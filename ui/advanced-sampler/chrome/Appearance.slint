@@ -41,7 +41,10 @@ component AppearanceColor inherits Rectangle {
 
 // A native appearance editor; accepted colors are validated by the native controller.
 export component Appearance inherits FocusScope {
+    private property <length> scroll-position;
     visible: AppearanceState.opened;
+    init => { if root.visible { popup.show(); } }
+    changed visible => { if root.visible { popup.show(); } else { popup.close(); } }
     callback theme-change(string, string, string, string, string, string);
     callback close-requested();
     public function choose(field: string, value: string) {
@@ -57,31 +60,39 @@ export component Appearance inherits FocusScope {
                           AppearanceState.secondary, AppearanceState.mod-palette, AppearanceState.host);
     }
     public function close() { AppearanceState.opened = false; root.close-requested(); }
-    key-pressed(event) => { if event.text == Key.Escape { root.close(); return accept; } return reject; }
-    Rectangle { width: parent.width; height: parent.height; background: SamplerTheme.scrim; }
-    TouchArea { width: parent.width; height: parent.height; clicked => { root.close(); } }
-    MaterialSurface {
-        x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
-        width: min(parent.width - 32px, 480px); height: min(parent.height - 32px, 560px);
-        base: SamplerTheme.surface-menu; raised: true;
-        TouchArea { width: parent.width; height: parent.height; }
-        Text { x: 16px; y: 12px; text: "Appearance"; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-display; font-size: 22px; font-weight: 700; }
-        ActionButton { x: parent.width - 74px; y: 12px; width: 58px; text: "Close"; clicked => { root.close(); } }
-        ScrollView {
-            x: 16px; y: 46px; width: parent.width - 32px; height: parent.height - 62px;
-            VerticalLayout {
-                spacing: 8px;
-                Text { text: "SURFACE"; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 700; }
-                AppearanceOptions { values: ["aluminium", "brushed", "ember", "graphite", "midnight", "forest", "camo", "paper"]; selected: AppearanceState.surface; changed(value) => { root.choose("surface", value); } }
-                Text { text: "FINISH"; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 700; }
-                AppearanceOptions { values: ["soft", "flat"]; selected: AppearanceState.finish; changed(value) => { root.choose("finish", value); } }
-                AppearanceColor { label: "Accent"; value: AppearanceState.accent; values: ["#E8C47A", "#E08A4E", "#E0574E", "#D8B24A", "#5BB38A", "#5B9DFF", "#C77DFF"]; changed(value) => { root.choose("accent", value); } }
-                AppearanceColor { label: "Secondary"; value: AppearanceState.secondary; values: ["#8C8F95", "#A07A58", "#7A5C45", "#B5653F", "#8E8A5A", "#6F7F8C", "#8A6A86", "#5F8072", "#9A8F7E"]; changed(value) => { root.choose("secondary", value); } }
-                Text { text: "MODULATION PALETTE"; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 700; }
-                AppearanceOptions { values: ["standard", "warm", "cool", "mono"]; selected: AppearanceState.mod-palette; changed(value) => { root.choose("mod-palette", value); } }
-                AppearanceColor { label: "Host automation"; value: AppearanceState.host; values: ["#5B9DFF", "#4FD1C5", "#B58CFF", "#FFFFFF"]; changed(value) => { root.choose("host", value); } }
-                Text { text: AppearanceState.error; color: SamplerTheme.error; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 500; wrap: word-wrap; }
-                Text { text: "Custom colors accept #RGB or #RRGGBB. Light surfaces adjust role contrast automatically."; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 500; wrap: word-wrap; }
+    popup := PopupWindow {
+        width: root.width; height: root.height; close-policy: no-auto-close;
+        forward-focus: close-button;
+        FocusScope {
+            focus-on-tab-navigation: false;
+            key-pressed(event) => { if event.text == Key.Escape { root.scroll-position = appearance-scroll.viewport-y; root.close(); return accept; } return reject; }
+            Rectangle { width: parent.width; height: parent.height; background: SamplerTheme.scrim; }
+            TouchArea { width: parent.width; height: parent.height; clicked => { root.scroll-position = appearance-scroll.viewport-y; root.close(); } }
+            MaterialSurface {
+                x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
+                width: min(parent.width - 32px, 480px); height: min(parent.height - 32px, 560px);
+                base: SamplerTheme.surface-menu; raised: true;
+                TouchArea { width: parent.width; height: parent.height; }
+                Text { x: 16px; y: 12px; text: "Appearance"; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-display; font-size: 22px; font-weight: 700; }
+                close-button := ActionButton { x: parent.width - 74px; y: 12px; width: 58px; text: "Close"; clicked => { root.scroll-position = appearance-scroll.viewport-y; root.close(); } }
+                appearance-scroll := ScrollView {
+                    viewport-y: root.scroll-position;
+                    x: 16px; y: 46px; width: parent.width - 32px; height: parent.height - 62px;
+                    VerticalLayout {
+                        spacing: 8px;
+                        Text { text: "SURFACE"; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 700; }
+                        AppearanceOptions { values: ["aluminium", "brushed", "ember", "graphite", "midnight", "forest", "camo", "paper"]; selected: AppearanceState.surface; changed(value) => { root.choose("surface", value); } }
+                        Text { text: "FINISH"; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 700; }
+                        AppearanceOptions { values: ["soft", "flat"]; selected: AppearanceState.finish; changed(value) => { root.choose("finish", value); } }
+                        AppearanceColor { label: "Accent"; value: AppearanceState.accent; values: ["#E8C47A", "#E08A4E", "#E0574E", "#D8B24A", "#5BB38A", "#5B9DFF", "#C77DFF"]; changed(value) => { root.choose("accent", value); } }
+                        AppearanceColor { label: "Secondary"; value: AppearanceState.secondary; values: ["#8C8F95", "#A07A58", "#7A5C45", "#B5653F", "#8E8A5A", "#6F7F8C", "#8A6A86", "#5F8072", "#9A8F7E"]; changed(value) => { root.choose("secondary", value); } }
+                        Text { text: "MODULATION PALETTE"; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 700; }
+                        AppearanceOptions { values: ["standard", "warm", "cool", "mono"]; selected: AppearanceState.mod-palette; changed(value) => { root.choose("mod-palette", value); } }
+                        AppearanceColor { label: "Host automation"; value: AppearanceState.host; values: ["#5B9DFF", "#4FD1C5", "#B58CFF", "#FFFFFF"]; changed(value) => { root.choose("host", value); } }
+                        Text { text: AppearanceState.error; color: SamplerTheme.error; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 500; wrap: word-wrap; }
+                        Text { text: "Custom colors accept #RGB or #RRGGBB. Light surfaces adjust role contrast automatically."; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 500; wrap: word-wrap; }
+                    }
+                }
             }
         }
     }

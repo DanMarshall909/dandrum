@@ -6,6 +6,8 @@ import { PatchRow } from "PatchRow.slint";
 import { ActionButton } from "../controls/ActionButton.slint";
 import { AppIcon } from "../controls/AppIcon.slint";
 export component PatchBrowser inherits FocusScope {
+    forward-focus: query;
+    focus-on-tab-navigation: false;
     in property <[PatchInfo]> presets;
     in property <string> current-patch-id;
     in property <bool> compact;

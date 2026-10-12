@@ -246,11 +246,11 @@ int main(int argc, char** argv) {
                         "Freeze "+caption+" uses a bounded aligned property row");
             }
             const auto before = model->definition(); const auto count = model->undoCount();
-            button("Freeze includes Source only");
+            popupButton("Freeze includes Source only");
             require(model->text("freeze-mode")=="src" && model->undoCount()==count+1, "Physical Freeze mode choice persists one native edit");
             session.invoke_command("undo", "", "", 0); settle();
             require(model->definition()==before, "Freeze mode Undo restores the complete definition");
-            button("Cancel render dialog");
+            popupButton("Cancel render dialog");
         };
         // Isolated runs retain causal layout failures even when another case fails first.
         const std::string_view focused = argc>1 ? argv[1] : "";
@@ -269,7 +269,7 @@ int main(int argc, char** argv) {
         chooseSize(2);
         require(session.invoke_command("state.select", "freeze", "", 0), "Freeze reference state is supported"); settle();
         auto freezeDefinition = model->definition(); auto freezeUndo = model->undoCount();
-        button("Cancel render dialog");
+        popupButton("Cancel render dialog");
         require(model->text("freeze-state") == "idle", "Cancel closes a reference Freeze confirmation without leaving stale confirmation state");
         require(model->definition() == freezeDefinition && model->undoCount() == freezeUndo, "Cancelling Freeze confirmation preserves the complete definition and Undo count");
         require(slint::testing::ElementHandle::find_by_accessible_label(window, "Freeze includes Source only").empty(), "Cancel removes the actual Freeze confirmation controls");

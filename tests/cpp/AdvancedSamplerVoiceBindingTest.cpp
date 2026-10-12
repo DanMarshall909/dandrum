@@ -13,6 +13,11 @@ namespace {
 int checks=0;
 void require(bool ok,const std::string& text){++checks;if(!ok)throw std::runtime_error(text);}
 bool near(double a,double b){return std::abs(a-b)<0.002;}
+// Programmatic globals/accessibility actions queue popup lifecycle callbacks.
+void settlePopup() {
+    slint::platform::update_timers_and_animations();
+    slint::invoke_from_event_loop([]{slint::quit_event_loop();});slint::run_event_loop();
+}
 template<class Window> slint::testing::ElementHandle find(const Window& window,std::string_view label){
     for(const auto& element:slint::testing::ElementHandle::find_by_accessible_label(window,label))
         if(element.accessible_role()==slint::language::AccessibleRole::Slider)return element;
@@ -205,8 +210,11 @@ int main(){try{
     activate(window,"Unfreeze · restore original source");
     require(!session.get_voice_frozen()&&model->find("source",original_source)->text("kind")==original_kind,"Native Unfreeze restores the original source kind and editable controls");
     window->set_voice_visible(false);
+    require(slint::testing::ElementHandle::find_by_accessible_label(window,"Sample patch…").empty(),"The conditional Voice page is actually removed before an external dialog request");
     window->global<dandrum_ui::VoiceDialogState>().set_mode("auto");
     window->set_voice_visible(true);
+    require(!slint::testing::ElementHandle::find_by_accessible_label(window,"Sample patch…").empty(),"The requested Voice page is recreated before its popup lifecycle runs");
+    settlePopup();
     require(find(window,"Low note").accessible_value()&&*find(window,"Low note").accessible_value()=="40","Externally requested autosampler opens when the Voice page is created later");
     window->window().dispatch_key_press_event("\x1b");
     require(window->global<dandrum_ui::VoiceDialogState>().get_mode().empty(),"Escape closes the externally requested modal and clears shared UI state");
@@ -248,6 +256,7 @@ int main(){try{
         if(action.accessible_role()==slint::language::AccessibleRole::Button){action.invoke_accessible_default_action();activated_sample=true;break;}
     require(activated_sample,"The actual SourceRow popup exposes its native sample action");
     require(model->text("selected-source")=="lush"&&model->text("page")=="voice"&&window->global<dandrum_ui::VoiceDialogState>().get_mode()=="auto","Synth context action selects the actual source, opens Voice and shares modal state; source="+model->text("selected-source")+", page="+model->text("page")+", modal="+std::string(window->global<dandrum_ui::VoiceDialogState>().get_mode()));
+    settlePopup();
     require(find(window,"Low note").accessible_value().has_value(),"Actual SourceRow context action opens native autosampler controls");
     find(window,"Tail").set_accessible_value("5");
     require(model->number("autosampler:tail")==5,"Source context autosampler controls persist native render configuration");

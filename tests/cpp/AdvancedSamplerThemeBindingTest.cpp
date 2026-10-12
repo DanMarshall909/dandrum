@@ -180,6 +180,9 @@ int main() {
         window->window().dispatch_pointer_release_event(scrim, slint::PointerEventButton::Left);
         require(!appearance.get_opened(), "Clicking the actual Appearance scrim dismisses it");
         appearance.set_opened(true);
+        // Global setters queue the popup lifecycle for the event loop.
+        slint::platform::update_timers_and_animations();
+        slint::invoke_from_event_loop([]{slint::quit_event_loop();});slint::run_event_loop();
         const auto focus_input = slint::testing::ElementHandle::find_by_accessible_label(window, "Host automation custom color");
         require(!focus_input.empty(), "Appearance Escape test starts with a visible actual input");
         const auto p = focus_input[0].absolute_position();
