@@ -30,33 +30,40 @@
       "source_line": 44,
       "event": "on-change",
       "reference_handler": "setPatch",
-      "component": null,
-      "command": null,
-      "test": null,
-      "evidence": null,
-      "status": "pending"
+      "component": "ui/advanced-sampler/chrome/GuideControls.slint",
+      "command": "patch.load",
+      "test": "tests/cpp/AdvancedSamplerGuideControlsBindingTest.cpp",
+      "evidence": "CTest advanced-sampler-guidecontrols-binding",
+      "status": "verified",
+      "proof_scope": "All three acceptance buttons load their named patch through the real session binding."
     },
     {
       "id": "v3:45:on-change:2",
       "source_line": 45,
       "event": "on-change",
       "reference_handler": "toggleAnn",
-      "component": null,
-      "command": null,
-      "test": null,
-      "evidence": null,
-      "status": "pending"
+      "component": "ui/advanced-sampler/chrome/GuideControls.slint",
+      "command": "GuidePresentation.annotations",
+      "test": "tests/cpp/AdvancedSamplerGuideControlsBindingTest.cpp",
+      "evidence": "CTest advanced-sampler-guidecontrols-binding",
+      "status": "verified",
+      "proof_scope": "Pointer and keyboard toggle annotation labels on every annotated page."
     },
     {
       "id": "v3:50:on-click:3",
       "source_line": 50,
       "event": "on-click",
       "reference_handler": "s.go",
-      "component": null,
-      "command": null,
-      "test": null,
-      "evidence": null,
-      "status": "pending"
+      "component": "ui/advanced-sampler/chrome/GuideControls.slint",
+      "command": "guide.select",
+      "test": [
+        "tests/cpp/AdvancedSamplerGuideControlsBindingTest.cpp",
+        "tests/cpp/AdvancedSamplerGuideAppTest.cpp"
+      ],
+      "evidence": "682 focused guide checks plus composed reference-size checks",
+      "status": "pending",
+      "proof_scope": "All 30 view choices preserve patch and history; four editor sizes. Simulated errors/loading still use explicit --state fixtures.",
+      "remaining": "Full operational fixture/state parity remains within the broader acceptance audit."
     },
     {
       "id": "v3:56:onAuxClick:141",
@@ -442,7 +449,7 @@
       "source_line": 205,
       "event": "data-ctx",
       "reference_handler": "src|{{ i.name",
-      "component": "ui/advanced-sampler/chrome/SourceRow.slint → ui/advanced-sampler/pages/VoicePage.slint::VoiceRenderDialog",
+      "component": "ui/advanced-sampler/chrome/SourceRow.slint \u2192 ui/advanced-sampler/pages/VoicePage.slint::VoiceRenderDialog",
       "command": [
         "asset.select lush",
         "page.select voice",
@@ -1026,7 +1033,7 @@
       "test": "tests/cpp/AdvancedSamplerSourcePagesBindingTest.cpp",
       "evidence": "build/advanced-sampler-evidence/functional-source-pages-binding.log (94 checks)",
       "status": "verified",
-      "proof_scope": "Physical middle-click resets all four knobs to their exact defaults, including Gain−1.5, oneUndo each"
+      "proof_scope": "Physical middle-click resets all four knobs to their exact defaults, including Gain\u22121.5, oneUndo each"
     },
     {
       "id": "v3:527:on-change:53",
@@ -1133,12 +1140,12 @@
       "source_line": 637,
       "event": "onContextMenu",
       "reference_handler": "onMapCtx",
-      "component": null,
-      "command": null,
-      "test": null,
-      "evidence": null,
-      "status": "pending",
-      "remaining": "Actual Rightclick→Insert at D3 targets selected overlapping soft zone and alters native mapping. Other menu actors need direct native coverage."
+      "component": "ui/advanced-sampler/pages/MappingPage.slint",
+      "command": "zone copy/paste/delete/add-gap",
+      "test": "tests/cpp/AdvancedSamplerDomainInteractionsBindingTest.cpp",
+      "evidence": "CTest advanced-sampler-domain-interactions",
+      "status": "verified",
+      "proof_scope": "Actual right-click menu edits selected ranges; Undo restores full definition."
     },
     {
       "id": "v3:637:onPointerDown:59",
@@ -1201,48 +1208,48 @@
       "source_line": 668,
       "event": "onContextMenu",
       "reference_handler": "closeMenuCtx",
-      "component": null,
-      "command": null,
-      "test": null,
-      "evidence": null,
-      "status": "pending",
-      "remaining": "Remaining native gesture/menu proof; see owned domain audit"
+      "component": "ui/advanced-sampler/pages/MappingPage.slint",
+      "command": "popup dismissal",
+      "test": "tests/cpp/AdvancedSamplerDomainInteractionsBindingTest.cpp",
+      "evidence": "CTest advanced-sampler-domain-interactions",
+      "status": "verified",
+      "proof_scope": "Outside right-click closes actual mapping popup without editing."
     },
     {
       "id": "v3:668:onPointerDown:61",
       "source_line": 668,
       "event": "onPointerDown",
       "reference_handler": "closeMenu",
-      "component": null,
-      "command": null,
-      "test": null,
-      "evidence": null,
-      "status": "pending",
-      "remaining": "Remaining native gesture/menu proof; see owned domain audit"
+      "component": "ui/advanced-sampler/pages/MappingPage.slint",
+      "command": "popup dismissal",
+      "test": "tests/cpp/AdvancedSamplerDomainInteractionsBindingTest.cpp",
+      "evidence": "CTest advanced-sampler-domain-interactions",
+      "status": "verified",
+      "proof_scope": "Outside pointer and Escape dismiss actual mapping popup without editing."
     },
     {
       "id": "v3:670:on-close:168",
       "source_line": 670,
       "event": "on-close",
       "reference_handler": "closeMenu",
-      "component": null,
-      "command": null,
-      "test": null,
-      "evidence": null,
-      "status": "pending",
-      "remaining": "Remaining native gesture/menu proof; see owned domain audit"
+      "component": "ui/advanced-sampler/pages/MappingPage.slint",
+      "command": "popup dismissal",
+      "test": "tests/cpp/AdvancedSamplerDomainInteractionsBindingTest.cpp",
+      "evidence": "CTest advanced-sampler-domain-interactions",
+      "status": "verified",
+      "proof_scope": "Outside pointer and Escape dismiss actual mapping popup without editing."
     },
     {
       "id": "v3:689:onClick:63",
       "source_line": 689,
       "event": "onClick",
       "reference_handler": "z.pick",
-      "component": null,
-      "command": null,
-      "test": null,
-      "evidence": null,
-      "status": "pending",
-      "remaining": "Remaining native gesture/menu proof; see owned domain audit"
+      "component": "ui/advanced-sampler/pages/MappingPage.slint",
+      "command": "zone.select",
+      "test": "tests/cpp/AdvancedSamplerDomainInteractionsBindingTest.cpp",
+      "evidence": "CTest advanced-sampler-domain-interactions",
+      "status": "verified",
+      "proof_scope": "Inventory selection updates exact native zone and source."
     },
     {
       "id": "v3:706:on-click:64",
@@ -1299,12 +1306,12 @@
       "source_line": 745,
       "event": "onPointerDown",
       "reference_handler": "onVelDown",
-      "component": null,
-      "command": null,
-      "test": null,
-      "evidence": null,
-      "status": "pending",
-      "remaining": "Remaining native gesture/menu proof; see owned domain audit"
+      "component": "ui/advanced-sampler/pages/LayersPage.slint",
+      "command": "velocity-split gesture",
+      "test": "tests/cpp/AdvancedSamplerDomainInteractionsBindingTest.cpp",
+      "evidence": "CTest advanced-sampler-domain-interactions",
+      "status": "verified",
+      "proof_scope": "Native multi-move split preserves alternate alignment, coalesces one Undo and cancels exactly."
     },
     {
       "id": "v3:770:on-change:69",
@@ -1388,7 +1395,7 @@
         "build/advanced-sampler-evidence/theme/final-owned-checkpoint/voice.log"
       ],
       "status": "verified",
-      "proof_scope": "Actual Sample patch button opens editable persistent configuration; native start completes exact 3 notes ×3 layers ×2 takes, one Undo."
+      "proof_scope": "Actual Sample patch button opens editable persistent configuration; native start completes exact 3 notes \u00d73 layers \u00d72 takes, one Undo."
     },
     {
       "id": "v3:831:on-click:75",
@@ -1476,7 +1483,7 @@
       "reference_handler": "knob|{{ k.key",
       "component": "ui/advanced-sampler/pages/VoicePage.slint::DomainKnob",
       "command": [
-        "actual middle-pointer reset → parameter-gesture exact default",
+        "actual middle-pointer reset \u2192 parameter-gesture exact default",
         "undo"
       ],
       "test": [
@@ -1488,7 +1495,7 @@
         "build/advanced-sampler-evidence/theme/final-owned-checkpoint/voice.log"
       ],
       "status": "verified",
-      "proof_scope": "Every42 actual generated Voice/source Slider receives native middle-pointer reset. Native exact advertised default, one additional Undo and Undo restoration are asserted; Source Gain off-step default−1.5 regression remains unchanged and passes after shared RangeControl correction."
+      "proof_scope": "Every42 actual generated Voice/source Slider receives native middle-pointer reset. Native exact advertised default, one additional Undo and Undo restoration are asserted; Source Gain off-step default\u22121.5 regression remains unchanged and passes after shared RangeControl correction."
     },
     {
       "id": "v3:852:on-change:79",
@@ -1598,12 +1605,12 @@
       "source_line": 956,
       "event": "data-ctx",
       "reference_handler": "route|{{ r.rk",
-      "component": null,
-      "command": null,
-      "test": null,
-      "evidence": null,
-      "status": "pending",
-      "remaining": "Remaining native gesture/menu proof; see owned domain audit"
+      "component": "ui/advanced-sampler/pages/ModulationPage.slint",
+      "command": "route.select/bypass/invert/delete",
+      "test": "tests/cpp/AdvancedSamplerDomainInteractionsBindingTest.cpp",
+      "evidence": "CTest advanced-sampler-domain-interactions",
+      "status": "verified",
+      "proof_scope": "Native context-menu keyboard activation targets the clicked route; Undo restores, including default Amp detach."
     },
     {
       "id": "v3:956:onClick:84",
@@ -1622,12 +1629,12 @@
       "source_line": 990,
       "event": "on-click",
       "reference_handler": "me.addDest",
-      "component": null,
-      "command": null,
-      "test": null,
-      "evidence": null,
-      "status": "pending",
-      "remaining": "Remaining native gesture/menu proof; see owned domain audit"
+      "component": "ui/advanced-sampler/pages/ModulationPage.slint",
+      "command": "context-action(modulator-destination)",
+      "test": "tests/cpp/AdvancedSamplerDomainInteractionsBindingTest.cpp",
+      "evidence": "CTest advanced-sampler-domain-interactions",
+      "status": "verified",
+      "proof_scope": "Selected modulator editor forwards canonical source ID to the root destination picker."
     },
     {
       "id": "v3:992:on-click:86",
@@ -2167,7 +2174,7 @@
       "reference_handler": "closeDlg",
       "component": "ui/advanced-sampler/pages/VoicePage.slint::VoiceRenderDialog",
       "command": [
-        "close → native cancellation + VoiceDialogState.mode=empty"
+        "close \u2192 native cancellation + VoiceDialogState.mode=empty"
       ],
       "test": [
         "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:346",
@@ -2205,7 +2212,7 @@
       "reference_handler": "closeDlg",
       "component": "ui/advanced-sampler/pages/VoicePage.slint::VoiceRenderDialog",
       "command": [
-        "close → native cancellation + VoiceDialogState.mode=empty"
+        "close \u2192 native cancellation + VoiceDialogState.mode=empty"
       ],
       "test": [
         "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:346",

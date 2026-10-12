@@ -1,0 +1,12 @@
+export component NativeFileDropTest inherits Window {
+    title: "Dandrum native XDND delivery test";
+    width: 320px;
+    height: 200px;
+    callback received(data-transfer);
+    DropArea {
+        width: parent.width;
+        height: parent.height;
+        can-drop(event) => { return DragAction.copy; }
+        dropped(event) => { root.received(event.data); return DragAction.copy; }
+    }
+}

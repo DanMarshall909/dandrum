@@ -2,6 +2,7 @@
 #include "engine/Bindings.h"
 #include "engine/FileOperations.h"
 #include "performance/Bindings.h"
+#include "platform/WindowFileDrop.h"
 #include "theme/AppearanceBinding.h"
 #include "../slint/host/ValueCodec.h"
 #include <iostream>
@@ -17,11 +18,13 @@ int main(int argc, char** argv) {
     auto model = std::make_shared<dandrum::sampler::Model>();
     std::string state;
     std::string screenshot;
+    bool guide = false;
     ThemeSettings initial_theme;
     int size = 1;
     for (int i = 1; i < argc; ++i) {
         const std::string argument = argv[i];
-        if (argument == "--state" && i + 1 < argc) state = argv[++i];
+        if (argument == "--guide") guide = true;
+        else if (argument == "--state" && i + 1 < argc) state = argv[++i];
         else if (argument == "--screenshot" && i + 1 < argc) screenshot = argv[++i];
         else if (argument == "--theme" && i + 1 < argc) {
             const std::string value = argv[++i];
@@ -41,7 +44,7 @@ int main(int argc, char** argv) {
             else if (value == "expanded") size = 2;
             else { std::cerr << "Size must be min, default or expanded\n"; return 2; }
         } else {
-            std::cerr << "Usage: dandrum-advanced-sampler [--state STATE] [--size min|default|expanded]\n";
+            std::cerr << "Usage: dandrum-advanced-sampler [--guide] [--state STATE] [--size min|default|expanded]\n";
             return 2;
         }
     }
@@ -50,6 +53,7 @@ int main(int argc, char** argv) {
         return 2;
     }
     auto window = AppWindow::create();
+    window->global<GuidePresentation>().set_enabled(guide);
     auto binding = dandrum::sampler::bindWindowSession<Session>(window, model);
     dandrum::sampler::bind_patch_search(window->global<PatchFilter>());
     dandrum::slint_ui::bind_value_codec<ParsedValue>(window->global<ValueCodec>());
@@ -67,9 +71,11 @@ int main(int argc, char** argv) {
                 secondary.data(), modulation.data(), host.data());
     });
     dandrum::sampler::bind_file_operations(window, binding);
+    auto desktopDrop = dandrum::sampler::bind_native_file_drop(window);
     dandrum::sampler::bind_performance_sources(window->global<PerformanceState>(), binding);
     window->invoke_choose_size(size);
-    if (state == "perf" && size == 1) window->window().set_size(slint::LogicalSize{{860, 610}});
+    if (state == "perf" && size == 1) window->window().set_size(slint::LogicalSize{{860,
+        610 + window->global<GuidePresentation>().invoke_height_for_width(860)}});
     std::cout << model->text("status") << '\n';
     slint::Timer capture;
     bool captured = screenshot.empty();

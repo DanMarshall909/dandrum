@@ -25,7 +25,8 @@ import { OverviewPage } from "pages/OverviewPage.slint";
 import { DiagnosticsPage } from "pages/DiagnosticsPage.slint";
 import { ImportChooser } from "pages/ImportChooser.slint";
 import { MultiImportPage } from "pages/MultiImportPage.slint";
-export { Session, SamplerTheme, AppearanceState, PerformanceState, PatchFilter, ValueCodec, ParsedValue }
+import { GuideControls, GuideAnnotations, GuidePresentation } from "chrome/GuideControls.slint";
+export { Session, SamplerTheme, AppearanceState, PerformanceState, PatchFilter, ValueCodec, ParsedValue, GuidePresentation }
 export struct DroppedFiles { paths: string, multiple: bool }
 
 export component AppWindow inherits Window {
@@ -34,7 +35,7 @@ export component AppWindow inherits Window {
     in-out property <length> viewport-height: 800px;
     in-out property <bool> diagnostics-open: Session.state-id == "diag";
     in-out property <bool> eventlog-open;
-    preferred-width: root.viewport-width; preferred-height: root.viewport-height; min-width: 820px; min-height: 560px;
+    preferred-width: root.viewport-width; preferred-height: root.viewport-height + GuidePresentation.height-for-width(root.viewport-width); min-width: 820px; min-height: 560px + guide.height;
     background: SamplerTheme.surface-window;
     default-font-family: SamplerTheme.font-ui;
     default-font-size: 13px;
@@ -59,7 +60,7 @@ export component AppWindow inherits Window {
     public function choose-size(size: int) {
         root.viewport-width = size == 0 ? 820px : size == 2 ? 1600px : 1200px;
         root.viewport-height = size == 0 ? 560px : size == 2 ? 1000px : 800px;
-        root.resize-window(root.viewport-width / 1px, root.viewport-height / 1px);
+        root.resize-window(root.viewport-width / 1px, (root.viewport-height + GuidePresentation.height-for-width(root.viewport-width)) / 1px);
         if size == 0 { PerformanceState.open = false; }
     }
     public function show-file(action: string) { Session.release-notes(); DragState.cancel(); root.import-mode = "root-velocity"; root.file-action = action; path.text = ""; path.focus(); }
@@ -109,7 +110,7 @@ export component AppWindow inherits Window {
         can-drop(event) => { return root.file-paths(event.data).paths != "" ? DragAction.copy : DragAction.none; }
         dropped(event) => { let files = root.file-paths(event.data); root.receive-files(files); return files.paths != "" ? DragAction.copy : DragAction.none; }
     clipboard-source := TextInput { visible: false; text: Session.definition-text; }
-    FocusScope { x: 0px; y: 0px; width: parent.width; height: parent.height; focus-on-click: true;
+    FocusScope { x: 0px; y: guide.height; width: parent.width; height: parent.height - self.y; focus-on-click: true;
         focus-lost(reason) => { if reason == FocusReason.window-activation { Session.release-notes(); DragState.cancel(); } }
         key-pressed(event) => {
             if event.modifiers.control && event.text.to-lowercase() == "o" { root.show-file("asset.import"); return accept; }
@@ -219,4 +220,14 @@ export component AppWindow inherits Window {
         }
     }
     }
+    guide := GuideControls {
+        x: 0; y: 0;
+        width: root.width; patch-id: Session.current-patch-id; state-id: Session.state-id;
+        command(a, target, text, value) => { return Session.command(a, target, text, value); }
+        layout-requested(w, h) => {
+            root.viewport-width = w * 1px; root.viewport-height = h * 1px;
+            root.resize-window(w, h + GuidePresentation.height-for-width(w * 1px) / 1px);
+        }
+    }
+    GuideAnnotations { y: guide.height; width: root.width; height: root.height - self.y; page: Session.page; inspector-type: Session.inspector-type; }
 }

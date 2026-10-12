@@ -1,0 +1,20 @@
+export { Session } from "../../ui/advanced-sampler/Session.slint";
+export { GuidePresentation } from "../../ui/advanced-sampler/chrome/GuideControls.slint";
+import { Session } from "../../ui/advanced-sampler/Session.slint";
+import { GuideControls, GuideAnnotations } from "../../ui/advanced-sampler/chrome/GuideControls.slint";
+import { SamplerTheme } from "../../ui/advanced-sampler/theme/Theme.slint";
+export component AdvancedSamplerGuideControlsTest inherits Window {
+    preferred-width: 1200px; preferred-height: 760px;
+    background: SamplerTheme.surface-window;
+    out property <length> editor-origin: guide.height;
+    in-out property <float> requested-width;
+    in-out property <float> requested-height;
+    guide := GuideControls {
+        x: 0px; y: 0px; width: parent.width;
+        patch-id: Session.current-patch-id; state-id: Session.state-id;
+        command(action, target, argument, value) => { return Session.command(action, target, argument, value); }
+        layout-requested(w, h) => { root.requested-width = w; root.requested-height = h; }
+    }
+    Rectangle { y: guide.height; width: parent.width; height: parent.height - self.y; background: SamplerTheme.surface-panel; }
+    GuideAnnotations { y: guide.height; width: parent.width; height: parent.height - self.y; page: Session.page; inspector-type: Session.inspector-type; }
+}

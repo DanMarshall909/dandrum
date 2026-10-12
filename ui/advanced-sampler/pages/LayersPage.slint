@@ -28,10 +28,38 @@ component VelocityRangeHandle inherits FocusScope {
   moved => { if root.captured && self.pressed { root.latest=root.initial+round((self.absolute-position.x+self.mouse-x - root.origin)/root.graph-width*127);Session.parameter-gesture("zone:"+root.zone-id+":"+root.edge,1,root.latest); } }
  }
 }
-export component LayersPage inherits Rectangle {
+component VelocitySplitHandle inherits FocusScope {
+ in property <float> split;
+ in property <length> graph-width;
+ private property <length> origin;
+ private property <float> initial;
+ private property <float> latest;
+ private property <bool> captured;
+ accessible-role: button; accessible-label: "Velocity split";
+ public function finish(cancel:bool) { if root.captured { Session.parameter-gesture("velocity-split",cancel ? 3 : 2,root.latest);root.captured=false; } }
+ key-pressed(e) => { if e.text == Key.Escape { root.finish(true);return accept; } return reject; }
+ focus-lost(reason) => { if reason == FocusReason.window-activation { root.finish(true); } }
+ Rectangle { x: 3px; width: 2px; background: SamplerTheme.paper-1; }
+ TouchArea { mouse-cursor: ew-resize;
+  pointer-event(e) => {
+   if e.kind == PointerEventKind.down && e.button == PointerEventButton.left { root.focus();root.origin=self.absolute-position.x+self.mouse-x;root.initial=root.split;root.latest=root.split;root.captured=Session.parameter-gesture("velocity-split",0,root.initial); }
+   if e.kind == PointerEventKind.up { root.finish(false); }
+   if e.kind == PointerEventKind.cancel { root.finish(true); }
+  }
+  moved => { if root.captured && self.pressed { root.latest=root.initial+round((self.absolute-position.x+self.mouse-x - root.origin)/root.graph-width*127);Session.parameter-gesture("velocity-split",1,root.latest); } }
+ }
+}
+export component LayersPage inherits FocusScope {
  in property <bool> compact;
  in property <bool> expanded;
  callback context-action(string,string);
+ private property <string> moving-id;
+ private property <length> move-origin;
+ private property <float> move-initial;
+ private property <float> move-latest;
+ public function finish-move(cancel:bool) { if root.moving-id != "" { Session.parameter-gesture("layer:"+root.moving-id+":move",cancel ? 3 : 2,root.move-latest);root.moving-id=""; } }
+ key-pressed(e) => { if e.text == Key.Escape { root.finish-move(true);return accept; } return reject; }
+ focus-lost(reason) => { if reason == FocusReason.window-activation { root.finish-move(true); } }
  public function set-mode(mode:string) { Session.command("selector.mode","",mode,0); }
  public function add-layer() { Session.command("layer.add",Session.selected-source,"New layer",Session.root-note); }
  ScrollView { VerticalLayout { padding: 0px; spacing: 4px; alignment: start;
@@ -65,6 +93,9 @@ export component LayersPage inherits Rectangle {
       VelocityRangeHandle { visible: z.vel-high < 127; x: z.vel-high/127*parent.width - 4px; width: 8px; height: parent.height; zone-id: z.id; edge: "vel-hi"; name: z.name; model-value: z.vel-high; graph-width: parent.width; }
       VelocityRangeHandle { visible: z.vel-low > 1; x: (z.vel-low - 1)/127*parent.width - 4px; width: 8px; height: parent.height; zone-id: z.id; edge: "vel-lo"; name: z.name; model-value: z.vel-low; graph-width: parent.width; }
      }
+     for soft in Session.candidates : Rectangle { visible: soft.vel-low == 1 && soft.vel-high < 127; width: parent.width; height: parent.height;
+      for hard in Session.candidates : VelocitySplitHandle { visible: hard.vel-low > soft.vel-low; split: (soft.vel-high+hard.vel-low)/2; graph-width: parent.width; x: (self.split - 1)/127*parent.width - 4px; width: 8px; height: parent.height; }
+     }
     }
     SectionText { x: 0px; y: 100px; width: 24px; height: 18px; text: "1"; font-family: SamplerTheme.font-value; font-size: 11px; }
     SectionText { x: parent.width - 24px; y: 100px; width: 24px; height: 18px; text: "127"; font-family: SamplerTheme.font-value; font-size: 11px; }
@@ -84,7 +115,19 @@ export component LayersPage inherits Rectangle {
      for caption in [{x: 32px, width: 120px, text: "NAME"},{x: candidate-headings.width - 472px, width: 62px, text: "VELOCITY"},{x: candidate-headings.width - 292px, width: 56px, text: "GAIN"},{x: candidate-headings.width - 232px, width: 56px, text: "PAN"},{x: candidate-headings.width - 172px, width: 56px, text: "TUNE"},{x: candidate-headings.width - 108px, width: 78px, text: "OUTPUT"}] : SectionText { x: caption.x; width: caption.width; height: 26px; text: caption.text; font-size: 10px; font-weight: 600; }
     }
     for layer[i] in Session.candidates : Rectangle { y: 26px+i*30px; width: parent.content-width; height: 30px; background: layer.selected ? SamplerTheme.accent-wash : transparent;
-     ActionButton { x: 4px; y: 3px; width: 24px; text: "↑"; label: "Move layer up"; compact: true; ghost: true; clicked => { Session.command("layer.move",layer.id,"",-1); } }
+     FocusScope { x: 4px; y: 3px; width: 24px; height: 24px; accessible-role: button; accessible-label: "Move candidate "+layer.name;
+      accessible-action-default => { Session.command("layer.move",layer.id,"",-1); }
+      key-pressed(e) => { if e.text == Key.UpArrow || e.text == Key.DownArrow { Session.command("layer.move",layer.id,"",e.text == Key.UpArrow ? -1 : 1);return accept; } return reject; }
+      SectionText { width: parent.width; height: parent.height; text: "↕"; horizontal-alignment: center; }
+      TouchArea { mouse-cursor: ns-resize;
+       pointer-event(e) => {
+        if e.kind == PointerEventKind.down && e.button == PointerEventButton.left { root.focus();root.moving-id=layer.id;root.move-origin=self.absolute-position.y+self.mouse-y;root.move-initial=i;root.move-latest=i;Session.parameter-gesture("layer:"+root.moving-id+":move",0,i); }
+        if e.kind == PointerEventKind.up { root.finish-move(false); }
+        if e.kind == PointerEventKind.cancel { root.finish-move(true); }
+       }
+       moved => { if self.pressed && root.moving-id != "" { root.move-latest=(root.move-initial+round((self.absolute-position.y+self.mouse-y - root.move-origin)/30px)).clamp(0,Session.candidates.length - 1);Session.parameter-gesture("layer:"+root.moving-id+":move",1,root.move-latest); } }
+      }
+     }
      ActionButton { x: 32px; y: 3px; width: max(108px,parent.width - 510px); text: (i+1)+"  "+layer.name; ghost: true; compact: true; clicked => { Session.command("zone.select",layer.id,"",0); } }
      SectionText { x: parent.width - 472px; width: 62px; height: 30px; text: layer.vel-low+"–"+layer.vel-high; font-family: SamplerTheme.font-value; font-size: 11px; }
      NumericField { visible: Session.selector-mode == "weighted" || Session.selector-mode == "random"; x: parent.width - 410px; y: 3px; width: 52px; show-label: false; ghost: true; label: "Weight"; model-value: layer.weight; value: layer.weight; minimum: 0; maximum: 1000; step: 0.1; gesture-began => { Session.parameter-gesture("layer:"+layer.id+":weight",0,self.value); } changed(v) => { Session.parameter-gesture("layer:"+layer.id+":weight",1,v); } gesture-ended => { Session.parameter-gesture("layer:"+layer.id+":weight",2,self.value); } }

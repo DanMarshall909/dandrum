@@ -44,6 +44,10 @@ Keep `SLINT_SCALE_FACTOR` unset during configuration and compilation: Slint can 
 
 The direct executable accepts `--size min|default|expanded` and `--state STATE` for operational design fixtures. These fixtures use the same native model and controls. Reference comparisons and the remaining acceptance audit are tracked in [OpenSpec](../../openspec/changes/add-advanced-sampler-slint/tasks.md); compilation or component screenshots alone do not complete that audit.
 
+Add `--guide` to show the acceptance-patch selectors, state navigation, editor sizes and annotations above the editor. State navigation preserves the current patch and undo/redo history; `--state` instead loads a demonstration fixture, including simulated loading and error states. Guide height is added to the requested editor size, so the editor itself retains its reference dimensions.
+
+Native desktop file drops on Linux/X11 require XCB development headers (`libxcb1-dev` on Debian/Ubuntu) when building. The optional adapter passes local WAV paths into the same import workflow as the file dialog, including batch choices and Undo. Builds without XCB, and other window-system backends, do not have this X11 bridge; see [platform support and bounds](platform/README.md).
+
 Capture all 30 states, both finishes for all eight surfaces, and all 13 pages at each of the three editor sizes from the actual compiled application:
 
 ```sh

@@ -90,6 +90,13 @@ export component ModulationPage inherits Rectangle {
      Rectangle { x: route.on ? 14px : 3px; y: 3px; width: 10px; height: 10px; border-radius: 5px; background: route.on ? SamplerTheme.ink-0 : SamplerTheme.paper-4; }
     }
     ActionButton { x: parent.width - 38px; y: 2px; width: 32px; height: 24px; label: "Bypass route "+route.source-name+" to "+route.destination-name; compact: true; ghost: true; clicked => { Session.command("route.bypass",route.id,"",0); } }
+    ContextMenuArea { Menu {
+     MenuItem { title: "Edit route"; activated => { Session.command("route.select",route.id,"",0); } }
+     MenuItem { title: "Bypass route"; activated => { Session.command("route.bypass",route.id,"",0); } }
+     MenuItem { title: "Invert route"; activated => { Session.command("route.invert",route.id,"",0); } }
+     MenuItem { title: "Go to "+route.destination-name; activated => { root.context-action("parameter-destination",route.destination); } }
+     MenuItem { title: "Remove route"; activated => { Session.command(route.default-route ? "amp.detach" : "route.delete",route.id,"",0); } }
+    } }
    }
   }
   Rectangle { height: 31px;
@@ -99,6 +106,7 @@ export component ModulationPage inherits Rectangle {
    ActionButton { x: parent.width - 86px; text: "+ Route"; compact: true; clicked => { root.add-route(); } }
   }
   PageSection { title: "Modulator"; height: 396px;
+   ActionButton { x: parent.width - 142px; y: 5px; width: 130px; text: "+ Destination"; label: "Add destination from selected modulator"; compact: true; clicked => { root.context-action("modulator-destination",root.selected-source); } }
    for mod in Session.modulators : Rectangle { visible: mod.id == root.selected-source; x: 12px; y: 44px; width: parent.width - 24px; height: 348px;
     SectionText { y: 0px; width: parent.width; height: 24px; text: mod.name+" · "+mod.kind; color: SamplerTheme.paper-1; }
     Rectangle { accessible-role: button; accessible-label: "Modulator graph "+mod.name; y: 30px; width: parent.width; height: 100px; background: SamplerTheme.ink-0; border-width: 1px; border-color: SamplerTheme.line-2;

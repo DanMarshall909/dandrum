@@ -127,6 +127,7 @@ bool Model::gestureValue(std::string_view id,double value,Edit& edit){
  static const std::set<std::string> sampleFields={"region-start","region-end","fade-in","fade-out","loop-start","loop-end","loop-crossfade"};
  if(id=="root-note")return tableCommand("sample.set",id,"",value,edit);
  if(id=="crossfade-width")return tableCommand("selector.crossfade","",text("crossfade-curve"),value,edit);
+ if(id=="velocity-split")return tableCommand("selector.split","","",value,edit);
  if(sampleFields.contains(std::string(id))){updateRegion(edit,id,value);return true;}
  if(id.starts_with("chain:")){std::string owner(id.substr(6));auto split=owner.rfind(':');if(split==std::string::npos||owner.substr(split+1)!="gain")return false;return tableCommand("chain.gain",owner.substr(0,split),"",value,edit);}
  if(id.starts_with("slice:")||id.starts_with("route:")||id.starts_with("modulator:")||id.starts_with("fx:")||id.starts_with("module:")||id.starts_with("send:")||id.starts_with("layer:")){auto prefix=id.substr(0,id.find(':'));std::string encoded(id.substr(prefix.size()+1));auto split=encoded.rfind(':');if(split==std::string::npos)return false;std::string target=encoded.substr(0,split),key=encoded.substr(split+1);if(prefix=="send")return tableCommand("send.set",target,key,value,edit);if(prefix=="layer"&&key=="move")return tableCommand("layer.move",target,"index",value,edit);return tableCommand(std::string(prefix)+".set",target,key,value,edit);}
@@ -145,7 +146,7 @@ bool Model::gesture(std::string_view id,int phase,double value){
  Edit edit=std::move(gesture_->edit);gesture_.reset();
  if(phase==3){for(auto c=edit.changes.rbegin();c!=edit.changes.rend();++c)apply(*c,false);return true;}
  edit.changes.erase(std::remove_if(edit.changes.begin(),edit.changes.end(),[](auto& c){return c.before&&c.after&&c.before->fields==c.after->fields;}),edit.changes.end());
- if(!edit.changes.empty()&&id!="crossfade-width"&&!id.starts_with("pad:")&&!id.starts_with("binding:")&&!id.starts_with("zone:")&&!id.starts_with("route:")&&!id.starts_with("modulator:")&&!id.starts_with("fx:")&&!id.starts_with("module:")&&!id.starts_with("send:")&&!id.starts_with("layer:")&&!id.starts_with("slice:")&&!find("parameter",id)&&!find("macro",id)){std::string previous;for(auto& c:edit.changes)if(c.id==id&&c.before)previous=c.before->text("value");put(edit,"history",make(uid("history"),{{"label",std::string(id)},{"field",std::string(id)},{"previous",previous},{"value",text(id)},{"source",text("selected-source")},{"detail",text(id)},{"on","1"}}));}
+ if(!edit.changes.empty()&&id!="crossfade-width"&&id!="velocity-split"&&!id.starts_with("pad:")&&!id.starts_with("binding:")&&!id.starts_with("zone:")&&!id.starts_with("route:")&&!id.starts_with("modulator:")&&!id.starts_with("fx:")&&!id.starts_with("module:")&&!id.starts_with("send:")&&!id.starts_with("layer:")&&!id.starts_with("slice:")&&!find("parameter",id)&&!find("macro",id)){std::string previous;for(auto& c:edit.changes)if(c.id==id&&c.before)previous=c.before->text("value");put(edit,"history",make(uid("history"),{{"label",std::string(id)},{"field",std::string(id)},{"previous",previous},{"value",text(id)},{"source",text("selected-source")},{"detail",text(id)},{"on","1"}}));}
  commit(std::move(edit));return true;
 }
 
@@ -153,7 +154,7 @@ void Model::beginJob(std::string kind,std::string target,std::string path,bool f
 bool Model::receive(const AdapterEvent& e){if(e.generation!=generation_){event("stale","Rejected stale "+e.kind+" result");return false;}event(e.kind,e.detail);return true;}
 void Model::updateRegion(Edit& edit,std::string_view id,double value){value=std::clamp(value,0.,1.);if(number("snap-zero")&&(id=="region-start"||id=="region-end"||id=="loop-start"||id=="loop-end")){auto source=find("source",text("selected-source"));if(source){std::istringstream positions(source->text("zero-crossings"));std::string position;double nearest=value,distance=2;while(std::getline(positions,position,';'))try{double crossing=std::stod(position);if(std::isfinite(crossing)&&crossing>=0&&crossing<=1&&std::abs(value-crossing)<distance){nearest=crossing;distance=std::abs(value-crossing);}}catch(...){}value=nearest;}}double start=number("region-start"),end=number("region-end");if(id=="region-start")value=std::min(value,end-0.00001);if(id=="region-end")value=std::max(value,start+0.00001);if(id=="fade-in"||id=="fade-out")value=std::min(value,end-start);if(id=="loop-start")value=std::clamp(value,start,std::max(start,number("loop-end")-0.00001));if(id=="loop-end")value=std::clamp(value,std::min(end,number("loop-start")+0.00001),end);setting(edit,id,decimal(value));if(id=="region-start"&&number("loop-start")<value)setting(edit,"loop-start",decimal(value));if(id=="region-end"&&number("loop-end")>value)setting(edit,"loop-end",decimal(value));if(auto source=find("source",text("selected-source")))for(auto key:{"region-start","region-end","fade-in","fade-out","loop-start","loop-end","loop-crossfade","loop-enabled","reversed","start-offset"})field(edit,"source",source->id,key,text(key));}
 const std::vector<std::string>& Model::commandIds(){static const std::vector<std::string> ids={
-"undo","redo","gesture.cancel","page.select","state.select","selection.set","patch.new","patch.load","patch.select","patch.favourite","patch.search","patch.category","patch.import","patch.export","patch.copy","patch.rename","patch.reload","patch.reload-fail","patch.discard",
+"undo","redo","gesture.cancel","page.select","state.select","guide.select","selection.set","patch.new","patch.load","patch.select","patch.favourite","patch.search","patch.category","patch.import","patch.export","patch.copy","patch.rename","patch.reload","patch.reload-fail","patch.discard",
 "tree.audition","tree.add","tree.assign","tree.rename","tree.delete","tree.duplicate","tree.move","tree.mute","tree.solo","tree.expand","tree.freeze","tree.unfreeze",
 "asset.group-toggle","asset.remove","asset.favourite","asset.import","asset.import-many","asset.relink","asset.replace","asset.search-folder","asset.select","asset.preview","asset.search","asset.category","asset.mock-state","automation.mock","sample.set","sample.snap-zero","sample.mode","sample.reverse","sample.audition","sample.stop","sample.freeze","sample.unfreeze","sample.history-select","sample.history-add","sample.history-collapse","sample.history-bypass","sample.history-remove","sample.history-move",
 "analysis.start","analysis.fail","analysis.retry","analysis.cancel","analysis.apply","analysis.discard","analysis.sensitivity","analysis.count","analysis.preview",
@@ -177,6 +178,16 @@ bool Model::command(std::string_view action,std::string_view target,std::string_
   if(table=="module"||table=="fx")set("selected-id",parameter->text("owner"));return true;
  }
  if(action=="state.select")return selectState(target.empty()?arg:target);
+ if(action=="guide.select"){
+  const auto id=target.empty()?arg:target;
+  if(std::find(stateIds().begin(),stateIds().end(),id)==stateIds().end())return false;
+  // The interactive harness navigates the loaded patch. Fixture loading remains
+  // explicit through state.select, which intentionally replaces the session.
+  static const std::map<std::string,std::string> pages={{"empty","empty"},{"drop","empty"},{"slices","slices"},{"transients","slices"},{"running","slices"},{"failed","slices"},{"mapping","mapping"},{"default","mapping"},{"recon","mapping"},{"vel","layers"},{"rr","layers"},{"voice","voice"},{"exp","voice"},{"freeze","voice"},{"mod","mod"},{"macro","macros"},{"macros","macros"},{"routing","routing"},{"fx","fx"},{"perf","perform"},{"pads","pads"},{"diag","diagnostics"},{"overview","overview"}};
+  auto page=pages.find(std::string(id));
+  releaseNotes();set("state-id",id);set("page",page==pages.end()?"sample":page->second);
+  return true;
+ }
  if(action=="asset.group-toggle"){std::string name(target);if(!std::any_of(records("source").begin(),records("source").end(),[&](auto& source){auto group=source.text("group","Samples");return (group.empty()?"Samples":group)==name;}))return false;std::string key="source-open:"+name;auto current=find("setting",key);bool expanded=current?current->number("value")!=0:name!="Break"&&name!="Keys"&&name!="Pad";set(key,expanded?0:1);return true;}
  if(action=="slice.preview"){auto slice=find("slice",target);if(!slice)return false;auto sourceId=slice->text("source",text("selected-source"));auto source=find("source",sourceId);if(!source||(source->text("state")!="loaded"&&source->text("state")!="cached"))return false;double start=slice->number("start");selectSource(sourceId);set("selected-slice",target);return command("sample.audition","","",start);}
  if(action=="asset.select"){if(!find("source",target))return false;selectSource(target);return true;}
@@ -368,6 +379,23 @@ bool Model::tableCommand(std::string_view action,std::string_view target,std::st
  if(action=="zone.add-gap"){int note=std::clamp(static_cast<int>(std::round(value)),0,127),velocity=80;try{if(!arg.empty())velocity=std::stoi(std::string(arg));}catch(...){return false;}velocity=std::clamp(velocity,1,127);const Record*left=nullptr,*right=nullptr;for(auto& zone:records("zone")){if(velocity<zone.number("vel-lo",1)||velocity>zone.number("vel-hi",127))continue;if(note>=zone.number("lo")&&note<=zone.number("hi"))return false;if(zone.number("hi")<note&&(!left||zone.number("hi")>left->number("hi")))left=&zone;if(zone.number("lo")>note&&(!right||zone.number("lo")<right->number("lo")))right=&zone;}int low=left?left->number("hi")+1:24,high=right?right->number("lo")-1:96;low=std::min(low,note);high=std::max(high,note);if(high-low+1>12)low=high=note;const auto*near=left?left:right;std::string id=uid("zone");put(edit,"zone",make(id,{{"name","Empty"},{"source",""},{"group",near?near->text("group"):"keys"},{"lo",decimal(low)},{"hi",decimal(high)},{"vel-lo",near?near->text("vel-lo","1"):"1"},{"vel-hi",near?near->text("vel-hi","127"):"127"},{"root-note",decimal(note)},{"weight","1"}}));set("selected-zone",id);edit.structural=true;return true;}
  if(action=="selector.mode"){std::string mode=arg.empty()?std::string(target):std::string(arg);if(mode=="rr")mode="round-robin";static const std::set<std::string> modes={"stack","velocity","round-robin","alternate","random","weighted"};if(!modes.contains(mode))return false;setting(edit,"selector-mode",mode);cycles_.clear();return true;}
  if(action=="selector.reset"){cycles_.clear();event("selector","Restarted selector cycles");return true;}
+ if(action=="selector.split") {
+  const auto* selected=find("zone",text("selected-zone"));if(!selected)return false;
+  auto rows=records("zone");const Record* soft=nullptr;const Record* hard=nullptr;
+  for(auto& row:rows)if(row.text("group")==selected->text("group")&&row.number("lo")==selected->number("lo")&&row.number("hi")==selected->number("hi")) {
+   if(!soft||row.number("vel-lo",1)<soft->number("vel-lo",1))soft=&row;
+   if(!hard||row.number("vel-lo",1)>hard->number("vel-lo",1))hard=&row;
+  }
+  if(!soft||!hard||soft==hard||soft->number("vel-lo",1)==hard->number("vel-lo",1))return false;
+  const auto high=soft->number("vel-hi",127),low=hard->number("vel-lo",1);
+  const auto delta=std::clamp(std::round(value-(high+low)/2),std::max(1-low,soft->number("vel-lo",1)-high),std::min(127-high,hard->number("vel-hi",127)-low));
+  edit.structural=true;
+  for(auto& row:rows)if(row.text("group")==selected->text("group")&&row.number("lo")==selected->number("lo")&&row.number("hi")==selected->number("hi")) {
+   if(row.number("vel-hi",127)==high)field(edit,"zone",row.id,"vel-hi",decimal(high+delta));
+   if(row.number("vel-lo",1)==low)field(edit,"zone",row.id,"vel-lo",decimal(low+delta));
+  }
+  return true;
+ }
  if(action=="selector.crossfade"){
   double width=std::clamp(value,0.,64.);setting(edit,"crossfade-width",decimal(width));setting(edit,"crossfade-curve",arg.empty()?"equal-power":std::string(arg));auto selected=find("zone",text("selected-zone"));if(selected){auto rows=records("zone");const Record* soft=nullptr;const Record* hard=nullptr;for(auto& row:rows)if(row.text("group")==selected->text("group")&&row.number("lo")==selected->number("lo")){if(!soft||row.number("vel-lo")<soft->number("vel-lo"))soft=&row;if(!hard||row.number("vel-lo")>hard->number("vel-lo"))hard=&row;}if(soft&&hard&&soft->id!=hard->id){double boundary=(soft->number("vel-hi",127)+hard->number("vel-lo",1))/2.;field(edit,"zone",soft->id,"vel-hi",decimal(std::clamp(std::floor(boundary+width/2.),1.,127.)));for(auto& row:rows)if(row.text("group")==hard->text("group")&&row.number("vel-lo")==hard->number("vel-lo"))field(edit,"zone",row.id,"vel-lo",decimal(std::clamp(std::ceil(boundary-width/2.),1.,127.)));}}return true;
  }
