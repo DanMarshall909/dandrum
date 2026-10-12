@@ -3,11 +3,128 @@
 #include <slint-testing.h>
 #include <stdexcept>
 #include <iostream>
+#include <functional>
 #define CHECK(x) do { ++checks; if(!(x)) throw std::runtime_error(#x); } while(false)
+struct RefreshChanges : slint::private_api::ModelChangeListener {
+ int changes=0;
+ void row_added(std::size_t,std::size_t) override { ++changes; }
+ void row_removed(std::size_t,std::size_t) override { ++changes; }
+ void row_changed(std::size_t) override { ++changes; }
+ void reset() override { ++changes; }
+};
+struct ProjectionRow {
+ slint::SharedString id;
+ int value=0;
+ std::shared_ptr<slint::Model<int>> children;
+ bool operator==(const ProjectionRow&) const = default;
+};
+struct CountingProjection : slint::VectorModel<ProjectionRow> {
+ using slint::VectorModel<ProjectionRow>::VectorModel;
+ mutable std::size_t reads=0;
+ mutable bool invalidRead=false;
+ std::optional<ProjectionRow> row_data(std::size_t i) const override {
+  ++reads;invalidRead|=i>=row_count();return slint::VectorModel<ProjectionRow>::row_data(i);
+ }
+};
+void stableProjection(int& checks) {
+ using namespace dandrum::sampler;
+ std::vector<Record> records;
+ std::vector<ProjectionRow> initial;
+ std::map<std::string,std::shared_ptr<slint::Model<int>>> children;
+ for(int i=0;i<128;++i) {
+  auto id="row"+std::to_string(i);
+  auto child=std::make_shared<slint::VectorModel<int>>(std::vector<int>{i});
+  records.push_back({id,{{"value",std::to_string(i)}}});
+  initial.push_back({binding::str(id),i,child});children.emplace(id,child);
+ }
+ auto counted=std::make_shared<CountingProjection>(std::move(initial));
+ std::shared_ptr<slint::Model<ProjectionRow>> model=counted;
+ auto fill=[](ProjectionRow& row,const Record& record) {
+  row.id=binding::str(record.id);row.value=record.number("value");
+  if(!row.children)row.children=std::make_shared<slint::VectorModel<int>>(std::vector<int>{row.value});
+ };
+ auto verify=[&](bool moved=false) {
+  auto oldCount=model->row_count();counted->reads=0;counted->invalidRead=false;
+  auto result=binding::project(model,records,fill);
+  CHECK(result==model);
+  CHECK(counted->reads<=(moved?3:2)*std::max(oldCount,records.size()));
+  CHECK(!counted->invalidRead);CHECK(result->row_count()==records.size());
+  for(std::size_t i=0;i<records.size();++i) {
+   auto row=result->row_data(i);CHECK(row.has_value());CHECK(row->id==binding::str(records[i].id));
+   CHECK(row->value==records[i].number("value"));
+   auto existing=children.find(records[i].id);
+   if(existing!=children.end())CHECK(row->children==existing->second);
+   else {
+    for(const auto& [id,child]:children)CHECK(row->children!=child);
+    CHECK(row->children->row_count()==1);CHECK(row->children->row_data(0)==row->value);
+    children.emplace(records[i].id,row->children);
+   }
+  }
+ };
+ verify();
+ records.front().fields["value"]="999";verify();
+ records.insert(records.begin(),{"inserted",{{"value","42"}}});verify(true);
+ records.erase(records.begin()+1);verify(true);
+ std::reverse(records.begin(),records.end());verify(true);
+ records.clear();verify();
+ records.push_back({"fresh",{{"value","7"}}});verify();
+}
+template<class Binding> void stableRefresh(const std::shared_ptr<Binding>& binding,const Session& session,int& checks) {
+ std::vector<std::function<void()>> verify;
+ auto watch=[&](auto original,auto current) {
+  auto changes=std::make_shared<RefreshChanges>();original->attach_peer(changes);
+  verify.push_back([&,original,current,changes]{CHECK(original==current());CHECK(changes->changes==0);});
+ };
+ watch(session.get_waveform(),[&]{return session.get_waveform();});
+ watch(session.get_sounding_notes(),[&]{return session.get_sounding_notes();});
+ watch(session.get_selected_zones(),[&]{return session.get_selected_zones();});
+ watch(session.get_selected_candidates(),[&]{return session.get_selected_candidates();});
+ watch(session.get_macros(),[&]{return session.get_macros();});
+ watch(session.get_buses(),[&]{return session.get_buses();});
+ watch(session.get_routing_buses(),[&]{return session.get_routing_buses();});
+ watch(session.get_layers(),[&]{return session.get_layers();});
+ for(std::size_t i=0;i<session.get_macros()->row_count();++i) {
+  watch(session.get_macros()->row_data(i)->destinations,[&,i]{return session.get_macros()->row_data(i)->destinations;});
+  watch(session.get_macros()->row_data(i)->assignments,[&,i]{return session.get_macros()->row_data(i)->assignments;});
+ }
+ for(std::size_t i=0;i<session.get_buses()->row_count();++i) {
+  watch(session.get_buses()->row_data(i)->feeds,[&,i]{return session.get_buses()->row_data(i)->feeds;});
+  watch(session.get_buses()->row_data(i)->channels,[&,i]{return session.get_buses()->row_data(i)->channels;});
+ }
+ for(std::size_t i=0;i<session.get_routing_buses()->row_count();++i) {
+  watch(session.get_routing_buses()->row_data(i)->feeds,[&,i]{return session.get_routing_buses()->row_data(i)->feeds;});
+  watch(session.get_routing_buses()->row_data(i)->channels,[&,i]{return session.get_routing_buses()->row_data(i)->channels;});
+ }
+ for(std::size_t i=0;i<session.get_layers()->row_count();++i)
+  watch(session.get_layers()->row_data(i)->parameters,[&,i]{return session.get_layers()->row_data(i)->parameters;});
+ binding->refresh();binding->refresh();for(auto& assertion:verify)assertion();
+ auto notes=session.get_sounding_notes();CHECK(session.invoke_note_on(36,100,"refresh-test"));
+ CHECK(session.get_sounding_notes()==notes);CHECK(notes->row_count()==1);CHECK(notes->row_data(0)==36);
+ session.invoke_note_off(36,"refresh-test");CHECK(session.get_sounding_notes()==notes);CHECK(notes->row_count()==0);
+ auto selected=session.get_selected_zones();CHECK(session.invoke_command("zone.select","snS","",0));
+ CHECK(session.get_selected_zones()==selected);CHECK(selected->row_data(0)=="snS");
+ CHECK(session.invoke_command("zone.select","kick","",0));
+ auto parameters=session.get_layers()->row_data(0)->parameters;
+ auto parameterChanges=std::make_shared<RefreshChanges>();parameters->attach_peer(parameterChanges);
+ CHECK(session.invoke_command("parameter.set","pitch","",3));CHECK(session.get_layers()->row_data(0)->parameters==parameters);
+ CHECK(parameters->row_data(0)->value==3);CHECK(parameterChanges->changes==1);
+ CHECK(session.invoke_command("undo","","",0));
+ auto destinations=session.get_macros()->row_data(0)->destinations;auto count=destinations->row_count();
+ CHECK(session.invoke_command("macro.bind","tone","pan",.25));
+ CHECK(session.get_macros()->row_data(0)->destinations==destinations);CHECK(destinations->row_count()==count+1);
+ CHECK(session.invoke_command("undo","","",0));CHECK(destinations->row_count()==count);
+ auto layers=session.get_layers();auto retained=layers->row_data(2).value();
+ CHECK(session.invoke_command("zone.delete","snS","",0));CHECK(session.get_layers()==layers);
+ bool preserved=false;
+ for(std::size_t i=0;i<layers->row_count();++i)if(auto row=layers->row_data(i);row->id==retained.id){CHECK(row->parameters==retained.parameters);preserved=true;}
+ CHECK(preserved);CHECK(session.invoke_command("undo","","",0));
+}
 int main(){int checks=0;try{
+ stableProjection(checks);
  slint::testing::init();auto w=SessionBindingFixture::create();auto b=dandrum::sampler::bindWindowSession<Session>(w);const auto& s=w->global<Session>();
  CHECK(w->get_spectral_image().size().width==0);CHECK(s.get_current_patch_id()=="empty");CHECK(s.get_tree()->row_count()==1);CHECK(s.get_pads()->row_count()==128);CHECK(s.get_sources()->row_count()==0);
  CHECK(s.invoke_command("patch.load","kit","",0));CHECK(w->get_spectral_image().size().width==256);CHECK(s.get_current_patch_id()=="kit");CHECK(s.get_zones()->row_count()==15);CHECK(s.get_modules()->row_count()==6);CHECK(s.get_waveform()->row_count()==256);CHECK(s.get_pads()->row_data(38)->alternates==2);
+ stableRefresh(b,s,checks);
  CHECK(s.get_inspector_type()=="Sample");CHECK(s.get_inspector_title()=="Kick.wav");CHECK(s.get_sample_duration()==0.8f);CHECK(s.get_inspector_rows()->row_count()>4);
  CHECK(s.get_candidates()->row_count()==1);CHECK(s.invoke_command("zone.select","snS","",0));CHECK(s.get_candidates()->row_count()==3);CHECK(s.invoke_command("selector.mode","","round-robin",0));CHECK(s.get_candidates()->row_count()==1);CHECK(s.invoke_command("zone.select","snH","",0));CHECK(s.get_candidates()->row_count()==2);CHECK(s.invoke_command("zone.select","kick","",0));CHECK(s.invoke_command("selector.mode","","velocity",0));
  CHECK(s.invoke_command("page.select","mapping","",0));CHECK(s.get_inspector_type()=="Zone");CHECK(s.get_inspector_title()=="Kick");
