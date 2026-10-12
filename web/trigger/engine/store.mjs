@@ -15,7 +15,16 @@ export class Store {
     this.editor=/** @type {Record<string,any>} */({page:'sample',st:'empty',ann:false,layout:'default',browser:false,
       selection:null,zoneSel:'k60f',zones:null,rrMode:null});
     this.snapshot=/** @type {import('./store-types').StoreSnapshot} */({patch:engine.getPatch(),editor:this.editor,busy:false,phase:this.phase,error:null,jobs:this.jobs});
-    this.unsubscribers=[engine.on('patch',payload=>{this.phase=payload.phase;this.error=payload.message??null;this.notify();}),
+    this.unsubscribers=[engine.on('patch',payload=>{
+      this.phase=payload.phase;this.error=payload.message??null;
+      if(payload.replacement){
+        const patch=engine.getPatch();this.undoStack=[];this.redoStack=[];this.gesture=null;this.jobs={};
+        this.editor={...this.editor,st:patch.rules.length?'sample':'empty',zoneSel:patch.rules[0]?.id,selection:null,selectedAsset:null,
+          sampleDraft:null,selectorDraft:null,sliceSelection:null,selectedMacro:null,selectedModule:null,selectedRoute:null,selectorTarget:null,
+          analysisJob:null,importDialog:null,dragSrc:null,dragMod:null,zones:null,menu:null,kmenu:null,cmenu:null,dmenu:null,dialog:null,histSel:null,modNote:null,wavePeaks:{}};
+      }
+      this.notify();
+    }),
       engine.on('param',()=>this.notify()),engine.on('asset',()=>this.notify()),
       engine.on('job',payload=>{this.jobs={...this.jobs,[payload.id]:payload};this.notify();})];
   }
@@ -67,10 +76,17 @@ export class Store {
     });
   }
   /** @param {string} id */
-  beginGesture(id){this.gesture={id,sequence:++this.gestureSequence,start:this.undoStack.length};}
-  cancelGesture(){const gesture=this.gesture;this.gesture=null;if(!gesture)return;return this.run(async()=>{while(true){const entry=this.undoStack.at(-1);if(!entry||entry.gesture!==gesture.sequence)break;await entry.command.undo(this.engine);this.undoStack.pop();}this.notify();});}
+  beginGesture(id){this.gesture={id,sequence:++this.gestureSequence,start:this.undoStack.length};return this.hostGesture('beginHostGesture',id);}
+  cancelGesture(){const gesture=this.gesture;this.gesture=null;if(!gesture)return;return this.run(async()=>{while(true){const entry=this.undoStack.at(-1);if(!entry||entry.gesture!==gesture.sequence)break;await entry.command.undo(this.engine);this.undoStack.pop();}if(this.engine.getPatch().params[gesture.id])await this.engine.endHostGesture?.(gesture.id);this.notify();});}
   /** @param {string} id */
-  endGesture(id){if(this.gesture?.id===id)this.gesture=null;}
+  endGesture(id){if(this.gesture?.id!==id)return;this.gesture=null;return this.hostGesture('endHostGesture',id);}
+  /** @param {'beginHostGesture'|'endHostGesture'} method @param {string} id */
+  hostGesture(method,id){
+    if(!this.engine.getPatch().params[id]||!this.engine[method])return;
+    const pending=this.run(()=>this.engine[method]?.(id));
+    if(pending instanceof Promise)void pending.catch(error=>{this.phase='failed';this.error=error instanceof Error?error.message:String(error);this.notify();});
+    return pending;
+  }
   /** @param {()=>any} action */
   run(action) {
     const execute=()=>{if(this.closed)throw new Error('Store is closed');return action();};

@@ -2458,3 +2458,31 @@ AC trigger-react-shell :: Input and mock telemetry :: Action-reachable states an
 AC trigger-react-shell :: Catalog, documentation and verification :: Reviewable complete shell
   fp 377fc7d9793b
   test js:tests/js/TriggerReactShellTest.mjs
+
+AC trigger-native-webview :: Native shell resource and adapter selection :: Embedded shell uses the native bridge
+  fp 62f6e1afcc75
+  test cpp:tests/cpp/PluginTriggerWebRuntimeTest.h
+
+AC trigger-native-webview :: Transactional sampler edits :: Failed preparation retains the working patch
+  fp b67939f9aaae
+  test cpp:tests/cpp/PluginTriggerNativeBridgeTest.cpp
+  test js:tests/js/TriggerNativeAdapterTest.mjs
+
+AC trigger-native-webview :: Transactional sampler edits :: Sample mapping edit and undo affect playback
+  fp dea2fa99fb12
+  test cpp:tests/cpp/PluginTriggerNativeBridgeTest.cpp
+  test js:tests/js/TriggerNativeAdapterTest.mjs
+
+AC trigger-native-webview :: Real runtime feedback and capabilities :: Notes and controls reach the host
+  fp 1eb8b63b48fa
+  test cpp:tests/cpp/PluginTriggerNativeBridgeTest.cpp
+  test js:tests/js/TriggerNativeAdapterTest.mjs
+
+AC trigger-native-webview :: Real runtime feedback and capabilities :: Feedback comes from prepared audio
+  fp 50626f5b1b72
+  test cpp:tests/cpp/PluginTriggerNativeBridgeTest.cpp
+  test js:tests/js/TriggerNativeAdapterTest.mjs
+
+AC trigger-native-webview :: Real runtime feedback and capabilities :: Unsupported edit is rejected
+  fp d7c02ab034e7
+  test js:tests/js/TriggerNativeAdapterTest.mjs

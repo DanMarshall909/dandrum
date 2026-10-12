@@ -20,7 +20,8 @@ export function sampleModel(presenter,model){
   model.pianoPeaks=peaks.map(v=>Math.min(1,v*gain));model.partialPeaks=model.pianoPeaks.map((v,i)=>i/Math.max(1,peaks.length)<(asset.progress??0)?v:0);
   model.seamA=peaks.slice(Math.max(0,Math.round((region.loop?.end??1)*peaks.length)-40),Math.round((region.loop?.end??1)*peaks.length));model.seamB=peaks.slice(Math.round((region.loop?.start??0)*peaks.length),Math.round((region.loop?.start??0)*peaks.length)+40);
   model.loadingProgress=asset.progress??0;model.isSample=model.page==='sample'&&!model.isDrop;model.isEmpty=false;
-  model.snapPosition=presenter.state.snapZero===false?null:value=>snapZero(asset.id,value);
+  const canSnap=store.engine.capabilities?.zeroCrossings!==false;
+  model.snapPosition=!canSnap||presenter.state.snapZero===false?null:value=>snapZero(asset.id,value);
   model.viewport=presenter.state.waveViewport??{zoom:1,offset:0};model.setViewport=viewport=>presenter.setState({waveViewport:viewport});
   const duration=asset.duration,seconds=v=>(v*duration).toFixed(3)+' s';
   const edit=(label,delta)=>store.operation(label,'setRegion',region.id,delta).catch(error=>presenter.setState({modNote:error.message}));
@@ -43,14 +44,14 @@ export function sampleModel(presenter,model){
     setPlayback:playback=>edit('Change playback',{playback,loop:['loop','pp','sus'].includes(playback)?region.loop??{start:.55,end:.82,crossfade:.025}:null}),
     toggleReverse:()=>edit('Reverse sample',{reverse:!region.reverse}),
     setLoop:(field,value)=>edit('Change loop '+field,{loop:{...region.loop,[field]:value}}),
-    snap:presenter.state.snapZero??true,setSnap:value=>presenter.setState({snapZero:value}),
+    snap:canSnap&&(presenter.state.snapZero??true),setSnap:value=>presenter.setState(canSnap?{snapZero:value}:{modNote:'Zero crossing analysis is unavailable in the native sampler.'}),
     duration,missing:asset.state==='missing',unsup:asset.state==='unsupported',isLoading:asset.state==='loading',waveReady:asset.state!=='loading',
     assetChoices:patch.assets.filter(a=>a.state==='loaded').map(a=>({id:a.id,label:a.name})),
     selectAsset:id=>store.operation('Replace sample','replaceRegionAsset',region.id,id).catch(error=>presenter.setState({modNote:error.message})),
   });
   model.detectedPitch=asset.analysis?.note!=null?presenter.nn(asset.analysis.note)+' +'+(asset.analysis.cents??0)+'¢':null;
   model.banner=model.missing||model.unsup;model.missingMessage=asset.name+' was not found. Locate the source to restore every region that uses it.';
-  model.meta=[{k:'Format',v:`${asset.sampleRate/1000} kHz · ${asset.bits}-bit · ${asset.channels===2?'stereo':'mono'}`},
+  model.meta=[{k:'Format',v:[`${asset.sampleRate/1000} kHz`,...(asset.bits>0?[`${asset.bits}-bit`]:[]),asset.channels===2?'stereo':'mono'].join(' · ')},
     {k:'Length',v:duration.toFixed(3)+' s'},{k:'Peak',v:asset.analysis?.peak!=null?asset.analysis.peak+' dBFS':'Not analysed'},{k:'Loudness',v:asset.analysis?.lufs!=null?asset.analysis.lufs+' LUFS':'Not analysed'},
     {k:'Pitch',v:asset.analysis?.note!=null?presenter.nn(asset.analysis.note)+' '+(asset.analysis.cents??0)+'¢':'Not analysed'},{k:'Source',v:asset.state==='loaded'?'external · cached':asset.state}];
 }

@@ -7,7 +7,11 @@ import {Store} from '../engine/store.mjs';
 
 const source=ts.createSourceFile('contract.ts',readFileSync(new URL('../engine/contract.ts',import.meta.url),'utf8'),ts.ScriptTarget.Latest);
 const surface=name=>source.statements.find(s=>ts.isInterfaceDeclaration(s)&&s.name.text===name).members.map(m=>m.name.text);
-const onlyDeclared=engine=>new Proxy(Object.fromEntries(surface('EngineAdapter').map(name=>[name,engine[name].bind(engine)])),{
+const onlyDeclared=engine=>new Proxy(Object.fromEntries(source.statements.find(s=>ts.isInterfaceDeclaration(s)&&s.name.text==='EngineAdapter').members.map(member=>{
+  const name=member.name.text,value=engine[name];
+  if(value===undefined&&member.questionToken)return [name,undefined];
+  return [name,value.bind(engine)];
+})),{
   get(target,name){if(name in target)return target[name];throw new Error('Undeclared adapter dependency: '+String(name));},
 });
 

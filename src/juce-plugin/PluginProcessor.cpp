@@ -1645,7 +1645,7 @@ std::optional<InstrumentUiDocument> DandrumAudioProcessor::getPreparedUiDocument
 std::optional<std::uint64_t> DandrumAudioProcessor::requestPreparedWaveform (
     std::uint32_t expectedGeneration, const std::string& sourceId,
     const std::string& regionId, std::uint16_t channel, std::size_t bucketCount,
-    std::uint64_t sessionId)
+    std::uint64_t sessionId, bool wholeSource)
 {
     InstrumentUiWaveformService::Source retainedSource;
     std::uint64_t startFrame = 0;
@@ -1663,10 +1663,10 @@ std::optional<std::uint64_t> DandrumAudioProcessor::requestPreparedWaveform (
             return std::nullopt;
         const auto region = std::find_if (source->regions.begin(), source->regions.end(),
             [&regionId] (const auto& value) { return value.id == regionId; });
-        if (region == source->regions.end())
+        if (! wholeSource && region == source->regions.end())
             return std::nullopt;
-        startFrame = region->startFrame;
-        endFrame = region->endFrame;
+        startFrame = wholeSource ? 0 : region->startFrame;
+        endFrame = wholeSource ? source->frameCount : region->endFrame;
         const auto sourceIndex = static_cast<std::size_t> (
             std::distance (document->sources.begin(), source));
         retainedSource.reset (dandrum_kernel_waveform_source_create (
@@ -1901,7 +1901,8 @@ bool DandrumAudioProcessor::reloadInstrumentFromFile (const juce::File& yamlFile
 }
 
 std::optional<std::uint64_t> DandrumAudioProcessor::requestInstrumentReloadJob (
-    const juce::File& yamlFile, std::uint32_t expectedGeneration)
+    const juce::File& yamlFile, std::uint32_t expectedGeneration,
+    std::optional<juce::String> yamlSnapshot)
 {
     const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     if (expectedGeneration != getParameterSurfaceGeneration()
@@ -1924,10 +1925,11 @@ std::optional<std::uint64_t> DandrumAudioProcessor::requestInstrumentReloadJob (
     try
     {
         pendingUiReload = std::async (std::launch::async,
-            [this, jobId, yamlFile, expectedGeneration, sampleRate, preparedBlockSize, previousMute]
+            [this, jobId, yamlFile, expectedGeneration, sampleRate, preparedBlockSize, previousMute,
+             yamlSnapshot = std::move (yamlSnapshot)]
             {
                 runInstrumentReloadJob (jobId, yamlFile, expectedGeneration,
-                                        sampleRate, preparedBlockSize, previousMute);
+                                        sampleRate, preparedBlockSize, previousMute, yamlSnapshot);
             });
     }
     catch (const std::exception& error)
@@ -1940,7 +1942,8 @@ std::optional<std::uint64_t> DandrumAudioProcessor::requestInstrumentReloadJob (
 
 void DandrumAudioProcessor::runInstrumentReloadJob (
     std::uint64_t jobId, const juce::File& yamlFile, std::uint32_t expectedGeneration,
-    std::uint32_t sampleRate, std::size_t preparedBlockSize, bool previousMute)
+    std::uint32_t sampleRate, std::size_t preparedBlockSize, bool previousMute,
+    const std::optional<juce::String>& yamlSnapshot)
 {
     UiJobStatus outcome { jobId, UiJobState::failed, expectedGeneration, {} };
     PreparedUiReload prepared;
@@ -1950,12 +1953,26 @@ void DandrumAudioProcessor::runInstrumentReloadJob (
         // audio callback, acknowledges any already-entered reader before work.
         waitForEngineReaders();
         if (beforeUiReloadPreparation) beforeUiReloadPreparation();
-        if (!yamlFile.existsAsFile())
+        const juce::TemporaryFile staged (yamlFile);
+        auto preparationFile = yamlFile;
+        if (yamlSnapshot)
+        {
+            prepared.yaml = *yamlSnapshot;
+            if (staged.getFile().replaceWithText (*yamlSnapshot))
+                preparationFile = staged.getFile();
+            else
+                prepared.error = "Could not stage sampler edit beside instrument source";
+        }
+        if (prepared.error.isNotEmpty())
+        {
+            // Preserve the original engine on staging failure.
+        }
+        else if (! preparationFile.existsAsFile())
             prepared.error = "Instrument file does not exist: " + yamlFile.getFullPathName();
         else
         {
-            prepared.yaml = yamlFile.loadFileAsString();
-            const auto path = yamlFile.getFullPathName().toStdString();
+            prepared.yaml = preparationFile.loadFileAsString();
+            const auto path = preparationFile.getFullPathName().toStdString();
             prepared.candidate.reset (prepareKernelWithPublicControls (path, sampleRate, preparedBlockSize));
             if (prepared.candidate == nullptr)
                 prepared.error = "Failed to load instrument: " + yamlFile.getFullPathName();

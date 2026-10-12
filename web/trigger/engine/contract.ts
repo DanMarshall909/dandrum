@@ -23,7 +23,7 @@ export interface Patch {id:Id;name:string;nodes:Node[];assets:Asset[];regions:Re
 export type AnalysisKind = 'transients'|'pitch'|'loops'|'loudness';
 export interface Job {id:Id;assetId:Id;kind:AnalysisKind;state:'running'|'done'|'failed'|'cancelled';progress:number;result?:Json;message?:string}
 export interface Telemetry {voices:{active:number;max:number};notes:{note:number;vel:number;layer:Id}[];playheads:{asset:Id;pos:number}[];selectorPos:Record<Id,{last:Id;next:Id;index?:number}>;mod:Record<Id,number>;meters:Record<Id,[number,number]>;host:Record<Id,boolean>;hostValues?:Record<Id,number>}
-export interface EventMap {patch:{phase:'preparing'|'ready'|'failed';patch?:Patch;message?:string};asset:Asset;job:Job;param:{id:Id;value:number;gesture?:'begin'|'end'};telemetry:Telemetry;host:{id:Id;value:number;host:boolean}}
+export interface EventMap {patch:{phase:'preparing'|'ready'|'failed';patch?:Patch;message?:string;replacement?:boolean};asset:Asset;job:Job;param:{id:Id;value:number;gesture?:'begin'|'end'};telemetry:Telemetry;host:{id:Id;value:number;host:boolean}}
 export type EntityCollection = 'nodes'|'assets'|'regions'|'rules'|'modules'|'modulators'|'routes'|'macros'|'buses'|'chains'|'history';
 export type DictionaryCollection = 'params'|'selectors';
 export type OperandPath = (string|{id:Id})[];
@@ -55,6 +55,8 @@ export interface EngineAdapter {
   addCandidate(target:Id,source:Id):Promise<void>;removeCandidate(target:Id,id:Id):Promise<void>;assignSource(target:Id,source:Id,policy?:string):Promise<Id|void>;
   setModuleParam(module:Id,param:string,value:ParamValue):Promise<void>;setVoicePolicy(delta:Partial<VoicePolicy>):Promise<void>;setTemplate(modules:Module[]):Promise<void>;
   setParam(id:Id,value:number,gesture?:'begin'|'end'):void;resetParam(id:Id):void;
+  /** Optional host automation gesture notifications, independent of value writes. */
+  beginHostGesture?(id:Id):Promise<void>;endHostGesture?(id:Id):Promise<void>;
   addRoute(route:Route):Promise<Id>;updateRoute(id:Id,delta:Partial<Route>):Promise<void>;removeRoute(id:Id):Promise<void>;
   setModulator(id:Id,delta:Partial<Modulator>):Promise<void>;addModulator(kind:string):Promise<Id>;removeModulator(id:Id):Promise<void>;
   setMacro(id:Id,value:number):void;renameMacro(id:Id,name:string):Promise<void>;bindMacro(id:Id,destination:Id,range:[number,number]):Promise<void>;learnMidi(target:Id|null):Promise<void>;receiveMidi(cc:number,channel:number):Promise<void>;

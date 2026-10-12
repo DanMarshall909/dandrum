@@ -1,5 +1,10 @@
 # Trigger shell feature audit
 
+The native integration is documented in the [Trigger README](../../web/trigger/README.md).
+The [engine roadmap](native-engine-roadmap.md) distinguishes remaining adapter work
+from engine capabilities that need implementation. The tables below retain the
+original mock-shell evidence and do not establish native support for each row.
+
 The standalone React shell is the phase-3 handoff. Real decoding, audible DSP,
 host automation, disk presets and JUCE mounting belong to the subsequent native
 adapter. This audit covers the supplied mock-shell scope, rather than asserting

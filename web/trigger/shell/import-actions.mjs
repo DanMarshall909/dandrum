@@ -1,7 +1,13 @@
 import {interpretFilename,mappingAssignments} from '../engine/filename-mapping.mjs';
+export async function selectNativeSamples(presenter,options={}){
+  try{
+    const files=await presenter.props.store.engine.chooseSamples();
+    if(files.length)return presenter.queueImport(files,options);
+  }catch(error){presenter.setState({lastImportError:error.message});}
+}
 export const importActions={
   queueImport(files,options={}){
-    const refs=Array.from(files,file=>({name:file.name,uri:file.uri??'mock://'+file.name}));
+    const refs=Array.from(files,file=>({...file,name:file.name,uri:file.uri??'mock://'+file.name}));
     if(!refs.length)return;
     this.setState({lastImportError:null});
     if(refs.length===1)return this.importFiles(refs,{policy:'stack',...options});
@@ -20,7 +26,7 @@ export const importActions={
   },
   importModel(model){
     const dialog=this.state.importDialog;
-    model.onFiles=files=>{const relink=this.state.relinkTarget;if(relink&&files[0]){this.setState({relinkTarget:null});return this.command('Relink source','relink',relink,'mock://'+files[0].name);}
+    model.onFiles=files=>{const relink=this.state.relinkTarget;if(relink&&files[0]){this.setState({relinkTarget:null});return this.command('Relink source','relink',relink,files[0].uri??'mock://'+files[0].name);}
       const replace=this.state.replaceTarget;this.setState({replaceTarget:null});return this.queueImport(files,replace?{replace}:{});};
     model.onSampleDrop=e=>{if(e.dataTransfer.files.length){e.preventDefault();e.stopPropagation();this.queueImport(e.dataTransfer.files,{replace:model.regionId});return;}
       const source=this.state.dragSrc,patch=this.props.store.getSnapshot().patch,region=patch.regions.find(r=>r.id===source?.id),asset=patch.assets.find(a=>a.id===(region?.assetId??source?.id));if(!asset)return;e.preventDefault();e.stopPropagation();this.command('Replace sample','replaceRegionAsset',model.regionId,asset.id);this.setState({dragSrc:null});};

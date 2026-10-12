@@ -1,7 +1,35 @@
 # Trigger standalone shell
 
 Trigger implements the supplied eight-workspace design as an independent React
-shell with a silent in-memory adapter. It does not produce audio.
+shell. The browser preview uses a silent in-memory adapter. Run the full editor
+with real sample playback inside JUCE from the repository root:
+
+```sh
+./demo react-trigger
+```
+
+The native adapter initializes from the prepared Advanced Drum Kit. It supports
+key/velocity mapping, forward loops, trim/fades/reverse, supported sample
+selectors, bounded polyphony, reversible prepared edits, actual host parameters,
+native mono/stereo WAV import, prepared waveforms and measured main-output meters.
+The Voice page exposes every actual native host parameter. Unsupported voice
+modules, FX/routing, modulation, analysis, zero-crossing snapping and isolated
+source audition report a capability error without accepting a simulated edit.
+Voice counts/playheads are not measured by this bridge and remain unavailable.
+The mock Felt Kit is not presented as a real native preset.
+
+The [engine roadmap](../../docs/trigger/native-engine-roadmap.md) records missing
+capabilities, existing primitives to reuse and the control/API/DSP test boundaries.
+
+Selected WAV files are copied beneath the instrument's authoring root in
+`.tools/trigger-assets/<unique-id>/` so the Rust resource boundary can admit
+them. Original files remain intact; these owned copies must remain available
+for saved patches to reload. This local cache is ignored by Git.
+
+The launcher builds `dist-native/` and embeds its script, CSS and local fonts;
+the integrated editor needs no development server. Native replacement prepares
+an owned YAML snapshot on the processor worker, retaining the working engine
+and undo operands on failure. Browser preview instructions:
 
 ```sh
 npm ci

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <future>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -18,12 +19,24 @@ public:
     ~InstrumentHostWebBridge();
 
     static const char* bootstrapScript() noexcept;
-    std::array<NativeFunctionEntry, 28> nativeFunctions();
+    std::array<NativeFunctionEntry, 34> nativeFunctions();
     juce::WebBrowserComponent::Options addNativeFunctions (
         juce::WebBrowserComponent::Options options);
     std::optional<juce::WebBrowserComponent::Resource> provideResource (
         const juce::String& path, const std::string& pageHtml) const;
-    bool publishParameterUpdates (juce::WebBrowserComponent& browser);
+    bool publishParameterUpdates (juce::WebBrowserComponent& browser,
+                                  bool refreshOnGeneration = true);
+
+    void getSamplerSessionForWeb (const juce::Array<juce::var>&,
+                                 juce::WebBrowserComponent::NativeFunctionCompletion) const;
+    void prepareSamplerFromWeb (const juce::Array<juce::var>&,
+                               juce::WebBrowserComponent::NativeFunctionCompletion);
+    void chooseSamplerFilesFromWeb (const juce::Array<juce::var>&,
+                                   juce::WebBrowserComponent::NativeFunctionCompletion);
+    void importSamplerFilesFromWeb (const juce::Array<juce::var>&,
+                                   juce::WebBrowserComponent::NativeFunctionCompletion);
+    void requestSourceWaveformFromWeb (const juce::Array<juce::var>&,
+                                      juce::WebBrowserComponent::NativeFunctionCompletion);
 
     void setParameterFromWeb (const juce::Array<juce::var>& arguments,
                               juce::WebBrowserComponent::NativeFunctionCompletion completion);
@@ -99,4 +112,6 @@ private:
     std::uint32_t parameterPublicationGeneration = 0;
     double lastNoteHeartbeatMilliseconds = 0.0;
     bool noteSessionActive = false;
+    std::unique_ptr<juce::FileChooser> samplerFileChooser;
+    std::future<void> samplerImportWorker;
 };

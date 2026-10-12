@@ -1,6 +1,7 @@
 #include "InstrumentHostWebBridge.h"
 
 #include "SharedInstrumentUi.h"
+#include <juce_audio_formats/juce_audio_formats.h>
 
 #include <charconv>
 #include <atomic>
@@ -518,10 +519,28 @@ const char* InstrumentHostWebBridge::bootstrapScript() noexcept
     return nativeFunctionBootstrap;
 }
 
-std::array<InstrumentHostWebBridge::NativeFunctionEntry, 28>
+std::array<InstrumentHostWebBridge::NativeFunctionEntry, 34>
 InstrumentHostWebBridge::nativeFunctions()
 {
     return {{
+        { "getSamplerSession", [this] (const juce::Array<juce::var>& args,
+              juce::WebBrowserComponent::NativeFunctionCompletion done)
+          { getSamplerSessionForWeb (args, std::move (done)); } },
+        { "prepareSampler", [this] (const juce::Array<juce::var>& args,
+              juce::WebBrowserComponent::NativeFunctionCompletion done)
+          { prepareSamplerFromWeb (args, std::move (done)); } },
+        { "chooseSamplerFiles", [this] (const juce::Array<juce::var>& args,
+              juce::WebBrowserComponent::NativeFunctionCompletion done)
+          { chooseSamplerFilesFromWeb (args, std::move (done)); } },
+        { "importSamplerFiles", [this] (const juce::Array<juce::var>& args,
+              juce::WebBrowserComponent::NativeFunctionCompletion done)
+          { importSamplerFilesFromWeb (args, std::move (done)); } },
+        { "requestSourceWaveform", [this] (const juce::Array<juce::var>& args,
+              juce::WebBrowserComponent::NativeFunctionCompletion done)
+          { requestSourceWaveformFromWeb (args, std::move (done)); } },
+        { "getSamplerPresetPath", [] (const juce::Array<juce::var>&,
+              juce::WebBrowserComponent::NativeFunctionCompletion done)
+          { done (juce::File (DANDRUM_SOURCE_ROOT).getChildFile ("examples/patches/advanced-drum-kit.yaml").getFullPathName()); } },
         { "setParameter",
           [this] (const juce::Array<juce::var>& arguments,
                   juce::WebBrowserComponent::NativeFunctionCompletion completion)
@@ -699,20 +718,24 @@ InstrumentHostWebBridge::provideResource (const juce::String& path,
     return std::nullopt;
 }
 
-bool InstrumentHostWebBridge::publishParameterUpdates (juce::WebBrowserComponent& browser)
+bool InstrumentHostWebBridge::publishParameterUpdates (juce::WebBrowserComponent& browser,
+                                                       bool refreshOnGeneration)
 {
     const auto generation = processor.getParameterSurfaceGeneration();
     if (generation != lastSeenParameterSurfaceGeneration)
     {
         pendingParameterPublication = 0;
         lastPublishedParameterState.reset();
-        processor.cancelPreparedWaveformSession (sessionId);
-        processor.cancelPreparedSpectrumSession (sessionId);
-        processor.unsubscribeMeter (sessionId);
-        processor.unsubscribeLiveAnalysis (sessionId);
-        processor.uiCommands().closeSession (sessionId);
+        if (refreshOnGeneration)
+        {
+            processor.cancelPreparedWaveformSession (sessionId);
+            processor.cancelPreparedSpectrumSession (sessionId);
+            processor.unsubscribeMeter (sessionId);
+            processor.unsubscribeLiveAnalysis (sessionId);
+            processor.uiCommands().closeSession (sessionId);
+        }
         lastSeenParameterSurfaceGeneration = generation;
-        browser.refresh();
+        if (refreshOnGeneration) browser.refresh();
         return true;
     }
 
@@ -838,6 +861,172 @@ void InstrumentHostWebBridge::getPreparedDocumentForWeb (
 {
     const auto document = processor.getPreparedUiDocument();
     completion (document ? preparedDocumentForWeb (*document) : juce::var {});
+}
+
+void InstrumentHostWebBridge::getSamplerSessionForWeb (
+    const juce::Array<juce::var>&,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion) const
+{
+    const auto document = processor.getPreparedUiDocument();
+    const auto yaml = processor.currentInstrumentYaml();
+    const auto source = processor.currentInstrumentFile();
+    if (! document || document->generation != processor.getParameterSurfaceGeneration())
+    {
+        completion (juce::var ("Prepared sampler session unavailable or changed"));
+        return;
+    }
+    juce::var reply (new juce::DynamicObject());
+    reply.getDynamicObject()->setProperty ("document", preparedDocumentForWeb (*document));
+    reply.getDynamicObject()->setProperty ("yaml", yaml);
+    reply.getDynamicObject()->setProperty ("sourcePath", source.getFullPathName());
+    completion (reply);
+}
+
+void InstrumentHostWebBridge::prepareSamplerFromWeb (
+    const juce::Array<juce::var>& args,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    const auto generation = args.size() == 2 ? parseGeneration (args[1]) : std::nullopt;
+    constexpr int maxSamplerYamlCharacters = 4 * 1024 * 1024;
+    if (! generation || ! args[0].isString() || args[0].toString().isEmpty()
+        || args[0].toString().length() > maxSamplerYamlCharacters)
+    {
+        completion (juce::var ("prepareSampler requires bounded YAML and an instrument generation"));
+        return;
+    }
+    const auto ticket = processor.requestInstrumentReloadJob (
+        processor.currentInstrumentFile(), *generation, args[0].toString());
+    if (! ticket)
+    {
+        completion (juce::var ("Rejected stale sampler generation or unavailable preparation"));
+        return;
+    }
+    juce::var reply (new juce::DynamicObject());
+    reply.getDynamicObject()->setProperty ("status", "accepted");
+    reply.getDynamicObject()->setProperty ("job_id", static_cast<juce::int64> (*ticket));
+    reply.getDynamicObject()->setProperty ("generation", static_cast<juce::int64> (*generation));
+    completion (reply);
+}
+
+void InstrumentHostWebBridge::chooseSamplerFilesFromWeb (
+    const juce::Array<juce::var>&,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    samplerFileChooser = std::make_unique<juce::FileChooser> (
+        "Import sampler WAV audio", juce::File {}, "*.wav");
+    const auto generation = processor.getParameterSurfaceGeneration();
+    samplerFileChooser->launchAsync (juce::FileBrowserComponent::openMode
+        | juce::FileBrowserComponent::canSelectFiles | juce::FileBrowserComponent::canSelectMultipleItems,
+        [this, generation, done = std::move (completion)] (const juce::FileChooser& chooser)
+        {
+            juce::Array<juce::var> paths;
+            for (const auto& file : chooser.getResults())
+                paths.add (file.getFullPathName());
+            importSamplerFilesFromWeb ({ juce::var (paths), juce::var (static_cast<juce::int64> (generation)) }, std::move (done));
+        });
+}
+
+void InstrumentHostWebBridge::importSamplerFilesFromWeb (
+    const juce::Array<juce::var>& args,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    const auto generation = args.size() == 2 ? parseGeneration (args[1]) : std::nullopt;
+    const auto* paths = args.size() == 2 ? args[0].getArray() : nullptr;
+    if (! generation || ! paths || paths->size() > 64
+        || *generation != processor.getParameterSurfaceGeneration())
+    {
+        completion (juce::var ("Import requires at most 64 file paths and the current sampler generation"));
+        return;
+    }
+    if (samplerImportWorker.valid()
+        && samplerImportWorker.wait_for (std::chrono::seconds (0)) != std::future_status::ready)
+    {
+        completion (juce::var ("A sample import is already running"));
+        return;
+    }
+    if (samplerImportWorker.valid()) samplerImportWorker.get();
+    const auto root = processor.currentInstrumentFile().getParentDirectory();
+    samplerImportWorker = std::async (std::launch::async,
+        [this, selected = *paths, root, expectedGeneration = *generation, done = std::move (completion)]
+        {
+            try
+            {
+                juce::AudioFormatManager formats;
+                formats.registerBasicFormats();
+                juce::Array<juce::var> files;
+                for (const auto& path : selected)
+                {
+                    if (! path.isString() || ! juce::File::isAbsolutePath (path.toString()))
+                    {
+                        done (juce::var ("Native import requires absolute WAV file paths"));
+                        return;
+                    }
+                    const juce::File file (path.toString());
+                    const std::unique_ptr<juce::AudioFormatReader> reader (formats.createReaderFor (file));
+                    if (! file.hasFileExtension ("wav") || ! reader || reader->sampleRate <= 0
+                        || reader->lengthInSamples < 1 || reader->numChannels < 1 || reader->numChannels > 2)
+                    {
+                        done (juce::var ("Select a readable mono or stereo WAV: " + file.getFileName()));
+                        return;
+                    }
+                    // Rust admits only canonical resources beneath the instrument root.
+                    // Copy selected external assets into an owned cache; originals survive.
+                    const auto directory = root.getChildFile (".tools/trigger-assets/" + juce::Uuid().toString());
+                    const auto retained = directory.getChildFile (file.getFileName());
+                    if (directory.createDirectory().failed() || ! file.copyFileTo (retained))
+                    {
+                        done (juce::var ("Could not retain imported sample beneath instrument root"));
+                        return;
+                    }
+                    juce::var item (new juce::DynamicObject());
+                    auto* metadata = item.getDynamicObject();
+                    metadata->setProperty ("name", file.getFileName());
+                    metadata->setProperty ("uri", retained.getFullPathName());
+                    metadata->setProperty ("originalUri", file.getFullPathName());
+                    metadata->setProperty ("duration", static_cast<double> (reader->lengthInSamples) / reader->sampleRate);
+                    metadata->setProperty ("sampleRate", reader->sampleRate);
+                    metadata->setProperty ("bits", static_cast<int> (reader->bitsPerSample));
+                    metadata->setProperty ("channels", static_cast<int> (reader->numChannels));
+                    files.add (item);
+                }
+                if (expectedGeneration != processor.getParameterSurfaceGeneration())
+                    done (juce::var ("Sampler changed while importing files"));
+                else
+                    done (juce::var (files));
+            }
+            catch (const std::exception& error)
+            {
+                done (juce::var (juce::String (error.what())));
+            }
+        });
+}
+
+void InstrumentHostWebBridge::requestSourceWaveformFromWeb (
+    const juce::Array<juce::var>& args,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    const auto generation = args.size() == 4 ? parseGeneration (args[3]) : std::nullopt;
+    const auto channel = args.size() == 4 ? parseGeneration (args[1]) : std::nullopt;
+    const auto buckets = args.size() == 4 ? parseGeneration (args[2]) : std::nullopt;
+    if (! generation || ! channel || ! buckets || ! args[0].isString()
+        || *channel > std::numeric_limits<std::uint16_t>::max() || *buckets < 1 || *buckets > 4096)
+    {
+        completion (juce::var ("requestSourceWaveform requires source, channel, buckets and generation"));
+        return;
+    }
+    const auto ticket = processor.requestPreparedWaveform (*generation,
+        args[0].toString().toStdString(), "<entire-source>",
+        static_cast<std::uint16_t> (*channel), *buckets, sessionId, true);
+    if (! ticket)
+    {
+        completion (juce::var ("Prepared source waveform unavailable"));
+        return;
+    }
+    juce::var reply (new juce::DynamicObject());
+    reply.getDynamicObject()->setProperty ("status", "accepted");
+    reply.getDynamicObject()->setProperty ("job_id", juce::String (std::to_string (*ticket)));
+    reply.getDynamicObject()->setProperty ("generation", static_cast<juce::int64> (*generation));
+    completion (reply);
 }
 
 void InstrumentHostWebBridge::requestWaveformFromWeb (

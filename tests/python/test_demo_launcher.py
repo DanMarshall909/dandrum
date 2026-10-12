@@ -274,6 +274,22 @@ class DemoLauncherTest(unittest.TestCase):
         self.assertEqual(commands[1][0][1:], ["-S", str(self.root), "-B", str(self.root / "build/demo-webview"), "-DDANDRUM_NATIVE_ONLY=OFF"])
         self.assertEqual(commands[2][0][3:5], ["--target", "dandrum-plugin_Standalone"])
 
+    def test_full_react_sampler_prepares_shell_and_selects_native_bundle(self):
+        self.native_fixture("react-trigger", "build/trigger-webview")
+        shell = self.web_fixture("web/trigger")
+        self.web_fixture("web/sampler")
+        commands = []
+        with self.recorded_tools(commands):
+            code, _, error = self.invoke("react-trigger")
+        self.assertEqual(code, 0, error)
+        self.assertTrue(any(command == ["npm", "ci"] and options["cwd"] == shell
+                            for command, options in commands))
+        self.assertTrue(any(command == ["npm", "run", "build:native"] and options["cwd"] == shell
+                            for command, options in commands))
+        configure = next(command for command, _ in commands if "-S" in command)
+        self.assertIn("-DDANDRUM_TRIGGER_REACT=ON", configure)
+        self.assertIn("-DDANDRUM_NATIVE_ONLY=OFF", configure)
+
     def test_native_build_metadata_is_generic_and_skips_browser_dependencies(self):
         catalog = self.root / "scripts/demos.json"
         demos = json.loads(catalog.read_text())

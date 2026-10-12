@@ -17,6 +17,7 @@ import {modulationModel,destinationFor} from './modulation-model.mjs';
 import {controlActions,controlMenus} from './control-menus.mjs';
 import {macroModel} from './macro-model.mjs';
 import {entityMenus} from './entity-menus.mjs';
+import {nativeControls} from '../engine/native-controls.mjs';
 
 /** Ephemeral selection, menus and pointer state; the Store owns patch commands. */
 export class ShellPresenter {
@@ -83,6 +84,7 @@ export class ShellPresenter {
     const current=this.props.store.getSnapshot().patch;
     model.routeSources=current.modulators.map(m=>({id:m.id,label:m.name}));
     model.routeDestinations=[...new Set(Object.keys(current.params).map(destinationFor).concat(['Send · Reverb','Send · Delay']))].map(id=>({id,label:id}));
+    if(this.props.store.engine.native)nativeControls(this,model);
     controlMenus(this,model);
     entityMenus(this,model);
     macroModel(this,model);

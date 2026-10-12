@@ -63,6 +63,10 @@ def launch(demo, root, args):
         run(["npm", "run", "dev", "--", *args], package)
         return
     sampler = root / "web/sampler/package.json"
+    if demo.get("reactPackage"):
+        package = root / demo["reactPackage"]
+        prepare_package(package)
+        run(["npm", "run", demo.get("reactBuildScript", "build")], package)
     if sampler.is_file() and not demo.get("nativeOnly"):
         prepare_package(sampler.parent)
     build = root / demo.get("buildDirectory", "build/demo-webview" if demo.get("react") else "build")

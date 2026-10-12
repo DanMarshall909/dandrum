@@ -10,19 +10,21 @@
     "test": "node --test tests/*.test.mjs",
     "test:coverage": "node --experimental-test-coverage --test tests/*.test.mjs",
     "test:browser": "playwright test",
-    "check": "tsc --noEmit && node scripts/check-components.mjs"
+    "check": "tsc --noEmit && node scripts/check-components.mjs",
+    "build:native": "vite build --config vite.native.config.mjs"
   },
   "dependencies": {
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.0",
-    "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^6.0.5",
-    "typescript": "^5.7.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "jsdom": "26.1.0"
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "26.1.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
   }
 }

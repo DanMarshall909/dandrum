@@ -19,7 +19,7 @@ export function AppHeader({model}) {
     <div style={{"flex": "1"}}></div>
     <div style={{"display": "flex","alignItems": "center","gap": "6px"}}>
       {model.ann && <><span style={{"font": "500 11px/16px var(--font-value)","color": "var(--dd-warn)","background": "var(--dd-warn-wash)","border": "1px dashed var(--dd-warn)","borderRadius": "2px","padding": "0 5px","whiteSpace": "nowrap"}}>Telemetry</span></>}
-      <span style={{"font": "500 12px var(--font-value)","color": "var(--dd-paper-3)","whiteSpace": "nowrap"}}>{`Voices ${telemetry.voices.active} / ${telemetry.voices.max}`}</span>
+      <span style={{"font": "500 12px var(--font-value)","color": "var(--dd-paper-3)","whiteSpace": "nowrap"}}>{`Voices ${telemetry.voices.active??'—'} / ${telemetry.voices.max}`}</span>
     </div>
     {model.notPerf && <><DD.SegmentedControl compact={true} value={model.layout} onChange={model.setLayout} options={model.layoutOpts}></DD.SegmentedControl></>}
     <DD.Button size="sm" variant="secondary" icon={model.perfIcon} onClick={model.togglePerf}>{model.perfLabel}</DD.Button>

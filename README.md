@@ -9,6 +9,7 @@ From this repository, run `./demo` or `./demo --list` to see demo names, descrip
 ```bash
 ./demo tb303                          # embedded standalone, real audio
 ./demo react303                       # embedded React standalone, real audio
+./demo react-trigger                  # full sampler shell in JUCE, real sample playback
 ./demo sampler                        # embedded sampler standalone, real audio
 ./demo filter-slint                   # experimental native Slint filter effect
 ./demo filter-jive                    # experimental native JIVE filter effect
@@ -26,7 +27,7 @@ Embedded WebView demos also need GTK3 and WebKitGTK development packages on Linu
 
 Native launches preserve the configured CMake build type. With a multi-config generator they choose Release if available, otherwise the first configured type, and run the executable from that configuration.
 
-`react303` and `react-sampler` embed React in JUCE and use the Rust engine. They use an isolated `build/demo-webview/` configuration so an existing native-only build keeps its settings. `tb303-web` and `sampler-web` are browser panel previews that require the JUCE host bridge for audio. `trigger` uses a silent mock engine; `instruments` is a visual design prototype. Browser demos stay in the foreground and print their URL; open that URL in your browser. Ctrl+C stops the demo. Existing dev servers keep running; pass another `--port` if necessary.
+`react303` and `react-sampler` embed React in JUCE and use the Rust engine. They use an isolated `build/demo-webview/` configuration so an existing native-only build keeps its settings. `react-trigger` embeds the full React sampler shell with real sample playback in `build/trigger-webview/`; supported sample edits prepare through the native engine before publication. `tb303-web` and `sampler-web` are browser panel previews that require the JUCE host bridge for audio. `trigger` uses a silent mock engine; `instruments` is a visual design prototype. Browser demos stay in the foreground and print their URL; open that URL in your browser. Ctrl+C stops the demo. Existing dev servers keep running; pass another `--port` if necessary.
 
 `filter-slint` and `filter-jive` are [experimental stereo filter effects](spikes/filter-ui/README.md) with native framework UIs and real Rust audio. They process stereo input and can use an optional audition-generated test signal. The launcher enables their opt-in dependencies in an isolated Release/native-only `build/filter-ui-spikes/` configuration and skips npm preparation. These experiments do not migrate the production instrument UIs.
 

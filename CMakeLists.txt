@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(DANDRUM_ENABLE_MUTATION_CTEST "Include the long-running cargo-mutants test in CTest" OFF)
 option(DANDRUM_NATIVE_ONLY "Build the plugin with the native JUCE editor and no browser dependencies" OFF)
+option(DANDRUM_TRIGGER_REACT "Embed the full native-backed React sampler shell" OFF)
 option(DANDRUM_BUILD_FILTER_UI_SPIKES "Build optional Slint and JIVE filter experiments" OFF)
 option(DANDRUM_BUILD_TRIGGER_SLINT "Build the silent Trigger Slint performance preview" OFF)
 option(DANDRUM_SLINT_LIBRARY_ONLY "Build only the Slint design library catalog and its tests" OFF)
@@ -290,6 +291,15 @@ juce_add_plugin(dandrum-plugin
     PRODUCT_NAME "Dandrum")
 
 if(NOT DANDRUM_NATIVE_ONLY)
+    if(DANDRUM_TRIGGER_REACT)
+        file(GLOB_RECURSE trigger_react_files CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/web/trigger/dist-native/*")
+        if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/web/trigger/dist-native/index.html")
+            message(FATAL_ERROR "Run npm ci --prefix web/trigger and npm run build:native --prefix web/trigger before configuring the integrated sampler")
+        endif()
+        juce_add_binary_data(dandrum-trigger-react-resources
+            NAMESPACE TriggerReactBinaryData HEADER_NAME TriggerReactBinaryData.h
+            SOURCES ${trigger_react_files})
+    endif()
     juce_add_binary_data(dandrum-tb303-react-resources
         NAMESPACE Tb303ReactBinaryData
         HEADER_NAME Tb303ReactBinaryData.h
@@ -310,6 +320,10 @@ if(NOT DANDRUM_NATIVE_ONLY)
     target_compile_definitions(dandrum-plugin PRIVATE DANDRUM_EMBED_SAMPLER_REACT=1)
 endif()
 target_include_directories(dandrum-plugin PRIVATE src/juce-wrapper)
+if(DANDRUM_TRIGGER_REACT AND NOT DANDRUM_NATIVE_ONLY)
+    target_link_libraries(dandrum-plugin PRIVATE dandrum-trigger-react-resources)
+    target_compile_definitions(dandrum-plugin PRIVATE DANDRUM_EMBED_TRIGGER_REACT=1)
+endif()
 target_compile_definitions(dandrum-plugin PRIVATE
     DANDRUM_SOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}"
     DANDRUM_EMBED_TB303_ASSETS=1
@@ -354,6 +368,10 @@ target_link_libraries(dandrum-sampler-plugin
 if(NOT DANDRUM_NATIVE_ONLY)
     target_link_libraries(dandrum-sampler-plugin PRIVATE dandrum-sampler-react-resources)
     target_compile_definitions(dandrum-sampler-plugin PRIVATE DANDRUM_EMBED_SAMPLER_REACT=1)
+    if(DANDRUM_TRIGGER_REACT)
+        target_link_libraries(dandrum-sampler-plugin PRIVATE dandrum-trigger-react-resources)
+        target_compile_definitions(dandrum-sampler-plugin PRIVATE DANDRUM_EMBED_TRIGGER_REACT=1)
+    endif()
 endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DANDRUM_BROWSER_ENABLED)
     # Both JUCE plugin targets generate the shared browser helper in the first
@@ -571,6 +589,16 @@ if(NOT DANDRUM_NATIVE_ONLY)
         PRIVATE dandrum-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
         PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
     add_test(NAME cxx-plugin-editor-bridge COMMAND dandrum-plugin-editor-bridge-test)
+    add_executable(dandrum-trigger-native-bridge-test tests/cpp/PluginTriggerNativeBridgeTest.cpp)
+    target_include_directories(dandrum-trigger-native-bridge-test PRIVATE src/juce-wrapper src/juce-plugin)
+    target_compile_definitions(dandrum-trigger-native-bridge-test PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=1 JUCE_USE_WIN_WEBVIEW2=1)
+    target_link_libraries(dandrum-trigger-native-bridge-test PRIVATE dandrum-plugin dandrum_engine
+        juce::juce_audio_utils juce::juce_gui_extra
+        PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+    add_test(NAME cxx-trigger-native-bridge COMMAND dandrum-trigger-native-bridge-test)
+    if(DANDRUM_TRIGGER_REACT)
+        add_test(NAME trigger-web-runtime COMMAND dandrum-trigger-native-bridge-test --web-runtime)
+    endif()
     add_test(NAME cxx-plugin-parameter-publication COMMAND dandrum-plugin-editor-bridge-test --parameter-publication)
     add_test(NAME cxx-plugin-live-bridge COMMAND dandrum-plugin-editor-bridge-test --live-bridge)
     set_tests_properties(cxx-plugin-live-bridge PROPERTIES TIMEOUT 15)
@@ -671,6 +699,8 @@ if(NOT DANDRUM_NATIVE_ONLY)
     add_test(NAME design-tokens-current COMMAND ${DANDRUM_NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate-ui-tokens.mjs --check)
     add_test(NAME react-asset-packaging COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/ReactAssetsTest.mjs)
     add_test(NAME design-icon-rendering COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/DesignIconsTest.mjs)
+    add_test(NAME trigger-native-ui COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/TriggerNativeUiTest.mjs)
+    add_test(NAME trigger-native-adapter COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/TriggerNativeAdapterTest.mjs)
 
     add_executable(dandrum-plugin-file-watch-reload-test tests/cpp/PluginFileWatchReloadTest.cpp)
     target_include_directories(dandrum-plugin-file-watch-reload-test PRIVATE src/juce-wrapper src/juce-plugin)
@@ -686,6 +716,7 @@ endif()
 # Linux WebKit/GTK usage requirements requested by NEEDS_WEB_BROWSER.
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT DANDRUM_NATIVE_ONLY)
     foreach(plugin_test_target
+            dandrum-trigger-native-bridge-test
             dandrum-plugin-live-processor-test
             dandrum-plugin-engine-handoff-test
             dandrum-plugin-knob-parity-test

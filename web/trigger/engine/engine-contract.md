@@ -2,9 +2,12 @@
 
 The TypeScript declarations in [contract.ts](contract.ts) define the standalone
 shell's DTOs, reversible operands and adapter API. `npm run check` checks the
-concrete mock and actual Store/telemetry consumer against that interface. This package produces no audio and performs no
-decoding: file metadata, peaks, analysis and performance feedback are simulated.
-An eventual Dandrum adapter implements this boundary without importing React.
+concrete mock and actual Store/telemetry consumer against that interface.
+The browser uses MockEngine with simulated metadata and feedback. Inside JUCE,
+[NativeEngine](native-engine.mjs) uses real prepared samples, notes, controls,
+waveforms and output meters, and rejects unsupported capabilities. Its modules
+do not import React. See the [native scope](../README.md) and
+[engine roadmap](../../../docs/trigger/native-engine-roadmap.md).
 
 `getPatch()` returns an owned copy of the last accepted patch. IDs are stable
 within a patch. UI components receive values and callbacks from the presenter;

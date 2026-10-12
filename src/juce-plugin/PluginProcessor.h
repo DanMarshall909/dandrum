@@ -89,7 +89,7 @@ public:
     std::optional<std::uint64_t> requestPreparedWaveform (
         std::uint32_t expectedGeneration, const std::string& sourceId,
         const std::string& regionId, std::uint16_t channel, std::size_t bucketCount,
-        std::uint64_t sessionId = 0);
+        std::uint64_t sessionId = 0, bool wholeSource = false);
     std::optional<InstrumentUiWaveformService::Snapshot>
         getPreparedWaveformJobStatus (std::uint64_t jobId) const;
     bool cancelPreparedWaveformJob (std::uint64_t jobId);
@@ -120,7 +120,8 @@ public:
     /// activates or recovers without an editor/status query driving completion.
     /// Terminal records outlive editor sessions for this processor instance.
     std::optional<std::uint64_t> requestInstrumentReloadJob (
-        const juce::File& yamlFile, std::uint32_t expectedGeneration);
+        const juce::File& yamlFile, std::uint32_t expectedGeneration,
+        std::optional<juce::String> yamlSnapshot = std::nullopt);
     std::optional<UiJobStatus> getInstrumentUiJobStatus (std::uint64_t jobId);
 
     /// Publishes bounded, per-note editor intent for delivery by processBlock.
@@ -363,7 +364,8 @@ private:
                                 juce::String* reloadWarning);
     void runInstrumentReloadJob (std::uint64_t, const juce::File&,
                                  std::uint32_t generation, std::uint32_t sampleRate,
-                                 std::size_t preparedBlockSize, bool previousMute);
+                                 std::size_t preparedBlockSize, bool previousMute,
+                                 const std::optional<juce::String>& yamlSnapshot);
     void finishInstrumentReloadJob (UiJobStatus, bool previousMute);
     void renderSilence (juce::AudioBuffer<float>& buffer) const;
     void preparePublicParameterSlots (const juce::File& instrumentFile,

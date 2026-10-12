@@ -13,6 +13,10 @@
 #include "SamplerReactBinaryData.h"
 #endif
 
+#if defined(DANDRUM_EMBED_TRIGGER_REACT)
+#include "TriggerReactBinaryData.h"
+#endif
+
 #include <cstring>
 #include <cmath>
 #include <string>
@@ -21,6 +25,30 @@
 
 namespace
 {
+#if defined(DANDRUM_EMBED_TRIGGER_REACT)
+std::optional<juce::WebBrowserComponent::Resource> triggerReactResource (juce::String path)
+{
+    if (path == "/") path = "/index.html";
+    if (path.contains ("..") || path.containsChar ('\\')) return std::nullopt;
+    const auto filename = path.fromLastOccurrenceOf ("/", false, false);
+    for (int index = 0; index < TriggerReactBinaryData::namedResourceListSize; ++index)
+    {
+        if (filename != TriggerReactBinaryData::originalFilenames[index]) continue;
+        int size = 0;
+        const auto* data = TriggerReactBinaryData::getNamedResource (
+            TriggerReactBinaryData::namedResourceList[index], size);
+        if (data == nullptr || size <= 0) return std::nullopt;
+        const auto mime = filename.endsWith (".html") ? "text/html"
+            : filename.endsWith (".js") ? "text/javascript"
+            : filename.endsWith (".css") ? "text/css"
+            : filename.endsWith (".ttf") ? "font/ttf" : "application/octet-stream";
+        std::vector<std::byte> bytes (static_cast<std::size_t> (size));
+        std::memcpy (bytes.data(), data, bytes.size());
+        return juce::WebBrowserComponent::Resource { std::move (bytes), mime };
+    }
+    return std::nullopt;
+}
+#endif
 std::vector<std::byte> toBytes (const char* text)
 {
     const auto length = std::char_traits<char>::length (text);
@@ -264,6 +292,10 @@ juce::WebBrowserComponent::Options DandrumAudioProcessorEditor::createBrowserOpt
 std::optional<juce::WebBrowserComponent::Resource>
 DandrumAudioProcessorEditor::provideResource (const juce::String& path) const
 {
+#if defined(DANDRUM_EMBED_TRIGGER_REACT)
+    if (processor.demoConfiguration().instrumentId == "dandrum.advanced-drum-kit")
+        return triggerReactResource (path);
+#endif
 #if defined(DANDRUM_EMBED_SAMPLER_REACT)
     if (processor.demoConfiguration().instrumentId == "dandrum.advanced-drum-kit")
         if (auto resource = samplerReactResource (path))
@@ -675,7 +707,13 @@ void DandrumAudioProcessorEditor::timerCallback()
 {
     processor.pollMeterDelivery();
     hostBridge.expireNoteSession (juce::Time::getMillisecondCounterHiRes());
-    if (hostBridge.publishParameterUpdates (browser))
+    if (hostBridge.publishParameterUpdates (browser,
+#if defined(DANDRUM_EMBED_TRIGGER_REACT)
+        processor.demoConfiguration().instrumentId != "dandrum.advanced-drum-kit"
+#else
+        true
+#endif
+        ))
         return;
 
     if (soundLabController == nullptr)
