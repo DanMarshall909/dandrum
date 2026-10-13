@@ -7,6 +7,26 @@ import {entityDelta} from '../engine/entity-delta.mjs';
 import {Store} from '../engine/store.mjs';
 const setup=async t=>{const bridge=backend(),engine=new NativeEngine({backend:bridge,pollMs:0,heartbeatMs:0});await engine.initialize();t.after(()=>engine.close());return {engine,bridge};};
 
+test('native window title follows accepted patch names, undo and external replacement',async t=>{
+  const {engine,bridge}=await setup(t),before=engine.getPatch();
+  const names=()=>bridge.calls.filter(call=>call[0]==='setTriggerWindowTitle').map(call=>call[1]);
+  assert.deepEqual(names(),['Advanced Drum Kit']);
+  const name='808: "Night" / 東京 #1';
+  await engine.renameNode('root',name);assert.equal(names().at(-1),name);
+  await engine.applyDelta(entityDelta(engine.getPatch(),before));assert.equal(names().at(-1),before.name);
+  const next=session(engine.session.yaml.replace('Advanced Drum Kit','Guest Set'),engine.generation+1);
+  bridge.setSession(next);await engine.requestGeneration(next.document.generation);assert.equal(names().at(-1),'Guest Set');
+  const accepted=names();bridge.functions.getUiJobStatus=()=>({state:'failed',error:'Rejected patch'});
+  await assert.rejects(engine.renameNode('root','Rejected name'),/Rejected patch/);assert.deepEqual(names(),accepted);
+});
+
+test('a window title failure does not reject an already accepted patch edit',async t=>{
+  const {engine,bridge}=await setup(t),events=[];engine.on('patch',event=>events.push(event));
+  bridge.functions.setTriggerWindowTitle=()=> 'Window unavailable';
+  await engine.renameNode('root','Accepted name');assert.equal(engine.getPatch().name,'Accepted name');
+  assert.ok(events.some(event=>event.message?.includes('Window title update failed')));
+});
+
 test('native edits await real publication; failed/stale preparations retain patch and expose failure',async t=>{
   const {engine,bridge}=await setup(t),before=engine.getPatch(),events=[];engine.on('patch',value=>events.push(value));
   bridge.functions.getUiJobStatus=()=>({state:'failed',generation:7,error:'Unknown audio asset'});

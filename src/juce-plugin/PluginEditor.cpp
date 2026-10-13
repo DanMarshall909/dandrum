@@ -15,6 +15,8 @@
 
 #if defined(DANDRUM_EMBED_TRIGGER_REACT)
 #include "TriggerReactBinaryData.h"
+#include <juce_audio_utils/juce_audio_utils.h>
+#include <juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h>
 #endif
 
 #include <cstring>
@@ -26,6 +28,41 @@
 namespace
 {
 #if defined(DANDRUM_EMBED_TRIGGER_REACT)
+class StandaloneOptionsMenu final : public juce::MenuBarModel
+{
+public:
+    explicit StandaloneOptionsMenu (juce::StandaloneFilterWindow& windowToUse)
+        : window (&windowToUse) {}
+
+    juce::StringArray getMenuBarNames() override { return { "Options" }; }
+
+    juce::PopupMenu getMenuForIndex (int index, const juce::String&) override
+    {
+        juce::PopupMenu menu;
+        if (index != 0) return menu;
+        menu.addItem (1, TRANS ("Audio/MIDI Settings..."));
+        menu.addSeparator();
+        menu.addItem (2, TRANS ("Save current state..."));
+        menu.addItem (3, TRANS ("Load a saved state..."));
+        menu.addSeparator();
+        menu.addItem (4, TRANS ("Reset to default state"));
+        return menu;
+    }
+
+    void menuItemSelected (int id, int index) override
+    {
+        if (index != 0 || id < 1 || id > 4) return;
+        // Reset destroys the editor and this model. Finish the menu callback first.
+        juce::MessageManager::callAsync ([target = window, id]
+        {
+            if (target != nullptr) target->handleMenuResult (id);
+        });
+    }
+
+private:
+    juce::Component::SafePointer<juce::StandaloneFilterWindow> window;
+};
+
 std::optional<juce::WebBrowserComponent::Resource> triggerReactResource (juce::String path)
 {
     if (path == "/") path = "/index.html";
@@ -199,7 +236,47 @@ DandrumAudioProcessorEditor::DandrumAudioProcessorEditor (DandrumAudioProcessor&
     startTimerHz (12);
 }
 
-DandrumAudioProcessorEditor::~DandrumAudioProcessorEditor() = default;
+DandrumAudioProcessorEditor::~DandrumAudioProcessorEditor()
+{
+    detachStandaloneOptions();
+}
+
+void DandrumAudioProcessorEditor::detachStandaloneOptions()
+{
+    if (standaloneWindow != nullptr)
+        if (auto* bar = dynamic_cast<juce::MenuBarComponent*> (standaloneWindow->getMenuBarComponent()))
+            if (bar->getModel() == standaloneOptions.get()) standaloneWindow->setMenuBar (nullptr);
+    standaloneOptions.reset();
+    standaloneWindow = nullptr;
+}
+
+void DandrumAudioProcessorEditor::parentHierarchyChanged()
+{
+    // The wrapper is still laying out its content during attachment.
+    standaloneChromePending = true;
+}
+
+void DandrumAudioProcessorEditor::updateStandaloneChrome()
+{
+#if defined(DANDRUM_EMBED_TRIGGER_REACT)
+    if (updatingStandaloneChrome) return;
+    const juce::ScopedValueSetter<bool> updating (updatingStandaloneChrome, true);
+    auto* window = processor.wrapperType == juce::AudioProcessor::wrapperType_Standalone
+        && processor.demoConfiguration().instrumentId == "dandrum.advanced-drum-kit"
+        ? findParentComponentOfClass<juce::StandaloneFilterWindow>() : nullptr;
+    if (window == standaloneWindow.getComponent() && standaloneOptions != nullptr) return;
+    const auto editorWidth = getWidth();
+    const auto editorHeight = getHeight();
+    detachStandaloneOptions();
+    if (window == nullptr) return;
+    standaloneWindow = window;
+    standaloneOptions = std::make_unique<StandaloneOptionsMenu> (*window);
+    window->setUsingNativeTitleBar (true);
+    window->setMenuBar (standaloneOptions.get(), 28);
+    window->setName (getName());
+    setSize (editorWidth, editorHeight);
+#endif
+}
 
 void DandrumAudioProcessorEditor::paint (juce::Graphics& g)
 {
@@ -219,6 +296,17 @@ juce::WebBrowserComponent::Options DandrumAudioProcessorEditor::createBrowserOpt
         .withNativeIntegrationEnabled()
         .withKeepPageLoadedWhenBrowserIsHidden()
         .withUserScript (InstrumentHostWebBridge::bootstrapScript()));
+
+#if defined(DANDRUM_EMBED_TRIGGER_REACT)
+    if (processor.demoConfiguration().instrumentId == "dandrum.advanced-drum-kit")
+        options = options.withNativeFunction (
+            "setTriggerWindowTitle",
+            [this] (const juce::Array<juce::var>& arguments,
+                    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+            {
+                setTriggerWindowTitleFromWeb (arguments, std::move (completion));
+            });
+#endif
 
     if (soundLabController != nullptr)
         options = options.withNativeFunction (
@@ -292,6 +380,24 @@ juce::WebBrowserComponent::Options DandrumAudioProcessorEditor::createBrowserOpt
    #endif
 
     return options;
+}
+
+void DandrumAudioProcessorEditor::setTriggerWindowTitleFromWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    if (arguments.size() != 1 || ! arguments[0].isString() || arguments[0].toString().trim().isEmpty())
+    {
+        completion (juce::var ("Trigger window title requires one non-empty patch name string"));
+        return;
+    }
+    const auto title = "trigger - " + arguments[0].toString();
+    setName (title);
+    if (standaloneWindow != nullptr) standaloneWindow->setName (title);
+    auto result = std::make_unique<juce::DynamicObject>();
+    result->setProperty ("status", "accepted");
+    result->setProperty ("title", title);
+    completion (juce::var (result.release()));
 }
 
 std::optional<juce::WebBrowserComponent::Resource>
@@ -710,6 +816,11 @@ juce::var DandrumAudioProcessorEditor::soundLabSnapshotForWeb() const
 
 void DandrumAudioProcessorEditor::timerCallback()
 {
+    if (standaloneChromePending)
+    {
+        standaloneChromePending = false;
+        updateStandaloneChrome();
+    }
     processor.pollMeterDelivery();
     hostBridge.expireNoteSession (juce::Time::getMillisecondCounterHiRes());
     if (hostBridge.publishParameterUpdates (browser,

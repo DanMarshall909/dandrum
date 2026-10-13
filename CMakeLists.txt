@@ -598,6 +598,16 @@ if(NOT DANDRUM_NATIVE_ONLY)
     add_test(NAME cxx-trigger-native-bridge COMMAND dandrum-trigger-native-bridge-test)
     if(DANDRUM_TRIGGER_REACT)
         add_test(NAME trigger-web-runtime COMMAND dandrum-trigger-native-bridge-test --web-runtime)
+        add_executable(dandrum-standalone-chrome-test tests/cpp/PluginStandaloneChromeTest.cpp)
+        target_include_directories(dandrum-standalone-chrome-test PRIVATE src/juce-wrapper src/juce-plugin)
+        target_compile_definitions(dandrum-standalone-chrome-test PRIVATE
+            JUCE_USE_CURL=0 JUCE_WEB_BROWSER=1 JUCE_USE_WIN_WEBVIEW2=1)
+        target_link_libraries(dandrum-standalone-chrome-test PRIVATE
+            dandrum-sampler-plugin dandrum_engine juce::juce_audio_utils juce::juce_gui_extra
+            juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+        add_test(NAME cxx-standalone-chrome COMMAND dandrum-standalone-chrome-test)
+        set_tests_properties(cxx-standalone-chrome PROPERTIES
+            LABELS "runtime" SKIP_RETURN_CODE 77 TIMEOUT 45 RUN_SERIAL TRUE)
     endif()
     add_test(NAME cxx-plugin-parameter-publication COMMAND dandrum-plugin-editor-bridge-test --parameter-publication)
     add_test(NAME cxx-plugin-live-bridge COMMAND dandrum-plugin-editor-bridge-test --live-bridge)
@@ -715,6 +725,17 @@ endif()
 # Unlike juce_add_plugin(), add_executable() does not automatically attach the
 # Linux WebKit/GTK usage requirements requested by NEEDS_WEB_BROWSER.
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT DANDRUM_NATIVE_ONLY)
+    if(TARGET dandrum-standalone-chrome-test)
+        # Window chrome checks do not need PulseAudio or a hardware stream.
+        # Avoid blocking on device enumeration when WSLg's audio server stalls.
+        set_tests_properties(cxx-standalone-chrome PROPERTIES
+            ENVIRONMENT "PULSE_SERVER=unix:${CMAKE_CURRENT_BINARY_DIR}/standalone-chrome-no-pulse.sock")
+        target_include_directories(dandrum-standalone-chrome-test PRIVATE
+            ${CMAKE_CURRENT_BINARY_DIR}/dandrum-sampler-plugin_artefacts/JuceLibraryCode
+            ${CMAKE_CURRENT_BINARY_DIR}/dandrum-plugin_artefacts/JuceLibraryCode)
+        target_link_libraries(dandrum-standalone-chrome-test PRIVATE juce::pkgconfig_JUCE_BROWSER_LINUX_DEPS)
+        juce_link_with_embedded_linux_subprocess(dandrum-standalone-chrome-test)
+    endif()
     foreach(plugin_test_target
             dandrum-trigger-native-bridge-test
             dandrum-plugin-live-processor-test

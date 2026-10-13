@@ -2471,6 +2471,17 @@ AC trigger-native-webview :: Native shell resource and adapter selection :: Nati
   fp 3f5a4defdd59
   test cpp:tests/cpp/PluginTriggerWebRuntimeTest.h
 
+AC trigger-native-webview :: Native shell resource and adapter selection :: Standalone title bar supports window movement
+  fp 53bcd871a712
+  test cpp:tests/cpp/PluginStandaloneChromeTest.cpp
+  test cpp:tests/cpp/PluginTriggerWebRuntimeTest.h
+
+AC trigger-native-webview :: Native shell resource and adapter selection :: Standalone title follows the accepted patch name
+  fp fbfc6d76e000
+  test cpp:tests/cpp/PluginStandaloneChromeTest.cpp
+  test cpp:tests/cpp/PluginTriggerWebRuntimeTest.h
+  test js:tests/js/TriggerNativeAdapterTest.mjs
+
 AC trigger-native-webview :: Transactional sampler edits :: Failed preparation retains the working patch
   fp b67939f9aaae
   test cpp:tests/cpp/PluginTriggerNativeBridgeTest.cpp

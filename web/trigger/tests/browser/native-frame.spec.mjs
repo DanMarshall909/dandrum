@@ -7,8 +7,10 @@ test('native backend status stays in the header and the editor fits actual host 
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.addInitScript(initial=>{
     window.nativeResizeRequests=[];
+    window.nativeTitleRequests=[];
     window.__JUCE__={backend:{addEventListener:()=>0,removeEventListener:()=>{},getNativeFunction:name=>async(...args)=>{
       if(name==='getSamplerSession')return initial;
+      if(name==='setTriggerWindowTitle'){window.nativeTitleRequests.push(args);return {status:'accepted',title:'trigger - '+args[0]};}
       if(name==='subscribeMeter'||name==='setMeterVisible')return true;
       if(name==='getMeterPacket')return null;
       if(name==='requestSourceWaveform')return {status:'accepted',job_id:'1',generation:initial.document.generation};
@@ -21,6 +23,7 @@ test('native backend status stays in the header and the editor fits actual host 
   await page.setViewportSize({width:1180,height:860});await page.goto('/');
   const editor=page.getByTestId('trigger-editor'),header=page.getByRole('banner');
   await expect(editor).toBeVisible();
+  expect(await page.evaluate(()=>window.nativeTitleRequests)).toEqual([['Advanced Drum Kit']]);
   await page.screenshot({path:testInfo.outputPath('native-1180.png'),animations:'disabled'});
   await expect(header.locator('[data-backend="native"]')).toBeVisible();
   await expect(page.locator('.preview > [data-backend]')).toHaveCount(0);
@@ -38,5 +41,6 @@ test('native backend status stays in the header and the editor fits actual host 
   }
   await header.getByRole('button',{name:/^Patch/}).click();await page.getByRole('button',{name:'New empty patch',exact:true}).click();
   await expect(header.getByRole('status')).toContainText('Operation failed');await expect(header.getByRole('status')).toContainText('Layout test preparation failed');
+  expect(await page.evaluate(()=>window.nativeTitleRequests)).toEqual([['Advanced Drum Kit']]);
   expect(errors).toEqual([]);
 });

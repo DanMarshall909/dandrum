@@ -18,6 +18,8 @@
 
 - [x] 4.1 Reproduce the connection banner pushing the editor sideways; place backend status in the existing header, fit native viewports, and verify browser and production WebKit geometry before rebuilding/relaunching the sampler.
 - [x] 4.2 Connect native size and performance choices to actual JUCE editor/window resizing; verify all preset dimensions, compact/full restoration and rejected requests through the real bridge.
+- [x] 4.3 Investigate the reported immovable standalone title bar under WSLg; use system window decorations while preserving host Options actions and exact editor presets, then verify real title-bar dragging and the standalone wrapper.
+- [x] 4.4 Display `trigger - {name of patch}` in the standalone title bar; verify initial name, accepted rename/undo and external replacement, and preserve the title after rejected edits or malformed title requests.
 
 Initial integration verified on Linux/WSL: 80 Trigger unit tests and type/component checks, 33 native
 adapter/UI boundary tests, and all seven focused CTest groups (including
@@ -50,3 +52,25 @@ missing arguments and missing editors are rejected. All 83 unit tests,
 type/component checks, fast and headed slow browser regressions and four
 focused native/UI CTest groups pass. The native adapter's source-line coverage
 remains 100%; this is not exhaustive branch or whole-C++ module coverage.
+
+Window movement and title follow-up: the standalone uses a system title bar
+and an Options menu that delegates to JUCE's existing audio/settings and state
+actions. Chrome installation waits until window construction completes and
+preserves the editor size; the regression first reproduced a startup shrink
+to 760×126 and now verifies 1180×860 initially and after Reset, plus all presets.
+The title API and native adapter first failed their new tests, then passed for
+accepted names, rename/undo, external replacement, Unicode/quotes, malformed
+requests, early title requests and host-owned window isolation. Production
+WebKit verifies the actual `trigger - Advanced Drum Kit` editor title.
+
+All eight focused native/UI and launcher CTest groups, 85 unit tests,
+type/component checks and fast/headed SLOW_MO=700 browser regressions pass.
+The native adapter retains 100% source-line coverage, with lower branch/function
+coverage. Spec coverage includes both new scenarios and keeps the 239 existing
+todo entries. The rebuilt standalone was relaunched with its full editor and
+correct title; Windows input dragged the actual system title bar 100 pixels
+right and 50 pixels down while retaining its dimensions. The GUI fixture uses
+no hardware stream and avoids PulseAudio enumeration; real API-to-DSP checks
+remain separate. WSLg's stuck supervised PulseAudio process required restarting
+during runtime verification. No physical audio listening, DAW loading or other
+platform verification is claimed.

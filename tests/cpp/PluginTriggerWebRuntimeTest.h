@@ -114,6 +114,11 @@ private:
                     finish (false, report["failure"].toString());
                 else if (static_cast<bool> (report["ready"]))
                 {
+                    if (editor->getName() != "trigger - Advanced Drum Kit")
+                    {
+                        finish (false, "native window title must follow the accepted patch name");
+                        return;
+                    }
                     const int expectedWidth = viewport < sizes.size() ? sizes[viewport].first : modes[mode].width;
                     const int expectedHeight = viewport < sizes.size() ? sizes[viewport].second : modes[mode].height;
                     if (static_cast<int> (report["viewportWidth"]) != expectedWidth

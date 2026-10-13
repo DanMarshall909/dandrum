@@ -16,6 +16,8 @@ Trigger has a typed editor adapter, reusable pure domain edits and reversible st
 - Embed the built shell and fonts through JUCE BinaryData and register a separate maintained `react-trigger` demo. Preserve the smaller React sampler.
 - Capability errors prevent unsupported operations from modifying accepted state.
 - Work in primary checkout/main under the user's explicit worktree override. The formatting task has been integrated and its shared ledger resolved.
+- Use the system title bar for the full Trigger standalone so the window manager handles movement. Keep the standard JUCE standalone lifecycle and expose its audio/settings and state actions through an Options menu below the title bar.
+- Install standalone chrome after window construction and preserve the editor's current dimensions. The native adapter sends the accepted patch name through a GUI-only title function; the window displays `trigger - {name of patch}`. Remember early title requests until the window is attached, and keep title failures separate from accepted DSP edits.
 
 ## Risks / Trade-offs
 

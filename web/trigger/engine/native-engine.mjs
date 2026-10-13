@@ -27,6 +27,7 @@ export class NativeEngine {
   async initialize(){
     this.session=await this.invoke('getSamplerSession');this.patch=patchFromSession(this.session);this.generation=this.session.document.generation;
     this.sourcePath=this.session.sourcePath;this.samplerSession=this.session;this.loadedPreset='native';
+    await this.publishWindowTitle();
     this.live=new NativeLive(this);await this.startFeedback();
     this.parameters=createParameterController((name,...args)=>this.invoke(name,...args),state=>{
       if(this.closed)return;
@@ -68,6 +69,7 @@ export class NativeEngine {
       else this.patch.params=accepted.params;
       await this.startFeedback(true);
       this.parameters.accept({generation:this.generation,sequence:0,parameters:Object.values(this.patch.params).map(p=>({id:p.id,name:p.name,value:p.value}))});
+      await this.publishWindowTitle();
       this.emit('patch',{phase:'ready',patch:this.getPatch(),replacement});
       completed=true;
     });
@@ -84,6 +86,10 @@ export class NativeEngine {
   on(event,listener){if(!this.listeners.has(event))this.listeners.set(event,new Set());this.listeners.get(event).add(listener);return()=>this.listeners.get(event)?.delete(listener);}
   emit(event,value){if(!this.closed)for(const listener of this.listeners.get(event)??[])listener(value);}
   report(error){if(!this.closed)this.emit('patch',{phase:'failed',message:error instanceof Error?error.message:String(error)});}
+  async publishWindowTitle(){
+    try{await this.invoke('setTriggerWindowTitle',this.patch.name);}
+    catch(error){this.report(new Error(`Window title update failed: ${error instanceof Error?error.message:String(error)}`));}
+  }
   getPatch(){return structuredClone(this.patch);}
   id(prefix){let id;const used=new Set(Object.values(this.patch).flatMap(value=>Array.isArray(value)?value.map(item=>item.id):[]));do{id=`${prefix}-${++this.sequence}`;}while(used.has(id));return id;}
   wait(){return new Promise((resolve,reject)=>{const entry={timer:setTimeout(()=>{this.waits.delete(entry);resolve();},this.pollMs),reject};this.waits.add(entry);});}
@@ -124,6 +130,7 @@ export class NativeEngine {
         for(const asset of this.patch.assets){const decoded=accepted.assets.find(a=>a.id===asset.id||a.uri===asset.uri);if(decoded)Object.assign(asset,{sampleRate:decoded.sampleRate,channels:decoded.channels,duration:decoded.duration,frameCount:decoded.frameCount});}
         await this.startFeedback(true);
         this.parameters.accept({generation:this.generation,sequence:0,parameters:Object.values(this.patch.params).map(p=>({id:p.id,name:p.name,value:p.value}))});
+        await this.publishWindowTitle();
         this.emit('patch',{phase:'ready',patch:this.getPatch()});return structuredClone(result);
       }catch(error){this.report(error);throw error;}
       finally{this.preparing=false;if(this.pendingGeneration>this.generation)void this.requestGeneration(this.pendingGeneration);else this.pendingGeneration=0;}

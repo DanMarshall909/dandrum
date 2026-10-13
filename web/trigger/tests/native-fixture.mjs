@@ -13,6 +13,7 @@ export function backend(initial=session()){
   const calls=[],events=new Map(),jobs=new Map();let current=initial,jobSequence=0;
   const functions={
     getSamplerSession:()=>current,
+    setTriggerWindowTitle:name=>({status:'accepted',title:'trigger - '+name}),
     prepareSampler:(text,generation)=>{if(generation!==current.document.generation)return 'Rejected stale instrument generation';const job_id=++jobSequence;jobs.set(job_id,{text,generation});return {status:'accepted',job_id,generation};},
     getUiJobStatus:id=>{const job=jobs.get(id);current=session(job.text,job.generation+1);return {job_id:id,generation:current.document.generation,state:'completed',error:''};},
     getSamplerPresetPath:()=>'/repo/examples/patches/advanced-drum-kit.yaml',

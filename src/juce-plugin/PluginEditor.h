@@ -20,9 +20,11 @@ public:
 
     void paint (juce::Graphics& g) override;
     void resized() override;
+    void parentHierarchyChanged() override;
 
 private:
     friend struct PluginEditorBridgeTestProbe;
+    friend struct PluginStandaloneChromeTestProbe;
     juce::WebBrowserComponent::Options createBrowserOptions();
     std::optional<juce::WebBrowserComponent::Resource> provideResource (const juce::String& path) const;
     void renderSoundLabFromWeb (const juce::Array<juce::var>& arguments,
@@ -42,8 +44,12 @@ private:
         juce::WebBrowserComponent::NativeFunctionCompletion completion);
     void getSoundLabAnalysisForWeb (const juce::Array<juce::var>& arguments,
                                     juce::WebBrowserComponent::NativeFunctionCompletion completion) const;
+    void setTriggerWindowTitleFromWeb (const juce::Array<juce::var>& arguments,
+                                      juce::WebBrowserComponent::NativeFunctionCompletion completion);
     juce::var soundLabSnapshotForWeb() const;
     void timerCallback() override;
+    void updateStandaloneChrome();
+    void detachStandaloneOptions();
 
     DandrumAudioProcessor& processor;
     InstrumentHostWebBridge hostBridge;
@@ -52,6 +58,10 @@ private:
     juce::File& soundLabReferenceFile;
     std::unique_ptr<juce::FileChooser> soundLabFileChooser;
     juce::WebBrowserComponent browser;
+    std::unique_ptr<juce::MenuBarModel> standaloneOptions;
+    juce::Component::SafePointer<juce::DocumentWindow> standaloneWindow;
+    bool updatingStandaloneChrome = false;
+    bool standaloneChromePending = false;
     std::uint64_t lastSeenSoundLabGeneration = static_cast<std::uint64_t> (-1);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DandrumAudioProcessorEditor)

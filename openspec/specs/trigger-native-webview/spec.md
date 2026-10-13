@@ -20,6 +20,14 @@ The integrated sampler SHALL load the full locally bundled React shell and selec
 - **WHEN** the user selects Min, Default, Expanded or the compact performance view
 - **THEN** the native editor window adopts the selected preset dimensions and reopening the editor restores its full layout dimensions
 
+#### Scenario: Standalone title bar supports window movement
+- **WHEN** the integrated standalone opens its editor
+- **THEN** it provides a system title bar for window-manager movement, keeps host audio/settings and state actions available through Options, and preserves the editor dimensions of size choices
+
+#### Scenario: Standalone title follows the accepted patch name
+- **WHEN** a patch is opened, renamed, undone or replaced in the integrated standalone
+- **THEN** the title is `trigger - {name of patch}` using the accepted patch name, and rejected edits or malformed title requests preserve the previous title
+
 ### Requirement: Transactional sampler edits
 
 Supported sample edits and undo SHALL prepare immutable replacement data off the audio thread and publish the edited model only after native acceptance. Rejected or stale edits SHALL retain the working instrument and editor patch.
