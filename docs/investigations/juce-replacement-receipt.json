@@ -1,0 +1,546 @@
+{
+  "schema_version": 1,
+  "investigated_at_utc": "2026-10-13T11:42:04.535315+00:00",
+  "issue": "https://github.com/DanMarshall909/dandrum/issues/24",
+  "scope": "source and upstream paper investigation; no replacement built or tested",
+  "baseline_commit": "1bdb1f8e7051c6b6f45d2839b3b303a0e492c6dd",
+  "environment": {
+    "os": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+    "architecture": "x86_64",
+    "native_windows_verified": false,
+    "native_macos_verified": false,
+    "native_desktop_linux_verified": false
+  },
+  "source_records": [
+    {
+      "path": "CMakeLists.txt",
+      "bytes": 49594,
+      "sha256": "aef807d189e6ffbfaad95bd9a2ea2980f525bbc4e1d1e5d97b9ec5e7a70589f4",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "src/rust-engine/Cargo.toml",
+      "bytes": 539,
+      "sha256": "b854bee281b47373d018c881aa024a67349dd5ed0928b3d05597c12d7c4ce90b",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "src/rust-engine/src/audio_loading.rs",
+      "bytes": 15278,
+      "sha256": "9e456cafe2eef0d62da62a4ad60c0c9859c27c74bf88727f4725fa8d8609c25b",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "src/rust-engine/src/sample.rs",
+      "bytes": 12809,
+      "sha256": "b1a76a9e0a4451df0b044c0183de0a3eb409112990e3a701cd606cdcd2598931",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "src/rust-engine/src/ffi.rs",
+      "bytes": 98548,
+      "sha256": "23cdba02c076e88ac5367c1142f2c4b2d87aed5639577e2a13eedfd433bbba96",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "src/juce-plugin/PluginProcessor.cpp",
+      "bytes": 89044,
+      "sha256": "5c700da33ec8a7a43f2071583efa0535392f213c5de59ee9846b239e77bd046c",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "src/juce-plugin/PluginProcessor.h",
+      "bytes": 22624,
+      "sha256": "f04bbccddab4153ea3631ce923a456ca1425a18ab7ae4975011ffd23597c9f28",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "src/juce-plugin/PluginEditor.cpp",
+      "bytes": 33300,
+      "sha256": "6fbc63098f13adf6a7942136b983bf4cbf86073c48721bd19175ac15dc84f519",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "src/juce-plugin/InstrumentUiSpectrumAnalysis.cpp",
+      "bytes": 1677,
+      "sha256": "ef32d0da842b06a711e2280c81f25367ed925ff714970362d3c1585bdac26d9c",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "src/juce-plugin/InstrumentHostWebBridge.cpp",
+      "bytes": 70168,
+      "sha256": "7a5f2be146bd8c9451858e205f0029c5fc5c1a7265e0dc1d6c68ed6d4ad0b040",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "src/juce-plugin/InstrumentFileWatcher.cpp",
+      "bytes": 4184,
+      "sha256": "5e78891368c33723deeb937719a41476b9e12e6909c855e466213660bd4db159",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "src/juce-wrapper/RustEngineSource.cpp",
+      "bytes": 4237,
+      "sha256": "da342cdfe890db7c08d075fa10b79cb76699c22d26c0d1de6bdb2bfcd343c56e",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "web/trigger/engine/native-engine.mjs",
+      "bytes": 15465,
+      "sha256": "efb4aa6192c6b7902ac0b545ab51e8826a41c3c16b58f508f1f444610d8a455c",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "web/trigger/engine/store.mjs",
+      "bytes": 9200,
+      "sha256": "b2bf495dfc710c02a4a3487cc7fa817bb2d1b687cf4d59ba35b7d36ed0c1d4e9",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "third_party/JUCE/LICENSE.md",
+      "bytes": 4822,
+      "sha256": "7c2a2deb752c35ebd52328c108ac54fd7600a79073ac956f97f368686903d219",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/DrumLoopPatternTest.cpp",
+      "bytes": 495,
+      "sha256": "a90a1f62a1aaace98f398b8c9b52188c188bd5cf2a0238a5ef084cb87eecb500",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/JuceKernelSourceTest.cpp",
+      "bytes": 2048,
+      "sha256": "fdcef03b35cf1b1d885c83260845416370a8e04c464f3b2e892071fda7bd5876",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/NativeWaveformLifetimeTest.cpp",
+      "bytes": 16530,
+      "sha256": "c76e48f32cca1f12b7a4f4f750e4f4a0fa2735d81faa602f225eaf0d7c42de4e",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/PluginConstructionTest.cpp",
+      "bytes": 72077,
+      "sha256": "17aa260107faf72fef4eb968c15094579ffe7c5b0cf3e1d5f4c305a2769319a4",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/PluginDemoConfigurationTest.cpp",
+      "bytes": 8905,
+      "sha256": "1a88d77feb19dbc025495f5b1984bb3833c3279e844a47e7245a3e0cd5cc564e",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/PluginEditorBridgeTest.cpp",
+      "bytes": 97031,
+      "sha256": "15b6fd0c7b8a0147a2e47036c09f7e7b528ebd47c63c548538aee5f11e77e8b3",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/PluginEngineHandoffTest.cpp",
+      "bytes": 66405,
+      "sha256": "d1a829b3c0990c3558c0c53a1191c5abc4b276d6bd8861c1052c99b690951453",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/PluginFileWatchReloadTest.cpp",
+      "bytes": 11680,
+      "sha256": "16afcd31b77b37d8b624be56ebc5656cfa8e96c262931210361c443468f195e7",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/PluginHostParameterSurfaceTest.cpp",
+      "bytes": 4930,
+      "sha256": "8e16438e28c9953862fcd3b7fdc23346ee46c7379b7828d5def306867684c8e4",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/PluginLiveAnalysisTest.cpp",
+      "bytes": 15358,
+      "sha256": "2253f4595373548a73423d4385434932f1dc9101bb5fb91b6d18f6f8ad3302df",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/PluginLiveCaptureTest.cpp",
+      "bytes": 7619,
+      "sha256": "24c5dd69de7b606ca6a8e384f8930f303725d76a922a240c850637ea10e70a0e",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/PluginLiveServiceTest.cpp",
+      "bytes": 22544,
+      "sha256": "66fbe7079cded4bb357429857dfbd4352d60ff0ef9866d7b355fbd1ed6d0f269",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/PluginSamplerHostTest.cpp",
+      "bytes": 23174,
+      "sha256": "256f6a4e57ba1a5d16aa493dbf49a32ffbe721c27a38f8757b6f15556c4bb276",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/PluginSpectralJobTest.cpp",
+      "bytes": 12336,
+      "sha256": "51d05f071fb16cf7ea971c2edbeafe40258dcdba253e5b4526b73978d93de868",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/PluginSpectralServiceTest.cpp",
+      "bytes": 19761,
+      "sha256": "32c3e2811f0b1962eb2b8c6346a77fd0005457abd0f5fa942306748e8d697ee0",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/PluginStandaloneChromeTest.cpp",
+      "bytes": 12871,
+      "sha256": "75d994395dc9a42d242bd18d63d86850143922f799315940af01917e31f30e49",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/PluginTriggerNativeBridgeTest.cpp",
+      "bytes": 8718,
+      "sha256": "f03aaeac7455a976ea4134c0579f6705cd4f7efa55f2619285d1afc30b1fa6bb",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/PluginTriggerWebRuntimeTest.h",
+      "bytes": 7513,
+      "sha256": "3e05fa01e67dd89ed4b1ef6ec1e82d66ac5ae8c59c05448b99123562ce1cdb65",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/PluginWaveformGeometryTest.cpp",
+      "bytes": 4595,
+      "sha256": "d3e35836c9f1ab7847bca06090e960dc1b94e85e8f73c51681820b9f0f2c850b",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/PluginWaveformServiceTest.cpp",
+      "bytes": 21265,
+      "sha256": "8858a177c77174653eb5403006f1f28aaea132d29bcaae587886049e51b0dac5",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/SoundLabControllerTest.cpp",
+      "bytes": 9951,
+      "sha256": "98f75e5099b19a6a70cf660c7a5752ea14dfa6fdec8bc9a0b0716c53260e7044",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/js/ReactAssetsTest.mjs",
+      "bytes": 4777,
+      "sha256": "0fb8227c79a90ac5a4eb5ea44d02d50445cc24f44db674eefa950bb88b1bfb06",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/js/TriggerNativeAdapterTest.mjs",
+      "bytes": 290,
+      "sha256": "18403b620c5e14a60fd1ebd4191157a41983af97d87f973f7a8445564e282ae6",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/js/TriggerNativeUiTest.mjs",
+      "bytes": 2267,
+      "sha256": "f7f82e80db028a49a501eaea4f7f44c8a22a6c9c9c181cf64af8196df1844ff1",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "tests/cpp/PluginWebRuntimeCheck.h",
+      "bytes": 44781,
+      "sha256": "bc27ac0581b6c8ab55c92520f5103f86e025c9b1f28a5dba6c624a848ce861d9",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "web/trigger/dist-native/index.html",
+      "bytes": 326,
+      "sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26",
+      "git_tracked_baseline_expected": false
+    },
+    {
+      "path": "scripts/demos.json",
+      "bytes": 4401,
+      "sha256": "a643fef117b582632761b9a530291e03e81fca359aeae464ec909714a8044082",
+      "git_tracked_baseline_expected": true
+    },
+    {
+      "path": "spec-tests.map",
+      "bytes": 116809,
+      "sha256": "da38a60759ae8ee6edb64ac65329eef4acb99df5aec551bf26bf3c021c5d506f",
+      "git_tracked_baseline_expected": true
+    }
+  ],
+  "retained_artifact": {
+    "path": "build/dandrum-sampler-plugin_artefacts/Release/Standalone/Dandrum Sampler",
+    "bytes": 32297320,
+    "sha256": "c9cfac7c815c8de16942e9b48d29cb3579b30f5cd7c40950598138776a9d3b1d",
+    "source_commit_proven": false,
+    "rebuilt_or_launched_during_investigation": false,
+    "archival_copy_created": false
+  },
+  "upstreams": [
+    {
+      "repo": "prokopyl/clack",
+      "revision": "27ca28391b57a61bad4bb5099288a7bf9247350d",
+      "commit_date": "2026-09-12T15:37:08Z",
+      "archived": false,
+      "default_branch": "main",
+      "license_spdx": "Apache-2.0"
+    },
+    {
+      "repo": "free-audio/clap-wrapper",
+      "revision": "1cca996e96f29ab2be7ae9f8cfe532bbc92e1dd6",
+      "commit_date": "2026-08-08T15:11:33Z",
+      "archived": false,
+      "default_branch": "main",
+      "license_spdx": "MIT"
+    },
+    {
+      "repo": "robbert-vdh/nih-plug",
+      "revision": "de421011f41a6d10fc8c7a6084e4f4dee0143683",
+      "commit_date": "2026-09-03T17:12:59Z",
+      "archived": false,
+      "default_branch": "master",
+      "license_spdx": "ISC"
+    },
+    {
+      "repo": "RustAudio/cpal",
+      "revision": "ed8aa8200ffc9f10f7750a67942d1ec2ca651a8a",
+      "commit_date": "2026-10-12T10:57:41Z",
+      "archived": false,
+      "default_branch": "master",
+      "license_spdx": "Apache-2.0"
+    },
+    {
+      "repo": "Boddlnagg/midir",
+      "revision": "db32c3f4fa017d7145395bf04d220625d2733305",
+      "commit_date": "2026-10-10T11:04:19Z",
+      "archived": false,
+      "default_branch": "master",
+      "license_spdx": "MIT"
+    },
+    {
+      "repo": "geraintluff/webview-gui",
+      "revision": "550f3f9141881be35758232285bf5b9699c76a99",
+      "commit_date": "2026-10-07T12:24:24Z",
+      "archived": false,
+      "default_branch": "main",
+      "license_spdx": null
+    },
+    {
+      "repo": "geraintluff/signalsmith-clap-cpp",
+      "revision": "95951b4a4f23d01b1fd86ad957dc0263e05248b4",
+      "commit_date": "2026-04-21T15:43:46Z",
+      "archived": false,
+      "default_branch": "main",
+      "license_spdx": "BSL-1.0"
+    },
+    {
+      "repo": "free-audio/clap",
+      "revision": "a47f6badb49d948fd009998f28309cdab78979c9",
+      "commit_date": "2026-07-28T21:29:46Z",
+      "archived": false,
+      "default_branch": "main",
+      "license_spdx": "MIT"
+    },
+    {
+      "repo": "tauri-apps/wry",
+      "revision": "6642074224a2db9eb197f69d21b300b02b5dcd49",
+      "commit_date": "2026-10-12T12:55:05Z",
+      "archived": false,
+      "default_branch": "dev",
+      "license_spdx": "Apache-2.0"
+    },
+    {
+      "repo": "steinbergmedia/vst3sdk",
+      "revision": "3cdf9ca5d1f5b1b21e0a86832aa4abe55607bd96",
+      "commit_date": "2026-08-11T14:14:52Z",
+      "archived": false,
+      "default_branch": "master",
+      "license_spdx": "MIT"
+    },
+    {
+      "repo": "RustAudio/nice-plug",
+      "origin": "https://codeberg.org/RustAudio/nice-plug",
+      "revision": "e60b5db09d8606c3dc3e93f982847a00bce17325",
+      "commit_date": "2026-09-14T11:55:00-05:00",
+      "archived": false,
+      "default_branch": "main",
+      "license_spdx": "ISC",
+      "verified_via_maintainer_link": "https://codeberg.org/BillyDM/nih-plug",
+      "release_inspected": "v0.4.2",
+      "package_version_inspected": "0.4.2",
+      "normal_direct_manifest_entries": 30,
+      "optional_normal_direct_manifest_entries": 14
+    }
+  ],
+  "upstream_snapshot_hashes": [
+    {
+      "filename": "Boddlnagg--midir-README.md",
+      "sha256": "0542d8f46af4da41129a0f3a2875f30b109f8ae80cbeb22be055a680ce1f1a25"
+    },
+    {
+      "filename": "RustAudio--cpal-README.md",
+      "sha256": "8644958957cb82637c2062af8d9d83cdd05592f9a86f4c182a3f3a100b933b9e"
+    },
+    {
+      "filename": "free-audio--clap-README.md",
+      "sha256": "3cbf0557feedea217a0e54fb94f355a1e9e0ec244a1776e1d14f9e702974a144"
+    },
+    {
+      "filename": "free-audio--clap-wrapper-README.md",
+      "sha256": "ec50f278708f814d0f2cbefa38dc6395b1b4a218a867612f53357ce0a4a9d4d6"
+    },
+    {
+      "filename": "geraintluff--signalsmith-clap-cpp-README.md",
+      "sha256": "c48f395782e73c55e6c2d09bf5f3972f0a4735dd5b3fa624a9371ef347c808fe"
+    },
+    {
+      "filename": "geraintluff--webview-gui-README.md",
+      "sha256": "39971f329880708dce97377f96c92f1393a3352f148723542018f208010d99b8"
+    },
+    {
+      "filename": "nice-plug-README.md",
+      "sha256": "89301c3ee987f6491f2cfbe62334c3e324ca092786a88652398a989dacd9bdac"
+    },
+    {
+      "filename": "prokopyl--clack-README.md",
+      "sha256": "7d586caffed64762090e8f1183e08f47f8139054941c63e09813b35aa0a239f7"
+    },
+    {
+      "filename": "robbert-vdh--nih-plug-README.md",
+      "sha256": "bf1c192c33d2067f259e0dd233c2673e649129ffe178e610ade6257e1494b217"
+    },
+    {
+      "filename": "steinbergmedia--vst3sdk-README.md",
+      "sha256": "83165df5693e3e77e58fad66b784a3e1b0c7eb8faedffd74fd5c4c453441f3b1"
+    },
+    {
+      "filename": "tauri-apps--wry-README.md",
+      "sha256": "cfa18c4d0e5a72d02b71e28c381de76d870d2adac8acf7b077071a5431ee536d"
+    },
+    {
+      "filename": "nice-plug-Cargo.toml",
+      "sha256": "b9e1ade30219ef7cd1dba151c9be78e7d70befeaaaa9433ccc3a6bb9475ba460"
+    },
+    {
+      "filename": "nice-plug-crates-nice-plug-Cargo.toml",
+      "sha256": "b743dbcb4b91409c3cbe467842a0c2007817822fe947c77254a6e5c8f2e20c5f"
+    },
+    {
+      "filename": "nice-plug-crates-nice-plug-core-src-editor.rs",
+      "sha256": "31787ca6932515d2c1ef2c4c7f22c1291bbc09a57678dfc35bd9deaf20a0b901"
+    }
+  ],
+  "dependency_resolution": "not run; no candidate lockfile, transitive dependency count, local patch set or product licence approval",
+  "gates": {
+    "A": "pending native audio, parented React and required-format proof",
+    "B": "pending legacy format state and shared-session lifecycle proof",
+    "C": "pending native formats/devices, packaging and cutover"
+  },
+  "unavailable_evidence": [
+    "captured old DAW projects and legacy wrapper state bytes",
+    "actual VST3 processor/controller IDs and numeric parameter ID dump",
+    "native replacement host/validator/device tests",
+    "candidate benchmark and callback-instrumentation results",
+    "signed installers and installed offline replacement package",
+    "approved project distribution licence and release OS/driver matrix"
+  ],
+  "mutation_testing": "excluded by user",
+  "react_resource_manifest": [
+    {
+      "path": "web/trigger/dist-native/app.css",
+      "bytes": 10966,
+      "sha256": "fd59e3162f403c24cfb68d26928ba44ee2a592728763bc8afc7a1e8db4814b70"
+    },
+    {
+      "path": "web/trigger/dist-native/app.js",
+      "bytes": 797828,
+      "sha256": "ecb38469a3cd4159714eb96ee28ea8d15b5439eb4f403365b1a318f70ed0f449"
+    },
+    {
+      "path": "web/trigger/dist-native/fonts/.gitattributes",
+      "bytes": 77,
+      "sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616"
+    },
+    {
+      "path": "web/trigger/dist-native/fonts/3386a05f6ece969e.ttf",
+      "bytes": 112204,
+      "sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160"
+    },
+    {
+      "path": "web/trigger/dist-native/fonts/6098b66ce7d608dc.ttf",
+      "bytes": 88644,
+      "sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef"
+    },
+    {
+      "path": "web/trigger/dist-native/fonts/74103fd6d41bc32c.ttf",
+      "bytes": 85776,
+      "sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154"
+    },
+    {
+      "path": "web/trigger/dist-native/fonts/91c841fdfa8e7b94.ttf",
+      "bytes": 81924,
+      "sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc"
+    },
+    {
+      "path": "web/trigger/dist-native/fonts/barlow-OFL.txt",
+      "bytes": 4377,
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+    },
+    {
+      "path": "web/trigger/dist-native/fonts/barlowsemicondensed-OFL.txt",
+      "bytes": 4377,
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+    },
+    {
+      "path": "web/trigger/dist-native/fonts/c15439e7a03af571.ttf",
+      "bytes": 85876,
+      "sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c"
+    },
+    {
+      "path": "web/trigger/dist-native/fonts/c2b046235fb4c2f8.ttf",
+      "bytes": 83412,
+      "sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9"
+    },
+    {
+      "path": "web/trigger/dist-native/fonts/cb75439ae401f776.ttf",
+      "bytes": 86708,
+      "sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da"
+    },
+    {
+      "path": "web/trigger/dist-native/fonts/df54dbfafba61d49.ttf",
+      "bytes": 112160,
+      "sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8"
+    },
+    {
+      "path": "web/trigger/dist-native/fonts/jetbrainsmono-OFL.txt",
+      "bytes": 4399,
+      "sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d"
+    },
+    {
+      "path": "web/trigger/dist-native/index.html",
+      "bytes": 326,
+      "sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26"
+    }
+  ],
+  "verification": {
+    "tracked_source_hashes": "matched git show at baseline commit",
+    "documentation_references": "all named tests and relative links exist; 25 register rows each have owner/dependencies/test or gap/destination/gate",
+    "openspec_canonical_specs": {
+      "command": "openspec validate --specs --strict",
+      "passed": 47,
+      "failed": 0
+    },
+    "spec_coverage": {
+      "command": "scripts/check-spec-coverage",
+      "acceptance_criteria": 595,
+      "mapped": 356,
+      "existing_todo": 239,
+      "passed": true
+    },
+    "product_tests": "not rerun: documentation-only investigation; no replacement implementation or runtime claim",
+    "mutation_testing": "not run, user exclusion"
+  }
+}
