@@ -1,0 +1,26 @@
+{
+  "project": "dandrum",
+  "branchName": "backlog",
+  "description": "Triaged backlog — work pending promotion to prd.json",
+  "idPrefix": "US",
+  "epics": [],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Add vocal and instrument isolation from samples",
+      "description": "As a sampler user, I want to isolate a vocal or instrument from a mixed sample so that I can audition and use that stem independently in a patch.",
+      "acceptanceCriteria": [
+        "Backend: expose the available isolation targets, including vocals, and accept a supported mono or stereo source sample, an optional selected region, and the requested target stem.",
+        "Backend: a successful separation returns a playable derived sample with source identity, sample rate, channel count and duration metadata; the result stays aligned to the source region and the original sample remains unchanged.",
+        "Backend: separation runs without blocking audio playback and reports job progress, completion, cancellation and actionable failures; cancelling a job does not apply a result.",
+        "Backend: a result from a cancelled job or a source/patch that has since changed cannot silently alter the current sample or patch.",
+        "Frontend: the sample editor lets the user choose the whole sample or a region, select an available stem, start or cancel isolation, and see progress; unavailable targets and failed jobs show a clear reason and allow recovery without losing the original sample.",
+        "Frontend: after separation, the user can audition the original and isolated stem at matching sample positions before accepting or discarding the result.",
+        "Frontend and backend: accepting a stem adds a separate sample asset usable in the patch, preserves the original, survives patch save/reload, and supports undo back to the previous sample selection."
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "P2 (normal). Backend requirements: source separation, discoverable target capabilities, asynchronous job lifecycle, aligned derived audio and metadata, cancellation/stale-result handling, and persistent sample assets. Frontend requirements: a sample-editor isolation action, source/region and stem selection, progress/cancel/error states, original-versus-result audition, and explicit accept/discard with undo. Example: extract a vocal from a mixed music sample and use it as a new sample in the current patch. Plan any missing engine/host separation and asset capabilities together with the bridge and React controls. Separation must stay outside the realtime audio path. Model/runtime choice, local versus remote execution, additional supported stems, resource limits and acceptable quality/latency remain planning decisions; no vendor or implementation is selected by this task."
+    }
+  ]
+}
