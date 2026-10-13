@@ -41,6 +41,12 @@ Open <http://127.0.0.1:8322> for the editor or
 then load Felt Kit from Patch. Header size controls and Collapse select the four
 geometries. Log exposes analysis/missing/unsupported/host mock switches.
 
+The event log has Include and Exclude fields. Both match literal text without
+case sensitivity across event names, kinds and payloads. Leave Include empty
+to show all events, and enter `telemetry` in Exclude to hide telemetry rows.
+The fields work together; clearing Exclude reveals retained matching entries.
+Filtering only changes the view; Clear removes recorded entries.
+
 ```sh
 npm run check
 npm test

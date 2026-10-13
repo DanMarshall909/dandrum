@@ -2455,6 +2455,10 @@ AC trigger-react-shell :: Input and mock telemetry :: Action-reachable states an
   fp 228de06234f1
   test js:tests/js/TriggerReactShellTest.mjs
 
+AC trigger-react-shell :: Input and mock telemetry :: Include and exclude event log entries
+  fp ff3e1f6886d5
+  test js:tests/js/TriggerReactShellTest.mjs
+
 AC trigger-react-shell :: Catalog, documentation and verification :: Reviewable complete shell
   fp 377fc7d9793b
   test js:tests/js/TriggerReactShellTest.mjs

@@ -29,3 +29,19 @@ Evidence: `docs/trigger/feature-audit.md`, `docs/trigger/verification.md`,
 `docs/trigger/evidence/final/`. Task 4.2 is verified by the independent exact-candidate PASS and its
 reviewed finalization envelope, retained at `/tmp/dandrum-trigger-final-review/`.
 The shell remains available for phase-3 human review; this change is not archived.
+
+## 5. Event log exclusion follow-up
+
+- [x] 5.1 Add a labeled, case-insensitive literal exclusion field that combines with inclusion, preserves logged events, and restores matching entries when cleared; prove existing and new filtering through rendered browser interactions.
+- [x] 5.2 Verify filter execution coverage, minimum/default/expanded layout, the complete Trigger test/check/build gates, and OpenSpec scenario-to-test coverage; document usage and commit the focused change.
+
+Follow-up evidence: the repository Trigger gate passes type/component checks, 85 unit tests,
+production build and 27 browser tests. All three focused log regressions pass after the
+fault probe restores the exact source hash; the native frontend bundle also builds.
+Browser V8 coverage exercises the filter predicate and exclusion input handler, including
+empty/nonempty and matching/nonmatching paths. Ignoring exclusion is rejected by the
+owning browser test. This is a bounded fault probe, not a full mutation score or whole-app
+coverage claim. Raw logs, coverage and screenshots: `/tmp/dandrum-event-log-evidence/`.
+Strict change/spec validation and scenario mapping pass (595 scenarios, 356 mapped,
+239 unchanged pre-existing todo entries). No production module extraction was needed;
+lowercasing is done once per render and the tests share only their patch/log setup.

@@ -31,7 +31,8 @@ button,input,select{font-family:inherit}
 .log-drawer{height:180px;flex:none;border-top:1px solid var(--dd-line-3);background:var(--dd-ink-0);display:flex;flex-direction:column;font:500 11px var(--font-value);min-width:0}
 .log-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:4px 8px;border-bottom:1px solid var(--dd-line-1)}
 .log-toolbar strong{font:700 12px var(--font-ui);text-transform:uppercase;letter-spacing:.06em}
-.log-toolbar input{width:160px;min-width:100px;max-width:20%;font:500 12px var(--font-ui);background:var(--dd-ink-2);color:var(--dd-paper-1);border:1px solid var(--dd-line-2);border-radius:2px;padding:4px}
+.log-filter{display:flex;align-items:center;gap:4px;white-space:nowrap}
+.log-toolbar input{width:140px;min-width:100px;font:500 12px var(--font-ui);background:var(--dd-ink-2);color:var(--dd-paper-1);border:1px solid var(--dd-line-2);border-radius:2px;padding:4px}
 .log-rows{overflow:auto;flex:1;min-height:0;min-width:0}
 .log-row{display:grid;grid-template-columns:78px 46px 130px minmax(0,1fr);gap:8px;padding:3px 8px;border-bottom:1px solid var(--dd-line-1)}
 .log-row code{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:inherit;color:var(--dd-paper-3)}

@@ -57,6 +57,10 @@ The shell SHALL implement supplied parameter gestures, value entry/reset, nested
 - **WHEN** the user uses ordinary actions and the docked log's failure/host switches
 - **THEN** all 24 supplied states can be reached without a design-state picker, with every adapter call/event logged, loading/analysis progress, missing/unsupported recovery, voices/playheads/meters and host tint.
 
+#### Scenario: Include and exclude event log entries
+- **WHEN** the user supplies inclusion and/or exclusion text in the docked event log
+- **THEN** rows match inclusion text and do not match nonempty exclusion text using case-insensitive literal matching across the event name, kind and payload; logging continues, and clearing either field re-applies the remaining filter to retained entries.
+
 ### Requirement: Catalog, documentation and verification
 The shell SHALL include the specified isolated-component catalog with state/width/background/prop controls, final engine contract, updated platform document and complete feature audit.
 
