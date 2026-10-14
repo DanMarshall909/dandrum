@@ -70,6 +70,7 @@ class EngineOnlyBuildTest(EngineBuildFixture):
                                                        "--show-only=json-v1"])
         self.assertEqual(code, 0, output)
         names = {test["name"] for test in json.loads(output)["tests"]}
+        self.assertNotIn("clap-dynamic-host", names)
         self.assertTrue({"rust-engine-tests", "cxx-rust-engine-ffi-smoke",
                          "cxx-rust-engine-sample-accurate-midi-smoke", "sound-lab-controller",
                          "cxx-plugin-waveform-service", "cxx-plugin-meter-capture",
@@ -100,6 +101,34 @@ class EngineOnlyBuildTest(EngineBuildFixture):
                 self.assertIn("DANDRUM_ENGINE_ONLY cannot be combined with " + option, " ".join(output.split()))
                 self.assertNotIn("third_party/JUCE", output)
                 self.assertNotIn("React rendering test dependencies", output)
+
+
+class ClapProofBuildTest(EngineBuildFixture):
+    def test_clap_selection_requires_independent_engine_mode(self):
+        _, code, output = self.configure("clap-needs-engine-mode", "-DDANDRUM_CLAP_PROOF=ON")
+        self.assertNotEqual(code, 0, output)
+        self.assertIn("DANDRUM_CLAP_PROOF requires DANDRUM_ENGINE_ONLY", output)
+        self.assertNotIn("Node.js is required", output)
+        self.assertNotIn("third_party/JUCE", output)
+
+    def test_exported_clap_build_and_dynamic_tests_without_host_sources(self):
+        build, code, output = self.configure("clap", "-DDANDRUM_ENGINE_ONLY=ON",
+                                             "-DDANDRUM_CLAP_PROOF=ON")
+        self.assertEqual(code, 0, output)
+        cache = (build / "CMakeCache.txt").read_text()
+        self.assertNotIn("DANDRUM_NODE_EXECUTABLE:", cache)
+        code, output = self.command("clap-targets", [CMAKE, "--build", str(build), "--target", "help"])
+        self.assertEqual(code, 0, output)
+        self.assertRegex(output, r"(?m)(?:^|\s)dandrum-clap-proof(?:\s|$)")
+        self.assertNotRegex(output, r"(?m)(?:^|\s)(?:juceaide|dandrum-plugin)(?:\s|$)")
+        code, output = self.command("clap-build", [CMAKE, "--build", str(build),
+                                                   "--target", "dandrum-clap-proof", "--parallel", "2"])
+        self.assertEqual(code, 0, output)
+        self.assertTrue((build / "clap" / "DandrumHeadlessProof.clap").is_file())
+        code, output = self.command("clap-runtime", [CTEST, "--test-dir", str(build),
+                                                     "--output-on-failure", "-R", "^clap-dynamic-host$"])
+        self.assertEqual(code, 0, output)
+        self.assertIn("100% tests passed", output)
 
 
 class ComparisonBuildTest(EngineBuildFixture):

@@ -8,12 +8,21 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(DANDRUM_ENABLE_MUTATION_CTEST "Include the long-running cargo-mutants test in CTest" OFF)
 option(DANDRUM_ENGINE_ONLY "Build only the Rust engine and independent native consumers without JUCE or browser dependencies" OFF)
+option(DANDRUM_CLAP_PROOF "Build the experimental headless CLAP engine proof" OFF)
 option(DANDRUM_NATIVE_ONLY "Build the plugin with the native JUCE editor and no browser dependencies" OFF)
 option(DANDRUM_TRIGGER_REACT "Embed the full native-backed React sampler shell" OFF)
 option(DANDRUM_BUILD_FILTER_UI_SPIKES "Build optional Slint and JIVE filter experiments" OFF)
 option(DANDRUM_BUILD_TRIGGER_SLINT "Build the silent Trigger Slint performance preview" OFF)
 option(DANDRUM_SLINT_LIBRARY_ONLY "Build only the Slint design library catalog and its tests" OFF)
 option(DANDRUM_ADVANCED_SAMPLER_ONLY "Build only the native silent advanced sampler and its tests" OFF)
+if(DANDRUM_CLAP_PROOF)
+    if(NOT DANDRUM_ENGINE_ONLY)
+        message(FATAL_ERROR "DANDRUM_CLAP_PROOF requires DANDRUM_ENGINE_ONLY")
+    endif()
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        message(FATAL_ERROR "The experimental CLAP packaging proof is currently verified only on Linux")
+    endif()
+endif()
 if(DANDRUM_ENGINE_ONLY)
     foreach(DANDRUM_PRODUCT_OPTION IN ITEMS
             DANDRUM_NATIVE_ONLY DANDRUM_TRIGGER_REACT
@@ -182,6 +191,39 @@ add_test(NAME engine-only-build
     COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1 python3
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_engine_only_build.py EngineOnlyBuildTest)
 set_tests_properties(engine-only-build PROPERTIES LABELS "build-boundary" RUN_SERIAL TRUE TIMEOUT 1200)
+
+if(DANDRUM_CLAP_PROOF)
+    set(DANDRUM_CLAP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/clap-adapter)
+    set(DANDRUM_CLAP_LIBRARY ${CMAKE_CURRENT_BINARY_DIR}/rust-target/release/libdandrum_clap_adapter.so)
+    set(DANDRUM_CLAP_ARTIFACT ${CMAKE_CURRENT_BINARY_DIR}/clap/DandrumHeadlessProof.clap)
+    file(GLOB_RECURSE DANDRUM_CLAP_SOURCES CONFIGURE_DEPENDS
+        ${DANDRUM_CLAP_DIR}/src/*.rs
+        ${DANDRUM_CLAP_DIR}/fixtures/*.yaml)
+    add_custom_command(
+        OUTPUT ${DANDRUM_CLAP_ARTIFACT}
+        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+            ${CARGO_BIN} build --locked --release --jobs 2 --manifest-path ${DANDRUM_CLAP_DIR}/Cargo.toml --lib
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/clap
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${DANDRUM_CLAP_LIBRARY} ${DANDRUM_CLAP_ARTIFACT}
+        DEPENDS ${DANDRUM_CLAP_SOURCES} ${RUST_ENGINE_SOURCES}
+            ${DANDRUM_CLAP_DIR}/Cargo.toml ${DANDRUM_CLAP_DIR}/Cargo.lock
+            ${RUST_ENGINE_DIR}/Cargo.toml ${RUST_ENGINE_DIR}/Cargo.lock
+            ${CMAKE_CURRENT_SOURCE_DIR}/examples/patches/tb303-acid.yaml
+        COMMENT "Building the experimental JUCE-free CLAP proof"
+        VERBATIM)
+    add_custom_target(dandrum-clap-proof DEPENDS ${DANDRUM_CLAP_ARTIFACT})
+    add_test(NAME clap-dynamic-host
+        COMMAND ${CMAKE_COMMAND} -E env
+            CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+            DANDRUM_CLAP_PLUGIN_PATH=${DANDRUM_CLAP_ARTIFACT}
+            ${CARGO_BIN} test --locked --jobs 2 --manifest-path ${DANDRUM_CLAP_DIR}/Cargo.toml
+                --test clap_dynamic --test public_engine_baseline)
+    set_tests_properties(clap-dynamic-host PROPERTIES TIMEOUT 1200)
+    add_test(NAME clap-build-boundary
+        COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_engine_only_build.py ClapProofBuildTest)
+    set_tests_properties(clap-build-boundary PROPERTIES
+        LABELS "build-boundary" RUN_SERIAL TRUE TIMEOUT 1200)
+endif()
 
 if(DANDRUM_ENGINE_ONLY)
     return()

@@ -1,0 +1,29 @@
+[package]
+name = "dandrum_clap_adapter"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+dandrum_engine = { path = "../rust-engine" }
+clack-plugin = { git = "https://github.com/prokopyl/clack", rev = "27ca28391b57a61bad4bb5099288a7bf9247350d" }
+clack-extensions = { git = "https://github.com/prokopyl/clack", rev = "27ca28391b57a61bad4bb5099288a7bf9247350d", features = ["clack-plugin", "audio-ports", "note-ports", "params"] }
+
+[dev-dependencies]
+clack-host = { git = "https://github.com/prokopyl/clack", rev = "27ca28391b57a61bad4bb5099288a7bf9247350d", default-features = false, features = ["libloading"] }
+clack-extensions = { git = "https://github.com/prokopyl/clack", rev = "27ca28391b57a61bad4bb5099288a7bf9247350d", features = ["clack-host"] }
+
+[profile.dev.package.dandrum_clap_adapter]
+strip = "debuginfo"
+
+[profile.test.package.dandrum_clap_adapter]
+strip = "debuginfo"
+
+
+# Match the retained engine build profile so task dependency artifacts are reusable.
+[profile.release]
+codegen-units = 1
+lto = true

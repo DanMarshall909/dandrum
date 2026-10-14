@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "elapsed_seconds": 0.776,
+  "artifact": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+  "artifact_sha256": "45ee428519b4f9e4d23ad81dcabf159fa1cbc0762532266de4bec3a96f382780",
+  "artifact_bytes": 15782608,
+  "exclusions": []
+}

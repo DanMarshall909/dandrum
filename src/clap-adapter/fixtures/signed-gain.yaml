@@ -1,0 +1,11 @@
+metadata: { name: Signed Stereo Gain Proof }
+ports:
+  - { name: input, direction: input, signal: audio, channels: 2, maps_to: amp.audio_in }
+  - { name: level, direction: input, signal: control, channels: 1, default: 0.5, min: 0, max: 1, maps_to: amp.gain }
+  - { name: master, direction: output, signal: audio, channels: 2, maps_from: amp.audio_out }
+preset_surface:
+  parameters:
+    - { name: fixture.level, maps_to: level }
+modules:
+  - { id: amp, type: gain, static: { channels: 2 } }
+connections: []

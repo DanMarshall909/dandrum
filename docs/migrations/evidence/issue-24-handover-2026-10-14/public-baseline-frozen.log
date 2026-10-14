@@ -1,0 +1,9 @@
+   Compiling dandrum_clap_adapter v0.1.0 (/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.66s
+     Running tests/public_engine_baseline.rs (build/engine-only/rust-target/debug/deps/public_engine_baseline-88df6e87421daaa4)
+
+running 2 tests
+test signed_gain_root_control_baseline ... ok
+test tb303_timed_notes_and_root_control_baseline ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s

@@ -101,6 +101,40 @@ This is the independent build prerequisite for [issue #24](https://github.com/Da
 Replacement plugin formats, devices, parented React editors, the #23 session contract and installed
 resource packaging still need their migration proofs. It does not replace the JUCE comparison product.
 
+## Experimental JUCE-free CLAP proof
+
+On Linux/WSL, opt in to the headless proof using the same engine build directory and cache:
+
+```bash
+cmake -S . -B build/engine-only -DDANDRUM_ENGINE_ONLY=ON -DDANDRUM_CLAP_PROOF=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build build/engine-only --target dandrum-clap-proof --parallel 2
+ctest --test-dir build/engine-only --output-on-failure -R '^clap-(dynamic-host|build-boundary)$'
+```
+
+The exported `build/engine-only/clap/DandrumHeadlessProof.clap` contains separate experimental
+TB-303 and signed stereo gain-fixture descriptors. The dynamic host tests load that binary and
+prove root controls, sample offsets/order, MIDI 1 key semantics, signed audio, reset/reactivation
+and independent instances. The build guard repeats packaging with JUCE/browser/UI source trees
+absent. First-time Cargo dependency fetching needs network access; the exact Clack revision and
+lockfile are retained. The engine and adapter use matching release profiles, while only the new
+adapter's dev/test output strips debug information.
+
+This is a rendering proof for [issue #24](https://github.com/DanMarshall909/dandrum/issues/24),
+not a production plugin or replacement-stack selection. It opens no audio device and has no
+editor or state extension. MIDI 1 notes use the engine's existing key semantics; independent
+CLAP note IDs/expression, MIDI 2 and per-note parameter modulation are not advertised. There
+are at most 1,024 input events per block; same-offset notes must also fit the prepared engine
+queue. Invalid event/layout/value input is silently rejected before admission and leaves host
+processing eligible to continue; full callback allocation/I/O and platform hardening are separate
+required proofs. Fractional rates reach the existing floating-point DSP runtime; integer preparation
+metadata is rounded for these resource-free fixtures. Asset-rate handling remains unproved.
+
+The [progress receipt](docs/migrations/juce-replacement-progress.md) retains the pending session,
+state/stopped-flush, parented production React, native second OS, VST3/AU, devices and packaging
+gates. The [dependency receipt](docs/migrations/juce-free-clap-dependencies.json) records exact
+provenance and scope; project/distribution licence decisions remain pending. Keep the existing
+JUCE products for comparison. No launchable demo or production cutover is added here.
+
 ## Engine Development
 
 The headless engine core is implemented in Rust under `src/rust-engine/`. The `core` module is the frontend-independent

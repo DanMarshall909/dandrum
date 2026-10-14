@@ -1,0 +1,1374 @@
+{
+  "results": [
+    {
+      "test": {
+        "plugin-library": {
+          "test": "query-nonexistent-factory",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 417900
+      }
+    },
+    {
+      "test": {
+        "plugin-library": {
+          "test": "create-id-with-trailing-garbage",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 507590
+      }
+    },
+    {
+      "test": {
+        "plugin-library": {
+          "test": "scan-rtld-now",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 459297
+      }
+    },
+    {
+      "test": {
+        "plugin-library": {
+          "test": "scan-time",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": "The plugin can be scanned in 0 milliseconds."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 485174
+      }
+    },
+    {
+      "test": {
+        "plugin-library": {
+          "test": "preset-discovery-crawl",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'clap.preset-discovery-factory/2' factory."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 427387
+      }
+    },
+    {
+      "test": {
+        "plugin-library": {
+          "test": "preset-discovery-descriptor-consistency",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'clap.preset-discovery-factory/2' factory."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 422316
+      }
+    },
+    {
+      "test": {
+        "plugin-library": {
+          "test": "preset-discovery-load",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'clap.preset-discovery-factory/2' factory."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 411308
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "descriptor-consistency",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 610028
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "descriptor-consistency",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 451691
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "features-categories",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 418659
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "features-categories",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 449873
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "features-duplicates",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 425859
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "features-duplicates",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 453317
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-audio-basic-out-of-place",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 4285547
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-audio-basic-out-of-place",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 6620890
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-audio-basic-in-place",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 4168602
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-audio-basic-in-place",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 5846728
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-audio-double-out-of-place",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not support 64-bit floating point audio."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 2863902
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-audio-double-out-of-place",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not support 64-bit floating point audio."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3899636
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-audio-double-in-place",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not support 64-bit floating point audio."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3024371
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-audio-double-in-place",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not support 64-bit floating point audio."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3550447
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-audio-denormals",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "warning",
+        "details": "The plugin took 5.08x longer to process denormals, you should set flush-to-zero flags or avoid denormals in some other way."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 9741463
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-audio-denormals",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin implements the 'audio-ports' extension but it does not have any input audio ports."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3698508
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-sleep-constant-mask",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": "The plugin never set the constant flag on any output"
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 4937146
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-sleep-constant-mask",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": "The plugin never set the constant flag on any output"
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 12348370
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-sleep-process-status",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": "The plugin never went to sleep during the test."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 4577600
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-sleep-process-status",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": "The plugin never went to sleep during the test."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 15680860
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-note-out-of-place-basic",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin implements the 'note-ports' extension but it does not have any input note ports."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3035832
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-note-out-of-place-basic",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 7720268
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-note-inconsistent",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin implements the 'note-ports' extension but it does not have any input note ports."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 2958609
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-note-inconsistent",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 7355595
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-note-wildcard",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin implements the 'note-ports' extension but it does not have any input note ports."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3091757
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-note-wildcard",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not have any input note ports that support CLAP events"
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3631755
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-varying-sample-rates",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 10441400
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-varying-sample-rates",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 33556479
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-varying-block-sizes",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 9874805
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-varying-block-sizes",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 34663561
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-random-block-sizes",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 4887240
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-random-block-sizes",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 11061287
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-reset-reactivate",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 4488465
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-reset-reactivate",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 5727053
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "layout-audio-ports-activation",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'audio-ports-activation' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3097586
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "layout-audio-ports-activation",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'audio-ports-activation' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3151047
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "layout-audio-ports-config",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'audio-ports-config' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 2879759
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "layout-audio-ports-config",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'audio-ports-config' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3340102
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "layout-configurable-audio-ports",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'configurable-audio-ports' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 2946630
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "layout-configurable-audio-ports",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'configurable-audio-ports' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3416589
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-set-events",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3893934
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-set-events",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 6747736
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-set-no-cookies",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3894110
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-set-no-cookies",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 6490593
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-set-wrong-namespace",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3866764
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-set-wrong-namespace",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 5857306
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-fuzz-basic",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 27369139
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-fuzz-basic",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 106609669
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-fuzz-bounds",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 26301447
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-fuzz-bounds",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 100051272
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-fuzz-sample-accurate",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 4744653
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-fuzz-sample-accurate",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 7979690
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-fuzz-modulation",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3819782
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-fuzz-modulation",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 4794927
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-conversions",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 2949901
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-conversions",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3283358
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-default-values",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 2785797
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-default-values",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 2685050
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "state-invalid-empty",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'state' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 2750278
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "state-invalid-empty",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'state' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 2894414
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "state-invalid-random",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'state' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3206665
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "state-invalid-random",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'state' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 2945052
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "state-reproducibility-basic",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'state' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3193544
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "state-reproducibility-basic",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'state' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 2827031
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "state-reproducibility-binary",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'state' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3008256
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "state-reproducibility-binary",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'state' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 2933458
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "state-reproducibility-buffered",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'state' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3706782
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "state-reproducibility-buffered",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'state' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 2849770
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "transport-null",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3609902
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "transport-null",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 4495999
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "transport-fuzz",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 3707729
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "transport-fuzz",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 7787178
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "transport-fuzz-sample-accurate",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.signed-gain"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 5680736
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "transport-fuzz-sample-accurate",
+          "path": "/home/dan/code/personal/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-xo69gixc/source/build/clap/clap/DandrumHeadlessProof.clap",
+          "plugin_id": "org.dandrum.experimental.tb303"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 12076518
+      }
+    }
+  ]
+}

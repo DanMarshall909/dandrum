@@ -1,0 +1,116 @@
+{
+  "receipt_schema_version": 1,
+  "scope": "Experimental headless CLAP rendering proof, not a production framework or distribution-license selection",
+  "issue": "https://github.com/DanMarshall909/dandrum/issues/24",
+  "native_target": "x86_64-unknown-linux-gnu",
+  "execution_environment": "Linux under WSL; native Windows/macOS not verified",
+  "clack_revision": "27ca28391b57a61bad4bb5099288a7bf9247350d",
+  "plugin_extension_features": [
+    "audio-ports",
+    "note-ports",
+    "params",
+    "clack-plugin"
+  ],
+  "dev_extension_features": [
+    "clack-host"
+  ],
+  "dev_host_features": [
+    "libloading"
+  ],
+  "dev_host_default_features": false,
+  "production_dependency_comparison": {
+    "command": "cargo tree --offline --locked --target x86_64-unknown-linux-gnu --edges normal --prefix none",
+    "baseline_engine_packages": 112,
+    "adapter_packages": 117,
+    "added_external_packages": 4,
+    "added_local_adapter_packages": 1,
+    "removed_engine_packages": 0,
+    "note": "Includes each unique package once. Full Linux metadata including dev/optional graph has125packages; that total is not the production count."
+  },
+  "dependencies": [
+    {
+      "name": "clack-common",
+      "version": "0.2.0",
+      "source": "git+https://github.com/prokopyl/clack?rev=27ca28391b57a61bad4bb5099288a7bf9247350d#27ca28391b57a61bad4bb5099288a7bf9247350d",
+      "license_declaration": "MIT OR Apache-2.0",
+      "role": "added production format dependency"
+    },
+    {
+      "name": "clack-plugin",
+      "version": "0.2.0",
+      "source": "git+https://github.com/prokopyl/clack?rev=27ca28391b57a61bad4bb5099288a7bf9247350d#27ca28391b57a61bad4bb5099288a7bf9247350d",
+      "license_declaration": "MIT OR Apache-2.0",
+      "role": "added production format dependency"
+    },
+    {
+      "name": "clack-extensions",
+      "version": "0.2.0",
+      "source": "git+https://github.com/prokopyl/clack?rev=27ca28391b57a61bad4bb5099288a7bf9247350d#27ca28391b57a61bad4bb5099288a7bf9247350d",
+      "license_declaration": "MIT OR Apache-2.0",
+      "role": "added production format dependency"
+    },
+    {
+      "name": "clap-sys",
+      "version": "0.5.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_declaration": "MIT/Apache-2.0",
+      "role": "added production format dependency"
+    },
+    {
+      "name": "clack-host",
+      "version": "0.2.0",
+      "source": "git+https://github.com/prokopyl/clack?rev=27ca28391b57a61bad4bb5099288a7bf9247350d#27ca28391b57a61bad4bb5099288a7bf9247350d",
+      "license_declaration": "MIT OR Apache-2.0",
+      "role": "dynamic test host only"
+    },
+    {
+      "name": "libloading",
+      "version": "0.8.9",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "license_declaration": "ISC",
+      "role": "dynamic test host only"
+    }
+  ],
+  "lockfile_hashes": {
+    "src/rust-engine/Cargo.lock": "7b9868b097cc152c22ff3462ccfd60e822d8a1bb3724a89f43ba526e72ea20d7",
+    "src/clap-adapter/Cargo.lock": "fb648ade15725d67d4192159ed2aee3cb4a6bf1149c33232d8ddae8762bd0d61"
+  },
+  "upstream_license_sources": [
+    {
+      "url": "https://github.com/prokopyl/clack/blob/27ca28391b57a61bad4bb5099288a7bf9247350d/LICENSE-MIT",
+      "sha256": "5561edd4b9921683d98162f4321d0a146b2cf01f2413261d75a3b3878d83e124"
+    },
+    {
+      "url": "https://github.com/prokopyl/clack/blob/27ca28391b57a61bad4bb5099288a7bf9247350d/LICENSE-APACHE",
+      "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+    }
+  ],
+  "validator": {
+    "repository": "https://github.com/free-audio/clap-validator",
+    "reported_version": "clap-validator 0.4.1",
+    "binary_sha256": "d9a78bfe781719de450bc5013141496eb13e1d9a538c67de1b8d325628670dbf",
+    "asset_url": "https://github.com/free-audio/clap-validator/releases/download/0.4.1/clap-validator-0.4.1-127-g152b982-ubuntu-22.04.zip",
+    "asset_sha256": "49edadcfb407ea0dd946ce418300e853fbd2660fa4b0d00e4f19ff8eef24ad90",
+    "execution_status": "Initial release artifact validated; final matching-LTO-profile rebuild and validator rerun pending at handover",
+    "initial_release_result": {
+      "exit_code": 0,
+      "counts": {
+        "success": 52,
+        "skipped": 28,
+        "warning": 1
+      },
+      "exclusions": [],
+      "artifact_sha256": "45ee428519b4f9e4d23ad81dcabf159fa1cbc0762532266de4bec3a96f382780",
+      "artifact_bytes": 15782608,
+      "profile_limit": "Initial artifact predates restoration of release lto=true and codegen-units=1; results are not final-profile evidence.",
+      "evidence": "evidence/issue-24-handover-2026-10-14/validator-release.json"
+    }
+  },
+  "limits": [
+    "No project or distribution licence chosen or changed; release/licence/ASIO scope remains pending.",
+    "Upstream manifest declarations and source hashes are provenance evidence, not complete redistribution clearance.",
+    "No GUI/device/browser stack or production framework adoption proved by this dependency inventory.",
+    "State, stopped parameter-flush, callback allocation/I/O audits, native second OS and VST3 projection remain required follow-ups.",
+    "Existing engine lockfile and dependencies retained; no framework dependency introduced into the engine crate."
+  ]
+}
