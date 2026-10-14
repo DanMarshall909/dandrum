@@ -11,4 +11,4 @@
 ## 3. Acceptance and publication
 
 - [x] 3.1 Sync the two additive headless-engine scenarios and map genuine ownership-transfer tests; verify strict OpenSpec and spec coverage with no additional todo entries.
-- [ ] 3.2 Review the complete focused diff and publish the verified prerequisite with detailed commit body; record exact branch preservation and remaining full #24 requirements in the shared ledger and progress receipt.
+- [x] 3.2 Review the complete focused diff and publish the verified prerequisite with detailed commit body; record exact branch preservation and remaining full #24 requirements in the shared ledger and progress receipt.
