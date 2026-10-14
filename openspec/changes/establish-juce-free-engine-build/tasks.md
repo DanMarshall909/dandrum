@@ -12,4 +12,4 @@
 ## 3. Acceptance and publication
 
 - [x] 3.1 Sync only the reviewed added scenarios into canonical specs and map genuine proving tests in spec-tests.map; verify scripts/check-spec-coverage and strict OpenSpec validation without new todo entries.
-- [ ] 3.2 Run relevant complete engine-only CTest/build checks, inspect the final diff and commit/push the focused verified slice with Why/What/Verification/Constraints; record remaining full-migration requirements and clean/preserved worktree state in the shared ledger.
+- [x] 3.2 Run relevant complete engine-only CTest/build checks, inspect the final diff and commit/push the focused verified slice with Why/What/Verification/Constraints; record remaining full-migration requirements and clean/preserved worktree state in the shared ledger.
