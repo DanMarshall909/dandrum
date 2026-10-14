@@ -7,12 +7,23 @@ enable_testing()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(DANDRUM_ENABLE_MUTATION_CTEST "Include the long-running cargo-mutants test in CTest" OFF)
+option(DANDRUM_ENGINE_ONLY "Build only the Rust engine and independent native consumers without JUCE or browser dependencies" OFF)
 option(DANDRUM_NATIVE_ONLY "Build the plugin with the native JUCE editor and no browser dependencies" OFF)
 option(DANDRUM_TRIGGER_REACT "Embed the full native-backed React sampler shell" OFF)
 option(DANDRUM_BUILD_FILTER_UI_SPIKES "Build optional Slint and JIVE filter experiments" OFF)
 option(DANDRUM_BUILD_TRIGGER_SLINT "Build the silent Trigger Slint performance preview" OFF)
 option(DANDRUM_SLINT_LIBRARY_ONLY "Build only the Slint design library catalog and its tests" OFF)
 option(DANDRUM_ADVANCED_SAMPLER_ONLY "Build only the native silent advanced sampler and its tests" OFF)
+if(DANDRUM_ENGINE_ONLY)
+    foreach(DANDRUM_PRODUCT_OPTION IN ITEMS
+            DANDRUM_NATIVE_ONLY DANDRUM_TRIGGER_REACT
+            DANDRUM_BUILD_FILTER_UI_SPIKES DANDRUM_BUILD_TRIGGER_SLINT
+            DANDRUM_SLINT_LIBRARY_ONLY DANDRUM_ADVANCED_SAMPLER_ONLY)
+        if(${DANDRUM_PRODUCT_OPTION})
+            message(FATAL_ERROR "DANDRUM_ENGINE_ONLY cannot be combined with ${DANDRUM_PRODUCT_OPTION}")
+        endif()
+    endforeach()
+endif()
 if(DANDRUM_ADVANCED_SAMPLER_ONLY)
     add_executable(dandrum-advanced-sampler)
     add_subdirectory(ui/advanced-sampler)
@@ -24,25 +35,27 @@ if(DANDRUM_SLINT_LIBRARY_ONLY)
     add_subdirectory(ui/slint)
     return()
 endif()
-if(DANDRUM_NATIVE_ONLY)
-    set(DANDRUM_BROWSER_ENABLED FALSE)
-    set(DANDRUM_EDITOR_ADAPTER dandrum-plugin-native-editor)
-else()
-    set(DANDRUM_BROWSER_ENABLED TRUE)
-    set(DANDRUM_EDITOR_ADAPTER dandrum-plugin-web-adapter)
-    find_program(DANDRUM_NODE_EXECUTABLE node)
-    if(NOT DANDRUM_NODE_EXECUTABLE OR NOT EXISTS "${DANDRUM_NODE_EXECUTABLE}")
-        message(FATAL_ERROR "Node.js is required to run the WebView page and native bridge tests")
-    endif()
-    execute_process(
-        COMMAND "${DANDRUM_NODE_EXECUTABLE}" -e
-            "const appRequire = require('node:module').createRequire(process.argv[1]); appRequire('react'); appRequire('react-dom/server');"
-            "${CMAKE_CURRENT_SOURCE_DIR}/web/sampler/package.json"
-        RESULT_VARIABLE DANDRUM_REACT_TEST_SETUP_RESULT
-        OUTPUT_QUIET ERROR_QUIET)
-    if(NOT DANDRUM_REACT_TEST_SETUP_RESULT EQUAL 0)
-        message(FATAL_ERROR
-            "React rendering test dependencies are unavailable. Run npm ci --prefix web/sampler from the repository root, then configure again.")
+if(NOT DANDRUM_ENGINE_ONLY)
+    if(DANDRUM_NATIVE_ONLY)
+        set(DANDRUM_BROWSER_ENABLED FALSE)
+        set(DANDRUM_EDITOR_ADAPTER dandrum-plugin-native-editor)
+    else()
+        set(DANDRUM_BROWSER_ENABLED TRUE)
+        set(DANDRUM_EDITOR_ADAPTER dandrum-plugin-web-adapter)
+        find_program(DANDRUM_NODE_EXECUTABLE node)
+        if(NOT DANDRUM_NODE_EXECUTABLE OR NOT EXISTS "${DANDRUM_NODE_EXECUTABLE}")
+            message(FATAL_ERROR "Node.js is required to run the WebView page and native bridge tests")
+        endif()
+        execute_process(
+            COMMAND "${DANDRUM_NODE_EXECUTABLE}" -e
+                "const appRequire = require('node:module').createRequire(process.argv[1]); appRequire('react'); appRequire('react-dom/server');"
+                "${CMAKE_CURRENT_SOURCE_DIR}/web/sampler/package.json"
+            RESULT_VARIABLE DANDRUM_REACT_TEST_SETUP_RESULT
+            OUTPUT_QUIET ERROR_QUIET)
+        if(NOT DANDRUM_REACT_TEST_SETUP_RESULT EQUAL 0)
+            message(FATAL_ERROR
+                "React rendering test dependencies are unavailable. Run npm ci --prefix web/sampler from the repository root, then configure again.")
+        endif()
     endif()
 endif()
 
@@ -159,13 +172,27 @@ add_executable(dandrum-plugin-spectral-geometry-test tests/cpp/PluginSpectralGeo
 target_include_directories(dandrum-plugin-spectral-geometry-test PRIVATE src/juce-wrapper src/juce-plugin)
 add_test(NAME cxx-plugin-spectral-geometry COMMAND dandrum-plugin-spectral-geometry-test)
 
-add_subdirectory(third_party/JUCE)
-
 add_executable(dandrum-filter-spike-engine-test tests/cpp/FilterSpikeEngineTest.cpp)
 target_include_directories(dandrum-filter-spike-engine-test PRIVATE src/juce-wrapper)
 target_compile_definitions(dandrum-filter-spike-engine-test PRIVATE DANDRUM_SOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(dandrum-filter-spike-engine-test PRIVATE dandrum_engine dl pthread m)
 add_test(NAME filter-spike-engine COMMAND dandrum-filter-spike-engine-test)
+
+add_test(NAME engine-only-build
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1 python3
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_engine_only_build.py EngineOnlyBuildTest)
+set_tests_properties(engine-only-build PROPERTIES LABELS "build-boundary" RUN_SERIAL TRUE TIMEOUT 1200)
+
+if(DANDRUM_ENGINE_ONLY)
+    return()
+endif()
+
+add_subdirectory(third_party/JUCE)
+
+add_test(NAME engine-only-comparison-build
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1 python3
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_engine_only_build.py ComparisonBuildTest)
+set_tests_properties(engine-only-comparison-build PROPERTIES LABELS "build-boundary" RUN_SERIAL TRUE TIMEOUT 600)
 
 if(DANDRUM_BUILD_FILTER_UI_SPIKES)
     include(cmake/FilterUiDependencies.cmake)

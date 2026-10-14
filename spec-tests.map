@@ -2509,3 +2509,17 @@ AC trigger-native-webview :: Real runtime feedback and capabilities :: Feedback 
 AC trigger-native-webview :: Real runtime feedback and capabilities :: Unsupported edit is rejected
   fp d7c02ab034e7
   test js:tests/js/TriggerNativeAdapterTest.mjs
+
+AC juce-free-engine-build :: Independent engine build configuration :: Build with host dependencies unavailable
+  fp 4a1bd3cfc7ce
+  test py:tests/python/test_engine_only_build.py
+  test cpp:tests/cpp/RustEngineFfiSmoke.cpp
+  test cpp:tests/cpp/RustEngineSampleAccurateMidiSmoke.cpp
+
+AC juce-free-engine-build :: Explicit configuration scope :: Retained comparison configuration
+  fp f8e07492103e
+  test py:tests/python/test_engine_only_build.py
+
+AC juce-free-engine-build :: Explicit configuration scope :: Reject conflicting product selections
+  fp 0e6d99e914a7
+  test py:tests/python/test_engine_only_build.py

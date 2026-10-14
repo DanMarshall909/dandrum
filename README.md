@@ -75,6 +75,32 @@ The current [Dandrum design system](docs/design-system/README.md) includes the r
 
 The [Trigger standalone React shell](web/trigger/README.md) implements the supplied Trigger design with a silent mock adapter. Run `npm ci` in `web/trigger` before CTest; the `trigger-react-shell` CTest runs its type, component, unit, production-build and browser checks. Browser verification uses Chrome (`TRIGGER_CHROME` can select another executable).
 
+## JUCE-free engine build
+
+On Linux/WSL, the engine and its independent native ABI/service tests can be configured without
+JUCE, Node.js, React assets or UI toolkits. Use CMake, a C++20 compiler and Cargo at
+`$HOME/.cargo/bin/cargo`:
+
+```bash
+cmake -S . -B build/engine-only -DDANDRUM_ENGINE_ONLY=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build build/engine-only --parallel 2
+ctest --test-dir build/engine-only --output-on-failure
+```
+
+This builds the existing Rust static library and independent C++ tests for named buses, signed
+rendering, sample-offset MIDI, waveform services, meters, commands and Sound Lab. Its build
+regression uses a first-party source fixture that omits JUCE, browser assets and UI toolkits,
+and keeps the reusable build cache in `build/engine-only-regression/`. The existing JUCE build
+separately checks that its comparison host/plugin targets and engine tests remain available.
+
+Leave `DANDRUM_ENGINE_ONLY` disabled for the existing JUCE host/plugins. It rejects combinations
+with `DANDRUM_NATIVE_ONLY`, React embedding and Slint/JIVE product options; use separate build
+directories for those configurations. Mutation CTest remains separately opt-in.
+
+This is the independent build prerequisite for [issue #24](https://github.com/DanMarshall909/dandrum/issues/24).
+Replacement plugin formats, devices, parented React editors, the #23 session contract and installed
+resource packaging still need their migration proofs. It does not replace the JUCE comparison product.
+
 ## Engine Development
 
 The headless engine core is implemented in Rust under `src/rust-engine/`. The `core` module is the frontend-independent

@@ -66,5 +66,22 @@ int main()
         }
     }
 
+    // Characterized from the checked-in kick at 48 kHz with this note/velocity:
+    // the onset click is positive, followed by the negative oscillator/filter tail.
+    // 1e-5 tolerates float rounding while rejecting silence or a shifted onset.
+    constexpr float expectedOnset[] { 0.999942f, -0.000277848f };
+    for (std::size_t i = 0; i < 2; ++i)
+    {
+        const auto frame = noteOnOffset + i;
+        if (std::abs (left[frame] - expectedOnset[i]) > 1.0e-5f
+            || std::abs (right[frame] - expectedOnset[i]) > 1.0e-5f)
+        {
+            std::cerr << "expected signed onset sample " << expectedOnset[i]
+                      << " at frame " << frame << ", got " << left[frame]
+                      << ", " << right[frame] << '\n';
+            return 1;
+        }
+    }
+
     return 0;
 }
