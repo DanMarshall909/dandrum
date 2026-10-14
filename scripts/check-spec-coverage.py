@@ -40,7 +40,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SPECS_DIR = ROOT / "openspec" / "specs"
 MAP_PATH = ROOT / "spec-tests.map"
-RUST_SRC = ROOT / "src" / "rust-engine"
 CPP_TESTS = ROOT / "tests"
 
 SEP = " :: "
@@ -194,7 +193,7 @@ def write_map(path: Path, acs: dict[AcKey, str], existing: dict[AcKey, AcBlock])
 
 def rust_test_functions() -> set[str]:
     names: set[str] = set()
-    for rs in RUST_SRC.rglob("*.rs"):
+    for rs in (ROOT / "src").rglob("*.rs"):
         if "llvm-cov-target" in rs.parts or "target" in rs.parts:
             continue
         for match in re.finditer(r"\bfn\s+([a-z_][a-z0-9_]*)\s*\(", rs.read_text()):
