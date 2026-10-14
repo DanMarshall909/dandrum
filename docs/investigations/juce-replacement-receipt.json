@@ -436,12 +436,11 @@
   "dependency_resolution": "not run; no candidate lockfile, transitive dependency count, local patch set or product licence approval",
   "gates": {
     "A": "pending native audio, parented React and required-format proof",
-    "B": "pending legacy format state and shared-session lifecycle proof",
+    "B": "pending replacement-owned state/automation round trips and shared-session lifecycle proof; no backwards compatibility gate",
     "C": "pending native formats/devices, packaging and cutover"
   },
   "unavailable_evidence": [
-    "captured old DAW projects and legacy wrapper state bytes",
-    "actual VST3 processor/controller IDs and numeric parameter ID dump",
+    "replacement identity manifest and replacement-owned state/automation round-trip evidence",
     "native replacement host/validator/device tests",
     "candidate benchmark and callback-instrumentation results",
     "signed installers and installed offline replacement package",
@@ -541,6 +540,26 @@
       "passed": true
     },
     "product_tests": "not rerun: documentation-only investigation; no replacement implementation or runtime claim",
-    "mutation_testing": "not run, user exclusion"
-  }
+    "mutation_testing": "not run, user exclusion",
+    "scope_amendment": "2026-10-14: checked report/receipt/issue correction, all 25 register rows and task count; local links and baseline source hashes pass; strict OpenSpec47/47 and spec coverage595/356/239 pass. Planning only; no new runtime proof."
+  },
+  "scope_amendments": [
+    {
+      "date": "2026-10-14",
+      "source": "User clarification: nothing has been released; backwards compatibility is not required",
+      "release_status": "unreleased, as confirmed by user",
+      "removed_requirements": [
+        "legacy JUCE state/envelope importer",
+        "old DAW project loading and automation compatibility",
+        "preservation of old numeric plugin/parameter IDs and fixed 64-slot scheme",
+        "new-state-to-old-binary downgrade"
+      ],
+      "retained_requirements": [
+        "replacement-owned versioned state save/reload and invalid-state handling",
+        "correct host automation and stable replacement identities",
+        "supported format/device matrix",
+        "Rust DSP, React visuals, signed behavioural comparisons and safe lifecycle"
+      ]
+    }
+  ]
 }
