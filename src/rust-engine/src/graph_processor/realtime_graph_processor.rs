@@ -1339,7 +1339,7 @@ pub(super) fn execute_prepared_step(context: &mut PreparedStepContext<'_>, step:
     (step.processor)(context, step);
 }
 
-pub(super) trait PreparedStepExecutor {
+pub(super) trait PreparedStepExecutor: Send {
     fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep);
     fn capture(&mut self, _: &ProcessContext<'_>) {}
     fn begin_block(&mut self) {}

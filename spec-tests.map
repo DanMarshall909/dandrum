@@ -2523,3 +2523,11 @@ AC juce-free-engine-build :: Explicit configuration scope :: Retained comparison
 AC juce-free-engine-build :: Explicit configuration scope :: Reject conflicting product selections
   fp 0e6d99e914a7
   test py:tests/python/test_engine_only_build.py
+
+AC headless-engine :: Owned runtime can move between host threads :: Render after ownership transfer
+  fp b68a5a0f59b9
+  test rust:owned_runtime_transfers_to_render_thread_with_signed_output
+
+AC headless-engine :: Owned runtime can move between host threads :: Reset after moving the runtime back
+  fp a1e0f34f1787
+  test rust:returned_runtime_resets_and_instances_keep_independent_filter_state

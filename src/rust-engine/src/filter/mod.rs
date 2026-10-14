@@ -8,7 +8,7 @@ pub use comb::{CombFilter, CombType};
 pub use moog::MoogLadder;
 pub use one_pole::OnePoleFilter;
 
-pub trait FilterAlgorithm {
+pub trait FilterAlgorithm: Send {
     fn process(&mut self, input: f32) -> f32;
     fn reset(&mut self);
     fn set_cutoff(&mut self, _hz: f64, _sample_rate: f64) {}
