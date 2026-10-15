@@ -1,0 +1,30 @@
+{
+  "verified_at_utc": "2026-10-15T23:20:32.825749+00:00",
+  "repository": "https://github.com/DanMarshall909/dandrum",
+  "branch": "feat/juce-free-host-adapters",
+  "implementation_commit": "11c3bd2d99b8607560ad6a68d1a7b630355ef952",
+  "implementation_tree": "7ba8340a4588cf9c6d7a3b22d6d649558ce66062",
+  "previous_remote_head": "5d72209b9a813a84f9af22da7f1f8b948a24a198",
+  "observed_remote_head": "11c3bd2d99b8607560ad6a68d1a7b630355ef952",
+  "reviewed_candidate_sha256": "1204e271c518f2dc890145ee8339bbc732968c91cabb1c10c80e6b095954f77a",
+  "push": {
+    "command": [
+      "git",
+      "push",
+      "origin",
+      "HEAD:refs/heads/feat/juce-free-host-adapters"
+    ],
+    "cwd": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters",
+    "started_unix": 1792106361.0257354,
+    "elapsed_seconds": 12.541,
+    "exit_code": 0
+  },
+  "hooks": {
+    "core_hooks_path": ".githooks",
+    "pre_push": "1091 Rust tests passed; no changed engine Rust source files, so mutation not triggered",
+    "bypassed": false
+  },
+  "raw_push_log_sha256": "734d800666fa38640cd57cba1c2acbbdcc0b15d1a5dca2384cf980617fb7073d",
+  "raw_push_log_local_path": "/tmp/dandrum-clap-completion/implementation-push.log",
+  "scope": "Experimental headless CLAP proof only; no main merge or completion of issue 24 Gates A-C."
+}
