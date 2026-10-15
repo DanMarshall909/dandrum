@@ -1,0 +1,541 @@
+    1|       |//! Experimental headless CLAP rendering proof. State and editor support are separate gates.
+    2|       |use clack_extensions::{audio_ports::*, note_ports::*, params::*};
+    3|       |use clack_plugin::entry::{Entry, EntryFactories, EntryLoadError};
+    4|       |use clack_plugin::events::spaces::CoreEventSpace;
+    5|       |use clack_plugin::factory::plugin::{PluginFactoryImpl, PluginFactoryWrapper};
+    6|       |use clack_plugin::host::HostInfo;
+    7|       |use clack_plugin::plugin::PluginInstance;
+    8|       |use clack_plugin::prelude::*;
+    9|       |use dandrum_engine::PreparedSamplerAssets;
+   10|       |use dandrum_engine::graph::PortDirection;
+   11|       |use dandrum_engine::graph_processor::RealtimeGraphProcessor;
+   12|       |use dandrum_engine::kernel::{ChannelCount, document::load_kernel_patch_str};
+   13|       |use dandrum_engine::patch::RenderSettings;
+   14|       |use dandrum_engine::preparation::{HostBuses, prepare_kernel_graph_with_buses};
+   15|       |use std::ffi::CStr;
+   16|       |use std::fmt::Write;
+   17|       |use std::sync::atomic::{AtomicU64, Ordering};
+   18|       |
+   19|       |const TB303: &str = include_str!("../../../examples/patches/tb303-acid.yaml");
+   20|       |const GAIN: &str = include_str!("../fixtures/signed-gain.yaml");
+   21|       |const EVENT_LIMIT: u32 = 1024;
+   22|       |#[derive(Clone, Copy, PartialEq)]
+   23|       |enum Kind {
+   24|       |    Tb303,
+   25|       |    Gain,
+   26|       |}
+   27|       |
+   28|       |impl Kind {
+   29|    472|    fn document(self) -> &'static str {
+   30|    472|        match self {
+   31|    235|            Self::Tb303 => TB303,
+   32|    237|            Self::Gain => GAIN,
+   33|       |        }
+   34|    472|    }
+   35|       |}
+   36|       |
+   37|       |struct Parameter {
+   38|       |    name: String,
+   39|       |    root: String,
+   40|       |    min: f64,
+   41|       |    max: f64,
+   42|       |    default: f64,
+   43|       |    value: AtomicU64,
+   44|       |}
+   45|       |
+   46|       |struct Shared {
+   47|       |    kind: Kind,
+   48|       |    parameters: Vec<Parameter>,
+   49|       |    rejected_blocks: AtomicU64,
+   50|       |}
+   51|       |impl PluginShared<'_> for Shared {}
+   52|       |impl Shared {
+   53|    126|    fn new(kind: Kind) -> Result<Self, PluginError> {
+   54|    126|        let patch = load_kernel_patch_str(kind.document())
+   55|    126|            .map_err(|_| PluginError::Message("Invalid built-in patch"))?;
+   56|    126|        let parameters = patch
+   57|    126|            .preset_surface()
+   58|    126|            .parameters()
+   59|    126|            .iter()
+   60|    498|            .map(|alias| {
+   61|    498|                let default = alias.control_default();
+   62|    498|                Parameter {
+   63|    498|                    name: alias.name().into(),
+   64|    498|                    root: alias.port_name().into(),
+   65|    498|                    min: default.min().unwrap_or(0.0),
+   66|    498|                    max: default.max().unwrap_or(1.0),
+   67|    498|                    default: default.default(),
+   68|    498|                    value: AtomicU64::new(default.default().to_bits()),
+   69|    498|                }
+   70|    498|            })
+   71|    126|            .collect();
+   72|    126|        Ok(Self {
+   73|    126|            kind,
+   74|    126|            parameters,
+   75|    126|            rejected_blocks: AtomicU64::new(0),
+   76|    126|        })
+   77|    126|    }
+   78|  6.37k|    fn parameter(&self, id: ClapId) -> Option<&Parameter> {
+   79|  6.37k|        self.parameters.get(id.get().checked_sub(1)? as usize)
+   80|  6.37k|    }
+   81|  1.53k|    fn valid_value(&self, event: &clack_plugin::events::event_types::ParamValueEvent) -> bool {
+   82|  1.53k|        event
+   83|  1.53k|            .param_id()
+   84|  1.53k|            .and_then(|id| self.parameter(id))
+   85|  1.53k|            .is_some_and(|p| {
+   86|  1.53k|                event.pckn().matches_all()
+   87|  1.53k|                    && event.value().is_finite()
+   88|  1.53k|                    && (p.min..=p.max).contains(&event.value())
+   89|  1.53k|            })
+   90|  1.53k|    }
+   91|      4|    fn flush(&self, input: &InputEvents) {
+   92|       |        // Bounded, global parameter-only synchronization; persistence is not implemented here.
+   93|      4|        if input.len() > EVENT_LIMIT
+   94|     16|            || input.iter().any(|e| {
+   95|     16|                matches!(e.as_core_event(),
+   96|     16|            Some(CoreEventSpace::ParamValue(v)) if !self.valid_value(v))
+   97|     16|            })
+   98|       |        {
+   99|      0|            return;
+  100|      4|        }
+  101|     16|        for event in input {
+  102|     16|            if let Some(CoreEventSpace::ParamValue(v)) = event.as_core_event() {
+  103|     16|                if let Some(p) = v.param_id().and_then(|id| self.parameter(id)) {
+  104|     16|                    p.value.store(v.value().to_bits(), Ordering::Relaxed);
+  105|     16|                }
+  106|      0|            }
+  107|       |        }
+  108|      4|    }
+  109|       |}
+  110|       |struct Main<'a> {
+  111|       |    shared: &'a Shared,
+  112|       |}
+  113|       |impl<'a> PluginMainThread<'a, Shared> for Main<'a> {}
+  114|       |struct Adapter;
+  115|       |impl Plugin for Adapter {
+  116|       |    type Shared<'a> = Shared;
+  117|       |    type MainThread<'a> = Main<'a>;
+  118|       |    type AudioProcessor<'a> = Processor<'a>;
+  119|    442|    fn declare_extensions(builder: &mut PluginExtensions<Self>, _: Option<&Shared>) {
+  120|    442|        builder
+  121|    442|            .register::<PluginAudioPorts>()
+  122|    442|            .register::<PluginNotePorts>()
+  123|    442|            .register::<PluginParams>();
+  124|    442|    }
+  125|       |}
+  126|       |struct Factory {
+  127|       |    descriptors: [PluginDescriptor; 2],
+  128|       |}
+  129|       |impl PluginFactoryImpl for Factory {
+  130|     13|    fn plugin_count(&self) -> u32 {
+  131|     13|        2
+  132|     13|    }
+  133|       |
+  134|     22|    fn plugin_descriptor(&self, index: u32) -> Option<&PluginDescriptor> {
+  135|     22|        self.descriptors.get(index as usize)
+  136|     22|    }
+  137|    129|    fn create_plugin<'a>(&'a self, host: HostInfo<'a>, id: &CStr) -> Option<PluginInstance<'a>> {
+  138|    195|        let index = self.descriptors.iter().position(|d| d.id() == Some(id))?;
+  139|    128|        let kind = if index == 0 { Kind::Tb303 } else { Kind::Gain };
+  140|    128|        Some(PluginInstance::new::<Adapter>(
+  141|    128|            host,
+  142|    128|            &self.descriptors[index],
+  143|    126|            move |_| Shared::new(kind),
+  144|    126|            |_, shared| Ok(Main { shared }),
+  145|       |        ))
+  146|    129|    }
+  147|       |}
+  148|       |struct ProofEntry {
+  149|       |    factory: PluginFactoryWrapper<Factory>,
+  150|       |}
+  151|       |impl Entry for ProofEntry {
+  152|    120|    fn new(_: Option<&CStr>) -> Result<Self, EntryLoadError> {
+  153|       |        use clack_plugin::plugin::features::*;
+  154|    120|        Ok(Self {
+  155|    120|            factory: PluginFactoryWrapper::new(Factory {
+  156|    120|                descriptors: [
+  157|    120|                    PluginDescriptor::new(
+  158|    120|                        "org.dandrum.experimental.tb303",
+  159|    120|                        "Dandrum Experimental TB303",
+  160|    120|                    )
+  161|    120|                    .with_vendor("Dandrum")
+  162|    120|                    .with_version("0.1.0")
+  163|    120|                    .with_features([INSTRUMENT, SYNTHESIZER, STEREO]),
+  164|    120|                    PluginDescriptor::new(
+  165|    120|                        "org.dandrum.experimental.signed-gain",
+  166|    120|                        "Dandrum Experimental Signed Gain",
+  167|    120|                    )
+  168|    120|                    .with_vendor("Dandrum")
+  169|    120|                    .with_version("0.1.0")
+  170|    120|                    .with_features([AUDIO_EFFECT, STEREO]),
+  171|    120|                ],
+  172|    120|            }),
+  173|    120|        })
+  174|    120|    }
+  175|    153|    fn declare_factories<'a>(&'a self, builder: &mut EntryFactories<'a>) {
+  176|    153|        builder.register_factory(&self.factory);
+  177|    153|    }
+  178|       |}
+  179|       |clack_plugin::clack_export_entry!(ProofEntry);
+  180|       |
+  181|       |impl PluginAudioPortsImpl for Main<'_> {
+  182|    168|    fn count(&self, input: bool) -> u32 {
+  183|    168|        u32::from(!input || self.shared.kind == Kind::Gain)
+  184|    168|    }
+  185|     72|    fn get(&self, index: u32, input: bool, writer: &mut AudioPortInfoWriter) {
+  186|     72|        if index == 0 && PluginAudioPortsImpl::count(self, input) > 0 {
+  187|     72|            writer.set(&AudioPortInfo {
+  188|     72|                id: ClapId::new(0),
+  189|     72|                name: b"main",
+  190|     72|                channel_count: 2,
+  191|     72|                flags: AudioPortFlags::IS_MAIN,
+  192|     72|                port_type: Some(AudioPortType::STEREO),
+  193|     72|                in_place_pair: None,
+  194|     72|            });
+  195|     72|        }
+  196|     72|    }
+  197|       |}
+  198|       |impl PluginNotePortsImpl for Main<'_> {
+  199|     99|    fn count(&self, input: bool) -> u32 {
+  200|     99|        u32::from(input && self.shared.kind == Kind::Tb303)
+  201|     99|    }
+  202|     21|    fn get(&self, index: u32, input: bool, writer: &mut NotePortInfoWriter) {
+  203|     21|        if index == 0 && PluginNotePortsImpl::count(self, input) > 0 {
+  204|     21|            writer.set(&NotePortInfo {
+  205|     21|                id: ClapId::new(0),
+  206|     21|                name: b"MIDI 1 notes",
+  207|     21|                supported_dialects: NoteDialects::MIDI,
+  208|     21|                preferred_dialect: Some(NoteDialect::Midi),
+  209|     21|            });
+  210|     21|        }
+  211|     21|    }
+  212|       |}
+  213|       |impl PluginMainThreadParams for Main<'_> {
+  214|     50|    fn count(&self) -> u32 {
+  215|     50|        self.shared.parameters.len() as u32
+  216|     50|    }
+  217|    186|    fn get_info(&self, index: u32, writer: &mut ParamInfoWriter) {
+  218|    186|        if let Some(p) = self.shared.parameters.get(index as usize) {
+  219|    186|            writer.set(&ParamInfo {
+  220|    186|                id: ClapId::new(index + 1),
+  221|    186|                flags: ParamInfoFlags::IS_AUTOMATABLE,
+  222|    186|                cookie: Default::default(),
+  223|    186|                name: p.name.as_bytes(),
+  224|    186|                module: b"",
+  225|    186|                min_value: p.min,
+  226|    186|                max_value: p.max,
+  227|    186|                default_value: p.default,
+  228|    186|            });
+  229|    186|        }
+  230|    186|    }
+  231|     88|    fn get_value(&self, id: ClapId) -> Option<f64> {
+  232|     88|        Some(f64::from_bits(
+  233|     88|            self.shared.parameter(id)?.value.load(Ordering::Relaxed),
+  234|       |        ))
+  235|     88|    }
+  236|  1.63k|    fn value_to_text(
+  237|  1.63k|        &self,
+  238|  1.63k|        id: ClapId,
+  239|  1.63k|        value: f64,
+  240|  1.63k|        writer: &mut ParamDisplayWriter,
+  241|  1.63k|    ) -> std::fmt::Result {
+  242|  1.63k|        if self.shared.parameter(id).is_none() {
+  243|      0|            return Err(std::fmt::Error);
+  244|  1.63k|        }
+  245|  1.63k|        write!(writer, "{value:.4}")
+  246|  1.63k|    }
+  247|  1.60k|    fn text_to_value(&self, id: ClapId, text: &CStr) -> Option<f64> {
+  248|  1.60k|        let p = self.shared.parameter(id)?;
+  249|  1.60k|        let value: f64 = text.to_str().ok()?.parse().ok()?;
+  250|  1.60k|        (value.is_finite() && (p.min..=p.max).contains(&value)).then_some(value)
+  251|  1.60k|    }
+  252|      4|    fn flush(&self, input: &InputEvents, _: &mut OutputEvents) {
+  253|      4|        self.shared.flush(input);
+  254|      4|    }
+  255|       |}
+  256|       |struct Processor<'a> {
+  257|       |    shared: &'a Shared,
+  258|       |    runtime: RealtimeGraphProcessor,
+  259|       |    maximum: usize,
+  260|       |    inputs: Vec<Vec<Vec<f32>>>,
+  261|       |    outputs: Vec<Vec<Vec<f32>>>,
+  262|       |    parameter_inputs: Vec<usize>,
+  263|       |    host_input: [Vec<f32>; 2],
+  264|       |    audio_input: Option<usize>,
+  265|       |}
+  266|       |impl PluginAudioProcessorParams for Processor<'_> {
+  267|      0|    fn flush(&mut self, input: &InputEvents, _: &mut OutputEvents) {
+  268|      0|        self.shared.flush(input);
+  269|      0|    }
+  270|       |}
+  271|       |impl<'a> PluginAudioProcessor<'a, Shared, Main<'a>> for Processor<'a> {
+  272|    346|    fn activate(
+  273|    346|        _: HostAudioProcessorHandle<'a>,
+  274|    346|        _: &Main<'a>,
+  275|    346|        shared: &'a Shared,
+  276|    346|        config: PluginAudioConfiguration,
+  277|    346|    ) -> Result<Self, PluginError> {
+  278|    346|        if !config.sample_rate.is_finite()
+  279|    346|            || !(1.0..=f64::from(u32::MAX)).contains(&config.sample_rate)
+  280|    346|            || config.min_frames_count == 0
+  281|    346|            || config.max_frames_count < config.min_frames_count
+  282|    346|            || config.max_frames_count > 65536
+  283|       |        {
+  284|      0|            return Err(PluginError::Message(
+  285|      0|                "Unsupported experimental audio configuration",
+  286|      0|            ));
+  287|    346|        }
+  288|    346|        let maximum = config.max_frames_count as usize;
+  289|    346|        let patch = load_kernel_patch_str(shared.kind.document())
+  290|    346|            .map_err(|_| PluginError::Message("Invalid built-in patch"))?;
+  291|       |        // These resource-free proof graphs use integer preparation metadata;
+  292|       |        // the runtime below receives the actual host rate in the engine's f32 format.
+  293|    346|        let settings = RenderSettings {
+  294|    346|            sample_rate_hz: config.sample_rate.round() as u32,
+  295|    346|            block_size_frames: config.max_frames_count,
+  296|    346|            duration_frames: maximum as u64,
+  297|    346|        };
+  298|    346|        let mut buses = HostBuses::new();
+  299|  1.90k|        for p in patch.root().ports() {
+  300|  1.90k|            let ChannelCount::Literal(n) = p.channels() else {
+  301|      0|                return Err(PluginError::Message("Nonliteral root channels"));
+  302|       |            };
+  303|  1.90k|            buses = match p.direction() {
+  304|  1.55k|                PortDirection::Input => buses.with_input(p.name(), *n as usize),
+  305|    346|                PortDirection::Output => buses.with_output(p.name(), 2),
+  306|       |            };
+  307|       |        }
+  308|    346|        let prepared =
+  309|    346|            prepare_kernel_graph_with_buses(patch.root(), patch.registry(), &settings, &buses)
+  310|    346|                .map_err(|_| PluginError::Message("Built-in preparation failed"))?;
+  311|    346|        let metadata = prepared.root_port_metadata();
+  312|    346|        let names: Vec<_> = metadata
+  313|    346|            .iter()
+  314|  1.90k|            .filter(|p| p.direction() == PortDirection::Input)
+  315|  1.55k|            .map(|p| p.name())
+  316|    346|            .collect();
+  317|    346|        let parameter_inputs = shared
+  318|    346|            .parameters
+  319|    346|            .iter()
+  320|  5.19k|            .map(|p| names.iter().position(|n| *n == p.root))
+  321|    346|            .collect::<Option<Vec<_>>>()
+  322|    346|            .ok_or(PluginError::Message("Missing public root control"))?;
+  323|    346|        let inputs = metadata
+  324|    346|            .iter()
+  325|  1.90k|            .filter(|p| p.direction() == PortDirection::Input)
+  326|  1.55k|            .map(|p| {
+  327|  1.55k|                let ChannelCount::Literal(n) = p.channels() else {
+  328|      0|                    unreachable!("validated authored roots")
+  329|       |                };
+  330|  1.55k|                vec![vec![0.0; maximum]; *n as usize]
+  331|  1.55k|            })
+  332|    346|            .collect();
+  333|    346|        let audio_input = if shared.kind == Kind::Gain {
+  334|    173|            names.iter().position(|n| *n == "input")
+  335|       |        } else {
+  336|    173|            None
+  337|       |        };
+  338|    346|        let runtime = RealtimeGraphProcessor::from_compiled_patch(
+  339|    346|            prepared.compiled_patch().clone(),
+  340|    346|            config.sample_rate as f32,
+  341|    346|            &PreparedSamplerAssets::empty(),
+  342|    346|            maximum,
+  343|       |        );
+  344|    346|        Ok(Self {
+  345|    346|            shared,
+  346|    346|            runtime,
+  347|    346|            maximum,
+  348|    346|            inputs,
+  349|    346|            outputs: vec![vec![vec![0.0; maximum]; 2]],
+  350|    346|            parameter_inputs,
+  351|    346|            host_input: [vec![0.0; maximum], vec![0.0; maximum]],
+  352|    346|            audio_input,
+  353|    346|        })
+  354|    346|    }
+  355|     16|    fn reset(&mut self) {
+  356|     16|        self.runtime.reset();
+  357|     16|    }
+  358|  2.02k|    fn process(
+  359|  2.02k|        &mut self,
+  360|  2.02k|        _: Process,
+  361|  2.02k|        mut audio: Audio,
+  362|  2.02k|        events: Events,
+  363|  2.02k|    ) -> Result<ProcessStatus, PluginError> {
+  364|  2.02k|        let frames = audio.frames_count() as usize;
+  365|  2.02k|        let event_count = events.input.len();
+  366|  2.02k|        let mut valid = frames > 0
+  367|  2.02k|            && frames <= self.maximum
+  368|  2.02k|            && audio.output_port_count() == 1
+  369|  2.02k|            && audio.input_port_count() == usize::from(self.shared.kind == Kind::Gain)
+  370|  2.02k|            && event_count <= EVENT_LIMIT;
+  371|  2.02k|        let mut previous = 0;
+  372|  2.02k|        let mut note_batch_events = 0_usize;
+  373|  2.02k|        let count_to_validate = if event_count <= EVENT_LIMIT {
+  374|  2.02k|            event_count
+  375|       |        } else {
+  376|      4|            0
+  377|       |        };
+  378|  19.5k|        for index in 0..count_to_validate {
+  379|  19.5k|            let Some(e) = events.input.get(index) else {
+  380|      8|                valid = false;
+  381|      8|                continue;
+  382|       |            };
+  383|  19.5k|            let time = e.header().time();
+  384|  19.5k|            valid &= time >= previous && (time as usize) < frames;
+  385|  19.5k|            if time != previous {
+  386|  14.8k|                note_batch_events = 0;
+  387|  14.8k|            }
+  388|  19.5k|            previous = time;
+  389|  19.5k|            match e.as_core_event() {
+  390|  1.52k|                Some(CoreEventSpace::ParamValue(v)) => valid &= self.shared.valid_value(v),
+  391|  12.8k|                Some(CoreEventSpace::Midi(m)) => {
+  392|  12.8k|                    valid &= self.shared.kind == Kind::Tb303
+  393|  12.8k|                        && m.port_index() == 0
+  394|  12.8k|                        && m.data()[0] >= 0x80
+  395|  12.8k|                        && m.data()[1] < 128
+  396|  12.8k|                        && m.data()[2] < 128;
+  397|  12.8k|                    if matches!(m.data()[0] & 0xf0, 0x80 | 0x90) {
+  398|  3.78k|                        note_batch_events += 1;
+  399|  3.78k|                        valid &= note_batch_events <= self.runtime.pending_event_capacity();
+  400|  9.03k|                    }
+  401|       |                }
+  402|  5.18k|                _ => {}
+  403|       |            }
+  404|       |        }
+  405|  2.02k|        if self.shared.kind == Kind::Gain {
+  406|  1.06k|            if let Some(port) = audio.input_port(0) {
+  407|  1.06k|                if let Ok(SampleType::F32(channels) | SampleType::Both(channels, _)) =
+  408|  1.06k|                    port.channels()
+  409|       |                {
+  410|  1.06k|                    valid &= channels.channel_count() == 2;
+  411|  2.13k|                    for (target, source) in self.host_input.iter_mut().zip(channels.iter()) {
+  412|  2.13k|                        if frames <= target.len() && source.len() >= frames {
+  413|  1.00M|                            valid &= source[..frames].iter().all(|v| v.is_finite());
+  414|  2.13k|                            target[..frames].copy_from_slice(&source[..frames]);
+  415|      0|                        } else {
+  416|      0|                            valid = false;
+  417|      0|                        }
+  418|       |                    }
+  419|      0|                } else {
+  420|      0|                    valid = false;
+  421|      0|                }
+  422|      0|            } else {
+  423|      0|                valid = false;
+  424|      0|            }
+  425|    961|        }
+  426|  2.02k|        if let Some(mut port) = audio.output_port(0) {
+  427|  2.02k|            match port.channels() {
+  428|  2.02k|                Ok(SampleType::F32(mut channels) | SampleType::Both(mut channels, _)) => {
+  429|  2.02k|                    valid &= channels.channel_count() == 2;
+  430|  2.02k|                    if valid {
+  431|  2.00k|                        let mut buffers = [None, None];
+  432|  4.00k|                        for (destination, source) in buffers.iter_mut().zip(channels.iter_mut()) {
+  433|  4.00k|                            *destination = Some(source);
+  434|  4.00k|                        }
+  435|  16.8k|                        for batch in events.input.batch() {
+  436|  16.8k|                            let start = batch.first_sample();
+  437|  16.8k|                            let end = batch.next_batch_first_sample().unwrap_or(frames);
+  438|  19.2k|                            for e in batch.events() {
+  439|  19.2k|                                match e.as_core_event() {
+  440|  1.50k|                                    Some(CoreEventSpace::ParamValue(v)) => {
+  441|  1.50k|                                        if let Some(p) =
+  442|  1.50k|                                            v.param_id().and_then(|id| self.shared.parameter(id))
+  443|  1.50k|                                        {
+  444|  1.50k|                                            p.value.store(v.value().to_bits(), Ordering::Relaxed);
+  445|  1.50k|                                        }
+  446|       |                                    }
+  447|  12.5k|                                    Some(CoreEventSpace::Midi(m)) => {
+  448|  12.5k|                                        let [status, note, velocity] = m.data();
+  449|  12.5k|                                        let accepted = match status & 0xf0 {
+  450|  1.94k|                                            0x90 if velocity > 0 => {
+  451|  1.94k|                                                self.runtime.try_note_on_at(note, velocity, 0)
+  452|       |                                            }
+  453|  1.58k|                                            0x80 | 0x90 => self.runtime.try_note_off_at(note, 0),
+  454|  9.03k|                                            _ => true,
+  455|       |                                        };
+  456|  12.5k|                                        if !accepted {
+  457|      0|                                            valid = false;
+  458|  12.5k|                                        }
+  459|       |                                    }
+  460|  5.18k|                                    _ => {}
+  461|       |                                }
+  462|       |                            }
+  463|  16.8k|                            let length = end - start;
+  464|  99.3k|                            for bus in &mut self.inputs {
+  465|   103k|                                for plane in bus {
+  466|   103k|                                    plane.resize(length, 0.0);
+  467|   103k|                                }
+  468|       |                            }
+  469|  95.6k|                            for (p, &index) in
+  470|  16.8k|                                self.shared.parameters.iter().zip(&self.parameter_inputs)
+  471|  95.6k|                            {
+  472|  95.6k|                                self.inputs[index][0]
+  473|  95.6k|                                    .fill(f64::from_bits(p.value.load(Ordering::Relaxed)) as f32);
+  474|  95.6k|                            }
+  475|  16.8k|                            if let Some(index) = self.audio_input {
+  476|  7.34k|                                for (plane, source) in
+  477|  3.67k|                                    self.inputs[index].iter_mut().zip(&self.host_input)
+  478|  7.34k|                                {
+  479|  7.34k|                                    plane.copy_from_slice(&source[start..end]);
+  480|  7.34k|                                }
+  481|  13.1k|                            }
+  482|  33.6k|                            for plane in &mut self.outputs[0] {
+  483|  33.6k|                                plane.resize(length, 0.0);
+  484|  33.6k|                            }
+  485|  16.8k|                            if self
+  486|  16.8k|                                .runtime
+  487|  16.8k|                                .render_root_buses(&self.inputs, &mut self.outputs)
+  488|  16.8k|                                != length
+  489|      0|                            {
+  490|      0|                                valid = false;
+  491|  16.8k|                            }
+  492|  33.6k|                            for (destination, source) in buffers.iter_mut().zip(&self.outputs[0]) {
+  493|  33.6k|                                if let Some(destination) = destination {
+  494|  33.6k|                                    destination[start..end].copy_from_slice(source);
+  495|  33.6k|                                }
+  496|       |                            }
+  497|       |                        }
+  498|     28|                    }
+  499|       |                }
+  500|      0|                Ok(SampleType::F64(_)) => {
+  501|      0|                    valid = false;
+  502|      0|                }
+  503|      0|                Err(_) => {
+  504|      0|                    valid = false;
+  505|      0|                }
+  506|       |            }
+  507|      0|        } else {
+  508|      0|            valid = false;
+  509|      0|        }
+  510|  2.02k|        if !valid {
+  511|       |            // Reject the complete host layout, including any unexpected buses.
+  512|     34|            for mut port in audio.output_ports() {
+  513|     34|                match port.channels() {
+  514|     28|                    Ok(SampleType::F32(mut channels)) => {
+  515|     54|                        for buffer in channels.iter_mut() {
+  516|     54|                            buffer.fill(0.0);
+  517|     54|                        }
+  518|       |                    }
+  519|      3|                    Ok(SampleType::F64(mut channels)) => {
+  520|      6|                        for buffer in channels.iter_mut() {
+  521|      6|                            buffer.fill(0.0);
+  522|      6|                        }
+  523|       |                    }
+  524|      2|                    Ok(SampleType::Both(mut f32_channels, mut f64_channels)) => {
+  525|      4|                        for buffer in f32_channels.iter_mut() {
+  526|      4|                            buffer.fill(0.0);
+  527|      4|                        }
+  528|      4|                        for buffer in f64_channels.iter_mut() {
+  529|      4|                            buffer.fill(0.0);
+  530|      4|                        }
+  531|       |                    }
+  532|      1|                    Err(_) => {}
+  533|       |                }
+  534|       |            }
+  535|       |            // Never log, allocate a diagnostic string, or return an SDK-logged PluginError here.
+  536|     28|            self.shared.rejected_blocks.fetch_add(1, Ordering::Relaxed);
+  537|     28|            return Ok(ProcessStatus::Continue);
+  538|  2.00k|        }
+  539|  2.00k|        Ok(ProcessStatus::Continue)
+  540|  2.02k|    }
+  541|       |}

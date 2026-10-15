@@ -1,0 +1,8 @@
+Internal ctest changing into directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only
+Test project /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only
+    Start 19: clap-dynamic-host
+1/1 Test #19: clap-dynamic-host ................   Passed    1.05 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   1.05 sec

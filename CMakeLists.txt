@@ -208,6 +208,8 @@ if(DANDRUM_CLAP_PROOF)
         DEPENDS ${DANDRUM_CLAP_SOURCES} ${RUST_ENGINE_SOURCES}
             ${DANDRUM_CLAP_DIR}/Cargo.toml ${DANDRUM_CLAP_DIR}/Cargo.lock
             ${RUST_ENGINE_DIR}/Cargo.toml ${RUST_ENGINE_DIR}/Cargo.lock
+            ${RUST_ENGINE_DIR}/module-library/seed-1.0.0.zip
+            ${CMAKE_CURRENT_SOURCE_DIR}/schema/patch.schema.yaml
             ${CMAKE_CURRENT_SOURCE_DIR}/examples/patches/tb303-acid.yaml
         COMMENT "Building the experimental JUCE-free CLAP proof"
         VERBATIM)

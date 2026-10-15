@@ -1,0 +1,11 @@
+{
+  "command": [
+    "python3",
+    "tests/python/test_engine_only_build.py",
+    "ComparisonBuildTest"
+  ],
+  "cwd": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters",
+  "started_unix": 1792060838.3571146,
+  "elapsed_seconds": 2.69,
+  "exit_code": 0
+}

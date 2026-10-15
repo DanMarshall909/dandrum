@@ -1,0 +1,11 @@
+{
+  "command": [
+    "python3",
+    "tests/python/test_engine_only_build.py",
+    "ClapProofBuildTest.test_clap_rebuilds_when_embedded_engine_resources_change"
+  ],
+  "cwd": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters",
+  "started_unix": 1792060088.465011,
+  "elapsed_seconds": 0.39,
+  "exit_code": 1
+}

@@ -1,5 +1,7 @@
 # Issue #24: home-PC handover — 14 October 2026
 
+This is the historical handover snapshot. See [current implementation evidence](juce-replacement-progress.md#final-headless-clap-proof--15-october-2026) for the resumed Linux proof and remaining publication/migration work.
+
 Continue [issue #24](https://github.com/DanMarshall909/dandrum/issues/24), the full JUCE replacement around the existing Rust engine and canonical React UI. **The migration is incomplete.** The independent engine build and owned runtime transfer are published and verified. The first headless CLAP rendering proof works, but its final release-profile verification and acceptance publication are unfinished.
 
 This checkpoint deliberately preserves the unfinished implementation alongside this document so the home PC can resume from the current code. It is not a completed migration, release, merged implementation or approved production framework selection.

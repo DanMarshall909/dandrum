@@ -1,0 +1,13 @@
+{
+  "command": [
+    "/home/dan/.local/bin/cmake",
+    "--build",
+    "build/engine-only",
+    "--parallel",
+    "2"
+  ],
+  "cwd": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters",
+  "started_unix": 1792060297.2820468,
+  "elapsed_seconds": 182.758,
+  "exit_code": 0
+}

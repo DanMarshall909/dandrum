@@ -1,0 +1,8 @@
+   Compiling dandrum_clap_adapter v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.84s
+     Running tests/clap_dynamic.rs (build/engine-only/rust-target/debug/deps/clap_dynamic-96ad7f6a07da5623)
+
+running 1 test
+test malformed_extra_output_buses_are_all_silent_and_preserve_controls ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.01s

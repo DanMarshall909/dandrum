@@ -3,7 +3,7 @@
   "scope": "Experimental headless CLAP rendering proof, not a production framework or distribution-license selection",
   "issue": "https://github.com/DanMarshall909/dandrum/issues/24",
   "native_target": "x86_64-unknown-linux-gnu",
-  "execution_environment": "Linux under WSL; native Windows/macOS not verified",
+  "execution_environment": "Native x86_64 Linux home PC; Windows/macOS remain unverified",
   "clack_revision": "27ca28391b57a61bad4bb5099288a7bf9247350d",
   "plugin_extension_features": [
     "audio-ports",
@@ -25,7 +25,7 @@
     "added_external_packages": 4,
     "added_local_adapter_packages": 1,
     "removed_engine_packages": 0,
-    "note": "Includes each unique package once. Full Linux metadata including dev/optional graph has125packages; that total is not the production count."
+    "note": "Includes each unique package once. Full Linux metadata including dev/optional graph has 125 packages; that total is not the production count."
   },
   "dependencies": [
     {
@@ -91,7 +91,7 @@
     "binary_sha256": "d9a78bfe781719de450bc5013141496eb13e1d9a538c67de1b8d325628670dbf",
     "asset_url": "https://github.com/free-audio/clap-validator/releases/download/0.4.1/clap-validator-0.4.1-127-g152b982-ubuntu-22.04.zip",
     "asset_sha256": "49edadcfb407ea0dd946ce418300e853fbd2660fa4b0d00e4f19ff8eef24ad90",
-    "execution_status": "Initial release artifact validated; final matching-LTO-profile rebuild and validator rerun pending at handover",
+    "execution_status": "Final aligned release artifact validated on 2026-10-15; no hidden exclusions",
     "initial_release_result": {
       "exit_code": 0,
       "counts": {
@@ -104,6 +104,23 @@
       "artifact_bytes": 15782608,
       "profile_limit": "Initial artifact predates restoration of release lto=true and codegen-units=1; results are not final-profile evidence.",
       "evidence": "evidence/issue-24-handover-2026-10-14/validator-release.json"
+    },
+    "final_release_result": {
+      "exit_code": 0,
+      "counts": {
+        "success": 53,
+        "skipped": 28,
+        "warning": 0,
+        "failure": 0
+      },
+      "exclusions": [],
+      "artifact_sha256": "e1b527f190db4be8b79f8271927f0f7e821702fdb81c5112d37cf4647ddd823c",
+      "artifact_bytes": 12287728,
+      "release_profile": {
+        "lto": true,
+        "codegen_units": 1
+      },
+      "evidence": "evidence/clap-proof-2026-10-15/validator-final.json"
     }
   },
   "limits": [

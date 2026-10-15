@@ -115,7 +115,9 @@ The exported `build/engine-only/clap/DandrumHeadlessProof.clap` contains separat
 TB-303 and signed stereo gain-fixture descriptors. The dynamic host tests load that binary and
 prove root controls, sample offsets/order, MIDI 1 key semantics, signed audio, reset/reactivation
 and independent instances. The build guard repeats packaging with JUCE/browser/UI source trees
-absent. First-time Cargo dependency fetching needs network access; the exact Clack revision and
+absent and checks incremental rebuilds after embedded schema/library changes. For warm
+functional feedback, select only `clap-dynamic-host`; run the slower `clap-build-boundary`
+at the final checkpoint. First-time Cargo dependency fetching needs network access; the exact Clack revision and
 lockfile are retained. The engine and adapter use matching release profiles, while only the new
 adapter's dev/test output strips debug information.
 
@@ -128,6 +130,27 @@ queue. Invalid event/layout/value input is silently rejected before admission an
 processing eligible to continue; full callback allocation/I/O and platform hardening are separate
 required proofs. Fractional rates reach the existing floating-point DSP runtime; integer preparation
 metadata is rounded for these resource-free fixtures. Asset-rate handling remains unproved.
+
+The experimental descriptor IDs are `org.dandrum.experimental.tb303` and
+`org.dandrum.experimental.signed-gain`; they are distinct from the retained JUCE products.
+These proof identities are not a stable release ABI. Parameter IDs are one-based positions in
+each fixture's authored preset surface; host values target the named public root control.
+All parameters are global and automatable, with no per-note or modulation flags.
+
+| Descriptor | Parameter ID | Public alias | Root control | Range | Default |
+| --- | --- | --- | --- | --- | --- |
+| TB-303 | 1 | `filter.cutoff` | `filter_cutoff` | 0.02–0.9 | 0.4 |
+| TB-303 | 2 | `filter.resonance` | `filter_resonance` | 0–1 | 0.65 |
+| TB-303 | 3 | `filter.envelope_modulation` | `filter_envelope_modulation` | 0–1 | 0.4 |
+| TB-303 | 4 | `filter.decay_ms` | `filter_decay_ms` | 50–3000 | 1000 |
+| TB-303 | 5 | `accent.brightness` | `accent_brightness` | 0–0.5 | 0.12 |
+| TB-303 | 6 | `amp.release_ms` | `amp_release_ms` | 5–500 | 60 |
+| TB-303 | 7 | `slide.time_ms` | `slide_time_ms` | 0–500 | 60 |
+| Signed gain | 1 | `fixture.level` | `level` | 0–1 | 0.5 |
+
+Each descriptor exposes one float32 stereo main output at audio port ID 0, without an
+in-place pair. Signed gain additionally exposes stereo input ID 0. TB-303 instead exposes
+MIDI 1 input note-port ID 0; neither descriptor exposes an output note port.
 
 The [progress receipt](docs/migrations/juce-replacement-progress.md) retains the pending session,
 state/stopped-flush, parented production React, native second OS, VST3/AU, devices and packaging

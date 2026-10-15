@@ -1,0 +1,20 @@
+   Compiling dandrum_clap_adapter v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.63s
+     Running tests/clap_dynamic.rs (build/engine-only/rust-target/debug/deps/clap_dynamic-96ad7f6a07da5623)
+
+running 13 tests
+test exported_binary_discovers_two_experimental_descriptors ... ok
+test fractional_and_high_host_rates_preserve_signed_output_and_runtime_clock ... ok
+test high_sample_rate_reactivation_keeps_signed_gain_and_real_instrument_usable ... ok
+test independent_instances_reset_and_changed_settings_reactivation_retain_controls ... ok
+test malformed_callback_events_and_layout_silence_without_changing_valid_control_state ... ok
+test malformed_event_lists_are_rejected_without_unbounded_event_reads ... ok
+test malformed_extra_output_buses_are_all_silent_and_preserve_controls ... ok
+test midi1_repeated_key_and_velocity_zero_follow_engine_key_semantics ... ok
+test note_batch_over_prepared_capacity_is_rejected_before_admitting_partial_notes ... ok
+test rejected_callback_keeps_host_processing_an_existing_held_instrument ... ok
+test signed_gain_defaults_and_offset_order_use_public_root_control ... ok
+test tb303_midi1_timing_overlap_and_root_alias_match_signed_engine_oracle ... ok
+test two_tb303_instances_keep_independent_held_notes_and_filter_history ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s

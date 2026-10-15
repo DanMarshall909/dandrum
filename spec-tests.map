@@ -2531,3 +2531,23 @@ AC headless-engine :: Owned runtime can move between host threads :: Render afte
 AC headless-engine :: Owned runtime can move between host threads :: Reset after moving the runtime back
   fp a1e0f34f1787
   test rust:returned_runtime_resets_and_instances_keep_independent_filter_state
+
+AC juce-free-clap-proof :: Experimental plugin discovery and signed engine rendering :: Discover and render the exported binary
+  fp d212e57784da
+  test rust:exported_binary_discovers_two_experimental_descriptors
+  test rust:signed_gain_defaults_and_offset_order_use_public_root_control
+  test py:tests/python/test_engine_only_build.py
+
+AC juce-free-clap-proof :: Sample-offset public controls and instrument notes :: Automation preserves offsets and same-offset order
+  fp 74ffed6c8932
+  test rust:signed_gain_defaults_and_offset_order_use_public_root_control
+
+AC juce-free-clap-proof :: Sample-offset public controls and instrument notes :: Existing instrument receives ordered timed notes
+  fp 7f4209e3c143
+  test rust:tb303_midi1_timing_overlap_and_root_alias_match_signed_engine_oracle
+  test rust:midi1_repeated_key_and_velocity_zero_follow_engine_key_semantics
+
+AC juce-free-clap-proof :: Independent prepared host lifecycle :: Two instances survive reset and reactivation
+  fp a3b1e1e1d0da
+  test rust:independent_instances_reset_and_changed_settings_reactivation_retain_controls
+  test rust:two_tb303_instances_keep_independent_held_notes_and_filter_history

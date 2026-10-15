@@ -1,0 +1,8 @@
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only
+[100%] Building the experimental JUCE-free CLAP proof
+warning: failed to connect to jobserver from environment variable `MAKEFLAGS="s -j2 --jobserver-auth=3,4"`: cannot open file descriptor 3 from the jobserver environment variable value: Bad file descriptor (os error 9)
+   Compiling dandrum_clap_adapter v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter)
+    Finished `release` profile [optimized] target(s) in 1.41s
+[100%] Built target dandrum-clap-proof

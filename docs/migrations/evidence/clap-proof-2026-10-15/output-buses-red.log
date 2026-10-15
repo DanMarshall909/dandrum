@@ -1,0 +1,24 @@
+   Compiling dandrum_clap_adapter v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.67s
+     Running tests/clap_dynamic.rs (build/engine-only/rust-target/debug/deps/clap_dynamic-96ad7f6a07da5623)
+
+running 1 test
+test malformed_extra_output_buses_are_all_silent_and_preserve_controls ... FAILED
+
+failures:
+
+---- malformed_extra_output_buses_are_all_silent_and_preserve_controls stdout ----
+
+thread 'malformed_extra_output_buses_are_all_silent_and_preserve_controls' (138158) panicked at tests/clap_dynamic.rs:723:5:
+assertion `left == right` failed: every rejected output bus must be silent
+  left: [[456.0, 456.0, 456.0, 456.0, 456.0, 456.0, 456.0, 456.0, 456.0, 456.0, 456.0, 456.0, 456.0, 456.0, 456.0, 456.0], [456.0, 456.0, 456.0, 456.0, 456.0, 456.0, 456.0, 456.0, 456.0, 456.0, 456.0, 456.0, 456.0, 456.0, 456.0, 456.0]]
+ right: [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    malformed_extra_output_buses_are_all_silent_and_preserve_controls
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test clap_dynamic`

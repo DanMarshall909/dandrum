@@ -1,0 +1,13 @@
+{
+  "command": [
+    "/tmp/dandrum-clap-completion/validator/clap-validator",
+    "validate",
+    "--jobs",
+    "1",
+    "--json",
+    "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only/clap/DandrumHeadlessProof.clap"
+  ],
+  "cwd": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters",
+  "elapsed_seconds": 0.652,
+  "exit_code": 0
+}

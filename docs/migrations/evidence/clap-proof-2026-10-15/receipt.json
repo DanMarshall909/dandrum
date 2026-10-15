@@ -1,0 +1,57 @@
+{
+  "scope": "Linux headless CLAP rendering proof; full issue #24 remains open",
+  "source_base": "5d72209b9a813a84f9af22da7f1f8b948a24a198",
+  "source_sha256": {
+    "CMakeLists.txt": "628ee2b049dc6ea022f26b15ab5e738a6ddbe8cedc3f9fb1d52c598ff6a74024",
+    "src/clap-adapter/src/lib.rs": "f981980a567ffa8b3b28867161f10e06af3ff20c0fc54a7d827a39755279e1fc",
+    "src/clap-adapter/tests/public_engine_baseline.rs": "c660b1c6ea3bf792cd25c6f0392f66ea258c8b38d5429fdfe4c251ee8fff019f",
+    "src/clap-adapter/tests/clap_dynamic.rs": "24dac2a61a3f67d73254e9d64f8950c958e6807c492b5b10c0d23c04ab03a1c5",
+    "src/clap-adapter/tests/common/mod.rs": "62fc5cb5dbab02f74683d49273d6b0e5ccd44f1624861920fe928031b0bbd3d1",
+    "tests/python/test_engine_only_build.py": "57ef1c91f56c1c49b6f2127df58c1780ec62d96e3592d126c4fc5eb885cef14a"
+  },
+  "platform": "Linux-7.0.11-76070011-generic-x86_64-with-glibc2.35",
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "artifact": {
+    "path": "build/engine-only/clap/DandrumHeadlessProof.clap",
+    "sha256": "e1b527f190db4be8b79f8271927f0f7e821702fdb81c5112d37cf4647ddd823c",
+    "bytes": 12287728,
+    "profile": {
+      "release": true,
+      "lto": true,
+      "codegen_units": 1
+    }
+  },
+  "validator": {
+    "version": "0.4.1",
+    "binary_sha256": "d9a78bfe781719de450bc5013141496eb13e1d9a538c67de1b8d325628670dbf",
+    "exit_code": 0,
+    "success": 53,
+    "skipped": 28,
+    "warning": 0,
+    "failure": 0,
+    "exclusions": []
+  },
+  "coverage": {
+    "instrumentation": "cargo rustc --release --lib -- -C instrument-coverage; owned adapter only; retained engine and SDK uninstrumented",
+    "drivers": [
+      "13 dynamic-host tests",
+      "pinned official validator (separate instrumented run)"
+    ],
+    "functions": {
+      "executed": 41,
+      "total": 42
+    },
+    "lines": {
+      "executed": 391,
+      "total": 423
+    },
+    "new_output_silencing_lines": "All executable paths at lib.rs:512\u2013537 exercised, including f32/f64/both/no accessible representation. No branch-coverage instrumentation was enabled.",
+    "limits": "Remaining unexecuted lines include stopped/audio parameter flush, invalid activation/metadata, some malformed input/layout paths and prevalidated invariant failures. This does not prove full realtime safety."
+  },
+  "storage": {
+    "filesystem": "Filesystem     1024-blocks      Used Available Capacity Mounted on\n/dev/nvme0n1p5   500781600 317227580 158042448      67% /",
+    "free_bytes": 161835466752,
+    "windows_c": "Not applicable on this native Linux home PC; historical WSL/C: readings remain in the handover."
+  },
+  "mutation": "Excluded by recorded user instruction"
+}

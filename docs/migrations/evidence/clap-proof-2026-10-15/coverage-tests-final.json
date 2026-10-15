@@ -1,0 +1,19 @@
+{
+  "command": [
+    "/home/dan/.cargo/bin/cargo",
+    "test",
+    "--locked",
+    "--jobs",
+    "2",
+    "--manifest-path",
+    "src/clap-adapter/Cargo.toml",
+    "--test",
+    "clap_dynamic",
+    "--",
+    "--test-threads=1"
+  ],
+  "cwd": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters",
+  "started_unix": 1792060488.3445156,
+  "elapsed_seconds": 0.763,
+  "exit_code": 0
+}

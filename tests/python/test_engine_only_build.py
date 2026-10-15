@@ -111,6 +111,32 @@ class ClapProofBuildTest(EngineBuildFixture):
         self.assertNotIn("Node.js is required", output)
         self.assertNotIn("third_party/JUCE", output)
 
+    def test_clap_rebuilds_when_embedded_engine_resources_change(self):
+        build, code, output = self.configure("clap-incremental", "-G", "Unix Makefiles",
+            "-DDANDRUM_ENGINE_ONLY=ON", "-DDANDRUM_CLAP_PROOF=ON")
+        self.assertEqual(code, 0, output)
+        # Inspect the real build tool's incremental plan without recompiling DSP
+        # for every input. The full artifact/load test below proves execution.
+        artifact = build / "clap" / "DandrumHeadlessProof.clap"
+        artifact.parent.mkdir()
+        artifact.touch()
+        command = [CMAKE, "--build", str(build), "--target", "dandrum-clap-proof", "--", "--dry-run"]
+        code, output = self.command("clap-current-plan", command)
+        self.assertEqual(code, 0, output)
+        self.assertNotIn("cargo build", output)
+        for relative in ("schema/patch.schema.yaml", "src/rust-engine/module-library/seed-1.0.0.zip"):
+            with self.subTest(resource=relative):
+                resource = self.source / relative
+                previous = resource.stat()
+                newer = artifact.stat().st_mtime_ns + 2_000_000_000
+                os.utime(resource, ns=(previous.st_atime_ns, newer))
+                try:
+                    code, output = self.command("clap-resource-plan-" + resource.name, command)
+                    self.assertEqual(code, 0, output)
+                    self.assertIn("cargo build", output, relative + " must rebuild the packaged plugin")
+                finally:
+                    os.utime(resource, ns=(previous.st_atime_ns, previous.st_mtime_ns))
+
     def test_exported_clap_build_and_dynamic_tests_without_host_sources(self):
         build, code, output = self.configure("clap", "-DDANDRUM_ENGINE_ONLY=ON",
                                              "-DDANDRUM_CLAP_PROOF=ON")

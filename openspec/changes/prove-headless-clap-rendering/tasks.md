@@ -12,7 +12,7 @@
 
 ## 3. Independent packaging and evidence
 
-- [ ] 3.1 Add explicit default-OFF independent CMake plugin selection and actual .clap packaging/test path; test the build guard, affected default selection and dynamically loaded artifact with no JUCE/browser resources.
-- [ ] 3.2 Run the pinned official CLAP validator against the actual artifact without hidden exclusions and record complete scoped results/limitations, exact dependency/feature/attribution receipt and current physical C: capacity.
-- [ ] 3.3 Sync/map the four proven scenarios and run strict scoped/canonical OpenSpec, acceptance map and final diff review with no new todo entries.
+- [x] 3.1 Add explicit default-OFF independent CMake plugin selection and actual .clap packaging/test path; test the build guard, affected default selection and dynamically loaded artifact with no JUCE/browser resources.
+- [x] 3.2 Run the pinned official CLAP validator against the actual artifact without hidden exclusions and record complete scoped results/limitations, exact dependency/feature/attribution receipt and current physical build-volume capacity (C: on the source Windows host).
+- [x] 3.3 Sync/map the four proven scenarios and run strict scoped/canonical OpenSpec, acceptance map and final diff review with no new todo entries.
 - [ ] 3.4 Commit/push the verified bounded proof with a detailed body, verify live exact head, and update progress/shared ledger retaining all remaining full #24 obligations.
