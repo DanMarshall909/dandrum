@@ -1,0 +1,44 @@
+   Compiling dandrum_instrument_session v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/instrument-session)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.37s
+     Running tests/session.rs (build/engine-only/rust-target/debug/deps/session-92dc921e9070e81b)
+
+running 5 tests
+test attachment_limit_reclaims_dropped_and_explicitly_retired_connections ... FAILED
+test foreign_and_retired_connections_cannot_read_another_session ... FAILED
+test unusable_documents_or_missing_samples_cannot_create_accepted_sessions ... FAILED
+test accepted_document_survives_detach_and_reattach_without_reloading_samples ... FAILED
+test existing_sampler_baseline_uses_real_assets_and_signed_key_mapping ... ok
+
+failures:
+
+---- attachment_limit_reclaims_dropped_and_explicitly_retired_connections stdout ----
+
+thread 'attachment_limit_reclaims_dropped_and_explicitly_retired_connections' (1183179) panicked at tests/session.rs:87:106:
+called `Result::unwrap()` on an `Err` value: InvalidDocument("session owner not implemented")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- foreign_and_retired_connections_cannot_read_another_session stdout ----
+
+thread 'foreign_and_retired_connections_cannot_read_another_session' (1183181) panicked at tests/session.rs:71:82:
+called `Result::unwrap()` on an `Err` value: InvalidDocument("session owner not implemented")
+
+---- unusable_documents_or_missing_samples_cannot_create_accepted_sessions stdout ----
+
+thread 'unusable_documents_or_missing_samples_cannot_create_accepted_sessions' (1183182) panicked at tests/session.rs:104:5:
+assertion failed: matches!(InstrumentSession::new(&missing,context,settings),Err(SessionError::PreparationFailed(_)))
+
+---- accepted_document_survives_detach_and_reattach_without_reloading_samples stdout ----
+
+thread 'accepted_document_survives_detach_and_reattach_without_reloading_samples' (1183178) panicked at tests/session.rs:50:109:
+called `Result::unwrap()` on an `Err` value: InvalidDocument("session owner not implemented")
+
+
+failures:
+    accepted_document_survives_detach_and_reattach_without_reloading_samples
+    attachment_limit_reclaims_dropped_and_explicitly_retired_connections
+    foreign_and_retired_connections_cannot_read_another_session
+    unusable_documents_or_missing_samples_cannot_create_accepted_sessions
+
+test result: FAILED. 1 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+error: test failed, to rerun pass `--test session`

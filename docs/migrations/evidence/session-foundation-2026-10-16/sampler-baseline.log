@@ -1,0 +1,8 @@
+   Compiling dandrum_instrument_session v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/instrument-session)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.27s
+     Running tests/session.rs (build/engine-only/rust-target/debug/deps/session-a5848381b008ca9a)
+
+running 1 test
+test existing_sampler_baseline_uses_real_assets_and_signed_key_mapping ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s

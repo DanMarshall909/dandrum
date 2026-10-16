@@ -105,3 +105,28 @@ acceptance map is 609 scenarios / 370 mapped / 239 unchanged backlog entries.
 Normal pre-commit coverage and pre-push tests passed without hook bypass.
 All five tasks for this bounded state increment are complete. The full beta,
 #23/#24 and Gates A–C remain open; main remains unchanged.
+
+
+## Persistent session foundation — 16 October 2026
+
+The #23 session owner now has an independent Rust crate with accepted YAML,
+actual prepared sample resources, copied snapshots and up to 16 disposable
+connections. Reattachment retains the document and signed sample output even
+after the test-owned source WAV is removed; foreign and explicitly retired
+connections fail, including retained copies of retired tokens. Dropped weak
+connections are reclaimed. The callback still consumes the engine directly.
+
+Five component tests pass with 68/68 implementation lines, 89/89 regions and
+12/12 functions executed. The independent 21-test checkpoint passes; after
+extending the absent-host-source guard, that affected guard passes separately
+and runs the session behavior tests with JUCE/browser/UI source trees absent.
+Retained JUCE comparison configuration passes. No branch-coverage or mutation
+claim is made. [Evidence](evidence/session-foundation-2026-10-16/receipt.json)
+records scope, commands and the split final checks.
+
+This completes only tasks 1.1 and 1.2 of
+`add-persistent-instrument-session`. Typed mapping edits, native history,
+request/job recovery, actual consumers and editor destruction remain open;
+no new canonical scenario is synced by this initial ownership foundation.
+Independent publication review passed for this initial ownership foundation;
+mapping/history/native integration and the full beta remain open.

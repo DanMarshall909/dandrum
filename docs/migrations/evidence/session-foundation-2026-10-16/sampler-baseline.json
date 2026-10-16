@@ -1,0 +1,17 @@
+{
+  "command": [
+    "/home/dan/.cargo/bin/cargo",
+    "test",
+    "--offline",
+    "--jobs",
+    "2",
+    "--manifest-path",
+    "src/instrument-session/Cargo.toml",
+    "--test",
+    "session",
+    "existing_sampler_baseline"
+  ],
+  "cwd": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters",
+  "elapsed_seconds": 1.329,
+  "exit_code": 0
+}

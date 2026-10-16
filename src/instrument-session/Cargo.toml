@@ -1,0 +1,15 @@
+[package]
+name = "dandrum_instrument_session"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+dandrum_engine = { path = "../rust-engine" }
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+codegen-units = 1
+lto = true

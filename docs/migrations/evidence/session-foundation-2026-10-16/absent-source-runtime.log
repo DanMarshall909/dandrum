@@ -1,0 +1,15 @@
+Internal ctest changing into directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-mnf607w9/source/build/engine
+Test project /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-mnf607w9/source/build/engine
+    Start 4: instrument-session-tests
+1/3 Test #4: instrument-session-tests .....................   Passed   16.03 sec
+    Start 5: cxx-rust-engine-ffi-smoke
+2/3 Test #5: cxx-rust-engine-ffi-smoke ....................   Passed    0.13 sec
+    Start 6: cxx-rust-engine-sample-accurate-midi-smoke
+3/3 Test #6: cxx-rust-engine-sample-accurate-midi-smoke ...   Passed    0.13 sec
+
+100% tests passed, 0 tests failed out of 3
+
+Label Time Summary:
+session-fast    =  16.03 sec*proc (1 test)
+
+Total Test time (real) =  16.29 sec

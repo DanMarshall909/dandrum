@@ -71,13 +71,13 @@ class EngineOnlyBuildTest(EngineBuildFixture):
         self.assertEqual(code, 0, output)
         names = {test["name"] for test in json.loads(output)["tests"]}
         self.assertNotIn("clap-dynamic-host", names)
-        self.assertTrue({"rust-engine-tests", "cxx-rust-engine-ffi-smoke",
+        self.assertTrue({"rust-engine-tests", "instrument-session-tests", "cxx-rust-engine-ffi-smoke",
                          "cxx-rust-engine-sample-accurate-midi-smoke", "sound-lab-controller",
                          "cxx-plugin-waveform-service", "cxx-plugin-meter-capture",
                          "filter-spike-engine"}.issubset(names), names)
-        # Existing signed gain/reset and sample-offset tests exercise real Rust.
+        # Exercise real Rust audio and session ownership with host sources absent.
         code, output = self.command("engine-runtime", [CTEST, "--test-dir", str(build),
-            "--output-on-failure", "-R", "^cxx-rust-engine-(ffi-smoke|sample-accurate-midi-smoke)$"])
+            "--output-on-failure", "-R", "^(cxx-rust-engine-(ffi-smoke|sample-accurate-midi-smoke)|instrument-session-tests)$"])
         self.assertEqual(code, 0, output)
         self.assertIn("100% tests passed", output)
 

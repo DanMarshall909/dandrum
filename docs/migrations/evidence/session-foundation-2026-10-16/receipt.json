@@ -1,0 +1,51 @@
+{
+  "scope": "Tasks 1.1 and 1.2 of add-persistent-instrument-session: real sampler baseline and framework-free initial accepted-state/attachment owner. Mapping/history/jobs/native consumers are not implemented by this foundation.",
+  "base": "eae530a3121b6530ed2c2b6854a24f50dee5452b",
+  "source_sha256": {
+    "CMakeLists.txt": "5e28c9ef345d7cc0bbf9a6907f1779d3f96a2a761fb1dfbcc70be254b999ff6f",
+    "tests/python/test_engine_only_build.py": "984c1648781d62a5c498b8f4c5f32d554984212afc27334a40093dd8bfe03e09",
+    "src/instrument-session/src/lib.rs": "9e69bef5b6017d58f9defcc14976c16d60c5d08bb5a1f27cb0dfac88afe8f860",
+    "src/instrument-session/tests/session.rs": "690c982b5ad0f576a780e1501e1e89897510bf426545f44634fd848321d11b31",
+    "src/instrument-session/Cargo.toml": "ac1ae4c5bba944d809ed071542ecaf52f334ed4d43049b31ef007a094c8140a3",
+    "src/instrument-session/Cargo.lock": "b8a710864eaaa3f5d3348007a2d222a4ffaac726256539a6d75a5818457cb8dd"
+  },
+  "tests": {
+    "component_tests": 5,
+    "runtime_seconds_after_build": 0.04,
+    "full_ctest_checkpoint": 21,
+    "full_ctest_seconds": 87.124,
+    "final_affected_guard": "After extending the source-absence guard to run session tests, engine-only-build passes again in 26.337 s; unaffected tests retain the full checkpoint.",
+    "retained_juce_comparison": "one configure/inventory test passed"
+  },
+  "coverage": {
+    "implementation_lines_executed": 68,
+    "implementation_lines_total": 68,
+    "regions_executed": 89,
+    "regions_total": 89,
+    "functions_executed": 12,
+    "functions_total": 12,
+    "scope": "Session implementation only; existing engine/dependency paths excluded from this report, with literal signed real-engine component assertions retained",
+    "branch_instrumentation": false,
+    "mutation": "Excluded by recorded user instruction"
+  },
+  "refactor": {
+    "production": "One private attachment bound reused for preallocation/admission; shared attachment lookup retains its index and avoids repeated validation; no module extraction needed.",
+    "tests": "One real sampler preparation/render helper supplies independent literal output. Separate ownership, isolation, bounded attachment and invalid-resource contracts remain distinct."
+  },
+  "lanes": "session-fast contains all five current component tests; session-slow is explicitly empty; combined regex session-(fast|slow) selects the registered suite. Source-absence guard stays in existing build-boundary slow lane.",
+  "limits": [
+    "Initial accepted YAML and prepared assets only; revisions/history are initially empty until typed transactions land",
+    "Opaque Rust lifetime identities are not serialized native pointers; lossless external IDs belong to later transport integration",
+    "No actual WebView/DAW, mapping edit/undo, background transaction, activation lease or final session/SDK completion claim",
+    "No new canonical scenarios synchronized: complete change criteria require later behavior and actual consumers",
+    "Full beta and existing denormal hardening requirement remain active"
+  ],
+  "dependency_policy": "Production dependencies contain only the existing engine edge; tempfile is a test-only dependency already in the engine graph. No GUI or plugin-format dependency added.",
+  "storage": {
+    "free_bytes": 130219679744,
+    "target_size_before_coverage": "12 GiB",
+    "cache": "build/engine-only/rust-target retained"
+  },
+  "review": "Independent completion review PASS for tasks 1.1/1.2 and the exact reviewed publication envelope; this is not complete session or beta acceptance.",
+  "raw_evidence_root": "/tmp/dandrum-session"
+}

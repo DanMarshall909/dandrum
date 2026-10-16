@@ -1,0 +1,12 @@
+   Compiling dandrum_instrument_session v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/instrument-session)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.85s
+     Running tests/session.rs (build/engine-only/rust-target/debug/deps/session-92dc921e9070e81b)
+
+running 5 tests
+test unusable_documents_or_missing_samples_cannot_create_accepted_sessions ... ok
+test attachment_limit_reclaims_dropped_and_explicitly_retired_connections ... ok
+test accepted_document_survives_detach_and_reattach_without_reloading_samples ... ok
+test existing_sampler_baseline_uses_real_assets_and_signed_key_mapping ... ok
+test foreign_and_retired_connections_cannot_read_another_session ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s

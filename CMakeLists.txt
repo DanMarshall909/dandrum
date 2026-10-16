@@ -104,6 +104,13 @@ add_test(
     COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target ${CARGO_BIN} test
     WORKING_DIRECTORY ${RUST_ENGINE_DIR})
 
+add_test(
+    NAME instrument-session-tests
+    COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+        ${CARGO_BIN} test --locked --jobs 2
+        --manifest-path ${CMAKE_CURRENT_SOURCE_DIR}/src/instrument-session/Cargo.toml)
+set_tests_properties(instrument-session-tests PROPERTIES LABELS "session-fast" TIMEOUT 1200)
+
 if(DANDRUM_ENABLE_MUTATION_CTEST)
     add_test(
         NAME rust-engine-mutation-tests

@@ -1,0 +1,9 @@
+{
+  "command": [
+    "python3",
+    "/tmp/dandrum-session/verify-registration.py"
+  ],
+  "cwd": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters",
+  "elapsed_seconds": 0.073,
+  "exit_code": 1
+}

@@ -1,0 +1,11 @@
+Internal ctest changing into directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only
+Test project /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only
+    Start 4: instrument-session-tests
+1/1 Test #4: instrument-session-tests .........   Passed    0.19 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Label Time Summary:
+session-fast    =   0.19 sec*proc (1 test)
+
+Total Test time (real) =   0.21 sec

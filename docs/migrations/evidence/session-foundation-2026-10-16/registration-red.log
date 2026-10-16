@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/tmp/dandrum-session/verify-registration.py", line 3, in <module>
+    assert "instrument-session-tests" in [t["name"] for t in r["tests"]],"instrument-session-tests is not registered in the normal build"
+AssertionError: instrument-session-tests is not registered in the normal build
