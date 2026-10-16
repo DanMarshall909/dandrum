@@ -1,0 +1,9 @@
+{
+  "command": [
+    "python3",
+    "/tmp/dandrum-beta-state/preview.py"
+  ],
+  "cwd": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters",
+  "elapsed_seconds": 0.093,
+  "exit_code": 0
+}

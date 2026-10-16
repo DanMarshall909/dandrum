@@ -10,7 +10,10 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 dandrum_engine = { path = "../rust-engine" }
 clack-plugin = { git = "https://github.com/prokopyl/clack", rev = "27ca28391b57a61bad4bb5099288a7bf9247350d" }
-clack-extensions = { git = "https://github.com/prokopyl/clack", rev = "27ca28391b57a61bad4bb5099288a7bf9247350d", features = ["clack-plugin", "audio-ports", "note-ports", "params"] }
+clack-extensions = { git = "https://github.com/prokopyl/clack", rev = "27ca28391b57a61bad4bb5099288a7bf9247350d", features = ["clack-plugin", "audio-ports", "note-ports", "params", "state"] }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
 
 [dev-dependencies]
 clack-host = { git = "https://github.com/prokopyl/clack", rev = "27ca28391b57a61bad4bb5099288a7bf9247350d", default-features = false, features = ["libloading"] }

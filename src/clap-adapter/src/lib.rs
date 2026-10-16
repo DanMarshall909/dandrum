@@ -1,24 +1,28 @@
-//! Experimental headless CLAP rendering proof. State and editor support are separate gates.
-use clack_extensions::{audio_ports::*, note_ports::*, params::*};
+//! Experimental headless CLAP proof with bounded fixture state; editor support is a separate gate.
+use clack_extensions::{audio_ports::*, note_ports::*, params::*, state::*};
 use clack_plugin::entry::{Entry, EntryFactories, EntryLoadError};
 use clack_plugin::events::spaces::CoreEventSpace;
 use clack_plugin::factory::plugin::{PluginFactoryImpl, PluginFactoryWrapper};
 use clack_plugin::host::HostInfo;
 use clack_plugin::plugin::PluginInstance;
 use clack_plugin::prelude::*;
+use clack_plugin::stream::{InputStream, OutputStream};
 use dandrum_engine::PreparedSamplerAssets;
 use dandrum_engine::graph::PortDirection;
 use dandrum_engine::graph_processor::RealtimeGraphProcessor;
 use dandrum_engine::kernel::{ChannelCount, document::load_kernel_patch_str};
 use dandrum_engine::patch::RenderSettings;
 use dandrum_engine::preparation::{HostBuses, prepare_kernel_graph_with_buses};
+use serde::{Deserialize, Serialize};
 use std::ffi::CStr;
 use std::fmt::Write;
+use std::io::Read;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 const TB303: &str = include_str!("../../../examples/patches/tb303-acid.yaml");
 const GAIN: &str = include_str!("../fixtures/signed-gain.yaml");
 const EVENT_LIMIT: u32 = 1024;
+const STATE_LIMIT: u64 = 16 * 1024;
 #[derive(Clone, Copy, PartialEq)]
 enum Kind {
     Tb303,
@@ -26,6 +30,12 @@ enum Kind {
 }
 
 impl Kind {
+    fn identity(self) -> &'static str {
+        match self {
+            Self::Tb303 => "org.dandrum.experimental.tb303",
+            Self::Gain => "org.dandrum.experimental.signed-gain",
+        }
+    }
     fn document(self) -> &'static str {
         match self {
             Self::Tb303 => TB303,
@@ -89,7 +99,7 @@ impl Shared {
             })
     }
     fn flush(&self, input: &InputEvents) {
-        // Bounded, global parameter-only synchronization; persistence is not implemented here.
+        // Bounded, global parameter-only synchronization without running audio.
         if input.len() > EVENT_LIMIT
             || input.iter().any(|e| {
                 matches!(e.as_core_event(),
@@ -109,8 +119,85 @@ impl Shared {
 }
 struct Main<'a> {
     shared: &'a Shared,
+    host: HostMainThreadHandle<'a>,
 }
 impl<'a> PluginMainThread<'a, Shared> for Main<'a> {}
+
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FixtureState {
+    version: u32,
+    instrument: String,
+    parameters: Vec<SavedParameter>,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SavedParameter {
+    id: String,
+    value: f64,
+}
+impl PluginStateImpl for Main<'_> {
+    fn save(&self, output: &mut OutputStream) -> Result<(), PluginError> {
+        let state = FixtureState {
+            version: 1,
+            instrument: self.shared.kind.identity().into(),
+            parameters: self
+                .shared
+                .parameters
+                .iter()
+                .map(|p| SavedParameter {
+                    id: p.name.clone(),
+                    value: f64::from_bits(p.value.load(Ordering::Relaxed)),
+                })
+                .collect(),
+        };
+        serde_json::to_writer(output, &state)
+            .map_err(|_| PluginError::Message("Fixture state save failed"))
+    }
+    fn load(&self, input: &mut InputStream) -> Result<(), PluginError> {
+        let invalid = || PluginError::Message("Invalid or unsupported fixture state");
+        let mut bytes = Vec::new();
+        input
+            .take(STATE_LIMIT + 1)
+            .read_to_end(&mut bytes)
+            .map_err(|_| invalid())?;
+        if bytes.len() as u64 > STATE_LIMIT {
+            return Err(invalid());
+        }
+        let state: FixtureState = serde_json::from_slice(&bytes).map_err(|_| invalid())?;
+        if state.version != 1
+            || state.instrument != self.shared.kind.identity()
+            || state.parameters.len() != self.shared.parameters.len()
+        {
+            return Err(invalid());
+        }
+        // Stage every validated value before publishing any: invalid tails must not partially load.
+        let values = self
+            .shared
+            .parameters
+            .iter()
+            .map(|p| {
+                let mut matches = state.parameters.iter().filter(|v| v.id == p.name);
+                let value = matches.next().ok_or_else(invalid)?.value;
+                if matches.next().is_some() || !(p.min..=p.max).contains(&value) {
+                    return Err(invalid());
+                }
+                Ok(value)
+            })
+            .collect::<Result<Vec<_>, PluginError>>()?;
+        let mut changed = false;
+        for (parameter, value) in self.shared.parameters.iter().zip(values) {
+            changed |= parameter.value.swap(value.to_bits(), Ordering::Relaxed) != value.to_bits();
+        }
+        if changed {
+            if let Some(params) = self.host.get_extension::<HostParams>() {
+                params.rescan(&self.host, ParamRescanFlags::VALUES);
+            }
+        }
+        Ok(())
+    }
+}
+
 struct Adapter;
 impl Plugin for Adapter {
     type Shared<'a> = Shared;
@@ -120,7 +207,8 @@ impl Plugin for Adapter {
         builder
             .register::<PluginAudioPorts>()
             .register::<PluginNotePorts>()
-            .register::<PluginParams>();
+            .register::<PluginParams>()
+            .register::<PluginState>();
     }
 }
 struct Factory {
@@ -141,7 +229,7 @@ impl PluginFactoryImpl for Factory {
             host,
             &self.descriptors[index],
             move |_| Shared::new(kind),
-            |_, shared| Ok(Main { shared }),
+            |host, shared| Ok(Main { shared, host }),
         ))
     }
 }
@@ -154,15 +242,12 @@ impl Entry for ProofEntry {
         Ok(Self {
             factory: PluginFactoryWrapper::new(Factory {
                 descriptors: [
+                    PluginDescriptor::new(Kind::Tb303.identity(), "Dandrum Experimental TB303")
+                        .with_vendor("Dandrum")
+                        .with_version("0.1.0")
+                        .with_features([INSTRUMENT, SYNTHESIZER, STEREO]),
                     PluginDescriptor::new(
-                        "org.dandrum.experimental.tb303",
-                        "Dandrum Experimental TB303",
-                    )
-                    .with_vendor("Dandrum")
-                    .with_version("0.1.0")
-                    .with_features([INSTRUMENT, SYNTHESIZER, STEREO]),
-                    PluginDescriptor::new(
-                        "org.dandrum.experimental.signed-gain",
+                        Kind::Gain.identity(),
                         "Dandrum Experimental Signed Gain",
                     )
                     .with_vendor("Dandrum")

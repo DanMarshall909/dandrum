@@ -1,0 +1,12 @@
+{
+  "changed_executable_lines": 68,
+  "changed_covered_lines": 68,
+  "changed_uncovered_lines": [],
+  "owner_lines": {
+    "count": 485,
+    "covered": 424,
+    "percent": 87.42268041237114
+  },
+  "instrumentation": "cargo rustc --release --lib -- -C instrument-coverage; real dynamically loaded adapter; engine and SDK uninstrumented; line coverage only",
+  "source_sha256": "cb4256a54f9d8f8d8bf4f34f596cf80611286aef44582223fa2e824a9460d477"
+}

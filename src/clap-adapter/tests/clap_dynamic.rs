@@ -42,7 +42,9 @@ use clack_host::prelude::*;
 use clack_host::process::StartedPluginAudioProcessor;
 
 struct TestHost;
-struct HostShared;
+struct HostShared {
+    notify_parameters: bool,
+}
 impl SharedHandler<'_> for HostShared {
     fn request_restart(&self) {}
     fn request_process(&self) {}
@@ -50,17 +52,48 @@ impl SharedHandler<'_> for HostShared {
 }
 impl HostHandlers for TestHost {
     type Shared<'a> = HostShared;
-    type MainThread<'a> = ();
+    type MainThread<'a> = HostMain;
     type AudioProcessor<'a> = ();
+    fn declare_extensions(
+        builder: &mut clack_host::host::HostExtensions<Self>,
+        shared: &HostShared,
+    ) {
+        if shared.notify_parameters {
+            builder.register::<clack_extensions::params::HostParams>();
+        }
+    }
+}
+#[derive(Default)]
+struct HostMain {
+    rescans: std::cell::RefCell<Vec<clack_extensions::params::ParamRescanFlags>>,
+}
+impl MainThreadHandler<'_> for HostMain {}
+impl clack_extensions::params::HostParamsImplShared for HostShared {
+    fn request_flush(&self) {}
+}
+impl clack_extensions::params::HostParamsImplMainThread for HostMain {
+    fn rescan(&self, flags: clack_extensions::params::ParamRescanFlags) {
+        self.rescans.borrow_mut().push(flags);
+    }
+    fn clear(&self, _: ClapId, _: clack_extensions::params::ParamClearFlags) {
+        panic!("state load must preserve parameter identities");
+    }
 }
 
 fn load(id: &str) -> (PluginEntry, PluginInstance<TestHost>) {
+    load_with_notifications(id, true)
+}
+
+fn load_with_notifications(
+    id: &str,
+    notify_parameters: bool,
+) -> (PluginEntry, PluginInstance<TestHost>) {
     // SAFETY: locally-built trusted artifact, retained alongside its instance.
     let entry = unsafe { PluginEntry::load(artifact()) }.unwrap();
     let id = std::ffi::CString::new(id).unwrap();
     let plugin = PluginInstance::<TestHost>::new(
-        |_| HostShared,
-        |_| (),
+        |_| HostShared { notify_parameters },
+        |_| HostMain::default(),
         &entry,
         &id,
         &HostInfo::new("Dandrum dynamic proof host", "Dandrum", "", "0.1").unwrap(),
@@ -749,5 +782,573 @@ fn malformed_extra_output_buses_are_all_silent_and_preserve_controls() {
             vec![vec![-0.25; 16], vec![0.125; 16]]
         );
         plugin.deactivate(stop(processor));
+    }
+}
+
+#[test]
+fn stopped_flush_preserves_valid_order_and_rejects_invalid_complete_batches() {
+    let (_entry, mut plugin) = load("org.dandrum.experimental.signed-gain");
+    let params = plugin
+        .plugin_handle()
+        .get_extension::<PluginParams>()
+        .unwrap();
+    let mut changes = EventBuffer::new();
+    for value in [0.25, 0.75] {
+        changes.push(&ParamValueEvent::new(
+            0,
+            ClapId::new(1),
+            Pckn::match_all(),
+            value,
+        ));
+    }
+    params.flush(
+        &mut plugin.inactive_plugin_handle().unwrap(),
+        &changes.as_input(),
+        &mut EventBuffer::new().as_output(),
+    );
+    assert_eq!(
+        params.get_value(&plugin.plugin_handle(), ClapId::new(1)),
+        Some(0.75)
+    );
+    let mut processor = activate(&mut plugin, 48000.0, 16);
+    assert_eq!(
+        block(&mut processor, 16, true, &EventBuffer::new(), 2, false),
+        vec![vec![-0.375; 16], vec![0.1875; 16]]
+    );
+    let mut stopped = stop(processor);
+    for values in [vec![0.125, f64::NAN], vec![0.125, 2.0], vec![0.125; 1025]] {
+        let mut invalid = EventBuffer::new();
+        for value in values {
+            invalid.push(&ParamValueEvent::new(
+                0,
+                ClapId::new(1),
+                Pckn::match_all(),
+                value,
+            ));
+        }
+        std::thread::scope(|scope| {
+            scope
+                .spawn(|| {
+                    params.flush_active(
+                        &mut stopped.plugin_handle(),
+                        &invalid.as_input(),
+                        &mut EventBuffer::new().as_output(),
+                    )
+                })
+                .join()
+                .unwrap()
+        });
+        assert_eq!(
+            params.get_value(&plugin.plugin_handle(), ClapId::new(1)),
+            Some(0.75)
+        );
+    }
+    let mut change = EventBuffer::new();
+    change.push(&ParamValueEvent::new(
+        0,
+        ClapId::new(1),
+        Pckn::match_all(),
+        0.25,
+    ));
+    std::thread::scope(|scope| {
+        scope
+            .spawn(|| {
+                params.flush_active(
+                    &mut stopped.plugin_handle(),
+                    &change.as_input(),
+                    &mut EventBuffer::new().as_output(),
+                )
+            })
+            .join()
+            .unwrap()
+    });
+    let state = plugin
+        .plugin_handle()
+        .get_extension::<clack_extensions::state::PluginState>()
+        .unwrap();
+    let mut saved = Vec::new();
+    state.save(&plugin.plugin_handle(), &mut saved).unwrap();
+    assert_eq!(
+        serde_json::from_slice::<serde_json::Value>(&saved).unwrap()["parameters"][0]["value"],
+        0.25
+    );
+    let mut processor = std::thread::spawn(move || stopped.start_processing().unwrap())
+        .join()
+        .unwrap();
+    assert_eq!(
+        block(&mut processor, 16, true, &EventBuffer::new(), 2, false),
+        vec![vec![-0.125; 16], vec![0.0625; 16]]
+    );
+    plugin.deactivate(stop(processor));
+}
+
+#[test]
+fn state_restores_nondefault_gain_in_fresh_instance_before_activation() {
+    use clack_extensions::state::PluginState;
+    let (_entry, mut original) = load("org.dandrum.experimental.signed-gain");
+    let params = original
+        .plugin_handle()
+        .get_extension::<PluginParams>()
+        .unwrap();
+    let state = original
+        .plugin_handle()
+        .get_extension::<PluginState>()
+        .expect("replacement-owned state extension");
+    let mut changes = EventBuffer::new();
+    changes.push(&ParamValueEvent::new(
+        0,
+        ClapId::new(1),
+        Pckn::match_all(),
+        0.75,
+    ));
+    params.flush(
+        &mut original.inactive_plugin_handle().unwrap(),
+        &changes.as_input(),
+        &mut EventBuffer::new().as_output(),
+    );
+    let mut saved = Vec::new();
+    state.save(&original.plugin_handle(), &mut saved).unwrap();
+    assert_eq!(
+        serde_json::from_slice::<serde_json::Value>(&saved).unwrap(),
+        serde_json::json!({
+            "version":1,"instrument":"org.dandrum.experimental.signed-gain","parameters":[{"id":"fixture.level","value":0.75}]
+        })
+    );
+    let (_fresh_entry, mut fresh) =
+        load_with_notifications("org.dandrum.experimental.signed-gain", false);
+    let fresh_state = fresh
+        .plugin_handle()
+        .get_extension::<PluginState>()
+        .unwrap();
+    fresh_state
+        .load(&fresh.plugin_handle(), &mut saved.as_slice())
+        .unwrap();
+    let fresh_params = fresh
+        .plugin_handle()
+        .get_extension::<PluginParams>()
+        .unwrap();
+    assert_eq!(
+        fresh_params.get_value(&fresh.plugin_handle(), ClapId::new(1)),
+        Some(0.75)
+    );
+    let mut restored = activate(&mut fresh, 48000.0, 16);
+    assert_eq!(
+        block(&mut restored, 16, true, &EventBuffer::new(), 2, false),
+        vec![vec![-0.375; 16], vec![0.1875; 16]]
+    );
+    let mut independent = activate(&mut original, 48000.0, 16);
+    let mut changes = EventBuffer::new();
+    changes.push(&ParamValueEvent::new(
+        0,
+        ClapId::new(1),
+        Pckn::match_all(),
+        0.25,
+    ));
+    assert_eq!(
+        block(&mut independent, 16, true, &changes, 2, false),
+        vec![vec![-0.125; 16], vec![0.0625; 16]]
+    );
+    assert_eq!(
+        block(&mut restored, 16, true, &EventBuffer::new(), 2, false),
+        vec![vec![-0.375; 16], vec![0.1875; 16]]
+    );
+    original.deactivate(stop(independent));
+    fresh.deactivate(stop(restored));
+}
+
+#[test]
+fn state_restores_named_tb303_controls_in_any_order_and_notifies_host() {
+    use clack_extensions::{params::ParamRescanFlags, state::PluginState};
+    let (_entry, mut plugin) = load("org.dandrum.experimental.tb303");
+    let params = plugin
+        .plugin_handle()
+        .get_extension::<PluginParams>()
+        .unwrap();
+    let controls = [
+        ("filter.cutoff", 0.27),
+        ("filter.resonance", 0.83),
+        ("filter.envelope_modulation", 0.19),
+        ("filter.decay_ms", 731.0),
+        ("accent.brightness", 0.31),
+        ("amp.release_ms", 147.0),
+        ("slide.time_ms", 213.0),
+    ];
+    let state = plugin
+        .plugin_handle()
+        .get_extension::<PluginState>()
+        .expect("replacement-owned state extension");
+    let document = serde_json::json!({"version":1,"instrument":"org.dandrum.experimental.tb303", "parameters": controls.iter().rev().map(|(id,value)|serde_json::json!({"id":id,"value":value})).collect::<Vec<_>>()});
+    let bytes = serde_json::to_vec(&document).unwrap();
+    let mut processor = activate(&mut plugin, 48000.0, 64);
+    state
+        .load(&plugin.plugin_handle(), &mut bytes.as_slice())
+        .unwrap();
+    assert_eq!(
+        plugin.access_handler(|h| h.rescans.borrow().clone()),
+        [ParamRescanFlags::VALUES]
+    );
+    for (index, (name, value)) in controls.iter().enumerate() {
+        let mut info = ParamInfoBuffer::new();
+        assert_eq!(
+            params
+                .get_info(&plugin.plugin_handle(), index as u32, &mut info)
+                .unwrap()
+                .name,
+            name.as_bytes()
+        );
+        assert_eq!(
+            params.get_value(&plugin.plugin_handle(), ClapId::new(index as u32 + 1)),
+            Some(*value)
+        );
+    }
+    // A late invalid entry must preserve every earlier valid nondefault control.
+    for case in ["late-range", "duplicate", "missing"] {
+        let mut invalid = document.clone();
+        // The document is reversed; cutoff is first in the engine's canonical order.
+        invalid["parameters"][6]["value"] = serde_json::json!(0.29);
+        match case {
+            "late-range" => invalid["parameters"][0]["value"] = serde_json::json!(-1.0),
+            "duplicate" => invalid["parameters"][0] = invalid["parameters"][1].clone(),
+            _ => invalid["parameters"][0]["id"] = serde_json::json!("unknown.parameter"),
+        }
+        let bytes = serde_json::to_vec(&invalid).unwrap();
+        assert!(
+            state
+                .load(&plugin.plugin_handle(), &mut bytes.as_slice())
+                .is_err(),
+            "{case}"
+        );
+        for (i, (_, v)) in controls.iter().enumerate() {
+            assert_eq!(
+                params.get_value(&plugin.plugin_handle(), ClapId::new(i as u32 + 1)),
+                Some(*v),
+                "{case}"
+            );
+        }
+    }
+    assert_eq!(
+        plugin.access_handler(|h| h.rescans.borrow().clone()),
+        [ParamRescanFlags::VALUES]
+    );
+    let notes = [(5, [0x90, 60, 110]), (43, [0x80, 60, 0])];
+    let mut events = EventBuffer::new();
+    for (offset, data) in notes {
+        events.push(&MidiEvent::new(offset, 0, data));
+    }
+    let actual = block(&mut processor, 64, false, &events, 2, false);
+    let changes = controls
+        .iter()
+        .enumerate()
+        .map(|(i, (_, v))| (0, i, *v))
+        .collect::<Vec<_>>();
+    let expected = common::direct_engine(common::TB303, 64, 48000, &notes, &changes);
+    assert_eq!(actual, expected);
+    assert!(actual[0].iter().any(|v| *v < 0.0));
+    // Literal oracle is recorded against unchanged production DSP before state implementation.
+    assert!((actual[0][12] - (-0.00025123634_f32)).abs() < 1e-10);
+    let mut saved = Vec::new();
+    state.save(&plugin.plugin_handle(), &mut saved).unwrap();
+    let saved: serde_json::Value = serde_json::from_slice(&saved).unwrap();
+    for (index, (id, value)) in controls.iter().enumerate() {
+        assert_eq!(
+            saved["parameters"][index],
+            serde_json::json!({"id":id,"value":value})
+        );
+    }
+    plugin.deactivate(stop(processor));
+}
+
+#[test]
+fn invalid_state_preserves_controls_signed_output_and_later_recovery() {
+    use clack_extensions::state::PluginState;
+    let (_entry, mut plugin) = load("org.dandrum.experimental.signed-gain");
+    let state = plugin
+        .plugin_handle()
+        .get_extension::<PluginState>()
+        .expect("replacement-owned state extension");
+    let params = plugin
+        .plugin_handle()
+        .get_extension::<PluginParams>()
+        .unwrap();
+    let good=br#"{"version":1,"instrument":"org.dandrum.experimental.signed-gain","parameters":[{"id":"fixture.level","value":0.75}]}"#;
+    state
+        .load(&plugin.plugin_handle(), &mut good.as_slice())
+        .unwrap();
+    let base: serde_json::Value = serde_json::from_slice(good).unwrap();
+    let mut invalids = vec![
+        ("empty", vec![]),
+        ("truncated", good[..good.len() - 1].to_vec()),
+        ("oversized", vec![b' '; 16385]),
+        (
+            "nonfinite",
+            String::from_utf8(good.to_vec())
+                .unwrap()
+                .replace("0.75", "1e999")
+                .into_bytes(),
+        ),
+        ("trailing", [good.as_slice(), b"x"].concat()),
+    ];
+    for (label, key, value) in [
+        ("version", "version", serde_json::json!(2)),
+        (
+            "instrument",
+            "instrument",
+            serde_json::json!("org.dandrum.experimental.tb303"),
+        ),
+        ("unknown-field", "other", serde_json::json!(1)),
+        ("missing-controls", "parameters", serde_json::json!([])),
+        (
+            "duplicate-controls",
+            "parameters",
+            serde_json::json!([{"id":"fixture.level","value":0.125},{"id":"fixture.level","value":0.25}]),
+        ),
+        (
+            "unknown-control",
+            "parameters",
+            serde_json::json!([{"id":"other","value":0.25}]),
+        ),
+        (
+            "range",
+            "parameters",
+            serde_json::json!([{"id":"fixture.level","value":2.0}]),
+        ),
+        (
+            "bad-type",
+            "parameters",
+            serde_json::json!([{"id":"fixture.level","value":"0.25"}]),
+        ),
+        (
+            "unknown-entry-field",
+            "parameters",
+            serde_json::json!([{"id":"fixture.level","value":0.25,"other":true}]),
+        ),
+    ] {
+        let mut doc = base.clone();
+        doc[key] = value;
+        invalids.push((label, serde_json::to_vec(&doc).unwrap()));
+    }
+    // Whitespace at the exact admission limit is valid; one additional byte is not.
+    let mut boundary = good.to_vec();
+    boundary.resize(16384, b' ');
+    state
+        .load(&plugin.plugin_handle(), &mut boundary.as_slice())
+        .unwrap();
+    boundary.push(b' ');
+    invalids.push(("one-over-limit", boundary));
+    let mut processor = activate(&mut plugin, 48000.0, 16);
+    for (label, bytes) in invalids {
+        assert!(
+            state
+                .load(&plugin.plugin_handle(), &mut bytes.as_slice())
+                .is_err(),
+            "{label}"
+        );
+        assert_eq!(
+            params.get_value(&plugin.plugin_handle(), ClapId::new(1)),
+            Some(0.75),
+            "{label}"
+        );
+        assert_eq!(
+            block(&mut processor, 16, true, &EventBuffer::new(), 2, false),
+            vec![vec![-0.375; 16], vec![0.1875; 16]],
+            "{label}"
+        );
+    }
+    let valid=br#"{"version":1,"instrument":"org.dandrum.experimental.signed-gain","parameters":[{"id":"fixture.level","value":0.25}]}"#;
+    state
+        .load(&plugin.plugin_handle(), &mut valid.as_slice())
+        .unwrap();
+    assert_eq!(
+        block(&mut processor, 16, true, &EventBuffer::new(), 2, false),
+        vec![vec![-0.125; 16], vec![0.0625; 16]]
+    );
+    plugin.deactivate(stop(processor));
+}
+
+#[test]
+fn state_handles_short_streams_and_reports_read_write_failures() {
+    use clack_extensions::state::PluginState;
+    use std::io::{Read, Write};
+    struct ShortWriter(Vec<u8>);
+    impl Write for ShortWriter {
+        fn write(&mut self, b: &[u8]) -> std::io::Result<usize> {
+            let n = b.len().min(3);
+            self.0.extend_from_slice(&b[..n]);
+            Ok(n)
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+    struct ShortReader<'a>(&'a [u8]);
+    impl Read for ShortReader<'_> {
+        fn read(&mut self, b: &mut [u8]) -> std::io::Result<usize> {
+            let n = b.len().min(2);
+            self.0.read(&mut b[..n])
+        }
+    }
+    struct Broken;
+    impl Read for Broken {
+        fn read(&mut self, _: &mut [u8]) -> std::io::Result<usize> {
+            Err(std::io::Error::other("host read failure"))
+        }
+    }
+    impl Write for Broken {
+        fn write(&mut self, _: &[u8]) -> std::io::Result<usize> {
+            Err(std::io::Error::other("host write failure"))
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+    struct PrefixThenFailure<'a>(&'a [u8]);
+    impl Read for PrefixThenFailure<'_> {
+        fn read(&mut self, bytes: &mut [u8]) -> std::io::Result<usize> {
+            if self.0.is_empty() {
+                Err(std::io::Error::other("host read failure after prefix"))
+            } else {
+                self.0.read(bytes)
+            }
+        }
+    }
+    let (_entry, mut plugin) = load("org.dandrum.experimental.signed-gain");
+    let state = plugin
+        .plugin_handle()
+        .get_extension::<PluginState>()
+        .expect("replacement-owned state extension");
+    let params = plugin
+        .plugin_handle()
+        .get_extension::<PluginParams>()
+        .unwrap();
+    let mut changes = EventBuffer::new();
+    changes.push(&ParamValueEvent::new(
+        0,
+        ClapId::new(1),
+        Pckn::match_all(),
+        0.75,
+    ));
+    params.flush(
+        &mut plugin.inactive_plugin_handle().unwrap(),
+        &changes.as_input(),
+        &mut EventBuffer::new().as_output(),
+    );
+    let mut writer = ShortWriter(Vec::new());
+    state.save(&plugin.plugin_handle(), &mut writer).unwrap();
+    assert_eq!(
+        serde_json::from_slice::<serde_json::Value>(&writer.0).unwrap()["parameters"][0]["value"],
+        0.75
+    );
+    let mut different = EventBuffer::new();
+    different.push(&ParamValueEvent::new(
+        0,
+        ClapId::new(1),
+        Pckn::match_all(),
+        0.25,
+    ));
+    params.flush(
+        &mut plugin.inactive_plugin_handle().unwrap(),
+        &different.as_input(),
+        &mut EventBuffer::new().as_output(),
+    );
+    assert_eq!(
+        params.get_value(&plugin.plugin_handle(), ClapId::new(1)),
+        Some(0.25)
+    );
+    state
+        .load(&plugin.plugin_handle(), &mut ShortReader(&writer.0))
+        .unwrap();
+    assert_eq!(
+        params.get_value(&plugin.plugin_handle(), ClapId::new(1)),
+        Some(0.75)
+    );
+    let mut processor = activate(&mut plugin, 48000.0, 16);
+    assert_eq!(
+        block(&mut processor, 16, true, &EventBuffer::new(), 2, false),
+        vec![vec![-0.375; 16], vec![0.1875; 16]]
+    );
+    assert!(state.load(&plugin.plugin_handle(), &mut Broken).is_err());
+    let prefix = br#"{"version":1,"instrument":"org.dandrum.experimental.signed-gain","parameters":[{"id":"fixture.level","value":0.125}"#;
+    let mut failing = PrefixThenFailure(prefix.as_slice());
+    assert!(state.load(&plugin.plugin_handle(), &mut failing).is_err());
+    assert!(
+        failing.0.is_empty(),
+        "the failing reader must have supplied its prefix"
+    );
+    assert!(state.save(&plugin.plugin_handle(), &mut Broken).is_err());
+    struct Endless(usize);
+    impl Read for Endless {
+        fn read(&mut self, b: &mut [u8]) -> std::io::Result<usize> {
+            b.fill(b' ');
+            self.0 += b.len();
+            Ok(b.len())
+        }
+    }
+    let mut endless = Endless(0);
+    assert!(state.load(&plugin.plugin_handle(), &mut endless).is_err());
+    assert_eq!(
+        endless.0, 16385,
+        "read admission must stop at bound plus overflow probe"
+    );
+    assert_eq!(
+        params.get_value(&plugin.plugin_handle(), ClapId::new(1)),
+        Some(0.75)
+    );
+    assert_eq!(
+        block(&mut processor, 16, true, &EventBuffer::new(), 2, false),
+        vec![vec![-0.375; 16], vec![0.1875; 16]]
+    );
+    plugin.deactivate(stop(processor));
+}
+
+#[test]
+fn state_roundtrip_preserves_plain_parameter_bits() {
+    use clack_extensions::state::PluginState;
+    let (_entry, mut original) = load("org.dandrum.experimental.signed-gain");
+    let (_fresh_entry, mut fresh) = load("org.dandrum.experimental.signed-gain");
+    let params = original
+        .plugin_handle()
+        .get_extension::<PluginParams>()
+        .unwrap();
+    let state = original
+        .plugin_handle()
+        .get_extension::<PluginState>()
+        .unwrap();
+    let restored_params = fresh
+        .plugin_handle()
+        .get_extension::<PluginParams>()
+        .unwrap();
+    let restored_state = fresh
+        .plugin_handle()
+        .get_extension::<PluginState>()
+        .unwrap();
+    let mut seed = 17_u64;
+    for _ in 0..128 {
+        seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
+        let value = f64::from_bits(0x3fe0000000000000 | (seed & 0x000fffffffffffff));
+        let mut events = EventBuffer::new();
+        events.push(&ParamValueEvent::new(
+            0,
+            ClapId::new(1),
+            Pckn::match_all(),
+            value,
+        ));
+        params.flush(
+            &mut original.inactive_plugin_handle().unwrap(),
+            &events.as_input(),
+            &mut EventBuffer::new().as_output(),
+        );
+        let mut bytes = Vec::new();
+        state.save(&original.plugin_handle(), &mut bytes).unwrap();
+        restored_state
+            .load(&fresh.plugin_handle(), &mut bytes.as_slice())
+            .unwrap();
+        assert_eq!(
+            restored_params
+                .get_value(&fresh.plugin_handle(), ClapId::new(1))
+                .unwrap()
+                .to_bits(),
+            value.to_bits(),
+            "plain parameter {value:?}"
+        );
     }
 }

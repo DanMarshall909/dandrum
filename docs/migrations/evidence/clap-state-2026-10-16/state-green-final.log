@@ -1,0 +1,54 @@
+   Compiling dandrum_clap_adapter v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.74s
+     Running tests/clap_dynamic.rs (build/engine-only/rust-target/debug/deps/clap_dynamic-45f55bae16cbd2c9)
+
+running 18 tests
+test exported_binary_discovers_two_experimental_descriptors ... ok
+[CLAP_PLUGIN_ERROR] Invalid or unsupported fixture state
+[CLAP_PLUGIN_ERROR] Fixture state save failed
+[CLAP_PLUGIN_ERROR] Invalid or unsupported fixture state
+[CLAP_PLUGIN_ERROR] Invalid or unsupported fixture state
+[CLAP_PLUGIN_ERROR] Invalid or unsupported fixture state
+[CLAP_PLUGIN_ERROR] Invalid or unsupported fixture state
+[CLAP_PLUGIN_ERROR] Invalid or unsupported fixture state
+[CLAP_PLUGIN_ERROR] Invalid or unsupported fixture state
+[CLAP_PLUGIN_ERROR] Invalid or unsupported fixture state
+[CLAP_PLUGIN_ERROR] Invalid or unsupported fixture state
+[CLAP_PLUGIN_ERROR] Invalid or unsupported fixture state
+test signed_gain_defaults_and_offset_order_use_public_root_control ... ok[CLAP_PLUGIN_ERROR]
+Invalid or unsupported fixture state
+[CLAP_PLUGIN_ERROR] Invalid or unsupported fixture state
+test state_handles_short_streams_and_reports_read_write_failures ... ok
+[CLAP_PLUGIN_ERROR] Invalid or unsupported fixture state
+[CLAP_PLUGIN_ERROR] Invalid or unsupported fixture state
+test rejected_callback_keeps_host_processing_an_existing_held_instrument ... ok[CLAP_PLUGIN_ERROR]
+Invalid or unsupported fixture state
+[CLAP_PLUGIN_ERROR] test malformed_event_lists_are_rejected_without_unbounded_event_reads ... Invalid or unsupported fixture stateok
+
+[CLAP_PLUGIN_ERROR] Invalid or unsupported fixture state
+[CLAP_PLUGIN_ERROR] Invalid or unsupported fixture state
+[CLAP_PLUGIN_ERROR] Invalid or unsupported fixture state
+test state_restores_nondefault_gain_in_fresh_instance_before_activation ... ok
+test stopped_flush_preserves_valid_order_and_rejects_invalid_complete_batches ... ok
+[CLAP_PLUGIN_ERROR] Invalid or unsupported fixture state
+test invalid_state_preserves_controls_signed_output_and_later_recovery ... ok
+test malformed_callback_events_and_layout_silence_without_changing_valid_control_state ... ok
+test malformed_extra_output_buses_are_all_silent_and_preserve_controls ... ok
+test independent_instances_reset_and_changed_settings_reactivation_retain_controls ... ok
+test note_batch_over_prepared_capacity_is_rejected_before_admitting_partial_notes ... ok
+test high_sample_rate_reactivation_keeps_signed_gain_and_real_instrument_usable ... ok
+test state_restores_named_tb303_controls_in_any_order_and_notifies_host ... ok
+test midi1_repeated_key_and_velocity_zero_follow_engine_key_semantics ... ok
+test tb303_midi1_timing_overlap_and_root_alias_match_signed_engine_oracle ... ok
+test two_tb303_instances_keep_independent_held_notes_and_filter_history ... ok
+test fractional_and_high_host_rates_preserve_signed_output_and_runtime_clock ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/public_engine_baseline.rs (build/engine-only/rust-target/debug/deps/public_engine_baseline-dab6f7720c209588)
+
+running 2 tests
+test signed_gain_root_control_baseline ... ok
+test tb303_timed_notes_and_root_control_baseline ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s

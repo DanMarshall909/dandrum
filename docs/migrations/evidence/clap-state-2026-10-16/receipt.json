@@ -1,0 +1,102 @@
+{
+  "scope": "Issue #24 scalar fixture-state and stopped-control increment towards the accepted JUCE-free Trigger beta; full beta remains active",
+  "source_base": "f8c7000399abf8254f09f98d9fd339af2ea9bb2f",
+  "source_sha256": {
+    "src/clap-adapter/src/lib.rs": "cb4256a54f9d8f8d8bf4f34f596cf80611286aef44582223fa2e824a9460d477",
+    "src/clap-adapter/Cargo.toml": "b9e976f19ee6a8755e49a9219814aa3ada19fd7df0531351dba2a976c7e83eb2",
+    "src/clap-adapter/Cargo.lock": "91226b3a36221d79b436b8e5a0d659aea61c764afbdde955e343f02d052fafb5",
+    "src/clap-adapter/tests/clap_dynamic.rs": "bc11036d1cd41491210ec273e19560892b9c781343e7499b28e316d1ff024bc5"
+  },
+  "platform": "Linux-7.0.11-76070011-generic-x86_64-with-glibc2.35",
+  "artifact": {
+    "path": "build/engine-only/clap/DandrumHeadlessProof.clap",
+    "sha256": "3973d56e8f956b0c872a2a084fb87d4851aa6125f61976d29b0160286b7271e5",
+    "bytes": 12339608,
+    "profile": "release, lto=true, codegen-units=1"
+  },
+  "tests": {
+    "dynamic_plugin": 19,
+    "public_engine_baselines": 2,
+    "engine_only_ctest": 20,
+    "ctest_elapsed_seconds": 90.159,
+    "retained_juce_comparison": 1
+  },
+  "validator": {
+    "version": "0.4.1",
+    "binary_sha256": "d9a78bfe781719de450bc5013141496eb13e1d9a538c67de1b8d325628670dbf",
+    "counts": {
+      "success": 62,
+      "skipped": 18,
+      "warning": 1
+    },
+    "exclusions": [],
+    "warning": "Signed-gain process-audio-denormals measured 3.04x slowdown; retained as unresolved callback-hardening work, not suppressed or counted as failure-free hardening."
+  },
+  "coverage": {
+    "changed_executable_lines": 68,
+    "changed_covered_lines": 68,
+    "changed_uncovered_lines": [],
+    "owner_lines": {
+      "count": 485,
+      "covered": 424,
+      "percent": 87.42268041237114
+    },
+    "instrumentation": "cargo rustc --release --lib -- -C instrument-coverage; real dynamically loaded adapter; engine and SDK uninstrumented; line coverage only",
+    "source_sha256": "cb4256a54f9d8f8d8bf4f34f596cf80611286aef44582223fa2e824a9460d477"
+  },
+  "production_packages": {
+    "before": 117,
+    "after": 117,
+    "added": [],
+    "direct_edges_added": [
+      "serde",
+      "serde_json"
+    ],
+    "command": [
+      "/home/dan/.cargo/bin/cargo",
+      "tree",
+      "--offline",
+      "--locked",
+      "--manifest-path",
+      "src/clap-adapter/Cargo.toml",
+      "--target",
+      "x86_64-unknown-linux-gnu",
+      "--edges",
+      "normal",
+      "--prefix",
+      "none"
+    ]
+  },
+  "storage": {
+    "free_bytes": 137171918848,
+    "reused_cargo_target": "build/engine-only/rust-target",
+    "pre_run_target_size": "8.1 GiB",
+    "windows_c": "not applicable to this native Linux host"
+  },
+  "test_lanes": "Existing real-binary package tests finish in about 0.05 s after compilation; CTest build-boundary label retains the slow source-absence proof (~65 s). No membership changed. No mutation lane asserted.",
+  "refactor": {
+    "production": "Share descriptor identity strings between state and discovery; remove redundant finite check because the declared finite range already rejects nonfinite values. No extraction needed.",
+    "tests": "Table-driven rejection cases share the same working instrument and known signed recovery; optional host notification capability is explicit. Existing block/lifecycle helpers reused. Further extraction would hide the short state scenarios."
+  },
+  "retained_failures": [
+    "Expected missing-extension RED on old artifact",
+    "Initial GREEN run exposed a cross-instance extension handle misuse and an unjustified positive-sample assertion; test setup/oracle corrected without changing DSP",
+    "Comparison class typo is retained separately; actual ComparisonBuildTest passes"
+  ],
+  "limits": [
+    "Fixture scalar values only: Trigger document/assets/undo session remain pending under #23",
+    "No whole-snapshot coherence claim during concurrent automation; existing per-parameter atomic semantics retained",
+    "Owner-wide coverage is distinct from changed-line coverage; no branch instrumentation or complete callback-allocation/locking proof",
+    "No display or installed native DAW available: parented React, VST3, standalone and native-host/device acceptance remain pending",
+    "Release/platform/licence decisions remain open; no legacy JUCE compatibility is required"
+  ],
+  "mutation": "Excluded by recorded prior user direction",
+  "review": "Read-only review found two evidence gaps; repaired late canonical invalid-control and nondefault/prefix-failing-stream checks pass. Final independent publication review pending.",
+  "raw_evidence_root": "/tmp/dandrum-beta-state",
+  "review_repairs": [
+    "Change early canonical cutoff to a distinct valid value while later canonical slide/amp identity or range rejects; all old values and signed output retained.",
+    "Short-stream success restores 0.75 over 0.25; immediate and prefix-then-error reads and failed save preserve nondefault value and literal signed stereo output.",
+    "serde_json float_roundtrip feature explicitly declared; existing effective feature graph unchanged."
+  ],
+  "portable_log_normalization": "Trailing whitespace and redundant EOF blank lines normalized for Git; exact raw command output remains in /tmp/dandrum-beta-state."
+}

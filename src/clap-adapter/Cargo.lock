@@ -246,6 +246,8 @@ dependencies = [
  "clack-host",
  "clack-plugin",
  "dandrum_engine",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

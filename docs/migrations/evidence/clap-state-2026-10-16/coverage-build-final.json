@@ -1,0 +1,19 @@
+{
+  "command": [
+    "/home/dan/.cargo/bin/cargo",
+    "rustc",
+    "--locked",
+    "--release",
+    "--jobs",
+    "2",
+    "--manifest-path",
+    "src/clap-adapter/Cargo.toml",
+    "--lib",
+    "--",
+    "-C",
+    "instrument-coverage"
+  ],
+  "cwd": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters",
+  "elapsed_seconds": 2.045,
+  "exit_code": 0
+}

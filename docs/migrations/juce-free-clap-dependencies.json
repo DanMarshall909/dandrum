@@ -1,6 +1,6 @@
 {
   "receipt_schema_version": 1,
-  "scope": "Experimental headless CLAP rendering proof, not a production framework or distribution-license selection",
+  "scope": "Experimental headless CLAP rendering and fixture-state proof, not a production framework or distribution-license selection",
   "issue": "https://github.com/DanMarshall909/dandrum/issues/24",
   "native_target": "x86_64-unknown-linux-gnu",
   "execution_environment": "Native x86_64 Linux home PC; Windows/macOS remain unverified",
@@ -9,7 +9,8 @@
     "audio-ports",
     "note-ports",
     "params",
-    "clack-plugin"
+    "clack-plugin",
+    "state"
   ],
   "dev_extension_features": [
     "clack-host"
@@ -73,7 +74,7 @@
   ],
   "lockfile_hashes": {
     "src/rust-engine/Cargo.lock": "7b9868b097cc152c22ff3462ccfd60e822d8a1bb3724a89f43ba526e72ea20d7",
-    "src/clap-adapter/Cargo.lock": "fb648ade15725d67d4192159ed2aee3cb4a6bf1149c33232d8ddae8762bd0d61"
+    "src/clap-adapter/Cargo.lock": "91226b3a36221d79b436b8e5a0d659aea61c764afbdde955e343f02d052fafb5"
   },
   "upstream_license_sources": [
     {
@@ -129,5 +130,17 @@
     "No GUI/device/browser stack or production framework adoption proved by this dependency inventory.",
     "State, stopped parameter-flush, callback allocation/I/O audits, native second OS and VST3 projection remain required follow-ups.",
     "Existing engine lockfile and dependencies retained; no framework dependency introduced into the engine crate."
-  ]
+  ],
+  "fixture_state_increment": {
+    "schema_version": 1,
+    "maximum_input_bytes": 16384,
+    "direct_dependencies": [
+      "serde",
+      "serde_json"
+    ],
+    "note": "Already present transitively through the engine; no new resolved package or engine dependency. State remains limited to the two built-in proof fixtures; Trigger session/assets and final product identity are pending. Exact JSON f64 round trips are an explicit direct feature rather than relying on jsonschema feature unification.",
+    "serde_json_features": [
+      "float_roundtrip"
+    ]
+  }
 }

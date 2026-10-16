@@ -1,0 +1,20 @@
+   Compiling dandrum_clap_adapter v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.69s
+     Running tests/clap_dynamic.rs (build/engine-only/rust-target/debug/deps/clap_dynamic-45f55bae16cbd2c9)
+
+running 1 test
+unchanged engine signed sample 12: -0.00025123634
+
+thread 'state_restores_named_tb303_controls_in_any_order_and_notifies_host' (1054069) panicked at tests/clap_dynamic.rs:831:71:
+replacement-owned state extension
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test state_restores_named_tb303_controls_in_any_order_and_notifies_host ... FAILED
+
+failures:
+
+failures:
+    state_restores_named_tb303_controls_in_any_order_and_notifies_host
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 17 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `--test clap_dynamic`

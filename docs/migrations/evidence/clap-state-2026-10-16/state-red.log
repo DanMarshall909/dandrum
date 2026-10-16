@@ -1,0 +1,23 @@
+   Compiling clack-extensions v0.2.0 (https://github.com/prokopyl/clack?rev=27ca28391b57a61bad4bb5099288a7bf9247350d#27ca2839)
+   Compiling dandrum_clap_adapter v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.12s
+     Running tests/clap_dynamic.rs (build/engine-only/rust-target/debug/deps/clap_dynamic-45f55bae16cbd2c9)
+
+running 1 test
+test state_restores_nondefault_gain_in_fresh_instance_before_activation ... FAILED
+
+failures:
+
+---- state_restores_nondefault_gain_in_fresh_instance_before_activation stdout ----
+
+thread 'state_restores_nondefault_gain_in_fresh_instance_before_activation' (1051031) panicked at tests/clap_dynamic.rs:787:73:
+replacement-owned state extension
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    state_restores_nondefault_gain_in_fresh_instance_before_activation
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test clap_dynamic`

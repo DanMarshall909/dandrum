@@ -1,0 +1,49 @@
+Internal ctest changing into directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only
+Test project /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only
+      Start  1: retired-engine-ffi-symbols
+ 1/20 Test  #1: retired-engine-ffi-symbols ...................   Passed    0.20 sec
+      Start  2: retired-kernel-fields
+ 2/20 Test  #2: retired-kernel-fields ........................   Passed    0.04 sec
+      Start  3: rust-engine-tests
+ 3/20 Test  #3: rust-engine-tests ............................   Passed   10.37 sec
+      Start  4: cxx-rust-engine-ffi-smoke
+ 4/20 Test  #4: cxx-rust-engine-ffi-smoke ....................   Passed    0.01 sec
+      Start  5: cxx-rust-engine-sample-accurate-midi-smoke
+ 5/20 Test  #5: cxx-rust-engine-sample-accurate-midi-smoke ...   Passed    0.01 sec
+      Start  6: realtime-callback-safety
+ 6/20 Test  #6: realtime-callback-safety .....................   Passed    0.03 sec
+      Start  7: sound-lab-controller
+ 7/20 Test  #7: sound-lab-controller .........................   Passed    0.82 sec
+      Start  8: cxx-plugin-ui-command
+ 8/20 Test  #8: cxx-plugin-ui-command ........................   Passed    0.00 sec
+      Start  9: cxx-plugin-meter-capture
+ 9/20 Test  #9: cxx-plugin-meter-capture .....................   Passed    0.00 sec
+      Start 10: cxx-plugin-live-capture
+10/20 Test #10: cxx-plugin-live-capture ......................   Passed    0.00 sec
+      Start 11: cxx-plugin-meter-aggregation
+11/20 Test #11: cxx-plugin-meter-aggregation .................   Passed    0.00 sec
+      Start 12: cxx-plugin-meter-delivery
+12/20 Test #12: cxx-plugin-meter-delivery ....................   Passed    0.00 sec
+      Start 13: cxx-plugin-meter-display
+13/20 Test #13: cxx-plugin-meter-display .....................   Passed    0.00 sec
+      Start 14: cxx-plugin-waveform-service
+14/20 Test #14: cxx-plugin-waveform-service ..................   Passed    0.08 sec
+      Start 15: cxx-plugin-waveform-geometry
+15/20 Test #15: cxx-plugin-waveform-geometry .................   Passed    0.00 sec
+      Start 16: cxx-plugin-spectral-geometry
+16/20 Test #16: cxx-plugin-spectral-geometry .................   Passed    0.00 sec
+      Start 17: filter-spike-engine
+17/20 Test #17: filter-spike-engine ..........................   Passed    0.00 sec
+      Start 18: engine-only-build
+18/20 Test #18: engine-only-build ............................   Passed    9.66 sec
+      Start 19: clap-dynamic-host
+19/20 Test #19: clap-dynamic-host ............................   Passed    0.47 sec
+      Start 20: clap-build-boundary
+20/20 Test #20: clap-build-boundary ..........................   Passed   68.45 sec
+
+100% tests passed, 0 tests failed out of 20
+
+Label Time Summary:
+build-boundary    =  78.10 sec*proc (2 tests)
+
+Total Test time (real) =  90.16 sec

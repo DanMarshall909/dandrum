@@ -2551,3 +2551,26 @@ AC juce-free-clap-proof :: Independent prepared host lifecycle :: Two instances 
   fp a3b1e1e1d0da
   test rust:independent_instances_reset_and_changed_settings_reactivation_retain_controls
   test rust:two_tb303_instances_keep_independent_held_notes_and_filter_history
+
+AC juce-free-clap-state :: Replacement-owned fixture state :: Fresh instance restores saved public controls
+  fp 03cbf864a4f8
+  test rust:state_restores_nondefault_gain_in_fresh_instance_before_activation
+  test rust:state_roundtrip_preserves_plain_parameter_bits
+
+AC juce-free-clap-state :: Replacement-owned fixture state :: Named controls restore independently of entry order
+  fp 05ed0cfe52a6
+  test rust:state_restores_named_tb303_controls_in_any_order_and_notifies_host
+
+AC juce-free-clap-state :: Bounded rejected-state recovery :: Invalid state preserves the working instrument
+  fp 0dec82589c30
+  test rust:invalid_state_preserves_controls_signed_output_and_later_recovery
+  test rust:state_restores_named_tb303_controls_in_any_order_and_notifies_host
+  test rust:state_handles_short_streams_and_reports_read_write_failures
+
+AC juce-free-clap-state :: Bounded rejected-state recovery :: Partial streams and save failures are reported correctly
+  fp cba780cb4772
+  test rust:state_handles_short_streams_and_reports_read_write_failures
+
+AC juce-free-clap-state :: Stopped parameter synchronization :: Flush updates survive save and processing restart
+  fp e79d4c5a33f9
+  test rust:stopped_flush_preserves_valid_order_and_rejects_invalid_complete_batches

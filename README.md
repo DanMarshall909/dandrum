@@ -113,17 +113,20 @@ ctest --test-dir build/engine-only --output-on-failure -R '^clap-(dynamic-host|b
 
 The exported `build/engine-only/clap/DandrumHeadlessProof.clap` contains separate experimental
 TB-303 and signed stereo gain-fixture descriptors. The dynamic host tests load that binary and
-prove root controls, sample offsets/order, MIDI 1 key semantics, signed audio, reset/reactivation
-and independent instances. The build guard repeats packaging with JUCE/browser/UI source trees
+prove root controls, sample offsets/order, MIDI 1 key semantics, signed audio, reset/reactivation,
+independent instances, fixture-state save/load and stopped parameter flushing. The build guard repeats packaging with JUCE/browser/UI source trees
 absent and checks incremental rebuilds after embedded schema/library changes. For warm
 functional feedback, select only `clap-dynamic-host`; run the slower `clap-build-boundary`
 at the final checkpoint. First-time Cargo dependency fetching needs network access; the exact Clack revision and
 lockfile are retained. The engine and adapter use matching release profiles, while only the new
 adapter's dev/test output strips debug information.
 
-This is a rendering proof for [issue #24](https://github.com/DanMarshall909/dandrum/issues/24),
+This is a rendering and fixture-state proof for [issue #24](https://github.com/DanMarshall909/dandrum/issues/24),
 not a production plugin or replacement-stack selection. It opens no audio device and has no
-editor or state extension. MIDI 1 notes use the engine's existing key semantics; independent
+editor. Its state extension saves schema-version-1 JSON containing the experimental instrument ID
+and complete named public parameter values. Input is limited to 16 KiB; invalid state or stream
+failure preserves the working controls. This format contains no Trigger authoring document,
+sample assets or undo journal. MIDI 1 notes use the engine's existing key semantics; independent
 CLAP note IDs/expression, MIDI 2 and per-note parameter modulation are not advertised. There
 are at most 1,024 input events per block; same-offset notes must also fit the prepared engine
 queue. Invalid event/layout/value input is silently rejected before admission and leaves host
@@ -153,7 +156,7 @@ in-place pair. Signed gain additionally exposes stereo input ID 0. TB-303 instea
 MIDI 1 input note-port ID 0; neither descriptor exposes an output note port.
 
 The [progress receipt](docs/migrations/juce-replacement-progress.md) retains the pending session,
-state/stopped-flush, parented production React, native second OS, VST3/AU, devices and packaging
+full Trigger state/assets, callback hardening, parented production React, native second OS, VST3/AU, devices and packaging
 gates. The [dependency receipt](docs/migrations/juce-free-clap-dependencies.json) records exact
 provenance and scope; project/distribution licence decisions remain pending. Keep the existing
 JUCE products for comparison. No launchable demo or production cutover is added here.

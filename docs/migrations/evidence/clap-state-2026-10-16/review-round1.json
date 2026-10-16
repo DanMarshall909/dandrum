@@ -1,0 +1,42 @@
+{
+  "snapshot": "c2d05fc4c7d7cc31f4ab74a6d3ce8e161c79223f442fa1f3840a53124b9aa691",
+  "head": "f8c7000399abf8254f09f98d9fd339af2ea9bb2f",
+  "worktree": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters",
+  "reviewer": "/root/state_readonly_review",
+  "publicationPass": false,
+  "findings": [
+    {
+      "severity": "P2",
+      "path": "src/clap-adapter/tests/clap_dynamic.rs",
+      "line": 1005,
+      "issue": "Reversed state entries make all purported late failures reject first canonical control or count; sequential validate-and-publish regression could pass.",
+      "required": "Change an early canonical parameter to a differing valid value, invalidate a later canonical parameter, and assert all old values and signed output survive."
+    },
+    {
+      "severity": "P2",
+      "path": "src/clap-adapter/tests/clap_dynamic.rs",
+      "line": 1170,
+      "issue": "Short-read round trip and stream failure preservation use unchanged defaults; reset-to-default regression could pass.",
+      "required": "Use distinct nondefault source/destination values; assert actual restored public controls and literal signed audio; test read failure after a valid prefix."
+    }
+  ],
+  "optional": "Declare serde_json float_roundtrip directly; current release obtains it transitively through jsonschema. Existing fidelity test covers 128 values in [0.5,1).",
+  "evidence": {
+    "dynamicTests": 19,
+    "publicBaselines": 2,
+    "ctest": 20,
+    "validator": {
+      "success": 63,
+      "skipped": 18,
+      "warning": 0,
+      "failure": 0
+    },
+    "coverage": {
+      "changed": "68/68",
+      "owner": "424/485"
+    }
+  },
+  "remaining": "Plan approval required by replacement AGENTS instructions; no mode switch tool available. Do not implement/commit/publish until approved. Canonical sync and task 2.2 unfinished. Full beta active.",
+  "previousGoalTurn": "progress: implemented/tested state increment, then new planning instruction imposed approval requirement",
+  "thisGoalTurn": "progress: independent read-only review established two concrete test repairs; no repository mutations"
+}

@@ -1,0 +1,14 @@
+{
+  "command": [
+    "cmake",
+    "--build",
+    "build/engine-only",
+    "--target",
+    "dandrum-clap-proof",
+    "--parallel",
+    "2"
+  ],
+  "cwd": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters",
+  "elapsed_seconds": 2.215,
+  "exit_code": 0
+}

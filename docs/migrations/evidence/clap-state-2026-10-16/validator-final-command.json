@@ -1,0 +1,12 @@
+{
+  "command": [
+    "/tmp/dandrum-clap-completion/validator/clap-validator",
+    "validate",
+    "--jobs",
+    "1",
+    "--json",
+    "build/engine-only/clap/DandrumHeadlessProof.clap"
+  ],
+  "elapsed_seconds": 0.628,
+  "exit_code": 0
+}

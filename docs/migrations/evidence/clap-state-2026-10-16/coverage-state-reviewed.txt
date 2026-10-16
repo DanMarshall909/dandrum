@@ -1,0 +1,81 @@
+  119|       |}
+  120|       |struct Main<'a> {
+  121|       |    shared: &'a Shared,
+  122|       |    host: HostMainThreadHandle<'a>,
+  123|       |}
+  124|       |impl<'a> PluginMainThread<'a, Shared> for Main<'a> {}
+  125|       |
+  126|       |#[derive(Serialize, Deserialize)]
+  127|       |#[serde(deny_unknown_fields)]
+  128|       |struct FixtureState {
+  129|       |    version: u32,
+  130|       |    instrument: String,
+  131|       |    parameters: Vec<SavedParameter>,
+  132|       |}
+  133|       |#[derive(Serialize, Deserialize)]
+  134|       |#[serde(deny_unknown_fields)]
+  135|       |struct SavedParameter {
+  136|       |    id: String,
+  137|       |    value: f64,
+  138|       |}
+  139|       |impl PluginStateImpl for Main<'_> {
+  140|    133|    fn save(&self, output: &mut OutputStream) -> Result<(), PluginError> {
+  141|    133|        let state = FixtureState {
+  142|       |            version: 1,
+  143|    133|            instrument: self.shared.kind.identity().into(),
+  144|    133|            parameters: self
+  145|    133|                .shared
+  146|    133|                .parameters
+  147|    133|                .iter()
+  148|    133|                .map(|p| SavedParameter {
+  149|    139|                    id: p.name.clone(),
+  150|    139|                    value: f64::from_bits(p.value.load(Ordering::Relaxed)),
+  151|    139|                })
+  152|    133|                .collect(),
+  153|       |        };
+  154|    133|        serde_json::to_writer(output, &state)
+  155|    133|            .map_err(|_| PluginError::Message("Fixture state save failed"))
+  156|    133|    }
+  157|    155|    fn load(&self, input: &mut InputStream) -> Result<(), PluginError> {
+  158|    155|        let invalid = || PluginError::Message("Invalid or unsupported fixture state");
+  159|    155|        let mut bytes = Vec::new();
+  160|    155|        input
+  161|    155|            .take(STATE_LIMIT + 1)
+  162|    155|            .read_to_end(&mut bytes)
+  163|    155|            .map_err(|_| invalid())?;
+  164|    153|        if bytes.len() as u64 > STATE_LIMIT {
+  165|      3|            return Err(invalid());
+  166|    150|        }
+  167|    150|        let state: FixtureState = serde_json::from_slice(&bytes).map_err(|_| invalid())?;
+  168|    143|        if state.version != 1
+  169|    142|            || state.instrument != self.shared.kind.identity()
+  170|    141|            || state.parameters.len() != self.shared.parameters.len()
+  171|       |        {
+  172|      4|            return Err(invalid());
+  173|    139|        }
+  174|       |        // Stage every validated value before publishing any: invalid tails must not partially load.
+  175|    139|        let values = self
+  176|    139|            .shared
+  177|    139|            .parameters
+  178|    139|            .iter()
+  179|    162|            .map(|p| {
+  180|    319|                let mut matches = state.parameters.iter().filter(|v| v.id == p.name);
+  181|    162|                let value = matches.next().ok_or_else(invalid)?.value;
+  182|    160|                if matches.next().is_some() || !(p.min..=p.max).contains(&value) {
+  183|      3|                    return Err(invalid());
+  184|    157|                }
+  185|    157|                Ok(value)
+  186|    162|            })
+  187|    139|            .collect::<Result<Vec<_>, PluginError>>()?;
+  188|    134|        let mut changed = false;
+  189|    140|        for (parameter, value) in self.shared.parameters.iter().zip(values) {
+  190|    140|            changed |= parameter.value.swap(value.to_bits(), Ordering::Relaxed) != value.to_bits();
+  191|    140|        }
+  192|    134|        if changed {
+  193|    133|            if let Some(params) = self.host.get_extension::<HostParams>() {
+  194|    132|                params.rescan(&self.host, ParamRescanFlags::VALUES);
+  195|    132|            }
+  196|      1|        }
+  197|    134|        Ok(())
+  198|    155|    }
+  199|       |}

@@ -1,0 +1,43 @@
+   Compiling dandrum_clap_adapter v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.89s
+     Running tests/clap_dynamic.rs (build/engine-only/rust-target/debug/deps/clap_dynamic-45f55bae16cbd2c9)
+
+running 4 tests
+test state_handles_short_streams_and_reports_read_write_failures ... FAILED
+test invalid_state_preserves_controls_signed_output_and_later_recovery ... FAILED
+test state_restores_nondefault_gain_in_fresh_instance_before_activation ... FAILED
+test state_restores_named_tb303_controls_in_any_order_and_notifies_host ... FAILED
+
+failures:
+
+---- state_handles_short_streams_and_reports_read_write_failures stdout ----
+
+thread 'state_handles_short_streams_and_reports_read_write_failures' (1053345) panicked at tests/clap_dynamic.rs:895:69:
+replacement-owned state extension
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- invalid_state_preserves_controls_signed_output_and_later_recovery stdout ----
+
+thread 'invalid_state_preserves_controls_signed_output_and_later_recovery' (1053344) panicked at tests/clap_dynamic.rs:859:69:
+replacement-owned state extension
+
+---- state_restores_nondefault_gain_in_fresh_instance_before_activation stdout ----
+
+thread 'state_restores_nondefault_gain_in_fresh_instance_before_activation' (1053347) panicked at tests/clap_dynamic.rs:798:73:
+replacement-owned state extension
+
+---- state_restores_named_tb303_controls_in_any_order_and_notifies_host stdout ----
+
+thread 'state_restores_named_tb303_controls_in_any_order_and_notifies_host' (1053346) panicked at tests/clap_dynamic.rs:826:71:
+replacement-owned state extension
+
+
+failures:
+    invalid_state_preserves_controls_signed_output_and_later_recovery
+    state_handles_short_streams_and_reports_read_write_failures
+    state_restores_named_tb303_controls_in_any_order_and_notifies_host
+    state_restores_nondefault_gain_in_fresh_instance_before_activation
+
+test result: FAILED. 0 passed; 4 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test clap_dynamic`

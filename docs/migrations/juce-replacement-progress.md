@@ -50,3 +50,48 @@ The native Linux home-PC build uses the original pinned Clack revision and lockf
 - Four canonical scenarios are synced and mapped to their proving assertions: **604 scenarios / 365 mapped / 239 unchanged backlog**. Strict validation passes for the scoped change and all 49 canonical specs. The independently reviewed implementation was committed and normally pushed as [`11c3bd2`](https://github.com/DanMarshall909/dandrum/commit/11c3bd2d99b8607560ad6a68d1a7b630355ef952) on 16 October 2026 (Australia/Brisbane). The pre-push hook passed all 1,091 Rust tests; no hooks were bypassed. Live remote/upstream matched the exact implementation commit, recorded in the [publication receipt](evidence/clap-proof-2026-10-15/publication.json). All tasks for this bounded proof are complete; no main merge or completed issue #24 is claimed.
 
 Raw commands/results are retained under [the completion evidence directory](evidence/clap-proof-2026-10-15/); larger local profiles, build outputs and review manifests remain in `/tmp/dandrum-clap-completion` and this feature worktree's `build/`. No reusable build cache or installed dependency was removed. The primary checkout remains on main. The next #24 work remains state/stopped-flush/callback hardening and parented React/required-format/native-platform evidence; all Gates A–C stay open.
+
+
+## Fixture state and stopped controls — 16 October 2026
+
+The accepted goal is a first JUCE-free Trigger beta with one React editor, a
+persistent host-independent session, standalone and VST3 artifacts, and actual
+native-host acceptance. This increment establishes replacement-owned scalar
+state for the existing two experimental CLAP fixtures; the full beta and all
+Gates A–C remain open.
+
+The real binary now saves version-1 instrument/named-parameter JSON, bounds
+input at 16 KiB, validates every entry before publication, and restores values
+before activation or between processing calls. Invalid/incompatible/oversized
+state and read failures preserve the working controls and signed audio. Short
+streams, failed writes, reordered names, optional host notifications, 128 exact
+plain-value round trips and inactive/active-stopped flush are executable tests.
+No structural graph, asset, authoring document or undo history is introduced.
+
+Verification: **19 dynamic-host tests plus two public signed baselines**, all
+**20 independent CTests**, and the retained JUCE comparison configure pass. The
+latest pinned official validator reports **62 successes / 18 skips / one
+denormal timing warning / zero failures**, including successful state
+reproducibility checks. The gain denormal case measured a 3.04× slowdown;
+callback hardening must resolve it before beta acceptance. The earlier
+63-success/no-warning run remains historical evidence. All **68 changed executable
+source lines** run through the real exported instrument; the receipt separately
+records inherited owner-wide coverage gaps and tooling limits. Production
+package membership stays unchanged; serde dependencies were already transitive.
+Mutation remains excluded by the recorded user direction. This candidate's
+independent review, canonical scenario synchronization and publication are still
+pending; no main integration is claimed.
+
+[Portable evidence](evidence/clap-state-2026-10-16/receipt.json) retains source and
+artifact hashes, commands, failures, scoped counts and explicit limitations.
+Larger raw profiles and coverage exports remain in `/tmp/dandrum-beta-state`;
+reusable builds and all unrelated branch/worktree state are preserved. Next:
+consume #23's minimum session/SDK/EditorHost contracts for a parented production
+React proof, then prove required VST3/standalone and native-platform behavior.
+
+Read-only review caught two assertion gaps despite complete changed-line
+execution: the reversed control table rejected too early, and stream tests used
+only defaults. Repairs now change an early canonical control before a later
+rejection, and restore/preserve distinct nondefault values through short and
+prefix-failing streams. The repaired actual-binary suite and final independent
+20-test checkpoint pass. Final publication review remains pending.
