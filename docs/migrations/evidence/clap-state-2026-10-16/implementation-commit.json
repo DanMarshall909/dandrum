@@ -1,0 +1,11 @@
+{
+  "command": [
+    "git",
+    "commit",
+    "-F",
+    "/tmp/dandrum-beta-state/commit-message.txt"
+  ],
+  "cwd": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters",
+  "elapsed_seconds": 63.581,
+  "exit_code": 0
+}

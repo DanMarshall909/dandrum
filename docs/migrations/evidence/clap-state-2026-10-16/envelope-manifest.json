@@ -1,0 +1,12 @@
+[
+  {
+    "path": "openspec/specs/juce-free-clap-state/spec.md",
+    "mode": "100644",
+    "sha256": "427ef6250503b5850c56c9fb39a7a69d824b59bb631e9ba3a3b061d5a0e6bcc0"
+  },
+  {
+    "path": "spec-tests.map",
+    "mode": "100644",
+    "sha256": "3a28fbe734932ba9ab4a01f83b8d6c9c5d3d66cc11560628c43db16917d5126c"
+  }
+]

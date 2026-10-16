@@ -1,0 +1,19 @@
+{
+  "verdict": "PASS",
+  "reviewer": "/root/state_readonly_review",
+  "manifest_sha256": "7cdc0c9562f8ce94ba78028ad7c6a1c93a88df8b0357cd5e40c3437324433304",
+  "upstream": "f8c7000399abf8254f09f98d9fd339af2ea9bb2f",
+  "envelope": [
+    {
+      "path": "openspec/specs/juce-free-clap-state/spec.md",
+      "mode": "100644",
+      "sha256": "427ef6250503b5850c56c9fb39a7a69d824b59bb631e9ba3a3b061d5a0e6bcc0"
+    },
+    {
+      "path": "spec-tests.map",
+      "mode": "100644",
+      "sha256": "3a28fbe734932ba9ab4a01f83b8d6c9c5d3d66cc11560628c43db16917d5126c"
+    }
+  ],
+  "scope": "Bounded fixture-state only; no full beta completion"
+}

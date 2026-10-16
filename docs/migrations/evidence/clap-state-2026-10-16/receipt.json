@@ -91,7 +91,7 @@
     "Release/platform/licence decisions remain open; no legacy JUCE compatibility is required"
   ],
   "mutation": "Excluded by recorded prior user direction",
-  "review": "Read-only review found two evidence gaps; repaired late canonical invalid-control and nondefault/prefix-failing-stream checks pass. Final independent publication review pending.",
+  "review": "Independent completion PASS for exact candidate and two-file envelope; implementation normally committed and pushed as 324f5da78aa80a657e8a3371d973c84d1474bc99; live exact head verified. See publication.json.",
   "raw_evidence_root": "/tmp/dandrum-beta-state",
   "review_repairs": [
     "Change early canonical cutoff to a distinct valid value while later canonical slide/amp identity or range rejects; all old values and signed output retained.",

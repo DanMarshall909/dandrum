@@ -7,4 +7,4 @@
 ## 2. Verification and publication
 
 - [x] 2.1 Run focused real-binary coverage, normal package/build/CTest and official validator; record commands, capacities, dependency changes, counts and explicit gaps. Review production/test refactoring. Mutation testing remains excluded.
-- [ ] 2.2 Independently review the exact candidate, sync/map every proven scenario, run strict scoped/canonical validation and acceptance coverage, then publish the verified slice and update migration evidence. Keep full beta and Gates A–C open.
+- [x] 2.2 Independently review the exact candidate, sync/map every proven scenario, run strict scoped/canonical validation and acceptance coverage, then publish the verified slice and update migration evidence. Keep full beta and Gates A–C open.

@@ -1,0 +1,11 @@
+{
+  "command": [
+    "git",
+    "push",
+    "origin",
+    "HEAD:refs/heads/feat/juce-free-host-adapters"
+  ],
+  "cwd": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters",
+  "elapsed_seconds": 12.635,
+  "exit_code": 0
+}

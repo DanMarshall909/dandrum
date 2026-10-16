@@ -1,0 +1,20 @@
+{
+  "implementation_commit": "324f5da78aa80a657e8a3371d973c84d1474bc99",
+  "verified_remote_head": "324f5da78aa80a657e8a3371d973c84d1474bc99",
+  "verified_utc": "2026-10-16T00:55:45.784426+00:00",
+  "branch": "feat/juce-free-host-adapters",
+  "main_unchanged": "68dd6553a2f07e71e2fe09ee1d7094d518559937",
+  "independent_verdict": "PASS",
+  "candidate_manifest_sha256": "7cdc0c9562f8ce94ba78028ad7c6a1c93a88df8b0357cd5e40c3437324433304",
+  "post_pass_envelope": "Exact canonical state spec and spec-tests.map; all named validations and normal hooks passed",
+  "canonical_specs": 50,
+  "acceptance": {
+    "total": 609,
+    "mapped": 370,
+    "unchanged_todo": 239
+  },
+  "precommit": "1084 engine library tests and strict coverage gate passed",
+  "prepush": "1091 engine tests passed; no engine source diff so mutation selector empty; no hooks bypassed",
+  "full_goal": "JUCE-free Trigger beta remains active; session/editor/format/device/installed/native-host and denormal-hardening requirements remain open",
+  "raw_hooks": "/tmp/dandrum-beta-state/implementation-{commit,push}.log"
+}

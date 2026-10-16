@@ -78,9 +78,8 @@ callback hardening must resolve it before beta acceptance. The earlier
 source lines** run through the real exported instrument; the receipt separately
 records inherited owner-wide coverage gaps and tooling limits. Production
 package membership stays unchanged; serde dependencies were already transitive.
-Mutation remains excluded by the recorded user direction. This candidate's
-independent review, canonical scenario synchronization and publication are still
-pending; no main integration is claimed.
+Mutation remains excluded by the recorded user direction. Independent review passed; the five new scenarios are synced and mapped.
+Implementation publication is verified below; no main integration is claimed.
 
 [Portable evidence](evidence/clap-state-2026-10-16/receipt.json) retains source and
 artifact hashes, commands, failures, scoped counts and explicit limitations.
@@ -94,4 +93,15 @@ execution: the reversed control table rejected too early, and stream tests used
 only defaults. Repairs now change an early canonical control before a later
 rejection, and restore/preserve distinct nondefault values through short and
 prefix-failing streams. The repaired actual-binary suite and final independent
-20-test checkpoint pass. Final publication review remains pending.
+20-test checkpoint pass. Final independent publication review passed.
+
+
+The reviewed state increment is normally committed and pushed as
+[`324f5da`](https://github.com/DanMarshall909/dandrum/commit/324f5da78aa80a657e8a3371d973c84d1474bc99),
+with exact live remote verification in the
+[publication receipt](evidence/clap-state-2026-10-16/publication.json).
+Strict validation passes all 50 canonical specs and the scoped change; the
+acceptance map is 609 scenarios / 370 mapped / 239 unchanged backlog entries.
+Normal pre-commit coverage and pre-push tests passed without hook bypass.
+All five tasks for this bounded state increment are complete. The full beta,
+#23/#24 and Gates A–C remain open; main remains unchanged.

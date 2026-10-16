@@ -1,0 +1,437 @@
+{
+  "base": "f8c7000399abf8254f09f98d9fd339af2ea9bb2f",
+  "current": "f8c7000399abf8254f09f98d9fd339af2ea9bb2f",
+  "upstream_ref": "refs/remotes/origin/feat/juce-free-host-adapters",
+  "upstream": "f8c7000399abf8254f09f98d9fd339af2ea9bb2f",
+  "main": "68dd6553a2f07e71e2fe09ee1d7094d518559937",
+  "integration_base": "68dd6553a2f07e71e2fe09ee1d7094d518559937",
+  "paths": [
+    {
+      "path": "README.md",
+      "index_worktree_status": "M ",
+      "mode": "100644",
+      "sha256": "b7012f7ee4dd1216839798b9b1ee8b0a494f6bcb2870fd388441382827084d51",
+      "staged_object": "c6cb15ab6069276bd765654c13b6ba352bca2566"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/all-state-red.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "45fd1e6a19bb7a75e44121c35095859b07ee1c93f50ccdc9a0c2e5ef59908f82",
+      "staged_object": "1fe703b908147ac1bd4ef50aeffc45c74c2f03af"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/all-state-red.log",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "25a805d0f17478ebd3699e6e593d0e67e8e3cb032ecbb177df3ae585f73a87f6",
+      "staged_object": "e153df2bea1ba6ab6e5ffa81fef16c98a4d0c781"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/build-refactored.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "246226f91fa945691dfb1cf2f8b8ce971c6a320b73605935b7b410d712624b0d",
+      "staged_object": "fbcf34b310dbb9a56efce28b2b5d9e988b516b5c"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/build-refactored.log",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "3f850484e7ded2169d0906f77cbdb58b096ff511272284d6952a6f7d3d22e51d",
+      "staged_object": "5af4e86d6b86c1a0bbb5e9a798aadc73dd2f78ae"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/build-reviewed.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "e7bd6f8432c219a43955f6334fba5dd7483f687e2cf1efaea2900b080ae63a89",
+      "staged_object": "908f1d5ef09c60b4b7fafef99c57f45aa7cfe40d"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/build-reviewed.log",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "3f850484e7ded2169d0906f77cbdb58b096ff511272284d6952a6f7d3d22e51d",
+      "staged_object": "5af4e86d6b86c1a0bbb5e9a798aadc73dd2f78ae"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/coverage-build-final.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "10481eb4196174a416129fea2ba8c27539ddb146f6bddab95e48bdd49a299c91",
+      "staged_object": "0ba4f8ef35e5ae5dee693b6a8ea92918deae6d48"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/coverage-build-final.log",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "795b041de63fb0bf68160d517ed609dea42d1f51b08bb4d7669a0f966fe4b626",
+      "staged_object": "3ce4bfbe6ec9fab888c44071f943e4e2e425fa22"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/coverage-state-reviewed.txt",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "5ca01aa564d37c82d25c4896f52b007ed88f5fde396ce982c97a6ba8d10947ba",
+      "staged_object": "d92cd482ae2de61c8a41b7620fdc5e8306149711"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/coverage-state.txt",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "71e2a837826b5ff60f05eb375648b129d1b2da596d6480faede9359a4cee37e0",
+      "staged_object": "c11fb88dc5ce99222adf1b8308610154cc514157"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/coverage-summary-reviewed.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "61729012b08a655ad41430541ee069cb89ac6108212d7f8b941d9c846c978b85",
+      "staged_object": "c32920aa46dceff288a5929843c431329c1fb0bf"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/coverage-summary.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "61729012b08a655ad41430541ee069cb89ac6108212d7f8b941d9c846c978b85",
+      "staged_object": "c32920aa46dceff288a5929843c431329c1fb0bf"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/coverage-tests-final.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "aca7c15ddf595bf8ec947e85e6d3c9d3f0c8dd54b2bbc3a080a54c84ae3995af",
+      "staged_object": "a052b9f46316faf38d331d420bfd9adaaeb973be"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/coverage-tests-final.log",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "ec9ff5510545c0119d67e89df4d0e16b5c35965fed6551561c85b46c639ac8cc",
+      "staged_object": "f4dca71b878adc8b76dac0b478b9329c65d3bbd1"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/coverage-tests-reviewed.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "23cbad813fd06de40f735d1c4d4a05cef0caf22c0d55a7154b54ae960f32b946",
+      "staged_object": "e0380aa5a1322cea2216b6242c6308342eab89c6"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/coverage-tests-reviewed.log",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "858f43c6b06e28e863af4c12a2175dd035c2bba3744d81947c2f20ef0a2bcaea",
+      "staged_object": "dbb8598c92c34d972c2c26882bf4b1fd7ea73e04"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/ctest-refactored.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "92b1792c20cd9f486465bdbd5ff136a62abd8125a4729d081ad4bec1d06d8670",
+      "staged_object": "dc1381d8e1ff547caac08a71d93be76b5b9a1fb2"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/ctest-refactored.log",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "296a7e35ddbc7d35d61761fba8936b66f9e005be0add27783083cf8e218bea49",
+      "staged_object": "d5d82150171494a13795faf76aad98e72412b887"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/ctest-reviewed.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "6b35833ebceffd727cd89004774e138fa3e2ec3351a5f1e74566ddd1aaedd3d8",
+      "staged_object": "8aadff9e02a32c816bd222a71612c2a6795b9576"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/ctest-reviewed.log",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "bdd91395d47575fc22d38030b0e67067eb43a5ae3f38ab4b4591b902f3e443f2",
+      "staged_object": "c0ea5039b4a758dbbd064d4eee59cbac78fc074b"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/float-roundtrip-characterization.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "7d2d4dfa751ca452f6f1e439fe11d10a082bdc8781daa8a685d846a88cd95cee",
+      "staged_object": "d792dfffb2d432273997f8f353f808bac648f5c6"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/float-roundtrip-characterization.log",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "cd216794ec24ac707cb1c6547cb1ca1b835d69c6256e7d49db784150d444fec9",
+      "staged_object": "b5923f28855951301dd291e4282c2e693c3051ac"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/flush-baseline.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "90c194a765d246b86d83f32a5481065ddae2069dbd4c5298c0397eeaf1530853",
+      "staged_object": "d14d59512ae7bc6c69d9021506c3e733a763adde"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/flush-baseline.log",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "3a1aaf3636b4c9abc65b3936729fa529747a8503fdb32662def91f82e2926486",
+      "staged_object": "e2a90403eda928d5d2a9a61c1fb5c7845984bd81"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/production-dependencies.txt",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "405199bf4ea134a0d5a8b0e8890ac8570073acbee58e9a055ecffae385e4c71f",
+      "staged_object": "98f7d89e61db2dbe683c99441454e40dbcfbb70e"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/receipt.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "1d7d009ce7d86a3512f2705be765dbe1a927358f549a1efe58d92ff90a237444",
+      "staged_object": "ac24db9f8b9dc99a7c2402f1c4449787185cfa5f"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/retained-comparison-corrected.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "4b6b381914415ce0e39f6976196da96679cc4ab2b0ac5d56238213eb7fb789ba",
+      "staged_object": "d461d938658f15df59ff2b40aef565d80d993a3c"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/retained-comparison-corrected.log",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "78144b9ec346dd714c5809bc9846cc89d0ff937f1cf2fea6191dba5012c0cb88",
+      "staged_object": "33cd48caad119b3e852467f73b5a3eeb5d494c36"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/retained-comparison.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "391d06447c3b51376434210afce8c61c7f6053692d7a62b6feee84182a95f1df",
+      "staged_object": "78c97e70ef395e3637790004373a1860e554ad3b"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/retained-comparison.log",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "d369e829c5b3995918a2498a13bf662cd60fc664312aeb003bb8547315b8d530",
+      "staged_object": "b894e21d09ed39179547b84e755d096ca628d11b"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/review-repairs-green.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "17304f8be2393d13eb8071f5c007d6585a08459a638ad8c3099652a7bc83544a",
+      "staged_object": "54ee188f2aa1b4738cf66ad05ab0f742523caacc"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/review-repairs-green.log",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "be94ee523dc749b4a4124fadf008d9c3de75f4aa11af11a4ab912a9882b5a74f",
+      "staged_object": "de11dc62b796b13acb3a15b9204593d978c0a6e0"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/review-round1.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "77c825a8bbb13254d203da1e2458c8004a333e90a58e78b4ddb74762c92a857c",
+      "staged_object": "2d615fb9556d5efb5a222dac069803f09fd180f4"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/spec-preview.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "59230d37150d7841c03e9ab9e1fa958ff537a872460cd6a3d7c7e9ffad4ea653",
+      "staged_object": "140aa0d895898ee173b429a066350a8fa2b5a191"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/spec-preview.log",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "d9acc8ef927980439fbb9e8eef4d0d093ceeed81398c99d45fb535d957b5b7a8",
+      "staged_object": "fe21f2187fc76bb66eae2757a3228e06d05e51ef"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/state-green-final.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "307457ec4285bce016b0f0316a6084ec2d178d772d00e40c6fa22d0717adb113",
+      "staged_object": "c99db0d7c918eb1121a5c9b070c9eaae194a88a7"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/state-green-final.log",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "2052ff9df5e705b5856df55256220d7945c0c3652bbd881cacab4822881bdc4e",
+      "staged_object": "6fff1a426c84c47ceeda7315552363bddd90669b"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/state-green.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "96d2ce4764feb63c06ef700877acccc6f3d20c2f8877a731d5a59aba673c83b6",
+      "staged_object": "e6ce48bc73c14892b4ca7dcdf4d2e9c2ea401338"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/state-green.log",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "442f3f01b3e6c5c672e0c6503f76700bc60ce0396d01968df357a0142bb72fca",
+      "staged_object": "b061e77149530eead9b17a805ede2c84f5e78d1a"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/state-red.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "04fff83a7346fa3d5a7826829088ea15431c2fbaa16c29ff30d5dc90cf3ef9c0",
+      "staged_object": "a8d97eb6f21373e15329413285d20faa1543f5aa"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/state-red.log",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "52b6173acc94a5349d73baea7035300e6142b19f62a49f576b659ea15d2d2a32",
+      "staged_object": "06b0c5385b2714473df0886c54dc34ea22b8c53e"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/tb-state-oracle-red.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "a82d5de25a45443f27160bc882dfec78e651a29e650a8e8b2e58a70a8c87ce82",
+      "staged_object": "9ca8440d4c9de20631f182df4eb2822520ddd0d2"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/tb-state-oracle-red.log",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "5f4e863ed0f3cef27bfea877d378fc3bf4e29647fcd9d72759bb96e179fc3fb2",
+      "staged_object": "2e660051f03a6bc561c51393015273c0b6cdef7f"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/validator-final-command.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "8540d5ff2eb621e809819ab29f2996a66de3800d4f587c851d15cd9050078c06",
+      "staged_object": "16f8ab2e6bab9de903074cbef7b35c5b189e253b"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/validator-final-result.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "46d58da51c08bd34a4e6d4e5ab91728c56a8abc70587aae29cc5457bb24cb601",
+      "staged_object": "5219156da2948049f71dfb5cf672c65750f0e81e"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/validator-final.stderr",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "c96c1b9e2435ecbdc6417ccb13ad29636130f0023749b456b9ce9a4acff0d0bf",
+      "staged_object": "dce4065723b85eb6d7c727f08a2b5c5111b9b7be"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/validator-reviewed-command.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "ce4130a4d182f8bb8be72659cca0841cc5b29b907854f9c460ff956892c9576b",
+      "staged_object": "82d9c5a3e4371d2cd5e73c6f5b53d273dba9ee4a"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/validator-reviewed-result.json",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "9e9353b6ff9730e054d19507c8e168f938eb90ef97d90928b88ee02f78b91ecb",
+      "staged_object": "7c1f7935136d0fe9329b5d369771e39f2f151ebf"
+    },
+    {
+      "path": "docs/migrations/evidence/clap-state-2026-10-16/validator-reviewed.stderr",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "64a85daf49d5ca671a0e14cccc46f43506107b6710d70bddd6a66723fdd7fe19",
+      "staged_object": "53fd2715489af414ffb3a7e45f321c3be3ad6c15"
+    },
+    {
+      "path": "docs/migrations/juce-free-clap-dependencies.json",
+      "index_worktree_status": "M ",
+      "mode": "100644",
+      "sha256": "2be60126e6a33c12b958a4bc41e28f1a54988a5ee3f492dc59391faa6c8c0603",
+      "staged_object": "5cca19c8adb5a2e31d9726c3d8ae731c12faf198"
+    },
+    {
+      "path": "docs/migrations/juce-replacement-progress.md",
+      "index_worktree_status": "M ",
+      "mode": "100644",
+      "sha256": "73d58a5b0f1465758d46315857cc5686f51f5092610280bf57b4b7e1f38fff53",
+      "staged_object": "02040334c91b084f90ef24e799f73bc60f9a0bb9"
+    },
+    {
+      "path": "openspec/changes/add-clap-proof-state/.openspec.yaml",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "9cfa2ab963a8c9b58eecdb9fd5b55544e988fee8de8b887226ffc32d27744459",
+      "staged_object": "0cb476561afe62049b71adb9b55c5ca7ebc8a759"
+    },
+    {
+      "path": "openspec/changes/add-clap-proof-state/design.md",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "ac4a1f8a46b2d5d8e0473c51cbb63a2a31558eca51b7b381bd96e260fd0cdabe",
+      "staged_object": "d3849330123f06d2f48c76c49afc3f1d30b0857a"
+    },
+    {
+      "path": "openspec/changes/add-clap-proof-state/proposal.md",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "71dae2240eae284d0504e865d9bab8d0428f4e4ccf7a67bf88cce6508b173f93",
+      "staged_object": "6c768f58f5df2705edbaf21e49410b72db3910fd"
+    },
+    {
+      "path": "openspec/changes/add-clap-proof-state/specs/juce-free-clap-state/spec.md",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "69c1537fcb1ea3ce53d263aa6c2956a84d4b6ca114e0e897ad2409e4d325c828",
+      "staged_object": "712d060650789c839be014a455d98bac7eb05f94"
+    },
+    {
+      "path": "openspec/changes/add-clap-proof-state/tasks.md",
+      "index_worktree_status": "A ",
+      "mode": "100644",
+      "sha256": "453c278e80a0b7ed5313f5a7d857938e6ded85b988e4c9fb7d58ec2e289187fc",
+      "staged_object": "65edb54cf3284a7c8f4c1882a0f44336f6292cc5"
+    },
+    {
+      "path": "src/clap-adapter/Cargo.lock",
+      "index_worktree_status": "M ",
+      "mode": "100644",
+      "sha256": "91226b3a36221d79b436b8e5a0d659aea61c764afbdde955e343f02d052fafb5",
+      "staged_object": "5006cb37dc4224fc8cb4a1feea0a8e42d75b4126"
+    },
+    {
+      "path": "src/clap-adapter/Cargo.toml",
+      "index_worktree_status": "M ",
+      "mode": "100644",
+      "sha256": "b9e976f19ee6a8755e49a9219814aa3ada19fd7df0531351dba2a976c7e83eb2",
+      "staged_object": "1aa0de3e45af1aa4f3a7d013fc36c225e647c2d7"
+    },
+    {
+      "path": "src/clap-adapter/src/lib.rs",
+      "index_worktree_status": "M ",
+      "mode": "100644",
+      "sha256": "cb4256a54f9d8f8d8bf4f34f596cf80611286aef44582223fa2e824a9460d477",
+      "staged_object": "7354a0ef97c5d58fb5838903e840b33364845654"
+    },
+    {
+      "path": "src/clap-adapter/tests/clap_dynamic.rs",
+      "index_worktree_status": "M ",
+      "mode": "100644",
+      "sha256": "bc11036d1cd41491210ec273e19560892b9c781343e7499b28e316d1ff024bc5",
+      "staged_object": "8970f7e071ee59bc61f8e41b9928d967393ac311"
+    }
+  ]
+}
