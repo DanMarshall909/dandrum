@@ -1,0 +1,11 @@
+{
+  "command": [
+    "/home/dan/.local/bin/ctest",
+    "--test-dir",
+    "build/engine-only",
+    "--output-on-failure"
+  ],
+  "cwd": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters",
+  "elapsed_seconds": 102.223,
+  "exit_code": 0
+}

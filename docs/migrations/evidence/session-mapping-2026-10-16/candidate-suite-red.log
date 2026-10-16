@@ -1,0 +1,43 @@
+   Compiling dandrum_instrument_session v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/instrument-session)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.72s
+     Running tests/session.rs (src/instrument-session/target/debug/deps/session-06759a4f0334f646)
+
+running 9 tests
+test unusable_documents_or_missing_samples_cannot_create_accepted_sessions ... ok
+test attachment_limit_reclaims_dropped_and_explicitly_retired_connections ... ok
+test mapping_candidate_derives_inverse_and_prepares_only_the_requested_zone_change ... FAILED
+test accepted_document_survives_detach_and_reattach_without_reloading_samples ... ok
+test inclusive_midi_boundaries_and_nondefault_inverse_come_from_native_state ... FAILED
+test existing_sampler_baseline_uses_real_assets_and_signed_key_mapping ... ok
+test foreign_and_retired_connections_cannot_read_another_session ... ok
+test mapping_admission_rejects_foreign_and_retired_connections ... FAILED
+test invalid_or_ambiguous_mapping_intents_preserve_the_accepted_instrument ... ok
+
+failures:
+
+---- mapping_candidate_derives_inverse_and_prepares_only_the_requested_zone_change stdout ----
+
+thread 'mapping_candidate_derives_inverse_and_prepares_only_the_requested_zone_change' (1274737) panicked at tests/session.rs:88:66:
+called `Result::unwrap()` on an `Err` value: InvalidMapping
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- inclusive_midi_boundaries_and_nondefault_inverse_come_from_native_state stdout ----
+
+thread 'inclusive_midi_boundaries_and_nondefault_inverse_come_from_native_state' (1274734) panicked at tests/session.rs:163:8:
+called `Result::unwrap()` on an `Err` value: InvalidMapping
+
+---- mapping_admission_rejects_foreign_and_retired_connections stdout ----
+
+thread 'mapping_admission_rejects_foreign_and_retired_connections' (1274736) panicked at tests/session.rs:147:5:
+assertion failed: matches!(first.prepare_mapping(&b, intent.clone()),
+    Err(SessionError::InvalidAttachment))
+
+
+failures:
+    inclusive_midi_boundaries_and_nondefault_inverse_come_from_native_state
+    mapping_admission_rejects_foreign_and_retired_connections
+    mapping_candidate_derives_inverse_and_prepares_only_the_requested_zone_change
+
+test result: FAILED. 6 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+error: test failed, to rerun pass `--test session`

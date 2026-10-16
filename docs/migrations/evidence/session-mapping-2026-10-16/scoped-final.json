@@ -1,0 +1,11 @@
+{
+  "command": [
+    "openspec",
+    "validate",
+    "add-persistent-instrument-session",
+    "--strict"
+  ],
+  "cwd": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters",
+  "elapsed_seconds": 1.033,
+  "exit_code": 0
+}

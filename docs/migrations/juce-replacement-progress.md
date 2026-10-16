@@ -130,3 +130,31 @@ request/job recovery, actual consumers and editor destruction remain open;
 no new canonical scenario is synced by this initial ownership foundation.
 Independent publication review passed for this initial ownership foundation;
 mapping/history/native integration and the full beta remain open.
+
+
+The initial ownership foundation is published at
+[`6f8167b`](https://github.com/DanMarshall909/dandrum/commit/6f8167ba73314119b18c78efa0cdfffe9f022a03).
+Normal hooks passed and the exact live feature head was verified; main is unchanged.
+
+## Prepared mapping candidate — 16 October 2026
+
+Task 1.3 adds one typed native map/zone key-range candidate. Native code derives
+its inverse from the accepted YAML, changes only that field's authored value,
+and reloads/prepares the existing real sampler with its retained resource root.
+Serialization normalizes YAML presentation/comments; all unrelated values and
+asset references remain equal. Candidate preparation leaves the accepted
+runtime, document and empty history untouched. It does not yet accept an edit.
+
+Eleven component tests include a non-first map/zone, same-named zones in distinct
+maps, nondefault inverse data, inclusive MIDI 0/127, ambiguous/unknown identities,
+invalid ranges/connections, absent sample maps and failed resource repreparation.
+The candidate produces literal stereo -0.5 at MIDI 60 and silence at 36; the
+accepted instrument retains its original signed note-36 sound. Tests retain
+independent state and source-file loss assertions. Measured owner coverage is
+139/139 lines, 187/187 regions and 20/20 functions; no branch instrumentation or
+mutation claim is made. [Evidence](evidence/session-mapping-2026-10-16/receipt.json)
+records retained commands and limits.
+
+Independent publication review passed for task 1.3 only; full session and beta acceptance remain pending. Atomic activation,
+native undo/redo, bounded jobs/recovery and concrete consumers remain pending;
+no complete session scenario is synchronized and the full beta stays active.

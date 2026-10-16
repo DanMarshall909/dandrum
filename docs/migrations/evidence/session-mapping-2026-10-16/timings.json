@@ -1,0 +1,112 @@
+{
+  "command": [
+    "/home/dan/.cargo/bin/cargo",
+    "test",
+    "--locked",
+    "--offline",
+    "--jobs",
+    "2",
+    "--manifest-path",
+    "src/instrument-session/Cargo.toml",
+    "--test",
+    "session",
+    "--no-run",
+    "--message-format=json"
+  ],
+  "executable": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/instrument-session/target/debug/deps/session-06759a4f0334f646",
+  "repeats": 3,
+  "tests": {
+    "accepted_document_survives_detach_and_reattach_without_reloading_samples": {
+      "seconds": [
+        0.030285,
+        0.031542,
+        0.030912
+      ],
+      "median_seconds": 0.030912
+    },
+    "attachment_limit_reclaims_dropped_and_explicitly_retired_connections": {
+      "seconds": [
+        0.031241,
+        0.030192,
+        0.030641
+      ],
+      "median_seconds": 0.030641
+    },
+    "documents_without_sample_maps_reject_mapping_without_changing_accepted_state": {
+      "seconds": [
+        0.0219,
+        0.022285,
+        0.02322
+      ],
+      "median_seconds": 0.022285
+    },
+    "existing_sampler_baseline_uses_real_assets_and_signed_key_mapping": {
+      "seconds": [
+        0.030352,
+        0.031042,
+        0.032628
+      ],
+      "median_seconds": 0.031042
+    },
+    "failed_sample_repreparation_preserves_the_working_document_and_sound": {
+      "seconds": [
+        0.038057,
+        0.038867,
+        0.038294
+      ],
+      "median_seconds": 0.038294
+    },
+    "foreign_and_retired_connections_cannot_read_another_session": {
+      "seconds": [
+        0.042079,
+        0.041315,
+        0.041662
+      ],
+      "median_seconds": 0.041662
+    },
+    "inclusive_midi_boundaries_and_nondefault_inverse_come_from_native_state": {
+      "seconds": [
+        0.045574,
+        0.046323,
+        0.046066
+      ],
+      "median_seconds": 0.046066
+    },
+    "invalid_or_ambiguous_mapping_intents_preserve_the_accepted_instrument": {
+      "seconds": [
+        0.053165,
+        0.053626,
+        0.052986
+      ],
+      "median_seconds": 0.053165
+    },
+    "mapping_admission_rejects_foreign_and_retired_connections": {
+      "seconds": [
+        0.041384,
+        0.042071,
+        0.042217
+      ],
+      "median_seconds": 0.042071
+    },
+    "mapping_candidate_derives_inverse_and_prepares_only_the_requested_zone_change": {
+      "seconds": [
+        0.058815,
+        0.058732,
+        0.057218
+      ],
+      "median_seconds": 0.058732
+    },
+    "unusable_documents_or_missing_samples_cannot_create_accepted_sessions": {
+      "seconds": [
+        0.022279,
+        0.021563,
+        0.020677
+      ],
+      "median_seconds": 0.021563
+    }
+  },
+  "peer_median_seconds": 0.038294,
+  "above_1_5_peer_median": [
+    "mapping_candidate_derives_inverse_and_prepares_only_the_requested_zone_change"
+  ]
+}

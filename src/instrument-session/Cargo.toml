@@ -6,6 +6,7 @@ publish = false
 
 [dependencies]
 dandrum_engine = { path = "../rust-engine" }
+serde_yaml = "0.9"
 
 [dev-dependencies]
 tempfile = "3"

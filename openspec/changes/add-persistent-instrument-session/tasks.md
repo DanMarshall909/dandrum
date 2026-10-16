@@ -2,7 +2,7 @@
 
 - [x] 1.1 Add the independent Rust session crate/test scaffold and characterize actual Advanced Drum Kit preparation, signed MIDI 36 output and MIDI 60 silence using the existing engine and assets; register its tests in the normal independent build lane.
 - [x] 1.2 Specify and implement instrument-owned accepted document/revision and disposable attachment APIs; prove detach/reattach, retired/cross-instance admission and independent ownership without GUI/format dependencies.
-- [ ] 1.3 Specify and implement one typed key-range candidate with native inverse derivation, unchanged unrelated YAML and actual asset preparation; prove mapping 36→60 and validation/preparation rejection with literal output.
+- [x] 1.3 Specify and implement one typed key-range candidate with native inverse derivation, unchanged unrelated YAML and actual asset preparation; prove mapping 36→60 and validation/preparation rejection with literal output.
 
 ## 2. Transaction and bounded journal
 

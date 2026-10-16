@@ -8,7 +8,15 @@ engine directly; they do not call into the session.
 This is the foundation of [issue #23](https://github.com/DanMarshall909/dandrum/issues/23),
 consumed by the JUCE replacement in #24. Current executable behavior covers
 initial preparation, 16 live attachments, retired/foreign attachment rejection,
-dropped-connection reclamation and reattachment without resource reload.
+dropped-connection reclamation and reattachment without resource reload. A typed
+`SetZoneKeyRange` prepares an uncommitted candidate from native map/zone IDs,
+derives its inverse from accepted YAML, and prepares actual samples using the
+retained native resource context. It preserves all unrelated YAML values and
+asset references; YAML formatting/comments are normalized when serializing the
+candidate. Invalid ranges, unknown/ambiguous targets, invalid connections and
+failed sample preparation leave the accepted document and sound unchanged.
+
+Candidate preparation does not publish an edit or change revision/history.
 Mapping transactions, native history, worker/handoff integration, the typed
 browser transport and actual WebView destruction proof remain pending in
 `openspec/changes/add-persistent-instrument-session/tasks.md`.
@@ -26,7 +34,7 @@ ctest --test-dir build/engine-only --output-on-failure -L '^session-fast$'
 ctest --test-dir build/engine-only --output-on-failure -L '^session-slow$'
 ```
 
-The fast lane currently contains the five session component tests; the slow
+The fast lane currently contains eleven session component tests; the slow
 selection is empty. Combined selection is `-L '^session-(fast|slow)$'`. Full
 `ctest --test-dir build/engine-only` also runs the source-absence build guard,
 which executes these tests with JUCE/browser/UI source trees absent. The

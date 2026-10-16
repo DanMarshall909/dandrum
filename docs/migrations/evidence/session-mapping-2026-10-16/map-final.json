@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/check-spec-coverage"
+  ],
+  "cwd": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters",
+  "elapsed_seconds": 0.126,
+  "exit_code": 0
+}

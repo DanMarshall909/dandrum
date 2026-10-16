@@ -1,0 +1,55 @@
+{
+  "scope": "Only task 1.3: typed prepared mapping candidate. No accepted transition, runtime activation, revision/history or complete session acceptance claim.",
+  "base": "6f8167ba73314119b18c78efa0cdfffe9f022a03",
+  "source_sha256": {
+    "src/instrument-session/Cargo.toml": "356897ba643f619dd03e98b550edc9b5253fc95cb2bad07ee7fa0614584cb4a1",
+    "src/instrument-session/Cargo.lock": "1537a3dc07c17fb7fe79786d1863b7e9b7e3db328757845fdbe3ffdbb10201eb",
+    "src/instrument-session/src/lib.rs": "6d6e96ba930b302955a96ff103aac4334caaeace32d7bf531ac943ff7dad3eb0",
+    "src/instrument-session/tests/session.rs": "5494f7b3d4e4969a366aad732efa357d8324fc9568fcce3f8a5a0bca76cfb5ce"
+  },
+  "tests": {
+    "component": 11,
+    "full_ctest": 21,
+    "full_ctest_seconds": 102.223,
+    "post_comment_owning_lane_seconds": 0.878,
+    "source_absence": "Real session tests and both C++ ABI tests pass in snapshot without JUCE/web/ui",
+    "comparison": "Existing JUCE configure/inventory proof retained unchanged from foundation; no host/build configuration changed"
+  },
+  "coverage": {
+    "lines": [
+      139,
+      139
+    ],
+    "regions": [
+      187,
+      187
+    ],
+    "functions": [
+      20,
+      20
+    ],
+    "scope": "Session implementation only; actual real-engine signed assertions retained separately",
+    "branches": "Not instrumented",
+    "mutation": "Excluded by recorded user direction"
+  },
+  "refactor": {
+    "production": "Consolidate constructor and candidate validation/preparation into one prepare_document boundary; keep typed intent distinct from derived inverse and uncommitted prepared resources. No module extraction needed.",
+    "tests": "Share creation of test-owned source WAV; preserve separate success, inverse/boundary, validation/identity, missing-map and failed-resource oracles."
+  },
+  "lanes": {
+    "fast": "All 11 component tests; three per-case warm repetitions include setup/teardown, peer median 0.038294 s, maximum 0.058732 s.",
+    "timing_candidate": "Non-first-map candidate proof is >1.5x peer median because it prepares two real maps and renders both accepted/candidate buses. At <0.06 s it retains unique mapping-preservation evidence within the few-seconds suite budget; no lane move justified.",
+    "slow": "Session-specific selection empty. Existing absent-source/package boundary lane passes in full CTest."
+  },
+  "limits": [
+    "Unrelated YAML values/assets are preserved; formatting/comments normalized by existing serde_yaml serialization.",
+    "No runtime installation, accepted edit, journal, request/revision gate, pending worker or real editor proof yet.",
+    "Complete proposed session scenarios need native history and concrete consumers; no canonical sync/map changes.",
+    "Full beta remains active; JUCE comparison and main preserved."
+  ],
+  "dependencies": "One direct serde_yaml edge already present in engine lock graph; no package/version added or GUI/format dependencies.",
+  "storage_before_coverage": "115 GiB free; session target 1.7 GiB, engine target 5.2 GiB, independent target 15 GiB; reusable outputs preserved.",
+  "review": "Independent publication review passed for task 1.3 only; full session and beta acceptance remain pending.",
+  "raw_evidence": "/tmp/dandrum-session-mapping",
+  "portable_log_policy": "Trailing blank EOF line removed from candidate-green.log for repository whitespace gate; exact raw output retained under /tmp/dandrum-session-mapping."
+}

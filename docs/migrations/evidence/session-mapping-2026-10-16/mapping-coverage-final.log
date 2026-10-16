@@ -1,0 +1,25 @@
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+   Compiling dandrum_instrument_session v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/instrument-session)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.96s
+     Running tests/session.rs (src/instrument-session/target/llvm-cov-target/debug/deps/session-06759a4f0334f646)
+
+running 11 tests
+test unusable_documents_or_missing_samples_cannot_create_accepted_sessions ... ok
+test documents_without_sample_maps_reject_mapping_without_changing_accepted_state ... ok
+test attachment_limit_reclaims_dropped_and_explicitly_retired_connections ... ok
+test existing_sampler_baseline_uses_real_assets_and_signed_key_mapping ... ok
+test accepted_document_survives_detach_and_reattach_without_reloading_samples ... ok
+test failed_sample_repreparation_preserves_the_working_document_and_sound ... ok
+test mapping_admission_rejects_foreign_and_retired_connections ... ok
+test foreign_and_retired_connections_cannot_read_another_session ... ok
+test inclusive_midi_boundaries_and_nondefault_inverse_come_from_native_state ... ok
+test invalid_or_ambiguous_mapping_intents_preserve_the_accepted_instrument ... ok
+test mapping_candidate_derives_inverse_and_prepares_only_the_requested_zone_change ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+Filename                                                                                       Regions    Missed Regions     Cover   Functions  Missed Functions  Executed       Lines      Missed Lines     Cover    Branches   Missed Branches     Cover
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/instrument-session/src/lib.rs         187                 0   100.00%          20                 0   100.00%         139                 0   100.00%           0                 0         -
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+TOTAL                                                                                              187                 0   100.00%          20                 0   100.00%         139                 0   100.00%           0                 0         -

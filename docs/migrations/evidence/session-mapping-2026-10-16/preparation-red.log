@@ -1,0 +1,24 @@
+   Compiling dandrum_instrument_session v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/instrument-session)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.82s
+     Running tests/session.rs (src/instrument-session/target/debug/deps/session-06759a4f0334f646)
+
+running 1 test
+test failed_sample_repreparation_preserves_the_working_document_and_sound ... FAILED
+
+failures:
+
+---- failed_sample_repreparation_preserves_the_working_document_and_sound stdout ----
+
+thread 'failed_sample_repreparation_preserves_the_working_document_and_sound' (1275624) panicked at tests/session.rs:184:5:
+assertion failed: matches!(session.prepare_mapping(&attachment, SetZoneKeyRange
+    { map_id: "kit".into(), zone_id: "kick".into(), key_range: [60, 60], }),
+    Err(SessionError::PreparationFailed(_)))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    failed_sample_repreparation_preserves_the_working_document_and_sound
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.03s
+
+error: test failed, to rerun pass `--test session`

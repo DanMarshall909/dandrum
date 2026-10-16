@@ -204,6 +204,7 @@ name = "dandrum_instrument_session"
 version = "0.1.0"
 dependencies = [
  "dandrum_engine",
+ "serde_yaml",
  "tempfile",
 ]
 
