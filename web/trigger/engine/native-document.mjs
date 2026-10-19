@@ -155,7 +155,9 @@ export function compileNativePatch(patch,session){
           candidate.region=`${source.id}.${id}`;
         }
       }
-      const zone={id:index?`${rule.id}_${index}`:rule.id,region:candidate.region,key_range:[rule.noteLo,rule.noteHi],velocity_range:[rule.velLo,rule.velHi]};
+      const nativeZoneId=rule.nativeMapId&&rule.nativeZoneId
+        &&rule.id===`${rule.nativeMapId}.${rule.nativeZoneId}`?rule.nativeZoneId:rule.id;
+      const zone={id:index?`${nativeZoneId}_${index}`:nativeZoneId,region:candidate.region,key_range:[rule.noteLo,rule.noteHi],velocity_range:[rule.velLo,rule.velHi]};
       Object.assign(zone,{gain_db:rule.nativeGain,pan:rule.nativePan,pitch_semitones:rule.nativeTune,choke_group:rule.nativeChokeGroup,control_group:target?.nativeControlGroup??rule.nativeControlGroup},candidate);
       for(const key of Object.keys(zone))if(zone[key]==null||zone[key]==='')delete zone[key];
       zones.push(zone);

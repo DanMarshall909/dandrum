@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parse} from 'yaml';
+import {parse,stringify} from 'yaml';
 import {session,connection,backend,yaml} from './native-fixture.mjs';
 import {NativeEngine} from '../engine/native-engine.mjs';
 import {entityDelta} from '../engine/entity-delta.mjs';
@@ -43,7 +43,7 @@ test('structural commands serialize through host and reversible operands compile
   assert.equal(engine.getPatch().name,'Renamed');assert.equal(engine.getPatch().rules.find(r=>r.id==='kit.kick').noteLo,40);
   assert.deepEqual(bridge.calls.filter(c=>c[0]==='prepareSampler').map(c=>c[2]),[7,8]);
   await engine.applyDelta(entityDelta(engine.getPatch(),before));assert.equal(engine.getPatch().name,before.name);
-  const graph=parse(bridge.calls.filter(c=>c[0]==='prepareSampler').at(-1)[1]);assert.equal(graph.assets.sample_maps[0].zones.find(z=>z.id==='kit.kick').key_range[0],36);
+  const graph=parse(bridge.calls.filter(c=>c[0]==='prepareSampler').at(-1)[1]);assert.equal(graph.assets.sample_maps[0].zones.find(z=>z.id==='kick').key_range[0],36);
 });
 
 test('live writes and notes carry current generation and use normalized values without phantom controls',async t=>{
@@ -203,6 +203,37 @@ test('migrated key mapping uses native identities and native undo without a loca
   assert.deepEqual(accepted[1],{kind:'undo',instance:'18446744073709551615',attachment:'9007199254740993',request:'2',revision:'1'});
   assert.equal(engine.getPatch().rules.find(rule=>rule.id==='kit.kick').noteLo,36);
   assert.equal(store.undoCount,0);
+});
+
+test('whole-document edits preserve native zone identity for later mapping and undo',async t=>{
+  const {engine,bridge}=await setup(t);await engine.renameNode('root','Renamed kit');
+  const renamedYaml=engine.session.yaml,replacement=engine.connection,accepted=[];
+  bridge.functions.setInstrumentZoneKeyRange=(_instance,_attachment,request,_revision,mapId,zoneId,low,high)=>{
+    const map=parse(engine.session.yaml).assets.sample_maps.find(item=>item.id===mapId);
+    if(!map?.zones.some(zone=>zone.id===zoneId))return `Unknown native zone: ${zoneId}`;
+    accepted.push(['map',request,mapId,zoneId,low,high]);return {status:'accepted',job_id:request};
+  };
+  bridge.functions.undoInstrumentSession=(_instance,_attachment,request)=>{
+    accepted.push(['undo',request]);return {status:'accepted',job_id:request};
+  };
+  bridge.functions.getInstrumentSessionJobStatus=request=>{
+    const undo=accepted.at(-1)[0]==='undo';
+    if(undo)bridge.setSession(session(renamedYaml,10,connection({instanceId:replacement.instanceId,attachmentId:replacement.attachmentId,revision:'2',nextRequestId:'3',history:{undoCount:0,redoCount:1}})));
+    else{
+      const graph=parse(renamedYaml),zone=graph.assets.sample_maps[0].zones.find(item=>item.id==='kick');
+      zone.key_range=[60,60];
+      bridge.setSession(session(stringify(graph),9,connection({instanceId:replacement.instanceId,attachmentId:replacement.attachmentId,revision:'1',nextRequestId:'2',history:{undoCount:1,redoCount:0}})));
+    }
+    const state=engine.backend.functions.getSamplerSession().connection;
+    return {state:'completed',request_id:request,revision:state.revision,undoCount:state.history.undoCount,redoCount:state.history.redoCount,error:''};
+  };
+  await engine.updateRule('kit.kick',{noteLo:60,noteHi:60});
+  assert.deepEqual(accepted[0],['map','1','kit','kick',60,60]);
+  assert.equal(engine.getPatch().rules.find(rule=>rule.id==='kit.kick').noteLo,60);
+  await engine.undoSession();
+  assert.deepEqual(accepted[1],['undo','2']);
+  assert.equal(engine.getPatch().name,'Renamed kit');
+  assert.equal(engine.getPatch().rules.find(rule=>rule.id==='kit.kick').noteLo,36);
 });
 
 test('shipped round robin mapping edits every candidate through whole-document preparation',async t=>{

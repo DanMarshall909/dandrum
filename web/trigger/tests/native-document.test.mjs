@@ -61,9 +61,9 @@ test('mapping roots compile to distinct playable regions while unchanged drums r
   patch.rules.push({...kick,id:'kick-second-root',noteLo:60,noteHi:60,root:60});
   const graph=parse(compileNativePatch(patch,initial)),source=graph.assets.sample_sources[0],zones=graph.assets.sample_maps[0].zones;
   const mapped=id=>source.regions.find(region=>region.id===zones.find(zone=>zone.id===id).region.split('.')[1]);
-  assert.equal(mapped('kit.kick').root_note,48);assert.equal(mapped('kick-second-root').root_note,60);
-  assert.deepEqual([mapped('kit.kick').start_frame,mapped('kit.kick').end_frame],[0,12000]);
-  assert.notEqual(zones.find(zone=>zone.id==='kit.kick').region,zones.find(zone=>zone.id==='kick-second-root').region);
+  assert.equal(mapped('kick').root_note,48);assert.equal(mapped('kick-second-root').root_note,60);
+  assert.deepEqual([mapped('kick').start_frame,mapped('kick').end_frame],[0,12000]);
+  assert.notEqual(zones.find(zone=>zone.id==='kick').region,zones.find(zone=>zone.id==='kick-second-root').region);
   kick.root=36;patch.rules=patch.rules.filter(rule=>rule.id!=='kick-second-root');
   const restored=parse(compileNativePatch(patch,initial));assert.equal(restored.assets.sample_sources[0].regions.find(region=>region.id==='kick').root_note,undefined);
 });
