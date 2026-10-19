@@ -86,6 +86,15 @@ int main (int argc, char** argv)
         require (call (bridge, "resizeSamplerEditor", { juce::var ("default") }).isString(),
                  "sampler size command must reject an unavailable editor");
         const auto session = call (bridge, "getSamplerSession");
+        require (static_cast<int> (session["connection"]["version"]) == 1,
+                 "session contract version missing");
+        require (session["connection"]["instanceId"].isString()
+                     && session["connection"]["attachmentId"].isString()
+                     && session["connection"]["revision"].toString() == "0",
+                 "lossless session connection identities missing");
+        require (static_cast<int> (session["connection"]["limits"]["history"]) == 100
+                     && static_cast<int> (session["connection"]["limits"]["outcomes"]) == 128,
+                 "session contract bounds missing");
         require (session["document"]["sources"].size() == 1, "prepared sources missing");
         require (juce::File::isAbsolutePath (session["sourcePath"].toString()), "source provenance missing");
         const auto generation = session["document"]["generation"];
@@ -105,22 +114,45 @@ int main (int argc, char** argv)
         // Only this test's uniquely owned copy is removed; source/user caches survive.
         require (retained.getParentDirectory().deleteRecursively(), "test-owned import cache cleanup failed");
         require (std::abs (hit (processor, 36) + 0.5f) < 0.0001f, "known signed sample incorrect");
+        const auto connection = session["connection"];
+        const auto mapped = waitJob (bridge, call (bridge, "setInstrumentZoneKeyRange",
+            { connection["instanceId"], connection["attachmentId"], connection["nextRequestId"],
+              connection["revision"], juce::var ("kit"), juce::var ("kick"),
+              juce::var (60), juce::var (60) }), "getInstrumentSessionJobStatus");
+        require (mapped["state"].toString() == "completed"
+                     && mapped["revision"].toString() == "1",
+                 "native mapping command failed");
+        require (std::abs (hit (processor, 60) + 0.5f) < 0.0001f,
+                 "native mapping command did not render signed sample");
+        const auto mappedSession = call (bridge, "getSamplerSession");
+        const auto mappedConnection = mappedSession["connection"];
+        const auto undone = waitJob (bridge, call (bridge, "undoInstrumentSession",
+            { mappedConnection["instanceId"], mappedConnection["attachmentId"],
+              mappedConnection["nextRequestId"], mappedConnection["revision"] }),
+            "getInstrumentSessionJobStatus");
+        require (undone["state"].toString() == "completed"
+                     && undone["revision"].toString() == "2",
+                 "native undo command failed");
+        require (std::abs (hit (processor, 36) + 0.5f) < 0.0001f,
+                 "native undo did not restore signed sample");
+        const auto resumedSession = call (bridge, "getSamplerSession");
+        const auto resumedGeneration = resumedSession["document"]["generation"];
         const auto parameterReply = call (bridge, "setParameter",
-            { juce::var ("drums.level"), juce::var (0.125), generation });
+            { juce::var ("drums.level"), juce::var (0.125), resumedGeneration });
         require (parameterReply["status"].toString() == "accepted", "representative knob command rejected");
         require (std::abs (hit (processor, 36) + 0.25f) < 0.0001f, "bridge knob did not change actual sample level");
-        call (bridge, "setParameter", { juce::var ("drums.level"), juce::var (0.25), generation });
+        call (bridge, "setParameter", { juce::var ("drums.level"), juce::var (0.25), resumedGeneration });
         const auto waveform = waitJob (bridge, call (bridge, "requestSourceWaveform",
-            { juce::var ("drums"), juce::var (0), juce::var (32), generation }), "getWaveformJobStatus");
+            { juce::var ("drums"), juce::var (0), juce::var (32), resumedGeneration }), "getWaveformJobStatus");
         require (waveform["state"].toString() == "ready", "whole-source waveform failed");
         require (waveform["result"]["startFrame"].toString() == "0"
             && waveform["result"]["endFrame"].toString() == "51000", "whole-source waveform used cropped region geometry");
         auto edited = original.replace ("key_range: [36, 36]", "key_range: [60, 60]");
-        const auto success = waitJob (bridge, call (bridge, "prepareSampler", { edited, generation }));
+        const auto success = waitJob (bridge, call (bridge, "prepareSampler", { edited, resumedGeneration }));
         require (success["state"].toString() == "completed", "owned YAML replacement failed");
         require (std::abs (hit (processor, 60) + 0.5f) < 0.0001f, "accepted mapping did not render actual sample");
         const auto activeGeneration = processor.getParameterSurfaceGeneration();
-        const auto rejected = call (bridge, "prepareSampler", { original, generation });
+        const auto rejected = call (bridge, "prepareSampler", { original, resumedGeneration });
         require (rejected.isString(), "stale generation accepted");
         const auto failed = waitJob (bridge, call (bridge, "prepareSampler",
             { juce::var ("invalid: ["), juce::var (static_cast<juce::int64> (activeGeneration)) }));

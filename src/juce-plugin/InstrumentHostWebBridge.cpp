@@ -114,6 +114,44 @@ std::optional<std::uint64_t> parsePositiveDecimalId (const juce::var& value)
     return sequence;
 }
 
+std::optional<std::uint64_t> parseUnsignedDecimalId (const juce::var& value)
+{
+    if (! value.isString())
+        return std::nullopt;
+    const auto digits = value.toString().toStdString();
+    if (digits.empty() || (digits.size() > 1 && digits.front() == '0'))
+        return std::nullopt;
+    std::uint64_t sequence = 0;
+    const auto [end, error] = std::from_chars (digits.data(), digits.data() + digits.size(),
+                                               sequence);
+    if (error != std::errc {} || end != digits.data() + digits.size())
+        return std::nullopt;
+    return sequence;
+}
+
+juce::var instrumentConnectionForWeb (
+    const DandrumAudioProcessor::InstrumentSessionConnectionSnapshot& snapshot)
+{
+    juce::var reply (new juce::DynamicObject());
+    auto* value = reply.getDynamicObject();
+    value->setProperty ("version", static_cast<int> (snapshot.contractVersion));
+    value->setProperty ("instanceId", juce::String (std::to_string (snapshot.instanceId)));
+    value->setProperty ("attachmentId", juce::String (std::to_string (snapshot.attachmentId)));
+    value->setProperty ("revision", juce::String (std::to_string (snapshot.revision)));
+    value->setProperty ("nextRequestId", juce::String (std::to_string (snapshot.nextRequestId)));
+    juce::var limits (new juce::DynamicObject());
+    limits.getDynamicObject()->setProperty ("attachments", static_cast<int> (snapshot.attachmentLimit));
+    limits.getDynamicObject()->setProperty ("history", static_cast<int> (snapshot.historyLimit));
+    limits.getDynamicObject()->setProperty ("outcomes", static_cast<int> (snapshot.outcomeLimit));
+    limits.getDynamicObject()->setProperty ("activeRequests", static_cast<int> (snapshot.activeRequestLimit));
+    value->setProperty ("limits", limits);
+    juce::var history (new juce::DynamicObject());
+    history.getDynamicObject()->setProperty ("undoCount", static_cast<int> (snapshot.undoCount));
+    history.getDynamicObject()->setProperty ("redoCount", static_cast<int> (snapshot.redoCount));
+    value->setProperty ("history", history);
+    return reply;
+}
+
 juce::var meterPacketForWeb (const InstrumentUiMeterDelivery::Packet& packet)
 {
     auto result = std::make_unique<juce::DynamicObject>();
@@ -502,6 +540,7 @@ InstrumentHostWebBridge::InstrumentHostWebBridge (DandrumAudioProcessor& process
       lastSeenParameterSurfaceGeneration (processorToUse.getParameterSurfaceGeneration()),
       sessionId (processorToUse.uiCommands().createSession())
 {
+    instrumentConnection = processor.openInstrumentSessionConnection();
 }
 
 InstrumentHostWebBridge::~InstrumentHostWebBridge()
@@ -512,6 +551,9 @@ InstrumentHostWebBridge::~InstrumentHostWebBridge()
     processor.unsubscribeLiveAnalysis (sessionId);
     processor.closeEditorNoteSession (sessionId);
     processor.uiCommands().closeSession (sessionId);
+    if (instrumentConnection)
+        processor.closeInstrumentSessionConnection (
+            instrumentConnection->instanceId, instrumentConnection->attachmentId);
 }
 
 const char* InstrumentHostWebBridge::bootstrapScript() noexcept
@@ -519,7 +561,7 @@ const char* InstrumentHostWebBridge::bootstrapScript() noexcept
     return nativeFunctionBootstrap;
 }
 
-std::array<InstrumentHostWebBridge::NativeFunctionEntry, 35>
+std::array<InstrumentHostWebBridge::NativeFunctionEntry, 38>
 InstrumentHostWebBridge::nativeFunctions()
 {
     return {{
@@ -529,6 +571,15 @@ InstrumentHostWebBridge::nativeFunctions()
         { "prepareSampler", [this] (const juce::Array<juce::var>& args,
               juce::WebBrowserComponent::NativeFunctionCompletion done)
           { prepareSamplerFromWeb (args, std::move (done)); } },
+        { "setInstrumentZoneKeyRange", [this] (const juce::Array<juce::var>& args,
+              juce::WebBrowserComponent::NativeFunctionCompletion done)
+          { setInstrumentZoneKeyRangeFromWeb (args, std::move (done)); } },
+        { "undoInstrumentSession", [this] (const juce::Array<juce::var>& args,
+              juce::WebBrowserComponent::NativeFunctionCompletion done)
+          { undoInstrumentSessionFromWeb (args, std::move (done)); } },
+        { "getInstrumentSessionJobStatus", [this] (const juce::Array<juce::var>& args,
+              juce::WebBrowserComponent::NativeFunctionCompletion done)
+          { getInstrumentSessionJobStatusFromWeb (args, std::move (done)); } },
         { "chooseSamplerFiles", [this] (const juce::Array<juce::var>& args,
               juce::WebBrowserComponent::NativeFunctionCompletion done)
           { chooseSamplerFilesFromWeb (args, std::move (done)); } },
@@ -912,6 +963,106 @@ void InstrumentHostWebBridge::getSamplerSessionForWeb (
     reply.getDynamicObject()->setProperty ("document", preparedDocumentForWeb (*document));
     reply.getDynamicObject()->setProperty ("yaml", yaml);
     reply.getDynamicObject()->setProperty ("sourcePath", source.getFullPathName());
+    if (! instrumentConnection)
+    {
+        completion (juce::var ("Instrument session connection unavailable"));
+        return;
+    }
+    const auto connection = processor.getInstrumentSessionConnectionSnapshot (
+        instrumentConnection->instanceId, instrumentConnection->attachmentId);
+    if (! connection)
+    {
+        completion (juce::var ("Instrument session connection retired"));
+        return;
+    }
+    reply.getDynamicObject()->setProperty ("connection", instrumentConnectionForWeb (*connection));
+    completion (reply);
+}
+
+void InstrumentHostWebBridge::setInstrumentZoneKeyRangeFromWeb (
+    const juce::Array<juce::var>& args,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    const auto instanceId = args.size() == 8 ? parsePositiveDecimalId (args[0]) : std::nullopt;
+    const auto attachmentId = args.size() == 8 ? parsePositiveDecimalId (args[1]) : std::nullopt;
+    const auto requestId = args.size() == 8 ? parsePositiveDecimalId (args[2]) : std::nullopt;
+    const auto revision = args.size() == 8 ? parseUnsignedDecimalId (args[3]) : std::nullopt;
+    const auto low = args.size() == 8 ? parseMidiNote (args[6]) : std::nullopt;
+    const auto high = args.size() == 8 ? parseMidiNote (args[7]) : std::nullopt;
+    if (! instrumentConnection || ! instanceId || ! attachmentId || ! requestId || ! revision
+        || ! args[4].isString() || args[4].toString().isEmpty()
+        || ! args[5].isString() || args[5].toString().isEmpty() || ! low || ! high
+        || *instanceId != instrumentConnection->instanceId
+        || *attachmentId != instrumentConnection->attachmentId)
+    {
+        completion (juce::var ("Invalid instrument session mapping request"));
+        return;
+    }
+    const auto ticket = processor.requestInstrumentSessionMappingJobForConnection (
+        *instanceId, *attachmentId, *requestId, *revision,
+        args[4].toString().toStdString(), args[5].toString().toStdString(),
+        static_cast<std::uint8_t> (*low), static_cast<std::uint8_t> (*high));
+    if (! ticket)
+    {
+        completion (juce::var ("Instrument session mapping request rejected"));
+        return;
+    }
+    juce::var reply (new juce::DynamicObject());
+    reply.getDynamicObject()->setProperty ("status", "accepted");
+    reply.getDynamicObject()->setProperty ("job_id", juce::String (std::to_string (*ticket)));
+    completion (reply);
+}
+
+void InstrumentHostWebBridge::undoInstrumentSessionFromWeb (
+    const juce::Array<juce::var>& args,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    const auto instanceId = args.size() == 4 ? parsePositiveDecimalId (args[0]) : std::nullopt;
+    const auto attachmentId = args.size() == 4 ? parsePositiveDecimalId (args[1]) : std::nullopt;
+    const auto requestId = args.size() == 4 ? parsePositiveDecimalId (args[2]) : std::nullopt;
+    const auto revision = args.size() == 4 ? parseUnsignedDecimalId (args[3]) : std::nullopt;
+    if (! instrumentConnection || ! instanceId || ! attachmentId || ! requestId || ! revision
+        || *instanceId != instrumentConnection->instanceId
+        || *attachmentId != instrumentConnection->attachmentId)
+    {
+        completion (juce::var ("Invalid instrument session undo request"));
+        return;
+    }
+    const auto ticket = processor.requestInstrumentSessionUndoJob (
+        *instanceId, *attachmentId, *requestId, *revision);
+    if (! ticket)
+    {
+        completion (juce::var ("Instrument session undo request rejected"));
+        return;
+    }
+    juce::var reply (new juce::DynamicObject());
+    reply.getDynamicObject()->setProperty ("status", "accepted");
+    reply.getDynamicObject()->setProperty ("job_id", juce::String (std::to_string (*ticket)));
+    completion (reply);
+}
+
+void InstrumentHostWebBridge::getInstrumentSessionJobStatusFromWeb (
+    const juce::Array<juce::var>& args,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion) const
+{
+    const auto requestId = args.size() == 1 ? parsePositiveDecimalId (args[0]) : std::nullopt;
+    const auto status = requestId ? processor.getInstrumentSessionJobStatus (*requestId) : std::nullopt;
+    if (! status)
+    {
+        completion (juce::var ("Unknown instrument session request"));
+        return;
+    }
+    juce::var reply (new juce::DynamicObject());
+    auto* value = reply.getDynamicObject();
+    value->setProperty ("request_id", juce::String (std::to_string (status->id)));
+    value->setProperty ("state", status->state == DandrumAudioProcessor::UiJobState::running
+        ? "running" : status->state == DandrumAudioProcessor::UiJobState::completed
+        ? "completed" : status->state == DandrumAudioProcessor::UiJobState::stale
+        ? "stale" : "failed");
+    value->setProperty ("revision", juce::String (std::to_string (status->revision)));
+    value->setProperty ("undoCount", static_cast<int> (status->undoCount));
+    value->setProperty ("redoCount", static_cast<int> (status->redoCount));
+    value->setProperty ("error", status->error);
     completion (reply);
 }
 

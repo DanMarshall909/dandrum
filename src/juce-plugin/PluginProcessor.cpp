@@ -2250,7 +2250,92 @@ DandrumAudioProcessor::getInstrumentSessionSnapshot() const
     return snapshot;
 }
 
+std::optional<DandrumAudioProcessor::InstrumentSessionConnectionSnapshot>
+DandrumAudioProcessor::copyInstrumentSessionConnectionSnapshot (
+    const DandrumInstrumentSessionSnapshot& value) const
+{
+    if (instrumentSession == nullptr) return std::nullopt;
+    InstrumentSessionConnectionSnapshot snapshot;
+    snapshot.contractVersion = value.contractVersion;
+    snapshot.instanceId = value.instanceId;
+    snapshot.attachmentId = value.attachmentId;
+    snapshot.revision = value.revision;
+    snapshot.nextRequestId = value.nextRequestId;
+    snapshot.undoCount = value.undoCount;
+    snapshot.redoCount = value.redoCount;
+    snapshot.attachmentLimit = value.attachmentLimit;
+    snapshot.historyLimit = value.historyLimit;
+    snapshot.outcomeLimit = value.outcomeLimit;
+    snapshot.activeRequestLimit = value.activeRequestLimit;
+    snapshot.yaml.resize (value.yamlSize);
+    if (! dandrum_instrument_session_copy_yaml (
+            instrumentSession.get(), reinterpret_cast<std::uint8_t*> (snapshot.yaml.data()),
+            snapshot.yaml.size()))
+        return std::nullopt;
+    return snapshot;
+}
+
+std::optional<DandrumAudioProcessor::InstrumentSessionConnectionSnapshot>
+DandrumAudioProcessor::openInstrumentSessionConnection()
+{
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    if (instrumentSession == nullptr) return std::nullopt;
+    DandrumInstrumentSessionSnapshot value {};
+    if (! dandrum_instrument_session_connect (instrumentSession.get(), &value))
+        return std::nullopt;
+    auto snapshot = copyInstrumentSessionConnectionSnapshot (value);
+    if (! snapshot)
+        dandrum_instrument_session_disconnect (
+            instrumentSession.get(), value.instanceId, value.attachmentId);
+    return snapshot;
+}
+
+bool DandrumAudioProcessor::closeInstrumentSessionConnection (
+    std::uint64_t instanceId, std::uint64_t attachmentId)
+{
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    return instrumentSession != nullptr
+        && dandrum_instrument_session_disconnect (
+            instrumentSession.get(), instanceId, attachmentId);
+}
+
+std::optional<DandrumAudioProcessor::InstrumentSessionConnectionSnapshot>
+DandrumAudioProcessor::getInstrumentSessionConnectionSnapshot (
+    std::uint64_t instanceId, std::uint64_t attachmentId) const
+{
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    if (instrumentSession == nullptr) return std::nullopt;
+    DandrumInstrumentSessionSnapshot value {};
+    if (! dandrum_instrument_session_connection_snapshot (
+            instrumentSession.get(), instanceId, attachmentId, &value))
+        return std::nullopt;
+    return copyInstrumentSessionConnectionSnapshot (value);
+}
+
 std::optional<std::uint64_t> DandrumAudioProcessor::requestInstrumentSessionMappingJob (
+    std::uint64_t requestId, std::uint64_t expectedRevision,
+    const std::string& mapId, const std::string& zoneId,
+    std::uint8_t keyLow, std::uint8_t keyHigh)
+{
+    return requestInstrumentSessionMappingJobInternal (
+        std::nullopt, requestId, expectedRevision, mapId, zoneId, keyLow, keyHigh);
+}
+
+std::optional<std::uint64_t>
+DandrumAudioProcessor::requestInstrumentSessionMappingJobForConnection (
+    std::uint64_t instanceId, std::uint64_t attachmentId,
+    std::uint64_t requestId, std::uint64_t expectedRevision,
+    const std::string& mapId, const std::string& zoneId,
+    std::uint8_t keyLow, std::uint8_t keyHigh)
+{
+    return requestInstrumentSessionMappingJobInternal (
+        std::pair { instanceId, attachmentId }, requestId, expectedRevision,
+        mapId, zoneId, keyLow, keyHigh);
+}
+
+std::optional<std::uint64_t>
+DandrumAudioProcessor::requestInstrumentSessionMappingJobInternal (
+    std::optional<std::pair<std::uint64_t, std::uint64_t>> connection,
     std::uint64_t requestId, std::uint64_t expectedRevision,
     const std::string& mapId, const std::string& zoneId,
     std::uint8_t keyLow, std::uint8_t keyHigh)
@@ -2260,7 +2345,18 @@ std::optional<std::uint64_t> DandrumAudioProcessor::requestInstrumentSessionMapp
         || instrumentSessionReconfigurationPending
         || uiReloadActive || uiReloadShuttingDown || engineActivationInProgress)
         return std::nullopt;
-    const auto accepted = getInstrumentSessionSnapshot();
+    std::optional<InstrumentSessionSnapshot> accepted;
+    if (connection)
+    {
+        const auto connected = getInstrumentSessionConnectionSnapshot (
+            connection->first, connection->second);
+        if (connected)
+            accepted = InstrumentSessionSnapshot {
+                connected->revision, connected->yaml,
+                connected->undoCount, connected->redoCount };
+    }
+    else
+        accepted = getInstrumentSessionSnapshot();
     if (! accepted || accepted->yaml != loadedInstrument.yamlContent.toStdString())
     {
         lastLoadError = "Instrument changed outside the persistent session";
@@ -2268,13 +2364,20 @@ std::optional<std::uint64_t> DandrumAudioProcessor::requestInstrumentSessionMapp
     }
 
     std::array<char, 512> error {};
-    std::unique_ptr<DandrumInstrumentSessionJob, decltype (&dandrum_instrument_session_job_destroy)>
-        job (dandrum_instrument_session_admit_mapping (
+    auto* admitted = connection
+        ? dandrum_instrument_session_admit_mapping_for_connection (
+            instrumentSession.get(), connection->first, connection->second,
+            requestId, expectedRevision,
+            reinterpret_cast<const std::uint8_t*> (mapId.data()), mapId.size(),
+            reinterpret_cast<const std::uint8_t*> (zoneId.data()), zoneId.size(),
+            keyLow, keyHigh, error.data(), error.size())
+        : dandrum_instrument_session_admit_mapping (
             instrumentSession.get(), requestId, expectedRevision,
             reinterpret_cast<const std::uint8_t*> (mapId.data()), mapId.size(),
             reinterpret_cast<const std::uint8_t*> (zoneId.data()), zoneId.size(),
-            keyLow, keyHigh, error.data(), error.size()),
-            &dandrum_instrument_session_job_destroy);
+            keyLow, keyHigh, error.data(), error.size());
+    std::unique_ptr<DandrumInstrumentSessionJob, decltype (&dandrum_instrument_session_job_destroy)>
+        job (admitted, &dandrum_instrument_session_job_destroy);
     if (job == nullptr)
     {
         lastLoadError = juce::String::fromUTF8 (error.data());
@@ -2286,7 +2389,7 @@ std::optional<std::uint64_t> DandrumAudioProcessor::requestInstrumentSessionMapp
     instrumentSessionJobHistory.push_back (
         { requestId, UiJobState::running, 0, 0, 0, {} });
     instrumentSessionJobActive = true;
-    auto* admitted = job.release();
+    admitted = job.release();
     try
     {
         pendingInstrumentSessionJob = std::async (
@@ -2304,6 +2407,77 @@ std::optional<std::uint64_t> DandrumAudioProcessor::requestInstrumentSessionMapp
         instrumentSessionJobHistory.back().error = exception.what();
     }
     return requestId;
+}
+
+std::optional<std::uint64_t> DandrumAudioProcessor::requestInstrumentSessionUndoJob (
+    std::uint64_t instanceId, std::uint64_t attachmentId,
+    std::uint64_t requestId, std::uint64_t expectedRevision)
+{
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    if (instrumentSession == nullptr || instrumentSessionJobActive
+        || instrumentSessionReconfigurationPending
+        || uiReloadActive || uiReloadShuttingDown || engineActivationInProgress)
+        return std::nullopt;
+    const auto accepted = getInstrumentSessionConnectionSnapshot (instanceId, attachmentId);
+    if (! accepted || accepted->revision != expectedRevision
+        || accepted->nextRequestId != requestId || accepted->undoCount == 0
+        || accepted->yaml != loadedInstrument.yamlContent.toStdString())
+        return std::nullopt;
+    if (instrumentSessionJobHistory.size() == 128)
+        instrumentSessionJobHistory.pop_front();
+    instrumentSessionJobHistory.push_back (
+        { requestId, UiJobState::running, 0, 0, 0, {} });
+    instrumentSessionJobActive = true;
+    try
+    {
+        pendingInstrumentSessionJob = std::async (
+            std::launch::async,
+            [this, instanceId, attachmentId, requestId, expectedRevision]
+            { runInstrumentSessionUndoJob (instanceId, attachmentId, requestId, expectedRevision); });
+    }
+    catch (const std::exception& exception)
+    {
+        instrumentSessionJobActive = false;
+        instrumentSessionJobHistory.back().state = UiJobState::failed;
+        instrumentSessionJobHistory.back().error = exception.what();
+        return std::nullopt;
+    }
+    return requestId;
+}
+
+void DandrumAudioProcessor::runInstrumentSessionUndoJob (
+    std::uint64_t instanceId, std::uint64_t attachmentId,
+    std::uint64_t requestId, std::uint64_t expectedRevision)
+{
+    std::array<char, 512> error {};
+    std::uint64_t revision = 0;
+    std::size_t undoCount = 0, redoCount = 0;
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    auto status = std::find_if (
+        instrumentSessionJobHistory.begin(), instrumentSessionJobHistory.end(),
+        [requestId] (const InstrumentSessionJobStatus& value) { return value.id == requestId; });
+    if (status == instrumentSessionJobHistory.end() || instrumentSession == nullptr
+        || uiReloadShuttingDown)
+    {
+        instrumentSessionJobActive = false;
+        return;
+    }
+    const auto accepted = dandrum_instrument_session_undo (
+        instrumentSession.get(), instanceId, attachmentId, requestId, expectedRevision,
+        &instrumentSessionHostCallbacks, this, &revision, &undoCount, &redoCount,
+        error.data(), error.size());
+    if (accepted)
+    {
+        lastLoadError.clear();
+        loadedPreset = {};
+        publishParameterSurface();
+    }
+    status->state = accepted ? UiJobState::completed : UiJobState::failed;
+    status->revision = revision;
+    status->undoCount = undoCount;
+    status->redoCount = redoCount;
+    if (! accepted) status->error = juce::String::fromUTF8 (error.data());
+    instrumentSessionJobActive = false;
 }
 
 void DandrumAudioProcessor::runInstrumentSessionJob (

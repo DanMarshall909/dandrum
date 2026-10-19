@@ -19,7 +19,7 @@ public:
     ~InstrumentHostWebBridge();
 
     static const char* bootstrapScript() noexcept;
-    std::array<NativeFunctionEntry, 35> nativeFunctions();
+    std::array<NativeFunctionEntry, 38> nativeFunctions();
     juce::WebBrowserComponent::Options addNativeFunctions (
         juce::WebBrowserComponent::Options options);
     std::optional<juce::WebBrowserComponent::Resource> provideResource (
@@ -31,6 +31,15 @@ public:
                                  juce::WebBrowserComponent::NativeFunctionCompletion) const;
     void prepareSamplerFromWeb (const juce::Array<juce::var>&,
                                juce::WebBrowserComponent::NativeFunctionCompletion);
+    void setInstrumentZoneKeyRangeFromWeb (
+        const juce::Array<juce::var>&,
+        juce::WebBrowserComponent::NativeFunctionCompletion);
+    void undoInstrumentSessionFromWeb (
+        const juce::Array<juce::var>&,
+        juce::WebBrowserComponent::NativeFunctionCompletion);
+    void getInstrumentSessionJobStatusFromWeb (
+        const juce::Array<juce::var>&,
+        juce::WebBrowserComponent::NativeFunctionCompletion) const;
     void chooseSamplerFilesFromWeb (const juce::Array<juce::var>&,
                                    juce::WebBrowserComponent::NativeFunctionCompletion);
     void importSamplerFilesFromWeb (const juce::Array<juce::var>&,
@@ -104,6 +113,8 @@ private:
     DandrumAudioProcessor& processor;
     std::uint32_t lastSeenParameterSurfaceGeneration;
     std::uint64_t sessionId;
+    std::optional<DandrumAudioProcessor::InstrumentSessionConnectionSnapshot>
+        instrumentConnection;
     // At most one timer snapshot is queued for this document. Current values
     // are read after acknowledgement rather than storing intervening states.
     std::optional<InstrumentUiParameterState> lastPublishedParameterState;

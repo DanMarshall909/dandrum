@@ -12,6 +12,7 @@
 #include <optional>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -127,6 +128,22 @@ public:
         bool operator== (const InstrumentSessionSnapshot&) const = default;
     };
 
+    struct InstrumentSessionConnectionSnapshot
+    {
+        std::uint32_t contractVersion = 0;
+        std::uint64_t instanceId = 0;
+        std::uint64_t attachmentId = 0;
+        std::uint64_t revision = 0;
+        std::uint64_t nextRequestId = 0;
+        std::string yaml;
+        std::size_t undoCount = 0;
+        std::size_t redoCount = 0;
+        std::size_t attachmentLimit = 0;
+        std::size_t historyLimit = 0;
+        std::size_t outcomeLimit = 0;
+        std::size_t activeRequestLimit = 0;
+    };
+
     struct InstrumentSessionJobStatus
     {
         std::uint64_t id = 0;
@@ -143,6 +160,19 @@ public:
         std::uint64_t requestId, std::uint64_t expectedRevision,
         const std::string& mapId, const std::string& zoneId,
         std::uint8_t keyLow, std::uint8_t keyHigh);
+    std::optional<InstrumentSessionConnectionSnapshot> openInstrumentSessionConnection();
+    bool closeInstrumentSessionConnection (std::uint64_t instanceId,
+                                           std::uint64_t attachmentId);
+    std::optional<InstrumentSessionConnectionSnapshot> getInstrumentSessionConnectionSnapshot (
+        std::uint64_t instanceId, std::uint64_t attachmentId) const;
+    std::optional<std::uint64_t> requestInstrumentSessionMappingJobForConnection (
+        std::uint64_t instanceId, std::uint64_t attachmentId,
+        std::uint64_t requestId, std::uint64_t expectedRevision,
+        const std::string& mapId, const std::string& zoneId,
+        std::uint8_t keyLow, std::uint8_t keyHigh);
+    std::optional<std::uint64_t> requestInstrumentSessionUndoJob (
+        std::uint64_t instanceId, std::uint64_t attachmentId,
+        std::uint64_t requestId, std::uint64_t expectedRevision);
     std::optional<InstrumentSessionJobStatus> getInstrumentSessionJobStatus (
         std::uint64_t requestId) const;
     std::optional<InstrumentSessionSnapshot> getInstrumentSessionSnapshot() const;
@@ -405,6 +435,15 @@ private:
     void finishInstrumentReloadJob (UiJobStatus, bool previousMute);
     bool createInstrumentSession (std::uint32_t sampleRate, std::size_t blockSize);
     void runInstrumentSessionJob (std::uint64_t, DandrumInstrumentSessionJob*);
+    void runInstrumentSessionUndoJob (std::uint64_t, std::uint64_t, std::uint64_t,
+                                      std::uint64_t);
+    std::optional<std::uint64_t> requestInstrumentSessionMappingJobInternal (
+        std::optional<std::pair<std::uint64_t, std::uint64_t>> connection,
+        std::uint64_t requestId, std::uint64_t expectedRevision,
+        const std::string& mapId, const std::string& zoneId,
+        std::uint8_t keyLow, std::uint8_t keyHigh);
+    std::optional<InstrumentSessionConnectionSnapshot> copyInstrumentSessionConnectionSnapshot (
+        const DandrumInstrumentSessionSnapshot&) const;
     static void* beginInstrumentSessionActivation (
         void*, DandrumKernelInstrument*, const std::uint8_t*, std::size_t,
         std::uint64_t, std::size_t, std::size_t) noexcept;
