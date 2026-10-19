@@ -28,6 +28,12 @@ foreach(symbol IN ITEMS dandrum_instrument_session_create dandrum_kernel_render)
     endif()
 endforeach()
 
+foreach(symbol IN ITEMS dandrum_instrument_session_undo)
+    if(archive_symbols MATCHES "[ \t]${symbol}")
+        message(FATAL_ERROR "Retired synchronous session export remains: ${symbol}")
+    endif()
+endforeach()
+
 foreach(product IN ITEMS "${CONSUMER}" "${STANDALONE}" "${VST3}")
     execute_process(
         COMMAND "${NM}" -g --defined-only "${product}"

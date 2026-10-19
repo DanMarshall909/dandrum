@@ -931,28 +931,6 @@ impl InstrumentSession {
         })
     }
 
-    pub(crate) fn reserve_control_request(
-        &mut self,
-        attachment: &Attachment,
-        request_id: RequestId,
-        expected_revision: u64,
-    ) -> Result<(), SessionError> {
-        self.attachment_index(attachment)
-            .ok_or(SessionError::InvalidAttachment)?;
-        self.ensure_idle()?;
-        if self
-            .highest_request_id
-            .is_some_and(|highest| request_id <= highest)
-        {
-            return Err(SessionError::RetiredRequest);
-        }
-        if expected_revision != self.accepted.revision {
-            return Err(SessionError::StaleRequest);
-        }
-        self.highest_request_id = Some(request_id);
-        Ok(())
-    }
-
     pub fn prepared(&self) -> &PreparedKernelInstrument {
         &self.accepted.prepared
     }

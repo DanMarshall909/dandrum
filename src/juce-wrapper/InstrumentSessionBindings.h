@@ -80,13 +80,6 @@ bool dandrum_instrument_session_complete_job (
     const DandrumInstrumentSessionHostCallbacks* callbacks, void* context,
     std::uint64_t* revision, std::size_t* undoCount, std::size_t* redoCount,
     char* error, std::size_t errorCapacity);
-bool dandrum_instrument_session_undo (
-    DandrumInstrumentSession* session, std::uint64_t instanceId,
-    std::uint64_t attachmentId, std::uint64_t requestId,
-    std::uint64_t expectedRevision,
-    const DandrumInstrumentSessionHostCallbacks* callbacks, void* context,
-    std::uint64_t* revision, std::size_t* undoCount, std::size_t* redoCount,
-    char* error, std::size_t errorCapacity);
 bool dandrum_instrument_session_reconfigure (
     DandrumInstrumentSession* session, std::uint32_t sampleRateHz,
     std::size_t maxBlockSize,
