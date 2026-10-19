@@ -130,7 +130,7 @@ test('new empty patch has no phantom controls and importing a staged sample rest
 test('a newer device generation refreshes native session and controls while retaining editor undo and selection',async t=>{
   const {engine,bridge}=await setup(t),store=new Store(engine);t.after(()=>store.close());
   await store.operation('Rename','renameNode','root','Retained');store.select({zoneSel:'kit.kick',sampleDraft:{id:'drums.kick',start:.01}});
-  const next=session(engine.session.yaml,9);bridge.setSession(next);
+  const next=session(engine.session.yaml,9,engine.session.connection);bridge.setSession(next);
   await bridge.events.get('parameterStateChanged')({generation:9,sequence:0,parameters:[]});
   assert.equal(engine.generation,9);assert.equal(store.undoCount,1);assert.equal(store.getSnapshot().editor.zoneSel,'kit.kick');assert.equal(store.getSnapshot().patch.name,'Retained');
   await engine.setParam('drums.level',.6);assert.deepEqual(bridge.calls.filter(call=>call[0]==='setParameter').at(-1),['setParameter','drums.level',.6,9]);
@@ -152,7 +152,7 @@ test('own native preparation defers generation events and preserves the newly ac
   await store.operation('Rename','renameNode','root','Own accepted edit');await new Promise(resolve=>setTimeout(resolve,0));
   assert.equal(engine.getPatch().name,'Own accepted edit');assert.equal(store.undoCount,1);assert.equal(bridge.calls.filter(call=>call[0]==='getSamplerSession').length,2);
   bridge.functions.getUiJobStatus=()=>{
-    bridge.setSession(session(engine.session.yaml,9));bridge.events.get('parameterStateChanged')({generation:9,sequence:0,parameters:[]});
+    bridge.setSession(session(engine.session.yaml,9,engine.session.connection));bridge.events.get('parameterStateChanged')({generation:9,sequence:0,parameters:[]});
     return {state:'stale',generation:9,error:'External device generation'};
   };
   await assert.rejects(engine.renameNode('root','Retired edit'),/External device generation/);await engine.reconciliation;
@@ -203,6 +203,56 @@ test('migrated key mapping uses native identities and native undo without a loca
   assert.deepEqual(accepted[1],{kind:'undo',instance:'18446744073709551615',attachment:'9007199254740993',request:'2',revision:'1'});
   assert.equal(engine.getPatch().rules.find(rule=>rule.id==='kit.kick').noteLo,36);
   assert.equal(store.undoCount,0);
+});
+
+test('shipped round robin mapping edits every candidate through whole-document preparation',async t=>{
+  const {engine,bridge}=await setup(t),store=new Store(engine);t.after(()=>store.close());
+  const rule=engine.getPatch().rules.find(item=>item.source==='kit.hard_snare');
+  assert.equal(engine.ownsOperation('updateRule',rule.id,{noteLo:39,noteHi:39}),false);
+  await store.operation('Change round robin range','updateRule',rule.id,{noteLo:39,noteHi:39});
+  const prepared=parse(bridge.calls.filter(call=>call[0]==='prepareSampler').at(-1)[1]);
+  const candidates=prepared.assets.sample_maps[0].zones.filter(zone=>zone.round_robin_group==='kit.hard_snare');
+  assert.equal(candidates.length,2);assert.deepEqual(candidates.map(zone=>zone.key_range),[[39,39],[39,39]]);
+  assert.equal(engine.getPatch().rules.find(item=>item.source==='kit.hard_snare').noteLo,39);
+  assert.equal(store.undoCount,1);
+  const reopened=new NativeEngine({backend:bridge,pollMs:0,heartbeatMs:0});await reopened.initialize();t.after(()=>reopened.close());
+  assert.equal(reopened.getPatch().rules.find(item=>item.source==='kit.hard_snare').noteLo,39);
+  assert.equal(reopened.getPatch().selectors['kit.hard_snare'].candidates.length,2);
+});
+
+test('a successful native mapping retires an abandoned local redo branch',async t=>{
+  const {engine,bridge}=await setup(t),store=new Store(engine);t.after(()=>store.close());
+  await store.changeParam('drums.level',.4);await store.undo();assert.equal(store.canRedo,true);
+  bridge.functions.setInstrumentZoneKeyRange=(_instance,_attachment,request)=>({status:'accepted',job_id:request});
+  bridge.functions.getInstrumentSessionJobStatus=request=>{
+    const edited=yaml.replace('key_range: [36, 36]','key_range: [60, 60]');
+    bridge.setSession(session(edited,8,connection({revision:'1',nextRequestId:'2',history:{undoCount:1,redoCount:0}})));
+    return {state:'completed',request_id:request,revision:'1',undoCount:1,redoCount:0,error:''};
+  };
+  await store.operation('Change zone Low','updateRule','kit.kick',{noteLo:60,noteHi:60});
+  assert.equal(store.canRedo,false);
+});
+
+test('a native mapping remains newest when bounded native history evicts its oldest entry',async t=>{
+  const initial=session(yaml,7,connection({revision:'100',nextRequestId:'101',history:{undoCount:100,redoCount:0}}));
+  const bridge=backend(initial),engine=new NativeEngine({backend:bridge,pollMs:0,heartbeatMs:0});await engine.initialize();t.after(()=>engine.close());
+  const store=new Store(engine);t.after(()=>store.close());const accepted=[];
+  await store.changeParam('drums.level',.4);
+  bridge.functions.setInstrumentZoneKeyRange=(_instance,_attachment,request)=>{accepted.push(['map',request]);return {status:'accepted',job_id:request};};
+  bridge.functions.undoInstrumentSession=(_instance,_attachment,request)=>{accepted.push(['undo',request]);return {status:'accepted',job_id:request};};
+  bridge.functions.getInstrumentSessionJobStatus=request=>{
+    const undo=accepted.at(-1)[0]==='undo',text=undo?yaml:yaml.replace('key_range: [36, 36]','key_range: [60, 60]');
+    const state=undo
+      ? connection({revision:'102',nextRequestId:'103',history:{undoCount:99,redoCount:1}})
+      : connection({revision:'101',nextRequestId:'102',history:{undoCount:100,redoCount:0}});
+    const acceptedSession=session(text,undo?9:8,state);
+    acceptedSession.document.parameters.find(parameter=>parameter.id==='drums.level').normalisedValue=.4;
+    bridge.setSession(acceptedSession);
+    return {state:'completed',request_id:request,revision:state.revision,undoCount:state.history.undoCount,redoCount:state.history.redoCount,error:''};
+  };
+  await store.operation('Change zone Low','updateRule','kit.kick',{noteLo:60,noteHi:60});
+  assert.equal(store.undoLabel,'Change Key Range');await store.undo();
+  assert.deepEqual(accepted.at(-1),['undo','102']);assert.equal(engine.getPatch().params['drums.level'].value,.4);
 });
 
 test('a failed native session command refreshes the consumed request identity before retry',async t=>{

@@ -54,7 +54,9 @@ export function patchFromSession(session){
       const source=document.sources[zone.sourceIndex],region=source?.regions[zone.regionIndex];if(!region)throw new Error('Invalid native zone source');
       const regionId=`${source.id}.${region.id}`,target=`${map.id}.sound.${zone.controlGroup??zone.keyLow}`;
       if(!patch.nodes.some(node=>node.id===target))patch.nodes.push({id:target,name:readable(zone.id),kind:'sound',parent:map.id,note:zone.keyLow,output:'inherit',sends:{},nativeControlGroup:zone.controlGroup});
-      const key=zone.roundRobinGroup?`${map.id}.${zone.roundRobinGroup}`:null;
+      const key=zone.roundRobinGroup
+        ? (zone.roundRobinGroup.startsWith(`${map.id}.`)?zone.roundRobinGroup:`${map.id}.${zone.roundRobinGroup}`)
+        : null;
       if(key){
         const first=grouped.get(key);
         if(first&&['keyLow','keyHigh','velocityLow','velocityHigh','controlGroup'].some(field=>first[field]!==zone[field]))unsupported('Round robin candidates with different mapping bounds');
@@ -68,7 +70,7 @@ export function patchFromSession(session){
       }
       if(key&&grouped.get(key)!==zone)continue;
       const root=patch.regions.find(item=>item.id===regionId)?.root??zone.keyLow;
-      patch.rules.push({id:`${map.id}.${zone.id}`,nativeMapId:map.id,nativeZoneId:zone.id,group:map.id,target,name:readable(zone.id),source:key??regionId,noteLo:zone.keyLow,noteHi:zone.keyHigh,velLo:zone.velocityLow,velHi:zone.velocityHigh,root,nativeInitialRoot:root,nativeControlGroup:zone.controlGroup,nativeChokeGroup:zone.chokeGroup,nativeGain:zone.gainDb,nativePan:zone.pan,nativeTune:zone.pitchSemitones});
+      patch.rules.push({id:`${map.id}.${zone.id}`,...(key?{}:{nativeMapId:map.id,nativeZoneId:zone.id}),group:map.id,target,name:readable(zone.id),source:key??regionId,noteLo:zone.keyLow,noteHi:zone.keyHigh,velLo:zone.velocityLow,velHi:zone.velocityHigh,root,nativeInitialRoot:root,nativeControlGroup:zone.controlGroup,nativeChokeGroup:zone.chokeGroup,nativeGain:zone.gainDb,nativePan:zone.pan,nativeTune:zone.pitchSemitones});
     }
   }
   return patch;

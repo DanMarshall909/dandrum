@@ -151,6 +151,13 @@ int main (int argc, char** argv)
         const auto success = waitJob (bridge, call (bridge, "prepareSampler", { edited, resumedGeneration }));
         require (success["state"].toString() == "completed", "owned YAML replacement failed");
         require (std::abs (hit (processor, 60) + 0.5f) < 0.0001f, "accepted mapping did not render actual sample");
+        const auto replacedSession = call (bridge, "getSamplerSession");
+        require (! replacedSession.isString()
+                     && replacedSession["connection"]["revision"].toString() == "0",
+                 "whole-document edit did not reconnect the existing bridge");
+        require (replacedSession["connection"]["instanceId"].toString()
+                     != connection["instanceId"].toString(),
+                 "whole-document edit retained its retired session identity");
         const auto activeGeneration = processor.getParameterSurfaceGeneration();
         const auto rejected = call (bridge, "prepareSampler", { original, resumedGeneration });
         require (rejected.isString(), "stale generation accepted");
@@ -163,6 +170,14 @@ int main (int argc, char** argv)
             { original, static_cast<juce::int64> (activeGeneration) }));
         require (undo["state"].toString() == "completed", "inverse edit failed");
         require (std::abs (hit (processor, 36) + 0.5f) < 0.0001f, "inverse edit did not restore sample map");
+        {
+            InstrumentHostWebBridge reopened (processor);
+            const auto reopenedSession = call (reopened, "getSamplerSession");
+            require (! reopenedSession.isString(),
+                     "reopened bridge did not attach to the replacement session");
+            require (reopenedSession["yaml"].toString().contains ("key_range: [36, 36]"),
+                     "reopened bridge did not expose the accepted inverse edit");
+        }
         for (int index = 1; index < argc; ++index)
         {
             const auto file = juce::File (juce::String (argv[index]));

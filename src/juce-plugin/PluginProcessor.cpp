@@ -736,25 +736,36 @@ bool DandrumAudioProcessor::loadDefaultInstrument()
 bool DandrumAudioProcessor::createInstrumentSession (std::uint32_t sampleRate,
                                                       std::size_t preparedBlockSize)
 {
+    auto* prepared = prepareInstrumentSession (
+        loadedInstrument, sampleRate, preparedBlockSize);
+    if (prepared == nullptr) return false;
+    instrumentSession.reset (prepared);
+    return true;
+}
+
+DandrumInstrumentSession* DandrumAudioProcessor::prepareInstrumentSession (
+    const LoadedInstrument& instrument, std::uint32_t sampleRate,
+    std::size_t preparedBlockSize)
+{
     std::vector<std::string> controlNames;
     std::vector<DandrumKernelBusDeclaration> buses;
-    const auto sourcePath = loadedInstrument.sourceFile.getFullPathName().toStdString();
+    const auto sourcePath = instrument.sourceFile.getFullPathName().toStdString();
     if (! prepareKernelBusDeclarations (sourcePath, controlNames, buses))
     {
         lastLoadError = "Failed to discover instrument-session host buses";
-        return false;
+        return nullptr;
     }
-    const auto yaml = loadedInstrument.yamlContent.toStdString();
-    const auto root = loadedInstrument.sourceFile.getParentDirectory().getFullPathName().toStdString();
-    instrumentSession.reset (dandrum_instrument_session_create (
+    const auto yaml = instrument.yamlContent.toStdString();
+    const auto root = instrument.sourceFile.getParentDirectory().getFullPathName().toStdString();
+    auto* prepared = dandrum_instrument_session_create (
         reinterpret_cast<const std::uint8_t*> (yaml.data()), yaml.size(), root.c_str(),
-        sampleRate, preparedBlockSize, buses.data(), buses.size()));
-    if (instrumentSession == nullptr)
+        sampleRate, preparedBlockSize, buses.data(), buses.size());
+    if (prepared == nullptr)
     {
         lastLoadError = "Failed to create persistent instrument session";
-        return false;
+        return nullptr;
     }
-    return true;
+    return prepared;
 }
 
 void DandrumAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
@@ -911,6 +922,16 @@ void DandrumAudioProcessor::installPreparedEngine (
     const EngineAccessPause handoff (*this);
     const juce::ScopedValueSetter<bool> activating (engineActivationInProgress, true);
     LoadedInstrument candidateInstrument { sourceHint, yamlText, instrumentId, schemaVersion };
+    const auto sessionSampleRate = static_cast<std::uint32_t> (
+        juce::jmax (1.0, getSampleRate() > 0.0 ? getSampleRate() : 44100.0));
+    const auto sessionBlockSize = static_cast<std::size_t> (
+        juce::jmax (1, getBlockSize() > 0 ? getBlockSize() : 512));
+    std::unique_ptr<DandrumInstrumentSession, decltype (&dandrum_instrument_session_destroy)>
+        candidateSession (
+            prepareInstrumentSession (candidateInstrument, sessionSampleRate, sessionBlockSize),
+            &dandrum_instrument_session_destroy);
+    if (candidateSession == nullptr)
+        throw std::runtime_error (lastLoadError.toStdString());
     CandidateParameterBindings bindings { candidateKernel, parameterSlots };
     juce::String candidateWarning;
     // Notifications may re-enter readers or fail. Only the candidate's bindings
@@ -921,10 +942,10 @@ void DandrumAudioProcessor::installPreparedEngine (
     std::swap (loadedInstrument, candidateInstrument);
     parameterSlots.swap (bindings.slots);
     instrumentLoaded = true;
-    // Legacy whole-document replacement has not yet migrated to the session
-    // transaction. Retire its now-stale owner so later host preparation or
-    // mapping cannot republish the previous accepted document.
-    instrumentSession.reset();
+    // Legacy whole-document replacement starts a fresh session transaction.
+    // The prior identity/history retire while the accepted document remains
+    // immediately attachable by the existing or a reopened editor bridge.
+    instrumentSession.swap (candidateSession);
     lastLoadError.clear();
     if (reloadWarning != nullptr) *reloadWarning = std::move (candidateWarning);
     publishParameterSurface();

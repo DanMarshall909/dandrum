@@ -949,7 +949,7 @@ void InstrumentHostWebBridge::getPreparedDocumentForWeb (
 
 void InstrumentHostWebBridge::getSamplerSessionForWeb (
     const juce::Array<juce::var>&,
-    juce::WebBrowserComponent::NativeFunctionCompletion completion) const
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
 {
     const auto document = processor.getPreparedUiDocument();
     const auto yaml = processor.currentInstrumentYaml();
@@ -963,16 +963,18 @@ void InstrumentHostWebBridge::getSamplerSessionForWeb (
     reply.getDynamicObject()->setProperty ("document", preparedDocumentForWeb (*document));
     reply.getDynamicObject()->setProperty ("yaml", yaml);
     reply.getDynamicObject()->setProperty ("sourcePath", source.getFullPathName());
-    if (! instrumentConnection)
-    {
-        completion (juce::var ("Instrument session connection unavailable"));
-        return;
-    }
-    const auto connection = processor.getInstrumentSessionConnectionSnapshot (
-        instrumentConnection->instanceId, instrumentConnection->attachmentId);
+    auto connection = instrumentConnection
+        ? processor.getInstrumentSessionConnectionSnapshot (
+            instrumentConnection->instanceId, instrumentConnection->attachmentId)
+        : std::nullopt;
     if (! connection)
     {
-        completion (juce::var ("Instrument session connection retired"));
+        instrumentConnection = processor.openInstrumentSessionConnection();
+        connection = instrumentConnection;
+    }
+    if (! connection)
+    {
+        completion (juce::var ("Instrument session connection unavailable"));
         return;
     }
     reply.getDynamicObject()->setProperty ("connection", instrumentConnectionForWeb (*connection));

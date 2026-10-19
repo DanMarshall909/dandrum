@@ -62,8 +62,9 @@ export class NativeEngine {
       const session=await this.invoke('getSamplerSession');
       if(this.closed)return;
       if(session.document?.generation<requested)throw new Error('Native session generation is stale');
-      const accepted=patchFromSession(session),connection=parseSessionConnection(session.connection),replacement=session.sourcePath!==this.sourcePath||JSON.stringify(parse(session.yaml))!==JSON.stringify(parse(this.session.yaml));
-      if(connection.instanceId!==this.connection.instanceId||connection.attachmentId!==this.connection.attachmentId)throw new Error('Native session connection changed unexpectedly');
+      const accepted=patchFromSession(session),connection=parseSessionConnection(session.connection);
+      const replacement=connection.instanceId!==this.connection.instanceId||connection.attachmentId!==this.connection.attachmentId
+        ||session.sourcePath!==this.sourcePath||JSON.stringify(parse(session.yaml))!==JSON.stringify(parse(this.session.yaml));
       this.session=session;this.generation=session.document.generation;this.sourcePath=session.sourcePath;
       this.connection=connection;
       if(this.pendingGeneration<=this.generation)this.pendingGeneration=0;
@@ -125,7 +126,6 @@ export class NativeEngine {
         if(this.closed)throw new Error('Engine is closed');
         if(session.document?.generation<=generation||completed.generation!==session.document.generation)throw new Error('Native preparation completed with stale generation');
         const accepted=patchFromSession(session),connection=parseSessionConnection(session.connection); // Validate real file/frame metadata before publication.
-        if(connection.instanceId!==this.connection.instanceId||connection.attachmentId!==this.connection.attachmentId)throw new Error('Native session connection changed unexpectedly');
         this.session=session;this.generation=session.document.generation;this.sourcePath=session.sourcePath;
         this.connection=connection;
         if(accepted.rules.length)this.samplerSession=session;

@@ -24,6 +24,7 @@ export class Store {
           sampleDraft:null,selectorDraft:null,sliceSelection:null,selectedMacro:null,selectedModule:null,selectedRoute:null,selectorTarget:null,
           analysisJob:null,importDialog:null,dragSrc:null,dragMod:null,zones:null,menu:null,kmenu:null,cmenu:null,dmenu:null,dialog:null,histSel:null,modNote:null,wavePeaks:{}};
       }
+      else this.reconcileNativeHistory();
       this.notify();
     }),
       engine.on('param',()=>this.notify()),engine.on('asset',()=>this.notify()),
@@ -64,7 +65,11 @@ export class Store {
   operation(label,method,...args){
     if(this.engine.ownsOperation?.(method,...args))return this.run(()=>{
       const before=this.engine.sessionHistory?.undoCount??0,result=/** @type {any} */(this.engine)[method](...args);
-      const finish=(/** @type {unknown} */ value)=>{this.reconcileNativeHistory();if((this.engine.sessionHistory?.undoCount??0)>before)this.nativeUndoOrder[this.nativeUndoOrder.length-1]=++this.historySequence;this.nativeRedoOrder=[];this.notify();return value;};
+      const finish=(/** @type {unknown} */ value)=>{
+        const after=this.engine.sessionHistory?.undoCount??0;
+        if(after===before&&after>0&&this.nativeUndoOrder.length===after)this.nativeUndoOrder.shift();
+        this.reconcileNativeHistory();this.redoStack=[];this.nativeRedoOrder=[];this.notify();return value;
+      };
       return result instanceof Promise?result.then(finish):finish(result);
     });
     return this.dispatch(operationCommand(label,method,args));

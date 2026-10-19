@@ -28,7 +28,7 @@ public:
                                   bool refreshOnGeneration = true);
 
     void getSamplerSessionForWeb (const juce::Array<juce::var>&,
-                                 juce::WebBrowserComponent::NativeFunctionCompletion) const;
+                                 juce::WebBrowserComponent::NativeFunctionCompletion);
     void prepareSamplerFromWeb (const juce::Array<juce::var>&,
                                juce::WebBrowserComponent::NativeFunctionCompletion);
     void setInstrumentZoneKeyRangeFromWeb (

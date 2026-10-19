@@ -434,6 +434,8 @@ private:
                                  const std::optional<juce::String>& yamlSnapshot);
     void finishInstrumentReloadJob (UiJobStatus, bool previousMute);
     bool createInstrumentSession (std::uint32_t sampleRate, std::size_t blockSize);
+    DandrumInstrumentSession* prepareInstrumentSession (
+        const LoadedInstrument&, std::uint32_t sampleRate, std::size_t blockSize);
     void runInstrumentSessionJob (std::uint64_t, DandrumInstrumentSessionJob*);
     void runInstrumentSessionUndoJob (std::uint64_t, std::uint64_t, std::uint64_t,
                                       std::uint64_t);
