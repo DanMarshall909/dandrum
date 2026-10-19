@@ -1,6 +1,6 @@
 {
   "scope": "OpenSpec task 4.1 plus the first task-4.2 review repair: source-bound coverage, build and regression evidence for the persistent instrument-session increment. The complete matrix was run at canonical specification head f362346; exact repair head 89efa74 removes a dead synchronous undo ABI and revalidates every affected native and packaged-WebView boundary. This remains a retained JUCE comparison consumer and independent session boundary, not the JUCE-free beta deliverables.",
-  "verified_head": "89efa740492d2ebbae23d7e577fe06f1b7ca964f",
+  "verified_head": "53c796ad901f06963e1a3380f9737b96cc4c2fad",
   "source_sha256": {
     "CMakeLists.txt": "f5973662fed506d60a6e199095f3ff570a741711bc19de03999d1a1c7cdf0c9e",
     "src/instrument-session/Cargo.toml": "64121a3f75dde57b6a4cc0dcee2a96e4f8cab7ee1b72382f8da60998efba4c44",
@@ -18,8 +18,8 @@
     "web/trigger/package-lock.json": "07d6d015bc9148c1f55f3146f38200f835727c0fc4bbe19cf7a415529ba342d9",
     "openspec/specs/instrument-session/spec.md": "309c9bce5ace132705755d4b098655f82070424504f1468bd154efc00bbff93a",
     "spec-tests.map": "10f9888d5e9d9d662695ce6ec640fa8b87868ac2cd47342cf03bc6e333aa29be",
-    "openspec/changes/add-persistent-instrument-session/tasks.md": "ed016e67b53d79128adb16c36124c14ff1d07a945b58d36a33d290f19ecfb66b",
-    "docs/migrations/juce-replacement-progress.md": "51b26d8caadb7f2a3585c13506a30f70d2921d4b9e22aca73093f69888da043d",
+    "openspec/changes/add-persistent-instrument-session/tasks.md": "af87d071db6e0ec0e05d6863874a82647971b88498c116de0593d9858fb46a86",
+    "docs/migrations/juce-replacement-progress.md": "b9da9d8f5d4f89af4c09105bf25c1b7ba3f64c974615656a2bbc0070db905fb9",
     "docs/migrations/evidence/session-completion-2026-10-19/build.log": "c1a839933704760eb5c692080c93eee9794cae53d345ba17eb4214ff22442ff9",
     "docs/migrations/evidence/session-completion-2026-10-19/coverage-missing.txt": "0768cbdd82474e178bd25bc28d68335ef79a114ca49c9d05aeee2a7f9104d14b",
     "docs/migrations/evidence/session-completion-2026-10-19/coverage-summary.json": "eed2ffc32b3dc44a52c5904f496bd3636e1557dc0bf453fa0097305ba497b665",
@@ -34,7 +34,8 @@
     "docs/migrations/evidence/session-completion-2026-10-19/review-retired-undo-red.log": "2773da582e15ada8dcfc8b791ddcf0054eb59d82119d70c475b3950fb77d37bb",
     "docs/migrations/evidence/session-completion-2026-10-19/review-retired-undo-build.log": "62956e438198620396552db18e0979cd450f94ada2e5c23f49b7b1f91bd979ec",
     "docs/migrations/evidence/session-completion-2026-10-19/review-retired-undo-native-green.log": "6d637522ff9ac27e615d1732db715c1ce35f6ce48dde186afbef59747b762e32",
-    "docs/migrations/evidence/session-completion-2026-10-19/review-retired-undo-web-green.log": "8445ef245d00e592bae1d86873e88668dbc7bbb1530423c5b2d1604cc24724de"
+    "docs/migrations/evidence/session-completion-2026-10-19/review-retired-undo-web-green.log": "8445ef245d00e592bae1d86873e88668dbc7bbb1530423c5b2d1604cc24724de",
+    "docs/migrations/evidence/session-completion-2026-10-19/task-4.2-independent-review.md": "51ffbc9ddd00d050d8398e6e955d24ab193475f4eaac861435945aa361b0cd96"
   },
   "preflight": {
     "free_space": "65 GiB available on the 478 GiB filesystem before coverage and full builds",
@@ -130,9 +131,9 @@
   ],
   "refactor": "Independent review exposed a real simplification: the uncalled synchronous undo ABI duplicated the maintained admitted-job transaction path and made the coverage interpretation unsound. It is removed at 89efa74, with a link-graph regression guard. Accepted state, admitted work and publication remain one cohesive transaction owner; the packaged lifecycle harness retains its ordered editor/WebView destruction state machine.",
   "specification": {
-    "progress": "10/11 tasks complete after this receipt and task checkbox are committed.",
+    "progress": "11/11 tasks complete after the independent task-4.2 PASS and this closure record are committed.",
     "canonical": "All nine instrument-session scenarios remain mapped at 618 total criteria / 379 tested / 239 unchanged todo backlog. The failed preparation/activation scenario now names the Rust invalid/ambiguous-intent preservation test and concrete C++ session consumer in addition to sample-repreparation and activation-rollback tests.",
-    "remaining": "Repeated task 4.2 independent completion review, strict gates and normal publication."
+    "remaining": "Archive the already-synced change and normally publish the focused branch commits."
   },
   "limits": [
     "The retained native comparison still uses JUCE and therefore does not satisfy the final framework-removal goal.",
@@ -147,6 +148,13 @@
     "red": "A new native link-graph assertion failed while dandrum_instrument_session_undo remained exported.",
     "implementation": "Repair head 89efa74 removes the unused synchronous undo export, C++ declaration and private reserve_control_request helper. Maintained consumers continue through dandrum_instrument_session_admit_undo_for_connection and owned off-audio jobs.",
     "mapping": "The failed preparation/activation scenario now also maps invalid_or_ambiguous_mapping_intents_preserve_the_accepted_instrument and tests/cpp/PluginInstrumentSessionTest.cpp.",
-    "status": "Awaiting repeated independent task-4.2 review of the repaired exact head."
+    "status": "PASS on repeated independent review of exact head 53c796a; task 4.2 is approved for closure, archive and normal publication."
+  },
+  "independent_review": {
+    "reviewed_head": "53c796ad901f06963e1a3380f9737b96cc4c2fad",
+    "verdict": "PASS",
+    "fresh_checks": "29/29 session tests plus formatting and Clippy; native session/link 2/2; Trigger bridge/actual packaged WebView 2/2 without skip; strict change and 51/51 canonical specs; spec coverage 618/379/239; 33/33 prior receipt hashes plus both artifact hashes and whitespace checks.",
+    "scope_limit": "Completes the retained JUCE comparison session increment only; the larger JUCE-free beta remains open.",
+    "publication_guard": "Closure edits are limited to review/status records, archive bookkeeping and corresponding hashes. Implementation changes require re-review."
   }
 }
