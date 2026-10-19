@@ -186,7 +186,9 @@ dependencies = [
 name = "dandrum-trigger-host"
 version = "0.1.0"
 dependencies = [
+ "dandrum_engine",
  "dandrum_instrument_session",
+ "tempfile",
 ]
 
 [[package]]

@@ -1,0 +1,17 @@
+   Compiling dandrum-trigger-host v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/trigger-host)
+error[E0432]: unresolved imports `dandrum_trigger_host::ADVANCED_DRUM_KIT_DOCUMENT`, `dandrum_trigger_host::ADVANCED_DRUM_KIT_SAMPLE`, `dandrum_trigger_host::PackagedResourceError`, `dandrum_trigger_host::TriggerHost`, `dandrum_trigger_host::TriggerHostConfiguration`, `dandrum_trigger_host::TriggerHostError`
+ --> tests/packaged_resources.rs:8:5
+  |
+8 |     ADVANCED_DRUM_KIT_DOCUMENT, ADVANCED_DRUM_KIT_SAMPLE, PackagedResourceError, TriggerHost,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^ no `TriggerHost` in the root
+  |     |                           |                         |
+  |     |                           |                         no `PackagedResourceError` in the root
+  |     |                           no `ADVANCED_DRUM_KIT_SAMPLE` in the root
+  |     no `ADVANCED_DRUM_KIT_DOCUMENT` in the root
+9 |     TriggerHostConfiguration, TriggerHostError,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^ no `TriggerHostError` in the root
+  |     |
+  |     no `TriggerHostConfiguration` in the root
+
+For more information about this error, try `rustc --explain E0432`.
+error: could not compile `dandrum-trigger-host` (test "packaged_resources") due to 1 previous error

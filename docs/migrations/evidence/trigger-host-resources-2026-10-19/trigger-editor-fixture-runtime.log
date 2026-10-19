@@ -1,0 +1,8 @@
+Internal ctest changing into directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-2ovxvza6/source/build/trigger-editor
+Test project /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only-regression/fixture-2ovxvza6/source/build/trigger-editor
+    Start 20: clap-dynamic-host
+1/1 Test #20: clap-dynamic-host ................   Passed   19.34 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =  19.35 sec

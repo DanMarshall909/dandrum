@@ -562,3 +562,28 @@ retains source and log hashes. Its local Cargo target is retained and explicitly
 ignored beside the other crate caches. This is build scaffolding only: it does not yet
 resolve packaged resources at runtime, own a prepared Trigger session, add Wry
 or expose a Trigger CLAP descriptor.
+
+## Packaged Trigger session owner — 19 October 2026
+
+The format-neutral host now opens one explicit `DandrumTrigger.resources`
+root, resolves the fixed Advanced Drum Kit document and sample beneath its
+`instrument/` directory, and owns the resulting persistent
+`InstrumentSession`. Resource roots are canonicalized; missing, unreadable,
+nonregular, permission-denied and symlinked payloads return explicit errors.
+There is no current-directory, executable-relative or checkout fallback.
+
+Seven behavior tests use a copied package outside the checkout. They prove the
+accepted document identity, literal signed `-0.5` stereo output for MIDI 36,
+silence at MIDI 60, stable diagnostics and rejection of a symlink back to the
+still-present repository sample. Malformed YAML and a removed installed sample
+both fail a reload candidate while the original snapshot and signed audio stay
+usable. The isolated opt-in build/resource/descriptor boundary also passes with
+the real host owner in 121.85 seconds.
+
+Focused LLVM coverage records 19/19 host functions, 106/107 counted lines and
+149/150 regions, with no annotated zero-hit source line. The one line and region
+are generic-instantiation accounting, matching the distinction already used for
+the session core; branch coverage is unavailable. Formatting, Clippy with
+warnings denied and all seven tests pass. [Portable evidence](evidence/trigger-host-resources-2026-10-19/receipt.json)
+retains the RED compile failure, final logs, coverage and source hashes. Runtime
+activation/reclamation and callback ownership remain task 2.2.

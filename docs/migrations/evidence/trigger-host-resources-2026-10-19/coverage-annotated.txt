@@ -1,0 +1,212 @@
+    1|       |//! Format-neutral ownership boundary for the production Trigger instrument.
+    2|       |//!
+    3|       |//! Session, runtime handoff and editor protocol behavior will be added here.
+    4|       |//! CLAP and native WebView types stay in their adapter modules.
+    5|       |
+    6|       |#![forbid(unsafe_code)]
+    7|       |
+    8|       |use dandrum_engine::patch::RenderSettings;
+    9|       |use dandrum_engine::preparation::PreparationContext;
+   10|       |use dandrum_instrument_session::{Attachment, PreparedDocumentReplacement, SessionError};
+   11|       |use std::fmt;
+   12|       |use std::path::{Path, PathBuf};
+   13|       |
+   14|       |pub use dandrum_instrument_session::InstrumentSession;
+   15|       |
+   16|       |pub const ADVANCED_DRUM_KIT_DOCUMENT: &str = "instrument/advanced-drum-kit.yaml";
+   17|       |pub const ADVANCED_DRUM_KIT_SAMPLE: &str = "instrument/assets/advanced-drums.wav";
+   18|       |
+   19|       |#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+   20|       |pub struct TriggerHostConfiguration {
+   21|       |    pub sample_rate_hz: u32,
+   22|       |    pub max_block_frames: u32,
+   23|       |}
+   24|       |
+   25|       |#[derive(Debug)]
+   26|       |pub enum PackagedResourceError {
+   27|       |    MissingRoot,
+   28|       |    InvalidRoot,
+   29|       |    Missing {
+   30|       |        relative: &'static str,
+   31|       |    },
+   32|       |    Invalid {
+   33|       |        relative: &'static str,
+   34|       |    },
+   35|       |    Read {
+   36|       |        relative: &'static str,
+   37|       |        message: String,
+   38|       |    },
+   39|       |}
+   40|       |
+   41|       |impl fmt::Display for PackagedResourceError {
+   42|      6|    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+   43|      6|        match self {
+   44|      2|            Self::MissingRoot => write!(formatter, "Trigger resource root does not exist"),
+   45|      1|            Self::InvalidRoot => write!(formatter, "Trigger resource root is not a directory"),
+   46|      1|            Self::Missing { relative } => write!(formatter, "missing Trigger resource {relative}"),
+   47|      1|            Self::Invalid { relative } => {
+   48|      1|                write!(
+   49|      1|                    formatter,
+   50|       |                    "Trigger resource is not a regular local file: {relative}"
+   51|       |                )
+   52|       |            }
+   53|      1|            Self::Read { relative, message } => {
+   54|      1|                write!(
+   55|      1|                    formatter,
+   56|       |                    "cannot read Trigger resource {relative}: {message}"
+   57|       |                )
+   58|       |            }
+   59|       |        }
+   60|      6|    }
+   61|       |}
+   62|       |
+   63|       |impl std::error::Error for PackagedResourceError {}
+   64|       |
+   65|       |#[derive(Debug)]
+   66|       |pub enum TriggerHostError {
+   67|       |    Resource(PackagedResourceError),
+   68|       |    Session(SessionError),
+   69|       |}
+   70|       |
+   71|       |impl fmt::Display for TriggerHostError {
+   72|      2|    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+   73|      2|        match self {
+   74|      1|            Self::Resource(error) => error.fmt(formatter),
+   75|      1|            Self::Session(error) => write!(formatter, "cannot prepare Trigger session: {error:?}"),
+   76|       |        }
+   77|      2|    }
+   78|       |}
+   79|       |
+   80|       |impl std::error::Error for TriggerHostError {}
+   81|       |
+   82|       |impl From<PackagedResourceError> for TriggerHostError {
+   83|      2|    fn from(error: PackagedResourceError) -> Self {
+   84|      2|        Self::Resource(error)
+   85|      2|    }
+   86|       |}
+   87|       |
+   88|       |impl From<SessionError> for TriggerHostError {
+   89|      2|    fn from(error: SessionError) -> Self {
+   90|      2|        Self::Session(error)
+   91|      2|    }
+   92|       |}
+   93|       |
+   94|       |pub struct PackagedResources {
+   95|       |    root: PathBuf,
+   96|       |    document: String,
+   97|       |}
+   98|       |
+   99|       |impl PackagedResources {
+  100|     11|    pub fn open(root: impl AsRef<Path>) -> Result<Self, PackagedResourceError> {
+  101|     11|        let root = root.as_ref();
+  102|     11|        let canonical = root.canonicalize().map_err(|error| {
+                          ^9                                              ^2
+  103|      2|            if error.kind() == std::io::ErrorKind::NotFound {
+  104|      1|                PackagedResourceError::MissingRoot
+  105|       |            } else {
+  106|      1|                PackagedResourceError::InvalidRoot
+  107|       |            }
+  108|      2|        })?;
+  109|      9|        if root.is_symlink() || !canonical.is_dir() {
+  110|      1|            return Err(PackagedResourceError::InvalidRoot);
+  111|      8|        }
+  112|      8|        let document = Self::read_current_document_from(&canonical)?;
+                          ^3                                                     ^5
+  113|      3|        Ok(Self {
+  114|      3|            root: canonical,
+  115|      3|            document,
+  116|      3|        })
+  117|     11|    }
+  118|       |
+  119|      1|    pub fn root(&self) -> &Path {
+  120|      1|        &self.root
+  121|      1|    }
+  122|       |
+  123|      3|    fn instrument_root(&self) -> PathBuf {
+  124|      3|        self.root.join("instrument")
+  125|      3|    }
+  126|       |
+  127|      3|    fn document(&self) -> &str {
+  128|      3|        &self.document
+  129|      3|    }
+  130|       |
+  131|      2|    fn read_current_document(&self) -> Result<String, PackagedResourceError> {
+  132|      2|        Self::read_current_document_from(&self.root)
+  133|      2|    }
+  134|       |
+  135|     10|    fn read_current_document_from(root: &Path) -> Result<String, PackagedResourceError> {
+  136|     10|        Self::regular_file(root, ADVANCED_DRUM_KIT_SAMPLE)?;
+                                                                        ^4
+  137|      6|        let document = Self::regular_file(root, ADVANCED_DRUM_KIT_DOCUMENT)?;
+                          ^5                                                             ^1
+  138|      5|        std::fs::read_to_string(document).map_err(|error| PackagedResourceError::Read {
+  139|       |            relative: ADVANCED_DRUM_KIT_DOCUMENT,
+  140|      1|            message: error.to_string(),
+  141|      1|        })
+  142|     10|    }
+  143|       |
+  144|     16|    fn regular_file(root: &Path, relative: &'static str) -> Result<PathBuf, PackagedResourceError> {
+  145|     16|        let path = root.join(relative);
+  146|     16|        let canonical = path.canonicalize().map_err(|error| {
+                          ^13                                             ^3
+  147|      3|            if error.kind() == std::io::ErrorKind::NotFound {
+  148|      2|                PackagedResourceError::Missing { relative }
+  149|       |            } else {
+  150|      1|                PackagedResourceError::Invalid { relative }
+  151|       |            }
+  152|      3|        })?;
+  153|     13|        if path.is_symlink() || !canonical.starts_with(root) || !canonical.is_file() {
+                                              ^12^12                            ^12
+  154|      2|            return Err(PackagedResourceError::Invalid { relative });
+  155|     11|        }
+  156|     11|        Ok(canonical)
+  157|     16|    }
+  158|       |}
+  159|       |
+  160|       |pub struct TriggerHost {
+  161|       |    resources: PackagedResources,
+  162|       |    session: InstrumentSession,
+  163|       |}
+  164|       |
+  165|       |impl TriggerHost {
+  166|      4|    pub fn open(
+  167|      4|        resource_root: impl AsRef<Path>,
+  168|      4|        configuration: TriggerHostConfiguration,
+  169|      4|    ) -> Result<Self, TriggerHostError> {
+  170|      4|        let resources = PackagedResources::open(resource_root)?;
+                          ^3                                                ^1
+  171|      3|        let settings = RenderSettings {
+  172|      3|            sample_rate_hz: configuration.sample_rate_hz,
+  173|      3|            block_size_frames: configuration.max_block_frames,
+  174|      3|            duration_frames: u64::from(configuration.max_block_frames),
+  175|      3|        };
+  176|      3|        let context =
+  177|      3|            PreparationContext::new(resources.instrument_root(), configuration.sample_rate_hz);
+  178|      3|        let session = InstrumentSession::new(resources.document(), context, settings)?;
+                          ^2                                                                       ^1
+  179|      2|        Ok(Self { resources, session })
+  180|      4|    }
+  181|       |
+  182|      1|    pub fn resource_root(&self) -> &Path {
+  183|      1|        self.resources.root()
+  184|      1|    }
+  185|       |
+  186|      7|    pub fn session(&self) -> &InstrumentSession {
+  187|      7|        &self.session
+  188|      7|    }
+  189|       |
+  190|      2|    pub fn session_mut(&mut self) -> &mut InstrumentSession {
+  191|      2|        &mut self.session
+  192|      2|    }
+  193|       |
+  194|      2|    pub fn prepare_resource_reload(
+  195|      2|        &self,
+  196|      2|        attachment: &Attachment,
+  197|      2|    ) -> Result<PreparedDocumentReplacement, TriggerHostError> {
+  198|      2|        let document = self.resources.read_current_document()?;
+                          ^1                                               ^1
+  199|      1|        self.session
+  200|      1|            .prepare_document_replacement(attachment, &document)
+  201|      1|            .map_err(Into::into)
+  202|      2|    }
+  203|       |}

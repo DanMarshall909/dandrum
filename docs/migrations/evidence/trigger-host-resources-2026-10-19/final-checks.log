@@ -1,0 +1,29 @@
+$ cargo fmt --manifest-path src/trigger-host/Cargo.toml -- --check
+$ cargo clippy --offline --locked --manifest-path src/trigger-host/Cargo.toml --all-targets --all-features -- -D warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.08s
+$ cargo test --offline --locked --manifest-path src/trigger-host/Cargo.toml
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.08s
+     Running unittests src/lib.rs (src/trigger-host/target/debug/deps/dandrum_trigger_host-b516ea22ac9e9936)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/packaged_resources.rs (src/trigger-host/target/debug/deps/packaged_resources-c28f129627e5c6c3)
+
+running 7 tests
+test resource_and_session_errors_have_stable_actionable_diagnostics ... ok
+test missing_installed_sample_never_falls_back_to_the_checkout ... ok
+test symbolic_resource_files_are_rejected_instead_of_followed ... ok
+test permission_denials_are_reported_without_searching_elsewhere ... ok
+test unavailable_roots_nonregular_files_and_unreadable_documents_are_explicit ... ok
+test copied_package_owns_the_real_kit_and_renders_known_signed_midi_36_output ... ok
+test invalid_or_missing_packaged_resources_preserve_the_accepted_session_and_sound ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+   Doc-tests dandrum_trigger_host
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

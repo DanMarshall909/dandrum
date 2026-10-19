@@ -1,0 +1,129 @@
+{
+  "scope": "Task 2.1 deterministic packaged-resource resolution and persistent Trigger session owner; runtime publication remains task 2.2",
+  "source_base": "36b31cd5208eb9931697d816fa646639376a36ce",
+  "candidate_source_sha256": {
+    "src/trigger-host/Cargo.toml": "476ea9f7551a048dd6b5c015f522e97a6f1b0d1a10b31be65587e5502d363d80",
+    "src/trigger-host/Cargo.lock": "935265f0235b550ea4a4adcf3c1fb63002230263d1e85eda594e40c93f4ce080",
+    "src/trigger-host/src/lib.rs": "3c246e8ba72aa3a5e51274efb8afd57ab67f2af84b91250caf852c8b66a2fcfa",
+    "src/trigger-host/tests/packaged_resources.rs": "0f553fda19bb4ee7d6a2c92cdb1277ab82ab7f382c1bc6313639d9c5671b3d6e",
+    "examples/patches/advanced-drum-kit.yaml": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008",
+    "examples/patches/assets/advanced-drums.wav": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503",
+    "CMakeLists.txt": "ecf46f5a573cca9d92b53d9ff2415e69bf634aebbb5d15e74f1f0da56a96cb53",
+    "tests/python/test_engine_only_build.py": "2bff7f1fe2aaf254955a2bf66be713617cf48e53c7565cc596f028a796b25177"
+  },
+  "tdd": {
+    "red": "The behavior test failed to compile because PackagedResources, TriggerHost, configuration and error APIs did not exist.",
+    "green": "One explicit packaged root resolves the two fixed regular files and constructs the real Advanced Drum Kit InstrumentSession.",
+    "rollback": "Malformed YAML and a removed installed sample reject the candidate before accepted session state or signed audio changes."
+  },
+  "behavior": {
+    "resource_root": "caller-supplied DandrumTrigger.resources directory only",
+    "document": "instrument/advanced-drum-kit.yaml",
+    "sample": "instrument/assets/advanced-drums.wav",
+    "fallback_search": false,
+    "tests": 7,
+    "tests_passed": 7,
+    "midi_36_first_stereo_sample": [
+      -0.5,
+      -0.5
+    ],
+    "midi_60_frames": "16 stereo frames of literal silence",
+    "rejected_inputs": [
+      "missing root",
+      "non-directory root",
+      "missing payload",
+      "nonregular payload",
+      "invalid UTF-8 document",
+      "permission denial",
+      "symlinked payload",
+      "invalid YAML"
+    ]
+  },
+  "final_checks": {
+    "trigger_host_fmt": "passed for crate sources",
+    "trigger_host_clippy_warnings_denied": "passed",
+    "trigger_host_integration_tests": {
+      "passed": 7,
+      "failed": 0
+    },
+    "trigger_host_doc_tests": {
+      "passed": 0,
+      "failed": 0
+    },
+    "isolated_clap_build_boundary": {
+      "passed": 1,
+      "failed": 0,
+      "elapsed_seconds": 121.845
+    },
+    "dynamic_fixture_test": "passed inside isolated build boundary"
+  },
+  "coverage": {
+    "tool": "cargo-llvm-cov 0.8.7 / LLVM coverage JSON 3.1.0",
+    "scope": "src/trigger-host/src/lib.rs; rust-engine and instrument-session path dependencies excluded",
+    "functions": {
+      "covered": 19,
+      "count": 19
+    },
+    "lines": {
+      "covered": 106,
+      "count": 107
+    },
+    "regions": {
+      "covered": 149,
+      "count": 150
+    },
+    "annotated_zero_hit_source_lines": 0,
+    "accounting_note": "The one uncovered line/region is generic-instantiation accounting; the annotated report contains no zero-hit source line.",
+    "branches": "unavailable"
+  },
+  "format_neutral_dependency_audit": {
+    "production_tree_lines": 212,
+    "unique_package_names": 111,
+    "forbidden_name_fragments": [
+      "clack",
+      "wry",
+      "webkit",
+      "gtk",
+      "juce"
+    ],
+    "matches": {
+      "clack": [],
+      "wry": [],
+      "webkit": [],
+      "gtk": [],
+      "juce": []
+    },
+    "direct_dependencies": [
+      "dandrum_engine",
+      "dandrum_instrument_session"
+    ],
+    "note": "Package names are parsed from the cargo-tree first column; checkout paths are not package identities."
+  },
+  "storage": {
+    "free_gib_before_commit": 46,
+    "build_tree_gib": 70,
+    "trigger_host_target_gib": 4.7,
+    "instrument_session_target_gib": 6.4,
+    "rust_engine_target_gib": 5.6,
+    "policy": "All reusable caches retained."
+  },
+  "evidence_sha256": {
+    "coverage-annotated.txt": "1b809b125bc3c6413eec196226d75d657aa8c65c68ac166b15f95789bb9c5ac9",
+    "coverage.json": "3b163efeeb2fa97e76d0a91ab4680d2f30d3c5ee5d71b0b861960555b1c75c4d",
+    "coverage.log": "fa7db72a16b169294eeb7427338b336ffb9766e448a18e4cff857cb5185c88f0",
+    "final-checks.log": "5dad83118e3436f096a065853f8342f0f4565b1c467507cdebd8c4fbb61021ff",
+    "isolated-build-boundary.log": "20bfbf752e978423fa0b4da826ae3677dd41d1d5db0e3028c9d6925f13ce94d2",
+    "resource-owner-red.log": "70396e8a8e99977819090a9e363212265538b6b8538a0d339f7a2b7898318e11",
+    "trigger-editor-build.log": "139a05f8b6e2fb866fd91e6a9a87cdaf43491a0acc7994330b6f74778f870c01",
+    "trigger-editor-fixture-runtime.log": "24a0ca64e734a3f991065fe9007a0a05129445be50a1fa10f158d36ceb3fbdc0",
+    "trigger-editor-resource-rebuild.log": "e302e3e41328eb23dfc134aa2a9fc4436eb7b8b35980824526d79fdb5d935b37",
+    "trigger-host-dependencies.log": "cc99aea91ae8b94970169d98e8a877d3f1b6f5877173efcd25924fab52ffe81f"
+  },
+  "limits": [
+    "Activation, reclamation, bounded callback handoffs and reset are task 2.2.",
+    "No Wry, Clack, JUCE, GTK or WebKit package edge exists in this format-neutral crate.",
+    "The CLAP Trigger descriptor, GUI, automation and state surfaces remain later tasks.",
+    "Mutation is excluded by recorded user direction."
+  ],
+  "portable_log_normalization": "CRLF converted to LF where present; trailing horizontal whitespace and redundant EOF blank lines removed; command content and results retained."
+}
