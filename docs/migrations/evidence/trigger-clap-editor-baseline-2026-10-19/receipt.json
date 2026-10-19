@@ -169,14 +169,14 @@
     "clap-production-dependencies.txt": "405199bf4ea134a0d5a8b0e8890ac8570073acbee58e9a055ecffae385e4c71f",
     "headless-artifact-dependencies.txt": "cb467dddc99e0375ca85fa5c1b89706c91d72fae6d1a751fefa1a94215aecf72",
     "preflight.log": "d68d5eaf34dd6dc019555860cb52efc5f2b55361b9aa5bfb64cb81818c3d9472",
-    "session-baseline.log": "bdba60fca6e88bf1c70602be872a4ede6b4d3deacd8349dc2fdb21b2bf51c276",
+    "session-baseline.log": "174d86074a5dea97b634f2a6d042df85d398fe88de063868eee4a8cb88d69577",
     "session-coverage-missing.txt": "0768cbdd82474e178bd25bc28d68335ef79a114ca49c9d05aeee2a7f9104d14b",
     "session-coverage.json": "eed2ffc32b3dc44a52c5904f496bd3636e1557dc0bf453fa0097305ba497b665",
     "session-coverage.log": "282d7fa9780bfb19cc36495d5b35d19210a174d4bdd99d2b521f9c3486a85090",
     "session-production-dependencies.txt": "1cd3e924c3fe52436bfd92b131be9f4e623db83d93b782a1518daff4367b0537",
-    "system-webview-dependencies.txt": "23eb9626b55c0f41278b16e88a563e42ff8f7349f51c3333132320643e37af00",
+    "system-webview-dependencies.txt": "8e410a569f5f12ff644319cf855ddb51741a94672c2af93e9403792ef98e5513",
     "trigger-baseline.log": "cc90d78dc6444c7c68e5c5c68f2cc04a932287a69425bfdaf21c6ce95d748146",
-    "trigger-coverage.log": "d782568bf4f0536880f2d9ef58dec10bddf00e6d563b5c5788c1cc72f015c2e8",
+    "trigger-coverage.log": "5465bb5421f49ce7dae06096b907c36d1912c4d6be61aa03f924a008d62a535d",
     "wry-info.log": "b354719e019149d6a8115cc236d0c8b601725404cdb8c6526bc5b486454d605f"
   },
   "limits": [
@@ -186,5 +186,6 @@
     "System WebKitGTK/GTK redistribution attribution remains open for installed packaging",
     "VST3, standalone, named DAW, installed release package and non-Linux acceptance remain later increments",
     "Mutation is excluded by recorded user direction"
-  ]
+  ],
+  "portable_log_normalization": "Tool-emitted trailing horizontal whitespace and redundant EOF blank lines removed; command content and results retained."
 }

@@ -586,52 +586,52 @@ ok 95 - replacement resets active feedback and continues updates outside the edi
 # ----------------------------------------------------------------------------------------
 # file                            | line % | branch % | funcs % | uncovered lines
 # ----------------------------------------------------------------------------------------
-# ..                              |        |          |         | 
-#  shared                         |        |          |         | 
+# ..                              |        |          |         |
+#  shared                         |        |          |         |
 #   meter-transport.mjs           |  97.26 |    74.19 |   90.00 | 61-62
-#   parameter-controller.mjs      | 100.00 |    78.26 |   90.00 | 
-#  tb303                          |        |          |         | 
-#   src                           |        |          |         | 
+#   parameter-controller.mjs      | 100.00 |    78.26 |   90.00 |
+#  tb303                          |        |          |         |
+#   src                           |        |          |         |
 #    note-audition.mjs            |  97.18 |    77.78 |   93.33 | 29-30
-# catalog                         |        |          |         | 
-#  story-props.mjs                | 100.00 |    71.43 |   66.67 | 
-# engine                          |        |          |         | 
+# catalog                         |        |          |         |
+#  story-props.mjs                | 100.00 |    71.43 |   66.67 |
+# engine                          |        |          |         |
 #  assets-jobs.mjs                |  89.47 |    70.73 |   83.33 | 17-21 52
-#  commands.mjs                   | 100.00 |   100.00 |  100.00 | 
-#  domains                        |        |          |         | 
+#  commands.mjs                   | 100.00 |   100.00 |  100.00 |
+#  domains                        |        |          |         |
 #   candidates.mjs                |  86.67 |    71.05 |   73.91 | 20-23
-#   history.mjs                   | 100.00 |    79.49 |   96.43 | 
+#   history.mjs                   | 100.00 |    79.49 |   96.43 |
 #   import-mapping.mjs            |  97.44 |    80.00 |   91.67 | 18
-#   instrument.mjs                | 100.00 |    58.57 |   90.48 | 
-#   routing.mjs                   | 100.00 |   100.00 |    0.00 | 
-#   slice-history.mjs             | 100.00 |    85.06 |   96.55 | 
-#   slices.mjs                    | 100.00 |    83.33 |   85.71 | 
-#   structure.mjs                 | 100.00 |    78.18 |   91.18 | 
-#  entity-delta.mjs               | 100.00 |    94.79 |  100.00 | 
-#  filename-mapping.mjs           | 100.00 |    84.75 |  100.00 | 
-#  mock-engine.mjs                | 100.00 |    92.67 |   87.50 | 
-#  mock-wave.mjs                  | 100.00 |   100.00 |  100.00 | 
-#  native-controls.mjs            | 100.00 |    93.75 |  100.00 | 
-#  native-document.mjs            | 100.00 |    76.39 |   95.12 | 
-#  native-engine.mjs              | 100.00 |    82.95 |   89.36 | 
-#  native-live.mjs                | 100.00 |    77.14 |   80.95 | 
-#  operation-command.mjs          | 100.00 |    81.82 |  100.00 | 
-#  presets.mjs                    | 100.00 |    98.59 |  100.00 | 
+#   instrument.mjs                | 100.00 |    58.57 |   90.48 |
+#   routing.mjs                   | 100.00 |   100.00 |    0.00 |
+#   slice-history.mjs             | 100.00 |    85.06 |   96.55 |
+#   slices.mjs                    | 100.00 |    83.33 |   85.71 |
+#   structure.mjs                 | 100.00 |    78.18 |   91.18 |
+#  entity-delta.mjs               | 100.00 |    94.79 |  100.00 |
+#  filename-mapping.mjs           | 100.00 |    84.75 |  100.00 |
+#  mock-engine.mjs                | 100.00 |    92.67 |   87.50 |
+#  mock-wave.mjs                  | 100.00 |   100.00 |  100.00 |
+#  native-controls.mjs            | 100.00 |    93.75 |  100.00 |
+#  native-document.mjs            | 100.00 |    76.39 |   95.12 |
+#  native-engine.mjs              | 100.00 |    82.95 |   89.36 |
+#  native-live.mjs                | 100.00 |    77.14 |   80.95 |
+#  operation-command.mjs          | 100.00 |    81.82 |  100.00 |
+#  presets.mjs                    | 100.00 |    98.59 |  100.00 |
 #  selector-sim.mjs               |  85.71 |    83.33 |   83.33 | 17-20
-#  session-connection.mjs         | 100.00 |    95.45 |  100.00 | 
-#  store.mjs                      | 100.00 |    88.03 |   88.71 | 
-#  telemetry-reader.mjs           | 100.00 |   100.00 |  100.00 | 
-#  telemetry-sim.mjs              | 100.00 |    81.82 |   96.67 | 
-#  validation.mjs                 | 100.00 |    75.76 |  100.00 | 
-#  voice-defaults.mjs             | 100.00 |    80.65 |  100.00 | 
-# scripts                         |        |          |         | 
-#  check-components.mjs           | 100.00 |    69.23 |  100.00 | 
-# shell                           |        |          |         | 
+#  session-connection.mjs         | 100.00 |    95.45 |  100.00 |
+#  store.mjs                      | 100.00 |    88.03 |   88.71 |
+#  telemetry-reader.mjs           | 100.00 |   100.00 |  100.00 |
+#  telemetry-sim.mjs              | 100.00 |    81.82 |   96.67 |
+#  validation.mjs                 | 100.00 |    75.76 |  100.00 |
+#  voice-defaults.mjs             | 100.00 |    80.65 |  100.00 |
+# scripts                         |        |          |         |
+#  check-components.mjs           | 100.00 |    69.23 |  100.00 |
+# shell                           |        |          |         |
 #  analysis-model.mjs             |  88.89 |    23.08 |   18.18 | 3-4
 #  control-menus.mjs              |  74.42 |    18.18 |    4.76 | 4-6 14-17 22-23 35 40
 #  entity-menus.mjs               |   6.67 |    50.00 |    2.70 | 3-44
-#  envelope-geometry.mjs          | 100.00 |    62.50 |   63.64 | 
-#  envelope-values.mjs            | 100.00 |   100.00 |  100.00 | 
+#  envelope-geometry.mjs          | 100.00 |    62.50 |   63.64 |
+#  envelope-values.mjs            | 100.00 |   100.00 |  100.00 |
 #  history-model.mjs              |  65.67 |    74.07 |   45.24 | 41-55 58 60-66
 #  import-actions.mjs             |  61.22 |    33.33 |   14.29 | 3-7 10-15 18-25
 #  input-actions.mjs              |   6.38 |   100.00 |    0.00 | 4-64 66-77 79-93
@@ -642,45 +642,45 @@ ok 95 - replacement resets active feedback and continues updates outside the edi
 #  mapping-geometry.mjs           |  59.21 |    78.72 |   71.43 | 30-33 46-51 53-61 64-75
 #  mapping-model.mjs              |  72.09 |    83.33 |   68.57 | 10-15 26-31
 #  modulation-actions.mjs         |  27.91 |   100.00 |   20.00 | 2-8 17-23 25-34 36-42
-#  modulation-model.mjs           | 100.00 |    90.18 |   66.18 | 
-#  modulator-knobs.mjs            | 100.00 |    90.48 |   50.00 | 
+#  modulation-model.mjs           | 100.00 |    90.18 |   66.18 |
+#  modulator-knobs.mjs            | 100.00 |    90.48 |   50.00 |
 #  modulator-shape.mjs            |  81.82 |    71.43 |  100.00 | 12-15
-#  parameter-units.mjs            | 100.00 |    98.75 |   91.89 | 
-#  project-reference.mjs          | 100.00 |   100.00 |  100.00 | 
-#  projections                    |        |          |         | 
-#   context-menus.mjs             | 100.00 |    44.44 |  100.00 | 
-#   frame-model.mjs               | 100.00 |    67.23 |   19.05 | 
+#  parameter-units.mjs            | 100.00 |    98.75 |   91.89 |
+#  project-reference.mjs          | 100.00 |   100.00 |  100.00 |
+#  projections                    |        |          |         |
+#   context-menus.mjs             | 100.00 |    44.44 |  100.00 |
+#   frame-model.mjs               | 100.00 |    67.23 |   19.05 |
 #   inspector-history.mjs         |  93.66 |    87.85 |   58.14 | 13 15-19 129-131
 #   layers-voice.mjs              |  94.64 |    62.50 |   80.00 | 21-23
-#   layout-tree.mjs               | 100.00 |    79.45 |   75.00 | 
+#   layout-tree.mjs               | 100.00 |    79.45 |   75.00 |
 #   modulation.mjs                |  98.02 |    62.92 |   54.05 | 58-59
-#   routing-macros.mjs            | 100.00 |    82.35 |   80.00 | 
+#   routing-macros.mjs            | 100.00 |    82.35 |   80.00 |
 #   sample-mapping.mjs            |  72.83 |    78.95 |   45.83 | 59-83
 #  routing-model.mjs              |  68.09 |    85.45 |   48.89 | 28-34 37-40 42-45
-#  sample-model.mjs               | 100.00 |    71.05 |   60.00 | 
+#  sample-model.mjs               | 100.00 |    71.05 |   60.00 |
 #  ShellPresenter.mjs             |  90.98 |    79.31 |   52.17 | 38-40 43-46 65-68
 #  slices-model.mjs               |  84.21 |    72.62 |   45.76 | 12 49-56
-#  voice-model.mjs                | 100.00 |    83.13 |   63.83 | 
-# tests                           |        |          |         | 
-#  adapter-operations.test.mjs    | 100.00 |   100.00 |  100.00 | 
-#  component-guard.test.mjs       | 100.00 |   100.00 |  100.00 | 
-#  contract-consumer.test.mjs     | 100.00 |    96.15 |  100.00 | 
-#  control-regressions.test.mjs   | 100.00 |   100.00 |   96.97 | 
-#  engine.test.mjs                | 100.00 |   100.00 |  100.00 | 
-#  import.test.mjs                | 100.00 |   100.00 |  100.00 | 
-#  mapping.test.mjs               | 100.00 |   100.00 |  100.00 | 
-#  model-bindings.test.mjs        | 100.00 |   100.00 |  100.00 | 
-#  native-controls.test.mjs       | 100.00 |   100.00 |  100.00 | 
-#  native-document.test.mjs       | 100.00 |   100.00 |  100.00 | 
-#  native-engine.test.mjs         | 100.00 |    98.89 |   99.33 | 
-#  native-fixture.mjs             | 100.00 |    85.00 |  100.00 | 
-#  preparation.test.mjs           | 100.00 |   100.00 |   87.50 | 
-#  presentation.test.mjs          | 100.00 |    94.12 |  100.00 | 
-#  session-connection.test.mjs    | 100.00 |   100.00 |  100.00 | 
-#  slices-history.test.mjs        | 100.00 |   100.00 |  100.00 | 
-#  store-boundary.test.mjs        | 100.00 |   100.00 |  100.00 | 
-#  telemetry.test.mjs             | 100.00 |   100.00 |  100.00 | 
+#  voice-model.mjs                | 100.00 |    83.13 |   63.83 |
+# tests                           |        |          |         |
+#  adapter-operations.test.mjs    | 100.00 |   100.00 |  100.00 |
+#  component-guard.test.mjs       | 100.00 |   100.00 |  100.00 |
+#  contract-consumer.test.mjs     | 100.00 |    96.15 |  100.00 |
+#  control-regressions.test.mjs   | 100.00 |   100.00 |   96.97 |
+#  engine.test.mjs                | 100.00 |   100.00 |  100.00 |
+#  import.test.mjs                | 100.00 |   100.00 |  100.00 |
+#  mapping.test.mjs               | 100.00 |   100.00 |  100.00 |
+#  model-bindings.test.mjs        | 100.00 |   100.00 |  100.00 |
+#  native-controls.test.mjs       | 100.00 |   100.00 |  100.00 |
+#  native-document.test.mjs       | 100.00 |   100.00 |  100.00 |
+#  native-engine.test.mjs         | 100.00 |    98.89 |   99.33 |
+#  native-fixture.mjs             | 100.00 |    85.00 |  100.00 |
+#  preparation.test.mjs           | 100.00 |   100.00 |   87.50 |
+#  presentation.test.mjs          | 100.00 |    94.12 |  100.00 |
+#  session-connection.test.mjs    | 100.00 |   100.00 |  100.00 |
+#  slices-history.test.mjs        | 100.00 |   100.00 |  100.00 |
+#  store-boundary.test.mjs        | 100.00 |   100.00 |  100.00 |
+#  telemetry.test.mjs             | 100.00 |   100.00 |  100.00 |
 # ----------------------------------------------------------------------------------------
-# all files                       |  91.86 |    82.63 |   76.90 | 
+# all files                       |  91.86 |    82.63 |   76.90 |
 # ----------------------------------------------------------------------------------------
 # end of coverage report
