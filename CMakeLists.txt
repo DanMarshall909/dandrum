@@ -729,6 +729,8 @@ if(NOT DANDRUM_NATIVE_ONLY)
     add_test(NAME cxx-trigger-native-bridge COMMAND dandrum-trigger-native-bridge-test)
     if(DANDRUM_TRIGGER_REACT)
         add_test(NAME trigger-web-runtime COMMAND dandrum-trigger-native-bridge-test --web-runtime)
+        set_tests_properties(trigger-web-runtime PROPERTIES
+            LABELS "runtime" SKIP_RETURN_CODE 77 TIMEOUT 120 RUN_SERIAL TRUE)
         add_executable(dandrum-standalone-chrome-test tests/cpp/PluginStandaloneChromeTest.cpp)
         target_include_directories(dandrum-standalone-chrome-test PRIVATE src/juce-wrapper src/juce-plugin)
         target_compile_definitions(dandrum-standalone-chrome-test PRIVATE
