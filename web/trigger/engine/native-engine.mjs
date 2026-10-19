@@ -12,6 +12,7 @@ import {mapAssets} from './domains/import-mapping.mjs';
 import {applyEntityDelta} from './entity-delta.mjs';
 import {synchroniseModuleParameters} from './voice-defaults.mjs';
 import {parse} from 'yaml';
+import {parseSessionConnection,nextDecimalId} from './session-connection.mjs';
 
 const operations={...structureOperations,...instrumentOperations,...historyOperations,...sliceOperations,...candidateOperations,...routingOperations};
 const unsupported=new Set(['collapseHistory','addModulator','setModulator','removeModulator','addRoute','updateRoute','removeRoute','setMacro','bindMacro','learnMidi','receiveMidi','addProcessor','moveProcessor','setProcessorParam','removeProcessor']);
@@ -25,7 +26,7 @@ export class NativeEngine {
     this.native=true;this.capabilities={analysis:false,zeroCrossings:false,fx:false,modulation:false,wholeSourceAudition:false};
   }
   async initialize(){
-    this.session=await this.invoke('getSamplerSession');this.patch=patchFromSession(this.session);this.generation=this.session.document.generation;
+    this.session=await this.invoke('getSamplerSession');this.connection=parseSessionConnection(this.session.connection);this.patch=patchFromSession(this.session);this.generation=this.session.document.generation;
     this.sourcePath=this.session.sourcePath;this.samplerSession=this.session;this.loadedPreset='native';
     await this.publishWindowTitle();
     this.live=new NativeLive(this);await this.startFeedback();
@@ -61,8 +62,10 @@ export class NativeEngine {
       const session=await this.invoke('getSamplerSession');
       if(this.closed)return;
       if(session.document?.generation<requested)throw new Error('Native session generation is stale');
-      const accepted=patchFromSession(session),replacement=session.sourcePath!==this.sourcePath||JSON.stringify(parse(session.yaml))!==JSON.stringify(parse(this.session.yaml));
+      const accepted=patchFromSession(session),connection=parseSessionConnection(session.connection),replacement=session.sourcePath!==this.sourcePath||JSON.stringify(parse(session.yaml))!==JSON.stringify(parse(this.session.yaml));
+      if(connection.instanceId!==this.connection.instanceId||connection.attachmentId!==this.connection.attachmentId)throw new Error('Native session connection changed unexpectedly');
       this.session=session;this.generation=session.document.generation;this.sourcePath=session.sourcePath;
+      this.connection=connection;
       if(this.pendingGeneration<=this.generation)this.pendingGeneration=0;
       if(accepted.rules.length)this.samplerSession=session;
       if(replacement)this.patch=accepted;
@@ -121,8 +124,10 @@ export class NativeEngine {
         const session=await this.invoke('getSamplerSession');
         if(this.closed)throw new Error('Engine is closed');
         if(session.document?.generation<=generation||completed.generation!==session.document.generation)throw new Error('Native preparation completed with stale generation');
-        const accepted=patchFromSession(session); // Validate real file/frame metadata before publication.
+        const accepted=patchFromSession(session),connection=parseSessionConnection(session.connection); // Validate real file/frame metadata before publication.
+        if(connection.instanceId!==this.connection.instanceId||connection.attachmentId!==this.connection.attachmentId)throw new Error('Native session connection changed unexpectedly');
         this.session=session;this.generation=session.document.generation;this.sourcePath=session.sourcePath;
+        this.connection=connection;
         if(accepted.rules.length)this.samplerSession=session;
         this.patch=reloadPath?accepted:draft;
         this.patch.params=accepted.params;
@@ -142,6 +147,52 @@ export class NativeEngine {
     if(['setHistory','addHistory'].includes(name)&&args.some(value=>value?.config?.snap||value?.snap))return Promise.reject(new Error('Zero crossing analysis is unsupported by the native sampler'));
     return this.prepared(draft=>operations[name].call(this,draft,...args));
   }
+  ownsOperation(method,...args){
+    if(method!=='updateRule')return false;
+    const [id,delta]=args,rule=this.patch.rules.find(item=>item.id===id),keys=delta&&typeof delta==='object'?Object.keys(delta):[];
+    return !!rule?.nativeMapId&&!!rule?.nativeZoneId&&keys.length>0&&keys.every(key=>key==='noteLo'||key==='noteHi');
+  }
+  acceptSessionCommandSnapshot(session,before){
+    const connection=parseSessionConnection(session.connection),accepted=patchFromSession(session);
+    if(connection.instanceId!==before.instanceId||connection.attachmentId!==before.attachmentId)throw new Error('Native session command returned another connection');
+    this.session=session;this.connection=connection;this.generation=session.document.generation;this.sourcePath=session.sourcePath;this.samplerSession=session;this.patch=accepted;
+    this.parameters.accept({generation:this.generation,sequence:0,parameters:Object.values(this.patch.params).map(p=>({id:p.id,name:p.name,value:p.value}))});
+    return connection;
+  }
+  async publishSessionCommand(method,args){
+    return this.serial(async()=>{
+      this.preparing=true;this.emit('patch',{phase:'preparing'});
+      try{
+        const before=this.connection,request=before.nextRequestId;
+        const admitted=await this.invoke(method,before.instanceId,before.attachmentId,request,before.revision,...args);
+        if(admitted?.status!=='accepted'||admitted.job_id!==request)throw new Error(`Native ${method} was not admitted`);
+        const completed=await this.pollJob('getInstrumentSessionJobStatus',request);
+        const session=await this.invoke('getSamplerSession');
+        if(this.closed)throw new Error('Engine is closed');
+        const connection=this.acceptSessionCommandSnapshot(session,before);
+        if(completed.request_id!==request||connection.revision!==completed.revision||connection.nextRequestId!==nextDecimalId(request))throw new Error('Native session command returned incoherent identity or revision metadata');
+        await this.startFeedback(true);
+        this.emit('patch',{phase:'ready',patch:this.getPatch(),replacement:false});
+      }catch(error){
+        let failure=error;
+        if(!this.closed)try{this.acceptSessionCommandSnapshot(await this.invoke('getSamplerSession'),this.connection);}
+        catch(refreshError){failure=new Error(`${error instanceof Error?error.message:String(error)}; session refresh failed: ${refreshError instanceof Error?refreshError.message:String(refreshError)}`,{cause:error});}
+        this.report(failure);throw failure;
+      }
+      finally{this.preparing=false;}
+    });
+  }
+  updateRule(id,delta){
+    if(!this.ownsOperation('updateRule',id,delta))return this.edit('updateRule',[id,delta]);
+    const rule=this.patch.rules.find(item=>item.id===id),low=delta.noteLo??rule.noteLo,high=delta.noteHi??rule.noteHi;
+    if(!Number.isInteger(low)||!Number.isInteger(high)||low<0||high>127||low>high)return Promise.reject(new Error('Invalid native mapping key range'));
+    return this.publishSessionCommand('setInstrumentZoneKeyRange',[rule.nativeMapId,rule.nativeZoneId,low,high]);
+  }
+  undoSession(){
+    if(!this.connection.history.undoCount)return Promise.resolve();
+    return this.publishSessionCommand('undoInstrumentSession',[]);
+  }
+  get sessionHistory(){return {undoCount:this.connection?.history.undoCount??0,redoCount:this.connection?.history.redoCount??0,undoLabel:'Change Key Range'};}
   applyDelta(changes){return this.prepared(draft=>applyEntityDelta(draft,changes));}
   beginHostGesture(id){return this.serial(async()=>{await this.parameters.command('beginGesture',id,this.generation);});}
   endHostGesture(id){return this.serial(async()=>{await this.parameters.command('endGesture',id,this.generation);});}
@@ -193,4 +244,4 @@ export class NativeEngine {
     for(const token of this.eventTokens)this.backend.removeEventListener?.(token);this.listeners.clear();
   }
 }
-for(const name of Object.keys(operations))NativeEngine.prototype[name]=function(...args){return this.edit(name,args);};
+for(const name of Object.keys(operations))if(name!=='updateRule')NativeEngine.prototype[name]=function(...args){return this.edit(name,args);};

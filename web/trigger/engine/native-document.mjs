@@ -68,7 +68,7 @@ export function patchFromSession(session){
       }
       if(key&&grouped.get(key)!==zone)continue;
       const root=patch.regions.find(item=>item.id===regionId)?.root??zone.keyLow;
-      patch.rules.push({id:`${map.id}.${zone.id}`,group:map.id,target,name:readable(zone.id),source:key??regionId,noteLo:zone.keyLow,noteHi:zone.keyHigh,velLo:zone.velocityLow,velHi:zone.velocityHigh,root,nativeInitialRoot:root,nativeControlGroup:zone.controlGroup,nativeChokeGroup:zone.chokeGroup,nativeGain:zone.gainDb,nativePan:zone.pan,nativeTune:zone.pitchSemitones});
+      patch.rules.push({id:`${map.id}.${zone.id}`,nativeMapId:map.id,nativeZoneId:zone.id,group:map.id,target,name:readable(zone.id),source:key??regionId,noteLo:zone.keyLow,noteHi:zone.keyHigh,velLo:zone.velocityLow,velHi:zone.velocityHigh,root,nativeInitialRoot:root,nativeControlGroup:zone.controlGroup,nativeChokeGroup:zone.chokeGroup,nativeGain:zone.gainDb,nativePan:zone.pan,nativeTune:zone.pitchSemitones});
     }
   }
   return patch;

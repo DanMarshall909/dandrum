@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {parse} from 'yaml';
-import {session,backend} from './native-fixture.mjs';
+import {session,connection,backend,yaml} from './native-fixture.mjs';
 import {NativeEngine} from '../engine/native-engine.mjs';
 import {entityDelta} from '../engine/entity-delta.mjs';
 import {Store} from '../engine/store.mjs';
@@ -37,8 +37,9 @@ test('native edits await real publication; failed/stale preparations retain patc
 });
 
 test('structural commands serialize through host and reversible operands compile real map changes',async t=>{
-  const {engine,bridge}=await setup(t),before=engine.getPatch();
-  await Promise.all([engine.renameNode('root','Renamed'),engine.updateRule('kit.kick',{noteLo:40,noteHi:40})]);
+  const {engine,bridge}=await setup(t),before=engine.getPatch(),rules=engine.getPatch().rules;
+  rules.find(rule=>rule.id==='kit.kick').noteLo=40;rules.find(rule=>rule.id==='kit.kick').noteHi=40;
+  await Promise.all([engine.renameNode('root','Renamed'),engine.setRules(rules)]);
   assert.equal(engine.getPatch().name,'Renamed');assert.equal(engine.getPatch().rules.find(r=>r.id==='kit.kick').noteLo,40);
   assert.deepEqual(bridge.calls.filter(c=>c[0]==='prepareSampler').map(c=>c[2]),[7,8]);
   await engine.applyDelta(entityDelta(engine.getPatch(),before));assert.equal(engine.getPatch().name,before.name);
@@ -169,4 +170,58 @@ test('native editor resize uses only the requested size mode and reports failed 
   const {engine,bridge}=await setup(t);bridge.functions.resizeSamplerEditor=()=>({status:'accepted',width:1600,height:1000});
   await engine.resizeEditor('exp');assert.deepEqual(bridge.calls.at(-1),['resizeSamplerEditor','exp']);
   bridge.functions.resizeSamplerEditor=()=>null;await assert.rejects(engine.resizeEditor('min'),/resize.*admitted/i);
+});
+
+test('migrated key mapping uses native identities and native undo without a local closure entry',async t=>{
+  const {engine,bridge}=await setup(t),store=new Store(engine);t.after(()=>store.close());
+  const accepted=[];
+  bridge.functions.setInstrumentZoneKeyRange=(instance,attachment,request,revision,map,zone,low,high)=>{
+    accepted.push({kind:'map',instance,attachment,request,revision,map,zone,low,high});
+    return {status:'accepted',job_id:request};
+  };
+  bridge.functions.undoInstrumentSession=(instance,attachment,request,revision)=>{
+    accepted.push({kind:'undo',instance,attachment,request,revision});
+    return {status:'accepted',job_id:request};
+  };
+  bridge.functions.getInstrumentSessionJobStatus=request=>{
+    const command=accepted.find(item=>item.request===request);
+    if(command.kind==='map'){
+      const edited=yaml.replace('key_range: [36, 36]','key_range: [60, 60]');
+      bridge.setSession(session(edited,8,connection({revision:'1',nextRequestId:'2',history:{undoCount:1,redoCount:0}})));
+      return {state:'completed',request_id:request,revision:'1',undoCount:1,redoCount:0,error:''};
+    }
+    bridge.setSession(session(yaml,9,connection({revision:'2',nextRequestId:'3',history:{undoCount:0,redoCount:1}})));
+    return {state:'completed',request_id:request,revision:'2',undoCount:0,redoCount:1,error:''};
+  };
+  await store.operation('Change zone Low','updateRule','kit.kick',{noteLo:60,noteHi:60});
+  assert.deepEqual(accepted[0],{kind:'map',instance:'18446744073709551615',attachment:'9007199254740993',request:'1',revision:'0',map:'kit',zone:'kick',low:60,high:60});
+  assert.equal(engine.getPatch().rules.find(rule=>rule.id==='kit.kick').noteLo,60);
+  assert.equal(store.undoStack.length,0);
+  assert.equal(store.undoCount,1);
+  assert.equal(bridge.calls.filter(call=>call[0]==='prepareSampler').length,0);
+  await store.undo();
+  assert.deepEqual(accepted[1],{kind:'undo',instance:'18446744073709551615',attachment:'9007199254740993',request:'2',revision:'1'});
+  assert.equal(engine.getPatch().rules.find(rule=>rule.id==='kit.kick').noteLo,36);
+  assert.equal(store.undoCount,0);
+});
+
+test('a failed native session command refreshes the consumed request identity before retry',async t=>{
+  const {engine,bridge}=await setup(t),requests=[];let attempt=0;
+  bridge.functions.setInstrumentZoneKeyRange=(instance,attachment,request)=>{
+    requests.push(request);return {status:'accepted',job_id:request};
+  };
+  bridge.functions.getInstrumentSessionJobStatus=request=>{
+    attempt++;
+    if(attempt===1){
+      bridge.setSession(session(yaml,7,connection({nextRequestId:'2'})));
+      return {state:'failed',request_id:request,revision:'0',undoCount:0,redoCount:0,error:'Preparation failed'};
+    }
+    const edited=yaml.replace('key_range: [36, 36]','key_range: [61, 61]');
+    bridge.setSession(session(edited,8,connection({revision:'1',nextRequestId:'3',history:{undoCount:1,redoCount:0}})));
+    return {state:'completed',request_id:request,revision:'1',undoCount:1,redoCount:0,error:''};
+  };
+  await assert.rejects(engine.updateRule('kit.kick',{noteLo:60,noteHi:60}),/Preparation failed/);
+  await engine.updateRule('kit.kick',{noteLo:61,noteHi:61});
+  assert.deepEqual(requests,['1','2']);
+  assert.equal(engine.getPatch().rules.find(rule=>rule.id==='kit.kick').noteLo,61);
 });
