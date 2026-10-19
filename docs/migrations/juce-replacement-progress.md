@@ -498,3 +498,40 @@ Archive head `de655b5` is published on
 active pre-push hook passed the full Rust suite and reported no changed engine
 Rust source files, so its mutation phase skipped normally. The main checkout
 remains clean and unchanged.
+
+## JUCE-free Trigger CLAP editor baseline — 19 October 2026
+
+The next bounded increment starts from committed plan `1c09208` and targets a
+Linux X11 CLAP child editor over the production Trigger bundle and persistent
+instrument session. It keeps VST3, standalone device IO, named-DAW acceptance
+and installed release packaging open for the following increment, so the full
+beta and Gates A–C remain active.
+
+Before behavior changed, both existing CLAP boundary CTests passed, all 95
+Trigger JavaScript tests passed, and all 29 session tests passed with formatting
+and Clippy warnings denied. The current headless CLAP source and artifact hashes
+match the preceding state receipt exactly: its latest source-bound evidence is
+68/68 changed executable lines and 424/485 owner lines. This baseline does not
+reinterpret the older 391/423 pre-state measurement as current coverage.
+
+Fresh JavaScript coverage records 100% line, 82.95% branch and 89.36% function
+coverage for `native-engine.mjs`; `session-connection.mjs` records 100% line and
+function coverage with 95.45% branch coverage. Fresh Rust session coverage
+records 104/109 functions, 1456/1594 lines and 1750/1980 regions overall. Its
+format-neutral core records 63/63 functions, 666/670 lines and 812/821 regions;
+the defensive C facade records 41/46 functions, 790/924 lines and 938/1159
+regions. Branch coverage is unavailable in that LLVM Rust run.
+
+The selected dependency baseline pins Clack at
+`27ca28391b57a61bad4bb5099288a7bf9247350d` and evaluates Wry 0.57.0 with its
+default Linux X11/WebKitGTK path. Both Rust projects declare MIT or Apache-2.0.
+The host provides WebKitGTK 2.50.4, GTK 3.24.33 and X11 1.7.5; their system
+package copyright manifests are multipart, so redistribution attribution stays
+open until installed packaging work. Wry is not yet a repository dependency,
+and the current headless CLAP binary links only libc, libm and libgcc_s, with no
+JUCE, GTK or WebKit runtime edge.
+
+[Portable baseline evidence](evidence/trigger-clap-editor-baseline-2026-10-19/receipt.json)
+contains the exact source, artifact, licence and log hashes. At measurement the
+filesystem had 58 GiB free; the 64 GiB build tree and both 5.6 GiB Cargo targets
+were retained. Mutation remains excluded by the recorded user direction.

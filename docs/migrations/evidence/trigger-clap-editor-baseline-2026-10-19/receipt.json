@@ -1,0 +1,190 @@
+{
+  "scope": "Task 1.1 baseline for the JUCE-free production Trigger CLAP editor increment; no behavior or dependency change",
+  "source_head": "1c092086f6b5da2b83bb1dd3d1ddcc71305207ba",
+  "upstream_before_baseline_commit": "16184e21e957e2adcca2f50845cf33f3b49ec510",
+  "measured_at": "2026-10-19T20:50:16+10:00",
+  "platform": "Linux-7.0.11-76070011-generic-x86_64-with-glibc2.35",
+  "source_sha256": {
+    "src/clap-adapter/src/lib.rs": "cb4256a54f9d8f8d8bf4f34f596cf80611286aef44582223fa2e824a9460d477",
+    "src/clap-adapter/Cargo.toml": "b9e976f19ee6a8755e49a9219814aa3ada19fd7df0531351dba2a976c7e83eb2",
+    "src/clap-adapter/Cargo.lock": "91226b3a36221d79b436b8e5a0d659aea61c764afbdde955e343f02d052fafb5",
+    "src/instrument-session/src/lib.rs": "7df8d1c3751e31fb9832b615d3957c2459014b6822aef1be1958a20064872fdf",
+    "src/instrument-session/src/native_ffi.rs": "cdada47286a2c2f94d45c652a9166b8d9a30870e56fca1111abdcdf5611934b8",
+    "src/instrument-session/Cargo.lock": "1537a3dc07c17fb7fe79786d1863b7e9b7e3db328757845fdbe3ffdbb10201eb",
+    "web/trigger/engine/native-engine.mjs": "181b61d90366d3ce0c6c90f44919f4be2c362a907a8821063704568bb966deb5",
+    "web/trigger/package-lock.json": "07d6d015bc9148c1f55f3146f38200f835727c0fc4bbe19cf7a415529ba342d9",
+    "examples/patches/advanced-drum-kit.yaml": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008",
+    "examples/patches/assets/advanced-drums.wav": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503"
+  },
+  "toolchain": {
+    "rustc": "1.96.0 (ac68faa20 2026-05-25)",
+    "cargo": "1.96.0 (30a34c682 2026-05-25)",
+    "cmake": "3.30.9",
+    "node": "22.19.0",
+    "npm": "10.9.3",
+    "webkit2gtk_4_1": "2.50.4",
+    "gtk_3": "3.24.33",
+    "x11": "1.7.5"
+  },
+  "storage": {
+    "filesystem_size": "478G",
+    "used": "396G",
+    "available": "58G",
+    "build": "64G",
+    "rust_engine_target": "5.6G",
+    "instrument_session_target": "5.6G",
+    "policy": "All reusable builds, Cargo targets and dependencies retained"
+  },
+  "dependencies": {
+    "clack": {
+      "revision": "27ca28391b57a61bad4bb5099288a7bf9247350d",
+      "license": "MIT OR Apache-2.0",
+      "license_sha256": {
+        "LICENSE-MIT": "5561edd4b9921683d98162f4321d0a146b2cf01f2413261d75a3b3878d83e124",
+        "LICENSE-APACHE": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+      }
+    },
+    "wry_candidate": {
+      "version": "0.57.0",
+      "rust_version": "1.85",
+      "default_features": [
+        "os-webview",
+        "x11"
+      ],
+      "linux_edges": [
+        "gtk 0.18",
+        "webkit2gtk =2.0.2 bindings",
+        "javascriptcore-rs =1.1.2",
+        "gdkx11 0.18",
+        "x11-dl 2.21"
+      ],
+      "license": "MIT OR Apache-2.0",
+      "license_sha256": {
+        "LICENSE-MIT": "ef88893533af22ffbb68ceef0724ba1389518df26165a34f3c99ad30b884df4f",
+        "LICENSE-APACHE": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+        "LICENSE.spdx": "26235c41e314fb0da35b33b2bb5bcbc4dd523839f8eeca52efcd43586f441fb5"
+      },
+      "repository_dependency_at_baseline": false
+    },
+    "system_webview": {
+      "webkit2gtk_package": "2.50.4-0ubuntu0.22.04.1",
+      "javascriptcoregtk_package": "2.50.4-0ubuntu0.22.04.1",
+      "gtk_package": "3.24.33-1ubuntu2.2",
+      "license_scope": "Multipart system-package manifests retained by hash; installed redistribution attribution remains later packaging work"
+    }
+  },
+  "headless_clap": {
+    "artifact": "build/engine-only/clap/DandrumHeadlessProof.clap",
+    "artifact_sha256": "3973d56e8f956b0c872a2a084fb87d4851aa6125f61976d29b0160286b7271e5",
+    "artifact_bytes": 12339608,
+    "fresh_baseline": {
+      "ctests": 2,
+      "passed": 2,
+      "names": [
+        "clap-dynamic-host",
+        "clap-build-boundary"
+      ]
+    },
+    "source_bound_prior_evidence": {
+      "receipt": "docs/migrations/evidence/clap-state-2026-10-16/receipt.json",
+      "source_hash_match": true,
+      "dynamic_plugin_tests": 19,
+      "public_signed_baselines": 2,
+      "changed_executable_lines": {
+        "covered": 68,
+        "count": 68
+      },
+      "owner_lines": {
+        "covered": 424,
+        "count": 485,
+        "percent": 87.42268041237114
+      },
+      "official_validator": {
+        "success": 62,
+        "skipped": 18,
+        "warning": 1,
+        "failure": 0
+      }
+    },
+    "dynamic_libraries": [
+      "libgcc_s.so.1",
+      "libm.so.6",
+      "libc.so.6"
+    ],
+    "juce_gtk_webkit_edges": []
+  },
+  "trigger": {
+    "check": "passed",
+    "tests": {
+      "passed": 95,
+      "failed": 0
+    },
+    "coverage": {
+      "all_files": {
+        "line_percent": 91.86,
+        "branch_percent": 82.63,
+        "function_percent": 76.9
+      },
+      "engine/native-engine.mjs": {
+        "line_percent": 100.0,
+        "branch_percent": 82.95,
+        "function_percent": 89.36
+      },
+      "engine/session-connection.mjs": {
+        "line_percent": 100.0,
+        "branch_percent": 95.45,
+        "function_percent": 100.0
+      }
+    },
+    "baseline_transport": "Explicit backend injection in unit tests; production default still resolves window.__JUCE__.backend"
+  },
+  "instrument_session": {
+    "fmt": "passed",
+    "clippy_warnings_denied": "passed",
+    "tests": {
+      "passed": 29,
+      "failed": 0
+    },
+    "coverage": {
+      "overall": {
+        "functions": "104/109",
+        "lines": "1456/1594",
+        "regions": "1750/1980"
+      },
+      "format_neutral_core": {
+        "functions": "63/63",
+        "lines": "666/670",
+        "regions": "812/821"
+      },
+      "native_ffi": {
+        "functions": "41/46",
+        "lines": "790/924",
+        "regions": "938/1159"
+      },
+      "branches": "not instrumented"
+    }
+  },
+  "evidence_sha256": {
+    "clap-baseline.log": "c0285e97e966ad775e33da8b8f53dbc6e9445e81be00df8d5460a61e7f8d40e9",
+    "clap-production-dependencies.txt": "405199bf4ea134a0d5a8b0e8890ac8570073acbee58e9a055ecffae385e4c71f",
+    "headless-artifact-dependencies.txt": "cb467dddc99e0375ca85fa5c1b89706c91d72fae6d1a751fefa1a94215aecf72",
+    "preflight.log": "d68d5eaf34dd6dc019555860cb52efc5f2b55361b9aa5bfb64cb81818c3d9472",
+    "session-baseline.log": "bdba60fca6e88bf1c70602be872a4ede6b4d3deacd8349dc2fdb21b2bf51c276",
+    "session-coverage-missing.txt": "0768cbdd82474e178bd25bc28d68335ef79a114ca49c9d05aeee2a7f9104d14b",
+    "session-coverage.json": "eed2ffc32b3dc44a52c5904f496bd3636e1557dc0bf453fa0097305ba497b665",
+    "session-coverage.log": "282d7fa9780bfb19cc36495d5b35d19210a174d4bdd99d2b521f9c3486a85090",
+    "session-production-dependencies.txt": "1cd3e924c3fe52436bfd92b131be9f4e623db83d93b782a1518daff4367b0537",
+    "system-webview-dependencies.txt": "23eb9626b55c0f41278b16e88a563e42ff8f7349f51c3333132320643e37af00",
+    "trigger-baseline.log": "cc90d78dc6444c7c68e5c5c68f2cc04a932287a69425bfdaf21c6ce95d748146",
+    "trigger-coverage.log": "d782568bf4f0536880f2d9ef58dec10bddf00e6d563b5c5788c1cc72f015c2e8",
+    "wry-info.log": "b354719e019149d6a8115cc236d0c8b601725404cdb8c6526bc5b486454d605f"
+  },
+  "limits": [
+    "Wry is evaluated and downloaded but not yet added to repository manifests or locks",
+    "Current CLAP proof remains the two headless fixture descriptors; production Trigger identity/editor is pending",
+    "No parented WebView, Trigger CLAP state, automation, lifecycle, copied-resource or independent-instance acceptance is claimed",
+    "System WebKitGTK/GTK redistribution attribution remains open for installed packaging",
+    "VST3, standalone, named DAW, installed release package and non-Linux acceptance remain later increments",
+    "Mutation is excluded by recorded user direction"
+  ]
+}

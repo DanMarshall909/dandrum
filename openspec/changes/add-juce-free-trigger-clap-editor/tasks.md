@@ -1,6 +1,6 @@
 ## 1. Baseline And Build Boundary
 
-- [ ] 1.1 Record free space, reusable build sizes, pinned Clack/Wry/WebKitGTK toolchain and licence/dependency scope; characterize the current headless CLAP, Trigger transport and session coverage before changing behavior.
+- [x] 1.1 Record free space, reusable build sizes, pinned Clack/Wry/WebKitGTK toolchain and licence/dependency scope; characterize the current headless CLAP, Trigger transport and session coverage before changing behavior.
 - [ ] 1.2 Add failing absent-JUCE/source-lookup and copied-resource build tests, then scaffold the format-neutral Trigger host crate and opt-in editor build without changing the two existing CLAP fixtures.
 
 ## 2. Format-Neutral Trigger Host

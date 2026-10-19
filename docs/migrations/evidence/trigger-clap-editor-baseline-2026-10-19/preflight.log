@@ -1,0 +1,34 @@
+2026-10-19T20:47:26+10:00
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/nvme0n1p5  478G  395G   59G  87% /
+63G	build
+5.6G	src/rust-engine/target
+6.4G	src/instrument-session/target
+rustc rustc 1.96.0 (ac68faa20 2026-05-25)
+cargo cargo 1.96.0 (30a34c682 2026-05-25)
+cmake cmake version 3.30.9
+node v22.19.0
+npm 10.9.3
+webkit2gtk-4.1 2.50.4
+gtk+-3.0 3.24.33
+x11 1.7.5
+Clack revision 27ca28391b57a61bad4bb5099288a7bf9247350d
+Clack licenses
+/home/dan/.cargo/git/checkouts/clack-e0a4d228e55f6c60/27ca283/LICENSE-APACHE
+
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+/home/dan/.cargo/git/checkouts/clack-e0a4d228e55f6c60/27ca283/LICENSE-MIT
+Copyright (c) 2021 Adrien Prokopowicz
+
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of

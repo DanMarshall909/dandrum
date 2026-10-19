@@ -1,0 +1,13 @@
+libgtk-3-0:amd64	3.24.33-1ubuntu2.2
+libgtk-3-bin	3.24.33-1ubuntu2.2
+libgtk-3-common	3.24.33-1ubuntu2.2
+libgtk-3-dev:amd64	3.24.33-1ubuntu2.2
+libgtk-3-doc	
+libjavascriptcoregtk-4.1-0:amd64	2.50.4-0ubuntu0.22.04.1
+libjavascriptcoregtk-4.1-dev:amd64	2.50.4-0ubuntu0.22.04.1
+libwebkit2gtk-4.1-0:amd64	2.50.4-0ubuntu0.22.04.1
+libwebkit2gtk-4.1-dev	2.50.4-0ubuntu0.22.04.1
+WebKitGTK/JavaScriptCore package manifest: /usr/share/doc/libwebkit2gtk-4.1-0/copyright
+GTK package manifest: /usr/share/doc/libgtk-3-0/copyright
+1f0568073d22552e2ef947912b9ed1169e5b7132a50d54d520f227e9408c3890  /usr/share/doc/libwebkit2gtk-4.1-0/copyright
+b1fb413d22da493a7e4a2bf256905399cf1401e271c5da9eb9022a4313656bbd  /usr/share/doc/libgtk-3-0/copyright

@@ -1,0 +1,6 @@
+	linux-vdso.so.1 (0x000072a476b4b000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x000072a476b09000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x000072a476a22000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x000072a475c00000)
+	/lib64/ld-linux-x86-64.so.2 (0x000072a476b4d000)
+build/engine-only/clap/DandrumHeadlessProof.clap: ELF 64-bit LSB shared object, x86-64, version 1 (SYSV), dynamically linked, BuildID[sha1]=746b729fa359ac6dbc44f0eb34cb6c332ac7cc08, not stripped
