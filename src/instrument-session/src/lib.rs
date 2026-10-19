@@ -1,8 +1,10 @@
 //! Host-independent accepted instrument state and authoring history.
+mod native_ffi;
 use dandrum_engine::kernel::document::load_kernel_patch_str;
 use dandrum_engine::patch::RenderSettings;
 use dandrum_engine::preparation::{
-    PreparationContext, PreparedKernelInstrument, prepare_kernel_patch_with_context,
+    HostBuses, PreparationContext, PreparedKernelInstrument,
+    prepare_kernel_patch_for_planar_host_with_context, prepare_kernel_patch_with_context,
 };
 use std::{
     collections::VecDeque,
@@ -193,12 +195,23 @@ pub struct PreparedDocumentReplacement {
     base_revision: u64,
 }
 
+/// A host render-configuration change that preserves authoring state/history.
+pub struct PreparedRenderConfiguration {
+    prepared: PreparedKernelInstrument,
+    context: PreparationContext,
+    settings: RenderSettings,
+    host_buses: HostBuses,
+    owner: SessionIdentity,
+    base_revision: u64,
+}
+
 /// Owned preparation work. It can move to a worker without retaining an editor.
 pub struct MappingJob {
     request: MappingRequest,
     yaml: String,
     context: PreparationContext,
     settings: RenderSettings,
+    host_buses: Option<Box<HostBuses>>,
 }
 
 pub struct PreparedMappingJob {
@@ -212,6 +225,7 @@ impl MappingJob {
             &self.yaml,
             &self.context,
             &self.settings,
+            self.host_buses.as_deref(),
             self.request.instance.clone(),
             self.request.expected_revision,
             self.request.intent.clone(),
@@ -220,6 +234,20 @@ impl MappingJob {
             request: self.request,
             result,
         }
+    }
+
+    pub fn fail(self, error: SessionError) -> PreparedMappingJob {
+        PreparedMappingJob {
+            request: self.request,
+            result: Err(error),
+        }
+    }
+}
+
+impl PreparedMappingJob {
+    pub fn fail(mut self, error: SessionError) -> Self {
+        self.result = Err(error);
+        self
     }
 }
 impl PreparedMapping {
@@ -240,6 +268,7 @@ pub struct InstrumentSession {
     attachments: Vec<Weak<()>>,
     context: PreparationContext,
     settings: RenderSettings,
+    host_buses: Option<HostBuses>,
     pending: Option<MappingRequest>,
     outcomes: VecDeque<RetainedOutcome>,
     highest_request_id: Option<RequestId>,
@@ -322,6 +351,7 @@ impl InstrumentSession {
             yaml: self.accepted.yaml.clone(),
             context: self.context.clone(),
             settings: self.settings.clone(),
+            host_buses: self.host_buses.clone().map(Box::new),
         };
         self.highest_request_id = Some(request.request_id);
         self.pending = Some(request);
@@ -414,7 +444,12 @@ impl InstrumentSession {
         self.attachment_index(attachment)
             .ok_or(SessionError::InvalidAttachment)?;
         self.ensure_idle()?;
-        let prepared = Self::prepare_document(yaml, &self.context, &self.settings)?;
+        let prepared = Self::prepare_document(
+            yaml,
+            &self.context,
+            &self.settings,
+            self.host_buses.as_ref(),
+        )?;
         Ok(PreparedDocumentReplacement {
             yaml: yaml.into(),
             prepared,
@@ -438,6 +473,62 @@ impl InstrumentSession {
         let outcomes = VecDeque::with_capacity(OUTCOME_LIMIT);
         self.install_staged(staged, &snapshot, host, Some(outcomes))
             .map_err(CommitError::Activation)?;
+        Ok(snapshot)
+    }
+
+    pub fn prepare_render_configuration(
+        &self,
+        attachment: &Attachment,
+        settings: RenderSettings,
+        host_buses: HostBuses,
+    ) -> Result<PreparedRenderConfiguration, SessionError> {
+        self.attachment_index(attachment)
+            .ok_or(SessionError::InvalidAttachment)?;
+        self.ensure_idle()?;
+        let context =
+            PreparationContext::new(self.context.document_root(), settings.sample_rate_hz)
+                .with_macro_roots(self.context.macro_roots().clone());
+        let prepared =
+            Self::prepare_document(&self.accepted.yaml, &context, &settings, Some(&host_buses))?;
+        Ok(PreparedRenderConfiguration {
+            prepared,
+            context,
+            settings,
+            host_buses,
+            owner: self.identity.clone(),
+            base_revision: self.accepted.revision,
+        })
+    }
+
+    pub fn commit_render_configuration<H: ActivationHost>(
+        &mut self,
+        candidate: PreparedRenderConfiguration,
+        host: &mut H,
+    ) -> Result<SessionSnapshot, CommitError<H::Error>> {
+        self.ensure_idle().map_err(CommitError::Session)?;
+        if candidate.owner != self.identity {
+            return Err(CommitError::Session(SessionError::ForeignCandidate));
+        }
+        if candidate.base_revision != self.accepted.revision {
+            return Err(CommitError::Session(SessionError::StaleCandidate));
+        }
+        let staged = AcceptedState {
+            yaml: self.accepted.yaml.clone(),
+            prepared: candidate.prepared,
+            revision: self.accepted.revision,
+            journal: self.accepted.journal.clone(),
+            cursor: self.accepted.cursor,
+        };
+        let snapshot = self.snapshot_of(&staged);
+        let lease = host
+            .activate(&staged.prepared, &snapshot)
+            .map_err(CommitError::Activation)?;
+        let previous = std::mem::replace(&mut self.accepted, staged);
+        self.context = candidate.context;
+        self.settings = candidate.settings;
+        self.host_buses = Some(candidate.host_buses);
+        lease.publish(self.accepted.publication());
+        drop(previous);
         Ok(snapshot)
     }
 
@@ -614,6 +705,7 @@ impl InstrumentSession {
             &self.accepted.yaml,
             &self.context,
             &self.settings,
+            self.host_buses.as_ref(),
             self.identity.clone(),
             self.accepted.revision,
             intent,
@@ -624,6 +716,7 @@ impl InstrumentSession {
         accepted_yaml: &str,
         context: &PreparationContext,
         settings: &RenderSettings,
+        host_buses: Option<&HostBuses>,
         owner: SessionIdentity,
         base_revision: u64,
         intent: SetZoneKeyRange,
@@ -662,7 +755,7 @@ impl InstrumentSession {
         );
         // Value serialization preserves authored values; presentation is normalized.
         let yaml = serde_yaml::to_string(&document).expect("YAML values serialize");
-        let prepared = Self::prepare_document(&yaml, context, settings)?;
+        let prepared = Self::prepare_document(&yaml, context, settings, host_buses)?;
         Ok(PreparedMapping {
             yaml,
             prepared,
@@ -682,7 +775,25 @@ impl InstrumentSession {
         context: PreparationContext,
         settings: RenderSettings,
     ) -> Result<Self, SessionError> {
-        let prepared = Self::prepare_document(yaml, &context, &settings)?;
+        Self::new_with_optional_host_buses(yaml, context, settings, None)
+    }
+
+    pub fn new_for_planar_host(
+        yaml: &str,
+        context: PreparationContext,
+        settings: RenderSettings,
+        host_buses: HostBuses,
+    ) -> Result<Self, SessionError> {
+        Self::new_with_optional_host_buses(yaml, context, settings, Some(host_buses))
+    }
+
+    fn new_with_optional_host_buses(
+        yaml: &str,
+        context: PreparationContext,
+        settings: RenderSettings,
+        host_buses: Option<HostBuses>,
+    ) -> Result<Self, SessionError> {
+        let prepared = Self::prepare_document(yaml, &context, &settings, host_buses.as_ref())?;
         Ok(Self {
             accepted: AcceptedState {
                 yaml: yaml.into(),
@@ -695,6 +806,7 @@ impl InstrumentSession {
             attachments: Vec::with_capacity(ATTACHMENT_LIMIT),
             context,
             settings,
+            host_buses,
             pending: None,
             outcomes: VecDeque::with_capacity(OUTCOME_LIMIT),
             highest_request_id: None,
@@ -736,10 +848,19 @@ impl InstrumentSession {
         yaml: &str,
         context: &PreparationContext,
         settings: &RenderSettings,
+        host_buses: Option<&HostBuses>,
     ) -> Result<PreparedKernelInstrument, SessionError> {
         let patch = load_kernel_patch_str(yaml)
             .map_err(|error| SessionError::InvalidDocument(error.to_string()))?;
-        prepare_kernel_patch_with_context(&patch, settings, context)
+        host_buses
+            .map_or_else(
+                || prepare_kernel_patch_with_context(&patch, settings, context),
+                |buses| {
+                    prepare_kernel_patch_for_planar_host_with_context(
+                        &patch, settings, buses, context,
+                    )
+                },
+            )
             .map_err(|error| SessionError::PreparationFailed(error.to_string()))
     }
 

@@ -1,0 +1,110 @@
+{
+  "scope": "Only OpenSpec task 3.1: connect the existing persistent instrument session to the real native sampler processor, publish prepared mappings through its audio-reader gate, preserve coherent runtime/document/history across failure, state restore and host reconfiguration, and verify the actual native library graph. React transport, native undo exposure, WebView destruction/recreation, selected desktop/DAW acceptance and the complete beta remain pending.",
+  "base": "a3df6a321c478a3667a559c4dd95201ab1774449",
+  "upstream_before_review": "a3df6a321c478a3667a559c4dd95201ab1774449",
+  "source_sha256": {
+    "CMakeLists.txt": "7f2c3dd646869d3a2d38500a3b8e6b891faef2e45e29a7669e8ecfc50796cb3e",
+    "src/instrument-session/Cargo.toml": "64121a3f75dde57b6a4cc0dcee2a96e4f8cab7ee1b72382f8da60998efba4c44",
+    "src/instrument-session/README.md": "a34c6f97a41fbb0b407b39de676b959be14ba33197801fd65e9231dde1af8b92",
+    "src/instrument-session/src/lib.rs": "5ece2af1c297c30739b46fa5b6b751a34297fdadeda1012e825f20218f146672",
+    "src/instrument-session/src/native_ffi.rs": "2766487a3696abfe558b953cc0350b84c891a2f4d1c380653ccbba975c0029fa",
+    "src/instrument-session/tests/session.rs": "f92285f21831a9804a0c09194085e6e40aec739ad0947284e1925d6b6fdb9739",
+    "src/juce-wrapper/InstrumentSessionBindings.h": "1a0570bf684644ed7321367239a6daa32b7f1d6e2888c8d6f2e0a28114583954",
+    "src/juce-plugin/PluginProcessor.cpp": "c17078cceb9e6bfcb44660a78e912d4cebf6cd46058d6afa30bbd644359c0ddc",
+    "src/juce-plugin/PluginProcessor.h": "bcecb8bdffa5ed8690b4d3097cb73ad902c1b872e047f7dab3ea0a6b7d68adab",
+    "src/rust-engine/src/ffi.rs": "ef1b15913cdadf9147d315ae0b4b310ada8e1f6ecbe208add2a180f5d0bebb1e",
+    "src/rust-engine/src/preparation.rs": "1179b659082e4751e8ef7833dc582900d6da95520c25b22ef1d8ac2079f2f8cf",
+    "tests/cpp/NativeEditorSmokeTest.cpp": "b7d280ac73f54affb21ebb8d398ef770c36213b46363899619e06b8dc4d1598d",
+    "tests/cpp/PluginInstrumentSessionTest.cpp": "9ddd15b198230b954918c7db2155d4df15e63928a28b4ff58a779ffe6d31e5c5",
+    "tests/cmake/NativeSessionLinkGraph.cmake": "c16698b902500d8fd8dab0bcadb85ecdf41b7c752b0fa039f601190e0060788d",
+    "openspec/changes/add-persistent-instrument-session/tasks.md": "a8bfea51f99166663f3ce66088148c34eb82de168e90cee504cf75853af7abcf",
+    "docs/migrations/juce-replacement-progress.md": "6b827516c9c6689730ee1d0f1fcfe3e5f083107eae54bd087ab38e5ba2a72ecb",
+    "docs/migrations/evidence/session-native-host-2026-10-19/native-proof.log": "14d0c219bbe3ebcb4d72fbe1cb53fe8acca0479a68c88c9cb677bbd9d3aed330",
+    "docs/migrations/evidence/session-native-host-2026-10-19/native-editor-repeat.log": "2ca7debea632641abb3a77e86a6bd7ae70e86c8f76939ddd63ce8e02755f8fc6",
+    "docs/migrations/evidence/session-native-host-2026-10-19/link-graph.log": "0d7df78db62f6b0deae970d486f5666170a47e06537e969b724981b4e7649d9a"
+  },
+  "red": [
+    "The task-2.3 base failed to compile the native session consumer because the concrete C ABI, planar prepared-engine constructor and render-reconfiguration transaction did not exist.",
+    "The held-preparation native test initially failed with 'Host reconfiguration bypassed an admitted session worker'; prepareToPlay now blocks new structural admission, waits without holding reloadMutex, then reconfigures the newly accepted state.",
+    "The native facade repeat-prepare regression initially failed at completion because a second prepare consumed the Prepared enum state; the rejected second call now restores that state and the same job completes successfully.",
+    "Initial independent review failed the candidate because plugin-state restore could retain stale session state, restore could discard an active worker, publication called host notification code inside the reader-gated lease, and incomplete native callback tables could reach absent function pointers.",
+    "The exact publication-window test failed with 'Infallible session lease publication acquired a native mutex' before UI notification was moved beyond the lease.",
+    "The incomplete-callback Rust regression initially failed because completion incorrectly succeeded instead of retaining a terminal activation failure.",
+    "The second independent review found that post-restore prepareToPlay reloaded the original file instead of the edited embedded document. The strengthened native regression failed with 'Host preparation replaced the restored embedded edit with stale session or disk state'.",
+    "The first embedded-authority fix was intentionally broad and made the three existing engine/live handoff tests fail their -0.5 signed oracle with 0.25. The final source-authority flag limits embedded staging to restored documents, and all four focused handoff tests then passed."
+  ],
+  "native_host": {
+    "consumer": "The real Advanced Drum Kit sampler processor owns DandrumInstrumentSession, and its processor-owned async worker survives editor absence.",
+    "publication": "C++ SessionActivation and EngineAccessPause RAII objects stage bindings and metadata, close audio admission, publish only the exact Rust-prepared engine and coherent revision/history, retire the old engine, then reopen admission. Parameter-surface notification follows after the native lease returns.",
+    "lease_contract": "The C++ proof wraps pthread_mutex_lock and scopes same-thread counting to the exact committed publication callback. The repaired candidate acquires zero native mutexes in that window.",
+    "held_reader": "A wrapped real processBlock render remains entered while mapping MIDI 36 to 60. The former engine is not destroyed while held and is destroyed exactly once after release.",
+    "signed_oracle": "The accepted mapping renders literal -0.5 at MIDI 60 and literal 0.0 at MIDI 36. Activation rejection preserves literal -0.5 from the prior accepted engine.",
+    "metadata": "Accepted YAML, prepared kit/kick UI metadata, revision 1, undo 1 and redo 0 publish together.",
+    "reconfiguration": "48 kHz block-size changes to 128 and then 256 preserve accepted YAML/history and signed output; a held mapping to MIDI 62 completes before the 256-frame rebuild, producing revision 2 and undo 2.",
+    "state_restore": "A held mapping to MIDI 63 reaches its terminal outcome before concurrent plugin-state restore returns. Restore then retires the session and installs an edited embedded mapping at MIDI 62 while the original file still maps MIDI 36. Later prepareToPlay preserves matching YAML/UI metadata and -0.5 at MIDI 62; superseded MIDI 63 and original-file MIDI 36 remain silent.",
+    "source_authority": "Only documents restored from embedded plugin state stage their retained YAML for later host preparation. Ordinary file-loaded instruments retain the established behavior of re-reading their source file.",
+    "callback_validation": "An incomplete completion callback table is consumed as a retained terminal activation failure without changing accepted state. Duplicate completion is rejected, a later request is admitted, and incomplete reconfigure callbacks are rejected before state changes.",
+    "repeat_evidence": "native-proof.log records the exact repaired PASS line and 10/10 repeat result"
+  },
+  "link_graph": {
+    "command": "ctest --test-dir build/native-session --output-on-failure -R '^native-session-link-graph$' -V",
+    "result": "1/1 passed in 0.43 seconds",
+    "products": [
+      "build/native-session/dandrum-plugin-instrument-session-test",
+      "build/native-session/dandrum-sampler-plugin_artefacts/Release/Standalone/Dandrum Sampler",
+      "build/native-session/dandrum-sampler-plugin_artefacts/Release/VST3/Dandrum Sampler.vst3/Contents/x86_64-linux/Dandrum Sampler.so"
+    ],
+    "assertion": "Each product links the combined session archive exactly once, excludes the standalone engine archive, and resolves exactly one dandrum_instrument_session_create and dandrum_kernel_render definition.",
+    "portable_evidence": "link-graph.log"
+  },
+  "tests": {
+    "session_command": "cargo test --manifest-path src/instrument-session/Cargo.toml",
+    "session_result": "28/28 passed: three unit cases and twenty-five public component cases",
+    "session_clippy": "cargo clippy --manifest-path src/instrument-session/Cargo.toml --all-targets -- -D warnings passed",
+    "session_format": "cargo fmt --manifest-path src/instrument-session/Cargo.toml -- --check passed",
+    "engine_format": "rustfmt --edition 2024 --check src/rust-engine/src/ffi.rs src/rust-engine/src/preparation.rs passed; the whole engine package still reports only unchanged runtime_thread_ownership.rs formatting outside this task",
+    "engine_ffi_command": "cargo test --manifest-path src/rust-engine/Cargo.toml ffi::tests",
+    "engine_ffi_result": "30/30 focused tests passed",
+    "native_build": "The final serial Release build completed all targets and produced the sampler Standalone and VST3 artifacts",
+    "native_command": "NO_AT_BRIDGE=1 ctest --test-dir build/native-session --output-on-failure",
+    "native_result": "52/52 passed in 63.30 seconds",
+    "engine_only_command": "ctest --test-dir build/engine-only --output-on-failure",
+    "engine_only_result": "21/21 passed in 133.79 seconds, including absent-JUCE/browser/UI source boundaries and dynamic/isolated CLAP checks",
+    "native_repeat": "The final session handoff proof passed 10/10, including edited embedded state across host preparation",
+    "editor_repeat": "The final native editor smoke test passed 30/30 after its authoritative timer poll was driven without unrelated desktop focus dispatch"
+  },
+  "coverage": {
+    "tool": "cargo-llvm-cov 0.8.7",
+    "command": "cargo llvm-cov --manifest-path src/instrument-session/Cargo.toml --json --summary-only --output-path /tmp/dandrum-session-native-task31/coverage-repaired.json --ignore-filename-regex 'src/rust-engine'",
+    "crate_functions": [85, 90],
+    "crate_lines": [1180, 1275],
+    "crate_regions": [1460, 1616],
+    "core_functions": [56, 56],
+    "core_lines": [592, 596],
+    "core_regions": [742, 749],
+    "native_facade_functions": [29, 34],
+    "native_facade_lines": [588, 679],
+    "native_facade_regions": [718, 867],
+    "classification": "The core annotated source report lists no uncovered owner source line; four zero-count line items and seven regions are generic-instantiation accounting. The native facade file includes its inline test code in the same file-level denominator, while the separate C++ executable proves the consuming ABI boundary.",
+    "branches": "Not instrumented",
+    "mutation": "Excluded by recorded user direction"
+  },
+  "specification": {
+    "task_progress": "7/11 complete; task 3.1 checked only after the exact repaired native and engine-only gates passed",
+    "strict_change_validation": "passed",
+    "acceptance_criteria": 609,
+    "mapped": 370,
+    "ratchet_todo": 239,
+    "sync": "No canonical scenario is synchronized because the proposed end-to-end scenario also requires the remaining React/WebView and selected-host work."
+  },
+  "limits": [
+    "Concrete session adoption currently covers native sample-map edits, state-restore lifecycle coordination and render reconfiguration. Legacy whole-document replacement retires the session rather than entering its authoring journal.",
+    "Task 3.2 retains the typed/versioned React connection contract, lossless identities, bounded request/outcome transport and native undo command.",
+    "Task 3.3 retains complete editor destruction/recreation, lost-reply recovery, signed output with two instances and actual runtime inspection.",
+    "Selected native desktop and named DAW proof are unavailable in this Linux environment and remain explicit beta work.",
+    "The full JUCE-free beta is not complete. Main remains unchanged and no merge is included."
+  ],
+  "storage_after_final_native_gate": "68 GiB free; native build 7.7 GiB, engine-only build 46 GiB, session target 6.3 GiB and engine target 5.6 GiB retained as reusable outputs.",
+  "review": "Independent final-candidate completion review PASS. The initial four findings and the later edited-restore preparation defect are repaired; the strengthened regression and existing handoff compatibility tests pass on the reviewed 20-path candidate.",
+  "raw_evidence": "/tmp/dandrum-session-native-task31"
+}

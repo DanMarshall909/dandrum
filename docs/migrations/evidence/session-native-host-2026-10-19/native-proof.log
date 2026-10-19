@@ -1,0 +1,3 @@
+INSTRUMENT_SESSION_HANDOFF held_reader=PASS worker=PASS metadata=PASS failure=PASS reconfigure=PASS concurrent_reconfigure=PASS lease_publish=PASS state_restore=PASS signed_pcm=-0.5
+restored_embedded_edit=midi62:-0.5 original_midi36:0 superseded_midi63:0 PASS
+repeat=10/10 PASS

@@ -1,0 +1,2 @@
+Native proof, Standalone and VST3 each use one combined Rust archive and one engine symbol set
+native-session-link-graph=PASS

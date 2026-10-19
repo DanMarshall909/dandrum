@@ -661,7 +661,8 @@ int main (int argc, char** argv)
     fixtureKnob->keyPressed (juce::KeyPress (juce::KeyPress::returnKey));
     blurInput->setText ("-0.5", false);
     fixtureParameter->setValueNotifyingHost (0.84f);
-    juce::MessageManager::getInstance()->runDispatchLoopUntil (40);
+    juce::Thread::sleep (40);
+    juce::Timer::callPendingTimersSynchronously();
     if (blurInput->getText() != "-0.5"
         || std::abs (fixtureKnob->getValue() - 0.61234567) > 0.00001)
     {
@@ -798,10 +799,21 @@ int main (int argc, char** argv)
         || ! renders (0.5f, 0.0f))
         return 1;
     fixtureParameter->setValueNotifyingHost (0.84f);
-    juce::MessageManager::getInstance()->runDispatchLoopUntil (40);
+    // Drive the 30 Hz authoritative-value poll without dispatching unrelated
+    // desktop focus messages between synthetic mouseDown and mouseUp calls.
+    juce::Thread::sleep (40);
+    juce::Timer::callPendingTimersSynchronously();
     if (std::abs (fixtureKnob->getValue() - 0.75) > 0.00001)
     {
-        std::cerr << "native held drag displayed an incoming automation echo\n";
+        std::cerr << "native held drag displayed an incoming automation echo: knob="
+                  << fixtureKnob->getValue()
+                  << " knobFocus=" << fixtureKnob->hasKeyboardFocus (true)
+                  << " peerFocus=" << fixtureEditor->getPeer()->isFocused()
+                  << " focused="
+                  << (juce::Component::getCurrentlyFocusedComponent() != nullptr
+                          ? juce::Component::getCurrentlyFocusedComponent()->getComponentID()
+                          : juce::String ("<none>"))
+                  << '\n';
         return 1;
     }
     fixtureKnob->mouseUp (pointerAt (*fixtureKnob, -51.0f, 0));

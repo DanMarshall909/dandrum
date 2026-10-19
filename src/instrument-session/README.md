@@ -63,11 +63,35 @@ new requests based on the former revision are stale. Host parameter automation
 remains authoritative runtime state outside the authoring journal and is reapplied
 by the host when it installs a replacement runtime.
 
-The test consumer retains an actual graph processor and checks signed output,
-publication ordering, rollback, reconnection and an independent second session.
-It is an in-process protocol fixture; it proves no concrete host's reader safety
-or continuing voices. Native adapter adoption, the typed browser transport and
-actual WebView destruction proof remain pending in
+The protocol test consumer retains an actual graph processor and checks signed
+output, publication ordering, rollback, reconnection and an independent second
+session. The native comparison processor now also constructs this owner for
+sample-map instruments through a C ABI static library. Its processor-owned
+worker prepares mapping jobs without an editor, then publishes the exact prepared
+engine through the existing audio-reader gate. Host render reconfiguration waits
+for admitted structural work and rebuilds the newly accepted state, retaining its
+revision, YAML and native history.
+
+The committed native swap updates only engine/session state while the reader
+gate is closed; parameter-surface notifications run after the activation lease
+returns. The host proof instruments that exact window and rejects any publisher
+mutex acquisition. Plugin-state restore waits for admitted mapping work and
+then retires the session. The restored embedded YAML remains authoritative for
+later sample-rate or block-size preparation even when its mapping differs from
+the original file; ordinary file-loaded instruments retain file-based
+preparation. The C facade also turns an incomplete callback table into a
+retained terminal activation failure instead of calling missing function
+pointers.
+
+The concrete Linux proof holds an entered `processBlock`, verifies that the old
+engine is retired once after reader release, maps `kit/kick` from MIDI 36 to 60,
+checks literal signed `-0.5` output, rejects one activation without changing
+runtime/metadata, and races a block-size change against held preparation. The real
+sampler Standalone and VST3 and the proof executable each link one combined Rust
+session archive, no separate engine archive, and one engine symbol set. Legacy
+whole-document replacement now waits for admitted work and retires the native
+session; adopting that path into the same journal, the typed browser transport
+and actual WebView destruction proof remain pending in
 `openspec/changes/add-persistent-instrument-session/tasks.md`.
 
 Internal instance/attachment identities are opaque Rust lifetime anchors; their
@@ -83,8 +107,9 @@ ctest --test-dir build/engine-only --output-on-failure -L '^session-fast$'
 ctest --test-dir build/engine-only --output-on-failure -L '^session-slow$'
 ```
 
-The fast lane currently contains twenty-five session tests (twenty-three public
-component cases and two revision-limit unit cases); the slow selection is empty.
+The fast lane currently contains twenty-eight session tests (twenty-five public
+component cases, two revision-limit unit cases and one native-facade lifecycle
+case); the slow selection is empty.
 Combined selection is `-L '^session-(fast|slow)$'`. Full
 `ctest --test-dir build/engine-only` also runs the source-absence build guard,
 which executes these tests with JUCE/browser/UI source trees absent. The
@@ -96,8 +121,16 @@ For package feedback directly:
 cargo test --locked --manifest-path src/instrument-session/Cargo.toml
 ```
 
+The concrete native boundary and its library graph are registered in native
+comparison builds:
+
+```bash
+ctest --test-dir build/native-session --output-on-failure \
+  -R 'cxx-plugin-instrument-session|native-session-link-graph'
+```
+
 The tests prepare the existing Advanced Drum Kit and its real WAV. Literal
 signed output at note 36 and silence at 60 are checked. A test-owned WAV is
 removed after preparation to prove that reconnecting uses retained resources.
-Headless connection tests do not establish actual native-editor destruction,
-DAW hosting or the completed JUCE-free beta.
+These tests do not establish actual native-editor destruction, React transport,
+named-DAW hosting or the completed JUCE-free beta.

@@ -70,12 +70,15 @@ endif()
 
 set(RUST_ENGINE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/rust-engine)
 set(RUST_ENGINE_LIB ${CMAKE_CURRENT_BINARY_DIR}/rust-target/release/libdandrum_engine.a)
+set(RUST_SESSION_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/instrument-session)
+set(RUST_SESSION_LIB ${CMAKE_CURRENT_BINARY_DIR}/rust-target/release/libdandrum_instrument_session.a)
 set(CARGO_BIN $ENV{HOME}/.cargo/bin/cargo)
 set(RUST_ENGINE_MUTATION_EXCLUDE_ARGS
     --exclude src/bin/*.rs
     --exclude src/cli.rs)
 
 file(GLOB_RECURSE RUST_ENGINE_SOURCES CONFIGURE_DEPENDS ${RUST_ENGINE_DIR}/src/*.rs)
+file(GLOB_RECURSE RUST_SESSION_SOURCES CONFIGURE_DEPENDS ${RUST_SESSION_DIR}/src/*.rs)
 
 add_custom_command(
     OUTPUT ${RUST_ENGINE_LIB}
@@ -87,6 +90,21 @@ add_custom_command(
     COMMENT "Building Rust audio engine")
 
 add_custom_target(dandrum-engine-rust DEPENDS ${RUST_ENGINE_LIB})
+
+add_custom_command(
+    OUTPUT ${RUST_SESSION_LIB}
+    COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+        ${CARGO_BIN} build --release --locked --manifest-path ${RUST_SESSION_DIR}/Cargo.toml
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    DEPENDS
+        ${RUST_SESSION_DIR}/Cargo.toml
+        ${RUST_SESSION_DIR}/Cargo.lock
+        ${RUST_SESSION_SOURCES}
+        ${RUST_ENGINE_DIR}/Cargo.toml
+        ${RUST_ENGINE_SOURCES}
+    COMMENT "Building Rust instrument session facade")
+
+add_custom_target(dandrum-instrument-session-rust DEPENDS ${RUST_SESSION_LIB})
 
 add_test(
     NAME retired-engine-ffi-symbols
@@ -123,6 +141,10 @@ endif()
 add_library(dandrum_engine STATIC IMPORTED GLOBAL)
 set_target_properties(dandrum_engine PROPERTIES IMPORTED_LOCATION ${RUST_ENGINE_LIB})
 add_dependencies(dandrum_engine dandrum-engine-rust)
+
+add_library(dandrum_instrument_session STATIC IMPORTED GLOBAL)
+set_target_properties(dandrum_instrument_session PROPERTIES IMPORTED_LOCATION ${RUST_SESSION_LIB})
+add_dependencies(dandrum_instrument_session dandrum-instrument-session-rust)
 
 add_executable(dandrum-ffi-smoke tests/cpp/RustEngineFfiSmoke.cpp)
 target_include_directories(dandrum-ffi-smoke PRIVATE src/juce-wrapper)
@@ -409,7 +431,7 @@ target_compile_definitions(dandrum-plugin PRIVATE
     JUCE_WEB_BROWSER=$<BOOL:${DANDRUM_BROWSER_ENABLED}>
     JUCE_USE_WIN_WEBVIEW2=$<BOOL:${DANDRUM_BROWSER_ENABLED}>)
 target_link_libraries(dandrum-plugin
-    PRIVATE dandrum_engine dandrum-tb303-instrument-resources
+    PRIVATE dandrum_instrument_session dandrum-tb303-instrument-resources
         dandrum-plugin-ui-common ${DANDRUM_EDITOR_ADAPTER}
         juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
@@ -440,7 +462,7 @@ target_compile_definitions(dandrum-sampler-plugin PRIVATE
     JUCE_WEB_BROWSER=$<BOOL:${DANDRUM_BROWSER_ENABLED}>
     JUCE_USE_WIN_WEBVIEW2=$<BOOL:${DANDRUM_BROWSER_ENABLED}>)
 target_link_libraries(dandrum-sampler-plugin
-    PRIVATE dandrum_engine dandrum-sampler-resources dandrum-plugin-ui-common ${DANDRUM_EDITOR_ADAPTER}
+    PRIVATE dandrum_instrument_session dandrum-sampler-resources dandrum-plugin-ui-common ${DANDRUM_EDITOR_ADAPTER}
         juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
 if(NOT DANDRUM_NATIVE_ONLY)
@@ -463,7 +485,7 @@ if(DANDRUM_NATIVE_ONLY)
     target_compile_definitions(dandrum-native-editor-smoke-test PRIVATE
         JUCE_USE_CURL=0 JUCE_WEB_BROWSER=0 JUCE_MODAL_LOOPS_PERMITTED=1)
     target_link_libraries(dandrum-native-editor-smoke-test
-        PRIVATE dandrum-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors
+        PRIVATE dandrum-plugin dandrum_instrument_session juce::juce_audio_basics juce::juce_audio_processors
             juce::juce_audio_utils juce::juce_gui_basics
         PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
     add_test(NAME native-editor-smoke COMMAND dandrum-native-editor-smoke-test)
@@ -485,7 +507,7 @@ if(DANDRUM_NATIVE_ONLY)
         target_compile_definitions(dandrum-native-waveform-lifetime-test PRIVATE
             JUCE_USE_CURL=0 JUCE_WEB_BROWSER=0 JUCE_MODAL_LOOPS_PERMITTED=1)
         target_link_libraries(dandrum-native-waveform-lifetime-test PRIVATE
-            dandrum-sampler-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors
+            dandrum-sampler-plugin dandrum_instrument_session juce::juce_audio_basics juce::juce_audio_processors
             juce::juce_audio_utils juce::juce_gui_basics
             juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
         target_link_options(dandrum-native-waveform-lifetime-test PRIVATE
@@ -505,7 +527,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         JUCE_USE_CURL=0 JUCE_WEB_BROWSER=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>
         JUCE_USE_WIN_WEBVIEW2=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>)
     target_link_libraries(dandrum-plugin-spectral-job-test PRIVATE
-        dandrum-sampler-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors
+        dandrum-sampler-plugin dandrum_instrument_session juce::juce_audio_basics juce::juce_audio_processors
         juce::juce_audio_utils juce::juce_dsp
         PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
     target_link_options(dandrum-plugin-spectral-job-test PRIVATE
@@ -521,7 +543,7 @@ target_compile_definitions(dandrum-plugin-knob-parity-test PRIVATE
     JUCE_USE_CURL=0 JUCE_WEB_BROWSER=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>
     JUCE_USE_WIN_WEBVIEW2=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>)
 target_link_libraries(dandrum-plugin-knob-parity-test PRIVATE
-    dandrum-sampler-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors
+    dandrum-sampler-plugin dandrum_instrument_session juce::juce_audio_basics juce::juce_audio_processors
     juce::juce_audio_utils juce::juce_gui_basics
     juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
 if(DANDRUM_NATIVE_ONLY)
@@ -540,7 +562,7 @@ target_compile_definitions(dandrum-plugin-live-processor-test PRIVATE
     JUCE_USE_CURL=0 JUCE_WEB_BROWSER=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>
     JUCE_USE_WIN_WEBVIEW2=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>)
 target_link_libraries(dandrum-plugin-live-processor-test PRIVATE
-    dandrum-sampler-plugin dandrum_engine juce::juce_audio_utils juce::juce_dsp
+    dandrum-sampler-plugin dandrum_instrument_session juce::juce_audio_utils juce::juce_dsp
     juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 if(NOT DANDRUM_NATIVE_ONLY)
     target_link_libraries(dandrum-plugin-live-processor-test PRIVATE juce::juce_gui_extra)
@@ -548,6 +570,7 @@ endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_options(dandrum-plugin-live-processor-test PRIVATE
         "LINKER:--wrap=pthread_mutex_lock" "LINKER:--wrap=_ZNSt6thread4joinEv"
+        "LINKER:--undefined=_ZNK4juce3dsp3FFT36performFrequencyOnlyForwardTransformEPfb"
         "LINKER:--wrap=_ZNK4juce3dsp3FFT36performFrequencyOnlyForwardTransformEPfb"
         "LINKER:--wrap=dandrum_kernel_destroy" "LINKER:--wrap=dandrum_kernel_prepare_file")
 endif()
@@ -565,7 +588,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         JUCE_WEB_BROWSER=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>
         JUCE_USE_WIN_WEBVIEW2=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>)
     target_link_libraries(dandrum-plugin-engine-handoff-test PRIVATE
-        dandrum-sampler-plugin dandrum_engine juce::juce_audio_utils
+        dandrum-sampler-plugin dandrum_instrument_session juce::juce_audio_utils
         juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
     if(NOT DANDRUM_NATIVE_ONLY)
         target_link_libraries(dandrum-plugin-engine-handoff-test PRIVATE juce::juce_gui_extra)
@@ -578,6 +601,36 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         "LINKER:--wrap=_ZNSt6thread4joinEv")
     add_test(NAME cxx-plugin-engine-handoff-baseline COMMAND dandrum-plugin-engine-handoff-test)
     add_test(NAME cxx-plugin-engine-handoff COMMAND dandrum-plugin-engine-handoff-test --hold)
+
+    add_executable(dandrum-plugin-instrument-session-test tests/cpp/PluginInstrumentSessionTest.cpp)
+    target_include_directories(dandrum-plugin-instrument-session-test PRIVATE src/juce-wrapper src/juce-plugin)
+    target_compile_definitions(dandrum-plugin-instrument-session-test PRIVATE
+        DANDRUM_SOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}" JUCE_USE_CURL=0
+        JUCE_WEB_BROWSER=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>
+        JUCE_USE_WIN_WEBVIEW2=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>)
+    target_link_libraries(dandrum-plugin-instrument-session-test PRIVATE
+        dandrum-sampler-plugin dandrum_instrument_session juce::juce_audio_utils
+        juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+    if(NOT DANDRUM_NATIVE_ONLY)
+        target_link_libraries(dandrum-plugin-instrument-session-test PRIVATE juce::juce_gui_extra)
+    endif()
+    target_link_options(dandrum-plugin-instrument-session-test PRIVATE
+        "LINKER:--wrap=pthread_mutex_lock"
+        "LINKER:--wrap=dandrum_kernel_render" "LINKER:--wrap=dandrum_kernel_destroy"
+        "LINKER:--wrap=dandrum_instrument_session_prepare_job")
+    add_test(NAME cxx-plugin-instrument-session COMMAND dandrum-plugin-instrument-session-test)
+    add_test(NAME native-session-link-graph
+        COMMAND ${CMAKE_COMMAND}
+            -DNM=${CMAKE_NM}
+            -DSESSION_LIB=${RUST_SESSION_LIB}
+            -DCONSUMER=$<TARGET_FILE:dandrum-plugin-instrument-session-test>
+            -DLINK_FILE=${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/dandrum-plugin-instrument-session-test.dir/link.txt
+            -DSTANDALONE=$<TARGET_FILE:dandrum-sampler-plugin_Standalone>
+            -DSTANDALONE_LINK_FILE=${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/dandrum-sampler-plugin_Standalone.dir/link.txt
+            -DVST3=$<TARGET_FILE:dandrum-sampler-plugin_VST3>
+            -DVST3_LINK_FILE=${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/dandrum-sampler-plugin_VST3.dir/link.txt
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/cmake/NativeSessionLinkGraph.cmake)
+    set_tests_properties(cxx-plugin-instrument-session native-session-link-graph PROPERTIES TIMEOUT 15)
     add_test(NAME cxx-plugin-live-handoff COMMAND dandrum-plugin-engine-handoff-test --live)
     add_test(NAME cxx-plugin-automatic-reload COMMAND dandrum-plugin-engine-handoff-test --automatic-job)
     add_test(NAME cxx-plugin-reload-job-contracts COMMAND dandrum-plugin-engine-handoff-test --job-baseline)
@@ -592,7 +645,7 @@ target_compile_definitions(dandrum-plugin-waveform-parity-test PRIVATE
     JUCE_USE_CURL=0 JUCE_WEB_BROWSER=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>
     JUCE_USE_WIN_WEBVIEW2=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>)
 target_link_libraries(dandrum-plugin-waveform-parity-test PRIVATE
-    dandrum-sampler-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors
+    dandrum-sampler-plugin dandrum_instrument_session juce::juce_audio_basics juce::juce_audio_processors
     juce::juce_audio_utils juce::juce_gui_basics
     juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
 if(DANDRUM_NATIVE_ONLY)
@@ -618,7 +671,7 @@ target_compile_definitions(dandrum-plugin-spectral-parity-test PRIVATE
     JUCE_USE_CURL=0 JUCE_WEB_BROWSER=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>
     JUCE_USE_WIN_WEBVIEW2=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>)
 target_link_libraries(dandrum-plugin-spectral-parity-test PRIVATE
-    dandrum-sampler-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors
+    dandrum-sampler-plugin dandrum_instrument_session juce::juce_audio_basics juce::juce_audio_processors
     juce::juce_audio_utils juce::juce_gui_basics
     juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -639,7 +692,7 @@ if(NOT DANDRUM_NATIVE_ONLY)
     target_include_directories(dandrum-sampler-plugin-host-test PRIVATE src/juce-wrapper src/juce-plugin)
     target_compile_definitions(dandrum-sampler-plugin-host-test PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=1 JUCE_USE_WIN_WEBVIEW2=1)
     target_link_libraries(dandrum-sampler-plugin-host-test
-        PRIVATE dandrum-sampler-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
+        PRIVATE dandrum-sampler-plugin dandrum_instrument_session juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
         PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
     add_test(NAME cxx-sampler-plugin-host COMMAND dandrum-sampler-plugin-host-test)
     add_test(NAME cxx-output-bus-metadata COMMAND dandrum-sampler-plugin-host-test --output-bus-metadata)
@@ -648,7 +701,7 @@ if(NOT DANDRUM_NATIVE_ONLY)
     target_include_directories(dandrum-plugin-construction-test PRIVATE src/juce-wrapper src/juce-plugin)
     target_compile_definitions(dandrum-plugin-construction-test PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=1 JUCE_USE_WIN_WEBVIEW2=1)
     target_link_libraries(dandrum-plugin-construction-test
-        PRIVATE dandrum-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
+        PRIVATE dandrum-plugin dandrum_instrument_session juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
         PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
     add_test(NAME cxx-plugin-construction COMMAND dandrum-plugin-construction-test)
 
@@ -656,7 +709,7 @@ if(NOT DANDRUM_NATIVE_ONLY)
     target_include_directories(dandrum-plugin-host-parameter-surface-test PRIVATE src/juce-wrapper src/juce-plugin)
     target_compile_definitions(dandrum-plugin-host-parameter-surface-test PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=1 JUCE_USE_WIN_WEBVIEW2=1)
     target_link_libraries(dandrum-plugin-host-parameter-surface-test
-        PRIVATE dandrum-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
+        PRIVATE dandrum-plugin dandrum_instrument_session juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
         PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
     add_test(NAME cxx-plugin-host-parameter-surface COMMAND dandrum-plugin-host-parameter-surface-test)
 
@@ -664,13 +717,13 @@ if(NOT DANDRUM_NATIVE_ONLY)
     target_include_directories(dandrum-plugin-editor-bridge-test PRIVATE src/juce-wrapper src/juce-plugin)
     target_compile_definitions(dandrum-plugin-editor-bridge-test PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=1 JUCE_USE_WIN_WEBVIEW2=1)
     target_link_libraries(dandrum-plugin-editor-bridge-test
-        PRIVATE dandrum-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
+        PRIVATE dandrum-plugin dandrum_instrument_session juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
         PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
     add_test(NAME cxx-plugin-editor-bridge COMMAND dandrum-plugin-editor-bridge-test)
     add_executable(dandrum-trigger-native-bridge-test tests/cpp/PluginTriggerNativeBridgeTest.cpp)
     target_include_directories(dandrum-trigger-native-bridge-test PRIVATE src/juce-wrapper src/juce-plugin)
     target_compile_definitions(dandrum-trigger-native-bridge-test PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=1 JUCE_USE_WIN_WEBVIEW2=1)
-    target_link_libraries(dandrum-trigger-native-bridge-test PRIVATE dandrum-plugin dandrum_engine
+    target_link_libraries(dandrum-trigger-native-bridge-test PRIVATE dandrum-plugin dandrum_instrument_session
         juce::juce_audio_utils juce::juce_gui_extra
         PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
     add_test(NAME cxx-trigger-native-bridge COMMAND dandrum-trigger-native-bridge-test)
@@ -681,7 +734,7 @@ if(NOT DANDRUM_NATIVE_ONLY)
         target_compile_definitions(dandrum-standalone-chrome-test PRIVATE
             JUCE_USE_CURL=0 JUCE_WEB_BROWSER=1 JUCE_USE_WIN_WEBVIEW2=1)
         target_link_libraries(dandrum-standalone-chrome-test PRIVATE
-            dandrum-sampler-plugin dandrum_engine juce::juce_audio_utils juce::juce_gui_extra
+            dandrum-sampler-plugin dandrum_instrument_session juce::juce_audio_utils juce::juce_gui_extra
             juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
         add_test(NAME cxx-standalone-chrome COMMAND dandrum-standalone-chrome-test)
         set_tests_properties(cxx-standalone-chrome PROPERTIES
@@ -706,7 +759,7 @@ if(NOT DANDRUM_NATIVE_ONLY)
     target_include_directories(dandrum-plugin-demo-configuration-test PRIVATE src/juce-wrapper src/juce-plugin)
     target_compile_definitions(dandrum-plugin-demo-configuration-test PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=1 JUCE_USE_WIN_WEBVIEW2=1)
     target_link_libraries(dandrum-plugin-demo-configuration-test
-        PRIVATE dandrum-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
+        PRIVATE dandrum-plugin dandrum_instrument_session juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
         PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
     add_test(NAME cxx-plugin-demo-configuration COMMAND dandrum-plugin-demo-configuration-test)
 endif()
@@ -794,7 +847,7 @@ if(NOT DANDRUM_NATIVE_ONLY)
     target_include_directories(dandrum-plugin-file-watch-reload-test PRIVATE src/juce-wrapper src/juce-plugin)
     target_compile_definitions(dandrum-plugin-file-watch-reload-test PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=1 JUCE_USE_WIN_WEBVIEW2=1)
     target_link_libraries(dandrum-plugin-file-watch-reload-test
-        PRIVATE dandrum-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
+        PRIVATE dandrum-plugin dandrum_instrument_session juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
         PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
     add_test(NAME cxx-plugin-file-watch-reload COMMAND dandrum-plugin-file-watch-reload-test)
 endif()

@@ -1154,7 +1154,7 @@ pub fn prepare_kernel_graph_with_buses_and_context(
 
 /// A planar host discovers event root outputs but cannot bind them to float
 /// buffers. Bind those outputs internally after package resolution and flattening.
-pub(crate) fn prepare_kernel_graph_for_planar_ffi(
+pub fn prepare_kernel_patch_for_planar_host_with_context(
     patch: &KernelPatch,
     render_settings: &RenderSettings,
     host_buses: &HostBuses,

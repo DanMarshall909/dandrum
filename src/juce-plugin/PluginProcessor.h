@@ -11,6 +11,7 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -26,6 +27,7 @@
 #include "InstrumentUiSpectralService.h"
 #include "InstrumentUiLiveService.h"
 #include "RustEngineBindings.h"
+#include "InstrumentSessionBindings.h"
 
 class SoundLabController;
 
@@ -114,6 +116,36 @@ public:
         std::uint32_t generation = 0;
         juce::String error;
     };
+
+    struct InstrumentSessionSnapshot
+    {
+        std::uint64_t revision = 0;
+        std::string yaml;
+        std::size_t undoCount = 0;
+        std::size_t redoCount = 0;
+
+        bool operator== (const InstrumentSessionSnapshot&) const = default;
+    };
+
+    struct InstrumentSessionJobStatus
+    {
+        std::uint64_t id = 0;
+        UiJobState state = UiJobState::running;
+        std::uint64_t revision = 0;
+        std::size_t undoCount = 0;
+        std::size_t redoCount = 0;
+        juce::String error;
+    };
+
+    /// Admits one native mapping command. The Rust-owned job prepares without
+    /// an editor and publishes through the same gate used by processBlock.
+    std::optional<std::uint64_t> requestInstrumentSessionMappingJob (
+        std::uint64_t requestId, std::uint64_t expectedRevision,
+        const std::string& mapId, const std::string& zoneId,
+        std::uint8_t keyLow, std::uint8_t keyHigh);
+    std::optional<InstrumentSessionJobStatus> getInstrumentSessionJobStatus (
+        std::uint64_t requestId) const;
+    std::optional<InstrumentSessionSnapshot> getInstrumentSessionSnapshot() const;
 
     /// Admit one off-audio instrument reload without waiting for preparation.
     /// Admission closes audio access immediately. The processor worker prepares,
@@ -255,6 +287,7 @@ private:
     };
     void waitForEngineReaders() const;
     friend struct PluginConstructionTestProbe;
+    friend struct PluginInstrumentSessionTestProbe;
     /// Test-only direct inspection; subscription delivery is the production
     /// queue consumer and excludes this diagnostic path while active.
     void setMeterCaptureEnabled (bool enabled) noexcept;
@@ -311,6 +344,7 @@ private:
         juce::String yamlContent;
         juce::String instrumentId;
         int presetSchemaVersion = 0;
+        bool reprepareFromEmbeddedYaml = false;
     };
 
     struct LoadedPreset
@@ -338,6 +372,8 @@ private:
             nullptr, &dandrum_kernel_destroy };
         juce::String error;
     };
+
+    class SessionActivation;
 
     static juce::String publicSlotParameterId (int slotIndex);
     static std::vector<PublicParameterDescriptor> loadPublicParameterDescriptors (const std::string& patchPath);
@@ -367,6 +403,15 @@ private:
                                  std::size_t preparedBlockSize, bool previousMute,
                                  const std::optional<juce::String>& yamlSnapshot);
     void finishInstrumentReloadJob (UiJobStatus, bool previousMute);
+    bool createInstrumentSession (std::uint32_t sampleRate, std::size_t blockSize);
+    void runInstrumentSessionJob (std::uint64_t, DandrumInstrumentSessionJob*);
+    static void* beginInstrumentSessionActivation (
+        void*, DandrumKernelInstrument*, const std::uint8_t*, std::size_t,
+        std::uint64_t, std::size_t, std::size_t) noexcept;
+    static void publishInstrumentSessionActivation (
+        void*, void*, std::uint64_t, std::size_t, std::size_t) noexcept;
+    static void abortInstrumentSessionActivation (void*, void*) noexcept;
+    static const DandrumInstrumentSessionHostCallbacks instrumentSessionHostCallbacks;
     void renderSilence (juce::AudioBuffer<float>& buffer) const;
     void preparePublicParameterSlots (const juce::File& instrumentFile,
                                       juce::String* droppedParametersWarning,
@@ -391,6 +436,8 @@ private:
     const std::vector<InstrumentUiDocument::OutputBus> hostOutputBuses;
     juce::AudioProcessorValueTreeState parameters;
     std::atomic<DandrumKernelInstrument*> kernel { nullptr };
+    std::unique_ptr<DandrumInstrumentSession, decltype (&dandrum_instrument_session_destroy)>
+        instrumentSession { nullptr, &dandrum_instrument_session_destroy };
     std::atomic<std::uint32_t> engineAccess { 0 };
     bool instrumentLoaded = false;
     juce::String lastLoadError;
@@ -439,11 +486,19 @@ private:
     // Admission/status use reloadMutex; this processor-owned worker also
     // serializes activation there. Its completion is independent of editors.
     std::future<void> pendingUiReload;
+    std::future<void> pendingInstrumentSessionJob;
     // Optional off-audio observation barrier, owned until the worker is joined.
     // This is also the pre-validation boundary used by lifecycle tests.
     std::function<void()> beforeUiReloadPreparation;
     bool uiReloadActive = false;
     bool uiReloadShuttingDown = false;
+    bool instrumentSessionJobActive = false;
+    bool instrumentSessionReconfigurationPending = false;
+    std::thread::id instrumentSessionLifecycleOwner;
+    std::atomic<bool> instrumentSessionLeasePublishing { false };
+    std::atomic<std::size_t> instrumentSessionLeasePublicationThread { 0 };
+    bool failNextSessionActivationForTest = false;
+    std::deque<InstrumentSessionJobStatus> instrumentSessionJobHistory;
     std::uint64_t nextUiJobId = 1;
     std::deque<UiJobStatus> uiJobHistory;
     // Watches the loaded instrument file for external edits and reloads it

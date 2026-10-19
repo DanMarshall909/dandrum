@@ -4,7 +4,7 @@ use dandrum_engine::graph_processor::RealtimeGraphProcessor;
 use dandrum_engine::kernel::{ChannelCount, document::load_kernel_patch_str};
 use dandrum_engine::patch::RenderSettings;
 use dandrum_engine::preparation::{
-    PreparationContext, PreparedKernelInstrument, prepare_kernel_patch_with_context,
+    HostBuses, PreparationContext, PreparedKernelInstrument, prepare_kernel_patch_with_context,
 };
 use dandrum_instrument_session::{InstrumentSession, SessionError, SetZoneKeyRange};
 use std::path::PathBuf;
@@ -31,6 +31,14 @@ fn owned_sample() -> (tempfile::TempDir, PathBuf) {
         .join("../../examples/patches/assets/advanced-drums.wav");
     std::fs::copy(source, &path).unwrap();
     (directory, path)
+}
+
+fn planar_host_buses(yaml: &str) -> HostBuses {
+    let patch = load_kernel_patch_str(yaml).unwrap();
+    patch.preset_surface().parameters().iter().fold(
+        HostBuses::new().with_output("master", 2),
+        |buses, parameter| buses.with_input(parameter.port_name(), 1),
+    )
 }
 
 struct NoteRenderer {
@@ -903,6 +911,50 @@ fn failed_worker_preparation_is_retained_and_retry_does_not_prepare_or_activate_
 }
 
 #[test]
+fn explicit_worker_failure_before_or_after_preparation_clears_pending_without_activation() {
+    let (yaml, context, settings) = fixture();
+    let mut session = InstrumentSession::new(&yaml, context, settings).unwrap();
+    let (connection, initial) = session.attach().unwrap();
+    let mut host = RuntimeHost::new(&session, &initial);
+
+    let admitted_job =
+        admitted(session.admit_mapping(&connection, mapping_request(&initial, 1, 60)));
+    let before_preparation = session
+        .complete_mapping(
+            admitted_job.fail(SessionError::PreparationFailed(
+                "cancelled before prepare".into(),
+            )),
+            &mut host,
+        )
+        .unwrap();
+    assert!(matches!(
+        &before_preparation.result,
+        Err(RequestFailure::Session(SessionError::PreparationFailed(message)))
+            if message == "cancelled before prepare"
+    ));
+
+    let prepared_job =
+        admitted(session.admit_mapping(&connection, mapping_request(&initial, 2, 61))).prepare();
+    let after_preparation = session
+        .complete_mapping(
+            prepared_job.fail(SessionError::PreparationFailed(
+                "cancelled after prepare".into(),
+            )),
+            &mut host,
+        )
+        .unwrap();
+    assert!(matches!(
+        &after_preparation.result,
+        Err(RequestFailure::Session(SessionError::PreparationFailed(message)))
+            if message == "cancelled after prepare"
+    ));
+    assert_eq!(session.snapshot(&connection).unwrap(), initial);
+    assert_eq!(host.published, initial);
+    assert_eq!(host.attempts, 0);
+    assert_eq!(host.render(36)[0][0], -0.5);
+}
+
+#[test]
 fn foreign_worker_completion_cannot_mutate_another_session() {
     let (yaml, context, settings) = fixture();
     let mut first = InstrumentSession::new(&yaml, context.clone(), settings.clone()).unwrap();
@@ -1194,6 +1246,95 @@ fn accepted_document_replacement_resets_history_and_requests_but_preserves_host_
         .unwrap();
     assert_eq!(accepted_outcome(&current).undo_len, 1);
     assert_eq!(host.render(65)[0][0], -0.25);
+}
+
+#[test]
+fn render_reconfiguration_preserves_accepted_document_history_and_failure_rollback() {
+    let (yaml, context, settings) = fixture();
+    let buses = planar_host_buses(&yaml);
+    let mut session = InstrumentSession::new_for_planar_host(
+        &yaml,
+        context.clone(),
+        settings.clone(),
+        buses.clone(),
+    )
+    .unwrap();
+    let mut other =
+        InstrumentSession::new_for_planar_host(&yaml, context, settings, buses.clone()).unwrap();
+    let (connection, initial) = session.attach().unwrap();
+    let (foreign, _) = other.attach().unwrap();
+    let mut host = RuntimeHost::new(&session, &initial);
+    let foreign_candidate = other
+        .prepare_render_configuration(
+            &foreign,
+            RenderSettings {
+                sample_rate_hz: 44_100,
+                block_size_frames: 128,
+                duration_frames: 128,
+            },
+            buses.clone(),
+        )
+        .unwrap();
+    assert_eq!(
+        session.commit_render_configuration(foreign_candidate, &mut host),
+        Err(CommitError::Session(SessionError::ForeignCandidate))
+    );
+    let stale_candidate = session
+        .prepare_render_configuration(
+            &connection,
+            RenderSettings {
+                sample_rate_hz: 44_100,
+                block_size_frames: 128,
+                duration_frames: 128,
+            },
+            buses.clone(),
+        )
+        .unwrap();
+    let mapping = session
+        .prepare_mapping(&connection, kick_mapping(60))
+        .unwrap();
+    let accepted = session.commit_mapping(mapping, &mut host).unwrap();
+    assert_eq!(
+        session.commit_render_configuration(stale_candidate, &mut host),
+        Err(CommitError::Session(SessionError::StaleCandidate))
+    );
+    assert_eq!(host.attempts, 1);
+
+    let render_settings = RenderSettings {
+        sample_rate_hz: 44_100,
+        block_size_frames: 128,
+        duration_frames: 128,
+    };
+    let candidate = session
+        .prepare_render_configuration(&connection, render_settings.clone(), buses.clone())
+        .unwrap();
+    let reconfigured = session
+        .commit_render_configuration(candidate, &mut host)
+        .unwrap();
+    assert_eq!(reconfigured, accepted);
+    assert_eq!(host.published, accepted);
+    assert_eq!(host.render(60)[0][0], -0.5);
+    assert_eq!(render_note(session.prepared(), 60)[0][0], -0.5);
+
+    host.reject = true;
+    let rejected = session
+        .prepare_render_configuration(
+            &connection,
+            RenderSettings {
+                sample_rate_hz: 96_000,
+                block_size_frames: 64,
+                duration_frames: 64,
+            },
+            buses,
+        )
+        .unwrap();
+    assert_eq!(
+        session.commit_render_configuration(rejected, &mut host),
+        Err(CommitError::Activation("activation rejected"))
+    );
+    assert_eq!(session.snapshot(&connection).unwrap(), accepted);
+    assert_eq!(host.published, accepted);
+    assert_eq!(host.render(60)[0][0], -0.5);
 }
 
 #[test]

@@ -280,3 +280,68 @@ concrete native reader handoff, typed React contract, actual WebView destruction
 and independent-instance host proof. No canonical scenario is synced, no main
 merge is included and the full JUCE-free beta remains active. Independent
 publication review passed for the exact task-2.3 candidate.
+
+## Concrete native session handoff — 19 October 2026
+
+Task 3.1 connects the persistent Rust owner to the real JUCE comparison
+processor for sample-map instruments. The Rust crate now exports one combined
+static library containing the session facade and engine. Its native mapping
+worker owns preparation independently of any editor. A C++ RAII activation
+lease closes the existing audio-reader gate, stages metadata and parameter
+bindings, publishes only the prepared engine and accepted revision/history in
+the committed swap, then retires the previous engine before reopening
+admission. Parameter-surface notifications run after the lease returns, outside
+that swap. Exact publication-window instrumentation proves the publisher takes
+no native mutex while the reader gate is closed. In C++ terms the lease is
+deterministic scope cleanup, similar to a C# `IDisposable` guard. The Rust job
+enum boxes its larger prepared variant so the enum itself stays bounded; Rust
+enums otherwise take the size of their largest variant.
+
+The actual consumer proof holds a real `processBlock` reader while mapping the
+Advanced Drum Kit `kit/kick` zone from MIDI 36 to 60. It proves the old engine is
+not destroyed while held and is destroyed exactly once after release, the
+editor-independent worker publishes revision 1 with one undo entry, native UI
+map/zone metadata and YAML agree with the session, MIDI 36 becomes literal zero,
+and MIDI 60 renders literal `-0.5`. An injected activation rejection preserves
+the exact runtime, YAML and history. Render reconfiguration preserves the same
+accepted state. A separate held-preparation case proves a host block-size change
+waits for admitted work, then rebuilds the newly accepted revision at the new
+size rather than publishing stale render settings.
+
+A concurrent plugin-state restore now waits for an admitted mapping worker,
+lets that accepted job reach a terminal outcome, then retires the persistent
+session before replacing the embedded document. The proof verifies later host
+preparation uses the restored embedded edit rather than either the retired
+mapping or the original disk file: restored MIDI 62 renders `-0.5`, while
+superseded MIDI 63 and original-disk MIDI 36 render literal zero. Ordinary
+file-loaded instruments retain their existing file-based host-preparation
+behavior. Native callback tables are validated before use: an incomplete
+completion table becomes a retained terminal activation failure without
+changing accepted state, duplicate completion is rejected, and the next
+mapping request remains admissible.
+
+The link-graph gate inspects the proof executable and the real sampler
+Standalone and VST3 link commands and binaries. Each links the combined session
+archive exactly once, excludes the standalone engine archive, and contains one
+`dandrum_instrument_session_create` plus one `dandrum_kernel_render` definition.
+The retained engine-only utilities continue to link the smaller engine archive.
+Release builds produced both native sampler products; the JUCE-free nested build
+continues to pass, so this adoption does not introduce JUCE into the independent
+engine/session boundary.
+
+The session package has 28 passing tests. Combined crate coverage executes
+85/90 functions, 1180/1275 LLVM-counted lines and 1460/1616 regions. The core
+owner executes all 56 functions and 592/596 LLVM-counted lines; the four
+remaining line counts are generic-instantiation spans, and the annotated report
+lists no uncovered owner source line. The native facade additionally has direct
+success/failure/reconfiguration coverage and the real C++ boundary proof.
+Mutation remains excluded by the recorded user direction. The portable receipt under
+`evidence/session-native-host-2026-10-19/` records final commands, hashes,
+timings, link evidence and explicit limits.
+
+This increment adopts native mapping and host render reconfiguration only.
+Legacy whole-document reload deliberately retires the session until that path is
+migrated. Tasks 3.2–3.3 retain the typed React contract, native undo command,
+actual WebView destruction/recreation, reply recovery and two-instance proof.
+No canonical scenario is synced, no main merge is included, selected native
+desktop/DAW proof remains open, and the full JUCE-free beta stays active.

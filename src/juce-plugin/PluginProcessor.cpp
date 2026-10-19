@@ -255,12 +255,12 @@ juce::File writeStateRestoreInstrumentFile (const juce::String& yamlText,
     return file;
 }
 
-DandrumKernelInstrument* prepareKernelWithPublicControls (const std::string& path,
-                                                          std::uint32_t sampleRate,
-                                                          std::size_t blockSize)
+bool prepareKernelBusDeclarations (const std::string& path,
+                                   std::vector<std::string>& controlNames,
+                                   std::vector<DandrumKernelBusDeclaration>& buses)
 {
     const auto parameterCount = dandrum_patch_public_numeric_parameter_count (path.c_str());
-    std::vector<std::string> controlNames;
+    controlNames.clear();
     controlNames.reserve (parameterCount);
     for (std::size_t index = 0; index < parameterCount; ++index)
     {
@@ -268,20 +268,38 @@ DandrumKernelInstrument* prepareKernelWithPublicControls (const std::string& pat
         if (! dandrum_patch_public_numeric_parameter_port_name (path.c_str(), index,
                                                                 name.data(), name.size())
             || name[0] == '\0')
-            return nullptr;
+            return false;
 
         if (std::find (controlNames.begin(), controlNames.end(), name.data()) == controlNames.end())
             controlNames.emplace_back (name.data());
     }
 
-    std::vector<DandrumKernelBusDeclaration> buses;
+    buses.clear();
     buses.reserve (controlNames.size() + 1);
     buses.push_back ({ "master", 2, 2 });
     for (const auto& name : controlNames)
         buses.push_back ({ name.c_str(), 1, 1 });
 
-    return dandrum_kernel_prepare_file (path.c_str(), sampleRate, blockSize,
-                                        buses.data(), buses.size());
+    return true;
+}
+
+bool preparedEngineHasSampleMaps (DandrumKernelInstrument* engine)
+{
+    std::unique_ptr<DandrumKernelUiSnapshot, decltype (&dandrum_kernel_ui_snapshot_destroy)>
+        snapshot (dandrum_kernel_ui_snapshot_create (engine), &dandrum_kernel_ui_snapshot_destroy);
+    return snapshot != nullptr && dandrum_kernel_ui_map_count (snapshot.get()) > 0;
+}
+
+DandrumKernelInstrument* prepareKernelWithPublicControls (const std::string& path,
+                                                          std::uint32_t sampleRate,
+                                                          std::size_t blockSize)
+{
+    std::vector<std::string> controlNames;
+    std::vector<DandrumKernelBusDeclaration> buses;
+    if (! prepareKernelBusDeclarations (path, controlNames, buses))
+        return nullptr;
+    return dandrum_kernel_prepare_file (
+        path.c_str(), sampleRate, blockSize, buses.data(), buses.size());
 }
 } // namespace
 
@@ -509,7 +527,15 @@ DandrumAudioProcessor::DandrumAudioProcessor (
 
     instrumentLoaded = loadDefaultInstrument();
     if (instrumentLoaded)
+    {
         preparePublicParameterSlots (loadPublicParameterDescriptors (configuration.instrumentPath.string()), nullptr, false);
+        if (preparedEngineHasSampleMaps (kernel.load (std::memory_order_relaxed))
+            && ! createInstrumentSession (44100, 512))
+        {
+            dandrum_kernel_destroy (kernel.exchange (nullptr, std::memory_order_acq_rel));
+            instrumentLoaded = false;
+        }
+    }
 
     if (configuration.soundLabFixturePath)
         soundLabController = std::make_unique<SoundLabController>();
@@ -561,6 +587,102 @@ DandrumAudioProcessor::EngineAccessPause::~EngineAccessPause()
     }
 }
 
+class DandrumAudioProcessor::SessionActivation final
+{
+public:
+    SessionActivation (DandrumAudioProcessor& processor,
+                       DandrumKernelInstrument* candidateEngine,
+                       const std::uint8_t* yamlBytes, std::size_t yamlSize,
+                       std::uint64_t revision, std::size_t undoCount,
+                       std::size_t redoCount)
+        : owner (processor), candidate (candidateEngine),
+          candidateInstrument (makeCandidateInstrument (
+              owner, candidateEngine, yamlBytes, yamlSize)),
+          bindings { candidateEngine, owner.parameterSlots },
+          pause (owner),
+          expectedRevision (revision), expectedUndoCount (undoCount),
+          expectedRedoCount (redoCount)
+    {
+        owner.replacementState.store (
+            static_cast<int> (ReplacementState::Muted), std::memory_order_relaxed);
+        owner.engineActivationInProgress = true;
+        for (auto& slot : bindings.slots)
+        {
+            if (! slot.active || slot.kernelSlotIndex == kNoEngineSlot || slot.rawValue == nullptr)
+                continue;
+            const auto latest = slot.rawValue->load (std::memory_order_relaxed);
+            owner.applySlotToKernel (slot, latest, candidate);
+            slot.lastAppliedNormalisedValue = latest;
+        }
+    }
+
+    ~SessionActivation()
+    {
+        if (ownsCandidate && candidate != nullptr)
+            dandrum_kernel_destroy (candidate);
+        dandrum_kernel_destroy (retired);
+        owner.engineActivationInProgress = false;
+        if (! published)
+            owner.replacementState.store (
+                static_cast<int> (ReplacementState::Running), std::memory_order_relaxed);
+    }
+
+    void acceptCandidateOwnership() noexcept { ownsCandidate = true; }
+
+    void publish (std::uint64_t revision, std::size_t undoCount,
+                  std::size_t redoCount) noexcept
+    {
+        const auto coherent = revision == expectedRevision && undoCount == expectedUndoCount
+                           && redoCount == expectedRedoCount;
+        jassert (coherent);
+        if (! coherent) std::terminate();
+        retired = owner.kernel.exchange (candidate, std::memory_order_acq_rel);
+        candidate = nullptr;
+        ownsCandidate = false;
+        std::swap (owner.loadedInstrument, candidateInstrument);
+        owner.parameterSlots.swap (bindings.slots);
+        owner.instrumentLoaded = true;
+        owner.replacementState.store (
+            static_cast<int> (ReplacementState::Running), std::memory_order_relaxed);
+        published = true;
+    }
+
+private:
+    static LoadedInstrument makeCandidateInstrument (
+        DandrumAudioProcessor& owner, DandrumKernelInstrument* candidateEngine,
+        const std::uint8_t* yamlBytes, std::size_t yamlSize)
+    {
+        if (candidateEngine == nullptr || (yamlSize > 0 && yamlBytes == nullptr)
+            || yamlSize > static_cast<std::size_t> (std::numeric_limits<int>::max()))
+            throw std::runtime_error ("Invalid prepared session activation");
+        auto instrument = owner.loadedInstrument;
+        instrument.yamlContent = juce::String::fromUTF8 (
+            reinterpret_cast<const char*> (yamlBytes), static_cast<int> (yamlSize));
+        if (! readInstrumentIdentity (instrument.yamlContent, instrument.instrumentId,
+                                      instrument.presetSchemaVersion))
+            throw std::runtime_error ("Prepared session YAML lost instrument identity");
+        return instrument;
+    }
+
+    DandrumAudioProcessor& owner;
+    DandrumKernelInstrument* candidate = nullptr;
+    LoadedInstrument candidateInstrument;
+    CandidateParameterBindings bindings;
+    EngineAccessPause pause;
+    DandrumKernelInstrument* retired = nullptr;
+    std::uint64_t expectedRevision = 0;
+    std::size_t expectedUndoCount = 0;
+    std::size_t expectedRedoCount = 0;
+    bool ownsCandidate = false;
+    bool published = false;
+};
+
+const DandrumInstrumentSessionHostCallbacks DandrumAudioProcessor::instrumentSessionHostCallbacks {
+    &DandrumAudioProcessor::beginInstrumentSessionActivation,
+    &DandrumAudioProcessor::publishInstrumentSessionActivation,
+    &DandrumAudioProcessor::abortInstrumentSessionActivation
+};
+
 DandrumAudioProcessor::~DandrumAudioProcessor()
 {
     instrumentFileWatcher.stopWatching();
@@ -580,6 +702,9 @@ DandrumAudioProcessor::~DandrumAudioProcessor()
         // coordinator. wait() never rethrows a stored worker exception.
         pendingUiReload.wait();
     }
+    if (pendingInstrumentSessionJob.valid())
+        pendingInstrumentSessionJob.wait();
+    instrumentSession.reset();
     dandrum_kernel_destroy (kernel.load (std::memory_order_relaxed));
 }
 
@@ -608,19 +733,100 @@ bool DandrumAudioProcessor::loadDefaultInstrument()
     return true;
 }
 
+bool DandrumAudioProcessor::createInstrumentSession (std::uint32_t sampleRate,
+                                                      std::size_t preparedBlockSize)
+{
+    std::vector<std::string> controlNames;
+    std::vector<DandrumKernelBusDeclaration> buses;
+    const auto sourcePath = loadedInstrument.sourceFile.getFullPathName().toStdString();
+    if (! prepareKernelBusDeclarations (sourcePath, controlNames, buses))
+    {
+        lastLoadError = "Failed to discover instrument-session host buses";
+        return false;
+    }
+    const auto yaml = loadedInstrument.yamlContent.toStdString();
+    const auto root = loadedInstrument.sourceFile.getParentDirectory().getFullPathName().toStdString();
+    instrumentSession.reset (dandrum_instrument_session_create (
+        reinterpret_cast<const std::uint8_t*> (yaml.data()), yaml.size(), root.c_str(),
+        sampleRate, preparedBlockSize, buses.data(), buses.size()));
+    if (instrumentSession == nullptr)
+    {
+        lastLoadError = "Failed to create persistent instrument session";
+        return false;
+    }
+    return true;
+}
+
 void DandrumAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
-    if (engineActivationInProgress || ! instrumentLoaded)
+    std::unique_lock<std::recursive_mutex> reloadLock (reloadMutex);
+    if (engineActivationInProgress || instrumentSessionReconfigurationPending
+        || ! instrumentLoaded)
         return;
 
+    const auto preparedBlockSize = static_cast<std::size_t> (juce::jmax (1, samplesPerBlock));
+    if (instrumentSession != nullptr)
+    {
+        const juce::ScopedValueSetter reconfigurationPending (
+            instrumentSessionReconfigurationPending, true);
+        const juce::ScopedValueSetter reconfigurationOwner (
+            instrumentSessionLifecycleOwner, std::this_thread::get_id());
+        if (instrumentSessionJobActive)
+        {
+            if (! pendingInstrumentSessionJob.valid())
+            {
+                lastLoadError = "Session worker has no completion handle";
+                return;
+            }
+            reloadLock.unlock();
+            pendingInstrumentSessionJob.wait();
+            reloadLock.lock();
+            if (uiReloadShuttingDown || instrumentSession == nullptr || ! instrumentLoaded)
+                return;
+        }
+        std::array<char, 512> error {};
+        if (! dandrum_instrument_session_reconfigure (
+                instrumentSession.get(),
+                static_cast<std::uint32_t> (juce::jmax (1.0, sampleRate)), preparedBlockSize,
+                &instrumentSessionHostCallbacks, this, error.data(), error.size()))
+            lastLoadError = juce::String::fromUTF8 (error.data());
+        else
+        {
+            lastLoadError.clear();
+            loadedPreset = {};
+            publishParameterSurface();
+        }
+        return;
+    }
+
     const EngineAccessPause handoff (*this);
-    const auto blockSize = static_cast<std::size_t> (juce::jmax (1, samplesPerBlock));
     if (auto* activeKernel = kernel.load (std::memory_order_relaxed))
     {
+        auto preparationFile = loadedInstrument.sourceFile;
+        juce::File embeddedDocument;
+        if (loadedInstrument.reprepareFromEmbeddedYaml)
+        {
+            const auto assetRoot = loadedInstrument.sourceFile.existsAsFile()
+                                       ? loadedInstrument.sourceFile.getParentDirectory()
+                                       : (loadedInstrument.instrumentId
+                                                  == juce::String (configuration.instrumentId)
+                                              ? juce::File (juce::String (
+                                                    configuration.instrumentPath.string()))
+                                                    .getParentDirectory()
+                                              : juce::File());
+            embeddedDocument = writeStateRestoreInstrumentFile (
+                loadedInstrument.yamlContent, assetRoot);
+            if (! embeddedDocument.existsAsFile())
+            {
+                lastLoadError = "Could not stage embedded instrument for host preparation";
+                return;
+            }
+            preparationFile = embeddedDocument;
+        }
         auto* replacement = prepareKernelWithPublicControls (
-            loadedInstrument.sourceFile.getFullPathName().toStdString(),
-            static_cast<std::uint32_t> (juce::jmax (1.0, sampleRate)), blockSize);
+            preparationFile.getFullPathName().toStdString(),
+            static_cast<std::uint32_t> (juce::jmax (1.0, sampleRate)), preparedBlockSize);
+        if (embeddedDocument.existsAsFile()) embeddedDocument.deleteFile();
         if (replacement != nullptr)
         {
             kernel.store (replacement, std::memory_order_relaxed);
@@ -628,7 +834,10 @@ void DandrumAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
                 if (slot.active && slot.kernelSlotIndex != kNoEngineSlot && slot.rawValue != nullptr)
                     applySlotToKernel (slot, slot.rawValue->load (std::memory_order_relaxed), replacement);
             dandrum_kernel_destroy (activeKernel);
+            lastLoadError.clear();
         }
+        else
+            lastLoadError = "Failed to prepare embedded instrument for host configuration";
     }
 }
 
@@ -712,6 +921,10 @@ void DandrumAudioProcessor::installPreparedEngine (
     std::swap (loadedInstrument, candidateInstrument);
     parameterSlots.swap (bindings.slots);
     instrumentLoaded = true;
+    // Legacy whole-document replacement has not yet migrated to the session
+    // transaction. Retire its now-stale owner so later host preparation or
+    // mapping cannot republish the previous accepted document.
+    instrumentSession.reset();
     lastLoadError.clear();
     if (reloadWarning != nullptr) *reloadWarning = std::move (candidateWarning);
     publishParameterSurface();
@@ -1329,8 +1542,32 @@ void DandrumAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 
 void DandrumAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    std::unique_lock<std::recursive_mutex> reloadLock (reloadMutex);
     if (engineActivationInProgress) return;
+    while (instrumentSessionReconfigurationPending)
+    {
+        if (instrumentSessionLifecycleOwner == std::this_thread::get_id()) return;
+        reloadLock.unlock();
+        std::this_thread::sleep_for (std::chrono::milliseconds (1));
+        reloadLock.lock();
+        if (engineActivationInProgress) return;
+    }
+    const juce::ScopedValueSetter restorePending (
+        instrumentSessionReconfigurationPending, true);
+    const juce::ScopedValueSetter restoreOwner (
+        instrumentSessionLifecycleOwner, std::this_thread::get_id());
+    if (instrumentSessionJobActive)
+    {
+        if (! pendingInstrumentSessionJob.valid())
+        {
+            lastLoadError = "Session worker has no completion handle";
+            return;
+        }
+        reloadLock.unlock();
+        pendingInstrumentSessionJob.wait();
+        reloadLock.lock();
+        if (uiReloadShuttingDown) return;
+    }
     std::unique_ptr<juce::XmlElement> xml (getXmlFromBinary (data, sizeInBytes));
     if (xml == nullptr || ! xml->hasTagName (parameters.state.getType()))
         return;
@@ -1391,6 +1628,11 @@ void DandrumAudioProcessor::setStateInformation (const void* data, int sizeInByt
         loadedInstrument.yamlContent = instrumentYaml;
         loadedInstrument.instrumentId = instrumentId;
         loadedInstrument.presetSchemaVersion = schema;
+        loadedInstrument.reprepareFromEmbeddedYaml = true;
+        // Embedded host state becomes the authoritative document. Retire the
+        // previous session before parameter-surface notifications can re-enter
+        // structural admission, so later host preparation cannot republish it.
+        instrumentSession.reset();
         preparePublicParameterSlots (restoreFile, &lastReloadWarning, true);
         restoreFile.deleteFile();
 
@@ -1890,7 +2132,8 @@ std::size_t DandrumAudioProcessor::getDroppedMidiEventCount() const noexcept
 bool DandrumAudioProcessor::reloadInstrumentFromFile (const juce::File& yamlFile)
 {
     const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
-    if (engineActivationInProgress) return false;
+    if (engineActivationInProgress || instrumentSessionJobActive
+        || instrumentSessionReconfigurationPending) return false;
     const auto yamlText = yamlFile.loadFileAsString();
     loadedPreset = {};
     const auto reloaded = replaceActiveEngineFromFile (yamlFile, yamlFile, yamlText, true, false, &lastReloadWarning);
@@ -1906,7 +2149,8 @@ std::optional<std::uint64_t> DandrumAudioProcessor::requestInstrumentReloadJob (
 {
     const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     if (expectedGeneration != getParameterSurfaceGeneration()
-        || getSampleRate() <= 0.0 || uiReloadActive || uiReloadShuttingDown)
+        || getSampleRate() <= 0.0 || uiReloadActive || uiReloadShuttingDown
+        || instrumentSessionJobActive || instrumentSessionReconfigurationPending)
         return std::nullopt;
 
     // A terminal worker has no further processor locks to acquire. Reap it
@@ -1938,6 +2182,193 @@ std::optional<std::uint64_t> DandrumAudioProcessor::requestInstrumentReloadJob (
                                      juce::String (error.what()) }, previousMute);
     }
     return jobId;
+}
+
+void* DandrumAudioProcessor::beginInstrumentSessionActivation (
+    void* context, DandrumKernelInstrument* candidate, const std::uint8_t* yaml,
+    std::size_t yamlSize, std::uint64_t revision, std::size_t undoCount,
+    std::size_t redoCount) noexcept
+{
+    auto* owner = static_cast<DandrumAudioProcessor*> (context);
+    if (owner == nullptr) return nullptr;
+    try
+    {
+        auto activation = std::make_unique<SessionActivation> (
+            *owner, candidate, yaml, yamlSize, revision, undoCount, redoCount);
+        if (std::exchange (owner->failNextSessionActivationForTest, false))
+            return nullptr;
+        activation->acceptCandidateOwnership();
+        return activation.release();
+    }
+    catch (...)
+    {
+        return nullptr;
+    }
+}
+
+void DandrumAudioProcessor::publishInstrumentSessionActivation (
+    void* context, void* lease, std::uint64_t revision, std::size_t undoCount,
+    std::size_t redoCount) noexcept
+{
+    if (auto* activation = static_cast<SessionActivation*> (lease))
+    {
+        auto* owner = static_cast<DandrumAudioProcessor*> (context);
+        if (owner == nullptr) std::terminate();
+        owner->instrumentSessionLeasePublicationThread.store (
+            std::hash<std::thread::id> {} (std::this_thread::get_id()),
+            std::memory_order_relaxed);
+        owner->instrumentSessionLeasePublishing.store (true, std::memory_order_release);
+        activation->publish (revision, undoCount, redoCount);
+        owner->instrumentSessionLeasePublishing.store (false, std::memory_order_release);
+        owner->instrumentSessionLeasePublicationThread.store (0, std::memory_order_relaxed);
+        delete activation;
+    }
+}
+
+void DandrumAudioProcessor::abortInstrumentSessionActivation (void*, void* lease) noexcept
+{
+    delete static_cast<SessionActivation*> (lease);
+}
+
+std::optional<DandrumAudioProcessor::InstrumentSessionSnapshot>
+DandrumAudioProcessor::getInstrumentSessionSnapshot() const
+{
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    if (instrumentSession == nullptr) return std::nullopt;
+    DandrumInstrumentSessionSnapshot value {};
+    if (! dandrum_instrument_session_snapshot (instrumentSession.get(), &value))
+        return std::nullopt;
+    InstrumentSessionSnapshot snapshot;
+    snapshot.revision = value.revision;
+    snapshot.undoCount = value.undoCount;
+    snapshot.redoCount = value.redoCount;
+    snapshot.yaml.resize (value.yamlSize);
+    if (! dandrum_instrument_session_copy_yaml (
+            instrumentSession.get(), reinterpret_cast<std::uint8_t*> (snapshot.yaml.data()),
+            snapshot.yaml.size()))
+        return std::nullopt;
+    return snapshot;
+}
+
+std::optional<std::uint64_t> DandrumAudioProcessor::requestInstrumentSessionMappingJob (
+    std::uint64_t requestId, std::uint64_t expectedRevision,
+    const std::string& mapId, const std::string& zoneId,
+    std::uint8_t keyLow, std::uint8_t keyHigh)
+{
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    if (instrumentSession == nullptr || instrumentSessionJobActive
+        || instrumentSessionReconfigurationPending
+        || uiReloadActive || uiReloadShuttingDown || engineActivationInProgress)
+        return std::nullopt;
+    const auto accepted = getInstrumentSessionSnapshot();
+    if (! accepted || accepted->yaml != loadedInstrument.yamlContent.toStdString())
+    {
+        lastLoadError = "Instrument changed outside the persistent session";
+        return std::nullopt;
+    }
+
+    std::array<char, 512> error {};
+    std::unique_ptr<DandrumInstrumentSessionJob, decltype (&dandrum_instrument_session_job_destroy)>
+        job (dandrum_instrument_session_admit_mapping (
+            instrumentSession.get(), requestId, expectedRevision,
+            reinterpret_cast<const std::uint8_t*> (mapId.data()), mapId.size(),
+            reinterpret_cast<const std::uint8_t*> (zoneId.data()), zoneId.size(),
+            keyLow, keyHigh, error.data(), error.size()),
+            &dandrum_instrument_session_job_destroy);
+    if (job == nullptr)
+    {
+        lastLoadError = juce::String::fromUTF8 (error.data());
+        return std::nullopt;
+    }
+
+    if (instrumentSessionJobHistory.size() == 128)
+        instrumentSessionJobHistory.pop_front();
+    instrumentSessionJobHistory.push_back (
+        { requestId, UiJobState::running, 0, 0, 0, {} });
+    instrumentSessionJobActive = true;
+    auto* admitted = job.release();
+    try
+    {
+        pendingInstrumentSessionJob = std::async (
+            std::launch::async,
+            [this, requestId, admitted] { runInstrumentSessionJob (requestId, admitted); });
+    }
+    catch (const std::exception& exception)
+    {
+        const std::string message = exception.what();
+        dandrum_instrument_session_fail_job (
+            instrumentSession.get(), admitted,
+            reinterpret_cast<const std::uint8_t*> (message.data()), message.size());
+        instrumentSessionJobActive = false;
+        instrumentSessionJobHistory.back().state = UiJobState::failed;
+        instrumentSessionJobHistory.back().error = exception.what();
+    }
+    return requestId;
+}
+
+void DandrumAudioProcessor::runInstrumentSessionJob (
+    std::uint64_t requestId, DandrumInstrumentSessionJob* admitted)
+{
+    std::unique_ptr<DandrumInstrumentSessionJob, decltype (&dandrum_instrument_session_job_destroy)>
+        job (admitted, &dandrum_instrument_session_job_destroy);
+    std::array<char, 512> error {};
+    auto prepared = dandrum_instrument_session_prepare_job (job.get());
+    std::uint64_t revision = 0;
+    std::size_t undoCount = 0, redoCount = 0;
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    auto status = std::find_if (
+        instrumentSessionJobHistory.begin(), instrumentSessionJobHistory.end(),
+        [requestId] (const InstrumentSessionJobStatus& value) { return value.id == requestId; });
+    if (status == instrumentSessionJobHistory.end())
+    {
+        instrumentSessionJobActive = false;
+        return;
+    }
+    if (! prepared || uiReloadShuttingDown || instrumentSession == nullptr)
+    {
+        const std::string message = uiReloadShuttingDown
+                                        ? "Processor closed while session work was preparing"
+                                        : "Native session job preparation failed";
+        if (instrumentSession != nullptr)
+            dandrum_instrument_session_fail_job (
+                instrumentSession.get(), job.release(),
+                reinterpret_cast<const std::uint8_t*> (message.data()), message.size());
+        status->state = UiJobState::failed;
+        status->error = juce::String (message);
+        instrumentSessionJobActive = false;
+        return;
+    }
+    auto* completion = job.release();
+    const auto accepted = dandrum_instrument_session_complete_job (
+        instrumentSession.get(), completion, &instrumentSessionHostCallbacks, this,
+        &revision, &undoCount, &redoCount, error.data(), error.size());
+    if (accepted)
+    {
+        // The Rust lease has returned: accepted engine/YAML/history are already
+        // coherent, the reader gate is open and notifications may now lock,
+        // allocate or wake ancillary UI workers without violating publication.
+        lastLoadError.clear();
+        loadedPreset = {};
+        publishParameterSurface();
+    }
+    status->state = accepted ? UiJobState::completed : UiJobState::failed;
+    status->revision = revision;
+    status->undoCount = undoCount;
+    status->redoCount = redoCount;
+    if (! accepted) status->error = juce::String::fromUTF8 (error.data());
+    instrumentSessionJobActive = false;
+}
+
+std::optional<DandrumAudioProcessor::InstrumentSessionJobStatus>
+DandrumAudioProcessor::getInstrumentSessionJobStatus (std::uint64_t requestId) const
+{
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    const auto status = std::find_if (
+        instrumentSessionJobHistory.begin(), instrumentSessionJobHistory.end(),
+        [requestId] (const InstrumentSessionJobStatus& value) { return value.id == requestId; });
+    return status == instrumentSessionJobHistory.end()
+               ? std::nullopt
+               : std::optional<InstrumentSessionJobStatus> (*status);
 }
 
 void DandrumAudioProcessor::runInstrumentReloadJob (
@@ -2076,7 +2507,8 @@ bool DandrumAudioProcessor::reloadInstrumentFromYaml (const juce::String& yamlTe
                                                       const juce::File& sourceHint)
 {
     const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
-    if (engineActivationInProgress) return false;
+    if (engineActivationInProgress || instrumentSessionJobActive
+        || instrumentSessionReconfigurationPending) return false;
     const auto parent = sourceHint.getParentDirectory();
     if (! parent.isDirectory())
     {

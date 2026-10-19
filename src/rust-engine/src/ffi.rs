@@ -241,6 +241,202 @@ struct KernelPublicControl {
     max: Option<f64>,
 }
 
+/// Owned planar-host configuration shared by the file FFI and native session facade.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PlanarBusDeclaration {
+    pub name: String,
+    pub direction: PortDirection,
+    pub channel_count: usize,
+}
+
+pub fn planar_host_buses(declarations: &[PlanarBusDeclaration]) -> Option<preparation::HostBuses> {
+    let mut buses = preparation::HostBuses::new();
+    let mut inputs = BTreeMap::new();
+    let mut outputs = BTreeMap::new();
+    for declaration in declarations {
+        if declaration.name.is_empty() || declaration.channel_count == 0 {
+            return None;
+        }
+        match declaration.direction {
+            PortDirection::Input
+                if inputs
+                    .insert(declaration.name.clone(), declaration.channel_count)
+                    .is_none() =>
+            {
+                buses = buses.with_input(&declaration.name, declaration.channel_count);
+            }
+            PortDirection::Output
+                if outputs
+                    .insert(declaration.name.clone(), declaration.channel_count)
+                    .is_none() =>
+            {
+                buses = buses.with_output(&declaration.name, declaration.channel_count);
+            }
+            _ => return None,
+        }
+    }
+    Some(buses)
+}
+
+/// Builds the planar FFI runtime from a session's already-prepared candidate.
+/// Parsing here recovers only public-control metadata; it never resolves or
+/// decodes resources a second time.
+pub fn kernel_instrument_from_prepared_yaml(
+    yaml: &str,
+    prepared: preparation::PreparedKernelInstrument,
+    sample_rate_hz: u32,
+    max_block_size: usize,
+    declarations: &[PlanarBusDeclaration],
+) -> Option<Box<DandrumKernelInstrument>> {
+    if sample_rate_hz == 0 || max_block_size == 0 {
+        return None;
+    }
+    let patch = crate::kernel::document::load_kernel_patch_str(yaml).ok()?;
+    let input_names = declarations
+        .iter()
+        .filter(|declaration| declaration.direction == PortDirection::Input)
+        .map(|declaration| declaration.name.clone())
+        .collect::<Vec<_>>();
+    let output_names = declarations
+        .iter()
+        .filter(|declaration| declaration.direction == PortDirection::Output)
+        .map(|declaration| declaration.name.clone())
+        .collect::<Vec<_>>();
+    if planar_host_buses(declarations).is_none()
+        || patch.root().ports().iter().any(|port| {
+            port.signal_type() == SignalType::Event
+                && match port.direction() {
+                    PortDirection::Input => input_names.contains(&port.name().to_string()),
+                    PortDirection::Output => output_names.contains(&port.name().to_string()),
+                }
+        })
+    {
+        return None;
+    }
+    build_kernel_instrument(
+        &patch,
+        prepared,
+        sample_rate_hz,
+        max_block_size,
+        declarations,
+    )
+}
+
+fn build_kernel_instrument(
+    patch: &crate::kernel::document::KernelPatch,
+    prepared: preparation::PreparedKernelInstrument,
+    sample_rate_hz: u32,
+    max_block_size: usize,
+    declarations: &[PlanarBusDeclaration],
+) -> Option<Box<DandrumKernelInstrument>> {
+    let ports = prepared.root_port_metadata();
+    let prepared_input_names = ports
+        .iter()
+        .filter(|port| port.direction() == PortDirection::Input)
+        .map(|port| port.name().to_string())
+        .collect::<Vec<_>>();
+    let prepared_output_names = ports
+        .iter()
+        .filter(|port| port.direction() == PortDirection::Output)
+        .map(|port| port.name().to_string())
+        .collect::<Vec<_>>();
+    let planar_output_names = ports
+        .iter()
+        .filter(|port| {
+            port.direction() == PortDirection::Output && port.signal_type() != SignalType::Event
+        })
+        .map(|port| port.name().to_string())
+        .collect::<Vec<_>>();
+    let input_bus_bindings = declarations
+        .iter()
+        .filter(|declaration| declaration.direction == PortDirection::Input)
+        .map(|declaration| PreparedInputBusBinding {
+            root_index: prepared_input_names
+                .iter()
+                .position(|candidate| candidate == &declaration.name),
+            channel_count: declaration.channel_count,
+        })
+        .collect::<Vec<_>>();
+    let output_bus_bindings = declarations
+        .iter()
+        .filter(|declaration| declaration.direction == PortDirection::Output)
+        .map(|declaration| {
+            planar_output_names
+                .contains(&declaration.name)
+                .then(|| {
+                    prepared_output_names
+                        .iter()
+                        .position(|candidate| candidate == &declaration.name)
+                        .map(|root_index| PreparedOutputBusBinding {
+                            root_index,
+                            channel_count: declaration.channel_count,
+                        })
+                })
+                .flatten()
+        })
+        .collect::<Option<Vec<_>>>()?;
+    let scratch = |direction| {
+        ports
+            .iter()
+            .filter(|port| port.direction() == direction)
+            .map(|port| {
+                let ChannelCount::Literal(channels) = port.channels() else {
+                    unreachable!("prepared root channels are resolved")
+                };
+                vec![vec![0.0; max_block_size]; *channels as usize]
+            })
+            .collect::<Vec<_>>()
+    };
+    let input_scratch = scratch(PortDirection::Input);
+    let output_scratch = scratch(PortDirection::Output);
+    let public_controls = patch
+        .preset_surface()
+        .parameters()
+        .iter()
+        .map(|alias| KernelPublicControl {
+            input_index: prepared_input_names
+                .iter()
+                .position(|name| name == alias.port_name())
+                .filter(|_| {
+                    declarations.iter().any(|declaration| {
+                        declaration.direction == PortDirection::Input
+                            && declaration.name == alias.port_name()
+                    })
+                }),
+            value: alias.control_default().default() as f32,
+            min: alias.control_default().min(),
+            max: alias.control_default().max(),
+        })
+        .collect();
+    let ui_control_groups = patch
+        .preset_surface()
+        .parameters()
+        .iter()
+        .map(|alias| sample_control_group(patch.root(), alias.port_name()))
+        .collect();
+    let runtime = RealtimeGraphProcessor::from_compiled_patch(
+        prepared.compiled_patch().clone(),
+        sample_rate_hz as f32,
+        &PreparedSamplerAssets::empty(),
+        max_block_size,
+    );
+    if !runtime.can_render_root_buses() {
+        return None;
+    }
+    Some(Box::new(DandrumKernelInstrument {
+        prepared,
+        runtime,
+        ports,
+        input_bus_bindings,
+        output_bus_bindings,
+        input_scratch,
+        output_scratch,
+        public_controls,
+        ui_control_groups,
+        max_block_size,
+    }))
+}
+
 unsafe fn ffi_name<'a>(pointer: &'a *const c_char) -> Option<&'a str> {
     if pointer.is_null() {
         return None;
@@ -339,112 +535,37 @@ pub unsafe extern "C" fn dandrum_kernel_prepare_file(
         };
         context = context.with_macro_roots(roots);
     }
-    let Ok(prepared) =
-        preparation::prepare_kernel_graph_for_planar_ffi(&patch, &settings, &buses, &context)
-    else {
+    let Ok(prepared) = preparation::prepare_kernel_patch_for_planar_host_with_context(
+        &patch, &settings, &buses, &context,
+    ) else {
         return std::ptr::null_mut();
     };
-    let ports = prepared.root_port_metadata();
-    let input_names = ports
-        .iter()
-        .filter(|port| port.direction() == PortDirection::Input)
-        .map(|port| port.name().to_string())
-        .collect::<Vec<_>>();
-    let output_names = ports
-        .iter()
-        .filter(|port| port.direction() == PortDirection::Output)
-        .map(|port| port.name().to_string())
-        .collect::<Vec<_>>();
-    let planar_output_names = ports
-        .iter()
-        .filter(|port| {
-            port.direction() == PortDirection::Output && port.signal_type() != SignalType::Event
+    let declarations = declared_input_order
+        .into_iter()
+        .map(|(name, channel_count)| PlanarBusDeclaration {
+            name,
+            direction: PortDirection::Input,
+            channel_count,
         })
-        .map(|port| port.name().to_string())
+        .chain(
+            declared_output_order
+                .into_iter()
+                .map(|(name, channel_count)| PlanarBusDeclaration {
+                    name,
+                    direction: PortDirection::Output,
+                    channel_count,
+                }),
+        )
         .collect::<Vec<_>>();
-    let input_bus_bindings = declared_input_order
-        .iter()
-        .map(|(name, channel_count)| PreparedInputBusBinding {
-            root_index: input_names.iter().position(|candidate| candidate == name),
-            channel_count: *channel_count,
-        })
-        .collect::<Vec<_>>();
-    let Some(output_bus_bindings) = declared_output_order
-        .iter()
-        .map(|(name, channel_count)| {
-            planar_output_names
-                .iter()
-                .any(|candidate| candidate == name)
-                .then(|| {
-                    output_names
-                        .iter()
-                        .position(|candidate| candidate == name)
-                        .map(|root_index| PreparedOutputBusBinding {
-                            root_index,
-                            channel_count: *channel_count,
-                        })
-                })
-                .flatten()
-        })
-        .collect::<Option<Vec<_>>>()
-    else {
-        return std::ptr::null_mut();
-    };
-    let scratch = |direction| {
-        ports
-            .iter()
-            .filter(|port| port.direction() == direction)
-            .map(|port| {
-                let ChannelCount::Literal(channels) = port.channels() else {
-                    unreachable!("prepared root channels are resolved")
-                };
-                vec![vec![0.0; max_block_size]; *channels as usize]
-            })
-            .collect::<Vec<_>>()
-    };
-    let input_scratch = scratch(PortDirection::Input);
-    let output_scratch = scratch(PortDirection::Output);
-    let public_controls = patch
-        .preset_surface()
-        .parameters()
-        .iter()
-        .map(|alias| KernelPublicControl {
-            input_index: input_names
-                .iter()
-                .position(|name| name == alias.port_name())
-                .filter(|_| declared_inputs.contains_key(alias.port_name())),
-            value: alias.control_default().default() as f32,
-            min: alias.control_default().min(),
-            max: alias.control_default().max(),
-        })
-        .collect();
-    let ui_control_groups = patch
-        .preset_surface()
-        .parameters()
-        .iter()
-        .map(|alias| sample_control_group(patch.root(), alias.port_name()))
-        .collect();
-    let runtime = RealtimeGraphProcessor::from_compiled_patch(
-        prepared.compiled_patch().clone(),
-        sample_rate_hz as f32,
-        &PreparedSamplerAssets::empty(),
-        max_block_size,
-    );
-    if !runtime.can_render_root_buses() {
-        return std::ptr::null_mut();
-    }
-    Box::into_raw(Box::new(DandrumKernelInstrument {
+    build_kernel_instrument(
+        &patch,
         prepared,
-        runtime,
-        ports,
-        input_bus_bindings,
-        output_bus_bindings,
-        input_scratch,
-        output_scratch,
-        public_controls,
-        ui_control_groups,
+        sample_rate_hz,
         max_block_size,
-    }))
+        &declarations,
+    )
+    .map(Box::into_raw)
+    .unwrap_or(std::ptr::null_mut())
 }
 
 #[unsafe(no_mangle)]
