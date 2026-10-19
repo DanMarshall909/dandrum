@@ -997,87 +997,65 @@
   931|      4|        })
   932|      7|    }
   933|       |
-  934|      0|    pub(crate) fn reserve_control_request(
-  935|      0|        &mut self,
-  936|      0|        attachment: &Attachment,
-  937|      0|        request_id: RequestId,
-  938|      0|        expected_revision: u64,
-  939|      0|    ) -> Result<(), SessionError> {
-  940|      0|        self.attachment_index(attachment)
-  941|      0|            .ok_or(SessionError::InvalidAttachment)?;
-  942|      0|        self.ensure_idle()?;
-  943|      0|        if self
-  944|      0|            .highest_request_id
-  945|      0|            .is_some_and(|highest| request_id <= highest)
-  946|       |        {
-  947|      0|            return Err(SessionError::RetiredRequest);
-  948|      0|        }
-  949|      0|        if expected_revision != self.accepted.revision {
-  950|      0|            return Err(SessionError::StaleRequest);
-  951|      0|        }
-  952|      0|        self.highest_request_id = Some(request_id);
-  953|      0|        Ok(())
-  954|      0|    }
-  955|       |
-  956|     33|    pub fn prepared(&self) -> &PreparedKernelInstrument {
-  957|     33|        &self.accepted.prepared
-  958|     33|    }
-  959|       |
-  960|    418|    fn prepare_document(
-  961|    418|        yaml: &str,
-  962|    418|        context: &PreparationContext,
-  963|    418|        settings: &RenderSettings,
-  964|    418|        host_buses: Option<&HostBuses>,
-  965|    418|    ) -> Result<PreparedKernelInstrument, SessionError> {
-  966|    418|        let patch = load_kernel_patch_str(yaml)
+  934|     33|    pub fn prepared(&self) -> &PreparedKernelInstrument {
+  935|     33|        &self.accepted.prepared
+  936|     33|    }
+  937|       |
+  938|    418|    fn prepare_document(
+  939|    418|        yaml: &str,
+  940|    418|        context: &PreparationContext,
+  941|    418|        settings: &RenderSettings,
+  942|    418|        host_buses: Option<&HostBuses>,
+  943|    418|    ) -> Result<PreparedKernelInstrument, SessionError> {
+  944|    418|        let patch = load_kernel_patch_str(yaml)
                           ^416
-  967|    418|            .map_err(|error| SessionError::InvalidDocument(error.to_string()))?;
+  945|    418|            .map_err(|error| SessionError::InvalidDocument(error.to_string()))?;
                                                                          ^2    ^2           ^2
-  968|    416|        host_buses
-  969|    416|            .map_or_else(
-  970|    403|                || prepare_kernel_patch_with_context(&patch, settings, context),
-  971|     13|                |buses| {
-  972|     13|                    prepare_kernel_patch_for_planar_host_with_context(
-  973|     13|                        &patch, settings, buses, context,
-  974|       |                    )
-  975|     13|                },
-  976|       |            )
-  977|    416|            .map_err(|error| SessionError::PreparationFailed(error.to_string()))
+  946|    416|        host_buses
+  947|    416|            .map_or_else(
+  948|    403|                || prepare_kernel_patch_with_context(&patch, settings, context),
+  949|     13|                |buses| {
+  950|     13|                    prepare_kernel_patch_for_planar_host_with_context(
+  951|     13|                        &patch, settings, buses, context,
+  952|       |                    )
+  953|     13|                },
+  954|       |            )
+  955|    416|            .map_err(|error| SessionError::PreparationFailed(error.to_string()))
                                                                            ^135  ^135
-  978|    418|    }
-  979|       |
-  980|    598|    fn attachment_index(&self, attachment: &Attachment) -> Option<usize> {
-  981|    598|        if self.identity != attachment.owner {
-  982|      8|            return None;
-  983|    590|        }
-  984|    590|        let marker = Arc::downgrade(&attachment.marker);
-  985|    590|        self.attachments
-  986|    590|            .iter()
-  987|    627|            .position(|active| active.ptr_eq(&marker))
+  956|    418|    }
+  957|       |
+  958|    598|    fn attachment_index(&self, attachment: &Attachment) -> Option<usize> {
+  959|    598|        if self.identity != attachment.owner {
+  960|      8|            return None;
+  961|    590|        }
+  962|    590|        let marker = Arc::downgrade(&attachment.marker);
+  963|    590|        self.attachments
+  964|    590|            .iter()
+  965|    627|            .position(|active| active.ptr_eq(&marker))
                            ^590
-  988|    598|    }
-  989|       |
-  990|    108|    fn accepted_snapshot(&self) -> SessionSnapshot {
-  991|    108|        self.snapshot_of(&self.accepted)
-  992|    108|    }
-  993|       |
-  994|    341|    fn snapshot_of(&self, accepted: &AcceptedState) -> SessionSnapshot {
-  995|    341|        let view = accepted.publication();
-  996|    341|        SessionSnapshot {
-  997|    341|            instance: self.identity.clone(),
-  998|    341|            revision: view.revision,
-  999|    341|            yaml: view.yaml.into(),
- 1000|    341|            undo_len: view.undo_len,
- 1001|    341|            redo_len: view.redo_len,
- 1002|    341|            undo: view.undo.cloned(),
- 1003|    341|            redo: view.redo.cloned(),
- 1004|    341|        }
- 1005|    341|    }
- 1006|       |}
- 1007|       |
- 1008|       |#[cfg(test)]
- 1009|       |#[path = "../tests/internal/revision_limit.rs"]
- 1010|       |mod revision_limit;
+  966|    598|    }
+  967|       |
+  968|    108|    fn accepted_snapshot(&self) -> SessionSnapshot {
+  969|    108|        self.snapshot_of(&self.accepted)
+  970|    108|    }
+  971|       |
+  972|    341|    fn snapshot_of(&self, accepted: &AcceptedState) -> SessionSnapshot {
+  973|    341|        let view = accepted.publication();
+  974|    341|        SessionSnapshot {
+  975|    341|            instance: self.identity.clone(),
+  976|    341|            revision: view.revision,
+  977|    341|            yaml: view.yaml.into(),
+  978|    341|            undo_len: view.undo_len,
+  979|    341|            redo_len: view.redo_len,
+  980|    341|            undo: view.undo.cloned(),
+  981|    341|            redo: view.redo.cloned(),
+  982|    341|        }
+  983|    341|    }
+  984|       |}
+  985|       |
+  986|       |#[cfg(test)]
+  987|       |#[path = "../tests/internal/revision_limit.rs"]
+  988|       |mod revision_limit;
 
 /home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/instrument-session/src/native_ffi.rs:
     1|       |use crate::{
@@ -1899,586 +1877,520 @@
   803|      4|}
   804|       |
   805|       |#[unsafe(no_mangle)]
-  806|      0|pub unsafe extern "C" fn dandrum_instrument_session_undo(
-  807|      0|    session: *mut DandrumInstrumentSession,
-  808|      0|    instance_id: u64,
-  809|      0|    attachment_id: u64,
-  810|      0|    request_id: u64,
-  811|      0|    expected_revision: u64,
-  812|      0|    callbacks: *const DandrumInstrumentSessionHostCallbacks,
-  813|      0|    context: *mut c_void,
-  814|      0|    revision: *mut u64,
-  815|      0|    undo_count: *mut usize,
-  816|      0|    redo_count: *mut usize,
-  817|      0|    error: *mut c_char,
-  818|      0|    error_capacity: usize,
-  819|      0|) -> bool {
-  820|      0|    let Some(session) = (unsafe { session.as_mut() }) else {
-  821|      0|        write_error("invalid instrument session", error, error_capacity);
-  822|      0|        return false;
-  823|       |    };
-  824|      0|    let Some(attachment) = connection(session, instance_id, attachment_id) else {
-  825|      0|        write_error(
-  826|      0|            "invalid instrument session connection",
-  827|      0|            error,
-  828|      0|            error_capacity,
-  829|       |        );
-  830|      0|        return false;
-  831|       |    };
-  832|      0|    let Some(callbacks) = (unsafe { callbacks.as_ref() }).and_then(required_callbacks) else {
-  833|      0|        write_error("invalid native activation callbacks", error, error_capacity);
-  834|      0|        return false;
-  835|       |    };
-  836|      0|    if revision.is_null() || undo_count.is_null() || redo_count.is_null() {
-  837|      0|        write_error("invalid session undo output", error, error_capacity);
-  838|      0|        return false;
-  839|      0|    }
-  840|      0|    if let Err(reason) = session.session.reserve_control_request(
-  841|      0|        &attachment,
-  842|      0|        RequestId(request_id),
-  843|      0|        expected_revision,
-  844|      0|    ) {
-  845|      0|        write_error(&format!("{reason:?}"), error, error_capacity);
-  846|      0|        return false;
-  847|      0|    }
-  848|      0|    let mut host = NativeHost {
-  849|      0|        callbacks,
-  850|      0|        context,
-  851|      0|        sample_rate_hz: session.sample_rate_hz,
-  852|      0|        max_block_size: session.max_block_size,
-  853|      0|        buses: &session.buses,
-  854|      0|    };
-  855|      0|    match session.session.undo(&attachment, &mut host) {
-  856|      0|        Ok(snapshot) => {
-  857|      0|            unsafe {
-  858|      0|                *revision = snapshot.revision;
-  859|      0|                *undo_count = snapshot.undo_len;
-  860|      0|                *redo_count = snapshot.redo_len;
-  861|      0|            }
-  862|      0|            true
-  863|       |        }
-  864|      0|        Err(reason) => {
-  865|      0|            write_error(&format!("{reason:?}"), error, error_capacity);
-  866|      0|            false
-  867|       |        }
-  868|       |    }
-  869|      0|}
-  870|       |
-  871|       |#[unsafe(no_mangle)]
-  872|      2|pub unsafe extern "C" fn dandrum_instrument_session_reconfigure(
-  873|      2|    session: *mut DandrumInstrumentSession,
-  874|      2|    sample_rate_hz: u32,
-  875|      2|    max_block_size: usize,
-  876|      2|    callbacks: *const DandrumInstrumentSessionHostCallbacks,
-  877|      2|    context: *mut c_void,
-  878|      2|    error: *mut c_char,
-  879|      2|    error_capacity: usize,
-  880|      2|) -> bool {
-  881|      2|    let Some(session) = (unsafe { session.as_mut() }) else {
-  882|      0|        write_error("invalid instrument session", error, error_capacity);
-  883|      0|        return false;
-  884|       |    };
-  885|      2|    let Some(callbacks) = (unsafe { callbacks.as_ref() }) else {
-  886|      0|        write_error("invalid native activation callbacks", error, error_capacity);
-  887|      0|        return false;
-  888|       |    };
-  889|      2|    let Some(callbacks) = required_callbacks(callbacks) else {
+  806|      2|pub unsafe extern "C" fn dandrum_instrument_session_reconfigure(
+  807|      2|    session: *mut DandrumInstrumentSession,
+  808|      2|    sample_rate_hz: u32,
+  809|      2|    max_block_size: usize,
+  810|      2|    callbacks: *const DandrumInstrumentSessionHostCallbacks,
+  811|      2|    context: *mut c_void,
+  812|      2|    error: *mut c_char,
+  813|      2|    error_capacity: usize,
+  814|      2|) -> bool {
+  815|      2|    let Some(session) = (unsafe { session.as_mut() }) else {
+  816|      0|        write_error("invalid instrument session", error, error_capacity);
+  817|      0|        return false;
+  818|       |    };
+  819|      2|    let Some(callbacks) = (unsafe { callbacks.as_ref() }) else {
+  820|      0|        write_error("invalid native activation callbacks", error, error_capacity);
+  821|      0|        return false;
+  822|       |    };
+  823|      2|    let Some(callbacks) = required_callbacks(callbacks) else {
                            ^1
-  890|      1|        write_error(
-  891|      1|            "native activation callback table is incomplete",
-  892|      1|            error,
-  893|      1|            error_capacity,
-  894|       |        );
-  895|      1|        return false;
-  896|       |    };
-  897|      1|    if sample_rate_hz == 0 || max_block_size == 0 {
-  898|      0|        write_error("invalid native render configuration", error, error_capacity);
-  899|      0|        return false;
-  900|      1|    }
-  901|      1|    let Some(host_buses) = planar_host_buses(&session.buses) else {
-  902|      0|        write_error(
-  903|      0|            "invalid retained native bus configuration",
-  904|      0|            error,
-  905|      0|            error_capacity,
-  906|       |        );
-  907|      0|        return false;
-  908|       |    };
-  909|      1|    let settings = RenderSettings {
-  910|      1|        sample_rate_hz,
-  911|      1|        block_size_frames: max_block_size.try_into().unwrap_or(u32::MAX),
-  912|      1|        duration_frames: max_block_size as u64,
-  913|      1|    };
-  914|      1|    if settings.block_size_frames as usize != max_block_size {
-  915|      0|        write_error(
-  916|      0|            "native block size exceeds the engine limit",
-  917|      0|            error,
-  918|      0|            error_capacity,
-  919|       |        );
-  920|      0|        return false;
-  921|      1|    }
-  922|      1|    let candidate = match session
-  923|      1|        .session
-  924|      1|        .prepare_render_configuration_owned(settings, host_buses)
-  925|       |    {
-  926|      1|        Ok(candidate) => candidate,
-  927|      0|        Err(reason) => {
-  928|      0|            write_error(&format!("{reason:?}"), error, error_capacity);
-  929|      0|            return false;
-  930|       |        }
-  931|       |    };
-  932|      1|    let mut host = NativeHost {
-  933|      1|        callbacks,
-  934|      1|        context,
-  935|      1|        sample_rate_hz,
-  936|      1|        max_block_size,
-  937|      1|        buses: &session.buses,
-  938|      1|    };
-  939|      1|    match session
-  940|      1|        .session
-  941|      1|        .commit_render_configuration(candidate, &mut host)
-  942|       |    {
-  943|       |        Ok(_) => {
-  944|      1|            session.sample_rate_hz = sample_rate_hz;
-  945|      1|            session.max_block_size = max_block_size;
-  946|      1|            true
-  947|       |        }
-  948|      0|        Err(reason) => {
-  949|      0|            write_error(&format!("{reason:?}"), error, error_capacity);
-  950|      0|            false
-  951|       |        }
-  952|       |    }
-  953|      2|}
-  954|       |
-  955|       |#[unsafe(no_mangle)]
-  956|      0|pub unsafe extern "C" fn dandrum_instrument_session_job_destroy(
-  957|      0|    job: *mut DandrumInstrumentSessionJob,
-  958|      0|) {
-  959|      0|    if !job.is_null() {
-  960|      0|        drop(unsafe { Box::from_raw(job) });
-  961|      0|    }
-  962|      0|}
-  963|       |
-  964|       |#[cfg(test)]
-  965|       |mod tests {
-  966|       |    use super::*;
-  967|       |    use std::ffi::CString;
-  968|       |
-  969|       |    struct TestHost {
-  970|       |        reject: bool,
-  971|       |        activations: usize,
-  972|       |        publications: usize,
-  973|       |        revision: u64,
-  974|       |        undo_count: usize,
-  975|       |        redo_count: usize,
-  976|       |    }
-  977|       |
-  978|       |    struct TestLease {
-  979|       |        candidate: *mut DandrumKernelInstrument,
-  980|       |    }
-  981|       |
-  982|       |    impl Drop for TestLease {
-  983|      3|        fn drop(&mut self) {
-  984|      3|            unsafe { drop(Box::from_raw(self.candidate)) };
-  985|      3|        }
-  986|       |    }
-  987|       |
-  988|      4|    unsafe extern "C" fn activate(
-  989|      4|        context: *mut c_void,
-  990|      4|        candidate: *mut DandrumKernelInstrument,
-  991|      4|        _: *const u8,
-  992|      4|        _: usize,
-  993|      4|        _: u64,
-  994|      4|        _: usize,
-  995|      4|        _: usize,
-  996|      4|    ) -> *mut c_void {
-  997|      4|        let host = unsafe { &mut *context.cast::<TestHost>() };
-  998|      4|        host.activations += 1;
-  999|      4|        if host.reject {
- 1000|      1|            return ptr::null_mut();
- 1001|      3|        }
- 1002|      3|        Box::into_raw(Box::new(TestLease { candidate })).cast()
- 1003|      4|    }
- 1004|       |
- 1005|      3|    unsafe extern "C" fn publish(
- 1006|      3|        context: *mut c_void,
- 1007|      3|        lease: *mut c_void,
- 1008|      3|        revision: u64,
- 1009|      3|        undo_count: usize,
- 1010|      3|        redo_count: usize,
- 1011|      3|    ) {
- 1012|      3|        let host = unsafe { &mut *context.cast::<TestHost>() };
- 1013|      3|        host.publications += 1;
- 1014|      3|        host.revision = revision;
- 1015|      3|        host.undo_count = undo_count;
- 1016|      3|        host.redo_count = redo_count;
- 1017|      3|        drop(unsafe { Box::from_raw(lease.cast::<TestLease>()) });
- 1018|      3|    }
- 1019|       |
- 1020|      0|    unsafe extern "C" fn abort(_: *mut c_void, lease: *mut c_void) {
- 1021|      0|        drop(unsafe { Box::from_raw(lease.cast::<TestLease>()) });
- 1022|      0|    }
- 1023|       |
- 1024|      1|    fn fixture() -> (
- 1025|      1|        String,
- 1026|      1|        CString,
- 1027|      1|        Vec<CString>,
- 1028|      1|        Vec<DandrumKernelBusDeclaration>,
- 1029|      1|    ) {
- 1030|      1|        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
- 1031|      1|            .join("../../examples/patches/advanced-drum-kit.yaml");
- 1032|      1|        let yaml = std::fs::read_to_string(&path).unwrap();
- 1033|      1|        let patch = dandrum_engine::kernel::document::load_kernel_patch_str(&yaml).unwrap();
- 1034|      1|        let mut names = vec![CString::new("master").unwrap()];
- 1035|      1|        names.extend(
- 1036|      1|            patch
- 1037|      1|                .preset_surface()
- 1038|      1|                .parameters()
- 1039|      1|                .iter()
- 1040|     23|                .map(|parameter| CString::new(parameter.port_name()).unwrap()),
+  824|      1|        write_error(
+  825|      1|            "native activation callback table is incomplete",
+  826|      1|            error,
+  827|      1|            error_capacity,
+  828|       |        );
+  829|      1|        return false;
+  830|       |    };
+  831|      1|    if sample_rate_hz == 0 || max_block_size == 0 {
+  832|      0|        write_error("invalid native render configuration", error, error_capacity);
+  833|      0|        return false;
+  834|      1|    }
+  835|      1|    let Some(host_buses) = planar_host_buses(&session.buses) else {
+  836|      0|        write_error(
+  837|      0|            "invalid retained native bus configuration",
+  838|      0|            error,
+  839|      0|            error_capacity,
+  840|       |        );
+  841|      0|        return false;
+  842|       |    };
+  843|      1|    let settings = RenderSettings {
+  844|      1|        sample_rate_hz,
+  845|      1|        block_size_frames: max_block_size.try_into().unwrap_or(u32::MAX),
+  846|      1|        duration_frames: max_block_size as u64,
+  847|      1|    };
+  848|      1|    if settings.block_size_frames as usize != max_block_size {
+  849|      0|        write_error(
+  850|      0|            "native block size exceeds the engine limit",
+  851|      0|            error,
+  852|      0|            error_capacity,
+  853|       |        );
+  854|      0|        return false;
+  855|      1|    }
+  856|      1|    let candidate = match session
+  857|      1|        .session
+  858|      1|        .prepare_render_configuration_owned(settings, host_buses)
+  859|       |    {
+  860|      1|        Ok(candidate) => candidate,
+  861|      0|        Err(reason) => {
+  862|      0|            write_error(&format!("{reason:?}"), error, error_capacity);
+  863|      0|            return false;
+  864|       |        }
+  865|       |    };
+  866|      1|    let mut host = NativeHost {
+  867|      1|        callbacks,
+  868|      1|        context,
+  869|      1|        sample_rate_hz,
+  870|      1|        max_block_size,
+  871|      1|        buses: &session.buses,
+  872|      1|    };
+  873|      1|    match session
+  874|      1|        .session
+  875|      1|        .commit_render_configuration(candidate, &mut host)
+  876|       |    {
+  877|       |        Ok(_) => {
+  878|      1|            session.sample_rate_hz = sample_rate_hz;
+  879|      1|            session.max_block_size = max_block_size;
+  880|      1|            true
+  881|       |        }
+  882|      0|        Err(reason) => {
+  883|      0|            write_error(&format!("{reason:?}"), error, error_capacity);
+  884|      0|            false
+  885|       |        }
+  886|       |    }
+  887|      2|}
+  888|       |
+  889|       |#[unsafe(no_mangle)]
+  890|      0|pub unsafe extern "C" fn dandrum_instrument_session_job_destroy(
+  891|      0|    job: *mut DandrumInstrumentSessionJob,
+  892|      0|) {
+  893|      0|    if !job.is_null() {
+  894|      0|        drop(unsafe { Box::from_raw(job) });
+  895|      0|    }
+  896|      0|}
+  897|       |
+  898|       |#[cfg(test)]
+  899|       |mod tests {
+  900|       |    use super::*;
+  901|       |    use std::ffi::CString;
+  902|       |
+  903|       |    struct TestHost {
+  904|       |        reject: bool,
+  905|       |        activations: usize,
+  906|       |        publications: usize,
+  907|       |        revision: u64,
+  908|       |        undo_count: usize,
+  909|       |        redo_count: usize,
+  910|       |    }
+  911|       |
+  912|       |    struct TestLease {
+  913|       |        candidate: *mut DandrumKernelInstrument,
+  914|       |    }
+  915|       |
+  916|       |    impl Drop for TestLease {
+  917|      3|        fn drop(&mut self) {
+  918|      3|            unsafe { drop(Box::from_raw(self.candidate)) };
+  919|      3|        }
+  920|       |    }
+  921|       |
+  922|      4|    unsafe extern "C" fn activate(
+  923|      4|        context: *mut c_void,
+  924|      4|        candidate: *mut DandrumKernelInstrument,
+  925|      4|        _: *const u8,
+  926|      4|        _: usize,
+  927|      4|        _: u64,
+  928|      4|        _: usize,
+  929|      4|        _: usize,
+  930|      4|    ) -> *mut c_void {
+  931|      4|        let host = unsafe { &mut *context.cast::<TestHost>() };
+  932|      4|        host.activations += 1;
+  933|      4|        if host.reject {
+  934|      1|            return ptr::null_mut();
+  935|      3|        }
+  936|      3|        Box::into_raw(Box::new(TestLease { candidate })).cast()
+  937|      4|    }
+  938|       |
+  939|      3|    unsafe extern "C" fn publish(
+  940|      3|        context: *mut c_void,
+  941|      3|        lease: *mut c_void,
+  942|      3|        revision: u64,
+  943|      3|        undo_count: usize,
+  944|      3|        redo_count: usize,
+  945|      3|    ) {
+  946|      3|        let host = unsafe { &mut *context.cast::<TestHost>() };
+  947|      3|        host.publications += 1;
+  948|      3|        host.revision = revision;
+  949|      3|        host.undo_count = undo_count;
+  950|      3|        host.redo_count = redo_count;
+  951|      3|        drop(unsafe { Box::from_raw(lease.cast::<TestLease>()) });
+  952|      3|    }
+  953|       |
+  954|      0|    unsafe extern "C" fn abort(_: *mut c_void, lease: *mut c_void) {
+  955|      0|        drop(unsafe { Box::from_raw(lease.cast::<TestLease>()) });
+  956|      0|    }
+  957|       |
+  958|      1|    fn fixture() -> (
+  959|      1|        String,
+  960|      1|        CString,
+  961|      1|        Vec<CString>,
+  962|      1|        Vec<DandrumKernelBusDeclaration>,
+  963|      1|    ) {
+  964|      1|        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+  965|      1|            .join("../../examples/patches/advanced-drum-kit.yaml");
+  966|      1|        let yaml = std::fs::read_to_string(&path).unwrap();
+  967|      1|        let patch = dandrum_engine::kernel::document::load_kernel_patch_str(&yaml).unwrap();
+  968|      1|        let mut names = vec![CString::new("master").unwrap()];
+  969|      1|        names.extend(
+  970|      1|            patch
+  971|      1|                .preset_surface()
+  972|      1|                .parameters()
+  973|      1|                .iter()
+  974|     23|                .map(|parameter| CString::new(parameter.port_name()).unwrap()),
                                ^1
- 1041|       |        );
- 1042|      1|        let declarations = names
- 1043|      1|            .iter()
- 1044|      1|            .enumerate()
- 1045|      1|            .map(|(index, name)| DandrumKernelBusDeclaration {
- 1046|     24|                name: name.as_ptr(),
- 1047|     24|                direction: if index == 0 { 2 } else { 1 },
+  975|       |        );
+  976|      1|        let declarations = names
+  977|      1|            .iter()
+  978|      1|            .enumerate()
+  979|      1|            .map(|(index, name)| DandrumKernelBusDeclaration {
+  980|     24|                name: name.as_ptr(),
+  981|     24|                direction: if index == 0 { 2 } else { 1 },
                                                          ^1         ^23
- 1048|     24|                channel_count: if index == 0 { 2 } else { 1 },
+  982|     24|                channel_count: if index == 0 { 2 } else { 1 },
                                                              ^1         ^23
- 1049|     24|            })
- 1050|      1|            .collect();
- 1051|      1|        (
- 1052|      1|            yaml,
- 1053|      1|            CString::new(path.parent().unwrap().to_str().unwrap()).unwrap(),
- 1054|      1|            names,
- 1055|      1|            declarations,
- 1056|      1|        )
- 1057|      1|    }
- 1058|       |
- 1059|       |    #[test]
- 1060|      1|    fn native_facade_maps_fails_reconfigures_and_rolls_back_activation() {
- 1061|      1|        let (yaml, root, _names, declarations) = fixture();
- 1062|      1|        let session = unsafe {
- 1063|      1|            dandrum_instrument_session_create(
- 1064|      1|                yaml.as_ptr(),
- 1065|      1|                yaml.len(),
- 1066|      1|                root.as_ptr(),
- 1067|       |                48_000,
- 1068|       |                64,
- 1069|      1|                declarations.as_ptr(),
- 1070|      1|                declarations.len(),
- 1071|       |            )
- 1072|       |        };
- 1073|      1|        assert!(!session.is_null());
- 1074|      1|        let mut snapshot = DandrumInstrumentSessionSnapshot {
- 1075|      1|            contract_version: 0,
- 1076|      1|            instance_id: 0,
- 1077|      1|            attachment_id: u64::MAX,
- 1078|      1|            revision: u64::MAX,
- 1079|      1|            next_request_id: 0,
- 1080|      1|            undo_count: usize::MAX,
- 1081|      1|            redo_count: usize::MAX,
- 1082|      1|            attachment_limit: 0,
- 1083|      1|            history_limit: 0,
- 1084|      1|            outcome_limit: 0,
- 1085|      1|            active_request_limit: 0,
- 1086|      1|            yaml_size: 0,
- 1087|      1|        };
- 1088|      1|        assert!(unsafe { dandrum_instrument_session_snapshot(session, &mut snapshot) });
- 1089|      1|        assert_eq!(snapshot.contract_version, 1);
- 1090|      1|        assert_ne!(snapshot.instance_id, 0);
- 1091|      1|        assert_eq!(snapshot.attachment_id, 0);
- 1092|      1|        assert_eq!(snapshot.next_request_id, 1);
- 1093|      1|        assert_eq!(
- 1094|      1|            (
- 1095|      1|                snapshot.attachment_limit,
- 1096|      1|                snapshot.history_limit,
- 1097|      1|                snapshot.outcome_limit,
- 1098|      1|                snapshot.active_request_limit,
- 1099|      1|            ),
- 1100|       |            (16, 100, 128, 1)
- 1101|       |        );
- 1102|      1|        assert_eq!(
- 1103|      1|            (snapshot.revision, snapshot.undo_count, snapshot.redo_count),
- 1104|       |            (0, 0, 0)
- 1105|       |        );
- 1106|      1|        let mut connection = snapshot;
- 1107|      1|        assert!(unsafe { dandrum_instrument_session_connect(session, &mut connection) });
- 1108|      1|        assert_eq!(connection.instance_id, snapshot.instance_id);
- 1109|      1|        assert_ne!(connection.attachment_id, 0);
- 1110|      1|        let attachment_id = connection.attachment_id;
- 1111|      1|        assert!(unsafe {
- 1112|      1|            dandrum_instrument_session_connection_snapshot(
- 1113|      1|                session,
- 1114|      1|                connection.instance_id,
- 1115|      1|                attachment_id,
- 1116|      1|                &mut connection,
- 1117|       |            )
- 1118|       |        });
- 1119|      1|        assert_eq!(connection.attachment_id, attachment_id);
- 1120|      1|        let mut copied = vec![0; snapshot.yaml_size];
- 1121|      1|        assert!(unsafe {
- 1122|      1|            dandrum_instrument_session_copy_yaml(session, copied.as_mut_ptr(), copied.len())
- 1123|       |        });
- 1124|      1|        assert_eq!(copied, yaml.as_bytes());
- 1125|       |
- 1126|      1|        let callbacks = DandrumInstrumentSessionHostCallbacks {
- 1127|      1|            activate: Some(activate),
- 1128|      1|            publish: Some(publish),
- 1129|      1|            abort: Some(abort),
- 1130|      1|        };
- 1131|      1|        let mut host = TestHost {
- 1132|      1|            reject: false,
- 1133|      1|            activations: 0,
- 1134|      1|            publications: 0,
- 1135|      1|            revision: 0,
- 1136|      1|            undo_count: 0,
- 1137|      1|            redo_count: 0,
- 1138|      1|        };
- 1139|      1|        let mut error = [0; 256];
- 1140|      1|        let job = unsafe {
- 1141|      1|            dandrum_instrument_session_admit_mapping_for_connection(
- 1142|      1|                session,
- 1143|      1|                connection.instance_id,
- 1144|      1|                attachment_id,
- 1145|       |                1,
- 1146|       |                0,
- 1147|      1|                b"kit".as_ptr(),
- 1148|       |                3,
- 1149|      1|                b"kick".as_ptr(),
- 1150|       |                4,
- 1151|       |                60,
- 1152|       |                60,
- 1153|      1|                error.as_mut_ptr(),
- 1154|      1|                error.len(),
- 1155|       |            )
- 1156|       |        };
- 1157|      1|        assert!(!job.is_null());
- 1158|      1|        assert!(unsafe {
- 1159|      1|            dandrum_instrument_session_disconnect(session, connection.instance_id, attachment_id)
- 1160|       |        });
- 1161|      1|        assert!(!unsafe {
- 1162|      1|            dandrum_instrument_session_connection_snapshot(
- 1163|      1|                session,
- 1164|      1|                connection.instance_id,
- 1165|      1|                attachment_id,
- 1166|      1|                &mut connection,
- 1167|      1|            )
- 1168|      1|        });
- 1169|      1|        assert!(unsafe { dandrum_instrument_session_prepare_job(job) });
- 1170|      1|        assert!(!unsafe { dandrum_instrument_session_prepare_job(job) });
- 1171|      1|        let mut revision = 0;
- 1172|      1|        let mut undo_count = 0;
- 1173|      1|        let mut redo_count = 0;
- 1174|      1|        assert!(unsafe {
- 1175|      1|            dandrum_instrument_session_complete_job(
- 1176|      1|                session,
- 1177|      1|                job,
- 1178|      1|                &callbacks,
- 1179|      1|                (&mut host as *mut TestHost).cast(),
- 1180|      1|                &mut revision,
- 1181|      1|                &mut undo_count,
- 1182|      1|                &mut redo_count,
- 1183|      1|                error.as_mut_ptr(),
- 1184|      1|                error.len(),
- 1185|       |            )
- 1186|       |        });
- 1187|      1|        assert_eq!((revision, undo_count, redo_count), (1, 1, 0));
- 1188|      1|        assert_eq!((host.activations, host.publications), (1, 1));
- 1189|      1|        assert_eq!((host.revision, host.undo_count, host.redo_count), (1, 1, 0));
- 1190|       |
- 1191|      1|        let failed = unsafe {
+  983|     24|            })
+  984|      1|            .collect();
+  985|      1|        (
+  986|      1|            yaml,
+  987|      1|            CString::new(path.parent().unwrap().to_str().unwrap()).unwrap(),
+  988|      1|            names,
+  989|      1|            declarations,
+  990|      1|        )
+  991|      1|    }
+  992|       |
+  993|       |    #[test]
+  994|      1|    fn native_facade_maps_fails_reconfigures_and_rolls_back_activation() {
+  995|      1|        let (yaml, root, _names, declarations) = fixture();
+  996|      1|        let session = unsafe {
+  997|      1|            dandrum_instrument_session_create(
+  998|      1|                yaml.as_ptr(),
+  999|      1|                yaml.len(),
+ 1000|      1|                root.as_ptr(),
+ 1001|       |                48_000,
+ 1002|       |                64,
+ 1003|      1|                declarations.as_ptr(),
+ 1004|      1|                declarations.len(),
+ 1005|       |            )
+ 1006|       |        };
+ 1007|      1|        assert!(!session.is_null());
+ 1008|      1|        let mut snapshot = DandrumInstrumentSessionSnapshot {
+ 1009|      1|            contract_version: 0,
+ 1010|      1|            instance_id: 0,
+ 1011|      1|            attachment_id: u64::MAX,
+ 1012|      1|            revision: u64::MAX,
+ 1013|      1|            next_request_id: 0,
+ 1014|      1|            undo_count: usize::MAX,
+ 1015|      1|            redo_count: usize::MAX,
+ 1016|      1|            attachment_limit: 0,
+ 1017|      1|            history_limit: 0,
+ 1018|      1|            outcome_limit: 0,
+ 1019|      1|            active_request_limit: 0,
+ 1020|      1|            yaml_size: 0,
+ 1021|      1|        };
+ 1022|      1|        assert!(unsafe { dandrum_instrument_session_snapshot(session, &mut snapshot) });
+ 1023|      1|        assert_eq!(snapshot.contract_version, 1);
+ 1024|      1|        assert_ne!(snapshot.instance_id, 0);
+ 1025|      1|        assert_eq!(snapshot.attachment_id, 0);
+ 1026|      1|        assert_eq!(snapshot.next_request_id, 1);
+ 1027|      1|        assert_eq!(
+ 1028|      1|            (
+ 1029|      1|                snapshot.attachment_limit,
+ 1030|      1|                snapshot.history_limit,
+ 1031|      1|                snapshot.outcome_limit,
+ 1032|      1|                snapshot.active_request_limit,
+ 1033|      1|            ),
+ 1034|       |            (16, 100, 128, 1)
+ 1035|       |        );
+ 1036|      1|        assert_eq!(
+ 1037|      1|            (snapshot.revision, snapshot.undo_count, snapshot.redo_count),
+ 1038|       |            (0, 0, 0)
+ 1039|       |        );
+ 1040|      1|        let mut connection = snapshot;
+ 1041|      1|        assert!(unsafe { dandrum_instrument_session_connect(session, &mut connection) });
+ 1042|      1|        assert_eq!(connection.instance_id, snapshot.instance_id);
+ 1043|      1|        assert_ne!(connection.attachment_id, 0);
+ 1044|      1|        let attachment_id = connection.attachment_id;
+ 1045|      1|        assert!(unsafe {
+ 1046|      1|            dandrum_instrument_session_connection_snapshot(
+ 1047|      1|                session,
+ 1048|      1|                connection.instance_id,
+ 1049|      1|                attachment_id,
+ 1050|      1|                &mut connection,
+ 1051|       |            )
+ 1052|       |        });
+ 1053|      1|        assert_eq!(connection.attachment_id, attachment_id);
+ 1054|      1|        let mut copied = vec![0; snapshot.yaml_size];
+ 1055|      1|        assert!(unsafe {
+ 1056|      1|            dandrum_instrument_session_copy_yaml(session, copied.as_mut_ptr(), copied.len())
+ 1057|       |        });
+ 1058|      1|        assert_eq!(copied, yaml.as_bytes());
+ 1059|       |
+ 1060|      1|        let callbacks = DandrumInstrumentSessionHostCallbacks {
+ 1061|      1|            activate: Some(activate),
+ 1062|      1|            publish: Some(publish),
+ 1063|      1|            abort: Some(abort),
+ 1064|      1|        };
+ 1065|      1|        let mut host = TestHost {
+ 1066|      1|            reject: false,
+ 1067|      1|            activations: 0,
+ 1068|      1|            publications: 0,
+ 1069|      1|            revision: 0,
+ 1070|      1|            undo_count: 0,
+ 1071|      1|            redo_count: 0,
+ 1072|      1|        };
+ 1073|      1|        let mut error = [0; 256];
+ 1074|      1|        let job = unsafe {
+ 1075|      1|            dandrum_instrument_session_admit_mapping_for_connection(
+ 1076|      1|                session,
+ 1077|      1|                connection.instance_id,
+ 1078|      1|                attachment_id,
+ 1079|       |                1,
+ 1080|       |                0,
+ 1081|      1|                b"kit".as_ptr(),
+ 1082|       |                3,
+ 1083|      1|                b"kick".as_ptr(),
+ 1084|       |                4,
+ 1085|       |                60,
+ 1086|       |                60,
+ 1087|      1|                error.as_mut_ptr(),
+ 1088|      1|                error.len(),
+ 1089|       |            )
+ 1090|       |        };
+ 1091|      1|        assert!(!job.is_null());
+ 1092|      1|        assert!(unsafe {
+ 1093|      1|            dandrum_instrument_session_disconnect(session, connection.instance_id, attachment_id)
+ 1094|       |        });
+ 1095|      1|        assert!(!unsafe {
+ 1096|      1|            dandrum_instrument_session_connection_snapshot(
+ 1097|      1|                session,
+ 1098|      1|                connection.instance_id,
+ 1099|      1|                attachment_id,
+ 1100|      1|                &mut connection,
+ 1101|      1|            )
+ 1102|      1|        });
+ 1103|      1|        assert!(unsafe { dandrum_instrument_session_prepare_job(job) });
+ 1104|      1|        assert!(!unsafe { dandrum_instrument_session_prepare_job(job) });
+ 1105|      1|        let mut revision = 0;
+ 1106|      1|        let mut undo_count = 0;
+ 1107|      1|        let mut redo_count = 0;
+ 1108|      1|        assert!(unsafe {
+ 1109|      1|            dandrum_instrument_session_complete_job(
+ 1110|      1|                session,
+ 1111|      1|                job,
+ 1112|      1|                &callbacks,
+ 1113|      1|                (&mut host as *mut TestHost).cast(),
+ 1114|      1|                &mut revision,
+ 1115|      1|                &mut undo_count,
+ 1116|      1|                &mut redo_count,
+ 1117|      1|                error.as_mut_ptr(),
+ 1118|      1|                error.len(),
+ 1119|       |            )
+ 1120|       |        });
+ 1121|      1|        assert_eq!((revision, undo_count, redo_count), (1, 1, 0));
+ 1122|      1|        assert_eq!((host.activations, host.publications), (1, 1));
+ 1123|      1|        assert_eq!((host.revision, host.undo_count, host.redo_count), (1, 1, 0));
+ 1124|       |
+ 1125|      1|        let failed = unsafe {
+ 1126|      1|            dandrum_instrument_session_admit_mapping(
+ 1127|      1|                session,
+ 1128|       |                2,
+ 1129|       |                1,
+ 1130|      1|                b"kit".as_ptr(),
+ 1131|       |                3,
+ 1132|      1|                b"kick".as_ptr(),
+ 1133|       |                4,
+ 1134|       |                61,
+ 1135|       |                61,
+ 1136|      1|                error.as_mut_ptr(),
+ 1137|      1|                error.len(),
+ 1138|       |            )
+ 1139|       |        };
+ 1140|      1|        assert!(!failed.is_null());
+ 1141|      1|        assert!(unsafe {
+ 1142|      1|            dandrum_instrument_session_fail_job(
+ 1143|      1|                session,
+ 1144|      1|                failed,
+ 1145|      1|                b"cancelled".as_ptr(),
+ 1146|      1|                b"cancelled".len(),
+ 1147|       |            )
+ 1148|       |        });
+ 1149|       |
+ 1150|      1|        let incomplete = DandrumInstrumentSessionHostCallbacks {
+ 1151|      1|            activate: Some(activate),
+ 1152|      1|            publish: Some(publish),
+ 1153|      1|            abort: None,
+ 1154|      1|        };
+ 1155|      1|        let incomplete_job = unsafe {
+ 1156|      1|            dandrum_instrument_session_admit_mapping(
+ 1157|      1|                session,
+ 1158|       |                3,
+ 1159|       |                1,
+ 1160|      1|                b"kit".as_ptr(),
+ 1161|       |                3,
+ 1162|      1|                b"kick".as_ptr(),
+ 1163|       |                4,
+ 1164|       |                62,
+ 1165|       |                62,
+ 1166|      1|                error.as_mut_ptr(),
+ 1167|      1|                error.len(),
+ 1168|       |            )
+ 1169|       |        };
+ 1170|      1|        assert!(!incomplete_job.is_null());
+ 1171|      1|        assert!(unsafe { dandrum_instrument_session_prepare_job(incomplete_job) });
+ 1172|      1|        assert!(!unsafe {
+ 1173|      1|            dandrum_instrument_session_complete_job(
+ 1174|      1|                session,
+ 1175|      1|                incomplete_job,
+ 1176|      1|                &incomplete,
+ 1177|      1|                (&mut host as *mut TestHost).cast(),
+ 1178|      1|                &mut revision,
+ 1179|      1|                &mut undo_count,
+ 1180|      1|                &mut redo_count,
+ 1181|      1|                error.as_mut_ptr(),
+ 1182|      1|                error.len(),
+ 1183|      1|            )
+ 1184|      1|        });
+ 1185|      1|        assert!(unsafe { dandrum_instrument_session_snapshot(session, &mut snapshot) });
+ 1186|      1|        assert_eq!(
+ 1187|      1|            (snapshot.revision, snapshot.undo_count, snapshot.redo_count),
+ 1188|       |            (1, 1, 0)
+ 1189|       |        );
+ 1190|      1|        error.fill(0);
+ 1191|      1|        let retained_incomplete = unsafe {
  1192|      1|            dandrum_instrument_session_admit_mapping(
  1193|      1|                session,
- 1194|       |                2,
+ 1194|       |                3,
  1195|       |                1,
  1196|      1|                b"kit".as_ptr(),
  1197|       |                3,
  1198|      1|                b"kick".as_ptr(),
  1199|       |                4,
- 1200|       |                61,
- 1201|       |                61,
+ 1200|       |                62,
+ 1201|       |                62,
  1202|      1|                error.as_mut_ptr(),
  1203|      1|                error.len(),
  1204|       |            )
  1205|       |        };
- 1206|      1|        assert!(!failed.is_null());
- 1207|      1|        assert!(unsafe {
- 1208|      1|            dandrum_instrument_session_fail_job(
- 1209|      1|                session,
- 1210|      1|                failed,
- 1211|      1|                b"cancelled".as_ptr(),
- 1212|      1|                b"cancelled".len(),
- 1213|       |            )
- 1214|       |        });
- 1215|       |
- 1216|      1|        let incomplete = DandrumInstrumentSessionHostCallbacks {
- 1217|      1|            activate: Some(activate),
- 1218|      1|            publish: Some(publish),
- 1219|      1|            abort: None,
- 1220|      1|        };
- 1221|      1|        let incomplete_job = unsafe {
- 1222|      1|            dandrum_instrument_session_admit_mapping(
- 1223|      1|                session,
- 1224|       |                3,
- 1225|       |                1,
- 1226|      1|                b"kit".as_ptr(),
- 1227|       |                3,
- 1228|      1|                b"kick".as_ptr(),
- 1229|       |                4,
- 1230|       |                62,
- 1231|       |                62,
- 1232|      1|                error.as_mut_ptr(),
- 1233|      1|                error.len(),
- 1234|       |            )
- 1235|       |        };
- 1236|      1|        assert!(!incomplete_job.is_null());
- 1237|      1|        assert!(unsafe { dandrum_instrument_session_prepare_job(incomplete_job) });
- 1238|      1|        assert!(!unsafe {
- 1239|      1|            dandrum_instrument_session_complete_job(
- 1240|      1|                session,
- 1241|      1|                incomplete_job,
- 1242|      1|                &incomplete,
- 1243|      1|                (&mut host as *mut TestHost).cast(),
- 1244|      1|                &mut revision,
- 1245|      1|                &mut undo_count,
- 1246|      1|                &mut redo_count,
- 1247|      1|                error.as_mut_ptr(),
- 1248|      1|                error.len(),
- 1249|      1|            )
- 1250|      1|        });
- 1251|      1|        assert!(unsafe { dandrum_instrument_session_snapshot(session, &mut snapshot) });
- 1252|      1|        assert_eq!(
- 1253|      1|            (snapshot.revision, snapshot.undo_count, snapshot.redo_count),
- 1254|       |            (1, 1, 0)
- 1255|       |        );
- 1256|      1|        error.fill(0);
- 1257|      1|        let retained_incomplete = unsafe {
- 1258|      1|            dandrum_instrument_session_admit_mapping(
- 1259|      1|                session,
- 1260|       |                3,
- 1261|       |                1,
- 1262|      1|                b"kit".as_ptr(),
- 1263|       |                3,
- 1264|      1|                b"kick".as_ptr(),
- 1265|       |                4,
- 1266|       |                62,
- 1267|       |                62,
- 1268|      1|                error.as_mut_ptr(),
- 1269|      1|                error.len(),
- 1270|       |            )
- 1271|       |        };
- 1272|      1|        assert!(retained_incomplete.is_null());
- 1273|      1|        assert_eq!(
- 1274|      1|            unsafe { CStr::from_ptr(error.as_ptr()) }.to_str().unwrap(),
- 1275|       |            "mapping request already completed"
- 1276|       |        );
- 1277|      1|        assert_eq!((host.activations, host.publications), (1, 1));
- 1278|      1|        assert!(!unsafe {
- 1279|      1|            dandrum_instrument_session_reconfigure(
- 1280|      1|                session,
- 1281|      1|                44_100,
- 1282|      1|                128,
- 1283|      1|                &incomplete,
- 1284|      1|                (&mut host as *mut TestHost).cast(),
- 1285|      1|                error.as_mut_ptr(),
- 1286|      1|                error.len(),
- 1287|      1|            )
- 1288|      1|        });
- 1289|       |
- 1290|      1|        assert!(unsafe {
- 1291|      1|            dandrum_instrument_session_reconfigure(
- 1292|      1|                session,
- 1293|       |                44_100,
- 1294|       |                128,
- 1295|      1|                &callbacks,
- 1296|      1|                (&mut host as *mut TestHost).cast(),
- 1297|      1|                error.as_mut_ptr(),
- 1298|      1|                error.len(),
- 1299|       |            )
- 1300|       |        });
- 1301|      1|        assert_eq!((host.activations, host.publications), (2, 2));
- 1302|      1|        assert_eq!((host.revision, host.undo_count, host.redo_count), (1, 1, 0));
- 1303|       |
- 1304|      1|        host.reject = true;
- 1305|      1|        let rejected = unsafe {
- 1306|      1|            dandrum_instrument_session_admit_mapping(
- 1307|      1|                session,
- 1308|       |                4,
- 1309|       |                1,
- 1310|      1|                b"kit".as_ptr(),
- 1311|       |                3,
- 1312|      1|                b"kick".as_ptr(),
- 1313|       |                4,
- 1314|       |                62,
- 1315|       |                62,
- 1316|      1|                error.as_mut_ptr(),
- 1317|      1|                error.len(),
- 1318|       |            )
- 1319|       |        };
- 1320|      1|        assert!(!rejected.is_null());
- 1321|      1|        assert!(unsafe { dandrum_instrument_session_prepare_job(rejected) });
- 1322|      1|        assert!(!unsafe {
- 1323|      1|            dandrum_instrument_session_complete_job(
- 1324|      1|                session,
- 1325|      1|                rejected,
- 1326|      1|                &callbacks,
- 1327|      1|                (&mut host as *mut TestHost).cast(),
- 1328|      1|                &mut revision,
- 1329|      1|                &mut undo_count,
- 1330|      1|                &mut redo_count,
- 1331|      1|                error.as_mut_ptr(),
- 1332|      1|                error.len(),
- 1333|      1|            )
- 1334|      1|        });
- 1335|      1|        assert_ne!(error[0], 0);
- 1336|      1|        assert_eq!((host.activations, host.publications), (3, 2));
- 1337|      1|        assert!(unsafe { dandrum_instrument_session_snapshot(session, &mut snapshot) });
- 1338|      1|        assert_eq!(
- 1339|      1|            (snapshot.revision, snapshot.undo_count, snapshot.redo_count),
- 1340|       |            (1, 1, 0)
- 1341|       |        );
- 1342|       |
- 1343|      1|        host.reject = false;
- 1344|      1|        assert!(unsafe { dandrum_instrument_session_connect(session, &mut connection) });
- 1345|      1|        let undo_job = unsafe {
- 1346|      1|            dandrum_instrument_session_admit_undo_for_connection(
- 1347|      1|                session,
- 1348|      1|                connection.instance_id,
- 1349|      1|                connection.attachment_id,
- 1350|       |                5,
- 1351|       |                1,
- 1352|      1|                error.as_mut_ptr(),
- 1353|      1|                error.len(),
- 1354|       |            )
- 1355|       |        };
- 1356|      1|        assert!(!undo_job.is_null());
- 1357|      1|        assert!(unsafe {
- 1358|      1|            dandrum_instrument_session_disconnect(
- 1359|      1|                session,
- 1360|      1|                connection.instance_id,
- 1361|      1|                connection.attachment_id,
- 1362|       |            )
- 1363|       |        });
- 1364|      1|        assert!(unsafe { dandrum_instrument_session_prepare_job(undo_job) });
- 1365|      1|        assert!(unsafe {
- 1366|      1|            dandrum_instrument_session_complete_job(
- 1367|      1|                session,
- 1368|      1|                undo_job,
- 1369|      1|                &callbacks,
- 1370|      1|                (&mut host as *mut TestHost).cast(),
- 1371|      1|                &mut revision,
- 1372|      1|                &mut undo_count,
- 1373|      1|                &mut redo_count,
- 1374|      1|                error.as_mut_ptr(),
- 1375|      1|                error.len(),
- 1376|       |            )
- 1377|       |        });
- 1378|      1|        assert_eq!((revision, undo_count, redo_count), (2, 0, 1));
- 1379|      1|        assert!(unsafe { dandrum_instrument_session_snapshot(session, &mut snapshot) });
- 1380|      1|        assert_eq!(snapshot.next_request_id, 6);
- 1381|       |
- 1382|      1|        unsafe { dandrum_instrument_session_destroy(session) };
- 1383|      1|    }
- 1384|       |}
+ 1206|      1|        assert!(retained_incomplete.is_null());
+ 1207|      1|        assert_eq!(
+ 1208|      1|            unsafe { CStr::from_ptr(error.as_ptr()) }.to_str().unwrap(),
+ 1209|       |            "mapping request already completed"
+ 1210|       |        );
+ 1211|      1|        assert_eq!((host.activations, host.publications), (1, 1));
+ 1212|      1|        assert!(!unsafe {
+ 1213|      1|            dandrum_instrument_session_reconfigure(
+ 1214|      1|                session,
+ 1215|      1|                44_100,
+ 1216|      1|                128,
+ 1217|      1|                &incomplete,
+ 1218|      1|                (&mut host as *mut TestHost).cast(),
+ 1219|      1|                error.as_mut_ptr(),
+ 1220|      1|                error.len(),
+ 1221|      1|            )
+ 1222|      1|        });
+ 1223|       |
+ 1224|      1|        assert!(unsafe {
+ 1225|      1|            dandrum_instrument_session_reconfigure(
+ 1226|      1|                session,
+ 1227|       |                44_100,
+ 1228|       |                128,
+ 1229|      1|                &callbacks,
+ 1230|      1|                (&mut host as *mut TestHost).cast(),
+ 1231|      1|                error.as_mut_ptr(),
+ 1232|      1|                error.len(),
+ 1233|       |            )
+ 1234|       |        });
+ 1235|      1|        assert_eq!((host.activations, host.publications), (2, 2));
+ 1236|      1|        assert_eq!((host.revision, host.undo_count, host.redo_count), (1, 1, 0));
+ 1237|       |
+ 1238|      1|        host.reject = true;
+ 1239|      1|        let rejected = unsafe {
+ 1240|      1|            dandrum_instrument_session_admit_mapping(
+ 1241|      1|                session,
+ 1242|       |                4,
+ 1243|       |                1,
+ 1244|      1|                b"kit".as_ptr(),
+ 1245|       |                3,
+ 1246|      1|                b"kick".as_ptr(),
+ 1247|       |                4,
+ 1248|       |                62,
+ 1249|       |                62,
+ 1250|      1|                error.as_mut_ptr(),
+ 1251|      1|                error.len(),
+ 1252|       |            )
+ 1253|       |        };
+ 1254|      1|        assert!(!rejected.is_null());
+ 1255|      1|        assert!(unsafe { dandrum_instrument_session_prepare_job(rejected) });
+ 1256|      1|        assert!(!unsafe {
+ 1257|      1|            dandrum_instrument_session_complete_job(
+ 1258|      1|                session,
+ 1259|      1|                rejected,
+ 1260|      1|                &callbacks,
+ 1261|      1|                (&mut host as *mut TestHost).cast(),
+ 1262|      1|                &mut revision,
+ 1263|      1|                &mut undo_count,
+ 1264|      1|                &mut redo_count,
+ 1265|      1|                error.as_mut_ptr(),
+ 1266|      1|                error.len(),
+ 1267|      1|            )
+ 1268|      1|        });
+ 1269|      1|        assert_ne!(error[0], 0);
+ 1270|      1|        assert_eq!((host.activations, host.publications), (3, 2));
+ 1271|      1|        assert!(unsafe { dandrum_instrument_session_snapshot(session, &mut snapshot) });
+ 1272|      1|        assert_eq!(
+ 1273|      1|            (snapshot.revision, snapshot.undo_count, snapshot.redo_count),
+ 1274|       |            (1, 1, 0)
+ 1275|       |        );
+ 1276|       |
+ 1277|      1|        host.reject = false;
+ 1278|      1|        assert!(unsafe { dandrum_instrument_session_connect(session, &mut connection) });
+ 1279|      1|        let undo_job = unsafe {
+ 1280|      1|            dandrum_instrument_session_admit_undo_for_connection(
+ 1281|      1|                session,
+ 1282|      1|                connection.instance_id,
+ 1283|      1|                connection.attachment_id,
+ 1284|       |                5,
+ 1285|       |                1,
+ 1286|      1|                error.as_mut_ptr(),
+ 1287|      1|                error.len(),
+ 1288|       |            )
+ 1289|       |        };
+ 1290|      1|        assert!(!undo_job.is_null());
+ 1291|      1|        assert!(unsafe {
+ 1292|      1|            dandrum_instrument_session_disconnect(
+ 1293|      1|                session,
+ 1294|      1|                connection.instance_id,
+ 1295|      1|                connection.attachment_id,
+ 1296|       |            )
+ 1297|       |        });
+ 1298|      1|        assert!(unsafe { dandrum_instrument_session_prepare_job(undo_job) });
+ 1299|      1|        assert!(unsafe {
+ 1300|      1|            dandrum_instrument_session_complete_job(
+ 1301|      1|                session,
+ 1302|      1|                undo_job,
+ 1303|      1|                &callbacks,
+ 1304|      1|                (&mut host as *mut TestHost).cast(),
+ 1305|      1|                &mut revision,
+ 1306|      1|                &mut undo_count,
+ 1307|      1|                &mut redo_count,
+ 1308|      1|                error.as_mut_ptr(),
+ 1309|      1|                error.len(),
+ 1310|       |            )
+ 1311|       |        });
+ 1312|      1|        assert_eq!((revision, undo_count, redo_count), (2, 0, 1));
+ 1313|      1|        assert!(unsafe { dandrum_instrument_session_snapshot(session, &mut snapshot) });
+ 1314|      1|        assert_eq!(snapshot.next_request_id, 6);
+ 1315|       |
+ 1316|      1|        unsafe { dandrum_instrument_session_destroy(session) };
+ 1317|      1|    }
+ 1318|       |}

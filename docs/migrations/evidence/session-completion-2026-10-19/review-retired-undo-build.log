@@ -1,0 +1,143 @@
+[  0%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[  5%] Building Rust instrument session facade
+warning: failed to connect to jobserver from environment variable `MAKEFLAGS="s -j2 --jobserver-auth=3,4"`: cannot open file descriptor 3 from the jobserver environment variable value: Bad file descriptor (os error 9)
+[  5%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[ 11%] Built target dandrum-sampler-resources
+[ 11%] Generating juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/NativeKnobFontBinaryData.h
+[ 11%] Generating juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/NativeKnobFontBinaryData.h
+[ 22%] Built target dandrum-native-knob-fonts
+   Compiling dandrum_instrument_session v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/instrument-session)
+    Finished `release` profile [optimized] target(s) in 2.10s
+[ 22%] Built target dandrum-instrument-session-rust
+[ 22%] Building CXX object CMakeFiles/dandrum-sampler-plugin.dir/src/juce-plugin/PluginFactory.cpp.o
+[ 22%] Building CXX object CMakeFiles/dandrum-sampler-plugin.dir/src/juce-plugin/PluginProcessor.cpp.o
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp: In constructor ‘DandrumAudioProcessor::DandrumAudioProcessor(InstrumentDemoConfiguration, InstrumentUiLiveService::BeforeBatch, std::function<void()>)’:
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp:524:24: warning: conversion to ‘std::vector<DandrumAudioProcessor::ParameterSlot>::size_type’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+  524 |         parameterSlots[slotIndex].slotParameterId = publicSlotParameterId (slotIndex);
+      |                        ^~~~~~~~~
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp:525:24: warning: conversion to ‘std::vector<DandrumAudioProcessor::ParameterSlot>::size_type’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+  525 |         parameterSlots[slotIndex].rawValue = parameters.getRawParameterValue (parameterSlots[slotIndex].slotParameterId);
+      |                        ^~~~~~~~~
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp:525:94: warning: conversion to ‘std::vector<DandrumAudioProcessor::ParameterSlot>::size_type’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+  525 |         parameterSlots[slotIndex].rawValue = parameters.getRawParameterValue (parameterSlots[slotIndex].slotParameterId);
+      |                                                                                              ^~~~~~~~~
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp: In member function ‘bool DandrumAudioProcessor::replaceActiveEngineFromFile(const juce::File&, const juce::File&, const juce::String&, bool, bool, juce::String*)’:
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp:886:16: warning: declaration of ‘blockSize’ shadows a member of ‘DandrumAudioProcessor’ [-Wshadow]
+  886 |     const auto blockSize = getBlockSize() > 0 ? getBlockSize() : 512;
+      |                ^~~~~~~~~
+In file included from /home/dan/code/dandrum-worktrees/juce-free-host-adapters/third_party/JUCE/modules/juce_audio_processors/juce_audio_processors.h:154,
+                 from /home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.h:18,
+                 from /home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp:1:
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/third_party/JUCE/modules/juce_audio_processors/processors/juce_AudioProcessor.h:1575:9: note: shadowed declaration is here
+ 1575 |     int blockSize = 0, latencySamples = 0;
+      |         ^~~~~~~~~
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp: In member function ‘void DandrumAudioProcessor::preparePublicParameterSlots(const std::vector<DandrumAudioProcessor::PublicParameterDescriptor>&, juce::String*, bool, DandrumAudioProcessor::CandidateParameterBindings*)’:
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp:1007:28: warning: conversion to ‘std::vector<DandrumAudioProcessor::ParameterSlot>::size_type’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+ 1007 |         auto& slot = slots[slotIndex];
+      |                            ^~~~~~~~~
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp: In member function ‘virtual void DandrumAudioProcessor::setStateInformation(const void*, int)’:
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp:1629:20: warning: declaration of ‘blockSize’ shadows a member of ‘DandrumAudioProcessor’ [-Wshadow]
+ 1629 |         const auto blockSize = getBlockSize() > 0 ? getBlockSize() : 512;
+      |                    ^~~~~~~~~
+In file included from /home/dan/code/dandrum-worktrees/juce-free-host-adapters/third_party/JUCE/modules/juce_audio_processors/juce_audio_processors.h:154,
+                 from /home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.h:18,
+                 from /home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp:1:
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/third_party/JUCE/modules/juce_audio_processors/processors/juce_AudioProcessor.h:1575:9: note: shadowed declaration is here
+ 1575 |     int blockSize = 0, latencySamples = 0;
+      |         ^~~~~~~~~
+[ 27%] Building CXX object CMakeFiles/dandrum-sampler-plugin.dir/src/juce-plugin/PluginNativeEditor.cpp.o
+[ 27%] Building CXX object CMakeFiles/dandrum-sampler-plugin.dir/src/juce-plugin/NativeOutputBuses.cpp.o
+[ 33%] Linking CXX static library "dandrum-sampler-plugin_artefacts/Release/libDandrum Sampler_SharedCode.a"
+[ 72%] Built target dandrum-sampler-plugin
+[ 77%] Building CXX object CMakeFiles/dandrum-plugin-instrument-session-test.dir/tests/cpp/PluginInstrumentSessionTest.cpp.o
+[ 77%] Linking CXX executable dandrum-plugin-instrument-session-test
+lto-wrapper: warning: using serial compilation of 70 LTRANS jobs
+[100%] Built target dandrum-plugin-instrument-session-test
+[  0%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[  6%] Built target dandrum-instrument-session-rust
+[  6%] Generating juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/NativeKnobFontBinaryData.h
+[  6%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[ 13%] Built target dandrum-sampler-resources
+[ 13%] Generating juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/NativeKnobFontBinaryData.h
+[ 26%] Built target dandrum-native-knob-fonts
+[ 86%] Built target dandrum-sampler-plugin
+[ 86%] Linking CXX executable "dandrum-sampler-plugin_artefacts/Release/Standalone/Dandrum Sampler"
+lto-wrapper: warning: using serial compilation of 78 LTRANS jobs
+[100%] Built target dandrum-sampler-plugin_Standalone
+[  0%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[  5%] Built target dandrum-instrument-session-rust
+[  5%] Generating juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/NativeKnobFontBinaryData.h
+[  5%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[ 11%] Built target dandrum-sampler-resources
+[ 17%] Built target juce_vst3_helper
+[ 17%] Generating juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/NativeKnobFontBinaryData.h
+[ 29%] Built target dandrum-native-knob-fonts
+[ 82%] Built target dandrum-sampler-plugin
+[ 82%] Linking CXX shared module "dandrum-sampler-plugin_artefacts/Release/VST3/Dandrum Sampler.vst3/Contents/x86_64-linux/Dandrum Sampler.so"
+lto-wrapper: warning: using serial compilation of 72 LTRANS jobs
+removing moduleinfo.json
+creating /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session/dandrum-sampler-plugin_artefacts/Release/VST3/Dandrum Sampler.vst3/Contents/Resources/moduleinfo.json
+[100%] Built target dandrum-sampler-plugin_VST3
+[  0%] Generating juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/SamplerReactBinaryData.h
+[  0%] Building Rust instrument session facade
+warning: failed to connect to jobserver from environment variable `MAKEFLAGS="s -j2 --jobserver-auth=3,4"`: cannot open file descriptor 3 from the jobserver environment variable value: Bad file descriptor (os error 9)
+[  0%] Generating juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/SamplerReactBinaryData.h
+   Compiling dandrum_instrument_session v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/instrument-session)
+[  6%] Built target dandrum-sampler-react-resources
+[  6%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[  6%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[ 12%] Built target dandrum-tb303-instrument-resources
+[ 12%] Built target juce_linux_subprocess_helper
+[ 18%] Generating juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/TriggerReactBinaryData.h
+[ 18%] Generating juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/TriggerReactBinaryData.h
+[ 37%] Built target dandrum-trigger-react-resources
+[ 37%] Generating juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/Tb303ReactBinaryData.h
+[ 37%] Generating juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/Tb303ReactBinaryData.h
+[ 43%] Built target dandrum-tb303-react-resources
+    Finished `release` profile [optimized] target(s) in 2.60s
+[ 43%] Built target dandrum-instrument-session-rust
+[ 43%] Building CXX object CMakeFiles/dandrum-plugin.dir/src/juce-plugin/PluginFactory.cpp.o
+[ 43%] Building CXX object CMakeFiles/dandrum-plugin.dir/src/juce-plugin/PluginProcessor.cpp.o
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp: In constructor ‘DandrumAudioProcessor::DandrumAudioProcessor(InstrumentDemoConfiguration, InstrumentUiLiveService::BeforeBatch, std::function<void()>)’:
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp:524:24: warning: conversion to ‘std::vector<DandrumAudioProcessor::ParameterSlot>::size_type’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+  524 |         parameterSlots[slotIndex].slotParameterId = publicSlotParameterId (slotIndex);
+      |                        ^~~~~~~~~
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp:525:24: warning: conversion to ‘std::vector<DandrumAudioProcessor::ParameterSlot>::size_type’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+  525 |         parameterSlots[slotIndex].rawValue = parameters.getRawParameterValue (parameterSlots[slotIndex].slotParameterId);
+      |                        ^~~~~~~~~
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp:525:94: warning: conversion to ‘std::vector<DandrumAudioProcessor::ParameterSlot>::size_type’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+  525 |         parameterSlots[slotIndex].rawValue = parameters.getRawParameterValue (parameterSlots[slotIndex].slotParameterId);
+      |                                                                                              ^~~~~~~~~
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp: In member function ‘bool DandrumAudioProcessor::replaceActiveEngineFromFile(const juce::File&, const juce::File&, const juce::String&, bool, bool, juce::String*)’:
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp:886:16: warning: declaration of ‘blockSize’ shadows a member of ‘DandrumAudioProcessor’ [-Wshadow]
+  886 |     const auto blockSize = getBlockSize() > 0 ? getBlockSize() : 512;
+      |                ^~~~~~~~~
+In file included from /home/dan/code/dandrum-worktrees/juce-free-host-adapters/third_party/JUCE/modules/juce_audio_processors/juce_audio_processors.h:154,
+                 from /home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.h:18,
+                 from /home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp:1:
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/third_party/JUCE/modules/juce_audio_processors/processors/juce_AudioProcessor.h:1575:9: note: shadowed declaration is here
+ 1575 |     int blockSize = 0, latencySamples = 0;
+      |         ^~~~~~~~~
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp: In member function ‘void DandrumAudioProcessor::preparePublicParameterSlots(const std::vector<DandrumAudioProcessor::PublicParameterDescriptor>&, juce::String*, bool, DandrumAudioProcessor::CandidateParameterBindings*)’:
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp:1007:28: warning: conversion to ‘std::vector<DandrumAudioProcessor::ParameterSlot>::size_type’ {aka ‘long unsigned int’} from ‘int’ may change the sign of the result [-Wsign-conversion]
+ 1007 |         auto& slot = slots[slotIndex];
+      |                            ^~~~~~~~~
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp: In member function ‘virtual void DandrumAudioProcessor::setStateInformation(const void*, int)’:
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp:1629:20: warning: declaration of ‘blockSize’ shadows a member of ‘DandrumAudioProcessor’ [-Wshadow]
+ 1629 |         const auto blockSize = getBlockSize() > 0 ? getBlockSize() : 512;
+      |                    ^~~~~~~~~
+In file included from /home/dan/code/dandrum-worktrees/juce-free-host-adapters/third_party/JUCE/modules/juce_audio_processors/juce_audio_processors.h:154,
+                 from /home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.h:18,
+                 from /home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/juce-plugin/PluginProcessor.cpp:1:
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/third_party/JUCE/modules/juce_audio_processors/processors/juce_AudioProcessor.h:1575:9: note: shadowed declaration is here
+ 1575 |     int blockSize = 0, latencySamples = 0;
+      |         ^~~~~~~~~
+[ 43%] Building CXX object CMakeFiles/dandrum-plugin.dir/src/juce-plugin/InstrumentHostWebBridge.cpp.o
+[ 43%] Building CXX object CMakeFiles/dandrum-plugin.dir/src/juce-plugin/PluginEditor.cpp.o
+[ 50%] Building CXX object CMakeFiles/dandrum-plugin.dir/src/juce-plugin/PluginWebEditorFactory.cpp.o
+[ 50%] Linking CXX static library dandrum-plugin_artefacts/Release/libDandrum_SharedCode.a
+[ 81%] Built target dandrum-plugin
+[ 81%] Building CXX object CMakeFiles/dandrum-trigger-native-bridge-test.dir/tests/cpp/PluginTriggerNativeBridgeTest.cpp.o
+[ 81%] Linking CXX executable dandrum-trigger-native-bridge-test
+lto-wrapper: warning: using serial compilation of 128 LTRANS jobs
+[100%] Built target dandrum-trigger-native-bridge-test

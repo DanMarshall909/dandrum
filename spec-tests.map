@@ -2597,7 +2597,9 @@ AC instrument-session :: Prepared mapping and history publish coherently :: Acce
 AC instrument-session :: Prepared mapping and history publish coherently :: Failed preparation or activation preserves all accepted state
   fp 0296f9ff41d2
   test rust:failed_sample_repreparation_preserves_the_working_document_and_sound
+  test rust:invalid_or_ambiguous_mapping_intents_preserve_the_accepted_instrument
   test rust:activation_failure_rolls_back_runtime_document_and_every_history_transition
+  test cpp:tests/cpp/PluginInstrumentSessionTest.cpp
 
 AC instrument-session :: Bounded admission survives editor loss :: Lost acknowledgement does not duplicate an accepted edit
   fp 65d10ecb88ad

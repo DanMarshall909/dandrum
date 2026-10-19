@@ -449,23 +449,30 @@ passes 5/5 in 92.92 seconds: 95 React tests, TypeScript/component checks, the
 production bundle, 27 Playwright browser scenarios, bridge coverage and the
 actual packaged WebView lifecycle on `DISPLAY=:10.0`.
 
-Rust-only session coverage records 104/112 functions, 1456/1672 LLVM-counted
-lines and 1750/2069 regions across the core and C facade. The core owner alone
-records 63/65 functions and 666/691 lines; every visible missed core source line
-belongs to `reserve_control_request`, which is entered through the concrete C++
-bridge for the passing native and packaged React undo paths. The C facade's
-Rust-only denominator also includes defensive ABI branches; its major success,
-rejection and rollback paths are additionally exercised by C++ consumers. The annotated report retains every missed line
-instead of presenting merged cross-language evidence as 100% Rust coverage.
-Branches are not instrumented, and mutation remains excluded by the recorded
-user direction.
+The first independent task-4.2 review rejected the coverage interpretation: the
+reported `reserve_control_request` lines belonged only to an uncalled synchronous
+undo export, while every maintained native and React consumer uses the admitted,
+owned off-audio job path. Repair head `89efa74` first proves the obsolete export
+present with a failing native link-graph assertion, then removes the export,
+binding and private reservation helper. The concrete native session, link graph,
+Trigger bridge and actual packaged WebView tests pass after the removal, and the
+commit hook passes all 1,084 engine tests plus its strict coverage gate.
 
-The post-verification refactoring review found no production extraction that
-would simplify ownership or strengthen a tested boundary. The accepted state,
-request reservation and publication code remain one cohesive transaction
-owner, while the packaged lifecycle harness intentionally keeps its ordered
-editor-destruction state machine visible. The initial React checkpoint used
-system Node 18 and failed only when Playwright required Node 20; the final lane
-uses the installed Node 22.19.0 runtime. All reusable build and Cargo caches are
-preserved. Task 4.2 retains final independent completion review and normal
+Repaired Rust-only session coverage records 104/109 functions, 1456/1594
+LLVM-counted lines and 1750/1980 regions across the core and C facade. The core
+owner records 63/63 functions, 666/670 lines and 812/821 regions, with no visible
+missed core source line. Its four unaccounted LLVM line counts and nine regions
+come from generic/instantiation accounting. The C facade records 41/46
+functions, 790/924 lines and 938/1159 regions; the annotated report retains all
+defensive ABI misses rather than presenting merged cross-language evidence as
+100% Rust coverage. Branches are not instrumented, and mutation remains excluded
+by the recorded user direction.
+
+The same review found the failed-preparation/activation acceptance map
+incomplete. It now also cites the invalid-or-ambiguous mapping preservation test
+and the concrete C++ session consumer, covering rejection before preparation as
+well as activation rollback. The initial React checkpoint used system Node 18
+and failed only when Playwright required Node 20; the final lane uses the
+installed Node 22.19.0 runtime. All reusable build and Cargo caches are
+preserved. Task 4.2 retains the repeated independent completion review and normal
 publication; the full JUCE-free beta goal remains open beyond this increment.

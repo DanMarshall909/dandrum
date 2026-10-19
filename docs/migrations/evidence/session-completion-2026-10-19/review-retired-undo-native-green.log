@@ -1,0 +1,10 @@
+Internal ctest changing into directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session
+Test project /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session
+    Start 35: cxx-plugin-instrument-session
+1/2 Test #35: cxx-plugin-instrument-session ....   Passed    0.34 sec
+    Start 36: native-session-link-graph
+2/2 Test #36: native-session-link-graph ........   Passed    0.41 sec
+
+100% tests passed, 0 tests failed out of 2
+
+Total Test time (real) =   0.75 sec

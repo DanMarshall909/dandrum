@@ -1,7 +1,6 @@
-$ cargo llvm-cov --locked --manifest-path src/instrument-session/Cargo.toml --json --summary-only --output-path docs/migrations/evidence/session-completion-2026-10-19/coverage-summary.json --ignore-filename-regex src/rust-engine
 info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
    Compiling dandrum_instrument_session v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/instrument-session)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.42s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.83s
      Running unittests src/lib.rs (src/instrument-session/target/llvm-cov-target/debug/deps/dandrum_instrument_session-b72f9403a4e5022a)
 
 running 3 tests
@@ -16,32 +15,36 @@ test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 running 26 tests
 test connection_contract_version_and_resource_bounds_are_stable ... ok
 test documents_without_sample_maps_reject_mapping_without_changing_accepted_state ... ok
-test unusable_documents_or_missing_samples_cannot_create_accepted_sessions ... ok
-test existing_sampler_baseline_uses_real_assets_and_signed_key_mapping ... ok
 test attachment_limit_reclaims_dropped_and_explicitly_retired_connections ... ok
-test failed_worker_preparation_is_retained_and_retry_does_not_prepare_or_activate_again ... ok
+test existing_sampler_baseline_uses_real_assets_and_signed_key_mapping ... ok
 test accepted_document_survives_detach_and_reattach_without_reloading_samples ... ok
+test unusable_documents_or_missing_samples_cannot_create_accepted_sessions ... ok
 test failed_sample_repreparation_preserves_the_working_document_and_sound ... ok
+test failed_worker_preparation_is_retained_and_retry_does_not_prepare_or_activate_again ... ok
+test inclusive_midi_boundaries_and_nondefault_inverse_come_from_native_state ... ok
 test foreign_and_retired_connections_cannot_read_another_session ... ok
 test mapping_admission_rejects_foreign_and_retired_connections ... ok
 test explicit_worker_failure_before_or_after_preparation_clears_pending_without_activation ... ok
-test invalid_or_ambiguous_mapping_intents_preserve_the_accepted_instrument ... ok
-test inclusive_midi_boundaries_and_nondefault_inverse_come_from_native_state ... ok
-test mapping_candidate_derives_inverse_and_prepares_only_the_requested_zone_change ... ok
 test foreign_worker_completion_cannot_mutate_another_session ... ok
+test mapping_candidate_derives_inverse_and_prepares_only_the_requested_zone_change ... ok
+test invalid_or_ambiguous_mapping_intents_preserve_the_accepted_instrument ... ok
 test activation_failure_is_terminal_and_clears_the_pending_slot_for_new_work ... ok
 test admitted_worker_survives_attachment_loss_and_retry_recovers_one_accepted_edit ... ok
 test failed_undo_preparation_preserves_accepted_mapping_and_native_history ... ok
-test empty_history_foreign_connections_and_obsolete_candidates_never_activate ... ok
 test accepted_document_replacement_resets_history_and_requests_but_preserves_host_automation ... ok
+test empty_history_foreign_connections_and_obsolete_candidates_never_activate ... ok
 test accepted_mapping_and_native_undo_redo_publish_document_history_and_signed_audio ... ok
+test document_replacement_rejects_invalid_foreign_stale_and_busy_work_before_activation ... ok
 test render_reconfiguration_preserves_accepted_document_history_and_failure_rollback ... ok
 test activation_failure_rolls_back_runtime_document_and_every_history_transition ... ok
-test document_replacement_rejects_invalid_foreign_stale_and_busy_work_before_activation ... ok
 test terminal_request_outcomes_are_capped_at_one_hundred_twenty_eight ... ok
 test history_retains_one_hundred_entries_and_branching_preserves_then_retires_redo ... ok
 
 test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.90s
 
 
-    Finished report saved to docs/migrations/evidence/session-completion-2026-10-19/coverage-summary.json
+    Finished report saved to /tmp/dandrum-session-coverage-repaired.json
+
+    Finished report saved to /tmp/dandrum-session-coverage-repaired-missing.txt
+Uncovered Lines:
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/instrument-session/src/native_ffi.rs: 131, 132, 133, 134, 135, 136, 141, 142, 223, 230, 233, 256, 259, 271, 286, 295, 334, 355, 358, 361, 364, 367, 375, 383, 386, 414, 425, 428, 431, 442, 443, 444, 445, 446, 447, 458, 461, 468, 482, 500, 504, 527, 528, 532, 533, 553, 554, 560, 561, 562, 584, 585, 588, 589, 590, 591, 593, 597, 598, 602, 603, 604, 624, 625, 628, 629, 631, 632, 633, 649, 650, 653, 654, 655, 656, 658, 670, 671, 674, 675, 677, 678, 679, 689, 711, 714, 717, 721, 726, 747, 748, 751, 752, 755, 756, 760, 761, 780, 781, 782, 796, 816, 817, 820, 821, 832, 833, 836, 837, 838, 839, 841, 849, 850, 851, 852, 854, 861, 862, 863, 882, 883, 884, 890, 891, 892, 893, 894, 895, 896, 954, 955, 956

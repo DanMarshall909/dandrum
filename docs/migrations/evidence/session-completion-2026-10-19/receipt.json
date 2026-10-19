@@ -1,12 +1,12 @@
 {
-  "scope": "OpenSpec task 4.1: source-bound final coverage, build and regression checkpoint for the complete persistent instrument-session increment through canonical specification head f362346. This verifies the retained JUCE comparison consumer and independent session boundary; it does not claim the JUCE-free beta deliverables.",
-  "verified_head": "f362346f50fa97b5886c240b85b8cc5b6f0a5b3f",
+  "scope": "OpenSpec task 4.1 plus the first task-4.2 review repair: source-bound coverage, build and regression evidence for the persistent instrument-session increment. The complete matrix was run at canonical specification head f362346; exact repair head 89efa74 removes a dead synchronous undo ABI and revalidates every affected native and packaged-WebView boundary. This remains a retained JUCE comparison consumer and independent session boundary, not the JUCE-free beta deliverables.",
+  "verified_head": "89efa740492d2ebbae23d7e577fe06f1b7ca964f",
   "source_sha256": {
     "CMakeLists.txt": "f5973662fed506d60a6e199095f3ff570a741711bc19de03999d1a1c7cdf0c9e",
     "src/instrument-session/Cargo.toml": "64121a3f75dde57b6a4cc0dcee2a96e4f8cab7ee1b72382f8da60998efba4c44",
     "src/instrument-session/Cargo.lock": "1537a3dc07c17fb7fe79786d1863b7e9b7e3db328757845fdbe3ffdbb10201eb",
-    "src/instrument-session/src/lib.rs": "b6185fc8058ad1083cee57d715e22e8f910d352005fa735c8acc0d97b19c1432",
-    "src/instrument-session/src/native_ffi.rs": "c4f36721421c56869cf2f82b1d9a58d2868500cba2f916e4c9dc3bd8155758ae",
+    "src/instrument-session/src/lib.rs": "7df8d1c3751e31fb9832b615d3957c2459014b6822aef1be1958a20064872fdf",
+    "src/instrument-session/src/native_ffi.rs": "cdada47286a2c2f94d45c652a9166b8d9a30870e56fca1111abdcdf5611934b8",
     "src/instrument-session/tests/session.rs": "7eca59843dcbecac33da9cd85e588ca81d0952cabbb993b55b511930a924c19b",
     "tests/python/test_engine_only_build.py": "984c1648781d62a5c498b8f4c5f32d554984212afc27334a40093dd8bfe03e09",
     "tests/cpp/PluginInstrumentSessionTest.cpp": "94779df305366e455414cb5d7416506d6ef991ea598392813fcaf9eb4c831a82",
@@ -17,18 +17,24 @@
     "web/trigger/package.json": "eee84408e787dfbdc12e8acfa98b1818ca65766b54de769cec44d19501867ed8",
     "web/trigger/package-lock.json": "07d6d015bc9148c1f55f3146f38200f835727c0fc4bbe19cf7a415529ba342d9",
     "openspec/specs/instrument-session/spec.md": "309c9bce5ace132705755d4b098655f82070424504f1468bd154efc00bbff93a",
-    "spec-tests.map": "619b3b90d567136b524c3e35f0a43d8250ee0017cd95bef6f7e57dcbf4c172d7",
+    "spec-tests.map": "10f9888d5e9d9d662695ce6ec640fa8b87868ac2cd47342cf03bc6e333aa29be",
     "openspec/changes/add-persistent-instrument-session/tasks.md": "ed016e67b53d79128adb16c36124c14ff1d07a945b58d36a33d290f19ecfb66b",
-    "docs/migrations/juce-replacement-progress.md": "fb6ccdc0fcad19b03083eb4028ce93558cdb3f01de771275bdd2f252f96ba0ba",
+    "docs/migrations/juce-replacement-progress.md": "51b26d8caadb7f2a3585c13506a30f70d2921d4b9e22aca73093f69888da043d",
     "docs/migrations/evidence/session-completion-2026-10-19/build.log": "c1a839933704760eb5c692080c93eee9794cae53d345ba17eb4214ff22442ff9",
-    "docs/migrations/evidence/session-completion-2026-10-19/coverage-missing.txt": "568011ca4f23eb5934821ab46441c8203b5353f0b14cf286bed7d52568d2b103",
-    "docs/migrations/evidence/session-completion-2026-10-19/coverage-summary.json": "4d8294d7d5e2b130ce34bf3736af19726b1d4bcef68eabc5cd5889a3a1d64152",
+    "docs/migrations/evidence/session-completion-2026-10-19/coverage-missing.txt": "0768cbdd82474e178bd25bc28d68335ef79a114ca49c9d05aeee2a7f9104d14b",
+    "docs/migrations/evidence/session-completion-2026-10-19/coverage-summary.json": "eed2ffc32b3dc44a52c5904f496bd3636e1557dc0bf453fa0097305ba497b665",
     "docs/migrations/evidence/session-completion-2026-10-19/engine-only.log": "311041a57b9a9d8c3158e905e15710c4f12dcc4e4d2d2e5e852b19cf7d04cff2",
     "docs/migrations/evidence/session-completion-2026-10-19/native-session.log": "b53f164f865a2f9e4f713456f71566d67d030ef2b535974ab74aa242c1b13ca4",
-    "docs/migrations/evidence/session-completion-2026-10-19/session-coverage.log": "a94ee2f7c061bd57ed5e04ae135d0e4eaa65895cb8f0422e097d9e96aa8a55e4",
+    "docs/migrations/evidence/session-completion-2026-10-19/session-coverage.log": "43cf9d48b60abd8e16504370a0de76fbadd737df11753ace7deab293bde86da5",
     "docs/migrations/evidence/session-completion-2026-10-19/session-rust.log": "de46a0851dfa6f68f75b9ea3666b9ae0bbf965521c293a70633858bc7c7878b6",
     "docs/migrations/evidence/session-completion-2026-10-19/web-host-setup-red.log": "1cc53ce65929248e8197d3014f7f626201940d2e715da082a4f92afd4345d5c6",
-    "docs/migrations/evidence/session-completion-2026-10-19/web-host.log": "3842e200b2ab2b60e780e16a4f697bc946300e5e0c56337fa9cd69c85eaeda81"
+    "docs/migrations/evidence/session-completion-2026-10-19/web-host.log": "3842e200b2ab2b60e780e16a4f697bc946300e5e0c56337fa9cd69c85eaeda81",
+    "src/juce-wrapper/InstrumentSessionBindings.h": "26c4cc5653a05d8eb11ef75795a62690c20c090d46ef9ef30ac862385cc1fbb3",
+    "tests/cmake/NativeSessionLinkGraph.cmake": "29a2e90fd6a08dddfabbf04f78af2f1b431717014e257e893cac8d61bba4b2bb",
+    "docs/migrations/evidence/session-completion-2026-10-19/review-retired-undo-red.log": "2773da582e15ada8dcfc8b791ddcf0054eb59d82119d70c475b3950fb77d37bb",
+    "docs/migrations/evidence/session-completion-2026-10-19/review-retired-undo-build.log": "62956e438198620396552db18e0979cd450f94ada2e5c23f49b7b1f91bd979ec",
+    "docs/migrations/evidence/session-completion-2026-10-19/review-retired-undo-native-green.log": "6d637522ff9ac27e615d1732db715c1ce35f6ce48dde186afbef59747b762e32",
+    "docs/migrations/evidence/session-completion-2026-10-19/review-retired-undo-web-green.log": "8445ef245d00e592bae1d86873e88668dbc7bbb1530423c5b2d1604cc24724de"
   },
   "preflight": {
     "free_space": "65 GiB available on the 478 GiB filesystem before coverage and full builds",
@@ -48,13 +54,13 @@
     "web_host": "Release build completed dandrum-trigger-native-bridge-test with the embedded production Trigger bundle.",
     "standalone": {
       "path": "build/native-session/dandrum-sampler-plugin_artefacts/Release/Standalone/Dandrum Sampler",
-      "size_bytes": 26270664,
-      "sha256": "e566dcaa08cd8cec120e16c1724d52a9550b455d73a5ff3e8c98204aafdf4c6a"
+      "size_bytes": 26266352,
+      "sha256": "849f1b93a9baa7e8008a5244ffe1593f3af490792ee687c859bf105a546a1ca3"
     },
     "vst3_binary": {
       "path": "build/native-session/dandrum-sampler-plugin_artefacts/Release/VST3/Dandrum Sampler.vst3/Contents/x86_64-linux/Dandrum Sampler.so",
-      "size_bytes": 26391184,
-      "sha256": "4b2a96b4644005288e96e77c78248359052e092cbac79fd34eda4855172f614d"
+      "size_bytes": 26386872,
+      "sha256": "60004330f7e365db94d9db4c4c710a485cc9e1de4e384a69b6caed4cf06f9f72"
     },
     "artifact_limit": "These are retained JUCE comparison artifacts inside the checkout build tree. They are not the installed offline JUCE-free beta artifacts required by the active goal."
   },
@@ -65,54 +71,55 @@
     "trigger": "5/5 passed in 92.92 seconds: cxx-trigger-native-bridge, actual trigger-web-runtime, trigger-react-shell, trigger-native-ui and trigger-native-adapter.",
     "react_detail": "The trigger shell passed TypeScript and the 70-file component guard, 95 Node tests, the production Vite build and 27 Playwright browser scenarios.",
     "webview": "The actual packaged WebView ran on DISPLAY=:10.0 and did not return unavailable-platform skip code 77.",
-    "commit_hooks": "The preceding task-3.3 evidence and spec-sync commits each passed 1,084 engine tests plus the strict coverage hook.",
-    "mutation": "Excluded by recorded user direction."
+    "commit_hooks": "Repair commit 89efa74 passed 1,084 engine tests plus the strict coverage hook. The preceding task-3.3 evidence and spec-sync commits passed the same hook.",
+    "mutation": "Excluded by recorded user direction.",
+    "review_repair": "After the dead ABI removal, cxx-plugin-instrument-session and native-session-link-graph passed 2/2 in 0.75 seconds; cxx-trigger-native-bridge and the actual trigger-web-runtime passed 2/2 in 6.74 seconds on DISPLAY=:10.0. The rebuilt sampler Standalone, VST3 and embedded Trigger bridge all linked successfully."
   },
   "coverage": {
     "tool": "cargo-llvm-cov 0.8.7, Rust-only process coverage with src/rust-engine excluded",
     "total": {
       "functions": [
         104,
-        112
+        109
       ],
       "lines": [
         1456,
-        1672
+        1594
       ],
       "regions": [
         1750,
-        2069
+        1980
       ]
     },
     "core": {
       "functions": [
         63,
-        65
+        63
       ],
       "lines": [
         666,
-        691
+        670
       ],
       "regions": [
         812,
-        843
+        821
       ]
     },
     "native_ffi": {
       "functions": [
         41,
-        47
+        46
       ],
       "lines": [
         790,
-        981
+        924
       ],
       "regions": [
         938,
-        1226
+        1159
       ]
     },
-    "classification": "Every visible missed core source line is reserve_control_request (lines 934-954), reached through the passing concrete C++ bridge and packaged React native-undo tests rather than the Rust-only coverage process. The annotated report retains all C-facade misses; major facade success, rejection and rollback behavior is covered by the Rust facade case and separate C++ consumers. Five additional core LLVM line counts are generic/instantiation accounting.",
+    "classification": "Independent review established that the previously missed reserve_control_request lines belonged to an uncalled synchronous undo ABI, not the maintained C++ or React path. Repair head 89efa74 removes that export, its binding and the private helper. The core now covers every function and has no visible missed source line; its four LLVM line counts and nine regions are generic/instantiation accounting. The annotated report retains all C-facade misses; concrete native consumers separately prove the maintained admitted-job success, rejection, recovery and rollback paths.",
     "branches": "Not instrumented.",
     "claim": "No merged cross-language 100% claim is made."
   },
@@ -121,11 +128,11 @@
     "A retry with an incomplete PATH assumption confirmed the same Node 18 setup condition. The duplicate log was discarded; the first raw setup RED is retained.",
     "The final checkpoint explicitly prepended the installed Node 22.19.0 directory and all five CTest lanes passed."
   ],
-  "refactor": "No production extraction was justified after the final tests. Accepted state, admission and publication form one cohesive transaction owner; splitting them would weaken visibility of the atomic invariant. The lifecycle test intentionally keeps its ordered editor/WebView destruction state machine together. No production code changed during task 4.1.",
+  "refactor": "Independent review exposed a real simplification: the uncalled synchronous undo ABI duplicated the maintained admitted-job transaction path and made the coverage interpretation unsound. It is removed at 89efa74, with a link-graph regression guard. Accepted state, admitted work and publication remain one cohesive transaction owner; the packaged lifecycle harness retains its ordered editor/WebView destruction state machine.",
   "specification": {
     "progress": "10/11 tasks complete after this receipt and task checkbox are committed.",
-    "canonical": "The nine instrument-session scenarios remain mapped at 618 total criteria / 379 tested / 239 unchanged todo backlog.",
-    "remaining": "Task 4.2 final independent completion review, strict gates and normal publication."
+    "canonical": "All nine instrument-session scenarios remain mapped at 618 total criteria / 379 tested / 239 unchanged todo backlog. The failed preparation/activation scenario now names the Rust invalid/ambiguous-intent preservation test and concrete C++ session consumer in addition to sample-repreparation and activation-rollback tests.",
+    "remaining": "Repeated task 4.2 independent completion review, strict gates and normal publication."
   },
   "limits": [
     "The retained native comparison still uses JUCE and therefore does not satisfy the final framework-removal goal.",
@@ -134,5 +141,12 @@
     "No complete absence-of-JUCE build/runtime dependency audit is claimed.",
     "Main remains unchanged and no merge is included."
   ],
-  "raw_evidence": "docs/migrations/evidence/session-completion-2026-10-19"
+  "raw_evidence": "docs/migrations/evidence/session-completion-2026-10-19",
+  "review_repair": {
+    "finding": "The first independent task-4.2 review failed because the receipt attributed dead reserve_control_request coverage to live consumers and because the failed preparation/activation scenario omitted two relevant proving tests.",
+    "red": "A new native link-graph assertion failed while dandrum_instrument_session_undo remained exported.",
+    "implementation": "Repair head 89efa74 removes the unused synchronous undo export, C++ declaration and private reserve_control_request helper. Maintained consumers continue through dandrum_instrument_session_admit_undo_for_connection and owned off-audio jobs.",
+    "mapping": "The failed preparation/activation scenario now also maps invalid_or_ambiguous_mapping_intents_preserve_the_accepted_instrument and tests/cpp/PluginInstrumentSessionTest.cpp.",
+    "status": "Awaiting repeated independent task-4.2 review of the repaired exact head."
+  }
 }

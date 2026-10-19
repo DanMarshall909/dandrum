@@ -1,0 +1,17 @@
+Internal ctest changing into directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session
+Test project /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session
+    Start 36: native-session-link-graph
+1/1 Test #36: native-session-link-graph ........***Failed    0.16 sec
+CMake Error at /home/dan/code/dandrum-worktrees/juce-free-host-adapters/tests/cmake/NativeSessionLinkGraph.cmake:33 (message):
+  Retired synchronous session export remains: dandrum_instrument_session_undo
+
+
+
+
+0% tests passed, 1 tests failed out of 1
+
+Total Test time (real) =   0.16 sec
+
+The following tests FAILED:
+	 36 - native-session-link-graph (Failed)
+Errors while running CTest
