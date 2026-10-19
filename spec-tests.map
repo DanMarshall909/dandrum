@@ -2574,3 +2574,48 @@ AC juce-free-clap-state :: Bounded rejected-state recovery :: Partial streams an
 AC juce-free-clap-state :: Stopped parameter synchronization :: Flush updates survive save and processing restart
   fp e79d4c5a33f9
   test rust:stopped_flush_preserves_valid_order_and_rejects_invalid_complete_batches
+
+AC instrument-session :: Instrument lifetime owns accepted editing state :: Reattachment observes the accepted session
+  fp e0d5cb328200
+  test rust:accepted_document_survives_detach_and_reattach_without_reloading_samples
+  test rust:accepted_mapping_and_native_undo_redo_publish_document_history_and_signed_audio
+
+AC instrument-session :: Instrument lifetime owns accepted editing state :: Instrument sessions remain independent
+  fp ed632269cb4c
+  test rust:accepted_mapping_and_native_undo_redo_publish_document_history_and_signed_audio
+  test cpp:tests/cpp/PluginTriggerNativeBridgeTest.cpp
+
+AC instrument-session :: Instrument lifetime owns accepted editing state :: Session core builds independently
+  fp 373e5ae3a393
+  test py:tests/python/test_engine_only_build.py
+
+AC instrument-session :: Prepared mapping and history publish coherently :: Accepted mapping edit and native undo render real samples
+  fp e717f2d789b5
+  test rust:accepted_mapping_and_native_undo_redo_publish_document_history_and_signed_audio
+  test cpp:tests/cpp/PluginTriggerNativeBridgeTest.cpp
+
+AC instrument-session :: Prepared mapping and history publish coherently :: Failed preparation or activation preserves all accepted state
+  fp 0296f9ff41d2
+  test rust:failed_sample_repreparation_preserves_the_working_document_and_sound
+  test rust:activation_failure_rolls_back_runtime_document_and_every_history_transition
+
+AC instrument-session :: Bounded admission survives editor loss :: Lost acknowledgement does not duplicate an accepted edit
+  fp 65d10ecb88ad
+  test rust:admitted_worker_survives_attachment_loss_and_retry_recovers_one_accepted_edit
+  test cpp:tests/cpp/PluginTriggerNativeBridgeTest.cpp
+
+AC instrument-session :: Bounded admission survives editor loss :: Invalid connections and concurrent edits are rejected
+  fp 514aff4c3499
+  test rust:mapping_admission_rejects_foreign_and_retired_connections
+  test rust:admitted_worker_survives_attachment_loss_and_retry_recovers_one_accepted_edit
+
+AC instrument-session :: Native history has bounded deterministic lifecycle :: Bounded history preserves undo and redo meaning
+  fp 43c87f59e443
+  test rust:terminal_request_outcomes_are_capped_at_one_hundred_twenty_eight
+  test rust:history_retains_one_hundred_entries_and_branching_preserves_then_retires_redo
+  test rust:accepted_document_replacement_resets_history_and_requests_but_preserves_host_automation
+
+AC instrument-session :: Actual editor destruction preserves instrument work :: Destroyed native WebView reconnects and undoes
+  fp b28c67e1b78b
+  test cpp:tests/cpp/PluginTriggerNativeBridgeTest.cpp
+  test cpp:tests/cpp/PluginTriggerWebRuntimeTest.h

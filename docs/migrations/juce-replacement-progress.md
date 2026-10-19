@@ -428,3 +428,10 @@ Standalone/VST3 artifacts or absence-of-JUCE audit required by the beta goal.
 Tasks 4.1–4.2 retain the complete verification and acceptance publication for
 this OpenSpec increment. Mutation remains excluded by the recorded user
 direction.
+
+All nine session scenarios are now synchronized into the canonical
+`instrument-session` specification and mapped only to their proving Rust,
+engine-only build, native bridge or packaged WebView tests. Strict validation
+passes the scoped change and all 51 canonical specs. The acceptance map passes
+with **618 scenarios / 379 mapped / 239 unchanged backlog entries**. The full
+task-4.1 checkpoint and task-4.2 completion/publication review remain open.

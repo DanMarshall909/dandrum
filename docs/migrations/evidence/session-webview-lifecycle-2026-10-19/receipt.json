@@ -11,12 +11,15 @@
     "tests/cpp/PluginTriggerNativeBridgeTest.cpp": "aacba1c497078231dd76c208609e4eae97e3394efe2e45427255eebe35522cc4",
     "tests/cpp/PluginTriggerWebRuntimeTest.h": "adc808b6dc83c68d270ebdc6bb055f2fcca26be049d9f826667e742fc8afbe33",
     "openspec/changes/add-persistent-instrument-session/tasks.md": "55762c224bfa506f069add070a50fe2fcbbd130c3b6629cf17b2e586d03667d4",
-    "docs/migrations/juce-replacement-progress.md": "40d71fec40ae86a42149817b9389b47139a62aa1baae989880bbea875f286bbb",
+    "docs/migrations/juce-replacement-progress.md": "1aed0edc751acb4621efd0997f25514d81594ac25f491285d8ccad6ff0804cbe",
     "docs/migrations/evidence/session-webview-lifecycle-2026-10-19/webview-runtime.log": "509cba6cb7b5bb39f41a445ed0dc9336d5767b3908d7596f02da2ea9d273c29e",
     "docs/migrations/evidence/session-webview-lifecycle-2026-10-19/native-boundaries.log": "c3239eee7844e7efe5dbfd5b684db74f3c778272cb7627740aa67d17c44d8230",
     "docs/migrations/evidence/session-webview-lifecycle-2026-10-19/native-boundaries-setup-red.log": "09e95f8cb1445b6399d40236223824e4a70c2a25768731aa96107e0b2b1512e2",
     "docs/migrations/evidence/session-webview-lifecycle-2026-10-19/native-build-setup-incomplete.log": "8562e6e33bccfcb14c3d2135bbb124292bdcbf6e0da0dc7bf9cfd82f9c7ad916",
-    "docs/migrations/evidence/session-webview-lifecycle-2026-10-19/review.md": "df496741d71708ac7f87fbe411522f3953bf001bd00c2691694fba8f3cbaecb8"
+    "docs/migrations/evidence/session-webview-lifecycle-2026-10-19/review.md": "df496741d71708ac7f87fbe411522f3953bf001bd00c2691694fba8f3cbaecb8",
+    "openspec/specs/instrument-session/spec.md": "309c9bce5ace132705755d4b098655f82070424504f1468bd154efc00bbff93a",
+    "spec-tests.map": "619b3b90d567136b524c3e35f0a43d8250ee0017cd95bef6f7e57dcbf4c172d7",
+    "docs/migrations/evidence/session-webview-lifecycle-2026-10-19/specification.log": "d97102430373c34b33377c650c9d5704892c55d2376fc0a9e162064481703f84"
   },
   "red": [
     "Opening the actual editor from the headless bridge executable initially terminated through SIGPIPE, demonstrating that the complete editor lifecycle belongs in the existing display-gated packaged WebView lane.",
@@ -44,8 +47,13 @@
     "boundary": "This validates the persistent-session lifecycle before framework cutover; it is not evidence for a JUCE-free editor artifact, native device driver, installed package or DAW host."
   },
   "specification": {
-    "task_progress": "9/11 complete after the actual packaged runtime, adjacent boundaries and independent review passed.",
-    "sync": "Canonical synchronization and acceptance-map publication are intentionally recorded in the following focused commit."
+    "task_progress": "9/11 complete; task 3.3 was checked after the actual packaged runtime, adjacent boundaries and independent review passed.",
+    "sync": "All nine proposed session scenarios are synchronized into the canonical instrument-session specification and mapped only to tests that prove them.",
+    "strict_change_validation": "passed",
+    "strict_canonical_specs": "51/51 passed",
+    "acceptance_criteria": 618,
+    "mapped": 379,
+    "ratchet_todo": 239
   },
   "limits": [
     "Task 4.1 still owns the complete meaningful session coverage/refactoring and full required Rust/native/JavaScript/build checkpoint.",
