@@ -345,3 +345,47 @@ migrated. Tasks 3.2–3.3 retain the typed React contract, native undo command,
 actual WebView destruction/recreation, reply recovery and two-instance proof.
 No canonical scenario is synced, no main merge is included, selected native
 desktop/DAW proof remains open, and the full JUCE-free beta stays active.
+
+## Typed session connection and React mapping — 19 October 2026
+
+Task 3.2 exposes the Rust-owned session contract through the concrete sampler
+processor and the canonical Trigger React adapter. Contract version 1 carries
+instrument, attachment, revision and next-request identities as canonical
+unsigned decimal strings, preserving values beyond JavaScript's safe integer
+range. It also publishes the exact limits of 16 attachments, 100 journal
+entries, 128 retained outcomes and one active structural request. Rust retains
+reference-counted lifetime identity internally; the monotonic `u64` values are
+transport identities rather than pointers or operating-system handles.
+
+Each `InstrumentHostWebBridge` now opens one disposable native connection and
+retires it by scope cleanup. The bridge accepts exact map/zone identities for a
+bounded key-range command, returns string request tickets, exposes terminal
+status, and runs native undo through the same processor-owned off-audio worker
+and activation path. The real bridge proof maps the Advanced Drum Kit kick from
+MIDI 36 to 60, renders literal signed `-0.5` at 60, then invokes native undo and
+restores `-0.5` at 36. The processor session and native link-graph regressions
+remain passing.
+
+The React projection retains the original native map and zone IDs separately
+from editor rule IDs. Only key-range `updateRule` operations with those native
+identities bypass the page closure journal; unmigrated operations and the mock
+preview retain the established path. The store orders native and local undo
+entries with numeric sequence tokens, without placing an executable closure in
+native history. Runtime validation rejects changed versions, noncanonical or
+overflowing identities and altered limits. Failed admitted work refreshes the
+consumed request high-water mark before retry, so the next command cannot reuse
+a retired identity.
+
+All 29 session crate tests, 89 Trigger tests, TypeScript/component checks, the
+native production bundle, three Trigger CTest boundaries and the concrete C++
+session/link checks pass. Each implementation commit's strict hook also passed
+all 1,084 engine tests and coverage. Mutation remains excluded by the recorded
+user direction. Portable commands and source hashes are retained under
+`evidence/session-react-contract-2026-10-19/`.
+
+This increment does not claim the task 3.3 destruction/recreation proof. The
+actual packaged WebView must still be destroyed around lost acknowledgement,
+reattach, recover undo and prove signed output while a second instance remains
+unchanged. No canonical scenario is synchronized yet; selected native desktop
+and named DAW acceptance, the JUCE-free installed artifacts and the full beta
+remain open.

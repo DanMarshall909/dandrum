@@ -1,0 +1,4 @@
+Change 'add-persistent-instrument-session' is valid
+
+Acceptance criteria: 609 | mapped-to-tests: 370 | ratchet backlog (todo): 239
+Spec-coverage check passed (with ratchet backlog still to burn down).

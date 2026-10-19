@@ -13,7 +13,7 @@
 ## 3. Concrete host and React adoption
 
 - [x] 3.1 Connect the same session owner to a real native host using its off-audio preparation and reader handoff; prove held readers, failed activation, editor-independent worker completion and coherent accepted metadata/history at the actual consumer boundary. Verify the native library link graph.
-- [ ] 3.2 Expose one authoritative typed/versioned connection contract with lossless IDs and bounded requests/outcomes; connect the native map/zone identities, mapping command and native undo in React while preserving preview behavior and bypassing local history only for migrated operations.
+- [x] 3.2 Expose one authoritative typed/versioned connection contract with lossless IDs and bounded requests/outcomes; connect the native map/zone identities, mapping command and native undo in React while preserving preview behavior and bypassing local history only for migrated operations.
 - [ ] 3.3 Extend the real native bridge and original packaged WebView tests for complete editor destruction/recreation, lost reply, recovered undo and signed sample output with two instances; inspect the actual runtime and retain any unavailable platform cells explicitly.
 
 ## 4. Verification and publication

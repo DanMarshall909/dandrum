@@ -1,0 +1,882 @@
+Start testing: Oct 19 16:36 AEST
+----------------------------------------------------------
+66/97 Testing: trigger-react-shell
+66/97 Test: trigger-react-shell
+Command: "/usr/bin/node" "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/tests/js/TriggerReactShellTest.mjs"
+Directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/web-host
+"trigger-react-shell" start time: Oct 19 16:36 AEST
+Output:
+----------------------------------------------------------
+
+> dandrum-trigger@0.1.0 check
+> tsc --noEmit && node scripts/check-components.mjs
+
+70 authored React files checked; largest components/pages/SamplePage.jsx: 99 lines.
+
+> dandrum-trigger@0.1.0 test
+> node --test tests/*.test.mjs
+
+TAP version 13
+# Subtest: subtree deletion and structural undo restore sounds, mapping and order without restoring unrelated live controls
+ok 1 - subtree deletion and structural undo restore sounds, mapping and order without restoring unrelated live controls
+  ---
+  duration_ms: 68.540696
+  type: 'test'
+  ...
+# Subtest: regions and slice edits keep valid ranges and undo restores removed mapping
+ok 2 - regions and slice edits keep valid ranges and undo restores removed mapping
+  ---
+  duration_ms: 60.876219
+  type: 'test'
+  ...
+# Subtest: selectors, modulation, macro bindings and processors accept edits and enforce fixed-route safety
+ok 3 - selectors, modulation, macro bindings and processors accept edits and enforce fixed-route safety
+  ---
+  duration_ms: 80.821789
+  type: 'test'
+  ...
+# Subtest: asset loading, analysis failure/cancellation and silent voices report their real mock state
+ok 4 - asset loading, analysis failure/cancellation and silent voices report their real mock state
+  ---
+  duration_ms: 24.360028
+  type: 'test'
+  ...
+# Subtest: component convention guard names oversized files, engine imports and broken JSX instead of treating setup errors as failures
+ok 5 - component convention guard names oversized files, engine imports and broken JSX instead of treating setup errors as failures
+  ---
+  duration_ms: 959.997091
+  type: 'test'
+  ...
+# Subtest: the declared adapter alone supports edit, undo, redo and telemetry subscription
+ok 6 - the declared adapter alone supports edit, undo, redo and telemetry subscription
+  ---
+  duration_ms: 21.466476
+  type: 'test'
+  ...
+# Subtest: mock diagnostics are explicitly injected separately from the adapter
+ok 7 - mock diagnostics are explicitly injected separately from the adapter
+  ---
+  duration_ms: 2.526206
+  type: 'test'
+  ...
+# Subtest: typed parameter values retain their displayed units and canonical centres
+ok 8 - typed parameter values retain their displayed units and canonical centres
+  ---
+  duration_ms: 1.873172
+  type: 'test'
+  ...
+# Subtest: modulator percentage entries remain percentages while time and rate entries use seconds and hertz
+ok 9 - modulator percentage entries remain percentages while time and rate entries use seconds and hertz
+  ---
+  duration_ms: 5.778106
+  type: 'test'
+  ...
+# Subtest: an operation undo preserves other fields within the same module, node, macro and candidate
+ok 10 - an operation undo preserves other fields within the same module, node, macro and candidate
+  ---
+  duration_ms: 67.824213
+  type: 'test'
+  ...
+# Subtest: envelope handles coincide with the drawn corners and point edits change the actual shape
+ok 11 - envelope handles coincide with the drawn corners and point edits change the actual shape
+  ---
+  duration_ms: 51.266991
+  type: 'test'
+  ...
+# Subtest: Space and source assignment use the displayed default selection, including nested alternates and patch sources
+ok 12 - Space and source assignment use the displayed default selection, including nested alternates and patch sources
+  ---
+  duration_ms: 27.998363
+  type: 'test'
+  ...
+# Subtest: catalog text, shape and value controls bind to individual stories and model callbacks log without logging render reads
+ok 13 - catalog text, shape and value controls bind to individual stories and model callbacks log without logging render reads
+  ---
+  duration_ms: 21.260417
+  type: 'test'
+  ...
+# Subtest: zero-crossing snap chooses a signed fixture crossing rather than a rounded time grid
+ok 14 - zero-crossing snap chooses a signed fixture crossing rather than a rounded time grid
+  ---
+  duration_ms: 2.961722
+  type: 'test'
+  ...
+# Subtest: undoing a candidate reorder retains unrelated current candidate values
+ok 15 - undoing a candidate reorder retains unrelated current candidate values
+  ---
+  duration_ms: 12.948816
+  type: 'test'
+  ...
+# Subtest: envelope millisecond, second, decibel and percentage fields preserve canonical values
+ok 16 - envelope millisecond, second, decibel and percentage fields preserve canonical values
+  ---
+  duration_ms: 0.302408
+  type: 'test'
+  ...
+# Subtest: Empty startup loads the complete Felt Kit behind preparing and ready events
+ok 17 - Empty startup loads the complete Felt Kit behind preparing and ready events
+  ---
+  duration_ms: 9.508849
+  type: 'test'
+  ...
+# Subtest: a knob gesture is one named reversible command and redo preserves its final value
+ok 18 - a knob gesture is one named reversible command and redo preserves its final value
+  ---
+  duration_ms: 16.769931
+  type: 'test'
+  ...
+# Subtest: explicit pitch, MIDI, dynamic, velocity and RR tokens are interpreted without treating unrelated digits as notes
+ok 19 - explicit pitch, MIDI, dynamic, velocity and RR tokens are interpreted without treating unrelated digits as notes
+  ---
+  duration_ms: 3.218419
+  type: 'test'
+  ...
+# Subtest: import sequential is one reversible operation and retains file sources
+ok 20 - import sequential is one reversible operation and retains file sources
+  ---
+  duration_ms: 27.527507
+  type: 'test'
+  ...
+# Subtest: import root-velocity is one reversible operation and retains file sources
+ok 21 - import root-velocity is one reversible operation and retains file sources
+  ---
+  duration_ms: 16.285185
+  type: 'test'
+  ...
+# Subtest: import stack is one reversible operation and retains file sources
+ok 22 - import stack is one reversible operation and retains file sources
+  ---
+  duration_ms: 15.913628
+  type: 'test'
+  ...
+# Subtest: import rr is one reversible operation and retains file sources
+ok 23 - import rr is one reversible operation and retains file sources
+  ---
+  duration_ms: 15.053367
+  type: 'test'
+  ...
+# Subtest: import replacement undo and redo keep the asset, region and Source history consistent
+ok 24 - import replacement undo and redo keep the asset, region and Source history consistent
+  ---
+  duration_ms: 28.135221
+  type: 'test'
+  ...
+# Subtest: mapping deletion, paste and neighbour edits change accepted rules and undo preserves unrelated parameters
+ok 25 - mapping deletion, paste and neighbour edits change accepted rules and undo preserves unrelated parameters
+  ---
+  duration_ms: 54.407601
+  type: 'test'
+  ...
+# Subtest: replace paste trims note and velocity rectangles without removing non-overlapping velocity layers
+ok 26 - replace paste trims note and velocity rectangles without removing non-overlapping velocity layers
+  ---
+  duration_ms: 21.166858
+  type: 'test'
+  ...
+# Subtest: Lush and a selected nested candidate preview their own source without triggering neighbouring rules
+ok 27 - Lush and a selected nested candidate preview their own source without triggering neighbouring rules
+  ---
+  duration_ms: 50.065182
+  type: 'test'
+  ...
+# Subtest: Voice module inspector and knob share Cutoff, including undo in either direction and added module sections
+ok 28 - Voice module inspector and knob share Cutoff, including undo in either direction and added module sections
+  ---
+  duration_ms: 64.150288
+  type: 'test'
+  ...
+# Subtest: Mapping toolbar and inspector edit real bounds, duplication, sequential mapping and safe empty selection
+ok 29 - Mapping toolbar and inspector edit real bounds, duplication, sequential mapping and safe empty selection
+  ---
+  duration_ms: 84.667272
+  type: 'test'
+  ...
+# Subtest: Picked modulator inspector edits its own route; selected slice Space auditions its actual region
+ok 30 - Picked modulator inspector edits its own route; selected slice Space auditions its actual region
+  ---
+  duration_ms: 22.020399
+  type: 'test'
+  ...
+# Subtest: Source assignment creates usable regions and sound rules; candidate file imports join the specified selector and undo preserves it
+ok 31 - Source assignment creates usable regions and sound rules; candidate file imports join the specified selector and undo preserves it
+  ---
+  duration_ms: 25.732135
+  type: 'test'
+  ...
+# Subtest: Grid and Even slicing produce distinct accepted boundaries, retain shared Slice history and undo restores its count
+ok 32 - Grid and Even slicing produce distinct accepted boundaries, retain shared Slice history and undo restores its count
+  ---
+  duration_ms: 25.242809
+  type: 'test'
+  ...
+# Subtest: Cancelled parameter gesture restores its starting value and removes its command; rendered peak sources preserve original assets
+ok 33 - Cancelled parameter gesture restores its starting value and removes its command; rendered peak sources preserve original assets
+  ---
+  duration_ms: 9.966025
+  type: 'test'
+  ...
+# Subtest: every native exposed React knob invokes its actual host parameter with normalized value and generation
+ok 34 - every native exposed React knob invokes its actual host parameter with normalized value and generation
+  ---
+  duration_ms: 248.790147
+  type: 'test'
+  ...
+# Subtest: native knob displayed units and typed values use the actual declared control range
+ok 35 - native knob displayed units and typed values use the actual declared control range
+  ---
+  duration_ms: 12.779478
+  type: 'test'
+  ...
+# Subtest: a React knob gesture brackets queued native writes once and preserves the last accepted value
+ok 36 - a React knob gesture brackets queued native writes once and preserves the last accepted value
+  ---
+  duration_ms: 13.945787
+  type: 'test'
+  ...
+# Subtest: native document projects exact file paths, real frame geometry, public controls and round robin candidates
+ok 37 - native document projects exact file paths, real frame geometry, public controls and round robin candidates
+  ---
+  duration_ms: 57.71129
+  type: 'test'
+  ...
+# Subtest: compiler preserves real graph controls and metadata while applying regions, map candidates and bounded polyphony
+ok 38 - compiler preserves real graph controls and metadata while applying regions, map candidates and bounded polyphony
+  ---
+  duration_ms: 68.715495
+  type: 'test'
+  ...
+# Subtest: compiler refuses unsupported DSP, synthetic assets, cyclic selectors and simulated history
+ok 39 - compiler refuses unsupported DSP, synthetic assets, cyclic selectors and simulated history
+  ---
+  duration_ms: 131.110769
+  type: 'test'
+  ...
+# Subtest: compiler refuses overlapping stacked rules, unsupported loop modes and unmapped native controls
+ok 40 - compiler refuses overlapping stacked rules, unsupported loop modes and unmapped native controls
+  ---
+  duration_ms: 72.942314
+  type: 'test'
+  ...
+# Subtest: forward loop and pitch/gain candidate edits retain actual units and weighted selection
+ok 41 - forward loop and pitch/gain candidate edits retain actual units and weighted selection
+  ---
+  duration_ms: 24.569246
+  type: 'test'
+  ...
+# Subtest: mapping roots compile to distinct playable regions while unchanged drums retain native no-root semantics
+ok 42 - mapping roots compile to distinct playable regions while unchanged drums retain native no-root semantics
+  ---
+  duration_ms: 45.275668
+  type: 'test'
+  ...
+# Subtest: native round robin projection rejects candidates whose bounds cannot be represented by one rule
+ok 43 - native round robin projection rejects candidates whose bounds cannot be represented by one rule
+  ---
+  duration_ms: 7.874335
+  type: 'test'
+  ...
+# Subtest: native compiler rejects nested selection policies instead of flattening their audible behavior
+ok 44 - native compiler rejects nested selection policies instead of flattening their audible behavior
+  ---
+  duration_ms: 11.144624
+  type: 'test'
+  ...
+# Subtest: native graph sample paths are canonical authoring-root relatives and outside-root files are rejected
+ok 45 - native graph sample paths are canonical authoring-root relatives and outside-root files are rejected
+  ---
+  duration_ms: 45.742994
+  type: 'test'
+  ...
+# Subtest: empty native patch compiles a real silent mixer graph without an invalid empty sample map
+ok 46 - empty native patch compiles a real silent mixer graph without an invalid empty sample map
+  ---
+  duration_ms: 11.51614
+  type: 'test'
+  ...
+# Subtest: native window title follows accepted patch names, undo and external replacement
+ok 47 - native window title follows accepted patch names, undo and external replacement
+  ---
+  duration_ms: 196.927641
+  type: 'test'
+  ...
+# Subtest: a window title failure does not reject an already accepted patch edit
+ok 48 - a window title failure does not reject an already accepted patch edit
+  ---
+  duration_ms: 45.806773
+  type: 'test'
+  ...
+# Subtest: native edits await real publication; failed/stale preparations retain patch and expose failure
+ok 49 - native edits await real publication; failed/stale preparations retain patch and expose failure
+  ---
+  duration_ms: 28.168231
+  type: 'test'
+  ...
+# Subtest: structural commands serialize through host and reversible operands compile real map changes
+ok 50 - structural commands serialize through host and reversible operands compile real map changes
+  ---
+  duration_ms: 54.57873
+  type: 'test'
+  ...
+# Subtest: live writes and notes carry current generation and use normalized values without phantom controls
+ok 51 - live writes and notes carry current generation and use normalized values without phantom controls
+  ---
+  duration_ms: 9.40648
+  type: 'test'
+  ...
+# Subtest: real meter packets are acknowledged, stale data dropped and waveform comes only from native reduction
+ok 52 - real meter packets are acknowledged, stale data dropped and waveform comes only from native reduction
+  ---
+  duration_ms: 9.802886
+  type: 'test'
+  ...
+# Subtest: native import preserves actual metadata and commits real file URIs atomically, without mock voice additions
+ok 53 - native import preserves actual metadata and commits real file URIs atomically, without mock voice additions
+  ---
+  duration_ms: 39.641152
+  type: 'test'
+  ...
+# Subtest: native polling waits for completion and close prevents late prepared publication
+ok 54 - native polling waits for completion and close prevents late prepared publication
+  ---
+  duration_ms: 46.003711
+  type: 'test'
+  ...
+# Subtest: host automation reconciles actual normalized native controls and ignores retired generations
+ok 55 - host automation reconciles actual normalized native controls and ignores retired generations
+  ---
+  duration_ms: 33.837507
+  type: 'test'
+  ...
+# Subtest: unsupported audio edits reject before native admission and waveform rejections create no fake peaks
+ok 56 - unsupported audio edits reject before native admission and waveform rejections create no fake peaks
+  ---
+  duration_ms: 15.66232
+  type: 'test'
+  ...
+# Subtest: native background telemetry and note heartbeat stop cleanly with the editor
+ok 57 - native background telemetry and note heartbeat stop cleanly with the editor
+  ---
+  duration_ms: 98.873956
+  type: 'test'
+  ...
+# Subtest: native preparation has a finite poll budget and preserves accepted patch on timeout
+ok 58 - native preparation has a finite poll budget and preserves accepted patch on timeout
+  ---
+  duration_ms: 25.310569
+  type: 'test'
+  ...
+# Subtest: successful replacement retires local note intent and stale waveform work without false editor failures
+ok 59 - successful replacement retires local note intent and stale waveform work without false editor failures
+  ---
+  duration_ms: 27.379279
+  type: 'test'
+  ...
+# Subtest: new empty patch has no phantom controls and importing a staged sample restores an accepted sampler graph
+ok 60 - new empty patch has no phantom controls and importing a staged sample restores an accepted sampler graph
+  ---
+  duration_ms: 31.760077
+  type: 'test'
+  ...
+# Subtest: a newer device generation refreshes native session and controls while retaining editor undo and selection
+ok 61 - a newer device generation refreshes native session and controls while retaining editor undo and selection
+  ---
+  duration_ms: 38.912289
+  type: 'test'
+  ...
+# Subtest: external graph replacement retires old history and selections while preserving editor layout
+ok 62 - external graph replacement retires old history and selections while preserving editor layout
+  ---
+  duration_ms: 36.75243
+  type: 'test'
+  ...
+# Subtest: own native preparation defers generation events and preserves the newly accepted command history
+ok 63 - own native preparation defers generation events and preserves the newly accepted command history
+  ---
+  duration_ms: 45.041881
+  type: 'test'
+  ...
+# Subtest: native initialization retries one rejected meter subscription and refuses to claim readiness if both fail
+ok 64 - native initialization retries one rejected meter subscription and refuses to claim readiness if both fail
+  ---
+  duration_ms: 14.202985
+  type: 'test'
+  ...
+# Subtest: native editor resize uses only the requested size mode and reports failed admission
+ok 65 - native editor resize uses only the requested size mode and reports failed admission
+  ---
+  duration_ms: 7.035023
+  type: 'test'
+  ...
+# Subtest: migrated key mapping uses native identities and native undo without a local closure entry
+ok 66 - migrated key mapping uses native identities and native undo without a local closure entry
+  ---
+  duration_ms: 21.859052
+  type: 'test'
+  ...
+# Subtest: a failed native session command refreshes the consumed request identity before retry
+ok 67 - a failed native session command refreshes the consumed request identity before retry
+  ---
+  duration_ms: 21.362897
+  type: 'test'
+  ...
+# Subtest: preparation publishes its phase while accepted data remains unchanged until ready
+ok 68 - preparation publishes its phase while accepted data remains unchanged until ready
+  ---
+  duration_ms: 13.036165
+  type: 'test'
+  ...
+# Subtest: closing during preparation cancels late publication and command history
+ok 69 - closing during preparation cancels late publication and command history
+  ---
+  duration_ms: 1.374537
+  type: 'test'
+  ...
+# Subtest: overlapping preparations publish accepted patches in request order with paired phases
+ok 70 - overlapping preparations publish accepted patches in request order with paired phases
+  ---
+  duration_ms: 6.30567
+  type: 'test'
+  ...
+# Subtest: a visible Cutoff edit enters the command history and the display follows undo and redo
+ok 71 - a visible Cutoff edit enters the command history and the display follows undo and redo
+  ---
+  duration_ms: 57.906657
+  type: 'test'
+  ...
+# Subtest: native frames fit the host viewport at readable size while browser layout dimensions remain exact
+ok 72 - native frames fit the host viewport at readable size while browser layout dimensions remain exact
+  ---
+  duration_ms: 55.52474
+  type: 'test'
+  ...
+# Subtest: native size choices resize the host and reopening restores the selected full layout
+ok 73 - native size choices resize the host and reopening restores the selected full layout
+  ---
+  duration_ms: 61.380854
+  type: 'test'
+  ...
+# Subtest: versioned session connection preserves unsigned 64-bit identities as decimal strings
+ok 74 - versioned session connection preserves unsigned 64-bit identities as decimal strings
+  ---
+  duration_ms: 2.329978
+  type: 'test'
+  ...
+# Subtest: native projection retains exact map and zone identities independently of its editor rule id
+ok 75 - native projection retains exact map and zone identities independently of its editor rule id
+  ---
+  duration_ms: 42.086549
+  type: 'test'
+  ...
+# Subtest: slice marker, division, mapping and bulk properties publish atomically and undo restores regions and notes
+ok 76 - slice marker, division, mapping and bulk properties publish atomically and undo restores regions and notes
+  ---
+  duration_ms: 82.888139
+  type: 'test'
+  ...
+# Subtest: history bypass changes only its owning region and collapse retains the original source with reversible operands
+ok 77 - history bypass changes only its owning region and collapse retains the original source with reversible operands
+  ---
+  duration_ms: 47.541057
+  type: 'test'
+  ...
+# Subtest: Slice history owns marker counts, preserves manual identities on bypass, and reverses count edits and deletion
+ok 78 - Slice history owns marker counts, preserves manual identities on bypass, and reverses count edits and deletion
+  ---
+  duration_ms: 50.602697
+  type: 'test'
+  ...
+# Subtest: initial slice bypass preserves the supplied nonuniform regions; edits and collapse retain coherent operation operands
+ok 79 - initial slice bypass preserves the supplied nonuniform regions; edits and collapse retain coherent operation operands
+  ---
+  duration_ms: 54.193903
+  type: 'test'
+  ...
+# Subtest: Slice operation regenerates from distinct grid/transient markers and rejects unsupported density without publishing
+ok 80 - Slice operation regenerates from distinct grid/transient markers and rejects unsupported density without publishing
+  ---
+  duration_ms: 12.132135
+  type: 'test'
+  ...
+# Subtest: newly imported slicing creates an owning source stack and count edits reject invalid mapping atomically
+ok 81 - newly imported slicing creates an owning source stack and count edits reject invalid mapping atomically
+  ---
+  duration_ms: 612.873243
+  type: 'test'
+  ...
+# Subtest: rapid changes merge through 600ms, separate gestures and controls keep their own undo
+ok 82 - rapid changes merge through 600ms, separate gestures and controls keep their own undo
+  ---
+  duration_ms: 28.991824
+  type: 'test'
+  ...
+# Subtest: a failed prepared command leaves history and patch operands available for retry
+ok 83 - a failed prepared command leaves history and patch operands available for retry
+  ---
+  duration_ms: 15.204065
+  type: 'test'
+  ...
+# Subtest: navigation and layout use one editor state without resetting the chosen size
+ok 84 - navigation and layout use one editor state without resetting the chosen size
+  ---
+  duration_ms: 32.355981
+  type: 'test'
+  ...
+# Subtest: successful replacement clears history while a failed load preserves the accepted edited patch
+ok 85 - successful replacement clears history while a failed load preserves the accepted edited patch
+  ---
+  duration_ms: 12.217464
+  type: 'test'
+  ...
+# Subtest: cancelling a gesture waits for prepared edits and restores only that gesture; separate prepared gestures do not merge
+ok 86 - cancelling a gesture waits for prepared edits and restores only that gesture; separate prepared gestures do not merge
+  ---
+  duration_ms: 52.027904
+  type: 'test'
+  ...
+# Subtest: parameter gestures queued behind preparation undo and redo their accepted values in order
+ok 87 - parameter gestures queued behind preparation undo and redo their accepted values in order
+  ---
+  duration_ms: 33.235083
+  type: 'test'
+  ...
+# Subtest: stack, per-note round robin, candidate mutes and missing fallback produce usable silent voice feedback
+ok 88 - stack, per-note round robin, candidate mutes and missing fallback produce usable silent voice feedback
+  ---
+  duration_ms: 19.447475
+  type: 'test'
+  ...
+# Subtest: replacement resets active feedback and continues updates outside the editor store
+ok 89 - replacement resets active feedback and continues updates outside the editor store
+  ---
+  duration_ms: 4.487038
+  type: 'test'
+  ...
+1..89
+# tests 89
+# suites 0
+# pass 89
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1008.877065
+
+> dandrum-trigger@0.1.0 build
+> vite build
+
+vite v6.4.4 building for production...
+transforming...
+✓ 244 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                          0.60 kB │ gzip:   0.33 kB
+dist/catalog.html                        0.68 kB │ gzip:   0.34 kB
+dist/assets/catalog-D5WtGZ3f.css         2.03 kB │ gzip:   0.79 kB
+dist/assets/styles-VRZ06cQx.css         11.02 kB │ gzip:   3.22 kB
+dist/assets/catalog-DJIeot4j.js         17.81 kB │ gzip:   6.73 kB
+dist/assets/shell-Dn73wFA1.js           39.04 kB │ gzip:  13.13 kB
+dist/assets/design-system-IiESn_cW.js  103.65 kB │ gzip:  26.54 kB
+dist/assets/react-runtime-BB0E8YcQ.js  322.57 kB │ gzip: 100.29 kB
+dist/assets/styles-gpTslNT9.js         346.63 kB │ gzip:  98.83 kB
+✓ built in 1.91s
+
+> dandrum-trigger@0.1.0 test:browser
+> playwright test
+
+[WebServer] (node:961460) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 27 tests using 1 worker
+
+(node:961508) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/browser/catalog.spec.mjs:2:1 › every public component renders independently in all nine catalog states, with editable props and width/background controls (21.1s)
+  ✓   2 tests/browser/editing.spec.mjs:4:1 › supplied knob drawing supports full-range drag, fine mode, typing and default reset with separate gesture undo (1.5s)
+  ✓   3 tests/browser/editing.spec.mjs:19:1 › sample handles and playback edit the accepted region and undo follows navigation (1.6s)
+  ✓   4 tests/browser/editing.spec.mjs:29:1 › multi-file import offers all mapping policies, shows filename interpretation and undo restores Empty (2.0s)
+  ✓   5 tests/browser/frame.spec.mjs:3:1 › the supplied workspaces and frame controls remain reachable (1.7s)
+  ✓   6 tests/browser/instrument.spec.mjs:3:1 › selector policies, crossfade and candidate mute/solo are accepted edits and undo updates their controls (2.1s)
+  ✓   7 tests/browser/instrument.spec.mjs:14:1 › voice module modes, voice policy, envelope values and template order use the model (2.3s)
+  ✓   8 tests/browser/instrument.spec.mjs:24:1 › routing inheritance, sends, graph, processor add and bypass are editable through the reused widgets (2.2s)
+  ✓   9 tests/browser/log-drawer.spec.mjs:20:1 › event log inclusion matches names, kinds and payload text without changing recorded rows (1.4s)
+  ✓  10 tests/browser/log-drawer.spec.mjs:37:1 › event log exclusions hide matching rows, combine with inclusion and reveal retained events when cleared (1.8s)
+  ✓  11 tests/browser/log-drawer.spec.mjs:65:1 › event log filters stay reachable within each editor width and Clear removes recorded matches (2.1s)
+  ✓  12 tests/browser/modulation.spec.mjs:3:1 › modulation amount, grouping, bypass and nested control menus reflect accepted routes and undo (2.4s)
+  ✓  13 tests/browser/modulation.spec.mjs:12:1 › macro inspector edits value, accepts MIDI learn, binds a destination and renames through real operations (2.2s)
+  ✓  14 tests/browser/patch.spec.mjs:3:1 › New empty patch replaces the accepted preset and returns the editor to Empty (985ms)
+  ✓  15 tests/browser/patch.spec.mjs:16:1 › Reload asks before discarding edits and Cancel preserves the patch and undo (1.6s)
+  ✓  16 tests/browser/runtime.spec.mjs:3:1 › computer keys drive silent voice telemetry and the event drawer switches and filter work (1.9s)
+  ✓  17 tests/browser/shared-controls.spec.mjs:3:1 › every processor and add button stays exposed at minimum and default sizes (1.2s)
+  ✓  18 tests/browser/shared-controls.spec.mjs:13:1 › editing and confirming displayed envelope units preserves tiny durations and sustain, while real edits update the curve (1.3s)
+  ✓  19 tests/browser/shared-controls.spec.mjs:23:1 › composed processor knobs share context controls and synth source menus explain asset-only actions (1.2s)
+  ✓  20 tests/browser/shared-controls.spec.mjs:30:1 › slice history inspector edits the same markers and mapping and bypass restores their identities (1.7s)
+  ✓  21 tests/browser/shared-controls.spec.mjs:41:1 › a narrow browser preserves the native minimum editor and anchors patch menus inside it (751ms)
+  ✓  22 tests/browser/shared-controls.spec.mjs:52:1 › a cancelled shared knob gesture restores the accepted value and does not add undo (917ms)
+  ✓  23 tests/browser/shell.spec.mjs:2:1 › a visible parameter edit enables named undo and restores the previous value (961ms)
+  ✓  24 tests/browser/slices.spec.mjs:3:1 › transient results require explicit apply, undo restores eight slices and failed or cancelled jobs preserve them (4.0s)
+  ✓  25 tests/browser/slices.spec.mjs:14:1 › slice selection, marker editing, bulk properties and sample history use real undoable operations (2.0s)
+  ✓  26 tests/browser/states.spec.mjs:3:1 › all 24 supplied states are reached through ordinary actions and mock switches, with actual loading and recovery (7.6s)
+(node:966808) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  27 tests/browser/native-frame.spec.mjs:6:1 › native backend status stays in the header and the editor fits actual host viewports (1.9s)
+
+  27 passed (1.3m)
+<end of output>
+Test time =  80.98 sec
+----------------------------------------------------------
+Test Passed.
+"trigger-react-shell" end time: Oct 19 16:37 AEST
+"trigger-react-shell" time elapsed: 00:01:20
+----------------------------------------------------------
+
+94/97 Testing: trigger-native-ui
+94/97 Test: trigger-native-ui
+Command: "/usr/bin/node" "--test" "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/tests/js/TriggerNativeUiTest.mjs"
+Directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/web-host
+"trigger-native-ui" start time: Oct 19 16:37 AEST
+Output:
+----------------------------------------------------------
+TAP version 13
+# Subtest: native source metadata does not display an invented zero-bit format
+ok 1 - native source metadata does not display an invented zero-bit format
+  ---
+  duration_ms: 60.330484
+  ...
+# Subtest: native sample choice preserves decoded file metadata through the mapping dialog
+ok 2 - native sample choice preserves decoded file metadata through the mapping dialog
+  ---
+  duration_ms: 1.0551
+  ...
+# Subtest: cancelled native chooser does not create an editor operation
+ok 3 - cancelled native chooser does not create an editor operation
+  ---
+  duration_ms: 0.125589
+  ...
+# Subtest: native chooser failure is visible and preserves the editor patch
+ok 4 - native chooser failure is visible and preserves the editor patch
+  ---
+  duration_ms: 0.361797
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 177.642695
+<end of output>
+Test time =   0.22 sec
+----------------------------------------------------------
+Test Passed.
+"trigger-native-ui" end time: Oct 19 16:37 AEST
+"trigger-native-ui" time elapsed: 00:00:00
+----------------------------------------------------------
+
+95/97 Testing: trigger-native-adapter
+95/97 Test: trigger-native-adapter
+Command: "/usr/bin/node" "--test" "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/tests/js/TriggerNativeAdapterTest.mjs"
+Directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/web-host
+"trigger-native-adapter" start time: Oct 19 16:37 AEST
+Output:
+----------------------------------------------------------
+TAP version 13
+# Subtest: native document projects exact file paths, real frame geometry, public controls and round robin candidates
+ok 1 - native document projects exact file paths, real frame geometry, public controls and round robin candidates
+  ---
+  duration_ms: 36.076206
+  ...
+# Subtest: compiler preserves real graph controls and metadata while applying regions, map candidates and bounded polyphony
+ok 2 - compiler preserves real graph controls and metadata while applying regions, map candidates and bounded polyphony
+  ---
+  duration_ms: 40.499983
+  ...
+# Subtest: compiler refuses unsupported DSP, synthetic assets, cyclic selectors and simulated history
+ok 3 - compiler refuses unsupported DSP, synthetic assets, cyclic selectors and simulated history
+  ---
+  duration_ms: 74.242912
+  ...
+# Subtest: compiler refuses overlapping stacked rules, unsupported loop modes and unmapped native controls
+ok 4 - compiler refuses overlapping stacked rules, unsupported loop modes and unmapped native controls
+  ---
+  duration_ms: 65.392326
+  ...
+# Subtest: forward loop and pitch/gain candidate edits retain actual units and weighted selection
+ok 5 - forward loop and pitch/gain candidate edits retain actual units and weighted selection
+  ---
+  duration_ms: 19.672872
+  ...
+# Subtest: mapping roots compile to distinct playable regions while unchanged drums retain native no-root semantics
+ok 6 - mapping roots compile to distinct playable regions while unchanged drums retain native no-root semantics
+  ---
+  duration_ms: 44.510926
+  ...
+# Subtest: native round robin projection rejects candidates whose bounds cannot be represented by one rule
+ok 7 - native round robin projection rejects candidates whose bounds cannot be represented by one rule
+  ---
+  duration_ms: 7.28167
+  ...
+# Subtest: native compiler rejects nested selection policies instead of flattening their audible behavior
+ok 8 - native compiler rejects nested selection policies instead of flattening their audible behavior
+  ---
+  duration_ms: 17.165486
+  ...
+# Subtest: native graph sample paths are canonical authoring-root relatives and outside-root files are rejected
+ok 9 - native graph sample paths are canonical authoring-root relatives and outside-root files are rejected
+  ---
+  duration_ms: 45.690444
+  ...
+# Subtest: empty native patch compiles a real silent mixer graph without an invalid empty sample map
+ok 10 - empty native patch compiles a real silent mixer graph without an invalid empty sample map
+  ---
+  duration_ms: 11.276803
+  ...
+# Subtest: versioned session connection preserves unsigned 64-bit identities as decimal strings
+ok 11 - versioned session connection preserves unsigned 64-bit identities as decimal strings
+  ---
+  duration_ms: 0.942431
+  ...
+# Subtest: native projection retains exact map and zone identities independently of its editor rule id
+ok 12 - native projection retains exact map and zone identities independently of its editor rule id
+  ---
+  duration_ms: 6.794945
+  ...
+# Subtest: native window title follows accepted patch names, undo and external replacement
+ok 13 - native window title follows accepted patch names, undo and external replacement
+  ---
+  duration_ms: 70.288979
+  ...
+# Subtest: a window title failure does not reject an already accepted patch edit
+ok 14 - a window title failure does not reject an already accepted patch edit
+  ---
+  duration_ms: 21.842831
+  ...
+# Subtest: native edits await real publication; failed/stale preparations retain patch and expose failure
+ok 15 - native edits await real publication; failed/stale preparations retain patch and expose failure
+  ---
+  duration_ms: 19.157638
+  ...
+# Subtest: structural commands serialize through host and reversible operands compile real map changes
+ok 16 - structural commands serialize through host and reversible operands compile real map changes
+  ---
+  duration_ms: 53.50431
+  ...
+# Subtest: live writes and notes carry current generation and use normalized values without phantom controls
+ok 17 - live writes and notes carry current generation and use normalized values without phantom controls
+  ---
+  duration_ms: 7.996044
+  ...
+# Subtest: real meter packets are acknowledged, stale data dropped and waveform comes only from native reduction
+ok 18 - real meter packets are acknowledged, stale data dropped and waveform comes only from native reduction
+  ---
+  duration_ms: 8.42378
+  ...
+# Subtest: native import preserves actual metadata and commits real file URIs atomically, without mock voice additions
+ok 19 - native import preserves actual metadata and commits real file URIs atomically, without mock voice additions
+  ---
+  duration_ms: 26.752355
+  ...
+# Subtest: native polling waits for completion and close prevents late prepared publication
+ok 20 - native polling waits for completion and close prevents late prepared publication
+  ---
+  duration_ms: 30.235372
+  ...
+# Subtest: host automation reconciles actual normalized native controls and ignores retired generations
+ok 21 - host automation reconciles actual normalized native controls and ignores retired generations
+  ---
+  duration_ms: 26.19009
+  ...
+# Subtest: unsupported audio edits reject before native admission and waveform rejections create no fake peaks
+ok 22 - unsupported audio edits reject before native admission and waveform rejections create no fake peaks
+  ---
+  duration_ms: 12.085874
+  ...
+# Subtest: native background telemetry and note heartbeat stop cleanly with the editor
+ok 23 - native background telemetry and note heartbeat stop cleanly with the editor
+  ---
+  duration_ms: 93.094172
+  ...
+# Subtest: native preparation has a finite poll budget and preserves accepted patch on timeout
+ok 24 - native preparation has a finite poll budget and preserves accepted patch on timeout
+  ---
+  duration_ms: 25.069611
+  ...
+# Subtest: successful replacement retires local note intent and stale waveform work without false editor failures
+ok 25 - successful replacement retires local note intent and stale waveform work without false editor failures
+  ---
+  duration_ms: 26.2071
+  ...
+# Subtest: new empty patch has no phantom controls and importing a staged sample restores an accepted sampler graph
+ok 26 - new empty patch has no phantom controls and importing a staged sample restores an accepted sampler graph
+  ---
+  duration_ms: 28.761255
+  ...
+# Subtest: a newer device generation refreshes native session and controls while retaining editor undo and selection
+ok 27 - a newer device generation refreshes native session and controls while retaining editor undo and selection
+  ---
+  duration_ms: 38.989418
+  ...
+# Subtest: external graph replacement retires old history and selections while preserving editor layout
+ok 28 - external graph replacement retires old history and selections while preserving editor layout
+  ---
+  duration_ms: 36.894038
+  ...
+# Subtest: own native preparation defers generation events and preserves the newly accepted command history
+ok 29 - own native preparation defers generation events and preserves the newly accepted command history
+  ---
+  duration_ms: 44.226819
+  ...
+# Subtest: native initialization retries one rejected meter subscription and refuses to claim readiness if both fail
+ok 30 - native initialization retries one rejected meter subscription and refuses to claim readiness if both fail
+  ---
+  duration_ms: 14.147305
+  ...
+# Subtest: native editor resize uses only the requested size mode and reports failed admission
+ok 31 - native editor resize uses only the requested size mode and reports failed admission
+  ---
+  duration_ms: 7.081883
+  ...
+# Subtest: migrated key mapping uses native identities and native undo without a local closure entry
+ok 32 - migrated key mapping uses native identities and native undo without a local closure entry
+  ---
+  duration_ms: 22.878192
+  ...
+# Subtest: a failed native session command refreshes the consumed request identity before retry
+ok 33 - a failed native session command refreshes the consumed request identity before retry
+  ---
+  duration_ms: 21.379966
+  ...
+# Subtest: every native exposed React knob invokes its actual host parameter with normalized value and generation
+ok 34 - every native exposed React knob invokes its actual host parameter with normalized value and generation
+  ---
+  duration_ms: 112.813834
+  ...
+# Subtest: native knob displayed units and typed values use the actual declared control range
+ok 35 - native knob displayed units and typed values use the actual declared control range
+  ---
+  duration_ms: 8.628737
+  ...
+# Subtest: a React knob gesture brackets queued native writes once and preserves the last accepted value
+ok 36 - a React knob gesture brackets queued native writes once and preserves the last accepted value
+  ---
+  duration_ms: 11.604739
+  ...
+1..36
+# tests 36
+# suites 0
+# pass 36
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1245.921234
+<end of output>
+Test time =   1.28 sec
+----------------------------------------------------------
+Test Passed.
+"trigger-native-adapter" end time: Oct 19 16:37 AEST
+"trigger-native-adapter" time elapsed: 00:00:01
+----------------------------------------------------------
+
+End testing: Oct 19 16:37 AEST

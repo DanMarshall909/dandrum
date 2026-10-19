@@ -1,0 +1,95 @@
+{
+  "scope": "Only OpenSpec task 3.2: expose the persistent instrument session as one versioned native/React connection contract, retain lossless identities and declared bounds, route exact native map/zone key-range edits and native undo through the real bridge, and bypass page-local closure history only for that migrated operation. Actual WebView destruction/recreation, lost-reply reconnection with two live instances, selected desktop/DAW acceptance and the complete beta remain pending.",
+  "base": "278d6aa0ce218830a8448f8df2d013c027f0d956",
+  "upstream_before_review": "278d6aa0ce218830a8448f8df2d013c027f0d956",
+  "implementation_head": "8fa284c946a6e5156eba1015bfc984b9c137da50",
+  "commits": [
+    "0c27362 Define native session connection contract",
+    "d20e4f9 Bridge native session edits to React",
+    "8fa284c Route React key mapping through native session"
+  ],
+  "source_sha256": {
+    "src/instrument-session/src/lib.rs": "b3e19c3cd994e65daab73d8f20e5b5014a46ed4cfa08ab735d5245e9512ee6b6",
+    "src/instrument-session/src/native_ffi.rs": "f75d4d78f7dc76c647d559369b6caf76c48185524b0886cc7e0d3074feac83c6",
+    "src/instrument-session/tests/session.rs": "7eca59843dcbecac33da9cd85e588ca81d0952cabbb993b55b511930a924c19b",
+    "src/juce-wrapper/InstrumentSessionBindings.h": "477f50e5ab0647152c90343be799a25872ed9ab8712a385112a0f2d51a5ec849",
+    "src/juce-plugin/PluginProcessor.cpp": "7ff0137bc1a227ff67a00b19e92d5cceb45383e1c9b841a040363d5839ceb517",
+    "src/juce-plugin/PluginProcessor.h": "018fbf6468cef305f02bb19dd28f32c3f782d1faaec4c46987cd1b38f0ca1a11",
+    "src/juce-plugin/InstrumentHostWebBridge.cpp": "515e2f2e15631cd39f11c5bc9aed42438b30dfdae38eea4d84858a7d1c6f5925",
+    "src/juce-plugin/InstrumentHostWebBridge.h": "6add425b2099320b4925e7d96e32ab1cb96127efec61237768dda48847d4055a",
+    "tests/cpp/PluginTriggerNativeBridgeTest.cpp": "96fd695ac3eb75e38d49e3c7a2b96e7867135e2fa554aebd48f1c342c7308a54",
+    "tests/js/TriggerNativeAdapterTest.mjs": "98e54a605306a9985d133aca7844a671339d6f8f324f5b560dc61c1d6e94f00f",
+    "web/trigger/engine/contract.ts": "d542781dabba921eb6cf62c7780e76fb533b1e4a0745b71d11496f10fa5ba7d3",
+    "web/trigger/engine/native-document.mjs": "7d5e243d1f453162fb830e80b8b69f2c7e6f843c63d0fee3a98fe312a3fe3718",
+    "web/trigger/engine/native-engine.mjs": "8297d609bab0bb93e7667f5f8e6fcc21040652a081bf6eda41250c7f13d17783",
+    "web/trigger/engine/session-connection.mjs": "4c82628091437387b2eb11446dcfa903ed812419b73bef4c6bcd906b29db03d9",
+    "web/trigger/engine/store-types.ts": "d9fe1e9655d3d85537a370a50c30d0587e5d8564152d95a0754515fc67a4e8a9",
+    "web/trigger/engine/store.mjs": "2766fa8372bb4477ac92d98b5d3a900065d5e1615d0c51e7d6869e7cc045d94c",
+    "web/trigger/tests/native-engine.test.mjs": "6fb42eb401494eff54a0f29b245b33768d30a3be09b1e7a39b188558296b34ea",
+    "web/trigger/tests/native-fixture.mjs": "7773bcd53d87ebe1084ac945d5cd0c600062c2e23c51bcc5eec0b59a22116e54",
+    "web/trigger/tests/session-connection.test.mjs": "f1500b4785c0dfaff9313244f207991b77f3e70358b38290e0acc692ed9a8198",
+    "openspec/changes/add-persistent-instrument-session/tasks.md": "02376974f2e18622f226ec229a27f800c92807c197a4d03b19fbcd076b2ede5a",
+    "docs/migrations/juce-replacement-progress.md": "fc878c5f9ff295454cbbc85964c1c8b78c46735b74586b6f2fe806ac4ac368a1",
+    "docs/migrations/evidence/session-react-contract-2026-10-19/rust-session.log": "9b9b74811baf689b2e5c88596718275cfa73cacb0120e43097efec33ac5279b4",
+    "docs/migrations/evidence/session-react-contract-2026-10-19/react.log": "2ac31c336762a55cae69a66dc2c329cd466802f2673c70b997daf39d73aa3410",
+    "docs/migrations/evidence/session-react-contract-2026-10-19/native-boundaries.log": "ca4ad71cee770a45d063d087ef4326eeeca48440d7798c31ff27e173171be90f",
+    "docs/migrations/evidence/session-react-contract-2026-10-19/native-integration-build.log": "ad5262db2dfd98f1f76a67886109a321d0a6c8af968f15c0f197543470fe6c85",
+    "docs/migrations/evidence/session-react-contract-2026-10-19/web-boundaries.log": "6016424f9988ca60301ad6e92e33d9a85fee4b6111c9d9fb2e7298b03c7e1ee0",
+    "docs/migrations/evidence/session-react-contract-2026-10-19/specification.log": "dcc4e35c639a5d0629445969308512bf16d7c7e0a5335c9c500ab66868413c05"
+  },
+  "red": [
+    "The Rust contract tests initially failed to compile because the native facade did not expose contract version, transport identities, connection snapshots, bounds or request-aware undo.",
+    "The JavaScript contract tests initially failed because session-connection.mjs did not exist and native map/zone identities were not projected separately from editor rule IDs.",
+    "The concrete bridge test initially had no connection payload, session-owned mapping command, status endpoint or native undo path.",
+    "The retry regression failed after an admitted preparation failure because React reused consumed request identity 1. The adapter now refreshes the canonical connection and the next successful request uses identity 2."
+  ],
+  "contract": {
+    "version": 1,
+    "wire_identity": "Instrument, attachment, revision and next-request values are canonical unsigned decimal strings and are never converted through JavaScript Number.",
+    "limits": {
+      "attachments": 16,
+      "history": 100,
+      "outcomes": 128,
+      "active_requests": 1
+    },
+    "ownership": "Rust owns the constants, monotonic transport identities, disposable attachment lifetime and accepted snapshot. C++ carries the ABI fields without numeric narrowing; JavaScript validates the exact version, limits and u64 domain at entry.",
+    "request_recovery": "A terminal failure still consumes its monotonic request identity. React refreshes the accepted connection snapshot before a retry and validates the returned request, revision and next-request identity on success."
+  },
+  "native_boundary": {
+    "connection": "Each InstrumentHostWebBridge opens one session attachment and disconnects it during deterministic destruction. Exact instance and attachment identities are required for mapping and undo admission.",
+    "worker": "Mapping and undo run through the processor-owned asynchronous session worker and the existing off-audio activation gate; status records remain bounded at 128.",
+    "signed_oracle": "The actual bridge maps kit/kick from MIDI 36 to 60, renders literal -0.5 at MIDI 60, invokes native undo, and restores literal -0.5 at MIDI 36.",
+    "integration_build": "The final React production bundle was regenerated, embedded into the native resource target, release-linked into dandrum-trigger-native-bridge-test and passed its concrete bridge test."
+  },
+  "react_boundary": {
+    "identity": "Native map and zone IDs survive projection independently of the editor-facing rule ID.",
+    "adoption": "Only native-identified key-range updateRule operations use the session command. Other fields and all unmigrated operations continue through whole-document preparation.",
+    "history": "Migrated operations bypass Store's closure journal and use numeric ordering tokens alongside local commands. Native undo refreshes the canonical document and history; preview MockEngine behavior remains local.",
+    "validation": "The adapter rejects version drift, noncanonical, zero or overflowing identities, altered limits, invalid history counts, incoherent status identity/revision and exhausted request IDs."
+  },
+  "tests": {
+    "session": "29/29 passed: three native-facade unit cases and twenty-six public component cases; cargo fmt and clippy -D warnings passed.",
+    "react": "89/89 Trigger tests passed; TypeScript no-emit and the 70-file component guard passed; the native Vite bundle built successfully.",
+    "web_ctest": "trigger-react-shell, trigger-native-ui and trigger-native-adapter passed in 82.49 seconds on the final source.",
+    "native_ctest": "cxx-trigger-native-bridge, trigger-native-ui, trigger-native-adapter, cxx-plugin-instrument-session and native-session-link-graph all passed in the recorded focused runs.",
+    "commit_hooks": "Each of the three implementation commits passed the strict hook: 1,084 engine tests and the strict engine coverage gate.",
+    "mutation": "Excluded by recorded user direction."
+  },
+  "specification": {
+    "task_progress": "8/11 complete; task 3.2 checked only after Rust, native, React, embedded integration and specification gates passed.",
+    "strict_change_validation": "passed",
+    "acceptance_criteria": 609,
+    "mapped": 370,
+    "ratchet_todo": 239,
+    "sync": "No proposed scenario is synchronized yet because the remaining end-to-end editor scenario requires task 3.3 destruction/recreation and two-instance proof."
+  },
+  "limits": [
+    "Task 3.3 still owns complete packaged editor/WebView destruction and recreation, lost acknowledgement recovery after reattachment, recovered undo, signed output and independent second-instance behavior.",
+    "Native redo is implemented by the session core but is not exposed through the React task-3.2 adapter.",
+    "Whole-document and other unmigrated React edits retain the existing preparation and local closure-history path.",
+    "Selected native desktop and named DAW proof, installed JUCE-free standalone/VST3 artifacts outside the repository, automation/instance beta acceptance and the full JUCE-free beta remain open.",
+    "Main remains unchanged and no merge is included."
+  ],
+  "review": "Pending independent completion review of the exact task-3.2 candidate.",
+  "raw_evidence": "docs/migrations/evidence/session-react-contract-2026-10-19"
+}

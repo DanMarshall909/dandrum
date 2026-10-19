@@ -1,0 +1,37 @@
+[  0%] Built target dandrum-instrument-session-rust
+[  6%] Built target dandrum-sampler-react-resources
+[ 12%] Built target dandrum-tb303-instrument-resources
+[ 12%] Built target juce_linux_subprocess_helper
+[ 18%] Generating juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/TriggerReactBinaryData.h
+[ 25%] Built target dandrum-tb303-react-resources
+[ 25%] Building CXX object CMakeFiles/dandrum-trigger-react-resources.dir/juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData1.cpp.o
+[ 25%] Building CXX object CMakeFiles/dandrum-trigger-react-resources.dir/juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData2.cpp.o
+[ 25%] Building CXX object CMakeFiles/dandrum-trigger-react-resources.dir/juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData3.cpp.o
+[ 25%] Building CXX object CMakeFiles/dandrum-trigger-react-resources.dir/juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData4.cpp.o
+[ 31%] Building CXX object CMakeFiles/dandrum-trigger-react-resources.dir/juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData5.cpp.o
+[ 31%] Building CXX object CMakeFiles/dandrum-trigger-react-resources.dir/juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData6.cpp.o
+[ 31%] Building CXX object CMakeFiles/dandrum-trigger-react-resources.dir/juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData7.cpp.o
+[ 31%] Building CXX object CMakeFiles/dandrum-trigger-react-resources.dir/juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData8.cpp.o
+[ 31%] Building CXX object CMakeFiles/dandrum-trigger-react-resources.dir/juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData9.cpp.o
+[ 37%] Building CXX object CMakeFiles/dandrum-trigger-react-resources.dir/juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData10.cpp.o
+[ 37%] Building CXX object CMakeFiles/dandrum-trigger-react-resources.dir/juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData11.cpp.o
+[ 37%] Building CXX object CMakeFiles/dandrum-trigger-react-resources.dir/juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData12.cpp.o
+[ 37%] Building CXX object CMakeFiles/dandrum-trigger-react-resources.dir/juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData13.cpp.o
+[ 37%] Building CXX object CMakeFiles/dandrum-trigger-react-resources.dir/juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData14.cpp.o
+[ 43%] Building CXX object CMakeFiles/dandrum-trigger-react-resources.dir/juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData15.cpp.o
+[ 43%] Linking CXX static library libdandrum-trigger-react-resources.a
+[ 43%] Built target dandrum-trigger-react-resources
+[ 43%] Building CXX object CMakeFiles/dandrum-plugin.dir/src/juce-plugin/PluginEditor.cpp.o
+[ 43%] Linking CXX static library dandrum-plugin_artefacts/Release/libDandrum_SharedCode.a
+[ 81%] Built target dandrum-plugin
+[ 81%] Linking CXX executable dandrum-trigger-native-bridge-test
+lto-wrapper: warning: using serial compilation of 128 LTRANS jobs
+[100%] Built target dandrum-trigger-native-bridge-test
+Internal ctest changing into directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/web-host
+Test project /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/web-host
+    Start 44: cxx-trigger-native-bridge
+1/1 Test #44: cxx-trigger-native-bridge ........   Passed    0.15 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.16 sec

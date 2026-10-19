@@ -1,0 +1,50 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.11s
+     Running unittests src/lib.rs (src/instrument-session/target/debug/deps/dandrum_instrument_session-b72f9403a4e5022a)
+
+running 3 tests
+test revision_limit::admitted_request_retains_revision_exhaustion_without_activating ... ok
+test revision_limit::revision_exhaustion_rejects_without_wrapping_accepted_identity_or_activating ... ok
+test native_ffi::tests::native_facade_maps_fails_reconfigures_and_rolls_back_activation ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s
+
+     Running tests/session.rs (src/instrument-session/target/debug/deps/session-913bc5523f518105)
+
+running 26 tests
+test connection_contract_version_and_resource_bounds_are_stable ... ok
+test documents_without_sample_maps_reject_mapping_without_changing_accepted_state ... ok
+test unusable_documents_or_missing_samples_cannot_create_accepted_sessions ... ok
+test accepted_document_survives_detach_and_reattach_without_reloading_samples ... ok
+test existing_sampler_baseline_uses_real_assets_and_signed_key_mapping ... ok
+test attachment_limit_reclaims_dropped_and_explicitly_retired_connections ... ok
+test failed_sample_repreparation_preserves_the_working_document_and_sound ... ok
+test foreign_and_retired_connections_cannot_read_another_session ... ok
+test mapping_admission_rejects_foreign_and_retired_connections ... ok
+test failed_worker_preparation_is_retained_and_retry_does_not_prepare_or_activate_again ... ok
+test inclusive_midi_boundaries_and_nondefault_inverse_come_from_native_state ... ok
+test invalid_or_ambiguous_mapping_intents_preserve_the_accepted_instrument ... ok
+test empty_history_foreign_connections_and_obsolete_candidates_never_activate ... ok
+test foreign_worker_completion_cannot_mutate_another_session ... ok
+test explicit_worker_failure_before_or_after_preparation_clears_pending_without_activation ... ok
+test admitted_worker_survives_attachment_loss_and_retry_recovers_one_accepted_edit ... ok
+test mapping_candidate_derives_inverse_and_prepares_only_the_requested_zone_change ... ok
+test activation_failure_is_terminal_and_clears_the_pending_slot_for_new_work ... ok
+test render_reconfiguration_preserves_accepted_document_history_and_failure_rollback ... ok
+test accepted_mapping_and_native_undo_redo_publish_document_history_and_signed_audio ... ok
+test activation_failure_rolls_back_runtime_document_and_every_history_transition ... ok
+test failed_undo_preparation_preserves_accepted_mapping_and_native_history ... ok
+test document_replacement_rejects_invalid_foreign_stale_and_busy_work_before_activation ... ok
+test accepted_document_replacement_resets_history_and_requests_but_preserves_host_automation ... ok
+test terminal_request_outcomes_are_capped_at_one_hundred_twenty_eight ... ok
+test history_retains_one_hundred_entries_and_branching_preserves_then_retires_redo ... ok
+
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.21s
+
+   Doc-tests dandrum_instrument_session
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+    Checking dandrum_instrument_session v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/instrument-session)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.02s
