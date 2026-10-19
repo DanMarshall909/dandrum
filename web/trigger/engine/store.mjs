@@ -136,7 +136,13 @@ export class Store {
       const entry=this.undoStack.at(-1),nativeSequence=this.nativeUndoOrder.at(-1)??-1;
       if(nativeSequence>(entry?.sequence??-1)&&this.engine.undoSession){
         const result=this.engine.undoSession();
-        const finish=()=>{const sequence=this.nativeUndoOrder.pop();if(sequence!=null)this.nativeRedoOrder.push(sequence);this.reconcileNativeHistory();this.notify();};
+        const finish=()=>{
+          // The native patch event may already have reconciled the decremented
+          // count. Retire this exact command only if it is still present.
+          if(this.nativeUndoOrder.at(-1)===nativeSequence)this.nativeUndoOrder.pop();
+          if(nativeSequence>=0)this.nativeRedoOrder.push(nativeSequence);
+          this.reconcileNativeHistory();this.notify();
+        };
         return result instanceof Promise?result.then(finish):finish();
       }
       if(!entry)return;

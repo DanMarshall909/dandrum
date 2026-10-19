@@ -233,6 +233,36 @@ test('a successful native mapping retires an abandoned local redo branch',async 
   assert.equal(store.canRedo,false);
 });
 
+test('native undo preserves the intervening local command as the next mixed-history undo',async t=>{
+  const {engine,bridge}=await setup(t),store=new Store(engine);t.after(()=>store.close());
+  const accepted=[],originalLevel=engine.getPatch().params['drums.level'].value;let nativeEdits=0;
+  bridge.functions.setInstrumentZoneKeyRange=(_instance,_attachment,request,_revision,_map,_zone,low)=>{
+    accepted.push(['map',request,low]);return {status:'accepted',job_id:request};
+  };
+  bridge.functions.undoInstrumentSession=(_instance,_attachment,request)=>{
+    accepted.push(['undo',request]);return {status:'accepted',job_id:request};
+  };
+  bridge.functions.getInstrumentSessionJobStatus=request=>{
+    const undo=accepted.at(-1)[0]==='undo';
+    if(undo)nativeEdits--;
+    else nativeEdits++;
+    const note=nativeEdits===0?36:nativeEdits===1?60:61;
+    const text=yaml.replace('key_range: [36, 36]',`key_range: [${note}, ${note}]`);
+    const revision=String(accepted.length),nextRequestId=String(accepted.length+1);
+    bridge.setSession(session(text,7+accepted.length,connection({revision,nextRequestId,history:{undoCount:nativeEdits,redoCount:undo?1:0}})));
+    return {state:'completed',request_id:request,revision,undoCount:nativeEdits,redoCount:undo?1:0,error:''};
+  };
+  await store.operation('Map first key','updateRule','kit.kick',{noteLo:60,noteHi:60});
+  await store.changeParam('drums.level',.4);
+  await store.operation('Map second key','updateRule','kit.kick',{noteLo:61,noteHi:61});
+  assert.equal(store.undoLabel,'Change Key Range');
+  await store.undo();
+  assert.equal(store.undoLabel,'Change drums.level');
+  await store.undo();
+  assert.equal(engine.getPatch().params['drums.level'].value,originalLevel);
+  assert.equal(accepted.filter(item=>item[0]==='undo').length,1);
+});
+
 test('a native mapping remains newest when bounded native history evicts its oldest entry',async t=>{
   const initial=session(yaml,7,connection({revision:'100',nextRequestId:'101',history:{undoCount:100,redoCount:0}}));
   const bridge=backend(initial),engine=new NativeEngine({backend:bridge,pollMs:0,heartbeatMs:0});await engine.initialize();t.after(()=>engine.close());
