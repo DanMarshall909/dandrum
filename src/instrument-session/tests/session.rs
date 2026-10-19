@@ -203,12 +203,20 @@ fn mapping_admission_rejects_foreign_and_retired_connections() {
         first.prepare_mapping(&b, intent.clone()),
         Err(SessionError::InvalidAttachment)
     ));
+    assert_admission_error(
+        first.admit_mapping(&b, mapping_request(&accepted, 1, 60)),
+        SessionError::InvalidAttachment,
+    );
     assert_eq!(first.snapshot(&a).unwrap(), accepted);
     first.detach(&a).unwrap();
     assert!(matches!(
-        first.prepare_mapping(&a, intent),
+        first.prepare_mapping(&a, intent.clone()),
         Err(SessionError::InvalidAttachment)
     ));
+    assert_admission_error(
+        first.admit_mapping(&a, mapping_request(&accepted, 2, 61)),
+        SessionError::InvalidAttachment,
+    );
     assert_eq!(render_note(first.prepared(), 36)[0][0], -0.5);
     assert_eq!(render_note(second.prepared(), 36)[0][0], -0.5);
 }
@@ -395,8 +403,10 @@ fn unusable_documents_or_missing_samples_cannot_create_accepted_sessions() {
 }
 
 use dandrum_instrument_session::{
-    ActivationHost, ActivationLease, CommitError, Publication, SessionSnapshot,
+    ActivationHost, ActivationLease, CommitError, MappingAdmission, MappingJob, MappingRequest,
+    Publication, RequestFailure, RequestId, RequestOutcome, SessionSnapshot,
 };
+use std::sync::Arc;
 
 // Protocol fixture only: real graph execution, no claim about a concrete host's
 // reader synchronization or editor lifecycle. Those require the native tests.
@@ -702,6 +712,318 @@ fn failed_undo_preparation_preserves_accepted_mapping_and_native_history() {
     assert_eq!(session.snapshot(&connection).unwrap(), undone);
     assert_eq!(host.attempts, 2);
     assert_eq!(host.published, undone);
+    assert_eq!(host.render(36)[0][0], -0.5);
+    assert_eq!(host.render(60), vec![vec![0.0; 16]; 2]);
+}
+
+fn mapping_request(snapshot: &SessionSnapshot, request_id: u64, note: u8) -> MappingRequest {
+    MappingRequest {
+        instance: snapshot.instance.clone(),
+        request_id: RequestId(request_id),
+        expected_revision: snapshot.revision,
+        intent: kick_mapping(note),
+    }
+}
+
+fn admitted(result: Result<MappingAdmission, SessionError>) -> MappingJob {
+    match result {
+        Ok(MappingAdmission::Admitted(job)) => job,
+        Ok(_) => panic!("request should be newly admitted"),
+        Err(error) => panic!("request should be admitted: {error:?}"),
+    }
+}
+
+fn assert_admission_error(result: Result<MappingAdmission, SessionError>, expected: SessionError) {
+    match result {
+        Err(error) => assert_eq!(error, expected),
+        Ok(_) => panic!("request should have been rejected"),
+    }
+}
+
+fn accepted_outcome(outcome: &RequestOutcome) -> &SessionSnapshot {
+    match &outcome.result {
+        Ok(snapshot) => snapshot,
+        Err(error) => panic!("request should have succeeded: {error:?}"),
+    }
+}
+
+#[test]
+fn admitted_worker_survives_attachment_loss_and_retry_recovers_one_accepted_edit() {
+    fn assert_send<T: Send>() {}
+    assert_send::<MappingJob>();
+
+    let (yaml, context, settings) = fixture();
+    let mut session = InstrumentSession::new(&yaml, context.clone(), settings.clone()).unwrap();
+    let mut other = InstrumentSession::new(&yaml, context, settings).unwrap();
+    let (connection, initial) = session.attach().unwrap();
+    let (other_connection, other_initial) = other.attach().unwrap();
+    let mut host = RuntimeHost::new(&session, &initial);
+    let request = mapping_request(&initial, 7, 60);
+    let direct = session
+        .prepare_mapping(&connection, kick_mapping(62))
+        .unwrap();
+
+    let job = admitted(session.admit_mapping(&connection, request.clone()));
+    assert!(matches!(
+        session.admit_mapping(&connection, request.clone()),
+        Ok(MappingAdmission::Pending)
+    ));
+    let mut pending_conflict = request.clone();
+    pending_conflict.intent = kick_mapping(63);
+    assert_admission_error(
+        session.admit_mapping(&connection, pending_conflict),
+        SessionError::ConflictingRequest,
+    );
+    assert_admission_error(
+        session.admit_mapping(&connection, mapping_request(&initial, 8, 61)),
+        SessionError::Busy,
+    );
+    assert!(matches!(
+        session.prepare_mapping(&connection, kick_mapping(64)),
+        Err(SessionError::Busy)
+    ));
+    assert_eq!(
+        session.commit_mapping(direct, &mut host),
+        Err(CommitError::Session(SessionError::Busy))
+    );
+    assert_eq!(
+        session.undo(&connection, &mut host),
+        Err(CommitError::Session(SessionError::Busy))
+    );
+    assert_eq!(
+        session.redo(&connection, &mut host),
+        Err(CommitError::Session(SessionError::Busy))
+    );
+    assert_eq!(host.attempts, 0);
+    session.detach(&connection).unwrap();
+
+    let completion = std::thread::spawn(|| job.prepare()).join().unwrap();
+    drop(session.complete_mapping(completion, &mut host).unwrap());
+    let (fresh, accepted) = session.attach().unwrap();
+    assert_eq!(accepted.revision, 1);
+    assert_eq!((accepted.undo_len, accepted.redo_len), (1, 0));
+    assert_eq!(host.attempts, 1);
+    assert_eq!(host.render(60)[0][0], -0.5);
+    assert_eq!(host.render(36), vec![vec![0.0; 16]; 2]);
+    assert_eq!(
+        session.request_outcome(&connection, RequestId(7)),
+        Err(SessionError::InvalidAttachment)
+    );
+    assert!(
+        session
+            .request_outcome(&fresh, RequestId(999))
+            .unwrap()
+            .is_none()
+    );
+
+    let recovered = session
+        .request_outcome(&fresh, RequestId(7))
+        .unwrap()
+        .unwrap();
+    assert_eq!(accepted_outcome(&recovered), &accepted);
+    let retried = match session.admit_mapping(&fresh, request.clone()).unwrap() {
+        MappingAdmission::Completed(outcome) => outcome,
+        _ => panic!("retry should recover the terminal outcome"),
+    };
+    assert!(Arc::ptr_eq(&recovered, &retried));
+    assert_eq!(host.attempts, 1, "retry must not reactivate");
+
+    let mut conflicting = request;
+    conflicting.intent = kick_mapping(61);
+    assert_admission_error(
+        session.admit_mapping(&fresh, conflicting),
+        SessionError::ConflictingRequest,
+    );
+    assert_admission_error(
+        session.admit_mapping(&fresh, mapping_request(&initial, 8, 61)),
+        SessionError::StaleRequest,
+    );
+    assert_admission_error(
+        other.admit_mapping(&other_connection, mapping_request(&initial, 9, 61)),
+        SessionError::InvalidRequestInstance,
+    );
+    assert_eq!(session.snapshot(&fresh).unwrap(), accepted);
+    assert_eq!(other.snapshot(&other_connection).unwrap(), other_initial);
+    assert_eq!(render_note(other.prepared(), 36)[0][0], -0.5);
+}
+
+#[test]
+fn failed_worker_preparation_is_retained_and_retry_does_not_prepare_or_activate_again() {
+    let (yaml, _, settings) = fixture();
+    let (directory, sample) = owned_sample();
+    let mut session = InstrumentSession::new(
+        &yaml,
+        PreparationContext::new(directory.path(), 48_000),
+        settings,
+    )
+    .unwrap();
+    let (connection, initial) = session.attach().unwrap();
+    let mut host = RuntimeHost::new(&session, &initial);
+    let request = mapping_request(&initial, 11, 60);
+    let job = admitted(session.admit_mapping(&connection, request.clone()));
+    session.detach(&connection).unwrap();
+    std::fs::remove_file(sample).unwrap();
+
+    let outcome = session.complete_mapping(job.prepare(), &mut host).unwrap();
+    assert!(matches!(
+        &outcome.result,
+        Err(RequestFailure::Session(SessionError::PreparationFailed(_)))
+    ));
+    assert_eq!(host.attempts, 0);
+    let (fresh, current) = session.attach().unwrap();
+    assert_eq!(current, initial);
+    assert_eq!(host.render(36)[0][0], -0.5);
+    assert_eq!(host.render(60), vec![vec![0.0; 16]; 2]);
+    let queried = session
+        .request_outcome(&fresh, RequestId(11))
+        .unwrap()
+        .unwrap();
+    let retried = match session.admit_mapping(&fresh, request).unwrap() {
+        MappingAdmission::Completed(outcome) => outcome,
+        _ => panic!("failed request should retain its terminal outcome"),
+    };
+    assert!(Arc::ptr_eq(&outcome, &queried));
+    assert!(Arc::ptr_eq(&outcome, &retried));
+    assert_eq!(host.attempts, 0);
+}
+
+#[test]
+fn foreign_worker_completion_cannot_mutate_another_session() {
+    let (yaml, context, settings) = fixture();
+    let mut first = InstrumentSession::new(&yaml, context.clone(), settings.clone()).unwrap();
+    let mut second = InstrumentSession::new(&yaml, context, settings).unwrap();
+    let (first_connection, first_initial) = first.attach().unwrap();
+    let (_, second_initial) = second.attach().unwrap();
+    let mut first_host = RuntimeHost::new(&first, &first_initial);
+    let mut second_host = RuntimeHost::new(&second, &second_initial);
+    let job =
+        admitted(first.admit_mapping(&first_connection, mapping_request(&first_initial, 31, 60)));
+
+    let route_error = second
+        .complete_mapping(job.prepare(), &mut second_host)
+        .unwrap_err();
+    assert_eq!(route_error.reason(), &SessionError::InvalidJob);
+    assert_eq!(
+        format!("{route_error:?}"),
+        "CompletionRouteError { reason: InvalidJob, .. }"
+    );
+    assert_eq!(second_host.published, second_initial);
+    assert_eq!(second_host.attempts, 0);
+    assert_eq!(second_host.render(36)[0][0], -0.5);
+    assert_eq!(second_host.render(60), vec![vec![0.0; 16]; 2]);
+
+    let accepted = first
+        .complete_mapping(route_error.into_completion(), &mut first_host)
+        .unwrap();
+    assert_eq!(accepted_outcome(&accepted).revision, 1);
+    assert_eq!(accepted_outcome(&accepted).undo_len, 1);
+    assert_eq!(first_host.attempts, 1);
+    assert_eq!(first_host.render(60)[0][0], -0.5);
+    assert_eq!(first_host.render(36), vec![vec![0.0; 16]; 2]);
+    assert_eq!(second_host.published, second_initial);
+}
+
+#[test]
+fn activation_failure_is_terminal_and_clears_the_pending_slot_for_new_work() {
+    let (yaml, context, settings) = fixture();
+    let mut session = InstrumentSession::new(&yaml, context, settings).unwrap();
+    let (connection, initial) = session.attach().unwrap();
+    let mut host = RuntimeHost::new(&session, &initial);
+    host.reject = true;
+    let failed_request = mapping_request(&initial, 21, 60);
+    let job = admitted(session.admit_mapping(&connection, failed_request.clone()));
+
+    let failed = session.complete_mapping(job.prepare(), &mut host).unwrap();
+    assert_eq!(
+        failed.result,
+        Err(RequestFailure::Activation("activation rejected".into()))
+    );
+    assert_eq!(session.snapshot(&connection).unwrap(), initial);
+    assert_eq!(host.attempts, 1);
+    host.reject = false;
+    let retried = match session.admit_mapping(&connection, failed_request).unwrap() {
+        MappingAdmission::Completed(outcome) => outcome,
+        _ => panic!("activation failure should be terminal"),
+    };
+    assert!(Arc::ptr_eq(&failed, &retried));
+    assert_eq!(host.attempts, 1);
+
+    let next_request = mapping_request(&initial, 22, 61);
+    let next_job = admitted(session.admit_mapping(&connection, next_request));
+    let accepted = session
+        .complete_mapping(next_job.prepare(), &mut host)
+        .unwrap();
+    assert_eq!(accepted_outcome(&accepted).revision, 1);
+    assert_eq!(host.attempts, 2);
+    assert_eq!(host.render(61)[0][0], -0.5);
+    assert_eq!(host.render(36), vec![vec![0.0; 16]; 2]);
+    assert!(Arc::ptr_eq(
+        &failed,
+        &session
+            .request_outcome(&connection, RequestId(21))
+            .unwrap()
+            .unwrap()
+    ));
+}
+
+#[test]
+fn terminal_request_outcomes_are_capped_at_one_hundred_twenty_eight() {
+    let (yaml, _, settings) = fixture();
+    let (directory, sample) = owned_sample();
+    let mut session = InstrumentSession::new(
+        &yaml,
+        PreparationContext::new(directory.path(), 48_000),
+        settings,
+    )
+    .unwrap();
+    let (connection, initial) = session.attach().unwrap();
+    let mut host = RuntimeHost::new(&session, &initial);
+    std::fs::remove_file(&sample).unwrap();
+
+    for request_id in 0..129 {
+        let request = mapping_request(&initial, request_id, 60);
+        let job = admitted(session.admit_mapping(&connection, request));
+        let outcome = session.complete_mapping(job.prepare(), &mut host).unwrap();
+        assert!(matches!(
+            &outcome.result,
+            Err(RequestFailure::Session(SessionError::PreparationFailed(_)))
+        ));
+    }
+
+    assert!(
+        session
+            .request_outcome(&connection, RequestId(0))
+            .unwrap()
+            .is_none()
+    );
+    assert!(
+        session
+            .request_outcome(&connection, RequestId(1))
+            .unwrap()
+            .is_some()
+    );
+    assert!(
+        session
+            .request_outcome(&connection, RequestId(128))
+            .unwrap()
+            .is_some()
+    );
+    std::fs::copy(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../examples/patches/assets/advanced-drums.wav"),
+        &sample,
+    )
+    .unwrap();
+    assert_admission_error(
+        session.admit_mapping(&connection, mapping_request(&initial, 0, 60)),
+        SessionError::RetiredRequest,
+    );
+    assert_admission_error(
+        session.admit_mapping(&connection, mapping_request(&initial, 0, 61)),
+        SessionError::RetiredRequest,
+    );
+    assert_eq!(session.snapshot(&connection).unwrap(), initial);
+    assert_eq!(host.attempts, 0);
     assert_eq!(host.render(36)[0][0], -0.5);
     assert_eq!(host.render(60), vec![vec![0.0; 16]; 2]);
 }

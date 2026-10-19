@@ -1,0 +1,31 @@
+Script started on 2026-10-19 11:32:58+10:00 [<not executed on terminal>]
+   Compiling dandrum_instrument_session v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/instrument-session)
+error[E0599]: no method named `reason` found for enum `SessionError` in the current scope
+   --> tests/session.rs:905:28
+    |
+905 |     assert_eq!(route_error.reason(), &SessionError::InvalidJob);
+    |                            ^^^^^^ method not found in `SessionError`
+
+error[E0599]: no method named `into_completion` found for enum `SessionError` in the current scope
+   --> tests/session.rs:912:39
+    |
+912 |         .complete_mapping(route_error.into_completion(), &mut first_host)
+    |                                       ^^^^^^^^^^^^^^^ method not found in `SessionError`
+
+error[E0599]: no variant, associated function, or constant named `RetiredRequest` found for enum `SessionError` in the current scope
+    --> tests/session.rs:1015:23
+     |
+1015 |         SessionError::RetiredRequest,
+     |                       ^^^^^^^^^^^^^^ variant, associated function, or constant not found in `SessionError`
+
+error[E0599]: no variant, associated function, or constant named `RetiredRequest` found for enum `SessionError` in the current scope
+    --> tests/session.rs:1019:23
+     |
+1019 |         SessionError::RetiredRequest,
+     |                       ^^^^^^^^^^^^^^ variant, associated function, or constant not found in `SessionError`
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `dandrum_instrument_session` (test "session") due to 4 previous errors
+warning: build failed, waiting for other jobs to finish...
+
+Script done on 2026-10-19 11:32:59+10:00 [COMMAND_EXIT_CODE="101"]

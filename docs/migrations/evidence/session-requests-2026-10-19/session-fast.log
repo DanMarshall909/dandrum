@@ -1,0 +1,14 @@
+Script started on 2026-10-19 11:35:04+10:00 [<not executed on terminal>]
+Internal ctest changing into directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only
+Test project /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only
+    Start 4: instrument-session-tests
+1/1 Test #4: instrument-session-tests .........   Passed    2.41 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Label Time Summary:
+session-fast    =   2.41 sec*proc (1 test)
+
+Total Test time (real) =   2.41 sec
+
+Script done on 2026-10-19 11:35:07+10:00 [COMMAND_EXIT_CODE="0"]

@@ -7,7 +7,7 @@
 ## 2. Transaction and bounded journal
 
 - [x] 2.1 Specify and implement staged runtime/document/journal publication through a host activation lease; prove native undo/redo and failure preservation, with no post-install fallible allocation or audio callback session access.
-- [ ] 2.2 Implement request identity/revision checks, one pending transaction, bounded retained outcomes and reconnect retry deduplication; prove admitted work survives attachment loss and conflicting/stale/busy requests cannot mutate state.
+- [x] 2.2 Implement request identity/revision checks, one pending transaction, bounded retained outcomes and reconnect retry deduplication; prove admitted work survives attachment loss and conflicting/stale/busy requests cannot mutate state.
 - [ ] 2.3 Implement/test 100-entry history, 128-outcome retention, redo branching and external replacement reconciliation; retain host automation outside the journal.
 
 ## 3. Concrete host and React adoption

@@ -1,0 +1,5 @@
+Script started on 2026-10-19 11:35:02+10:00 [<not executed on terminal>]
+    Checking dandrum_instrument_session v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/instrument-session)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.48s
+
+Script done on 2026-10-19 11:35:02+10:00 [COMMAND_EXIT_CODE="0"]

@@ -1,0 +1,86 @@
+{
+  "scope": "Only OpenSpec task 2.2: request/revision admission, one owned structural worker, bounded retained outcomes and exact reconnect retry recovery. Journal capping/replacement reconciliation, concrete native consumers, React/WebView lifecycle and full beta acceptance remain pending.",
+  "base": "91ee29b429ae5351901066bb3f6ba96f359e5ff0",
+  "upstream_before_review": "91ee29b429ae5351901066bb3f6ba96f359e5ff0",
+  "source_sha256": {
+    "src/instrument-session/src/lib.rs": "5c638aa7f320e13af1f020e47edf909437af618e3c35ddc0a8c37f253b16a8f8",
+    "src/instrument-session/tests/session.rs": "1d6e746672fe4fe9b54e49e62cb7950be26062975052a17daa50ba4d3f295c00",
+    "src/instrument-session/tests/internal/revision_limit.rs": "62a48798e7cccdbe4ee86ed6ceb1571d9160e2c4350768a7e0dbd1b5ea3671d4",
+    "src/instrument-session/README.md": "171dc8ef91b97a75ec113279dba316ea42af4f4fae70293fb69a7252a20d4a6c",
+    "openspec/changes/add-persistent-instrument-session/design.md": "f7c79d937d8c2e659c9e919aa1317e9663ca98d50322688fa8f98cf48af129b3",
+    "openspec/changes/add-persistent-instrument-session/specs/instrument-session/spec.md": "6d19f886bb23f9924b524f5c1d6bcfcf190bf7d47e3f9e30c147987f11b8fa90",
+    "openspec/changes/add-persistent-instrument-session/tasks.md": "053aebd803b8dbb55fe871f09799058787a2c5ec5d93ad27cdd95fd9ea5adca7",
+    "docs/migrations/juce-replacement-progress.md": "ec6c4c9e385eb5946db1aa39489414e80acd5b8c7b2bd34a1dbad9f4dd64ceb2"
+  },
+  "red": {
+    "request_api": {
+      "command": "cargo test --locked --manifest-path src/instrument-session/Cargo.toml --test session",
+      "result": "Expected E0432/E0599 failures: the task-2.1 base had no request types, admission/completion/outcome methods or explicit busy result.",
+      "log": "request-api-red.log"
+    },
+    "single_preparation": {
+      "command": "cargo test --locked --manifest-path src/instrument-session/Cargo.toml --test session admitted_worker_survives_attachment_loss_and_retry_recovers_one_accepted_edit -- --exact",
+      "result": "Expected assertion failure before the final production guard: direct structural preparation remained possible while an admitted job was pending.",
+      "log": "pending-prepare-red.log"
+    },
+    "review_repair": {
+      "command": "cargo test --locked --manifest-path src/instrument-session/Cargo.toml",
+      "result": "Expected E0599 failures before repair: no recoverable completion route error API and no explicit retired-request outcome after eviction.",
+      "log": "review-repair-red.log"
+    }
+  },
+  "tests": {
+    "component": "22 passed: twenty public component cases and two revision-exhaustion unit boundaries",
+    "package_command": "cargo test --locked --manifest-path src/instrument-session/Cargo.toml",
+    "package_result": "22/22 passed",
+    "fast_command": "ctest --test-dir build/engine-only --output-on-failure -L '^session-fast$'",
+    "fast_result": "1/1 CTest target passed in 2.41 seconds; the target runs all 22 session tests",
+    "slow_command": "ctest --test-dir build/engine-only --output-on-failure -L '^session-slow$'",
+    "slow_result": "Named selection is empty",
+    "full_command": "ctest --test-dir build/engine-only --output-on-failure",
+    "full_result": "21/21 passed in 113.98 seconds",
+    "boundary_result": "The full gate includes absent-JUCE/browser/UI source build, both C++ FFI/callback checks, dynamic CLAP host and isolated CLAP build boundary",
+    "clippy": "cargo clippy --locked --manifest-path src/instrument-session/Cargo.toml --all-targets -- -D warnings passed",
+    "signed_oracle": "The recovered accepted edit renders literal stereo -0.5 at MIDI 60 and silence at 36; its history length is exactly one and an independent session retains literal -0.5 at MIDI 36"
+  },
+  "coverage": {
+    "tool": "cargo-llvm-cov 0.8.7",
+    "command": "cargo llvm-cov --locked --manifest-path src/instrument-session/Cargo.toml --json --summary-only --output-path coverage.json --ignore-filename-regex 'src/rust-engine' --fail-uncovered-lines 0 --fail-uncovered-functions 0",
+    "lines": [437, 441],
+    "functions": [43, 43],
+    "regions": [544, 548],
+    "classification": "The four zero-count items are generic-instantiation spans in LLVM's per-monomorph accounting. The retained annotated report shows executed merged counters for every source line and execution of invalid/retired attachment, invalid instance/job, conflict, pending, busy, stale/retired request, preparation failure, staging failure, activation failure and accepted branches.",
+    "branches": "Not instrumented",
+    "mutation": "Excluded by recorded user direction"
+  },
+  "request_evidence": {
+    "owned_job": "MappingJob is statically Send and owns accepted YAML, preparation context, render settings, request identity/revision and typed intent; its test moves preparation to another thread after detaching the admitting attachment.",
+    "single_pending": "A same-content retry reports pending; conflicting ID reuse, a second request, direct preparation, direct commit, undo and redo reject while the admitted job owns the slot.",
+    "lost_acknowledgement": "Completion succeeds after attachment retirement. A fresh attachment queries and retries the same request, receives the same Arc outcome, observes revision 1/history length 1 and does not reactivate.",
+    "terminal_failures": "Missing-sample preparation, revision exhaustion and host activation rejection are retained terminal outcomes; exact retry does not prepare or activate again and the pending slot admits later work.",
+    "bounded_outcomes": "After 129 terminal failures at one accepted revision, request 0 is absent while requests 1 and 128 remain. After the missing sample is restored, exact and conflicting reuse of evicted request 0 receive RetiredRequest without preparation, activation or state change.",
+    "independence": "Cross-instance requests reject without mutation. A misrouted completion returns its owned prepared result, leaves the second session unchanged and then completes successfully at the still-pending source session."
+  },
+  "allocation_boundary": {
+    "success": "The accepted RequestOutcome Arc and its returned reference are created before activation. The outcome deque is preallocated to 128; post-install retention at capacity pops then pushes without fallible allocation.",
+    "failure": "Preparation, staging and activation failures occur before accepted installation and may allocate their retained diagnostic afterward."
+  },
+  "specification": {
+    "strict_change_validation": "passed",
+    "canonical_specs": 50,
+    "acceptance_criteria": 609,
+    "mapped": 370,
+    "ratchet_todo": 239,
+    "sync": "No new canonical scenario is synchronized because the proposed scenario also requires later concrete native host/editor proof."
+  },
+  "limits": [
+    "This is an in-process protocol boundary over the real Rust graph; task 3.1 must calibrate worker completion, installation, rollback and held-reader behavior at the actual native consumer.",
+    "The journal is not yet capped at 100 entries and external accepted-document replacement is not implemented; task 2.3 remains open even though the outcome deque already enforces its exact 128 limit.",
+    "Wire attachment/request identities and lossless decimal representation are deferred to task 3.2.",
+    "No React transport, actual WebView destruction, VST3/standalone packaging, named DAW proof or full beta claim is made.",
+    "Main remains unchanged and no merge is included."
+  ],
+  "storage_before_coverage": "113 GiB free; engine-only build 22 GiB, session target 4.6 GiB and engine target 5.2 GiB retained as reusable outputs.",
+  "review": "Independent completion review PASS for the exact repaired task-2.2 candidate and finite publication envelope.",
+  "raw_evidence": "/tmp/dandrum-session-requests"
+}

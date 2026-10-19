@@ -35,7 +35,7 @@ A supported sample-zone key-range edit SHALL address native map/zone identities,
 
 ### Requirement: Bounded admission survives editor loss
 
-Structural requests SHALL carry instrument, attachment, request and expected-revision identities. Only a current matching attachment SHALL admit new work. Each session SHALL admit at most one structural preparation at a time, complete admitted work independently of editor polling, retain bounded outcomes and reject conflicting retries or stale revisions.
+Structural requests SHALL carry instrument, attachment, monotonically increasing request and expected-revision identities. Only a current matching attachment SHALL admit new work. Each session SHALL admit at most one structural preparation at a time, complete admitted work independently of editor polling, retain bounded outcomes and reject conflicting retries, retired request identities or stale revisions.
 
 #### Scenario: Lost acknowledgement does not duplicate an accepted edit
 

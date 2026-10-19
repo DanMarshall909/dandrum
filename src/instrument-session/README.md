@@ -33,11 +33,29 @@ retired/foreign history connections, empty history and exhausted revisions rejec
 before activation. Snapshots copy the next undo/redo entry and its native label.
 Host automation stays outside this authoring owner.
 
+Structural mapping requests add instrument, request and expected-revision identity
+to the current attachment used for admission. A newly admitted `MappingJob` owns
+its accepted YAML, preparation context and render settings, so it is `Send` and can
+finish on a worker after the attachment disappears. Each session admits one such
+job at a time; overlapping requests, direct preparation, commit, undo and redo
+receive `Busy`. A request ID reused with different content is rejected, and stale
+or cross-instance requests cannot activate. IDs increase monotonically within a
+live session; one retained high-water mark rejects an admitted identity after its
+terminal outcome leaves the bounded recovery window.
+
+The session retains the latest 128 terminal outcomes, including preparation and
+activation failures. A fresh attachment can query an outcome or retry the exact
+request and receive the same `Arc<RequestOutcome>` without preparing, activating
+or appending history again. The successful path allocates the outcome and both
+references before host installation; retaining it after installation uses the
+preallocated bounded deque. A completion sent to the wrong session returns an
+owned routing error, allowing that same prepared result to finish at its source.
+
 The test consumer retains an actual graph processor and checks signed output,
 publication ordering, rollback, reconnection and an independent second session.
 It is an in-process protocol fixture; it proves no concrete host's reader safety
-or continuing voices. Native adapter adoption, bounded 100-entry history and
-128-outcome recovery, one pending worker, the typed browser transport and actual
+or continuing voices. Native adapter adoption, bounded 100-entry history,
+external replacement reconciliation, the typed browser transport and actual
 WebView destruction proof remain pending in
 `openspec/changes/add-persistent-instrument-session/tasks.md`.
 
@@ -54,8 +72,9 @@ ctest --test-dir build/engine-only --output-on-failure -L '^session-fast$'
 ctest --test-dir build/engine-only --output-on-failure -L '^session-slow$'
 ```
 
-The fast lane currently contains sixteen session tests (fifteen component cases and one revision-limit unit case); the slow
-selection is empty. Combined selection is `-L '^session-(fast|slow)$'`. Full
+The fast lane currently contains twenty-two session tests (twenty public
+component cases and two revision-limit unit cases); the slow selection is empty.
+Combined selection is `-L '^session-(fast|slow)$'`. Full
 `ctest --test-dir build/engine-only` also runs the source-absence build guard,
 which executes these tests with JUCE/browser/UI source trees absent. The
 retained JUCE comparison configuration keeps the same registered test target.

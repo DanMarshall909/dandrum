@@ -1,0 +1,26 @@
+Script started on 2026-10-19 11:18:03+10:00 [<not executed on terminal>]
+   Compiling dandrum_instrument_session v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/instrument-session)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.70s
+     Running tests/session.rs (src/instrument-session/target/debug/deps/session-06759a4f0334f646)
+
+running 1 test
+test admitted_worker_survives_attachment_loss_and_retry_recovers_one_accepted_edit ... FAILED
+
+failures:
+
+---- admitted_worker_survives_attachment_loss_and_retry_recovers_one_accepted_edit stdout ----
+
+thread 'admitted_worker_survives_attachment_loss_and_retry_recovers_one_accepted_edit' (81978) panicked at tests/session.rs:773:5:
+assertion failed: matches!(session.prepare_mapping(&connection, kick_mapping(64)),
+    Err(SessionError::Busy))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    admitted_worker_survives_attachment_loss_and_retry_recovers_one_accepted_edit
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 19 filtered out; finished in 0.07s
+
+error: test failed, to rerun pass `--test session`
+
+Script done on 2026-10-19 11:18:04+10:00 [COMMAND_EXIT_CODE="101"]

@@ -1,0 +1,1869 @@
+    1|       |//! Host-independent accepted instrument state and authoring history.
+    2|       |use dandrum_engine::kernel::document::load_kernel_patch_str;
+    3|       |use dandrum_engine::patch::RenderSettings;
+    4|       |use dandrum_engine::preparation::{
+    5|       |    PreparationContext, PreparedKernelInstrument, prepare_kernel_patch_with_context,
+    6|       |};
+    7|       |use std::{
+    8|       |    collections::VecDeque,
+    9|       |    fmt,
+   10|       |    sync::{Arc, Weak},
+   11|       |};
+   12|       |
+   13|       |const ATTACHMENT_LIMIT: usize = 16;
+   14|       |const OUTCOME_LIMIT: usize = 128;
+   15|       |
+   16|       |/// An opaque lifetime identity, never a serialized pointer or platform handle.
+   17|       |#[derive(Clone, Debug)]
+   18|       |pub struct SessionIdentity(Arc<()>);
+   19|       |impl PartialEq for SessionIdentity {
+   20|    609|    fn eq(&self, other: &Self) -> bool {
+   21|    609|        Arc::ptr_eq(&self.0, &other.0)
+   22|    609|    }
+  ------------------
+  | <dandrum_instrument_session::SessionIdentity as core::cmp::PartialEq>::eq:
+  |   20|     14|    fn eq(&self, other: &Self) -> bool {
+  |   21|     14|        Arc::ptr_eq(&self.0, &other.0)
+  |   22|     14|    }
+  ------------------
+  | <dandrum_instrument_session::SessionIdentity as core::cmp::PartialEq>::eq:
+  |   20|    595|    fn eq(&self, other: &Self) -> bool {
+  |   21|    595|        Arc::ptr_eq(&self.0, &other.0)
+  |   22|    595|    }
+  ------------------
+   23|       |}
+   24|       |impl Eq for SessionIdentity {}
+   25|       |
+   26|       |/// An editor connection; retaining a copy cannot reverse explicit retirement.
+   27|       |#[derive(Clone, Debug)]
+   28|       |pub struct Attachment {
+   29|       |    owner: SessionIdentity,
+   30|       |    marker: Arc<()>,
+   31|       |}
+   32|       |
+   33|       |#[derive(Clone, Debug, PartialEq, Eq)]
+   34|       |pub struct SessionSnapshot {
+   35|       |    pub instance: SessionIdentity,
+   36|       |    pub revision: u64,
+   37|       |    pub yaml: String,
+   38|       |    pub undo_len: usize,
+   39|       |    pub redo_len: usize,
+   40|       |    pub undo: Option<JournalEntry>,
+   41|       |    pub redo: Option<JournalEntry>,
+   42|       |}
+   43|       |
+   44|       |#[derive(Clone, Debug, PartialEq, Eq)]
+   45|       |pub struct JournalEntry {
+   46|       |    pub version: u32,
+   47|       |    pub label: String,
+   48|       |    pub change: ZoneKeyRangeChange,
+   49|       |}
+   50|       |
+   51|       |pub struct Publication<'a> {
+   52|       |    pub revision: u64,
+   53|       |    pub yaml: &'a str,
+   54|       |    pub undo_len: usize,
+   55|       |    pub redo_len: usize,
+   56|       |    pub undo: Option<&'a JournalEntry>,
+   57|       |    pub redo: Option<&'a JournalEntry>,
+   58|       |}
+   59|       |
+   60|       |/// A host lease keeps audio/snapshot admission closed until publication.
+   61|       |pub trait ActivationLease {
+   62|       |    /// Infallible release: no allocation, notification, error or unwinding.
+   63|       |    fn publish(self, accepted: Publication<'_>);
+   64|       |}
+   65|       |
+   66|       |pub trait ActivationHost {
+   67|       |    type Error;
+   68|       |    type Lease<'a>: ActivationLease
+   69|       |    where
+   70|       |        Self: 'a;
+   71|       |
+   72|       |    /// Stage fallible host resources before installing. A failed activation or
+   73|       |    /// unpublished lease must restore the old runtime and metadata.
+   74|       |    fn activate<'a>(
+   75|       |        &'a mut self,
+   76|       |        prepared: &PreparedKernelInstrument,
+   77|       |        next: &SessionSnapshot,
+   78|       |    ) -> Result<Self::Lease<'a>, Self::Error>;
+   79|       |}
+   80|       |
+   81|       |#[derive(Clone, Debug, PartialEq, Eq)]
+   82|       |pub enum CommitError<E> {
+   83|       |    Session(SessionError),
+   84|       |    Activation(E),
+   85|       |}
+   86|       |
+   87|       |#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+   88|       |pub struct RequestId(pub u64);
+   89|       |
+   90|       |#[derive(Clone, Debug, PartialEq, Eq)]
+   91|       |pub struct MappingRequest {
+   92|       |    pub instance: SessionIdentity,
+   93|       |    pub request_id: RequestId,
+   94|       |    pub expected_revision: u64,
+   95|       |    pub intent: SetZoneKeyRange,
+   96|       |}
+   97|       |
+   98|       |#[derive(Clone, Debug, PartialEq, Eq)]
+   99|       |pub enum RequestFailure {
+  100|       |    Session(SessionError),
+  101|       |    Activation(String),
+  102|       |}
+  103|       |
+  104|       |#[derive(Clone, Debug, PartialEq, Eq)]
+  105|       |pub struct RequestOutcome {
+  106|       |    pub request_id: RequestId,
+  107|       |    pub result: Result<SessionSnapshot, RequestFailure>,
+  108|       |}
+  109|       |
+  110|       |pub enum MappingAdmission {
+  111|       |    Admitted(MappingJob),
+  112|       |    Pending,
+  113|       |    Completed(Arc<RequestOutcome>),
+  114|       |}
+  115|       |
+  116|       |/// A completion routed to the wrong session. The owned result remains recoverable.
+  117|       |pub struct CompletionRouteError {
+  118|       |    reason: SessionError,
+  119|       |    completion: Box<PreparedMappingJob>,
+  120|       |}
+  121|       |
+  122|       |impl CompletionRouteError {
+  123|      1|    pub fn reason(&self) -> &SessionError {
+  124|      1|        &self.reason
+  125|      1|    }
+  ------------------
+  | Unexecuted instantiation: <dandrum_instrument_session::CompletionRouteError>::reason
+  ------------------
+  | <dandrum_instrument_session::CompletionRouteError>::reason:
+  |  123|      1|    pub fn reason(&self) -> &SessionError {
+  |  124|      1|        &self.reason
+  |  125|      1|    }
+  ------------------
+  126|       |
+  127|      1|    pub fn into_completion(self) -> PreparedMappingJob {
+  128|      1|        *self.completion
+  129|      1|    }
+  ------------------
+  | Unexecuted instantiation: <dandrum_instrument_session::CompletionRouteError>::into_completion
+  ------------------
+  | <dandrum_instrument_session::CompletionRouteError>::into_completion:
+  |  127|      1|    pub fn into_completion(self) -> PreparedMappingJob {
+  |  128|      1|        *self.completion
+  |  129|      1|    }
+  ------------------
+  130|       |}
+  131|       |
+  132|       |impl fmt::Debug for CompletionRouteError {
+  133|      1|    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+  134|      1|        formatter
+  135|      1|            .debug_struct("CompletionRouteError")
+  136|      1|            .field("reason", &self.reason)
+  137|      1|            .finish_non_exhaustive()
+  138|      1|    }
+  ------------------
+  | Unexecuted instantiation: <dandrum_instrument_session::CompletionRouteError as core::fmt::Debug>::fmt
+  ------------------
+  | <dandrum_instrument_session::CompletionRouteError as core::fmt::Debug>::fmt:
+  |  133|      1|    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+  |  134|      1|        formatter
+  |  135|      1|            .debug_struct("CompletionRouteError")
+  |  136|      1|            .field("reason", &self.reason)
+  |  137|      1|            .finish_non_exhaustive()
+  |  138|      1|    }
+  ------------------
+  139|       |}
+  140|       |
+  141|       |#[derive(Clone, Debug, PartialEq, Eq)]
+  142|       |pub enum SessionError {
+  143|       |    InvalidDocument(String),
+  144|       |    PreparationFailed(String),
+  145|       |    InvalidAttachment,
+  146|       |    AttachmentLimit,
+  147|       |    InvalidMapping,
+  148|       |    ForeignCandidate,
+  149|       |    StaleCandidate,
+  150|       |    NothingToUndo,
+  151|       |    NothingToRedo,
+  152|       |    RevisionExhausted,
+  153|       |    InvalidRequestInstance,
+  154|       |    StaleRequest,
+  155|       |    ConflictingRequest,
+  156|       |    RetiredRequest,
+  157|       |    Busy,
+  158|       |    InvalidJob,
+  159|       |}
+  160|       |
+  161|       |#[derive(Clone, Debug, PartialEq, Eq)]
+  162|       |/// A musical intent addressed by native identities; no client inverse is accepted.
+  163|       |pub struct SetZoneKeyRange {
+  164|       |    pub map_id: String,
+  165|       |    pub zone_id: String,
+  166|       |    pub key_range: [u8; 2],
+  167|       |}
+  168|       |
+  169|       |#[derive(Clone, Debug, PartialEq, Eq)]
+  170|       |/// Native before/after data for the future instrument-owned journal.
+  171|       |pub struct ZoneKeyRangeChange {
+  172|       |    pub map_id: String,
+  173|       |    pub zone_id: String,
+  174|       |    pub before: [u8; 2],
+  175|       |    pub after: [u8; 2],
+  176|       |}
+  177|       |
+  178|       |/// An uncommitted candidate. Its creation never installs a runtime or edits history.
+  179|       |pub struct PreparedMapping {
+  180|       |    yaml: String,
+  181|       |    prepared: PreparedKernelInstrument,
+  182|       |    change: ZoneKeyRangeChange,
+  183|       |    owner: SessionIdentity,
+  184|       |    base_revision: u64,
+  185|       |}
+  186|       |
+  187|       |/// Owned preparation work. It can move to a worker without retaining an editor.
+  188|       |pub struct MappingJob {
+  189|       |    request: MappingRequest,
+  190|       |    yaml: String,
+  191|       |    context: PreparationContext,
+  192|       |    settings: RenderSettings,
+  193|       |}
+  194|       |
+  195|       |pub struct PreparedMappingJob {
+  196|       |    request: MappingRequest,
+  197|       |    result: Result<PreparedMapping, SessionError>,
+  198|       |}
+  199|       |
+  200|       |impl MappingJob {
+  201|    135|    pub fn prepare(self) -> PreparedMappingJob {
+  202|    135|        let result = InstrumentSession::prepare_mapping_document(
+  203|    135|            &self.yaml,
+  204|    135|            &self.context,
+  205|    135|            &self.settings,
+  206|    135|            self.request.instance.clone(),
+  207|    135|            self.request.expected_revision,
+  208|    135|            self.request.intent.clone(),
+  209|       |        );
+  210|    135|        PreparedMappingJob {
+  211|    135|            request: self.request,
+  212|    135|            result,
+  213|    135|        }
+  214|    135|    }
+  ------------------
+  | <dandrum_instrument_session::MappingJob>::prepare:
+  |  201|      1|    pub fn prepare(self) -> PreparedMappingJob {
+  |  202|      1|        let result = InstrumentSession::prepare_mapping_document(
+  |  203|      1|            &self.yaml,
+  |  204|      1|            &self.context,
+  |  205|      1|            &self.settings,
+  |  206|      1|            self.request.instance.clone(),
+  |  207|      1|            self.request.expected_revision,
+  |  208|      1|            self.request.intent.clone(),
+  |  209|       |        );
+  |  210|      1|        PreparedMappingJob {
+  |  211|      1|            request: self.request,
+  |  212|      1|            result,
+  |  213|      1|        }
+  |  214|      1|    }
+  ------------------
+  | <dandrum_instrument_session::MappingJob>::prepare:
+  |  201|    134|    pub fn prepare(self) -> PreparedMappingJob {
+  |  202|    134|        let result = InstrumentSession::prepare_mapping_document(
+  |  203|    134|            &self.yaml,
+  |  204|    134|            &self.context,
+  |  205|    134|            &self.settings,
+  |  206|    134|            self.request.instance.clone(),
+  |  207|    134|            self.request.expected_revision,
+  |  208|    134|            self.request.intent.clone(),
+  |  209|       |        );
+  |  210|    134|        PreparedMappingJob {
+  |  211|    134|            request: self.request,
+  |  212|    134|            result,
+  |  213|    134|        }
+  |  214|    134|    }
+  ------------------
+  215|       |}
+  216|       |impl PreparedMapping {
+  217|      1|    pub fn yaml(&self) -> &str {
+  218|      1|        &self.yaml
+  219|      1|    }
+  ------------------
+  | Unexecuted instantiation: <dandrum_instrument_session::PreparedMapping>::yaml
+  ------------------
+  | <dandrum_instrument_session::PreparedMapping>::yaml:
+  |  217|      1|    pub fn yaml(&self) -> &str {
+  |  218|      1|        &self.yaml
+  |  219|      1|    }
+  ------------------
+  220|      5|    pub fn prepared(&self) -> &PreparedKernelInstrument {
+  221|      5|        &self.prepared
+  222|      5|    }
+  ------------------
+  | Unexecuted instantiation: <dandrum_instrument_session::PreparedMapping>::prepared
+  ------------------
+  | <dandrum_instrument_session::PreparedMapping>::prepared:
+  |  220|      5|    pub fn prepared(&self) -> &PreparedKernelInstrument {
+  |  221|      5|        &self.prepared
+  |  222|      5|    }
+  ------------------
+  223|      6|    pub fn change(&self) -> &ZoneKeyRangeChange {
+  224|      6|        &self.change
+  225|      6|    }
+  ------------------
+  | Unexecuted instantiation: <dandrum_instrument_session::PreparedMapping>::change
+  ------------------
+  | <dandrum_instrument_session::PreparedMapping>::change:
+  |  223|      6|    pub fn change(&self) -> &ZoneKeyRangeChange {
+  |  224|      6|        &self.change
+  |  225|      6|    }
+  ------------------
+  226|       |}
+  227|       |
+  228|       |/// Off-audio owner. Renderers consume the prepared engine directly.
+  229|       |pub struct InstrumentSession {
+  230|       |    accepted: AcceptedState,
+  231|       |    identity: SessionIdentity,
+  232|       |    attachments: Vec<Weak<()>>,
+  233|       |    context: PreparationContext,
+  234|       |    settings: RenderSettings,
+  235|       |    pending: Option<MappingRequest>,
+  236|       |    outcomes: VecDeque<RetainedOutcome>,
+  237|       |    highest_request_id: Option<RequestId>,
+  238|       |}
+  239|       |struct AcceptedState {
+  240|       |    yaml: String,
+  241|       |    prepared: PreparedKernelInstrument,
+  242|       |    revision: u64,
+  243|       |    journal: Vec<JournalEntry>,
+  244|       |    cursor: usize,
+  245|       |}
+  246|       |enum HistoryAction {
+  247|       |    Append,
+  248|       |    Undo,
+  249|       |    Redo,
+  250|       |}
+  251|       |struct RetainedOutcome {
+  252|       |    request: MappingRequest,
+  253|       |    outcome: Arc<RequestOutcome>,
+  254|       |}
+  255|       |impl AcceptedState {
+  256|    117|    fn publication(&self) -> Publication<'_> {
+  257|       |        Publication {
+  258|    117|            revision: self.revision,
+  259|    117|            yaml: &self.yaml,
+  260|    117|            undo_len: self.cursor,
+  261|    117|            redo_len: self.journal.len() - self.cursor,
+  262|    117|            undo: self
+  263|    117|                .cursor
+  264|    117|                .checked_sub(1)
+  265|    117|                .and_then(|index| self.journal.get(index)),
+                                                ^32          ^32 ^32
+  ------------------
+  | Unexecuted instantiation: <dandrum_instrument_session::AcceptedState>::publication::{closure#0}
+  ------------------
+  | <dandrum_instrument_session::AcceptedState>::publication::{closure#0}:
+  |  265|     32|                .and_then(|index| self.journal.get(index)),
+  ------------------
+  266|    117|            redo: self.journal.get(self.cursor),
+  267|       |        }
+  268|    117|    }
+  ------------------
+  | <dandrum_instrument_session::AcceptedState>::publication:
+  |  256|      4|    fn publication(&self) -> Publication<'_> {
+  |  257|       |        Publication {
+  |  258|      4|            revision: self.revision,
+  |  259|      4|            yaml: &self.yaml,
+  |  260|      4|            undo_len: self.cursor,
+  |  261|      4|            redo_len: self.journal.len() - self.cursor,
+  |  262|      4|            undo: self
+  |  263|      4|                .cursor
+  |  264|      4|                .checked_sub(1)
+  |  265|      4|                .and_then(|index| self.journal.get(index)),
+  |  266|      4|            redo: self.journal.get(self.cursor),
+  |  267|       |        }
+  |  268|      4|    }
+  ------------------
+  | <dandrum_instrument_session::AcceptedState>::publication:
+  |  256|    113|    fn publication(&self) -> Publication<'_> {
+  |  257|       |        Publication {
+  |  258|    113|            revision: self.revision,
+  |  259|    113|            yaml: &self.yaml,
+  |  260|    113|            undo_len: self.cursor,
+  |  261|    113|            redo_len: self.journal.len() - self.cursor,
+  |  262|    113|            undo: self
+  |  263|    113|                .cursor
+  |  264|    113|                .checked_sub(1)
+  |  265|    113|                .and_then(|index| self.journal.get(index)),
+  |  266|    113|            redo: self.journal.get(self.cursor),
+  |  267|       |        }
+  |  268|    113|    }
+  ------------------
+  269|       |}
+  270|       |impl InstrumentSession {
+  271|    149|    pub fn admit_mapping(
+  272|    149|        &mut self,
+  273|    149|        attachment: &Attachment,
+  274|    149|        request: MappingRequest,
+  275|    149|    ) -> Result<MappingAdmission, SessionError> {
+  276|    149|        self.attachment_index(attachment)
+  277|    149|            .ok_or(SessionError::InvalidAttachment)?;
+                                                                 ^2
+  278|    147|        if request.instance != self.identity {
+  279|      1|            return Err(SessionError::InvalidRequestInstance);
+  280|    146|        }
+  281|    146|        if let Some(retained) = self
+                                  ^5
+  282|    146|            .outcomes
+  283|    146|            .iter()
+  284|  8.51k|            .find(|retained| retained.request.request_id == request.request_id)
+                           ^146
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::admit_mapping::{closure#0}:
+  |  284|      1|            .find(|retained| retained.request.request_id == request.request_id)
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::admit_mapping::{closure#0}:
+  |  284|  8.51k|            .find(|retained| retained.request.request_id == request.request_id)
+  ------------------
+  285|       |        {
+  286|      5|            return if retained.request == request {
+  287|      4|                Ok(MappingAdmission::Completed(Arc::clone(&retained.outcome)))
+  288|       |            } else {
+  289|      1|                Err(SessionError::ConflictingRequest)
+  290|       |            };
+  291|    141|        }
+  292|    141|        if let Some(pending) = &self.pending {
+                                  ^3
+  293|      3|            return if pending.request_id == request.request_id {
+  294|      2|                if pending == &request {
+  295|      1|                    Ok(MappingAdmission::Pending)
+  296|       |                } else {
+  297|      1|                    Err(SessionError::ConflictingRequest)
+  298|       |                }
+  299|       |            } else {
+  300|      1|                Err(SessionError::Busy)
+  301|       |            };
+  302|    138|        }
+  303|    138|        if self
+  304|    138|            .highest_request_id
+  305|    138|            .is_some_and(|highest| request.request_id <= highest)
+                                                 ^132                  ^132
+  ------------------
+  | Unexecuted instantiation: <dandrum_instrument_session::InstrumentSession>::admit_mapping::{closure#1}
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::admit_mapping::{closure#1}:
+  |  305|    132|            .is_some_and(|highest| request.request_id <= highest)
+  ------------------
+  306|       |        {
+  307|      2|            return Err(SessionError::RetiredRequest);
+  308|    136|        }
+  309|    136|        if request.expected_revision != self.accepted.revision {
+  310|      1|            return Err(SessionError::StaleRequest);
+  311|    135|        }
+  312|    135|        let job = MappingJob {
+  313|    135|            request: request.clone(),
+  314|    135|            yaml: self.accepted.yaml.clone(),
+  315|    135|            context: self.context.clone(),
+  316|    135|            settings: self.settings.clone(),
+  317|    135|        };
+  318|    135|        self.highest_request_id = Some(request.request_id);
+  319|    135|        self.pending = Some(request);
+  320|    135|        Ok(MappingAdmission::Admitted(job))
+  321|    149|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::admit_mapping:
+  |  271|      2|    pub fn admit_mapping(
+  |  272|      2|        &mut self,
+  |  273|      2|        attachment: &Attachment,
+  |  274|      2|        request: MappingRequest,
+  |  275|      2|    ) -> Result<MappingAdmission, SessionError> {
+  |  276|      2|        self.attachment_index(attachment)
+  |  277|      2|            .ok_or(SessionError::InvalidAttachment)?;
+  |                                                                 ^0
+  |  278|      2|        if request.instance != self.identity {
+  |  279|      0|            return Err(SessionError::InvalidRequestInstance);
+  |  280|      2|        }
+  |  281|      2|        if let Some(retained) = self
+  |                                  ^1
+  |  282|      2|            .outcomes
+  |  283|      2|            .iter()
+  |  284|      2|            .find(|retained| retained.request.request_id == request.request_id)
+  |  285|       |        {
+  |  286|      1|            return if retained.request == request {
+  |  287|      1|                Ok(MappingAdmission::Completed(Arc::clone(&retained.outcome)))
+  |  288|       |            } else {
+  |  289|      0|                Err(SessionError::ConflictingRequest)
+  |  290|       |            };
+  |  291|      1|        }
+  |  292|      1|        if let Some(pending) = &self.pending {
+  |                                  ^0
+  |  293|      0|            return if pending.request_id == request.request_id {
+  |  294|      0|                if pending == &request {
+  |  295|      0|                    Ok(MappingAdmission::Pending)
+  |  296|       |                } else {
+  |  297|      0|                    Err(SessionError::ConflictingRequest)
+  |  298|       |                }
+  |  299|       |            } else {
+  |  300|      0|                Err(SessionError::Busy)
+  |  301|       |            };
+  |  302|      1|        }
+  |  303|      1|        if self
+  |  304|      1|            .highest_request_id
+  |  305|      1|            .is_some_and(|highest| request.request_id <= highest)
+  |  306|       |        {
+  |  307|      0|            return Err(SessionError::RetiredRequest);
+  |  308|      1|        }
+  |  309|      1|        if request.expected_revision != self.accepted.revision {
+  |  310|      0|            return Err(SessionError::StaleRequest);
+  |  311|      1|        }
+  |  312|      1|        let job = MappingJob {
+  |  313|      1|            request: request.clone(),
+  |  314|      1|            yaml: self.accepted.yaml.clone(),
+  |  315|      1|            context: self.context.clone(),
+  |  316|      1|            settings: self.settings.clone(),
+  |  317|      1|        };
+  |  318|      1|        self.highest_request_id = Some(request.request_id);
+  |  319|      1|        self.pending = Some(request);
+  |  320|      1|        Ok(MappingAdmission::Admitted(job))
+  |  321|      2|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::admit_mapping:
+  |  271|    147|    pub fn admit_mapping(
+  |  272|    147|        &mut self,
+  |  273|    147|        attachment: &Attachment,
+  |  274|    147|        request: MappingRequest,
+  |  275|    147|    ) -> Result<MappingAdmission, SessionError> {
+  |  276|    147|        self.attachment_index(attachment)
+  |  277|    147|            .ok_or(SessionError::InvalidAttachment)?;
+  |                                                                 ^2
+  |  278|    145|        if request.instance != self.identity {
+  |  279|      1|            return Err(SessionError::InvalidRequestInstance);
+  |  280|    144|        }
+  |  281|    144|        if let Some(retained) = self
+  |                                  ^4
+  |  282|    144|            .outcomes
+  |  283|    144|            .iter()
+  |  284|    144|            .find(|retained| retained.request.request_id == request.request_id)
+  |  285|       |        {
+  |  286|      4|            return if retained.request == request {
+  |  287|      3|                Ok(MappingAdmission::Completed(Arc::clone(&retained.outcome)))
+  |  288|       |            } else {
+  |  289|      1|                Err(SessionError::ConflictingRequest)
+  |  290|       |            };
+  |  291|    140|        }
+  |  292|    140|        if let Some(pending) = &self.pending {
+  |                                  ^3
+  |  293|      3|            return if pending.request_id == request.request_id {
+  |  294|      2|                if pending == &request {
+  |  295|      1|                    Ok(MappingAdmission::Pending)
+  |  296|       |                } else {
+  |  297|      1|                    Err(SessionError::ConflictingRequest)
+  |  298|       |                }
+  |  299|       |            } else {
+  |  300|      1|                Err(SessionError::Busy)
+  |  301|       |            };
+  |  302|    137|        }
+  |  303|    137|        if self
+  |  304|    137|            .highest_request_id
+  |  305|    137|            .is_some_and(|highest| request.request_id <= highest)
+  |  306|       |        {
+  |  307|      2|            return Err(SessionError::RetiredRequest);
+  |  308|    135|        }
+  |  309|    135|        if request.expected_revision != self.accepted.revision {
+  |  310|      1|            return Err(SessionError::StaleRequest);
+  |  311|    134|        }
+  |  312|    134|        let job = MappingJob {
+  |  313|    134|            request: request.clone(),
+  |  314|    134|            yaml: self.accepted.yaml.clone(),
+  |  315|    134|            context: self.context.clone(),
+  |  316|    134|            settings: self.settings.clone(),
+  |  317|    134|        };
+  |  318|    134|        self.highest_request_id = Some(request.request_id);
+  |  319|    134|        self.pending = Some(request);
+  |  320|    134|        Ok(MappingAdmission::Admitted(job))
+  |  321|    147|    }
+  ------------------
+  322|       |
+  323|    136|    pub fn complete_mapping<H: ActivationHost>(
+  324|    136|        &mut self,
+  325|    136|        completion: PreparedMappingJob,
+  326|    136|        host: &mut H,
+  327|    136|    ) -> Result<Arc<RequestOutcome>, CompletionRouteError>
+  328|    136|    where
+  329|    136|        H::Error: ToString,
+  330|       |    {
+  331|    136|        if self.pending.as_ref() != Some(&completion.request) {
+  332|      1|            return Err(CompletionRouteError {
+  333|      1|                reason: SessionError::InvalidJob,
+  334|      1|                completion: Box::new(completion),
+  335|      1|            });
+  336|    135|        }
+  337|    135|        let request = self
+  338|    135|            .pending
+  339|    135|            .take()
+  340|    135|            .expect("matching pending request exists");
+  341|    135|        let outcome = match completion.result {
+                          ^132
+  342|    130|            Err(error) => Arc::new(RequestOutcome {
+  343|    130|                request_id: request.request_id,
+  344|    130|                result: Err(RequestFailure::Session(error)),
+  345|    130|            }),
+  346|      5|            Ok(candidate) => match self.stage(candidate, HistoryAction::Append) {
+  347|      1|                Err(error) => Arc::new(RequestOutcome {
+  348|      1|                    request_id: request.request_id,
+  349|      1|                    result: Err(RequestFailure::Session(error)),
+  350|      1|                }),
+  351|      4|                Ok(staged) => {
+  352|      4|                    let snapshot = self.snapshot_of(&staged);
+  353|       |                    // Both retained and returned references exist before installation.
+  354|      4|                    let accepted = Arc::new(RequestOutcome {
+  355|      4|                        request_id: request.request_id,
+  356|      4|                        result: Ok(snapshot.clone()),
+  357|      4|                    });
+  358|      4|                    let returned = Arc::clone(&accepted);
+  359|      4|                    match self.install_staged(staged, &snapshot, host) {
+  360|       |                        Ok(()) => {
+  361|      3|                            self.retain_outcome(request, accepted);
+  362|      3|                            return Ok(returned);
+  363|       |                        }
+  364|      1|                        Err(error) => Arc::new(RequestOutcome {
+  365|      1|                            request_id: request.request_id,
+  366|      1|                            result: Err(RequestFailure::Activation(error.to_string())),
+  367|      1|                        }),
+  368|       |                    }
+  369|       |                }
+  370|       |            },
+  371|       |        };
+  372|    132|        let returned = Arc::clone(&outcome);
+  373|    132|        self.retain_outcome(request, outcome);
+  374|    132|        Ok(returned)
+  375|    136|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::complete_mapping::<dandrum_instrument_session::revision_limit::NoActivation>:
+  |  323|      1|    pub fn complete_mapping<H: ActivationHost>(
+  |  324|      1|        &mut self,
+  |  325|      1|        completion: PreparedMappingJob,
+  |  326|      1|        host: &mut H,
+  |  327|      1|    ) -> Result<Arc<RequestOutcome>, CompletionRouteError>
+  |  328|      1|    where
+  |  329|      1|        H::Error: ToString,
+  |  330|       |    {
+  |  331|      1|        if self.pending.as_ref() != Some(&completion.request) {
+  |  332|      0|            return Err(CompletionRouteError {
+  |  333|      0|                reason: SessionError::InvalidJob,
+  |  334|      0|                completion: Box::new(completion),
+  |  335|      0|            });
+  |  336|      1|        }
+  |  337|      1|        let request = self
+  |  338|      1|            .pending
+  |  339|      1|            .take()
+  |  340|      1|            .expect("matching pending request exists");
+  |  341|      1|        let outcome = match completion.result {
+  |  342|      0|            Err(error) => Arc::new(RequestOutcome {
+  |  343|      0|                request_id: request.request_id,
+  |  344|      0|                result: Err(RequestFailure::Session(error)),
+  |  345|      0|            }),
+  |  346|      1|            Ok(candidate) => match self.stage(candidate, HistoryAction::Append) {
+  |  347|      1|                Err(error) => Arc::new(RequestOutcome {
+  |  348|      1|                    request_id: request.request_id,
+  |  349|      1|                    result: Err(RequestFailure::Session(error)),
+  |  350|      1|                }),
+  |  351|      0|                Ok(staged) => {
+  |  352|      0|                    let snapshot = self.snapshot_of(&staged);
+  |  353|       |                    // Both retained and returned references exist before installation.
+  |  354|      0|                    let accepted = Arc::new(RequestOutcome {
+  |  355|      0|                        request_id: request.request_id,
+  |  356|      0|                        result: Ok(snapshot.clone()),
+  |  357|      0|                    });
+  |  358|      0|                    let returned = Arc::clone(&accepted);
+  |  359|      0|                    match self.install_staged(staged, &snapshot, host) {
+  |  360|       |                        Ok(()) => {
+  |  361|      0|                            self.retain_outcome(request, accepted);
+  |  362|      0|                            return Ok(returned);
+  |  363|       |                        }
+  |  364|      0|                        Err(error) => Arc::new(RequestOutcome {
+  |  365|      0|                            request_id: request.request_id,
+  |  366|      0|                            result: Err(RequestFailure::Activation(error.to_string())),
+  |  367|      0|                        }),
+  |  368|       |                    }
+  |  369|       |                }
+  |  370|       |            },
+  |  371|       |        };
+  |  372|      1|        let returned = Arc::clone(&outcome);
+  |  373|      1|        self.retain_outcome(request, outcome);
+  |  374|      1|        Ok(returned)
+  |  375|      1|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::complete_mapping::<session::RuntimeHost>:
+  |  323|    135|    pub fn complete_mapping<H: ActivationHost>(
+  |  324|    135|        &mut self,
+  |  325|    135|        completion: PreparedMappingJob,
+  |  326|    135|        host: &mut H,
+  |  327|    135|    ) -> Result<Arc<RequestOutcome>, CompletionRouteError>
+  |  328|    135|    where
+  |  329|    135|        H::Error: ToString,
+  |  330|       |    {
+  |  331|    135|        if self.pending.as_ref() != Some(&completion.request) {
+  |  332|      1|            return Err(CompletionRouteError {
+  |  333|      1|                reason: SessionError::InvalidJob,
+  |  334|      1|                completion: Box::new(completion),
+  |  335|      1|            });
+  |  336|    134|        }
+  |  337|    134|        let request = self
+  |  338|    134|            .pending
+  |  339|    134|            .take()
+  |  340|    134|            .expect("matching pending request exists");
+  |  341|    134|        let outcome = match completion.result {
+  |                          ^131
+  |  342|    130|            Err(error) => Arc::new(RequestOutcome {
+  |  343|    130|                request_id: request.request_id,
+  |  344|    130|                result: Err(RequestFailure::Session(error)),
+  |  345|    130|            }),
+  |  346|      4|            Ok(candidate) => match self.stage(candidate, HistoryAction::Append) {
+  |  347|      0|                Err(error) => Arc::new(RequestOutcome {
+  |  348|      0|                    request_id: request.request_id,
+  |  349|      0|                    result: Err(RequestFailure::Session(error)),
+  |  350|      0|                }),
+  |  351|      4|                Ok(staged) => {
+  |  352|      4|                    let snapshot = self.snapshot_of(&staged);
+  |  353|       |                    // Both retained and returned references exist before installation.
+  |  354|      4|                    let accepted = Arc::new(RequestOutcome {
+  |  355|      4|                        request_id: request.request_id,
+  |  356|      4|                        result: Ok(snapshot.clone()),
+  |  357|      4|                    });
+  |  358|      4|                    let returned = Arc::clone(&accepted);
+  |  359|      4|                    match self.install_staged(staged, &snapshot, host) {
+  |  360|       |                        Ok(()) => {
+  |  361|      3|                            self.retain_outcome(request, accepted);
+  |  362|      3|                            return Ok(returned);
+  |  363|       |                        }
+  |  364|      1|                        Err(error) => Arc::new(RequestOutcome {
+  |  365|      1|                            request_id: request.request_id,
+  |  366|      1|                            result: Err(RequestFailure::Activation(error.to_string())),
+  |  367|      1|                        }),
+  |  368|       |                    }
+  |  369|       |                }
+  |  370|       |            },
+  |  371|       |        };
+  |  372|    131|        let returned = Arc::clone(&outcome);
+  |  373|    131|        self.retain_outcome(request, outcome);
+  |  374|    131|        Ok(returned)
+  |  375|    135|    }
+  ------------------
+  376|       |
+  377|      9|    pub fn request_outcome(
+  378|      9|        &self,
+  379|      9|        attachment: &Attachment,
+  380|      9|        request_id: RequestId,
+  381|      9|    ) -> Result<Option<Arc<RequestOutcome>>, SessionError> {
+  382|      9|        self.attachment_index(attachment)
+  383|      9|            .ok_or(SessionError::InvalidAttachment)?;
+                                                                 ^1
+  384|      8|        Ok(self
+  385|      8|            .outcomes
+  386|      8|            .iter()
+  387|    262|            .find(|retained| retained.request.request_id == request_id)
+                           ^8
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::request_outcome::{closure#0}:
+  |  387|      1|            .find(|retained| retained.request.request_id == request_id)
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::request_outcome::{closure#0}:
+  |  387|    261|            .find(|retained| retained.request.request_id == request_id)
+  ------------------
+  388|      8|            .map(|retained| Arc::clone(&retained.outcome)))
+                                          ^6         ^6
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::request_outcome::{closure#1}:
+  |  388|      1|            .map(|retained| Arc::clone(&retained.outcome)))
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::request_outcome::{closure#1}:
+  |  388|      5|            .map(|retained| Arc::clone(&retained.outcome)))
+  ------------------
+  389|      9|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::request_outcome:
+  |  377|      1|    pub fn request_outcome(
+  |  378|      1|        &self,
+  |  379|      1|        attachment: &Attachment,
+  |  380|      1|        request_id: RequestId,
+  |  381|      1|    ) -> Result<Option<Arc<RequestOutcome>>, SessionError> {
+  |  382|      1|        self.attachment_index(attachment)
+  |  383|      1|            .ok_or(SessionError::InvalidAttachment)?;
+  |                                                                 ^0
+  |  384|      1|        Ok(self
+  |  385|      1|            .outcomes
+  |  386|      1|            .iter()
+  |  387|      1|            .find(|retained| retained.request.request_id == request_id)
+  |  388|      1|            .map(|retained| Arc::clone(&retained.outcome)))
+  |  389|      1|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::request_outcome:
+  |  377|      8|    pub fn request_outcome(
+  |  378|      8|        &self,
+  |  379|      8|        attachment: &Attachment,
+  |  380|      8|        request_id: RequestId,
+  |  381|      8|    ) -> Result<Option<Arc<RequestOutcome>>, SessionError> {
+  |  382|      8|        self.attachment_index(attachment)
+  |  383|      8|            .ok_or(SessionError::InvalidAttachment)?;
+  |                                                                 ^1
+  |  384|      7|        Ok(self
+  |  385|      7|            .outcomes
+  |  386|      7|            .iter()
+  |  387|      7|            .find(|retained| retained.request.request_id == request_id)
+  |  388|      7|            .map(|retained| Arc::clone(&retained.outcome)))
+  |  389|      8|    }
+  ------------------
+  390|       |
+  391|      9|    pub fn commit_mapping<H: ActivationHost>(
+  392|      9|        &mut self,
+  393|      9|        candidate: PreparedMapping,
+  394|      9|        host: &mut H,
+  395|      9|    ) -> Result<SessionSnapshot, CommitError<H::Error>> {
+  396|      9|        self.ensure_idle().map_err(CommitError::Session)?;
+                                                                      ^1
+  397|      8|        self.publish(candidate, HistoryAction::Append, host)
+  398|      9|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::commit_mapping::<dandrum_instrument_session::revision_limit::NoActivation>:
+  |  391|      1|    pub fn commit_mapping<H: ActivationHost>(
+  |  392|      1|        &mut self,
+  |  393|      1|        candidate: PreparedMapping,
+  |  394|      1|        host: &mut H,
+  |  395|      1|    ) -> Result<SessionSnapshot, CommitError<H::Error>> {
+  |  396|      1|        self.ensure_idle().map_err(CommitError::Session)?;
+  |                                                                      ^0
+  |  397|      1|        self.publish(candidate, HistoryAction::Append, host)
+  |  398|      1|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::commit_mapping::<session::RuntimeHost>:
+  |  391|      8|    pub fn commit_mapping<H: ActivationHost>(
+  |  392|      8|        &mut self,
+  |  393|      8|        candidate: PreparedMapping,
+  |  394|      8|        host: &mut H,
+  |  395|      8|    ) -> Result<SessionSnapshot, CommitError<H::Error>> {
+  |  396|      8|        self.ensure_idle().map_err(CommitError::Session)?;
+  |                                                                      ^1
+  |  397|      7|        self.publish(candidate, HistoryAction::Append, host)
+  |  398|      8|    }
+  ------------------
+  399|       |
+  400|      9|    pub fn undo<H: ActivationHost>(
+  401|      9|        &mut self,
+  402|      9|        attachment: &Attachment,
+  403|      9|        host: &mut H,
+  404|      9|    ) -> Result<SessionSnapshot, CommitError<H::Error>> {
+  405|      9|        self.attachment_index(attachment)
+  406|      9|            .ok_or(CommitError::Session(SessionError::InvalidAttachment))?;
+                                                                                       ^2
+  407|      7|        self.ensure_idle().map_err(CommitError::Session)?;
+                                                                      ^1
+  408|      6|        let entry = self
+                          ^5
+  409|      6|            .accepted
+  410|      6|            .publication()
+  411|      6|            .undo
+  412|      6|            .ok_or(CommitError::Session(SessionError::NothingToUndo))?;
+                                                                                   ^1
+  413|      5|        let intent = SetZoneKeyRange {
+  414|      5|            map_id: entry.change.map_id.clone(),
+  415|      5|            zone_id: entry.change.zone_id.clone(),
+  416|      5|            key_range: entry.change.before,
+  417|      5|        };
+  418|      5|        let candidate = self
+                          ^4
+  419|      5|            .prepare_mapping(attachment, intent)
+  420|      5|            .map_err(CommitError::Session)?;
+                                                        ^1
+  421|      4|        self.publish(candidate, HistoryAction::Undo, host)
+  422|      9|    }
+  ------------------
+  | Unexecuted instantiation: <dandrum_instrument_session::InstrumentSession>::undo::<_>
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::undo::<session::RuntimeHost>:
+  |  400|      9|    pub fn undo<H: ActivationHost>(
+  |  401|      9|        &mut self,
+  |  402|      9|        attachment: &Attachment,
+  |  403|      9|        host: &mut H,
+  |  404|      9|    ) -> Result<SessionSnapshot, CommitError<H::Error>> {
+  |  405|      9|        self.attachment_index(attachment)
+  |  406|      9|            .ok_or(CommitError::Session(SessionError::InvalidAttachment))?;
+  |                                                                                       ^2
+  |  407|      7|        self.ensure_idle().map_err(CommitError::Session)?;
+  |                                                                      ^1
+  |  408|      6|        let entry = self
+  |                          ^5
+  |  409|      6|            .accepted
+  |  410|      6|            .publication()
+  |  411|      6|            .undo
+  |  412|      6|            .ok_or(CommitError::Session(SessionError::NothingToUndo))?;
+  |                                                                                   ^1
+  |  413|      5|        let intent = SetZoneKeyRange {
+  |  414|      5|            map_id: entry.change.map_id.clone(),
+  |  415|      5|            zone_id: entry.change.zone_id.clone(),
+  |  416|      5|            key_range: entry.change.before,
+  |  417|      5|        };
+  |  418|      5|        let candidate = self
+  |                          ^4
+  |  419|      5|            .prepare_mapping(attachment, intent)
+  |  420|      5|            .map_err(CommitError::Session)?;
+  |                                                        ^1
+  |  421|      4|        self.publish(candidate, HistoryAction::Undo, host)
+  |  422|      9|    }
+  ------------------
+  423|       |
+  424|      7|    pub fn redo<H: ActivationHost>(
+  425|      7|        &mut self,
+  426|      7|        attachment: &Attachment,
+  427|      7|        host: &mut H,
+  428|      7|    ) -> Result<SessionSnapshot, CommitError<H::Error>> {
+  429|      7|        self.attachment_index(attachment)
+  430|      7|            .ok_or(CommitError::Session(SessionError::InvalidAttachment))?;
+                                                                                       ^2
+  431|      5|        self.ensure_idle().map_err(CommitError::Session)?;
+                                                                      ^1
+  432|      4|        let entry = self
+                          ^3
+  433|      4|            .accepted
+  434|      4|            .publication()
+  435|      4|            .redo
+  436|      4|            .ok_or(CommitError::Session(SessionError::NothingToRedo))?;
+                                                                                   ^1
+  437|      3|        let intent = SetZoneKeyRange {
+  438|      3|            map_id: entry.change.map_id.clone(),
+  439|      3|            zone_id: entry.change.zone_id.clone(),
+  440|      3|            key_range: entry.change.after,
+  441|      3|        };
+  442|      3|        let candidate = self
+                          ^2
+  443|      3|            .prepare_mapping(attachment, intent)
+  444|      3|            .map_err(CommitError::Session)?;
+                                                        ^1
+  445|      2|        self.publish(candidate, HistoryAction::Redo, host)
+  446|      7|    }
+  ------------------
+  | Unexecuted instantiation: <dandrum_instrument_session::InstrumentSession>::redo::<_>
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::redo::<session::RuntimeHost>:
+  |  424|      7|    pub fn redo<H: ActivationHost>(
+  |  425|      7|        &mut self,
+  |  426|      7|        attachment: &Attachment,
+  |  427|      7|        host: &mut H,
+  |  428|      7|    ) -> Result<SessionSnapshot, CommitError<H::Error>> {
+  |  429|      7|        self.attachment_index(attachment)
+  |  430|      7|            .ok_or(CommitError::Session(SessionError::InvalidAttachment))?;
+  |                                                                                       ^2
+  |  431|      5|        self.ensure_idle().map_err(CommitError::Session)?;
+  |                                                                      ^1
+  |  432|      4|        let entry = self
+  |                          ^3
+  |  433|      4|            .accepted
+  |  434|      4|            .publication()
+  |  435|      4|            .redo
+  |  436|      4|            .ok_or(CommitError::Session(SessionError::NothingToRedo))?;
+  |                                                                                   ^1
+  |  437|      3|        let intent = SetZoneKeyRange {
+  |  438|      3|            map_id: entry.change.map_id.clone(),
+  |  439|      3|            zone_id: entry.change.zone_id.clone(),
+  |  440|      3|            key_range: entry.change.after,
+  |  441|      3|        };
+  |  442|      3|        let candidate = self
+  |                          ^2
+  |  443|      3|            .prepare_mapping(attachment, intent)
+  |  444|      3|            .map_err(CommitError::Session)?;
+  |                                                        ^1
+  |  445|      2|        self.publish(candidate, HistoryAction::Redo, host)
+  |  446|      7|    }
+  ------------------
+  447|       |
+  448|     14|    fn publish<H: ActivationHost>(
+  449|     14|        &mut self,
+  450|     14|        candidate: PreparedMapping,
+  451|     14|        action: HistoryAction,
+  452|     14|        host: &mut H,
+  453|     14|    ) -> Result<SessionSnapshot, CommitError<H::Error>> {
+  454|     14|        let staged = self
+                          ^11
+  455|     14|            .stage(candidate, action)
+  456|     14|            .map_err(CommitError::Session)?;
+                                                        ^3
+  457|       |        // Snapshot/history/string allocations all precede host installation.
+  458|     11|        let snapshot = self.snapshot_of(&staged);
+  459|     11|        self.install_staged(staged, &snapshot, host)
+  460|     11|            .map_err(CommitError::Activation)?;
+                                                           ^3
+  461|      8|        Ok(snapshot)
+  462|     14|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::publish::<dandrum_instrument_session::revision_limit::NoActivation>:
+  |  448|      1|    fn publish<H: ActivationHost>(
+  |  449|      1|        &mut self,
+  |  450|      1|        candidate: PreparedMapping,
+  |  451|      1|        action: HistoryAction,
+  |  452|      1|        host: &mut H,
+  |  453|      1|    ) -> Result<SessionSnapshot, CommitError<H::Error>> {
+  |  454|      1|        let staged = self
+  |                          ^0
+  |  455|      1|            .stage(candidate, action)
+  |  456|      1|            .map_err(CommitError::Session)?;
+  |  457|       |        // Snapshot/history/string allocations all precede host installation.
+  |  458|      0|        let snapshot = self.snapshot_of(&staged);
+  |  459|      0|        self.install_staged(staged, &snapshot, host)
+  |  460|      0|            .map_err(CommitError::Activation)?;
+  |  461|      0|        Ok(snapshot)
+  |  462|      1|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::publish::<session::RuntimeHost>:
+  |  448|     13|    fn publish<H: ActivationHost>(
+  |  449|     13|        &mut self,
+  |  450|     13|        candidate: PreparedMapping,
+  |  451|     13|        action: HistoryAction,
+  |  452|     13|        host: &mut H,
+  |  453|     13|    ) -> Result<SessionSnapshot, CommitError<H::Error>> {
+  |  454|     13|        let staged = self
+  |                          ^11
+  |  455|     13|            .stage(candidate, action)
+  |  456|     13|            .map_err(CommitError::Session)?;
+  |                                                        ^2
+  |  457|       |        // Snapshot/history/string allocations all precede host installation.
+  |  458|     11|        let snapshot = self.snapshot_of(&staged);
+  |  459|     11|        self.install_staged(staged, &snapshot, host)
+  |  460|     11|            .map_err(CommitError::Activation)?;
+  |                                                           ^3
+  |  461|      8|        Ok(snapshot)
+  |  462|     13|    }
+  ------------------
+  463|       |
+  464|     15|    fn install_staged<H: ActivationHost>(
+  465|     15|        &mut self,
+  466|     15|        staged: AcceptedState,
+  467|     15|        snapshot: &SessionSnapshot,
+  468|     15|        host: &mut H,
+  469|     15|    ) -> Result<(), H::Error> {
+  470|     15|        let lease = host.activate(&staged.prepared, snapshot)?;
+                          ^11                                              ^4
+  471|     11|        let previous = std::mem::replace(&mut self.accepted, staged);
+  472|     11|        lease.publish(self.accepted.publication());
+  473|     11|        drop(previous); // Retire accepted resources off audio after release.
+  474|     11|        Ok(())
+  475|     15|    }
+  ------------------
+  | Unexecuted instantiation: <dandrum_instrument_session::InstrumentSession>::install_staged::<dandrum_instrument_session::revision_limit::NoActivation>
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::install_staged::<session::RuntimeHost>:
+  |  464|     15|    fn install_staged<H: ActivationHost>(
+  |  465|     15|        &mut self,
+  |  466|     15|        staged: AcceptedState,
+  |  467|     15|        snapshot: &SessionSnapshot,
+  |  468|     15|        host: &mut H,
+  |  469|     15|    ) -> Result<(), H::Error> {
+  |  470|     15|        let lease = host.activate(&staged.prepared, snapshot)?;
+  |                          ^11                                              ^4
+  |  471|     11|        let previous = std::mem::replace(&mut self.accepted, staged);
+  |  472|     11|        lease.publish(self.accepted.publication());
+  |  473|     11|        drop(previous); // Retire accepted resources off audio after release.
+  |  474|     11|        Ok(())
+  |  475|     15|    }
+  ------------------
+  476|       |
+  477|     19|    fn stage(
+  478|     19|        &self,
+  479|     19|        candidate: PreparedMapping,
+  480|     19|        action: HistoryAction,
+  481|     19|    ) -> Result<AcceptedState, SessionError> {
+  482|     19|        if candidate.owner != self.identity {
+  483|      1|            return Err(SessionError::ForeignCandidate);
+  484|     18|        }
+  485|     18|        if candidate.base_revision != self.accepted.revision {
+  486|      1|            return Err(SessionError::StaleCandidate);
+  487|     17|        }
+  488|     17|        let revision = self
+                          ^15
+  489|     17|            .accepted
+  490|     17|            .revision
+  491|     17|            .checked_add(1)
+  492|     17|            .ok_or(SessionError::RevisionExhausted)?;
+                                                                 ^2
+  493|     15|        let mut journal = self.accepted.journal.clone();
+  494|     15|        let cursor = match action {
+  495|       |            HistoryAction::Append => {
+  496|      9|                journal.truncate(self.accepted.cursor);
+  497|      9|                journal.push(JournalEntry {
+  498|      9|                    version: 1,
+  499|      9|                    label: "Change Key Range".into(),
+  500|      9|                    change: candidate.change,
+  501|      9|                });
+  502|      9|                journal.len()
+  503|       |            }
+  504|      4|            HistoryAction::Undo => self.accepted.cursor - 1,
+  505|      2|            HistoryAction::Redo => self.accepted.cursor + 1,
+  506|       |        };
+  507|     15|        Ok(AcceptedState {
+  508|     15|            yaml: candidate.yaml,
+  509|     15|            prepared: candidate.prepared,
+  510|     15|            revision,
+  511|     15|            journal,
+  512|     15|            cursor,
+  513|     15|        })
+  514|     19|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::stage:
+  |  477|      2|    fn stage(
+  |  478|      2|        &self,
+  |  479|      2|        candidate: PreparedMapping,
+  |  480|      2|        action: HistoryAction,
+  |  481|      2|    ) -> Result<AcceptedState, SessionError> {
+  |  482|      2|        if candidate.owner != self.identity {
+  |  483|      0|            return Err(SessionError::ForeignCandidate);
+  |  484|      2|        }
+  |  485|      2|        if candidate.base_revision != self.accepted.revision {
+  |  486|      0|            return Err(SessionError::StaleCandidate);
+  |  487|      2|        }
+  |  488|      2|        let revision = self
+  |                          ^0
+  |  489|      2|            .accepted
+  |  490|      2|            .revision
+  |  491|      2|            .checked_add(1)
+  |  492|      2|            .ok_or(SessionError::RevisionExhausted)?;
+  |  493|      0|        let mut journal = self.accepted.journal.clone();
+  |  494|      0|        let cursor = match action {
+  |  495|       |            HistoryAction::Append => {
+  |  496|      0|                journal.truncate(self.accepted.cursor);
+  |  497|      0|                journal.push(JournalEntry {
+  |  498|      0|                    version: 1,
+  |  499|      0|                    label: "Change Key Range".into(),
+  |  500|      0|                    change: candidate.change,
+  |  501|      0|                });
+  |  502|      0|                journal.len()
+  |  503|       |            }
+  |  504|      0|            HistoryAction::Undo => self.accepted.cursor - 1,
+  |  505|      0|            HistoryAction::Redo => self.accepted.cursor + 1,
+  |  506|       |        };
+  |  507|      0|        Ok(AcceptedState {
+  |  508|      0|            yaml: candidate.yaml,
+  |  509|      0|            prepared: candidate.prepared,
+  |  510|      0|            revision,
+  |  511|      0|            journal,
+  |  512|      0|            cursor,
+  |  513|      0|        })
+  |  514|      2|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::stage:
+  |  477|     17|    fn stage(
+  |  478|     17|        &self,
+  |  479|     17|        candidate: PreparedMapping,
+  |  480|     17|        action: HistoryAction,
+  |  481|     17|    ) -> Result<AcceptedState, SessionError> {
+  |  482|     17|        if candidate.owner != self.identity {
+  |  483|      1|            return Err(SessionError::ForeignCandidate);
+  |  484|     16|        }
+  |  485|     16|        if candidate.base_revision != self.accepted.revision {
+  |  486|      1|            return Err(SessionError::StaleCandidate);
+  |  487|     15|        }
+  |  488|     15|        let revision = self
+  |  489|     15|            .accepted
+  |  490|     15|            .revision
+  |  491|     15|            .checked_add(1)
+  |  492|     15|            .ok_or(SessionError::RevisionExhausted)?;
+  |                                                                 ^0
+  |  493|     15|        let mut journal = self.accepted.journal.clone();
+  |  494|     15|        let cursor = match action {
+  |  495|       |            HistoryAction::Append => {
+  |  496|      9|                journal.truncate(self.accepted.cursor);
+  |  497|      9|                journal.push(JournalEntry {
+  |  498|      9|                    version: 1,
+  |  499|      9|                    label: "Change Key Range".into(),
+  |  500|      9|                    change: candidate.change,
+  |  501|      9|                });
+  |  502|      9|                journal.len()
+  |  503|       |            }
+  |  504|      4|            HistoryAction::Undo => self.accepted.cursor - 1,
+  |  505|      2|            HistoryAction::Redo => self.accepted.cursor + 1,
+  |  506|       |        };
+  |  507|     15|        Ok(AcceptedState {
+  |  508|     15|            yaml: candidate.yaml,
+  |  509|     15|            prepared: candidate.prepared,
+  |  510|     15|            revision,
+  |  511|     15|            journal,
+  |  512|     15|            cursor,
+  |  513|     15|        })
+  |  514|     17|    }
+  ------------------
+  515|       |
+  516|     51|    fn ensure_idle(&self) -> Result<(), SessionError> {
+  517|     51|        if self.pending.is_some() {
+  518|      4|            Err(SessionError::Busy)
+  519|       |        } else {
+  520|     47|            Ok(())
+  521|       |        }
+  522|     51|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::ensure_idle:
+  |  516|      2|    fn ensure_idle(&self) -> Result<(), SessionError> {
+  |  517|      2|        if self.pending.is_some() {
+  |  518|      0|            Err(SessionError::Busy)
+  |  519|       |        } else {
+  |  520|      2|            Ok(())
+  |  521|       |        }
+  |  522|      2|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::ensure_idle:
+  |  516|     49|    fn ensure_idle(&self) -> Result<(), SessionError> {
+  |  517|     49|        if self.pending.is_some() {
+  |  518|      4|            Err(SessionError::Busy)
+  |  519|       |        } else {
+  |  520|     45|            Ok(())
+  |  521|       |        }
+  |  522|     49|    }
+  ------------------
+  523|       |
+  524|    135|    fn retain_outcome(&mut self, request: MappingRequest, outcome: Arc<RequestOutcome>) {
+  525|    135|        if self.outcomes.len() == OUTCOME_LIMIT {
+  526|      1|            self.outcomes.pop_front();
+  527|    134|        }
+  528|    135|        self.outcomes
+  529|    135|            .push_back(RetainedOutcome { request, outcome });
+  530|    135|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::retain_outcome:
+  |  524|      1|    fn retain_outcome(&mut self, request: MappingRequest, outcome: Arc<RequestOutcome>) {
+  |  525|      1|        if self.outcomes.len() == OUTCOME_LIMIT {
+  |  526|      0|            self.outcomes.pop_front();
+  |  527|      1|        }
+  |  528|      1|        self.outcomes
+  |  529|      1|            .push_back(RetainedOutcome { request, outcome });
+  |  530|      1|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::retain_outcome:
+  |  524|    134|    fn retain_outcome(&mut self, request: MappingRequest, outcome: Arc<RequestOutcome>) {
+  |  525|    134|        if self.outcomes.len() == OUTCOME_LIMIT {
+  |  526|      1|            self.outcomes.pop_front();
+  |  527|    133|        }
+  |  528|    134|        self.outcomes
+  |  529|    134|            .push_back(RetainedOutcome { request, outcome });
+  |  530|    134|    }
+  ------------------
+  531|       |
+  532|       |    /// Prepare off audio without publishing or changing accepted state.
+  533|     32|    pub fn prepare_mapping(
+  534|     32|        &self,
+  535|     32|        attachment: &Attachment,
+  536|     32|        intent: SetZoneKeyRange,
+  537|     32|    ) -> Result<PreparedMapping, SessionError> {
+  538|     32|        self.attachment_index(attachment)
+  539|     32|            .ok_or(SessionError::InvalidAttachment)?;
+                                                                 ^2
+  540|     30|        self.ensure_idle()?;
+                                        ^1
+  541|     29|        Self::prepare_mapping_document(
+  542|     29|            &self.accepted.yaml,
+  543|     29|            &self.context,
+  544|     29|            &self.settings,
+  545|     29|            self.identity.clone(),
+  546|     29|            self.accepted.revision,
+  547|     29|            intent,
+  548|       |        )
+  549|     32|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::prepare_mapping:
+  |  533|      1|    pub fn prepare_mapping(
+  |  534|      1|        &self,
+  |  535|      1|        attachment: &Attachment,
+  |  536|      1|        intent: SetZoneKeyRange,
+  |  537|      1|    ) -> Result<PreparedMapping, SessionError> {
+  |  538|      1|        self.attachment_index(attachment)
+  |  539|      1|            .ok_or(SessionError::InvalidAttachment)?;
+  |                                                                 ^0
+  |  540|      1|        self.ensure_idle()?;
+  |                                        ^0
+  |  541|      1|        Self::prepare_mapping_document(
+  |  542|      1|            &self.accepted.yaml,
+  |  543|      1|            &self.context,
+  |  544|      1|            &self.settings,
+  |  545|      1|            self.identity.clone(),
+  |  546|      1|            self.accepted.revision,
+  |  547|      1|            intent,
+  |  548|       |        )
+  |  549|      1|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::prepare_mapping:
+  |  533|     31|    pub fn prepare_mapping(
+  |  534|     31|        &self,
+  |  535|     31|        attachment: &Attachment,
+  |  536|     31|        intent: SetZoneKeyRange,
+  |  537|     31|    ) -> Result<PreparedMapping, SessionError> {
+  |  538|     31|        self.attachment_index(attachment)
+  |  539|     31|            .ok_or(SessionError::InvalidAttachment)?;
+  |                                                                 ^2
+  |  540|     29|        self.ensure_idle()?;
+  |                                        ^1
+  |  541|     28|        Self::prepare_mapping_document(
+  |  542|     28|            &self.accepted.yaml,
+  |  543|     28|            &self.context,
+  |  544|     28|            &self.settings,
+  |  545|     28|            self.identity.clone(),
+  |  546|     28|            self.accepted.revision,
+  |  547|     28|            intent,
+  |  548|       |        )
+  |  549|     31|    }
+  ------------------
+  550|       |
+  551|    164|    fn prepare_mapping_document(
+  552|    164|        accepted_yaml: &str,
+  553|    164|        context: &PreparationContext,
+  554|    164|        settings: &RenderSettings,
+  555|    164|        owner: SessionIdentity,
+  556|    164|        base_revision: u64,
+  557|    164|        intent: SetZoneKeyRange,
+  558|    164|    ) -> Result<PreparedMapping, SessionError> {
+  559|    164|        if intent.key_range[0] > intent.key_range[1] || intent.key_range[1] > 127 {
+                                                                      ^163
+  560|      3|            return Err(SessionError::InvalidMapping);
+  561|    161|        }
+  562|       |        // Only the native accepted document supplies identities and inverse data.
+  563|    161|        let mut document: serde_yaml::Value =
+  564|    161|            serde_yaml::from_str(accepted_yaml).expect("accepted YAML remains valid");
+  565|    161|        let maps = document["assets"]["sample_maps"]
+                          ^160
+  566|    161|            .as_sequence_mut()
+  567|    161|            .ok_or(SessionError::InvalidMapping)?;
+                                                              ^1
+  568|    160|        let map = maps
+                          ^158
+  569|    160|            .iter_mut()
+  570|    161|            .find(|map| map["id"].as_str() == Some(&intent.map_id))
+                           ^160
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::prepare_mapping_document::{closure#0}:
+  |  570|      2|            .find(|map| map["id"].as_str() == Some(&intent.map_id))
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::prepare_mapping_document::{closure#0}:
+  |  570|    159|            .find(|map| map["id"].as_str() == Some(&intent.map_id))
+  ------------------
+  571|    160|            .ok_or(SessionError::InvalidMapping)?;
+                                                              ^2
+  572|    158|        let zones = map["zones"]
+  573|    158|            .as_sequence_mut()
+  574|    158|            .expect("accepted sample map has zones");
+  575|    158|        let mut matching = zones
+  576|    158|            .iter_mut()
+  577|  1.10k|            .filter(|zone| zone["id"].as_str() == Some(&intent.zone_id));
+                           ^158
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::prepare_mapping_document::{closure#1}:
+  |  577|     14|            .filter(|zone| zone["id"].as_str() == Some(&intent.zone_id));
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::prepare_mapping_document::{closure#1}:
+  |  577|  1.08k|            .filter(|zone| zone["id"].as_str() == Some(&intent.zone_id));
+  ------------------
+  578|    158|        let zone = matching.next().ok_or(SessionError::InvalidMapping)?;
+                          ^156                                                      ^2
+  579|    156|        if matching.next().is_some() {
+  580|      1|            return Err(SessionError::InvalidMapping);
+  581|    155|        }
+  582|    155|        let before = serde_yaml::from_value(zone["key_range"].clone())
+  583|    155|            .expect("accepted zone has a typed key range");
+  584|    155|        zone["key_range"] = serde_yaml::Value::Sequence(
+  585|    155|            intent
+  586|    155|                .key_range
+  587|    155|                .into_iter()
+  588|    310|                .map(|note| note.into())
+                               ^155
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::prepare_mapping_document::{closure#2}:
+  |  588|      4|                .map(|note| note.into())
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::prepare_mapping_document::{closure#2}:
+  |  588|    306|                .map(|note| note.into())
+  ------------------
+  589|    155|                .collect(),
+  590|       |        );
+  591|       |        // Value serialization preserves authored values; presentation is normalized.
+  592|    155|        let yaml = serde_yaml::to_string(&document).expect("YAML values serialize");
+  593|    155|        let prepared = Self::prepare_document(&yaml, context, settings)?;
+                          ^22                                                        ^133
+  594|     22|        Ok(PreparedMapping {
+  595|     22|            yaml,
+  596|     22|            prepared,
+  597|     22|            owner,
+  598|     22|            base_revision,
+  599|     22|            change: ZoneKeyRangeChange {
+  600|     22|                map_id: intent.map_id,
+  601|     22|                zone_id: intent.zone_id,
+  602|     22|                before,
+  603|     22|                after: intent.key_range,
+  604|     22|            },
+  605|     22|        })
+  606|    164|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::prepare_mapping_document:
+  |  551|      2|    fn prepare_mapping_document(
+  |  552|      2|        accepted_yaml: &str,
+  |  553|      2|        context: &PreparationContext,
+  |  554|      2|        settings: &RenderSettings,
+  |  555|      2|        owner: SessionIdentity,
+  |  556|      2|        base_revision: u64,
+  |  557|      2|        intent: SetZoneKeyRange,
+  |  558|      2|    ) -> Result<PreparedMapping, SessionError> {
+  |  559|      2|        if intent.key_range[0] > intent.key_range[1] || intent.key_range[1] > 127 {
+  |  560|      0|            return Err(SessionError::InvalidMapping);
+  |  561|      2|        }
+  |  562|       |        // Only the native accepted document supplies identities and inverse data.
+  |  563|      2|        let mut document: serde_yaml::Value =
+  |  564|      2|            serde_yaml::from_str(accepted_yaml).expect("accepted YAML remains valid");
+  |  565|      2|        let maps = document["assets"]["sample_maps"]
+  |  566|      2|            .as_sequence_mut()
+  |  567|      2|            .ok_or(SessionError::InvalidMapping)?;
+  |                                                              ^0
+  |  568|      2|        let map = maps
+  |  569|      2|            .iter_mut()
+  |  570|      2|            .find(|map| map["id"].as_str() == Some(&intent.map_id))
+  |  571|      2|            .ok_or(SessionError::InvalidMapping)?;
+  |                                                              ^0
+  |  572|      2|        let zones = map["zones"]
+  |  573|      2|            .as_sequence_mut()
+  |  574|      2|            .expect("accepted sample map has zones");
+  |  575|      2|        let mut matching = zones
+  |  576|      2|            .iter_mut()
+  |  577|      2|            .filter(|zone| zone["id"].as_str() == Some(&intent.zone_id));
+  |  578|      2|        let zone = matching.next().ok_or(SessionError::InvalidMapping)?;
+  |                                                                                    ^0
+  |  579|      2|        if matching.next().is_some() {
+  |  580|      0|            return Err(SessionError::InvalidMapping);
+  |  581|      2|        }
+  |  582|      2|        let before = serde_yaml::from_value(zone["key_range"].clone())
+  |  583|      2|            .expect("accepted zone has a typed key range");
+  |  584|      2|        zone["key_range"] = serde_yaml::Value::Sequence(
+  |  585|      2|            intent
+  |  586|      2|                .key_range
+  |  587|      2|                .into_iter()
+  |  588|      2|                .map(|note| note.into())
+  |  589|      2|                .collect(),
+  |  590|       |        );
+  |  591|       |        // Value serialization preserves authored values; presentation is normalized.
+  |  592|      2|        let yaml = serde_yaml::to_string(&document).expect("YAML values serialize");
+  |  593|      2|        let prepared = Self::prepare_document(&yaml, context, settings)?;
+  |                                                                                     ^0
+  |  594|      2|        Ok(PreparedMapping {
+  |  595|      2|            yaml,
+  |  596|      2|            prepared,
+  |  597|      2|            owner,
+  |  598|      2|            base_revision,
+  |  599|      2|            change: ZoneKeyRangeChange {
+  |  600|      2|                map_id: intent.map_id,
+  |  601|      2|                zone_id: intent.zone_id,
+  |  602|      2|                before,
+  |  603|      2|                after: intent.key_range,
+  |  604|      2|            },
+  |  605|      2|        })
+  |  606|      2|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::prepare_mapping_document:
+  |  551|    162|    fn prepare_mapping_document(
+  |  552|    162|        accepted_yaml: &str,
+  |  553|    162|        context: &PreparationContext,
+  |  554|    162|        settings: &RenderSettings,
+  |  555|    162|        owner: SessionIdentity,
+  |  556|    162|        base_revision: u64,
+  |  557|    162|        intent: SetZoneKeyRange,
+  |  558|    162|    ) -> Result<PreparedMapping, SessionError> {
+  |  559|    162|        if intent.key_range[0] > intent.key_range[1] || intent.key_range[1] > 127 {
+  |                                                                      ^161
+  |  560|      3|            return Err(SessionError::InvalidMapping);
+  |  561|    159|        }
+  |  562|       |        // Only the native accepted document supplies identities and inverse data.
+  |  563|    159|        let mut document: serde_yaml::Value =
+  |  564|    159|            serde_yaml::from_str(accepted_yaml).expect("accepted YAML remains valid");
+  |  565|    159|        let maps = document["assets"]["sample_maps"]
+  |                          ^158
+  |  566|    159|            .as_sequence_mut()
+  |  567|    159|            .ok_or(SessionError::InvalidMapping)?;
+  |                                                              ^1
+  |  568|    158|        let map = maps
+  |                          ^156
+  |  569|    158|            .iter_mut()
+  |  570|    158|            .find(|map| map["id"].as_str() == Some(&intent.map_id))
+  |  571|    158|            .ok_or(SessionError::InvalidMapping)?;
+  |                                                              ^2
+  |  572|    156|        let zones = map["zones"]
+  |  573|    156|            .as_sequence_mut()
+  |  574|    156|            .expect("accepted sample map has zones");
+  |  575|    156|        let mut matching = zones
+  |  576|    156|            .iter_mut()
+  |  577|    156|            .filter(|zone| zone["id"].as_str() == Some(&intent.zone_id));
+  |  578|    156|        let zone = matching.next().ok_or(SessionError::InvalidMapping)?;
+  |                          ^154                                                      ^2
+  |  579|    154|        if matching.next().is_some() {
+  |  580|      1|            return Err(SessionError::InvalidMapping);
+  |  581|    153|        }
+  |  582|    153|        let before = serde_yaml::from_value(zone["key_range"].clone())
+  |  583|    153|            .expect("accepted zone has a typed key range");
+  |  584|    153|        zone["key_range"] = serde_yaml::Value::Sequence(
+  |  585|    153|            intent
+  |  586|    153|                .key_range
+  |  587|    153|                .into_iter()
+  |  588|    153|                .map(|note| note.into())
+  |  589|    153|                .collect(),
+  |  590|       |        );
+  |  591|       |        // Value serialization preserves authored values; presentation is normalized.
+  |  592|    153|        let yaml = serde_yaml::to_string(&document).expect("YAML values serialize");
+  |  593|    153|        let prepared = Self::prepare_document(&yaml, context, settings)?;
+  |                          ^20                                                        ^133
+  |  594|     20|        Ok(PreparedMapping {
+  |  595|     20|            yaml,
+  |  596|     20|            prepared,
+  |  597|     20|            owner,
+  |  598|     20|            base_revision,
+  |  599|     20|            change: ZoneKeyRangeChange {
+  |  600|     20|                map_id: intent.map_id,
+  |  601|     20|                zone_id: intent.zone_id,
+  |  602|     20|                before,
+  |  603|     20|                after: intent.key_range,
+  |  604|     20|            },
+  |  605|     20|        })
+  |  606|    162|    }
+  ------------------
+  607|       |
+  608|     29|    pub fn new(
+  609|     29|        yaml: &str,
+  610|     29|        context: PreparationContext,
+  611|     29|        settings: RenderSettings,
+  612|     29|    ) -> Result<Self, SessionError> {
+  613|     29|        let prepared = Self::prepare_document(yaml, &context, &settings)?;
+                          ^27                                                         ^2
+  614|     27|        Ok(Self {
+  615|     27|            accepted: AcceptedState {
+  616|     27|                yaml: yaml.into(),
+  617|     27|                prepared,
+  618|     27|                revision: 0,
+  619|     27|                journal: Vec::new(),
+  620|     27|                cursor: 0,
+  621|     27|            },
+  622|     27|            identity: SessionIdentity(Arc::new(())),
+  623|     27|            attachments: Vec::with_capacity(ATTACHMENT_LIMIT),
+  624|     27|            context,
+  625|     27|            settings,
+  626|     27|            pending: None,
+  627|     27|            outcomes: VecDeque::with_capacity(OUTCOME_LIMIT),
+  628|     27|            highest_request_id: None,
+  629|     27|        })
+  630|     29|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::new:
+  |  608|      2|    pub fn new(
+  |  609|      2|        yaml: &str,
+  |  610|      2|        context: PreparationContext,
+  |  611|      2|        settings: RenderSettings,
+  |  612|      2|    ) -> Result<Self, SessionError> {
+  |  613|      2|        let prepared = Self::prepare_document(yaml, &context, &settings)?;
+  |                                                                                      ^0
+  |  614|      2|        Ok(Self {
+  |  615|      2|            accepted: AcceptedState {
+  |  616|      2|                yaml: yaml.into(),
+  |  617|      2|                prepared,
+  |  618|      2|                revision: 0,
+  |  619|      2|                journal: Vec::new(),
+  |  620|      2|                cursor: 0,
+  |  621|      2|            },
+  |  622|      2|            identity: SessionIdentity(Arc::new(())),
+  |  623|      2|            attachments: Vec::with_capacity(ATTACHMENT_LIMIT),
+  |  624|      2|            context,
+  |  625|      2|            settings,
+  |  626|      2|            pending: None,
+  |  627|      2|            outcomes: VecDeque::with_capacity(OUTCOME_LIMIT),
+  |  628|      2|            highest_request_id: None,
+  |  629|      2|        })
+  |  630|      2|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::new:
+  |  608|     27|    pub fn new(
+  |  609|     27|        yaml: &str,
+  |  610|     27|        context: PreparationContext,
+  |  611|     27|        settings: RenderSettings,
+  |  612|     27|    ) -> Result<Self, SessionError> {
+  |  613|     27|        let prepared = Self::prepare_document(yaml, &context, &settings)?;
+  |                          ^25                                                         ^2
+  |  614|     25|        Ok(Self {
+  |  615|     25|            accepted: AcceptedState {
+  |  616|     25|                yaml: yaml.into(),
+  |  617|     25|                prepared,
+  |  618|     25|                revision: 0,
+  |  619|     25|                journal: Vec::new(),
+  |  620|     25|                cursor: 0,
+  |  621|     25|            },
+  |  622|     25|            identity: SessionIdentity(Arc::new(())),
+  |  623|     25|            attachments: Vec::with_capacity(ATTACHMENT_LIMIT),
+  |  624|     25|            context,
+  |  625|     25|            settings,
+  |  626|     25|            pending: None,
+  |  627|     25|            outcomes: VecDeque::with_capacity(OUTCOME_LIMIT),
+  |  628|     25|            highest_request_id: None,
+  |  629|     25|        })
+  |  630|     27|    }
+  ------------------
+  631|       |
+  632|     51|    pub fn attach(&mut self) -> Result<(Attachment, SessionSnapshot), SessionError> {
+  633|    183|        self.attachments.retain(|marker| marker.strong_count() != 0);
+                      ^51              ^51
+  ------------------
+  | Unexecuted instantiation: <dandrum_instrument_session::InstrumentSession>::attach::{closure#0}
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::attach::{closure#0}:
+  |  633|    183|        self.attachments.retain(|marker| marker.strong_count() != 0);
+  ------------------
+  634|     51|        if self.attachments.len() == ATTACHMENT_LIMIT {
+  635|      2|            return Err(SessionError::AttachmentLimit);
+  636|     49|        }
+  637|     49|        let attachment = Attachment {
+  638|     49|            owner: self.identity.clone(),
+  639|     49|            marker: Arc::new(()),
+  640|     49|        };
+  641|     49|        self.attachments.push(Arc::downgrade(&attachment.marker));
+  642|     49|        Ok((attachment, self.accepted_snapshot()))
+  643|     51|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::attach:
+  |  632|      2|    pub fn attach(&mut self) -> Result<(Attachment, SessionSnapshot), SessionError> {
+  |  633|      2|        self.attachments.retain(|marker| marker.strong_count() != 0);
+  |  634|      2|        if self.attachments.len() == ATTACHMENT_LIMIT {
+  |  635|      0|            return Err(SessionError::AttachmentLimit);
+  |  636|      2|        }
+  |  637|      2|        let attachment = Attachment {
+  |  638|      2|            owner: self.identity.clone(),
+  |  639|      2|            marker: Arc::new(()),
+  |  640|      2|        };
+  |  641|      2|        self.attachments.push(Arc::downgrade(&attachment.marker));
+  |  642|      2|        Ok((attachment, self.accepted_snapshot()))
+  |  643|      2|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::attach:
+  |  632|     49|    pub fn attach(&mut self) -> Result<(Attachment, SessionSnapshot), SessionError> {
+  |  633|     49|        self.attachments.retain(|marker| marker.strong_count() != 0);
+  |  634|     49|        if self.attachments.len() == ATTACHMENT_LIMIT {
+  |  635|      2|            return Err(SessionError::AttachmentLimit);
+  |  636|     47|        }
+  |  637|     47|        let attachment = Attachment {
+  |  638|     47|            owner: self.identity.clone(),
+  |  639|     47|            marker: Arc::new(()),
+  |  640|     47|        };
+  |  641|     47|        self.attachments.push(Arc::downgrade(&attachment.marker));
+  |  642|     47|        Ok((attachment, self.accepted_snapshot()))
+  |  643|     49|    }
+  ------------------
+  644|       |
+  645|     10|    pub fn detach(&mut self, attachment: &Attachment) -> Result<(), SessionError> {
+  646|     10|        let index = self
+                          ^8
+  647|     10|            .attachment_index(attachment)
+  648|     10|            .ok_or(SessionError::InvalidAttachment)?;
+                                                                 ^2
+  649|      8|        self.attachments.swap_remove(index);
+  650|      8|        Ok(())
+  651|     10|    }
+  ------------------
+  | Unexecuted instantiation: <dandrum_instrument_session::InstrumentSession>::detach
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::detach:
+  |  645|     10|    pub fn detach(&mut self, attachment: &Attachment) -> Result<(), SessionError> {
+  |  646|     10|        let index = self
+  |                          ^8
+  |  647|     10|            .attachment_index(attachment)
+  |  648|     10|            .ok_or(SessionError::InvalidAttachment)?;
+  |                                                                 ^2
+  |  649|      8|        self.attachments.swap_remove(index);
+  |  650|      8|        Ok(())
+  |  651|     10|    }
+  ------------------
+  652|       |
+  653|     37|    pub fn snapshot(&self, attachment: &Attachment) -> Result<SessionSnapshot, SessionError> {
+  654|     37|        self.attachment_index(attachment)
+  655|     37|            .ok_or(SessionError::InvalidAttachment)?;
+                                                                 ^5
+  656|     32|        Ok(self.accepted_snapshot())
+  657|     37|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::snapshot:
+  |  653|      2|    pub fn snapshot(&self, attachment: &Attachment) -> Result<SessionSnapshot, SessionError> {
+  |  654|      2|        self.attachment_index(attachment)
+  |  655|      2|            .ok_or(SessionError::InvalidAttachment)?;
+  |                                                                 ^0
+  |  656|      2|        Ok(self.accepted_snapshot())
+  |  657|      2|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::snapshot:
+  |  653|     35|    pub fn snapshot(&self, attachment: &Attachment) -> Result<SessionSnapshot, SessionError> {
+  |  654|     35|        self.attachment_index(attachment)
+  |  655|     35|            .ok_or(SessionError::InvalidAttachment)?;
+  |                                                                 ^5
+  |  656|     30|        Ok(self.accepted_snapshot())
+  |  657|     35|    }
+  ------------------
+  658|       |
+  659|     27|    pub fn prepared(&self) -> &PreparedKernelInstrument {
+  660|     27|        &self.accepted.prepared
+  661|     27|    }
+  ------------------
+  | Unexecuted instantiation: <dandrum_instrument_session::InstrumentSession>::prepared
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::prepared:
+  |  659|     27|    pub fn prepared(&self) -> &PreparedKernelInstrument {
+  |  660|     27|        &self.accepted.prepared
+  |  661|     27|    }
+  ------------------
+  662|       |
+  663|    184|    fn prepare_document(
+  664|    184|        yaml: &str,
+  665|    184|        context: &PreparationContext,
+  666|    184|        settings: &RenderSettings,
+  667|    184|    ) -> Result<PreparedKernelInstrument, SessionError> {
+  668|    184|        let patch = load_kernel_patch_str(yaml)
+                          ^183
+  669|    184|            .map_err(|error| SessionError::InvalidDocument(error.to_string()))?;
+                                                                         ^1    ^1           ^1
+  ------------------
+  | Unexecuted instantiation: <dandrum_instrument_session::InstrumentSession>::prepare_document::{closure#0}
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::prepare_document::{closure#0}:
+  |  669|      1|            .map_err(|error| SessionError::InvalidDocument(error.to_string()))?;
+  ------------------
+  670|    183|        prepare_kernel_patch_with_context(&patch, settings, context)
+  671|    183|            .map_err(|error| SessionError::PreparationFailed(error.to_string()))
+                                                                           ^134  ^134
+  ------------------
+  | Unexecuted instantiation: <dandrum_instrument_session::InstrumentSession>::prepare_document::{closure#1}
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::prepare_document::{closure#1}:
+  |  671|    134|            .map_err(|error| SessionError::PreparationFailed(error.to_string()))
+  ------------------
+  672|    184|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::prepare_document:
+  |  663|      4|    fn prepare_document(
+  |  664|      4|        yaml: &str,
+  |  665|      4|        context: &PreparationContext,
+  |  666|      4|        settings: &RenderSettings,
+  |  667|      4|    ) -> Result<PreparedKernelInstrument, SessionError> {
+  |  668|      4|        let patch = load_kernel_patch_str(yaml)
+  |  669|      4|            .map_err(|error| SessionError::InvalidDocument(error.to_string()))?;
+  |                                                                                            ^0
+  |  670|      4|        prepare_kernel_patch_with_context(&patch, settings, context)
+  |  671|      4|            .map_err(|error| SessionError::PreparationFailed(error.to_string()))
+  |  672|      4|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::prepare_document:
+  |  663|    180|    fn prepare_document(
+  |  664|    180|        yaml: &str,
+  |  665|    180|        context: &PreparationContext,
+  |  666|    180|        settings: &RenderSettings,
+  |  667|    180|    ) -> Result<PreparedKernelInstrument, SessionError> {
+  |  668|    180|        let patch = load_kernel_patch_str(yaml)
+  |                          ^179
+  |  669|    180|            .map_err(|error| SessionError::InvalidDocument(error.to_string()))?;
+  |                                                                                            ^1
+  |  670|    179|        prepare_kernel_patch_with_context(&patch, settings, context)
+  |  671|    179|            .map_err(|error| SessionError::PreparationFailed(error.to_string()))
+  |  672|    180|    }
+  ------------------
+  673|       |
+  674|    253|    fn attachment_index(&self, attachment: &Attachment) -> Option<usize> {
+  675|    253|        if self.identity != attachment.owner {
+  676|      7|            return None;
+  677|    246|        }
+  678|    246|        let marker = Arc::downgrade(&attachment.marker);
+  679|    246|        self.attachments
+  680|    246|            .iter()
+  681|    283|            .position(|active| active.ptr_eq(&marker))
+                           ^246
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::attachment_index::{closure#0}:
+  |  681|      6|            .position(|active| active.ptr_eq(&marker))
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::attachment_index::{closure#0}:
+  |  681|    277|            .position(|active| active.ptr_eq(&marker))
+  ------------------
+  682|    253|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::attachment_index:
+  |  674|      6|    fn attachment_index(&self, attachment: &Attachment) -> Option<usize> {
+  |  675|      6|        if self.identity != attachment.owner {
+  |  676|      0|            return None;
+  |  677|      6|        }
+  |  678|      6|        let marker = Arc::downgrade(&attachment.marker);
+  |  679|      6|        self.attachments
+  |  680|      6|            .iter()
+  |  681|      6|            .position(|active| active.ptr_eq(&marker))
+  |  682|      6|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::attachment_index:
+  |  674|    247|    fn attachment_index(&self, attachment: &Attachment) -> Option<usize> {
+  |  675|    247|        if self.identity != attachment.owner {
+  |  676|      7|            return None;
+  |  677|    240|        }
+  |  678|    240|        let marker = Arc::downgrade(&attachment.marker);
+  |  679|    240|        self.attachments
+  |  680|    240|            .iter()
+  |  681|    240|            .position(|active| active.ptr_eq(&marker))
+  |  682|    247|    }
+  ------------------
+  683|       |
+  684|     81|    fn accepted_snapshot(&self) -> SessionSnapshot {
+  685|     81|        self.snapshot_of(&self.accepted)
+  686|     81|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::accepted_snapshot:
+  |  684|      4|    fn accepted_snapshot(&self) -> SessionSnapshot {
+  |  685|      4|        self.snapshot_of(&self.accepted)
+  |  686|      4|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::accepted_snapshot:
+  |  684|     77|    fn accepted_snapshot(&self) -> SessionSnapshot {
+  |  685|     77|        self.snapshot_of(&self.accepted)
+  |  686|     77|    }
+  ------------------
+  687|       |
+  688|     96|    fn snapshot_of(&self, accepted: &AcceptedState) -> SessionSnapshot {
+  689|     96|        let view = accepted.publication();
+  690|     96|        SessionSnapshot {
+  691|     96|            instance: self.identity.clone(),
+  692|     96|            revision: view.revision,
+  693|     96|            yaml: view.yaml.into(),
+  694|     96|            undo_len: view.undo_len,
+  695|     96|            redo_len: view.redo_len,
+  696|     96|            undo: view.undo.cloned(),
+  697|     96|            redo: view.redo.cloned(),
+  698|     96|        }
+  699|     96|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::snapshot_of:
+  |  688|      4|    fn snapshot_of(&self, accepted: &AcceptedState) -> SessionSnapshot {
+  |  689|      4|        let view = accepted.publication();
+  |  690|      4|        SessionSnapshot {
+  |  691|      4|            instance: self.identity.clone(),
+  |  692|      4|            revision: view.revision,
+  |  693|      4|            yaml: view.yaml.into(),
+  |  694|      4|            undo_len: view.undo_len,
+  |  695|      4|            redo_len: view.redo_len,
+  |  696|      4|            undo: view.undo.cloned(),
+  |  697|      4|            redo: view.redo.cloned(),
+  |  698|      4|        }
+  |  699|      4|    }
+  ------------------
+  | <dandrum_instrument_session::InstrumentSession>::snapshot_of:
+  |  688|     92|    fn snapshot_of(&self, accepted: &AcceptedState) -> SessionSnapshot {
+  |  689|     92|        let view = accepted.publication();
+  |  690|     92|        SessionSnapshot {
+  |  691|     92|            instance: self.identity.clone(),
+  |  692|     92|            revision: view.revision,
+  |  693|     92|            yaml: view.yaml.into(),
+  |  694|     92|            undo_len: view.undo_len,
+  |  695|     92|            redo_len: view.redo_len,
+  |  696|     92|            undo: view.undo.cloned(),
+  |  697|     92|            redo: view.redo.cloned(),
+  |  698|     92|        }
+  |  699|     92|    }
+  ------------------
+  700|       |}
+  701|       |
+  702|       |#[cfg(test)]
+  703|       |#[path = "../tests/internal/revision_limit.rs"]
+  704|       |mod revision_limit;

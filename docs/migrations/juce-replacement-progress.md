@@ -193,3 +193,51 @@ editor lifecycle. Tasks 2.2–2.3 and 3.1–3.3 retain request recovery, bounds,
 actual host calibration, React/WebView destruction and independent-instance host
 proof. No canonical scenario is synced, no main merge is included and the full
 JUCE-free beta remains active. Independent publication review passed for task 2.1.
+
+## Bounded request recovery — 19 October 2026
+
+Task 2.2 adds an owned structural request boundary around the existing mapping
+transaction. Admission validates the current attachment, instrument identity,
+request identity and expected revision, then moves accepted YAML, resource
+context and render settings into one `Send` worker job. A session admits only one
+structural job; overlapping admission, direct preparation, commit, undo and redo
+return explicit rejections without replacing or queueing work.
+
+The worker no longer borrows the editor or session. It can prepare after the
+originating attachment is retired, and completion publishes through the same
+activation lease. The latest 128 terminal outcomes are retained by exact request
+content. A fresh attachment can query or retry a lost result and receives the
+same reference without new preparation, activation or history. Conflicting ID
+reuse, stale revisions, foreign instances, retired connections and misrouted
+completion cannot mutate either tested instrument. Request IDs increase within
+the live session; a one-value high-water mark rejects admitted identities after
+their result is evicted. Misrouted completion returns the owned result so its
+source can still accept it. Preparation, staging and activation failures are
+terminal retained outcomes and release the pending slot.
+
+Twenty-two session tests cover worker movement to another thread, detach before
+completion, lost acknowledgement recovery, one accepted history entry, explicit
+busy/conflict/stale/foreign failures, failed sample preparation, activation
+rollback, revision exhaustion and 129 failed requests evicting the oldest result.
+The accepted edit retains the literal stereo `-0.5` sample at MIDI 60 and silence
+at 36; the independent instrument retains `-0.5` at 36. Owner coverage reports
+437/441 lines, 43/43 functions and 544/548 LLVM regions. The four zero-count
+items are compiler generic-instantiation spans; merged source counters execute
+every source line and all request outcome branches. Mutation remains excluded by
+the recorded user direction.
+
+The named fast lane passes all 22 session tests and the slow selection remains
+empty. The complete engine-only checkpoint passes 21/21 targets in 113.98
+seconds, including C++ FFI/callback checks, the absent-JUCE/browser/UI source
+build, dynamic CLAP hosting and the isolated CLAP build boundary. Clippy with
+warnings denied, strict OpenSpec validation and the unchanged 609/370/239
+spec-coverage ratchet pass.
+
+[Portable evidence](evidence/session-requests-2026-10-19/receipt.json) records
+the final commands, hashes and limits. This remains an in-process protocol proof.
+Task 2.3 retains bounded journal/replacement reconciliation, and tasks 3.1–3.3
+retain the concrete native host, typed React transport, real WebView destruction
+and independent-instance host proof. No canonical scenario is synced, no main
+merge is included and the full JUCE-free beta remains active.
+
+Independent publication review passed for the exact repaired task 2.2 candidate.

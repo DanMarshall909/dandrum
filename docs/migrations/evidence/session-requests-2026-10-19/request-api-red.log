@@ -1,0 +1,359 @@
+Script started on 2026-10-19 11:14:06+10:00 [<not executed on terminal>]
+   Compiling dandrum_instrument_session v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/instrument-session)
+error[E0432]: unresolved imports `dandrum_instrument_session::MappingAdmission`, `dandrum_instrument_session::MappingJob`, `dandrum_instrument_session::MappingRequest`, `dandrum_instrument_session::RequestFailure`, `dandrum_instrument_session::RequestId`, `dandrum_instrument_session::RequestOutcome`
+   --> tests/session.rs:398:51
+    |
+398 |     ActivationHost, ActivationLease, CommitError, MappingAdmission, MappingJob, MappingRequest,
+    |                                                   ^^^^^^^^^^^^^^^^  ^^^^^^^^^^  ^^^^^^^^^^^^^^ no `MappingRequest` in the root
+    |                                                   |                 |
+    |                                                   |                 no `MappingJob` in the root
+    |                                                   no `MappingAdmission` in the root
+399 |     Publication, RequestFailure, RequestId, RequestOutcome, SessionSnapshot,
+    |                  ^^^^^^^^^^^^^^  ^^^^^^^^^  ^^^^^^^^^^^^^^ no `RequestOutcome` in the root
+    |                  |               |
+    |                  |               no `RequestId` in the root
+    |                  no `RequestFailure` in the root
+
+error[E0599]: no method named `admit_mapping` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:765:32
+    |
+765 |     let job = admitted(session.admit_mapping(&connection, request.clone()));
+    |                                ^^^^^^^^^^^^^
+    |
+help: there is a method `commit_mapping` with a similar name
+    |
+765 -     let job = admitted(session.admit_mapping(&connection, request.clone()));
+765 +     let job = admitted(session.commit_mapping(&connection, request.clone()));
+    |
+
+error[E0599]: no method named `admit_mapping` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:767:17
+    |
+767 |         session.admit_mapping(&connection, request.clone()),
+    |                 ^^^^^^^^^^^^^
+    |
+help: there is a method `commit_mapping` with a similar name
+    |
+767 -         session.admit_mapping(&connection, request.clone()),
+767 +         session.commit_mapping(&connection, request.clone()),
+    |
+
+error[E0599]: no method named `admit_mapping` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:771:17
+    |
+771 |         session.admit_mapping(&connection, mapping_request(&initial, 8, 61)),
+    |                 ^^^^^^^^^^^^^
+    |
+help: there is a method `commit_mapping` with a similar name
+    |
+771 -         session.admit_mapping(&connection, mapping_request(&initial, 8, 61)),
+771 +         session.commit_mapping(&connection, mapping_request(&initial, 8, 61)),
+    |
+
+error[E0599]: no variant, associated function, or constant named `Busy` found for enum `SessionError` in the current scope
+   --> tests/session.rs:772:23
+    |
+772 |         SessionError::Busy,
+    |                       ^^^^ variant, associated function, or constant not found in `SessionError`
+
+error[E0599]: no variant, associated function, or constant named `Busy` found for enum `SessionError` in the current scope
+   --> tests/session.rs:776:48
+    |
+776 |         Err(CommitError::Session(SessionError::Busy))
+    |                                                ^^^^ variant, associated function, or constant not found in `SessionError`
+
+error[E0599]: no variant, associated function, or constant named `Busy` found for enum `SessionError` in the current scope
+   --> tests/session.rs:780:48
+    |
+780 |         Err(CommitError::Session(SessionError::Busy))
+    |                                                ^^^^ variant, associated function, or constant not found in `SessionError`
+
+error[E0599]: no method named `complete_mapping` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:786:18
+    |
+786 |     drop(session.complete_mapping(completion, &mut host).unwrap());
+    |                  ^^^^^^^^^^^^^^^^
+    |
+help: there is a method `commit_mapping` with a similar name
+    |
+786 -     drop(session.complete_mapping(completion, &mut host).unwrap());
+786 +     drop(session.commit_mapping(completion, &mut host).unwrap());
+    |
+
+error[E0599]: no method named `request_outcome` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:794:17
+    |
+794 |         session.request_outcome(&connection, RequestId(7)),
+    |                 ^^^^^^^^^^^^^^^ method not found in `InstrumentSession`
+
+error[E0599]: no method named `request_outcome` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:798:10
+    |
+797 |       assert!(session
+    |  _____________-
+798 | |         .request_outcome(&fresh, RequestId(999))
+    | |         -^^^^^^^^^^^^^^^ method not found in `InstrumentSession`
+    | |_________|
+    |
+
+error[E0599]: no method named `request_outcome` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:803:10
+    |
+802 |       let recovered = session
+    |  _____________________-
+803 | |         .request_outcome(&fresh, RequestId(7))
+    | |         -^^^^^^^^^^^^^^^ method not found in `InstrumentSession`
+    | |_________|
+    |
+
+error[E0599]: no method named `admit_mapping` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:807:33
+    |
+807 |     let retried = match session.admit_mapping(&fresh, request.clone()).unwrap() {
+    |                                 ^^^^^^^^^^^^^
+    |
+help: there is a method `commit_mapping` with a similar name
+    |
+807 -     let retried = match session.admit_mapping(&fresh, request.clone()).unwrap() {
+807 +     let retried = match session.commit_mapping(&fresh, request.clone()).unwrap() {
+    |
+
+error[E0599]: no method named `admit_mapping` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:817:17
+    |
+817 |         session.admit_mapping(&fresh, conflicting),
+    |                 ^^^^^^^^^^^^^
+    |
+help: there is a method `commit_mapping` with a similar name
+    |
+817 -         session.admit_mapping(&fresh, conflicting),
+817 +         session.commit_mapping(&fresh, conflicting),
+    |
+
+error[E0599]: no variant, associated function, or constant named `ConflictingRequest` found for enum `SessionError` in the current scope
+   --> tests/session.rs:818:23
+    |
+818 |         SessionError::ConflictingRequest,
+    |                       ^^^^^^^^^^^^^^^^^^ variant, associated function, or constant not found in `SessionError`
+
+error[E0599]: no method named `admit_mapping` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:821:17
+    |
+821 |         session.admit_mapping(&fresh, mapping_request(&initial, 8, 61)),
+    |                 ^^^^^^^^^^^^^
+    |
+help: there is a method `commit_mapping` with a similar name
+    |
+821 -         session.admit_mapping(&fresh, mapping_request(&initial, 8, 61)),
+821 +         session.commit_mapping(&fresh, mapping_request(&initial, 8, 61)),
+    |
+
+error[E0599]: no variant, associated function, or constant named `StaleRequest` found for enum `SessionError` in the current scope
+   --> tests/session.rs:822:23
+    |
+822 |         SessionError::StaleRequest,
+    |                       ^^^^^^^^^^^^ variant, associated function, or constant not found in `SessionError`
+
+error[E0599]: no method named `admit_mapping` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:825:15
+    |
+825 |         other.admit_mapping(&other_connection, mapping_request(&initial, 9, 61)),
+    |               ^^^^^^^^^^^^^
+    |
+help: there is a method `commit_mapping` with a similar name
+    |
+825 -         other.admit_mapping(&other_connection, mapping_request(&initial, 9, 61)),
+825 +         other.commit_mapping(&other_connection, mapping_request(&initial, 9, 61)),
+    |
+
+error[E0599]: no variant, associated function, or constant named `InvalidRequestInstance` found for enum `SessionError` in the current scope
+   --> tests/session.rs:826:23
+    |
+826 |         SessionError::InvalidRequestInstance,
+    |                       ^^^^^^^^^^^^^^^^^^^^^^ variant, associated function, or constant not found in `SessionError`
+
+error[E0599]: no method named `admit_mapping` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:846:32
+    |
+846 |     let job = admitted(session.admit_mapping(&connection, request.clone()));
+    |                                ^^^^^^^^^^^^^
+    |
+help: there is a method `commit_mapping` with a similar name
+    |
+846 -     let job = admitted(session.admit_mapping(&connection, request.clone()));
+846 +     let job = admitted(session.commit_mapping(&connection, request.clone()));
+    |
+
+error[E0599]: no method named `complete_mapping` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:851:10
+    |
+850 |       let outcome = session
+    |  ___________________-
+851 | |         .complete_mapping(job.prepare(), &mut host)
+    | |_________-^^^^^^^^^^^^^^^^
+    |
+help: there is a method `commit_mapping` with a similar name
+    |
+851 -         .complete_mapping(job.prepare(), &mut host)
+851 +         .commit_mapping(job.prepare(), &mut host)
+    |
+
+error[E0599]: no method named `request_outcome` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:863:10
+    |
+862 |       let queried = session
+    |  ___________________-
+863 | |         .request_outcome(&fresh, RequestId(11))
+    | |         -^^^^^^^^^^^^^^^ method not found in `InstrumentSession`
+    | |_________|
+    |
+
+error[E0599]: no method named `admit_mapping` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:866:33
+    |
+866 |     let retried = match session.admit_mapping(&fresh, request).unwrap() {
+    |                                 ^^^^^^^^^^^^^
+    |
+help: there is a method `commit_mapping` with a similar name
+    |
+866 -     let retried = match session.admit_mapping(&fresh, request).unwrap() {
+866 +     let retried = match session.commit_mapping(&fresh, request).unwrap() {
+    |
+
+error[E0599]: no method named `admit_mapping` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:883:32
+    |
+883 |     let job = admitted(session.admit_mapping(&connection, failed_request.clone()));
+    |                                ^^^^^^^^^^^^^
+    |
+help: there is a method `commit_mapping` with a similar name
+    |
+883 -     let job = admitted(session.admit_mapping(&connection, failed_request.clone()));
+883 +     let job = admitted(session.commit_mapping(&connection, failed_request.clone()));
+    |
+
+error[E0599]: no method named `complete_mapping` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:886:10
+    |
+885 |       let failed = session
+    |  __________________-
+886 | |         .complete_mapping(job.prepare(), &mut host)
+    | |_________-^^^^^^^^^^^^^^^^
+    |
+help: there is a method `commit_mapping` with a similar name
+    |
+886 -         .complete_mapping(job.prepare(), &mut host)
+886 +         .commit_mapping(job.prepare(), &mut host)
+    |
+
+error[E0599]: no method named `admit_mapping` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:896:10
+    |
+895 |       let retried = match session
+    |  _________________________-
+896 | |         .admit_mapping(&connection, failed_request)
+    | |_________-^^^^^^^^^^^^^
+    |
+help: there is a method `commit_mapping` with a similar name
+    |
+896 -         .admit_mapping(&connection, failed_request)
+896 +         .commit_mapping(&connection, failed_request)
+    |
+
+error[E0599]: no method named `admit_mapping` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:906:37
+    |
+906 |     let next_job = admitted(session.admit_mapping(&connection, next_request));
+    |                                     ^^^^^^^^^^^^^
+    |
+help: there is a method `commit_mapping` with a similar name
+    |
+906 -     let next_job = admitted(session.admit_mapping(&connection, next_request));
+906 +     let next_job = admitted(session.commit_mapping(&connection, next_request));
+    |
+
+error[E0599]: no method named `complete_mapping` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:908:10
+    |
+907 |       let accepted = session
+    |  ____________________-
+908 | |         .complete_mapping(next_job.prepare(), &mut host)
+    | |_________-^^^^^^^^^^^^^^^^
+    |
+help: there is a method `commit_mapping` with a similar name
+    |
+908 -         .complete_mapping(next_job.prepare(), &mut host)
+908 +         .commit_mapping(next_job.prepare(), &mut host)
+    |
+
+error[E0599]: no method named `request_outcome` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:917:14
+    |
+916 |           &session
+    |  __________-
+917 | |             .request_outcome(&connection, RequestId(21))
+    | |             -^^^^^^^^^^^^^^^ method not found in `InstrumentSession`
+    | |_____________|
+    |
+
+error[E0599]: no method named `admit_mapping` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:939:36
+    |
+939 |         let job = admitted(session.admit_mapping(&connection, request));
+    |                                    ^^^^^^^^^^^^^
+    |
+help: there is a method `commit_mapping` with a similar name
+    |
+939 -         let job = admitted(session.admit_mapping(&connection, request));
+939 +         let job = admitted(session.commit_mapping(&connection, request));
+    |
+
+error[E0599]: no method named `complete_mapping` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:941:14
+    |
+940 |           let outcome = session
+    |  _______________________-
+941 | |             .complete_mapping(job.prepare(), &mut host)
+    | |_____________-^^^^^^^^^^^^^^^^
+    |
+help: there is a method `commit_mapping` with a similar name
+    |
+941 -             .complete_mapping(job.prepare(), &mut host)
+941 +             .commit_mapping(job.prepare(), &mut host)
+    |
+
+error[E0599]: no method named `request_outcome` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:950:10
+    |
+949 |       assert!(session
+    |  _____________-
+950 | |         .request_outcome(&connection, RequestId(0))
+    | |         -^^^^^^^^^^^^^^^ method not found in `InstrumentSession`
+    | |_________|
+    |
+
+error[E0599]: no method named `request_outcome` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:954:10
+    |
+953 |       assert!(session
+    |  _____________-
+954 | |         .request_outcome(&connection, RequestId(1))
+    | |         -^^^^^^^^^^^^^^^ method not found in `InstrumentSession`
+    | |_________|
+    |
+
+error[E0599]: no method named `request_outcome` found for struct `InstrumentSession` in the current scope
+   --> tests/session.rs:958:10
+    |
+957 |       assert!(session
+    |  _____________-
+958 | |         .request_outcome(&connection, RequestId(128))
+    | |         -^^^^^^^^^^^^^^^ method not found in `InstrumentSession`
+    | |_________|
+    |
+
+Some errors have detailed explanations: E0432, E0599.
+For more information about an error, try `rustc --explain E0432`.
+error: could not compile `dandrum_instrument_session` (test "session") due to 33 previous errors
+
+Script done on 2026-10-19 11:14:07+10:00 [COMMAND_EXIT_CODE="101"]

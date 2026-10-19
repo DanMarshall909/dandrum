@@ -1,0 +1,52 @@
+{
+  "reviewed_manifest_sha256": "c2cf8a8f50f13ec57b47642efcdfd9054a43cfe92aabc1a5a49630ded3bb53b1",
+  "verdict": "FAIL",
+  "findings": [
+    {
+      "finding": "An evicted failed request could be admitted again while the accepted revision remained unchanged.",
+      "repair": "Request IDs are now monotonically increasing per live session. A one-value admitted-ID high-water mark rejects exact or conflicting reuse after bounded outcome eviction; the test restores the missing sample before retrying to prove no late activation."
+    },
+    {
+      "finding": "Routing the only prepared completion to the wrong session consumed it and left the source permanently busy.",
+      "repair": "CompletionRouteError returns ownership of the boxed prepared completion. The test rejects at the second session, then moves the same result to the source and proves one accepted edit with signed output."
+    },
+    {
+      "finding": "Retired-attachment admission and retained staging-failure recovery lacked direct assertions.",
+      "repair": "The public admission test now calls admit_mapping with a retired attachment. The revision-exhaustion test queries and exactly retries the retained Arc without activation."
+    },
+    {
+      "finding": "The candidate digest list omitted integration identity, status, canonical mode and staged-object fields required by the review procedure.",
+      "repair": "The repaired packet uses a deterministic tab-separated manifest with base/current/upstream/merge-base/remote identities and, per bytewise path, XY status, canonical mode, content digest or deletion marker, and index object or explicit unstaged/untracked marker."
+    }
+  ],
+  "verification_after_repair": {
+    "package_tests": "22/22 passed",
+    "clippy": "all targets passed with warnings denied",
+    "coverage": "437/441 lines, 43/43 functions and 544/548 regions; four compiler generic-instantiation spans",
+    "session_fast": "1/1 target passed in 2.41 seconds",
+    "session_slow": "empty by design",
+    "full_ctest": "21/21 passed in 113.98 seconds",
+    "openspec": "strict validation passed",
+    "spec_coverage": "609 acceptance criteria, 370 mapped, 239 ratchet backlog"
+  },
+  "lesson_candidates": [
+    {
+      "owner": "request protocol design",
+      "guidance": "A bounded idempotency cache needs bounded retirement metadata or a monotonic identity contract; outcome eviction alone permits old failed work to execute again.",
+      "downside": "Monotonic IDs reject unused lower values and require transport-side ordered allocation.",
+      "disposition": "Applied to this OpenSpec design and implementation."
+    },
+    {
+      "owner": "Rust ownership API design",
+      "guidance": "When a routing error is recoverable, return ownership of the consumed work item with the error.",
+      "downside": "Large work items need indirection to keep Result errors small.",
+      "disposition": "Applied with a boxed completion payload."
+    },
+    {
+      "owner": "agentic delivery tooling",
+      "guidance": "Generate completion-review manifests from status and index metadata, not content hashes alone.",
+      "downside": "The manifest is more verbose and platform-specific modes must be normalized.",
+      "disposition": "Applied to the repaired review packet; no shared rule edit is authorized here."
+    }
+  ]
+}
