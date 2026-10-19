@@ -1,0 +1,78 @@
+$ cmake --build build/engine-only --parallel 2
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only
+[  3%] Built target dandrum-engine-rust
+[ 10%] Built target dandrum-plugin-ui-command-test
+[ 17%] Built target dandrum-plugin-meter-capture-test
+[ 24%] Built target dandrum-plugin-live-capture-test
+[ 31%] Built target dandrum-plugin-meter-aggregation-test
+[ 37%] Built target dandrum-plugin-meter-delivery-test
+[ 44%] Built target dandrum-plugin-meter-display-test
+[ 55%] Built target dandrum-plugin-waveform-service-test
+[ 62%] Built target dandrum-plugin-waveform-geometry-test
+[ 68%] Built target dandrum-plugin-spectral-geometry-test
+[ 75%] Built target dandrum-filter-spike-engine-test
+[ 82%] Built target dandrum-ffi-smoke
+[ 89%] Built target dandrum-sample-accurate-midi-smoke
+[100%] Built target dandrum-sound-lab-controller-test
+$ cmake --build build/native-session --config Release --parallel 2 --target dandrum-plugin-instrument-session-test dandrum-sampler-plugin_Standalone dandrum-sampler-plugin_VST3
+-- Configuring juceaide
+-- Building juceaide
+-- Exporting juceaide
+-- Testing juceaide
+-- Finished setting up juceaide
+-- Configuring done (0.5s)
+-- Generating done (0.1s)
+-- Build files have been written to: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session
+[  0%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[  5%] Built target dandrum-instrument-session-rust
+[  5%] Generating juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/NativeKnobFontBinaryData.h
+[  5%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[ 11%] Built target dandrum-sampler-resources
+[ 11%] Generating juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/NativeKnobFontBinaryData.h
+[ 22%] Built target dandrum-native-knob-fonts
+[ 72%] Built target dandrum-sampler-plugin
+[100%] Built target dandrum-plugin-instrument-session-test
+[  0%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[  6%] Built target dandrum-instrument-session-rust
+[  6%] Generating juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/NativeKnobFontBinaryData.h
+[  6%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[ 13%] Built target dandrum-sampler-resources
+[ 13%] Generating juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/NativeKnobFontBinaryData.h
+[ 26%] Built target dandrum-native-knob-fonts
+[ 86%] Built target dandrum-sampler-plugin
+[ 86%] Linking CXX executable "dandrum-sampler-plugin_artefacts/Release/Standalone/Dandrum Sampler"
+lto-wrapper: warning: using serial compilation of 78 LTRANS jobs
+[100%] Built target dandrum-sampler-plugin_Standalone
+[  0%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[  5%] Built target dandrum-instrument-session-rust
+[  5%] Generating juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/NativeKnobFontBinaryData.h
+[  5%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[ 11%] Built target dandrum-sampler-resources
+[ 11%] Generating juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_dandrum-native-knob-fonts/JuceLibraryCode/NativeKnobFontBinaryData.h
+[ 17%] Built target juce_vst3_helper
+[ 29%] Built target dandrum-native-knob-fonts
+[ 82%] Built target dandrum-sampler-plugin
+[ 82%] Linking CXX shared module "dandrum-sampler-plugin_artefacts/Release/VST3/Dandrum Sampler.vst3/Contents/x86_64-linux/Dandrum Sampler.so"
+lto-wrapper: warning: using serial compilation of 72 LTRANS jobs
+removing moduleinfo.json
+creating /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session/dandrum-sampler-plugin_artefacts/Release/VST3/Dandrum Sampler.vst3/Contents/Resources/moduleinfo.json
+[100%] Built target dandrum-sampler-plugin_VST3
+$ cmake --build build/web-host --config Release --parallel 2 --target dandrum-trigger-native-bridge-test
+[  0%] Generating juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/SamplerReactBinaryData.h
+[  0%] Built target dandrum-instrument-session-rust
+[  0%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[  0%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[  6%] Built target dandrum-tb303-instrument-resources
+[  6%] Built target juce_linux_subprocess_helper
+[ 12%] Generating juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/TriggerReactBinaryData.h
+[ 12%] Generating juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/SamplerReactBinaryData.h
+[ 12%] Generating juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_dandrum-trigger-react-resources/JuceLibraryCode/TriggerReactBinaryData.h
+[ 31%] Built target dandrum-trigger-react-resources
+[ 31%] Generating juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/Tb303ReactBinaryData.h
+[ 37%] Built target dandrum-sampler-react-resources
+[ 37%] Generating juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/Tb303ReactBinaryData.h
+[ 43%] Built target dandrum-tb303-react-resources
+[ 81%] Built target dandrum-plugin
+[100%] Built target dandrum-trigger-native-bridge-test

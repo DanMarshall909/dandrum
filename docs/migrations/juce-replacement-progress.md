@@ -435,3 +435,37 @@ engine-only build, native bridge or packaged WebView tests. Strict validation
 passes the scoped change and all 51 canonical specs. The acceptance map passes
 with **618 scenarios / 379 mapped / 239 unchanged backlog entries**. The full
 task-4.1 checkpoint and task-4.2 completion/publication review remain open.
+
+## Persistent session completion checkpoint — 19 October 2026
+
+Task 4.1 rebuilds and verifies the whole persistent-session increment from
+source head `f362346`. Rust formatting and Clippy with warnings denied pass, as
+do all 29 session tests. The independent configuration passes 21/21 tests in
+121.40 seconds, including the absent-JUCE/browser/UI source build, callback
+safety and dynamic CLAP boundaries. The maintained native comparison passes
+52/52 in 67.33 seconds, including the concrete session handoff, editor smoke,
+Standalone/VST3 link graph and its own isolated build checks. The Trigger slice
+passes 5/5 in 92.92 seconds: 95 React tests, TypeScript/component checks, the
+production bundle, 27 Playwright browser scenarios, bridge coverage and the
+actual packaged WebView lifecycle on `DISPLAY=:10.0`.
+
+Rust-only session coverage records 104/112 functions, 1456/1672 LLVM-counted
+lines and 1750/2069 regions across the core and C facade. The core owner alone
+records 63/65 functions and 666/691 lines; every visible missed core source line
+belongs to `reserve_control_request`, which is entered through the concrete C++
+bridge for the passing native and packaged React undo paths. The C facade's
+Rust-only denominator also includes defensive ABI branches; its major success,
+rejection and rollback paths are additionally exercised by C++ consumers. The annotated report retains every missed line
+instead of presenting merged cross-language evidence as 100% Rust coverage.
+Branches are not instrumented, and mutation remains excluded by the recorded
+user direction.
+
+The post-verification refactoring review found no production extraction that
+would simplify ownership or strengthen a tested boundary. The accepted state,
+request reservation and publication code remain one cohesive transaction
+owner, while the packaged lifecycle harness intentionally keeps its ordered
+editor-destruction state machine visible. The initial React checkpoint used
+system Node 18 and failed only when Playwright required Node 20; the final lane
+uses the installed Node 22.19.0 runtime. All reusable build and Cargo caches are
+preserved. Task 4.2 retains final independent completion review and normal
+publication; the full JUCE-free beta goal remains open beyond this increment.

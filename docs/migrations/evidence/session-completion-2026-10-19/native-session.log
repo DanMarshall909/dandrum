@@ -1,0 +1,115 @@
+Internal ctest changing into directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session
+Test project /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session
+      Start  1: retired-engine-ffi-symbols
+ 1/52 Test  #1: retired-engine-ffi-symbols ...................   Passed    0.22 sec
+      Start  2: retired-kernel-fields
+ 2/52 Test  #2: retired-kernel-fields ........................   Passed    0.04 sec
+      Start  3: rust-engine-tests
+ 3/52 Test  #3: rust-engine-tests ............................   Passed   12.50 sec
+      Start  4: instrument-session-tests
+ 4/52 Test  #4: instrument-session-tests .....................   Passed    5.77 sec
+      Start  5: cxx-rust-engine-ffi-smoke
+ 5/52 Test  #5: cxx-rust-engine-ffi-smoke ....................   Passed    0.02 sec
+      Start  6: cxx-rust-engine-sample-accurate-midi-smoke
+ 6/52 Test  #6: cxx-rust-engine-sample-accurate-midi-smoke ...   Passed    0.02 sec
+      Start  7: realtime-callback-safety
+ 7/52 Test  #7: realtime-callback-safety .....................   Passed    0.03 sec
+      Start  8: sound-lab-controller
+ 8/52 Test  #8: sound-lab-controller .........................   Passed    0.79 sec
+      Start  9: cxx-plugin-ui-command
+ 9/52 Test  #9: cxx-plugin-ui-command ........................   Passed    0.00 sec
+      Start 10: cxx-plugin-meter-capture
+10/52 Test #10: cxx-plugin-meter-capture .....................   Passed    0.00 sec
+      Start 11: cxx-plugin-live-capture
+11/52 Test #11: cxx-plugin-live-capture ......................   Passed    0.00 sec
+      Start 12: cxx-plugin-meter-aggregation
+12/52 Test #12: cxx-plugin-meter-aggregation .................   Passed    0.00 sec
+      Start 13: cxx-plugin-meter-delivery
+13/52 Test #13: cxx-plugin-meter-delivery ....................   Passed    0.00 sec
+      Start 14: cxx-plugin-meter-display
+14/52 Test #14: cxx-plugin-meter-display .....................   Passed    0.00 sec
+      Start 15: cxx-plugin-waveform-service
+15/52 Test #15: cxx-plugin-waveform-service ..................   Passed    0.09 sec
+      Start 16: cxx-plugin-waveform-geometry
+16/52 Test #16: cxx-plugin-waveform-geometry .................   Passed    0.00 sec
+      Start 17: cxx-plugin-spectral-geometry
+17/52 Test #17: cxx-plugin-spectral-geometry .................   Passed    0.00 sec
+      Start 18: filter-spike-engine
+18/52 Test #18: filter-spike-engine ..........................   Passed    0.02 sec
+      Start 19: engine-only-build
+19/52 Test #19: engine-only-build ............................   Passed   34.01 sec
+      Start 20: engine-only-comparison-build
+20/52 Test #20: engine-only-comparison-build .................   Passed    0.91 sec
+      Start 21: cxx-plugin-spectral-service
+21/52 Test #21: cxx-plugin-spectral-service ..................   Passed    0.08 sec
+      Start 22: cxx-plugin-live-analysis
+22/52 Test #22: cxx-plugin-live-analysis .....................   Passed    0.01 sec
+      Start 23: cxx-plugin-live-service
+23/52 Test #23: cxx-plugin-live-service ......................   Passed    0.42 sec
+      Start 24: cxx-juce-kernel-source
+24/52 Test #24: cxx-juce-kernel-source .......................   Passed    0.04 sec
+      Start 25: native-editor-smoke
+25/52 Test #25: native-editor-smoke ..........................   Passed    2.17 sec
+      Start 26: native-meter-characterization
+26/52 Test #26: native-meter-characterization ................   Passed    0.10 sec
+      Start 27: native-output-buses
+27/52 Test #27: native-output-buses ..........................   Passed    0.15 sec
+      Start 28: native-output-reload-interleaving
+28/52 Test #28: native-output-reload-interleaving ............   Passed    0.55 sec
+      Start 29: native-waveform-lifetime
+29/52 Test #29: native-waveform-lifetime .....................   Passed    0.35 sec
+      Start 30: cxx-plugin-spectral-job
+30/52 Test #30: cxx-plugin-spectral-job ......................   Passed    0.11 sec
+      Start 31: native-knob-parity
+31/52 Test #31: native-knob-parity ...........................   Passed    0.50 sec
+      Start 32: cxx-plugin-live-processor
+32/52 Test #32: cxx-plugin-live-processor ....................   Passed    0.23 sec
+      Start 33: cxx-plugin-engine-handoff-baseline
+33/52 Test #33: cxx-plugin-engine-handoff-baseline ...........   Passed    0.03 sec
+      Start 34: cxx-plugin-engine-handoff
+34/52 Test #34: cxx-plugin-engine-handoff ....................   Passed    0.19 sec
+      Start 35: cxx-plugin-instrument-session
+35/52 Test #35: cxx-plugin-instrument-session ................   Passed    0.36 sec
+      Start 36: native-session-link-graph
+36/52 Test #36: native-session-link-graph ....................   Passed    0.41 sec
+      Start 37: cxx-plugin-live-handoff
+37/52 Test #37: cxx-plugin-live-handoff ......................   Passed    0.28 sec
+      Start 38: cxx-plugin-automatic-reload
+38/52 Test #38: cxx-plugin-automatic-reload ..................   Passed    0.25 sec
+      Start 39: cxx-plugin-reload-job-contracts
+39/52 Test #39: cxx-plugin-reload-job-contracts ..............   Passed    0.04 sec
+      Start 40: native-waveform-parity
+40/52 Test #40: native-waveform-parity .......................   Passed    0.26 sec
+      Start 41: native-live-renderer
+41/52 Test #41: native-live-renderer .........................   Passed    0.98 sec
+      Start 42: native-output-buses-runtime
+42/52 Test #42: native-output-buses-runtime ..................   Passed    0.27 sec
+      Start 43: native-spectral-parity
+43/52 Test #43: native-spectral-parity .......................   Passed    0.62 sec
+      Start 44: spec-coverage-map
+44/52 Test #44: spec-coverage-map ............................   Passed    0.07 sec
+      Start 45: rust-coverage-gate
+45/52 Test #45: rust-coverage-gate ...........................   Passed    0.07 sec
+      Start 46: demo-launcher
+46/52 Test #46: demo-launcher ................................   Passed    0.48 sec
+      Start 47: demo-launcher-inventory
+47/52 Test #47: demo-launcher-inventory ......................   Passed    0.05 sec
+      Start 48: demo-launcher-boundaries
+48/52 Test #48: demo-launcher-boundaries .....................   Passed    3.07 sec
+      Start 49: slint-headless-launch
+49/52 Test #49: slint-headless-launch ........................   Passed    0.09 sec
+      Start 50: slint-compiler-build-environment
+50/52 Test #50: slint-compiler-build-environment .............   Passed    0.35 sec
+      Start 51: mutation-hook
+51/52 Test #51: mutation-hook ................................   Passed    0.29 sec
+      Start 52: drum-loop-pattern-test
+52/52 Test #52: drum-loop-pattern-test .......................   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 52
+
+Label Time Summary:
+build-boundary    =  34.92 sec*proc (2 tests)
+runtime           =   3.64 sec*proc (8 tests)
+session-fast      =   5.77 sec*proc (1 test)
+
+Total Test time (real) =  67.33 sec

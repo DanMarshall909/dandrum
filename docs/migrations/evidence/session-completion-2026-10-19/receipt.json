@@ -1,0 +1,138 @@
+{
+  "scope": "OpenSpec task 4.1: source-bound final coverage, build and regression checkpoint for the complete persistent instrument-session increment through canonical specification head f362346. This verifies the retained JUCE comparison consumer and independent session boundary; it does not claim the JUCE-free beta deliverables.",
+  "verified_head": "f362346f50fa97b5886c240b85b8cc5b6f0a5b3f",
+  "source_sha256": {
+    "CMakeLists.txt": "f5973662fed506d60a6e199095f3ff570a741711bc19de03999d1a1c7cdf0c9e",
+    "src/instrument-session/Cargo.toml": "64121a3f75dde57b6a4cc0dcee2a96e4f8cab7ee1b72382f8da60998efba4c44",
+    "src/instrument-session/Cargo.lock": "1537a3dc07c17fb7fe79786d1863b7e9b7e3db328757845fdbe3ffdbb10201eb",
+    "src/instrument-session/src/lib.rs": "b6185fc8058ad1083cee57d715e22e8f910d352005fa735c8acc0d97b19c1432",
+    "src/instrument-session/src/native_ffi.rs": "c4f36721421c56869cf2f82b1d9a58d2868500cba2f916e4c9dc3bd8155758ae",
+    "src/instrument-session/tests/session.rs": "7eca59843dcbecac33da9cd85e588ca81d0952cabbb993b55b511930a924c19b",
+    "tests/python/test_engine_only_build.py": "984c1648781d62a5c498b8f4c5f32d554984212afc27334a40093dd8bfe03e09",
+    "tests/cpp/PluginInstrumentSessionTest.cpp": "94779df305366e455414cb5d7416506d6ef991ea598392813fcaf9eb4c831a82",
+    "tests/cpp/PluginTriggerNativeBridgeTest.cpp": "aacba1c497078231dd76c208609e4eae97e3394efe2e45427255eebe35522cc4",
+    "tests/cpp/PluginTriggerWebRuntimeTest.h": "adc808b6dc83c68d270ebdc6bb055f2fcca26be049d9f826667e742fc8afbe33",
+    "tests/js/TriggerNativeUiTest.mjs": "f7f82e80db028a49a501eaea4f7f44c8a22a6c9c9c181cf64af8196df1844ff1",
+    "tests/js/TriggerNativeAdapterTest.mjs": "98e54a605306a9985d133aca7844a671339d6f8f324f5b560dc61c1d6e94f00f",
+    "web/trigger/package.json": "eee84408e787dfbdc12e8acfa98b1818ca65766b54de769cec44d19501867ed8",
+    "web/trigger/package-lock.json": "07d6d015bc9148c1f55f3146f38200f835727c0fc4bbe19cf7a415529ba342d9",
+    "openspec/specs/instrument-session/spec.md": "309c9bce5ace132705755d4b098655f82070424504f1468bd154efc00bbff93a",
+    "spec-tests.map": "619b3b90d567136b524c3e35f0a43d8250ee0017cd95bef6f7e57dcbf4c172d7",
+    "openspec/changes/add-persistent-instrument-session/tasks.md": "ed016e67b53d79128adb16c36124c14ff1d07a945b58d36a33d290f19ecfb66b",
+    "docs/migrations/juce-replacement-progress.md": "fb6ccdc0fcad19b03083eb4028ce93558cdb3f01de771275bdd2f252f96ba0ba",
+    "docs/migrations/evidence/session-completion-2026-10-19/build.log": "c1a839933704760eb5c692080c93eee9794cae53d345ba17eb4214ff22442ff9",
+    "docs/migrations/evidence/session-completion-2026-10-19/coverage-missing.txt": "568011ca4f23eb5934821ab46441c8203b5353f0b14cf286bed7d52568d2b103",
+    "docs/migrations/evidence/session-completion-2026-10-19/coverage-summary.json": "4d8294d7d5e2b130ce34bf3736af19726b1d4bcef68eabc5cd5889a3a1d64152",
+    "docs/migrations/evidence/session-completion-2026-10-19/engine-only.log": "311041a57b9a9d8c3158e905e15710c4f12dcc4e4d2d2e5e852b19cf7d04cff2",
+    "docs/migrations/evidence/session-completion-2026-10-19/native-session.log": "b53f164f865a2f9e4f713456f71566d67d030ef2b535974ab74aa242c1b13ca4",
+    "docs/migrations/evidence/session-completion-2026-10-19/session-coverage.log": "a94ee2f7c061bd57ed5e04ae135d0e4eaa65895cb8f0422e097d9e96aa8a55e4",
+    "docs/migrations/evidence/session-completion-2026-10-19/session-rust.log": "de46a0851dfa6f68f75b9ea3666b9ae0bbf965521c293a70633858bc7c7878b6",
+    "docs/migrations/evidence/session-completion-2026-10-19/web-host-setup-red.log": "1cc53ce65929248e8197d3014f7f626201940d2e715da082a4f92afd4345d5c6",
+    "docs/migrations/evidence/session-completion-2026-10-19/web-host.log": "3842e200b2ab2b60e780e16a4f697bc946300e5e0c56337fa9cd69c85eaeda81"
+  },
+  "preflight": {
+    "free_space": "65 GiB available on the 478 GiB filesystem before coverage and full builds",
+    "existing_build_cache": "58 GiB under build plus retained 5.6 GiB rust-engine and 6.4 GiB instrument-session Cargo targets",
+    "cache_policy": "All reusable CMake and Cargo build directories were preserved."
+  },
+  "toolchain": {
+    "cargo": "1.96.0 (30a34c682 2026-05-25)",
+    "rustc": "1.96.0 (ac68faa20 2026-05-25)",
+    "cargo_llvm_cov": "0.8.7",
+    "node_final": "22.19.0 from ~/.nvm/versions/node/v22.19.0/bin",
+    "display": ":10.0"
+  },
+  "build": {
+    "engine_only": "Fresh build command completed successfully in build/engine-only.",
+    "native_session": "Release build completed the concrete session test plus sampler Standalone and VST3 targets.",
+    "web_host": "Release build completed dandrum-trigger-native-bridge-test with the embedded production Trigger bundle.",
+    "standalone": {
+      "path": "build/native-session/dandrum-sampler-plugin_artefacts/Release/Standalone/Dandrum Sampler",
+      "size_bytes": 26270664,
+      "sha256": "e566dcaa08cd8cec120e16c1724d52a9550b455d73a5ff3e8c98204aafdf4c6a"
+    },
+    "vst3_binary": {
+      "path": "build/native-session/dandrum-sampler-plugin_artefacts/Release/VST3/Dandrum Sampler.vst3/Contents/x86_64-linux/Dandrum Sampler.so",
+      "size_bytes": 26391184,
+      "sha256": "4b2a96b4644005288e96e77c78248359052e092cbac79fd34eda4855172f614d"
+    },
+    "artifact_limit": "These are retained JUCE comparison artifacts inside the checkout build tree. They are not the installed offline JUCE-free beta artifacts required by the active goal."
+  },
+  "tests": {
+    "session_rust": "cargo fmt --check and clippy --all-targets -D warnings passed; cargo test passed 3 unit plus 26 public integration tests.",
+    "engine_only": "21/21 passed in 121.40 seconds, including absent-JUCE/browser/UI source build, realtime callback safety, dynamic CLAP host and isolated CLAP build.",
+    "native_session": "52/52 passed in 67.33 seconds, including concrete handoff, native editor/runtime lanes, Standalone/VST3 link graph, spec coverage and build boundaries.",
+    "trigger": "5/5 passed in 92.92 seconds: cxx-trigger-native-bridge, actual trigger-web-runtime, trigger-react-shell, trigger-native-ui and trigger-native-adapter.",
+    "react_detail": "The trigger shell passed TypeScript and the 70-file component guard, 95 Node tests, the production Vite build and 27 Playwright browser scenarios.",
+    "webview": "The actual packaged WebView ran on DISPLAY=:10.0 and did not return unavailable-platform skip code 77.",
+    "commit_hooks": "The preceding task-3.3 evidence and spec-sync commits each passed 1,084 engine tests plus the strict coverage hook.",
+    "mutation": "Excluded by recorded user direction."
+  },
+  "coverage": {
+    "tool": "cargo-llvm-cov 0.8.7, Rust-only process coverage with src/rust-engine excluded",
+    "total": {
+      "functions": [
+        104,
+        112
+      ],
+      "lines": [
+        1456,
+        1672
+      ],
+      "regions": [
+        1750,
+        2069
+      ]
+    },
+    "core": {
+      "functions": [
+        63,
+        65
+      ],
+      "lines": [
+        666,
+        691
+      ],
+      "regions": [
+        812,
+        843
+      ]
+    },
+    "native_ffi": {
+      "functions": [
+        41,
+        47
+      ],
+      "lines": [
+        790,
+        981
+      ],
+      "regions": [
+        938,
+        1226
+      ]
+    },
+    "classification": "Every visible missed core source line is reserve_control_request (lines 934-954), reached through the passing concrete C++ bridge and packaged React native-undo tests rather than the Rust-only coverage process. The annotated report retains all C-facade misses; major facade success, rejection and rollback behavior is covered by the Rust facade case and separate C++ consumers. Five additional core LLVM line counts are generic/instantiation accounting.",
+    "branches": "Not instrumented.",
+    "claim": "No merged cross-language 100% claim is made."
+  },
+  "setup_red": [
+    "The first aggregate Trigger checkpoint selected system Node 18.20.8. TypeScript, 95 unit tests and the production bundle passed, then Playwright rejected Node below 20.",
+    "A retry with an incomplete PATH assumption confirmed the same Node 18 setup condition. The duplicate log was discarded; the first raw setup RED is retained.",
+    "The final checkpoint explicitly prepended the installed Node 22.19.0 directory and all five CTest lanes passed."
+  ],
+  "refactor": "No production extraction was justified after the final tests. Accepted state, admission and publication form one cohesive transaction owner; splitting them would weaken visibility of the atomic invariant. The lifecycle test intentionally keeps its ordered editor/WebView destruction state machine together. No production code changed during task 4.1.",
+  "specification": {
+    "progress": "10/11 tasks complete after this receipt and task checkbox are committed.",
+    "canonical": "The nine instrument-session scenarios remain mapped at 618 total criteria / 379 tested / 239 unchanged todo backlog.",
+    "remaining": "Task 4.2 final independent completion review, strict gates and normal publication."
+  },
+  "limits": [
+    "The retained native comparison still uses JUCE and therefore does not satisfy the final framework-removal goal.",
+    "No selected named-DAW automation/independent-instance acceptance is claimed.",
+    "No installed offline Standalone or VST3 artifacts outside the checkout are claimed.",
+    "No complete absence-of-JUCE build/runtime dependency audit is claimed.",
+    "Main remains unchanged and no merge is included."
+  ],
+  "raw_evidence": "docs/migrations/evidence/session-completion-2026-10-19"
+}

@@ -18,5 +18,5 @@
 
 ## 4. Verification and publication
 
-- [ ] 4.1 Complete meaningful session coverage/refactoring and required Rust/native/JS/build checks for each verified increment; mutation remains excluded by the recorded user direction. Preserve reusable caches and record source-bound evidence.
+- [x] 4.1 Complete meaningful session coverage/refactoring and required Rust/native/JS/build checks for each verified increment; mutation remains excluded by the recorded user direction. Preserve reusable caches and record source-bound evidence.
 - [ ] 4.2 Independently review each material implementation boundary before publication, map only actually proven scenarios when syncing, pass strict OpenSpec/spec-coverage gates and normally publish focused commits. Keep all incomplete native-editor and full beta requirements open.

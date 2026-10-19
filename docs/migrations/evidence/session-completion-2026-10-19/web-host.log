@@ -1,0 +1,20 @@
+DISPLAY=:10.0
+Internal ctest changing into directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/web-host
+Test project /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/web-host
+    Start 44: cxx-trigger-native-bridge
+1/5 Test #44: cxx-trigger-native-bridge ........   Passed    0.33 sec
+    Start 45: trigger-web-runtime
+2/5 Test #45: trigger-web-runtime ..............   Passed    6.59 sec
+    Start 66: trigger-react-shell
+3/5 Test #66: trigger-react-shell ..............   Passed   84.41 sec
+    Start 94: trigger-native-ui
+4/5 Test #94: trigger-native-ui ................   Passed    0.21 sec
+    Start 95: trigger-native-adapter
+5/5 Test #95: trigger-native-adapter ...........   Passed    1.38 sec
+
+100% tests passed, 0 tests failed out of 5
+
+Label Time Summary:
+runtime    =   6.59 sec*proc (1 test)
+
+Total Test time (real) =  92.92 sec

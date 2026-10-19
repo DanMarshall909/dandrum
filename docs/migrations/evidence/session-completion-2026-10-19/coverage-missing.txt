@@ -1,0 +1,2484 @@
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/instrument-session/src/lib.rs:
+    1|       |//! Host-independent accepted instrument state and authoring history.
+    2|       |mod native_ffi;
+    3|       |use dandrum_engine::kernel::document::load_kernel_patch_str;
+    4|       |use dandrum_engine::patch::RenderSettings;
+    5|       |use dandrum_engine::preparation::{
+    6|       |    HostBuses, PreparationContext, PreparedKernelInstrument,
+    7|       |    prepare_kernel_patch_for_planar_host_with_context, prepare_kernel_patch_with_context,
+    8|       |};
+    9|       |use std::{
+   10|       |    collections::VecDeque,
+   11|       |    fmt,
+   12|       |    sync::{Arc, Weak},
+   13|       |};
+   14|       |
+   15|       |pub const CONNECTION_CONTRACT_VERSION: u32 = 1;
+   16|       |pub const ATTACHMENT_LIMIT: usize = 16;
+   17|       |pub const HISTORY_LIMIT: usize = 100;
+   18|       |pub const OUTCOME_LIMIT: usize = 128;
+   19|       |pub const ACTIVE_REQUEST_LIMIT: usize = 1;
+   20|       |
+   21|       |/// An opaque lifetime identity, never a serialized pointer or platform handle.
+   22|       |#[derive(Clone, Debug)]
+   23|       |pub struct SessionIdentity(Arc<()>);
+   24|       |impl PartialEq for SessionIdentity {
+   25|  1.21k|    fn eq(&self, other: &Self) -> bool {
+   26|  1.21k|        Arc::ptr_eq(&self.0, &other.0)
+   27|  1.21k|    }
+   28|       |}
+   29|       |impl Eq for SessionIdentity {}
+   30|       |
+   31|       |/// An editor connection; retaining a copy cannot reverse explicit retirement.
+   32|       |#[derive(Clone, Debug)]
+   33|       |pub struct Attachment {
+   34|       |    owner: SessionIdentity,
+   35|       |    marker: Arc<()>,
+   36|       |}
+   37|       |
+   38|       |#[derive(Clone, Debug, PartialEq, Eq)]
+   39|       |pub struct SessionSnapshot {
+   40|       |    pub instance: SessionIdentity,
+   41|       |    pub revision: u64,
+   42|       |    pub yaml: String,
+   43|       |    pub undo_len: usize,
+   44|       |    pub redo_len: usize,
+   45|       |    pub undo: Option<JournalEntry>,
+   46|       |    pub redo: Option<JournalEntry>,
+   47|       |}
+   48|       |
+   49|       |#[derive(Clone, Debug, PartialEq, Eq)]
+   50|       |pub struct JournalEntry {
+   51|       |    pub version: u32,
+   52|       |    pub label: String,
+   53|       |    pub change: ZoneKeyRangeChange,
+   54|       |}
+   55|       |
+   56|       |pub struct Publication<'a> {
+   57|       |    pub revision: u64,
+   58|       |    pub yaml: &'a str,
+   59|       |    pub undo_len: usize,
+   60|       |    pub redo_len: usize,
+   61|       |    pub undo: Option<&'a JournalEntry>,
+   62|       |    pub redo: Option<&'a JournalEntry>,
+   63|       |}
+   64|       |
+   65|       |/// A host lease keeps audio/snapshot admission closed until publication.
+   66|       |pub trait ActivationLease {
+   67|       |    /// Infallible release: no allocation, notification, error or unwinding.
+   68|       |    fn publish(self, accepted: Publication<'_>);
+   69|       |}
+   70|       |
+   71|       |pub trait ActivationHost {
+   72|       |    type Error;
+   73|       |    type Lease<'a>: ActivationLease
+   74|       |    where
+   75|       |        Self: 'a;
+   76|       |
+   77|       |    /// Stage fallible host resources before installing. A failed activation or
+   78|       |    /// unpublished lease must restore the old runtime and metadata.
+   79|       |    fn activate<'a>(
+   80|       |        &'a mut self,
+   81|       |        prepared: &PreparedKernelInstrument,
+   82|       |        next: &SessionSnapshot,
+   83|       |    ) -> Result<Self::Lease<'a>, Self::Error>;
+   84|       |}
+   85|       |
+   86|       |#[derive(Clone, Debug, PartialEq, Eq)]
+   87|       |pub enum CommitError<E> {
+   88|       |    Session(SessionError),
+   89|       |    Activation(E),
+   90|       |}
+   91|       |
+   92|       |#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+   93|       |pub struct RequestId(pub u64);
+   94|       |
+   95|       |#[derive(Clone, Debug, PartialEq, Eq)]
+   96|       |pub struct MappingRequest {
+   97|       |    pub instance: SessionIdentity,
+   98|       |    pub request_id: RequestId,
+   99|       |    pub expected_revision: u64,
+  100|       |    pub intent: SetZoneKeyRange,
+  101|       |}
+  102|       |
+  103|       |#[derive(Clone, Debug, PartialEq, Eq)]
+  104|       |pub enum RequestFailure {
+  105|       |    Session(SessionError),
+  106|       |    Activation(String),
+  107|       |}
+  108|       |
+  109|       |#[derive(Clone, Debug, PartialEq, Eq)]
+  110|       |pub struct RequestOutcome {
+  111|       |    pub request_id: RequestId,
+  112|       |    pub result: Result<SessionSnapshot, RequestFailure>,
+  113|       |}
+  114|       |
+  115|       |pub enum MappingAdmission {
+  116|       |    Admitted(MappingJob),
+  117|       |    Pending,
+  118|       |    Completed(Arc<RequestOutcome>),
+  119|       |}
+  120|       |
+  121|       |/// A completion routed to the wrong session. The owned result remains recoverable.
+  122|       |pub struct CompletionRouteError {
+  123|       |    reason: SessionError,
+  124|       |    completion: Box<PreparedMappingJob>,
+  125|       |}
+  126|       |
+  127|       |impl CompletionRouteError {
+  128|      1|    pub fn reason(&self) -> &SessionError {
+  129|      1|        &self.reason
+  130|      1|    }
+  131|       |
+  132|      1|    pub fn into_completion(self) -> PreparedMappingJob {
+  133|      1|        *self.completion
+  134|      1|    }
+  135|       |}
+  136|       |
+  137|       |impl fmt::Debug for CompletionRouteError {
+  138|      1|    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+  139|      1|        formatter
+  140|      1|            .debug_struct("CompletionRouteError")
+  141|      1|            .field("reason", &self.reason)
+  142|      1|            .finish_non_exhaustive()
+  143|      1|    }
+  144|       |}
+  145|       |
+  146|       |#[derive(Clone, Debug, PartialEq, Eq)]
+  147|       |pub enum SessionError {
+  148|       |    InvalidDocument(String),
+  149|       |    PreparationFailed(String),
+  150|       |    InvalidAttachment,
+  151|       |    AttachmentLimit,
+  152|       |    InvalidMapping,
+  153|       |    ForeignCandidate,
+  154|       |    StaleCandidate,
+  155|       |    NothingToUndo,
+  156|       |    NothingToRedo,
+  157|       |    RevisionExhausted,
+  158|       |    InvalidRequestInstance,
+  159|       |    StaleRequest,
+  160|       |    ConflictingRequest,
+  161|       |    RetiredRequest,
+  162|       |    Busy,
+  163|       |    InvalidJob,
+  164|       |}
+  165|       |
+  166|       |#[derive(Clone, Debug, PartialEq, Eq)]
+  167|       |/// A musical intent addressed by native identities; no client inverse is accepted.
+  168|       |pub struct SetZoneKeyRange {
+  169|       |    pub map_id: String,
+  170|       |    pub zone_id: String,
+  171|       |    pub key_range: [u8; 2],
+  172|       |}
+  173|       |
+  174|       |#[derive(Clone, Debug, PartialEq, Eq)]
+  175|       |/// Native before/after data for the future instrument-owned journal.
+  176|       |pub struct ZoneKeyRangeChange {
+  177|       |    pub map_id: String,
+  178|       |    pub zone_id: String,
+  179|       |    pub before: [u8; 2],
+  180|       |    pub after: [u8; 2],
+  181|       |}
+  182|       |
+  183|       |/// An uncommitted candidate. Its creation never installs a runtime or edits history.
+  184|       |pub struct PreparedMapping {
+  185|       |    yaml: String,
+  186|       |    prepared: PreparedKernelInstrument,
+  187|       |    change: ZoneKeyRangeChange,
+  188|       |    owner: SessionIdentity,
+  189|       |    base_revision: u64,
+  190|       |}
+  191|       |
+  192|       |/// A fully prepared external document that has not changed accepted state.
+  193|       |pub struct PreparedDocumentReplacement {
+  194|       |    yaml: String,
+  195|       |    prepared: PreparedKernelInstrument,
+  196|       |    owner: SessionIdentity,
+  197|       |    base_revision: u64,
+  198|       |}
+  199|       |
+  200|       |/// A host render-configuration change that preserves authoring state/history.
+  201|       |pub struct PreparedRenderConfiguration {
+  202|       |    prepared: PreparedKernelInstrument,
+  203|       |    context: PreparationContext,
+  204|       |    settings: RenderSettings,
+  205|       |    host_buses: HostBuses,
+  206|       |    owner: SessionIdentity,
+  207|       |    base_revision: u64,
+  208|       |}
+  209|       |
+  210|       |/// Owned preparation work. It can move to a worker without retaining an editor.
+  211|       |pub struct MappingJob {
+  212|       |    request: MappingRequest,
+  213|       |    action: HistoryAction,
+  214|       |    yaml: String,
+  215|       |    context: PreparationContext,
+  216|       |    settings: RenderSettings,
+  217|       |    host_buses: Option<Box<HostBuses>>,
+  218|       |}
+  219|       |
+  220|       |pub struct PreparedMappingJob {
+  221|       |    request: MappingRequest,
+  222|       |    action: HistoryAction,
+  223|       |    result: Result<PreparedMapping, SessionError>,
+  224|       |}
+  225|       |
+  226|       |impl MappingJob {
+  227|    143|    pub fn prepare(self) -> PreparedMappingJob {
+  228|    143|        let result = InstrumentSession::prepare_mapping_document(
+  229|    143|            &self.yaml,
+  230|    143|            &self.context,
+  231|    143|            &self.settings,
+  232|    143|            self.host_buses.as_deref(),
+  233|    143|            self.request.instance.clone(),
+  234|    143|            self.request.expected_revision,
+  235|    143|            self.request.intent.clone(),
+  236|       |        );
+  237|    143|        PreparedMappingJob {
+  238|    143|            request: self.request,
+  239|    143|            action: self.action,
+  240|    143|            result,
+  241|    143|        }
+  242|    143|    }
+  243|       |
+  244|      2|    pub fn fail(self, error: SessionError) -> PreparedMappingJob {
+  245|      2|        PreparedMappingJob {
+  246|      2|            request: self.request,
+  247|      2|            action: self.action,
+  248|      2|            result: Err(error),
+  249|      2|        }
+  250|      2|    }
+  251|       |}
+  252|       |
+  253|       |impl PreparedMappingJob {
+  254|      1|    pub fn fail(mut self, error: SessionError) -> Self {
+  255|      1|        self.result = Err(error);
+  256|      1|        self
+  257|      1|    }
+  258|       |}
+  259|       |impl PreparedMapping {
+  260|      1|    pub fn yaml(&self) -> &str {
+  261|      1|        &self.yaml
+  262|      1|    }
+  263|      5|    pub fn prepared(&self) -> &PreparedKernelInstrument {
+  264|      5|        &self.prepared
+  265|      5|    }
+  266|      6|    pub fn change(&self) -> &ZoneKeyRangeChange {
+  267|      6|        &self.change
+  268|      6|    }
+  269|       |}
+  270|       |/// Off-audio owner. Renderers consume the prepared engine directly.
+  271|       |pub struct InstrumentSession {
+  272|       |    accepted: AcceptedState,
+  273|       |    identity: SessionIdentity,
+  274|       |    attachments: Vec<Weak<()>>,
+  275|       |    context: PreparationContext,
+  276|       |    settings: RenderSettings,
+  277|       |    host_buses: Option<HostBuses>,
+  278|       |    pending: Option<PendingRequest>,
+  279|       |    outcomes: VecDeque<RetainedOutcome>,
+  280|       |    highest_request_id: Option<RequestId>,
+  281|       |}
+  282|       |struct AcceptedState {
+  283|       |    yaml: String,
+  284|       |    prepared: PreparedKernelInstrument,
+  285|       |    revision: u64,
+  286|       |    journal: Vec<JournalEntry>,
+  287|       |    cursor: usize,
+  288|       |}
+  289|       |#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+  290|       |enum HistoryAction {
+  291|       |    Append,
+  292|       |    Undo,
+  293|       |    Redo,
+  294|       |}
+  295|       |#[derive(Clone, Debug, PartialEq, Eq)]
+  296|       |struct PendingRequest {
+  297|       |    request: MappingRequest,
+  298|       |    action: HistoryAction,
+  299|       |}
+  300|       |struct RetainedOutcome {
+  301|       |    request: MappingRequest,
+  302|       |    action: HistoryAction,
+  303|       |    outcome: Arc<RequestOutcome>,
+  304|       |}
+  305|       |impl AcceptedState {
+  306|    680|    fn publication(&self) -> Publication<'_> {
+  307|       |        Publication {
+  308|    680|            revision: self.revision,
+  309|    680|            yaml: &self.yaml,
+  310|    680|            undo_len: self.cursor,
+  311|    680|            redo_len: self.journal.len() - self.cursor,
+  312|    680|            undo: self
+  313|    680|                .cursor
+  314|    680|                .checked_sub(1)
+  315|    680|                .and_then(|index| self.journal.get(index)),
+                                                ^570         ^570^570
+  316|    680|            redo: self.journal.get(self.cursor),
+  317|       |        }
+  318|    680|    }
+  319|       |}
+  320|       |impl InstrumentSession {
+  321|    157|    pub fn admit_mapping(
+  322|    157|        &mut self,
+  323|    157|        attachment: &Attachment,
+  324|    157|        request: MappingRequest,
+  325|    157|    ) -> Result<MappingAdmission, SessionError> {
+  326|    157|        self.attachment_index(attachment)
+  327|    157|            .ok_or(SessionError::InvalidAttachment)?;
+                                                                 ^2
+  328|    155|        self.admit_mapping_request(request, HistoryAction::Append)
+  329|    157|    }
+  330|       |
+  331|      4|    pub(crate) fn admit_mapping_owned(
+  332|      4|        &mut self,
+  333|      4|        request: MappingRequest,
+  334|      4|    ) -> Result<MappingAdmission, SessionError> {
+  335|      4|        self.admit_mapping_request(request, HistoryAction::Append)
+  336|      4|    }
+  337|       |
+  338|      1|    pub(crate) fn admit_undo(
+  339|      1|        &mut self,
+  340|      1|        attachment: &Attachment,
+  341|      1|        request_id: RequestId,
+  342|      1|        expected_revision: u64,
+  343|      1|    ) -> Result<MappingAdmission, SessionError> {
+  344|      1|        self.attachment_index(attachment)
+  345|      1|            .ok_or(SessionError::InvalidAttachment)?;
+                                                                 ^0
+  346|      1|        let entry = self
+  347|      1|            .accepted
+  348|      1|            .publication()
+  349|      1|            .undo
+  350|      1|            .ok_or(SessionError::NothingToUndo)?;
+                                                             ^0
+  351|      1|        let request = MappingRequest {
+  352|      1|            instance: self.identity.clone(),
+  353|      1|            request_id,
+  354|      1|            expected_revision,
+  355|      1|            intent: SetZoneKeyRange {
+  356|      1|                map_id: entry.change.map_id.clone(),
+  357|      1|                zone_id: entry.change.zone_id.clone(),
+  358|      1|                key_range: entry.change.before,
+  359|      1|            },
+  360|      1|        };
+  361|      1|        self.admit_mapping_request(request, HistoryAction::Undo)
+  362|      1|    }
+  363|       |
+  364|    160|    fn admit_mapping_request(
+  365|    160|        &mut self,
+  366|    160|        request: MappingRequest,
+  367|    160|        action: HistoryAction,
+  368|    160|    ) -> Result<MappingAdmission, SessionError> {
+  369|    160|        if request.instance != self.identity {
+  370|      1|            return Err(SessionError::InvalidRequestInstance);
+  371|    159|        }
+  372|    159|        if let Some(retained) = self
+                                  ^6
+  373|    159|            .outcomes
+  374|    159|            .iter()
+  375|  8.53k|            .find(|retained| retained.request.request_id == request.request_id)
+                           ^159
+  376|       |        {
+  377|      6|            return if retained.request == request && retained.action == action {
+                                                                   ^5
+  378|      5|                Ok(MappingAdmission::Completed(Arc::clone(&retained.outcome)))
+  379|       |            } else {
+  380|      1|                Err(SessionError::ConflictingRequest)
+  381|       |            };
+  382|    153|        }
+  383|    153|        if let Some(pending) = &self.pending {
+                                  ^3
+  384|      3|            return if pending.request.request_id == request.request_id {
+  385|      2|                if pending.request == request && pending.action == action {
+                                                               ^1
+  386|      1|                    Ok(MappingAdmission::Pending)
+  387|       |                } else {
+  388|      1|                    Err(SessionError::ConflictingRequest)
+  389|       |                }
+  390|       |            } else {
+  391|      1|                Err(SessionError::Busy)
+  392|       |            };
+  393|    150|        }
+  394|    150|        if self
+  395|    150|            .highest_request_id
+  396|    150|            .is_some_and(|highest| request.request_id <= highest)
+                                                 ^140                  ^140
+  397|       |        {
+  398|      3|            return Err(SessionError::RetiredRequest);
+  399|    147|        }
+  400|    147|        if request.expected_revision != self.accepted.revision {
+  401|      2|            return Err(SessionError::StaleRequest);
+  402|    145|        }
+  403|    145|        let job = MappingJob {
+  404|    145|            request: request.clone(),
+  405|    145|            action,
+  406|    145|            yaml: self.accepted.yaml.clone(),
+  407|    145|            context: self.context.clone(),
+  408|    145|            settings: self.settings.clone(),
+  409|    145|            host_buses: self.host_buses.clone().map(Box::new),
+  410|    145|        };
+  411|    145|        self.highest_request_id = Some(request.request_id);
+  412|    145|        self.pending = Some(PendingRequest { request, action });
+  413|    145|        Ok(MappingAdmission::Admitted(job))
+  414|    160|    }
+  415|       |
+  416|    146|    pub fn complete_mapping<H: ActivationHost>(
+  417|    146|        &mut self,
+  418|    146|        completion: PreparedMappingJob,
+  419|    146|        host: &mut H,
+  420|    146|    ) -> Result<Arc<RequestOutcome>, CompletionRouteError>
+  421|    146|    where
+  422|    146|        H::Error: ToString,
+  423|       |    {
+  424|    146|        if self.pending.as_ref()
+  425|    146|            != Some(&PendingRequest {
+  426|    146|                request: completion.request.clone(),
+  427|    146|                action: completion.action,
+  428|    146|            })
+  429|       |        {
+  430|      1|            return Err(CompletionRouteError {
+  431|      1|                reason: SessionError::InvalidJob,
+  432|      1|                completion: Box::new(completion),
+  433|      1|            });
+  434|    145|        }
+  435|    145|        let pending = self
+  436|    145|            .pending
+  437|    145|            .take()
+  438|    145|            .expect("matching pending request exists");
+  439|    145|        let request = pending.request;
+  440|    145|        let outcome = match completion.result {
+                          ^137
+  441|    133|            Err(error) => Arc::new(RequestOutcome {
+  442|    133|                request_id: request.request_id,
+  443|    133|                result: Err(RequestFailure::Session(error)),
+  444|    133|            }),
+  445|     12|            Ok(candidate) => match self.stage(candidate, completion.action) {
+  446|      1|                Err(error) => Arc::new(RequestOutcome {
+  447|      1|                    request_id: request.request_id,
+  448|      1|                    result: Err(RequestFailure::Session(error)),
+  449|      1|                }),
+  450|     11|                Ok(staged) => {
+  451|     11|                    let snapshot = self.snapshot_of(&staged);
+  452|       |                    // Both retained and returned references exist before installation.
+  453|     11|                    let accepted = Arc::new(RequestOutcome {
+  454|     11|                        request_id: request.request_id,
+  455|     11|                        result: Ok(snapshot.clone()),
+  456|     11|                    });
+  457|     11|                    let returned = Arc::clone(&accepted);
+  458|     11|                    match self.install_staged(staged, &snapshot, host, None) {
+  459|       |                        Ok(()) => {
+  460|      8|                            self.retain_outcome(request, completion.action, accepted);
+  461|      8|                            return Ok(returned);
+  462|       |                        }
+  463|      3|                        Err(error) => Arc::new(RequestOutcome {
+  464|      3|                            request_id: request.request_id,
+  465|      3|                            result: Err(RequestFailure::Activation(error.to_string())),
+  466|      3|                        }),
+  467|       |                    }
+  468|       |                }
+  469|       |            },
+  470|       |        };
+  471|    137|        let returned = Arc::clone(&outcome);
+  472|    137|        self.retain_outcome(request, completion.action, outcome);
+  473|    137|        Ok(returned)
+  474|    146|    }
+  475|       |
+  476|     11|    pub fn request_outcome(
+  477|     11|        &self,
+  478|     11|        attachment: &Attachment,
+  479|     11|        request_id: RequestId,
+  480|     11|    ) -> Result<Option<Arc<RequestOutcome>>, SessionError> {
+  481|     11|        self.attachment_index(attachment)
+  482|     11|            .ok_or(SessionError::InvalidAttachment)?;
+                                                                 ^1
+  483|     10|        Ok(self
+  484|     10|            .outcomes
+  485|     10|            .iter()
+  486|    263|            .find(|retained| retained.request.request_id == request_id)
+                           ^10
+  487|     10|            .map(|retained| Arc::clone(&retained.outcome)))
+                                          ^7         ^7
+  488|     11|    }
+  489|       |
+  490|    114|    pub fn commit_mapping<H: ActivationHost>(
+  491|    114|        &mut self,
+  492|    114|        candidate: PreparedMapping,
+  493|    114|        host: &mut H,
+  494|    114|    ) -> Result<SessionSnapshot, CommitError<H::Error>> {
+  495|    114|        self.ensure_idle().map_err(CommitError::Session)?;
+                                                                      ^1
+  496|    113|        self.publish(candidate, HistoryAction::Append, host)
+  497|    114|    }
+  498|       |
+  499|       |    /// Prepare an externally supplied canonical document without publishing it.
+  500|      9|    pub fn prepare_document_replacement(
+  501|      9|        &self,
+  502|      9|        attachment: &Attachment,
+  503|      9|        yaml: &str,
+  504|      9|    ) -> Result<PreparedDocumentReplacement, SessionError> {
+  505|      9|        self.attachment_index(attachment)
+  506|      9|            .ok_or(SessionError::InvalidAttachment)?;
+                                                                 ^1
+  507|      8|        self.ensure_idle()?;
+                                        ^1
+  508|      7|        let prepared = Self::prepare_document(
+                          ^5
+  509|      7|            yaml,
+  510|      7|            &self.context,
+  511|      7|            &self.settings,
+  512|      7|            self.host_buses.as_ref(),
+  513|      2|        )?;
+  514|      5|        Ok(PreparedDocumentReplacement {
+  515|      5|            yaml: yaml.into(),
+  516|      5|            prepared,
+  517|      5|            owner: self.identity.clone(),
+  518|      5|            base_revision: self.accepted.revision,
+  519|      5|        })
+  520|      9|    }
+  521|       |
+  522|       |    /// Publish a prepared external document and retire incompatible recovery state.
+  523|      5|    pub fn commit_document_replacement<H: ActivationHost>(
+  524|      5|        &mut self,
+  525|      5|        candidate: PreparedDocumentReplacement,
+  526|      5|        host: &mut H,
+  527|      5|    ) -> Result<SessionSnapshot, CommitError<H::Error>> {
+  528|      5|        self.ensure_idle().map_err(CommitError::Session)?;
+                                                                      ^1
+  529|      4|        let staged = self
+                          ^2
+  530|      4|            .stage_document_replacement(candidate)
+  531|      4|            .map_err(CommitError::Session)?;
+                                                        ^2
+  532|      2|        let snapshot = self.snapshot_of(&staged);
+  533|       |        // Allocate the next bounded recovery window before host installation.
+  534|      2|        let outcomes = VecDeque::with_capacity(OUTCOME_LIMIT);
+  535|      2|        self.install_staged(staged, &snapshot, host, Some(outcomes))
+  536|      2|            .map_err(CommitError::Activation)?;
+                                                           ^1
+  537|      1|        Ok(snapshot)
+  538|      5|    }
+  539|       |
+  540|      4|    pub fn prepare_render_configuration(
+  541|      4|        &self,
+  542|      4|        attachment: &Attachment,
+  543|      4|        settings: RenderSettings,
+  544|      4|        host_buses: HostBuses,
+  545|      4|    ) -> Result<PreparedRenderConfiguration, SessionError> {
+  546|      4|        self.attachment_index(attachment)
+  547|      4|            .ok_or(SessionError::InvalidAttachment)?;
+                                                                 ^0
+  548|      4|        self.prepare_render_configuration_owned(settings, host_buses)
+  549|      4|    }
+  550|       |
+  551|      5|    pub(crate) fn prepare_render_configuration_owned(
+  552|      5|        &self,
+  553|      5|        settings: RenderSettings,
+  554|      5|        host_buses: HostBuses,
+  555|      5|    ) -> Result<PreparedRenderConfiguration, SessionError> {
+  556|      5|        self.ensure_idle()?;
+                                        ^0
+  557|      5|        let context =
+  558|      5|            PreparationContext::new(self.context.document_root(), settings.sample_rate_hz)
+  559|      5|                .with_macro_roots(self.context.macro_roots().clone());
+  560|      5|        let prepared =
+  561|      5|            Self::prepare_document(&self.accepted.yaml, &context, &settings, Some(&host_buses))?;
+                                                                                                             ^0
+  562|      5|        Ok(PreparedRenderConfiguration {
+  563|      5|            prepared,
+  564|      5|            context,
+  565|      5|            settings,
+  566|      5|            host_buses,
+  567|      5|            owner: self.identity.clone(),
+  568|      5|            base_revision: self.accepted.revision,
+  569|      5|        })
+  570|      5|    }
+  571|       |
+  572|      5|    pub fn commit_render_configuration<H: ActivationHost>(
+  573|      5|        &mut self,
+  574|      5|        candidate: PreparedRenderConfiguration,
+  575|      5|        host: &mut H,
+  576|      5|    ) -> Result<SessionSnapshot, CommitError<H::Error>> {
+  577|      5|        self.ensure_idle().map_err(CommitError::Session)?;
+                                                                      ^0
+  578|      5|        if candidate.owner != self.identity {
+  579|      1|            return Err(CommitError::Session(SessionError::ForeignCandidate));
+  580|      4|        }
+  581|      4|        if candidate.base_revision != self.accepted.revision {
+  582|      1|            return Err(CommitError::Session(SessionError::StaleCandidate));
+  583|      3|        }
+  584|      3|        let staged = AcceptedState {
+  585|      3|            yaml: self.accepted.yaml.clone(),
+  586|      3|            prepared: candidate.prepared,
+  587|      3|            revision: self.accepted.revision,
+  588|      3|            journal: self.accepted.journal.clone(),
+  589|      3|            cursor: self.accepted.cursor,
+  590|      3|        };
+  591|      3|        let snapshot = self.snapshot_of(&staged);
+  592|      3|        let lease = host
+                          ^2
+  593|      3|            .activate(&staged.prepared, &snapshot)
+  594|      3|            .map_err(CommitError::Activation)?;
+                                                           ^1
+  595|      2|        let previous = std::mem::replace(&mut self.accepted, staged);
+  596|      2|        self.context = candidate.context;
+  597|      2|        self.settings = candidate.settings;
+  598|      2|        self.host_buses = Some(candidate.host_buses);
+  599|      2|        lease.publish(self.accepted.publication());
+  600|      2|        drop(previous);
+  601|      2|        Ok(snapshot)
+  602|      5|    }
+  603|       |
+  604|    112|    pub fn undo<H: ActivationHost>(
+  605|    112|        &mut self,
+  606|    112|        attachment: &Attachment,
+  607|    112|        host: &mut H,
+  608|    112|    ) -> Result<SessionSnapshot, CommitError<H::Error>> {
+  609|    112|        self.attachment_index(attachment)
+  610|    112|            .ok_or(CommitError::Session(SessionError::InvalidAttachment))?;
+                                                                                       ^2
+  611|    110|        self.ensure_idle().map_err(CommitError::Session)?;
+                                                                      ^1
+  612|    109|        let entry = self
+                          ^106
+  613|    109|            .accepted
+  614|    109|            .publication()
+  615|    109|            .undo
+  616|    109|            .ok_or(CommitError::Session(SessionError::NothingToUndo))?;
+                                                                                   ^3
+  617|    106|        let intent = SetZoneKeyRange {
+  618|    106|            map_id: entry.change.map_id.clone(),
+  619|    106|            zone_id: entry.change.zone_id.clone(),
+  620|    106|            key_range: entry.change.before,
+  621|    106|        };
+  622|    106|        let candidate = self
+                          ^105
+  623|    106|            .prepare_mapping(attachment, intent)
+  624|    106|            .map_err(CommitError::Session)?;
+                                                        ^1
+  625|    105|        self.publish(candidate, HistoryAction::Undo, host)
+  626|    112|    }
+  627|       |
+  628|      8|    pub fn redo<H: ActivationHost>(
+  629|      8|        &mut self,
+  630|      8|        attachment: &Attachment,
+  631|      8|        host: &mut H,
+  632|      8|    ) -> Result<SessionSnapshot, CommitError<H::Error>> {
+  633|      8|        self.attachment_index(attachment)
+  634|      8|            .ok_or(CommitError::Session(SessionError::InvalidAttachment))?;
+                                                                                       ^2
+  635|      6|        self.ensure_idle().map_err(CommitError::Session)?;
+                                                                      ^1
+  636|      5|        let entry = self
+                          ^3
+  637|      5|            .accepted
+  638|      5|            .publication()
+  639|      5|            .redo
+  640|      5|            .ok_or(CommitError::Session(SessionError::NothingToRedo))?;
+                                                                                   ^2
+  641|      3|        let intent = SetZoneKeyRange {
+  642|      3|            map_id: entry.change.map_id.clone(),
+  643|      3|            zone_id: entry.change.zone_id.clone(),
+  644|      3|            key_range: entry.change.after,
+  645|      3|        };
+  646|      3|        let candidate = self
+                          ^2
+  647|      3|            .prepare_mapping(attachment, intent)
+  648|      3|            .map_err(CommitError::Session)?;
+                                                        ^1
+  649|      2|        self.publish(candidate, HistoryAction::Redo, host)
+  650|      8|    }
+  651|       |
+  652|    220|    fn publish<H: ActivationHost>(
+  653|    220|        &mut self,
+  654|    220|        candidate: PreparedMapping,
+  655|    220|        action: HistoryAction,
+  656|    220|        host: &mut H,
+  657|    220|    ) -> Result<SessionSnapshot, CommitError<H::Error>> {
+  658|    220|        let staged = self
+                          ^217
+  659|    220|            .stage(candidate, action)
+  660|    220|            .map_err(CommitError::Session)?;
+                                                        ^3
+  661|       |        // Snapshot/history/string allocations all precede host installation.
+  662|    217|        let snapshot = self.snapshot_of(&staged);
+  663|    217|        self.install_staged(staged, &snapshot, host, None)
+  664|    217|            .map_err(CommitError::Activation)?;
+                                                           ^4
+  665|    213|        Ok(snapshot)
+  666|    220|    }
+  667|       |
+  668|    230|    fn install_staged<H: ActivationHost>(
+  669|    230|        &mut self,
+  670|    230|        staged: AcceptedState,
+  671|    230|        snapshot: &SessionSnapshot,
+  672|    230|        host: &mut H,
+  673|    230|        replacement_outcomes: Option<VecDeque<RetainedOutcome>>,
+  674|    230|    ) -> Result<(), H::Error> {
+  675|    230|        let lease = host.activate(&staged.prepared, snapshot)?;
+                          ^222                                             ^8
+  676|    222|        let previous = std::mem::replace(&mut self.accepted, staged);
+  677|    222|        let retired_outcomes =
+  678|    222|            replacement_outcomes.map(|outcomes| std::mem::replace(&mut self.outcomes, outcomes));
+                                                              ^1                ^1                  ^1
+  679|    222|        lease.publish(self.accepted.publication());
+  680|    222|        drop(previous); // Retire accepted resources off audio after release.
+  681|    222|        drop(retired_outcomes);
+  682|    222|        Ok(())
+  683|    230|    }
+  684|       |
+  685|    232|    fn stage(
+  686|    232|        &self,
+  687|    232|        candidate: PreparedMapping,
+  688|    232|        action: HistoryAction,
+  689|    232|    ) -> Result<AcceptedState, SessionError> {
+  690|    232|        let revision = self.next_candidate_revision(&candidate.owner, candidate.base_revision)?;
+                          ^228                                                                              ^4
+  691|    228|        let mut journal = self.accepted.journal.clone();
+  692|    228|        let cursor = match action {
+  693|       |            HistoryAction::Append => {
+  694|    120|                journal.truncate(self.accepted.cursor);
+  695|    120|                journal.push(JournalEntry {
+  696|    120|                    version: 1,
+  697|    120|                    label: "Change Key Range".into(),
+  698|    120|                    change: candidate.change,
+  699|    120|                });
+  700|    120|                if journal.len() > HISTORY_LIMIT {
+  701|      1|                    journal.remove(0);
+  702|    119|                }
+  703|    120|                journal.len()
+  704|       |            }
+  705|    106|            HistoryAction::Undo => self.accepted.cursor - 1,
+  706|      2|            HistoryAction::Redo => self.accepted.cursor + 1,
+  707|       |        };
+  708|    228|        Ok(AcceptedState {
+  709|    228|            yaml: candidate.yaml,
+  710|    228|            prepared: candidate.prepared,
+  711|    228|            revision,
+  712|    228|            journal,
+  713|    228|            cursor,
+  714|    228|        })
+  715|    232|    }
+  716|       |
+  717|      4|    fn stage_document_replacement(
+  718|      4|        &self,
+  719|      4|        candidate: PreparedDocumentReplacement,
+  720|      4|    ) -> Result<AcceptedState, SessionError> {
+  721|      4|        let revision = self.next_candidate_revision(&candidate.owner, candidate.base_revision)?;
+                          ^2                                                                                ^2
+  722|      2|        Ok(AcceptedState {
+  723|      2|            yaml: candidate.yaml,
+  724|      2|            prepared: candidate.prepared,
+  725|      2|            revision,
+  726|      2|            journal: Vec::with_capacity(HISTORY_LIMIT),
+  727|      2|            cursor: 0,
+  728|      2|        })
+  729|      4|    }
+  730|       |
+  731|    236|    fn next_candidate_revision(
+  732|    236|        &self,
+  733|    236|        owner: &SessionIdentity,
+  734|    236|        base_revision: u64,
+  735|    236|    ) -> Result<u64, SessionError> {
+  736|    236|        if owner != &self.identity {
+  737|      2|            return Err(SessionError::ForeignCandidate);
+  738|    234|        }
+  739|    234|        if base_revision != self.accepted.revision {
+  740|      2|            return Err(SessionError::StaleCandidate);
+  741|    232|        }
+  742|    232|        self.accepted
+  743|    232|            .revision
+  744|    232|            .checked_add(1)
+  745|    232|            .ok_or(SessionError::RevisionExhausted)
+  746|    236|    }
+  747|       |
+  748|    489|    fn ensure_idle(&self) -> Result<(), SessionError> {
+  749|    489|        if self.pending.is_some() {
+  750|      6|            Err(SessionError::Busy)
+  751|       |        } else {
+  752|    483|            Ok(())
+  753|       |        }
+  754|    489|    }
+  755|       |
+  756|    145|    fn retain_outcome(
+  757|    145|        &mut self,
+  758|    145|        request: MappingRequest,
+  759|    145|        action: HistoryAction,
+  760|    145|        outcome: Arc<RequestOutcome>,
+  761|    145|    ) {
+  762|    145|        if self.outcomes.len() == OUTCOME_LIMIT {
+  763|      1|            self.outcomes.pop_front();
+  764|    144|        }
+  765|    145|        self.outcomes.push_back(RetainedOutcome {
+  766|    145|            request,
+  767|    145|            action,
+  768|    145|            outcome,
+  769|    145|        });
+  770|    145|    }
+  771|       |
+  772|       |    /// Prepare off audio without publishing or changing accepted state.
+  773|    238|    pub fn prepare_mapping(
+  774|    238|        &self,
+  775|    238|        attachment: &Attachment,
+  776|    238|        intent: SetZoneKeyRange,
+  777|    238|    ) -> Result<PreparedMapping, SessionError> {
+  778|    238|        self.attachment_index(attachment)
+  779|    238|            .ok_or(SessionError::InvalidAttachment)?;
+                                                                 ^2
+  780|    236|        self.ensure_idle()?;
+                                        ^1
+  781|    235|        Self::prepare_mapping_document(
+  782|    235|            &self.accepted.yaml,
+  783|    235|            &self.context,
+  784|    235|            &self.settings,
+  785|    235|            self.host_buses.as_ref(),
+  786|    235|            self.identity.clone(),
+  787|    235|            self.accepted.revision,
+  788|    235|            intent,
+  789|       |        )
+  790|    238|    }
+  791|       |
+  792|    378|    fn prepare_mapping_document(
+  793|    378|        accepted_yaml: &str,
+  794|    378|        context: &PreparationContext,
+  795|    378|        settings: &RenderSettings,
+  796|    378|        host_buses: Option<&HostBuses>,
+  797|    378|        owner: SessionIdentity,
+  798|    378|        base_revision: u64,
+  799|    378|        intent: SetZoneKeyRange,
+  800|    378|    ) -> Result<PreparedMapping, SessionError> {
+  801|    378|        if intent.key_range[0] > intent.key_range[1] || intent.key_range[1] > 127 {
+                                                                      ^377
+  802|      3|            return Err(SessionError::InvalidMapping);
+  803|    375|        }
+  804|       |        // Only the native accepted document supplies identities and inverse data.
+  805|    375|        let mut document: serde_yaml::Value =
+  806|    375|            serde_yaml::from_str(accepted_yaml).expect("accepted YAML remains valid");
+  807|    375|        let maps = document["assets"]["sample_maps"]
+                          ^374
+  808|    375|            .as_sequence_mut()
+  809|    375|            .ok_or(SessionError::InvalidMapping)?;
+                                                              ^1
+  810|    374|        let map = maps
+                          ^372
+  811|    374|            .iter_mut()
+  812|    375|            .find(|map| map["id"].as_str() == Some(&intent.map_id))
+                           ^374
+  813|    374|            .ok_or(SessionError::InvalidMapping)?;
+                                                              ^2
+  814|    372|        let zones = map["zones"]
+  815|    372|            .as_sequence_mut()
+  816|    372|            .expect("accepted sample map has zones");
+  817|    372|        let mut matching = zones
+  818|    372|            .iter_mut()
+  819|  2.59k|            .filter(|zone| zone["id"].as_str() == Some(&intent.zone_id));
+                           ^372
+  820|    372|        let zone = matching.next().ok_or(SessionError::InvalidMapping)?;
+                          ^370                                                      ^2
+  821|    370|        if matching.next().is_some() {
+  822|      1|            return Err(SessionError::InvalidMapping);
+  823|    369|        }
+  824|    369|        let before = serde_yaml::from_value(zone["key_range"].clone())
+  825|    369|            .expect("accepted zone has a typed key range");
+  826|    369|        zone["key_range"] = serde_yaml::Value::Sequence(
+  827|    369|            intent
+  828|    369|                .key_range
+  829|    369|                .into_iter()
+  830|    738|                .map(|note| note.into())
+                               ^369
+  831|    369|                .collect(),
+  832|       |        );
+  833|       |        // Value serialization preserves authored values; presentation is normalized.
+  834|    369|        let yaml = serde_yaml::to_string(&document).expect("YAML values serialize");
+  835|    369|        let prepared = Self::prepare_document(&yaml, context, settings, host_buses)?;
+                          ^236                                                                   ^133
+  836|    236|        Ok(PreparedMapping {
+  837|    236|            yaml,
+  838|    236|            prepared,
+  839|    236|            owner,
+  840|    236|            base_revision,
+  841|    236|            change: ZoneKeyRangeChange {
+  842|    236|                map_id: intent.map_id,
+  843|    236|                zone_id: intent.zone_id,
+  844|    236|                before,
+  845|    236|                after: intent.key_range,
+  846|    236|            },
+  847|    236|        })
+  848|    378|    }
+  849|       |
+  850|     34|    pub fn new(
+  851|     34|        yaml: &str,
+  852|     34|        context: PreparationContext,
+  853|     34|        settings: RenderSettings,
+  854|     34|    ) -> Result<Self, SessionError> {
+  855|     34|        Self::new_with_optional_host_buses(yaml, context, settings, None)
+  856|     34|    }
+  857|       |
+  858|      3|    pub fn new_for_planar_host(
+  859|      3|        yaml: &str,
+  860|      3|        context: PreparationContext,
+  861|      3|        settings: RenderSettings,
+  862|      3|        host_buses: HostBuses,
+  863|      3|    ) -> Result<Self, SessionError> {
+  864|      3|        Self::new_with_optional_host_buses(yaml, context, settings, Some(host_buses))
+  865|      3|    }
+  866|       |
+  867|     37|    fn new_with_optional_host_buses(
+  868|     37|        yaml: &str,
+  869|     37|        context: PreparationContext,
+  870|     37|        settings: RenderSettings,
+  871|     37|        host_buses: Option<HostBuses>,
+  872|     37|    ) -> Result<Self, SessionError> {
+  873|     37|        let prepared = Self::prepare_document(yaml, &context, &settings, host_buses.as_ref())?;
+                          ^35                                                                              ^2
+  874|     35|        Ok(Self {
+  875|     35|            accepted: AcceptedState {
+  876|     35|                yaml: yaml.into(),
+  877|     35|                prepared,
+  878|     35|                revision: 0,
+  879|     35|                journal: Vec::with_capacity(HISTORY_LIMIT),
+  880|     35|                cursor: 0,
+  881|     35|            },
+  882|     35|            identity: SessionIdentity(Arc::new(())),
+  883|     35|            attachments: Vec::with_capacity(ATTACHMENT_LIMIT),
+  884|     35|            context,
+  885|     35|            settings,
+  886|     35|            host_buses,
+  887|     35|            pending: None,
+  888|     35|            outcomes: VecDeque::with_capacity(OUTCOME_LIMIT),
+  889|     35|            highest_request_id: None,
+  890|     35|        })
+  891|     37|    }
+  892|       |
+  893|     60|    pub fn attach(&mut self) -> Result<(Attachment, SessionSnapshot), SessionError> {
+  894|    183|        self.attachments.retain(|marker| marker.strong_count() != 0);
+                      ^60              ^60
+  895|     60|        if self.attachments.len() == ATTACHMENT_LIMIT {
+  896|      2|            return Err(SessionError::AttachmentLimit);
+  897|     58|        }
+  898|     58|        let attachment = Attachment {
+  899|     58|            owner: self.identity.clone(),
+  900|     58|            marker: Arc::new(()),
+  901|     58|        };
+  902|     58|        self.attachments.push(Arc::downgrade(&attachment.marker));
+  903|     58|        Ok((attachment, self.accepted_snapshot()))
+  904|     60|    }
+  905|       |
+  906|     12|    pub fn detach(&mut self, attachment: &Attachment) -> Result<(), SessionError> {
+  907|     12|        let index = self
+                          ^10
+  908|     12|            .attachment_index(attachment)
+  909|     12|            .ok_or(SessionError::InvalidAttachment)?;
+                                                                 ^2
+  910|     10|        self.attachments.swap_remove(index);
+  911|     10|        Ok(())
+  912|     12|    }
+  913|       |
+  914|     46|    pub fn snapshot(&self, attachment: &Attachment) -> Result<SessionSnapshot, SessionError> {
+  915|     46|        self.attachment_index(attachment)
+  916|     46|            .ok_or(SessionError::InvalidAttachment)?;
+                                                                 ^5
+  917|     41|        Ok(self.accepted_snapshot())
+  918|     46|    }
+  919|       |
+  920|      9|    pub(crate) fn owner_snapshot(&self) -> SessionSnapshot {
+  921|      9|        self.accepted_snapshot()
+  922|      9|    }
+  923|       |
+  924|      7|    pub fn next_request_id(&self) -> Result<RequestId, SessionError> {
+  925|      7|        self.highest_request_id.map_or(Ok(RequestId(1)), |highest| {
+                                                                                 ^4
+  926|      4|            highest
+  927|      4|                .0
+  928|      4|                .checked_add(1)
+  929|      4|                .map(RequestId)
+  930|      4|                .ok_or(SessionError::RevisionExhausted)
+  931|      4|        })
+  932|      7|    }
+  933|       |
+  934|      0|    pub(crate) fn reserve_control_request(
+  935|      0|        &mut self,
+  936|      0|        attachment: &Attachment,
+  937|      0|        request_id: RequestId,
+  938|      0|        expected_revision: u64,
+  939|      0|    ) -> Result<(), SessionError> {
+  940|      0|        self.attachment_index(attachment)
+  941|      0|            .ok_or(SessionError::InvalidAttachment)?;
+  942|      0|        self.ensure_idle()?;
+  943|      0|        if self
+  944|      0|            .highest_request_id
+  945|      0|            .is_some_and(|highest| request_id <= highest)
+  946|       |        {
+  947|      0|            return Err(SessionError::RetiredRequest);
+  948|      0|        }
+  949|      0|        if expected_revision != self.accepted.revision {
+  950|      0|            return Err(SessionError::StaleRequest);
+  951|      0|        }
+  952|      0|        self.highest_request_id = Some(request_id);
+  953|      0|        Ok(())
+  954|      0|    }
+  955|       |
+  956|     33|    pub fn prepared(&self) -> &PreparedKernelInstrument {
+  957|     33|        &self.accepted.prepared
+  958|     33|    }
+  959|       |
+  960|    418|    fn prepare_document(
+  961|    418|        yaml: &str,
+  962|    418|        context: &PreparationContext,
+  963|    418|        settings: &RenderSettings,
+  964|    418|        host_buses: Option<&HostBuses>,
+  965|    418|    ) -> Result<PreparedKernelInstrument, SessionError> {
+  966|    418|        let patch = load_kernel_patch_str(yaml)
+                          ^416
+  967|    418|            .map_err(|error| SessionError::InvalidDocument(error.to_string()))?;
+                                                                         ^2    ^2           ^2
+  968|    416|        host_buses
+  969|    416|            .map_or_else(
+  970|    403|                || prepare_kernel_patch_with_context(&patch, settings, context),
+  971|     13|                |buses| {
+  972|     13|                    prepare_kernel_patch_for_planar_host_with_context(
+  973|     13|                        &patch, settings, buses, context,
+  974|       |                    )
+  975|     13|                },
+  976|       |            )
+  977|    416|            .map_err(|error| SessionError::PreparationFailed(error.to_string()))
+                                                                           ^135  ^135
+  978|    418|    }
+  979|       |
+  980|    598|    fn attachment_index(&self, attachment: &Attachment) -> Option<usize> {
+  981|    598|        if self.identity != attachment.owner {
+  982|      8|            return None;
+  983|    590|        }
+  984|    590|        let marker = Arc::downgrade(&attachment.marker);
+  985|    590|        self.attachments
+  986|    590|            .iter()
+  987|    627|            .position(|active| active.ptr_eq(&marker))
+                           ^590
+  988|    598|    }
+  989|       |
+  990|    108|    fn accepted_snapshot(&self) -> SessionSnapshot {
+  991|    108|        self.snapshot_of(&self.accepted)
+  992|    108|    }
+  993|       |
+  994|    341|    fn snapshot_of(&self, accepted: &AcceptedState) -> SessionSnapshot {
+  995|    341|        let view = accepted.publication();
+  996|    341|        SessionSnapshot {
+  997|    341|            instance: self.identity.clone(),
+  998|    341|            revision: view.revision,
+  999|    341|            yaml: view.yaml.into(),
+ 1000|    341|            undo_len: view.undo_len,
+ 1001|    341|            redo_len: view.redo_len,
+ 1002|    341|            undo: view.undo.cloned(),
+ 1003|    341|            redo: view.redo.cloned(),
+ 1004|    341|        }
+ 1005|    341|    }
+ 1006|       |}
+ 1007|       |
+ 1008|       |#[cfg(test)]
+ 1009|       |#[path = "../tests/internal/revision_limit.rs"]
+ 1010|       |mod revision_limit;
+
+/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/instrument-session/src/native_ffi.rs:
+    1|       |use crate::{
+    2|       |    ACTIVE_REQUEST_LIMIT, ATTACHMENT_LIMIT, ActivationHost, ActivationLease,
+    3|       |    CONNECTION_CONTRACT_VERSION, HISTORY_LIMIT, InstrumentSession, MappingAdmission, MappingJob,
+    4|       |    MappingRequest, OUTCOME_LIMIT, PreparedMappingJob, Publication, RequestFailure, RequestId,
+    5|       |    SessionError, SessionSnapshot, SetZoneKeyRange,
+    6|       |};
+    7|       |use dandrum_engine::{
+    8|       |    ffi::{
+    9|       |        DandrumKernelBusDeclaration, DandrumKernelInstrument, PlanarBusDeclaration,
+   10|       |        kernel_instrument_from_prepared_yaml, planar_host_buses,
+   11|       |    },
+   12|       |    graph::PortDirection,
+   13|       |    patch::RenderSettings,
+   14|       |    preparation::PreparationContext,
+   15|       |};
+   16|       |use std::{
+   17|       |    ffi::{CStr, c_char, c_void},
+   18|       |    path::PathBuf,
+   19|       |    ptr,
+   20|       |    sync::atomic::{AtomicU64, Ordering},
+   21|       |};
+   22|       |
+   23|       |static NEXT_SESSION_ID: AtomicU64 = AtomicU64::new(1);
+   24|       |
+   25|       |struct NativeConnection {
+   26|       |    id: u64,
+   27|       |    attachment: crate::Attachment,
+   28|       |}
+   29|       |
+   30|       |pub struct DandrumInstrumentSession {
+   31|       |    session: InstrumentSession,
+   32|       |    instance_id: u64,
+   33|       |    next_attachment_id: u64,
+   34|       |    connections: Vec<NativeConnection>,
+   35|       |    sample_rate_hz: u32,
+   36|       |    max_block_size: usize,
+   37|       |    buses: Vec<PlanarBusDeclaration>,
+   38|       |}
+   39|       |
+   40|       |enum JobState {
+   41|       |    Admitted(MappingJob),
+   42|       |    Prepared(Box<PreparedMappingJob>),
+   43|       |}
+   44|       |
+   45|       |pub struct DandrumInstrumentSessionJob {
+   46|       |    state: Option<JobState>,
+   47|       |}
+   48|       |
+   49|       |#[repr(C)]
+   50|       |#[derive(Clone, Copy)]
+   51|       |pub struct DandrumInstrumentSessionSnapshot {
+   52|       |    pub contract_version: u32,
+   53|       |    pub instance_id: u64,
+   54|       |    pub attachment_id: u64,
+   55|       |    pub revision: u64,
+   56|       |    pub next_request_id: u64,
+   57|       |    pub undo_count: usize,
+   58|       |    pub redo_count: usize,
+   59|       |    pub attachment_limit: usize,
+   60|       |    pub history_limit: usize,
+   61|       |    pub outcome_limit: usize,
+   62|       |    pub active_request_limit: usize,
+   63|       |    pub yaml_size: usize,
+   64|       |}
+   65|       |
+   66|       |pub type ActivateCallback = unsafe extern "C" fn(
+   67|       |    context: *mut c_void,
+   68|       |    candidate: *mut DandrumKernelInstrument,
+   69|       |    yaml: *const u8,
+   70|       |    yaml_size: usize,
+   71|       |    revision: u64,
+   72|       |    undo_count: usize,
+   73|       |    redo_count: usize,
+   74|       |) -> *mut c_void;
+   75|       |pub type PublishCallback = unsafe extern "C" fn(
+   76|       |    context: *mut c_void,
+   77|       |    lease: *mut c_void,
+   78|       |    revision: u64,
+   79|       |    undo_count: usize,
+   80|       |    redo_count: usize,
+   81|       |);
+   82|       |pub type AbortCallback = unsafe extern "C" fn(context: *mut c_void, lease: *mut c_void);
+   83|       |
+   84|       |#[repr(C)]
+   85|       |#[derive(Clone, Copy)]
+   86|       |pub struct DandrumInstrumentSessionHostCallbacks {
+   87|       |    pub activate: Option<ActivateCallback>,
+   88|       |    pub publish: Option<PublishCallback>,
+   89|       |    pub abort: Option<AbortCallback>,
+   90|       |}
+   91|       |
+   92|       |#[derive(Clone, Copy)]
+   93|       |struct NativeCallbacks {
+   94|       |    activate: ActivateCallback,
+   95|       |    publish: PublishCallback,
+   96|       |    abort: AbortCallback,
+   97|       |}
+   98|       |
+   99|      6|fn required_callbacks(
+  100|      6|    callbacks: &DandrumInstrumentSessionHostCallbacks,
+  101|      6|) -> Option<NativeCallbacks> {
+  102|       |    Some(NativeCallbacks {
+  103|      6|        activate: callbacks.activate?,
+                                                  ^0
+  104|      6|        publish: callbacks.publish?,
+                                                ^0
+  105|      6|        abort: callbacks.abort?,
+                                            ^2
+  106|       |    })
+  107|      6|}
+  108|       |
+  109|       |struct NativeHost<'a> {
+  110|       |    callbacks: NativeCallbacks,
+  111|       |    context: *mut c_void,
+  112|       |    sample_rate_hz: u32,
+  113|       |    max_block_size: usize,
+  114|       |    buses: &'a [PlanarBusDeclaration],
+  115|       |}
+  116|       |
+  117|       |struct NativeLease {
+  118|       |    callbacks: NativeCallbacks,
+  119|       |    context: *mut c_void,
+  120|       |    lease: Option<*mut c_void>,
+  121|       |}
+  122|       |
+  123|       |struct NeverHost;
+  124|       |struct NeverLease;
+  125|       |struct RejectingHost(String);
+  126|       |
+  127|       |impl ActivationHost for NeverHost {
+  128|       |    type Error = String;
+  129|       |    type Lease<'a> = NeverLease;
+  130|       |
+  131|      0|    fn activate<'a>(
+  132|      0|        &'a mut self,
+  133|      0|        _: &dandrum_engine::preparation::PreparedKernelInstrument,
+  134|      0|        _: &SessionSnapshot,
+  135|      0|    ) -> Result<Self::Lease<'a>, Self::Error> {
+  136|      0|        unreachable!("explicitly failed work never reaches activation")
+  137|       |    }
+  138|       |}
+  139|       |
+  140|       |impl ActivationLease for NeverLease {
+  141|      0|    fn publish(self, _: Publication<'_>) {
+  142|      0|        unreachable!("explicitly failed work never publishes")
+  143|       |    }
+  144|       |}
+  145|       |
+  146|       |impl ActivationHost for RejectingHost {
+  147|       |    type Error = String;
+  148|       |    type Lease<'a> = NeverLease;
+  149|       |
+  150|      1|    fn activate<'a>(
+  151|      1|        &'a mut self,
+  152|      1|        _: &dandrum_engine::preparation::PreparedKernelInstrument,
+  153|      1|        _: &SessionSnapshot,
+  154|      1|    ) -> Result<Self::Lease<'a>, Self::Error> {
+  155|      1|        Err(self.0.clone())
+  156|      1|    }
+  157|       |}
+  158|       |
+  159|       |impl ActivationHost for NativeHost<'_> {
+  160|       |    type Error = String;
+  161|       |    type Lease<'a>
+  162|       |        = NativeLease
+  163|       |    where
+  164|       |        Self: 'a;
+  165|       |
+  166|      4|    fn activate<'a>(
+  167|      4|        &'a mut self,
+  168|      4|        prepared: &dandrum_engine::preparation::PreparedKernelInstrument,
+  169|      4|        next: &SessionSnapshot,
+  170|      4|    ) -> Result<Self::Lease<'a>, Self::Error> {
+  171|      4|        let candidate = kernel_instrument_from_prepared_yaml(
+  172|      4|            &next.yaml,
+  173|      4|            prepared.clone(),
+  174|      4|            self.sample_rate_hz,
+  175|      4|            self.max_block_size,
+  176|      4|            self.buses,
+  177|       |        )
+  178|      4|        .ok_or_else(|| "failed to instantiate prepared session engine".to_string())?;
+                                     ^0                                              ^0          ^0
+  179|      4|        let candidate = Box::into_raw(candidate);
+  180|      4|        let activate = self.callbacks.activate;
+  181|      4|        let lease = unsafe {
+  182|      4|            activate(
+  183|      4|                self.context,
+  184|      4|                candidate,
+  185|      4|                next.yaml.as_ptr(),
+  186|      4|                next.yaml.len(),
+  187|      4|                next.revision,
+  188|      4|                next.undo_len,
+  189|      4|                next.redo_len,
+  190|      4|            )
+  191|       |        };
+  192|      4|        if lease.is_null() {
+  193|      1|            unsafe { drop(Box::from_raw(candidate)) };
+  194|      1|            return Err("native activation rejected the prepared session engine".into());
+  195|      3|        }
+  196|      3|        Ok(NativeLease {
+  197|      3|            callbacks: self.callbacks,
+  198|      3|            context: self.context,
+  199|      3|            lease: Some(lease),
+  200|      3|        })
+  201|      4|    }
+  202|       |}
+  203|       |
+  204|       |impl ActivationLease for NativeLease {
+  205|      3|    fn publish(mut self, accepted: Publication<'_>) {
+  206|      3|        let lease = self.lease.take().expect("native lease publishes once");
+  207|      3|        let publish = self.callbacks.publish;
+  208|       |        unsafe {
+  209|      3|            publish(
+  210|      3|                self.context,
+  211|      3|                lease,
+  212|      3|                accepted.revision,
+  213|      3|                accepted.undo_len,
+  214|      3|                accepted.redo_len,
+  215|      3|            )
+  216|       |        };
+  217|      3|    }
+  218|       |}
+  219|       |
+  220|       |impl Drop for NativeLease {
+  221|      3|    fn drop(&mut self) {
+  222|      3|        if let Some(lease) = self.lease.take() {
+                                  ^0
+  223|      0|            unsafe { (self.callbacks.abort)(self.context, lease) };
+  224|      3|        }
+  225|      3|    }
+  226|       |}
+  227|       |
+  228|     12|fn bytes<'a>(pointer: *const u8, size: usize) -> Option<&'a str> {
+  229|     12|    if size > 0 && pointer.is_null() {
+  230|      0|        return None;
+  231|     12|    }
+  232|     12|    std::str::from_utf8(if size == 0 {
+  233|      0|        &[]
+  234|       |    } else {
+  235|     12|        unsafe { std::slice::from_raw_parts(pointer, size) }
+  236|       |    })
+  237|     12|    .ok()
+  238|     12|}
+  239|       |
+  240|     25|fn c_text(pointer: *const c_char) -> Option<String> {
+  241|     25|    (!pointer.is_null())
+  242|     25|        .then(|| {
+  243|     25|            unsafe { CStr::from_ptr(pointer) }
+  244|     25|                .to_str()
+  245|     25|                .ok()
+  246|     25|                .map(str::to_owned)
+  247|     25|        })
+  248|     25|        .flatten()
+  249|     25|}
+  250|       |
+  251|      1|unsafe fn bus_declarations(
+  252|      1|    declarations: *const DandrumKernelBusDeclaration,
+  253|      1|    count: usize,
+  254|      1|) -> Option<Vec<PlanarBusDeclaration>> {
+  255|      1|    if count > 0 && declarations.is_null() {
+  256|      0|        return None;
+  257|      1|    }
+  258|      1|    let declarations = if count == 0 {
+  259|      0|        &[][..]
+  260|       |    } else {
+  261|      1|        unsafe { std::slice::from_raw_parts(declarations, count) }
+  262|       |    };
+  263|      1|    declarations
+  264|      1|        .iter()
+  265|     24|        .map(|declaration| {
+                       ^1
+  266|       |            Some(PlanarBusDeclaration {
+  267|     24|                name: c_text(declaration.name)?,
+                                                            ^0
+  268|     24|                direction: match declaration.direction {
+  269|     23|                    1 => PortDirection::Input,
+  270|      1|                    2 => PortDirection::Output,
+  271|      0|                    _ => return None,
+  272|       |                },
+  273|     24|                channel_count: declaration.channel_count,
+  274|       |            })
+  275|     24|        })
+  276|      1|        .collect()
+  277|      1|}
+  278|       |
+  279|      7|fn fill_snapshot(
+  280|      7|    session: &DandrumInstrumentSession,
+  281|      7|    attachment_id: u64,
+  282|      7|    value: &SessionSnapshot,
+  283|      7|    output: *mut DandrumInstrumentSessionSnapshot,
+  284|      7|) -> bool {
+  285|      7|    let Some(output) = (unsafe { output.as_mut() }) else {
+  286|      0|        return false;
+  287|       |    };
+  288|       |    *output = DandrumInstrumentSessionSnapshot {
+  289|       |        contract_version: CONNECTION_CONTRACT_VERSION,
+  290|      7|        instance_id: session.instance_id,
+  291|      7|        attachment_id,
+  292|      7|        revision: value.revision,
+  293|      7|        next_request_id: match session.session.next_request_id() {
+  294|      7|            Ok(id) => id.0,
+  295|      0|            Err(_) => return false,
+  296|       |        },
+  297|      7|        undo_count: value.undo_len,
+  298|      7|        redo_count: value.redo_len,
+  299|       |        attachment_limit: ATTACHMENT_LIMIT,
+  300|       |        history_limit: HISTORY_LIMIT,
+  301|       |        outcome_limit: OUTCOME_LIMIT,
+  302|       |        active_request_limit: ACTIVE_REQUEST_LIMIT,
+  303|      7|        yaml_size: value.yaml.len(),
+  304|       |    };
+  305|      7|    true
+  306|      7|}
+  307|       |
+  308|      1|fn allocate_session_id() -> Option<u64> {
+  309|      1|    NEXT_SESSION_ID
+  310|      1|        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
+  311|      1|            value.checked_add(1)
+  312|      1|        })
+  313|      1|        .ok()
+  314|      1|}
+  315|       |
+  316|      4|fn connection(
+  317|      4|    session: &DandrumInstrumentSession,
+  318|      4|    instance_id: u64,
+  319|      4|    attachment_id: u64,
+  320|      4|) -> Option<crate::Attachment> {
+  321|      4|    (session.instance_id == instance_id)
+  322|      4|        .then(|| {
+  323|      4|            session
+  324|      4|                .connections
+  325|      4|                .iter()
+  326|      4|                .find(|connection| connection.id == attachment_id)
+                                                 ^3               ^3
+  327|      4|                .map(|connection| connection.attachment.clone())
+                                                ^3                    ^3
+  328|      4|        })
+  329|      4|        .flatten()
+  330|      4|}
+  331|       |
+  332|      4|fn write_error(message: &str, output: *mut c_char, capacity: usize) {
+  333|      4|    if output.is_null() || capacity == 0 {
+  334|      0|        return;
+  335|      4|    }
+  336|      4|    let bytes = message.as_bytes();
+  337|      4|    let count = bytes.len().min(capacity - 1);
+  338|      4|    unsafe {
+  339|      4|        ptr::copy_nonoverlapping(bytes.as_ptr(), output.cast(), count);
+  340|      4|        *output.add(count) = 0;
+  341|      4|    }
+  342|      4|}
+  343|       |
+  344|       |#[unsafe(no_mangle)]
+  345|      1|pub unsafe extern "C" fn dandrum_instrument_session_create(
+  346|      1|    yaml: *const u8,
+  347|      1|    yaml_size: usize,
+  348|      1|    document_root: *const c_char,
+  349|      1|    sample_rate_hz: u32,
+  350|      1|    max_block_size: usize,
+  351|      1|    declarations: *const DandrumKernelBusDeclaration,
+  352|      1|    declaration_count: usize,
+  353|      1|) -> *mut DandrumInstrumentSession {
+  354|      1|    if sample_rate_hz == 0 || max_block_size == 0 {
+  355|      0|        return ptr::null_mut();
+  356|      1|    }
+  357|      1|    let Some(yaml) = bytes(yaml, yaml_size) else {
+  358|      0|        return ptr::null_mut();
+  359|       |    };
+  360|      1|    let Some(document_root) = c_text(document_root).map(PathBuf::from) else {
+  361|      0|        return ptr::null_mut();
+  362|       |    };
+  363|      1|    let Some(buses) = (unsafe { bus_declarations(declarations, declaration_count) }) else {
+  364|      0|        return ptr::null_mut();
+  365|       |    };
+  366|      1|    let Some(host_buses) = planar_host_buses(&buses) else {
+  367|      0|        return ptr::null_mut();
+  368|       |    };
+  369|      1|    let settings = RenderSettings {
+  370|      1|        sample_rate_hz,
+  371|      1|        block_size_frames: max_block_size.try_into().unwrap_or(u32::MAX),
+  372|      1|        duration_frames: max_block_size as u64,
+  373|      1|    };
+  374|      1|    if settings.block_size_frames as usize != max_block_size {
+  375|      0|        return ptr::null_mut();
+  376|      1|    }
+  377|      1|    let mut context = PreparationContext::new(document_root, sample_rate_hz);
+  378|      1|    if let Ok(roots) = dandrum_engine::module_library::default_host_macro_roots() {
+  379|      1|        context = context.with_macro_roots(roots);
+  380|      1|    }
+                  ^0
+  381|      1|    let Ok(session) = InstrumentSession::new_for_planar_host(yaml, context, settings, host_buses)
+  382|       |    else {
+  383|      0|        return ptr::null_mut();
+  384|       |    };
+  385|      1|    let Some(instance_id) = allocate_session_id() else {
+  386|      0|        return ptr::null_mut();
+  387|       |    };
+  388|      1|    Box::into_raw(Box::new(DandrumInstrumentSession {
+  389|      1|        session,
+  390|      1|        instance_id,
+  391|      1|        next_attachment_id: 1,
+  392|      1|        connections: Vec::with_capacity(ATTACHMENT_LIMIT),
+  393|      1|        sample_rate_hz,
+  394|      1|        max_block_size,
+  395|      1|        buses,
+  396|      1|    }))
+  397|      1|}
+  398|       |
+  399|       |#[unsafe(no_mangle)]
+  400|      1|pub unsafe extern "C" fn dandrum_instrument_session_destroy(
+  401|      1|    session: *mut DandrumInstrumentSession,
+  402|      1|) {
+  403|      1|    if !session.is_null() {
+  404|      1|        drop(unsafe { Box::from_raw(session) });
+  405|      1|    }
+                  ^0
+  406|      1|}
+  407|       |
+  408|       |#[unsafe(no_mangle)]
+  409|      4|pub unsafe extern "C" fn dandrum_instrument_session_snapshot(
+  410|      4|    session: *const DandrumInstrumentSession,
+  411|      4|    output: *mut DandrumInstrumentSessionSnapshot,
+  412|      4|) -> bool {
+  413|      4|    let Some(session) = (unsafe { session.as_ref() }) else {
+  414|      0|        return false;
+  415|       |    };
+  416|      4|    fill_snapshot(session, 0, &session.session.owner_snapshot(), output)
+  417|      4|}
+  418|       |
+  419|       |#[unsafe(no_mangle)]
+  420|      2|pub unsafe extern "C" fn dandrum_instrument_session_connect(
+  421|      2|    session: *mut DandrumInstrumentSession,
+  422|      2|    output: *mut DandrumInstrumentSessionSnapshot,
+  423|      2|) -> bool {
+  424|      2|    let Some(session) = (unsafe { session.as_mut() }) else {
+  425|      0|        return false;
+  426|       |    };
+  427|      2|    let Some(next_attachment_id) = session.next_attachment_id.checked_add(1) else {
+  428|      0|        return false;
+  429|       |    };
+  430|      2|    let Ok((attachment, snapshot)) = session.session.attach() else {
+  431|      0|        return false;
+  432|       |    };
+  433|      2|    let attachment_id = session.next_attachment_id;
+  434|      2|    session.next_attachment_id = next_attachment_id;
+  435|      2|    session.connections.push(NativeConnection {
+  436|      2|        id: attachment_id,
+  437|      2|        attachment,
+  438|      2|    });
+  439|      2|    if fill_snapshot(session, attachment_id, &snapshot, output) {
+  440|      2|        true
+  441|       |    } else {
+  442|      0|        let connection = session
+  443|      0|            .connections
+  444|      0|            .pop()
+  445|      0|            .expect("connection was just appended");
+  446|      0|        let _ = session.session.detach(&connection.attachment);
+  447|      0|        false
+  448|       |    }
+  449|      2|}
+  450|       |
+  451|       |#[unsafe(no_mangle)]
+  452|      2|pub unsafe extern "C" fn dandrum_instrument_session_disconnect(
+  453|      2|    session: *mut DandrumInstrumentSession,
+  454|      2|    instance_id: u64,
+  455|      2|    attachment_id: u64,
+  456|      2|) -> bool {
+  457|      2|    let Some(session) = (unsafe { session.as_mut() }) else {
+  458|      0|        return false;
+  459|       |    };
+  460|      2|    if session.instance_id != instance_id {
+  461|      0|        return false;
+  462|      2|    }
+  463|      2|    let Some(index) = session
+  464|      2|        .connections
+  465|      2|        .iter()
+  466|      2|        .position(|connection| connection.id == attachment_id)
+  467|       |    else {
+  468|      0|        return false;
+  469|       |    };
+  470|      2|    let connection = session.connections.swap_remove(index);
+  471|      2|    session.session.detach(&connection.attachment).is_ok()
+  472|      2|}
+  473|       |
+  474|       |#[unsafe(no_mangle)]
+  475|      2|pub unsafe extern "C" fn dandrum_instrument_session_connection_snapshot(
+  476|      2|    session: *const DandrumInstrumentSession,
+  477|      2|    instance_id: u64,
+  478|      2|    attachment_id: u64,
+  479|      2|    output: *mut DandrumInstrumentSessionSnapshot,
+  480|      2|) -> bool {
+  481|      2|    let Some(session) = (unsafe { session.as_ref() }) else {
+  482|      0|        return false;
+  483|       |    };
+  484|      2|    let Some(attachment) = connection(session, instance_id, attachment_id) else {
+                           ^1
+  485|      1|        return false;
+  486|       |    };
+  487|      1|    session
+  488|      1|        .session
+  489|      1|        .snapshot(&attachment)
+  490|      1|        .is_ok_and(|snapshot| fill_snapshot(session, attachment_id, &snapshot, output))
+  491|      2|}
+  492|       |
+  493|       |#[unsafe(no_mangle)]
+  494|      1|pub unsafe extern "C" fn dandrum_instrument_session_copy_yaml(
+  495|      1|    session: *const DandrumInstrumentSession,
+  496|      1|    output: *mut u8,
+  497|      1|    capacity: usize,
+  498|      1|) -> bool {
+  499|      1|    let Some(session) = (unsafe { session.as_ref() }) else {
+  500|      0|        return false;
+  501|       |    };
+  502|      1|    let snapshot = session.session.owner_snapshot();
+  503|      1|    if capacity != snapshot.yaml.len() || (capacity > 0 && output.is_null()) {
+  504|      0|        return false;
+  505|      1|    }
+  506|      1|    if capacity > 0 {
+  507|      1|        unsafe { ptr::copy_nonoverlapping(snapshot.yaml.as_ptr(), output, capacity) };
+  508|      1|    }
+                  ^0
+  509|      1|    true
+  510|      1|}
+  511|       |
+  512|       |#[unsafe(no_mangle)]
+  513|      4|pub unsafe extern "C" fn dandrum_instrument_session_admit_mapping(
+  514|      4|    session: *mut DandrumInstrumentSession,
+  515|      4|    request_id: u64,
+  516|      4|    expected_revision: u64,
+  517|      4|    map_id: *const u8,
+  518|      4|    map_id_size: usize,
+  519|      4|    zone_id: *const u8,
+  520|      4|    zone_id_size: usize,
+  521|      4|    key_low: u8,
+  522|      4|    key_high: u8,
+  523|      4|    error: *mut c_char,
+  524|      4|    error_capacity: usize,
+  525|      4|) -> *mut DandrumInstrumentSessionJob {
+  526|      4|    let Some(session) = (unsafe { session.as_mut() }) else {
+  527|      0|        write_error("invalid instrument session", error, error_capacity);
+  528|      0|        return ptr::null_mut();
+  529|       |    };
+  530|      4|    let (Some(map_id), Some(zone_id)) = (bytes(map_id, map_id_size), bytes(zone_id, zone_id_size))
+  531|       |    else {
+  532|      0|        write_error("invalid UTF-8 mapping identity", error, error_capacity);
+  533|      0|        return ptr::null_mut();
+  534|       |    };
+  535|      4|    let snapshot = session.session.owner_snapshot();
+  536|      4|    let request = MappingRequest {
+  537|      4|        instance: snapshot.instance,
+  538|      4|        request_id: RequestId(request_id),
+  539|      4|        expected_revision,
+  540|      4|        intent: SetZoneKeyRange {
+  541|      4|            map_id: map_id.into(),
+  542|      4|            zone_id: zone_id.into(),
+  543|      4|            key_range: [key_low, key_high],
+  544|      4|        },
+  545|      4|    };
+  546|      4|    match session.session.admit_mapping_owned(request) {
+  547|      3|        Ok(MappingAdmission::Admitted(job)) => {
+  548|      3|            Box::into_raw(Box::new(DandrumInstrumentSessionJob {
+  549|      3|                state: Some(JobState::Admitted(job)),
+  550|      3|            }))
+  551|       |        }
+  552|       |        Ok(MappingAdmission::Pending) => {
+  553|      0|            write_error("mapping request is already pending", error, error_capacity);
+  554|      0|            ptr::null_mut()
+  555|       |        }
+  556|       |        Ok(MappingAdmission::Completed(_)) => {
+  557|      1|            write_error("mapping request already completed", error, error_capacity);
+  558|      1|            ptr::null_mut()
+  559|       |        }
+  560|      0|        Err(reason) => {
+  561|      0|            write_error(&format!("{reason:?}"), error, error_capacity);
+  562|      0|            ptr::null_mut()
+  563|       |        }
+  564|       |    }
+  565|      4|}
+  566|       |
+  567|       |#[unsafe(no_mangle)]
+  568|      1|pub unsafe extern "C" fn dandrum_instrument_session_admit_mapping_for_connection(
+  569|      1|    session: *mut DandrumInstrumentSession,
+  570|      1|    instance_id: u64,
+  571|      1|    attachment_id: u64,
+  572|      1|    request_id: u64,
+  573|      1|    expected_revision: u64,
+  574|      1|    map_id: *const u8,
+  575|      1|    map_id_size: usize,
+  576|      1|    zone_id: *const u8,
+  577|      1|    zone_id_size: usize,
+  578|      1|    key_low: u8,
+  579|      1|    key_high: u8,
+  580|      1|    error: *mut c_char,
+  581|      1|    error_capacity: usize,
+  582|      1|) -> *mut DandrumInstrumentSessionJob {
+  583|      1|    let Some(session) = (unsafe { session.as_mut() }) else {
+  584|      0|        write_error("invalid instrument session", error, error_capacity);
+  585|      0|        return ptr::null_mut();
+  586|       |    };
+  587|      1|    let Some(attachment) = connection(session, instance_id, attachment_id) else {
+  588|      0|        write_error(
+  589|      0|            "invalid instrument session connection",
+  590|      0|            error,
+  591|      0|            error_capacity,
+  592|       |        );
+  593|      0|        return ptr::null_mut();
+  594|       |    };
+  595|      1|    let (Some(map_id), Some(zone_id)) = (bytes(map_id, map_id_size), bytes(zone_id, zone_id_size))
+  596|       |    else {
+  597|      0|        write_error("invalid UTF-8 mapping identity", error, error_capacity);
+  598|      0|        return ptr::null_mut();
+  599|       |    };
+  600|      1|    let snapshot = match session.session.snapshot(&attachment) {
+  601|      1|        Ok(snapshot) => snapshot,
+  602|      0|        Err(reason) => {
+  603|      0|            write_error(&format!("{reason:?}"), error, error_capacity);
+  604|      0|            return ptr::null_mut();
+  605|       |        }
+  606|       |    };
+  607|      1|    let request = MappingRequest {
+  608|      1|        instance: snapshot.instance,
+  609|      1|        request_id: RequestId(request_id),
+  610|      1|        expected_revision,
+  611|      1|        intent: SetZoneKeyRange {
+  612|      1|            map_id: map_id.into(),
+  613|      1|            zone_id: zone_id.into(),
+  614|      1|            key_range: [key_low, key_high],
+  615|      1|        },
+  616|      1|    };
+  617|      1|    match session.session.admit_mapping(&attachment, request) {
+  618|      1|        Ok(MappingAdmission::Admitted(job)) => {
+  619|      1|            Box::into_raw(Box::new(DandrumInstrumentSessionJob {
+  620|      1|                state: Some(JobState::Admitted(job)),
+  621|      1|            }))
+  622|       |        }
+  623|       |        Ok(MappingAdmission::Pending) => {
+  624|      0|            write_error("mapping request is already pending", error, error_capacity);
+  625|      0|            ptr::null_mut()
+  626|       |        }
+  627|       |        Ok(MappingAdmission::Completed(_)) => {
+  628|      0|            write_error("mapping request already completed", error, error_capacity);
+  629|      0|            ptr::null_mut()
+  630|       |        }
+  631|      0|        Err(reason) => {
+  632|      0|            write_error(&format!("{reason:?}"), error, error_capacity);
+  633|      0|            ptr::null_mut()
+  634|       |        }
+  635|       |    }
+  636|      1|}
+  637|       |
+  638|       |#[unsafe(no_mangle)]
+  639|      1|pub unsafe extern "C" fn dandrum_instrument_session_admit_undo_for_connection(
+  640|      1|    session: *mut DandrumInstrumentSession,
+  641|      1|    instance_id: u64,
+  642|      1|    attachment_id: u64,
+  643|      1|    request_id: u64,
+  644|      1|    expected_revision: u64,
+  645|      1|    error: *mut c_char,
+  646|      1|    error_capacity: usize,
+  647|      1|) -> *mut DandrumInstrumentSessionJob {
+  648|      1|    let Some(session) = (unsafe { session.as_mut() }) else {
+  649|      0|        write_error("invalid instrument session", error, error_capacity);
+  650|      0|        return ptr::null_mut();
+  651|       |    };
+  652|      1|    let Some(attachment) = connection(session, instance_id, attachment_id) else {
+  653|      0|        write_error(
+  654|      0|            "invalid instrument session connection",
+  655|      0|            error,
+  656|      0|            error_capacity,
+  657|       |        );
+  658|      0|        return ptr::null_mut();
+  659|       |    };
+  660|      1|    match session
+  661|      1|        .session
+  662|      1|        .admit_undo(&attachment, RequestId(request_id), expected_revision)
+  663|       |    {
+  664|      1|        Ok(MappingAdmission::Admitted(job)) => {
+  665|      1|            Box::into_raw(Box::new(DandrumInstrumentSessionJob {
+  666|      1|                state: Some(JobState::Admitted(job)),
+  667|      1|            }))
+  668|       |        }
+  669|       |        Ok(MappingAdmission::Pending) => {
+  670|      0|            write_error("undo request is already pending", error, error_capacity);
+  671|      0|            ptr::null_mut()
+  672|       |        }
+  673|       |        Ok(MappingAdmission::Completed(_)) => {
+  674|      0|            write_error("undo request already completed", error, error_capacity);
+  675|      0|            ptr::null_mut()
+  676|       |        }
+  677|      0|        Err(reason) => {
+  678|      0|            write_error(&format!("{reason:?}"), error, error_capacity);
+  679|      0|            ptr::null_mut()
+  680|       |        }
+  681|       |    }
+  682|      1|}
+  683|       |
+  684|       |#[unsafe(no_mangle)]
+  685|      5|pub unsafe extern "C" fn dandrum_instrument_session_prepare_job(
+  686|      5|    job: *mut DandrumInstrumentSessionJob,
+  687|      5|) -> bool {
+  688|      5|    let Some(job) = (unsafe { job.as_mut() }) else {
+  689|      0|        return false;
+  690|       |    };
+  691|      5|    match job.state.take() {
+  692|      4|        Some(JobState::Admitted(admitted)) => {
+  693|      4|            job.state = Some(JobState::Prepared(Box::new(admitted.prepare())));
+  694|      4|            true
+  695|       |        }
+  696|      1|        state => {
+  697|      1|            job.state = state;
+  698|      1|            false
+  699|       |        }
+  700|       |    }
+  701|      5|}
+  702|       |
+  703|       |#[unsafe(no_mangle)]
+  704|      1|pub unsafe extern "C" fn dandrum_instrument_session_fail_job(
+  705|      1|    session: *mut DandrumInstrumentSession,
+  706|      1|    job: *mut DandrumInstrumentSessionJob,
+  707|      1|    message: *const u8,
+  708|      1|    message_size: usize,
+  709|      1|) -> bool {
+  710|      1|    let Some(session) = (unsafe { session.as_mut() }) else {
+  711|      0|        return false;
+  712|       |    };
+  713|      1|    let Some(message) = bytes(message, message_size) else {
+  714|      0|        return false;
+  715|       |    };
+  716|      1|    if job.is_null() {
+  717|      0|        return false;
+  718|      1|    }
+  719|      1|    let mut job = unsafe { Box::from_raw(job) };
+  720|      1|    let Some(state) = job.state.take() else {
+  721|      0|        return false;
+  722|       |    };
+  723|      1|    let failure = SessionError::PreparationFailed(message.into());
+  724|      1|    let completion = match state {
+  725|      1|        JobState::Admitted(job) => job.fail(failure),
+  726|      0|        JobState::Prepared(job) => (*job).fail(failure),
+  727|       |    };
+  728|      1|    session
+  729|      1|        .session
+  730|      1|        .complete_mapping(completion, &mut NeverHost)
+  731|      1|        .is_ok()
+  732|      1|}
+  733|       |
+  734|       |#[unsafe(no_mangle)]
+  735|      4|pub unsafe extern "C" fn dandrum_instrument_session_complete_job(
+  736|      4|    session: *mut DandrumInstrumentSession,
+  737|      4|    job: *mut DandrumInstrumentSessionJob,
+  738|      4|    callbacks: *const DandrumInstrumentSessionHostCallbacks,
+  739|      4|    context: *mut c_void,
+  740|      4|    revision: *mut u64,
+  741|      4|    undo_count: *mut usize,
+  742|      4|    redo_count: *mut usize,
+  743|      4|    error: *mut c_char,
+  744|      4|    error_capacity: usize,
+  745|      4|) -> bool {
+  746|      4|    let Some(session) = (unsafe { session.as_mut() }) else {
+  747|      0|        write_error("invalid instrument session", error, error_capacity);
+  748|      0|        return false;
+  749|       |    };
+  750|      4|    let Some(callbacks) = (unsafe { callbacks.as_ref() }) else {
+  751|      0|        write_error("invalid native activation callbacks", error, error_capacity);
+  752|      0|        return false;
+  753|       |    };
+  754|      4|    if revision.is_null() || undo_count.is_null() || redo_count.is_null() || job.is_null() {
+  755|      0|        write_error("invalid session completion output", error, error_capacity);
+  756|      0|        return false;
+  757|      4|    }
+  758|      4|    let mut job = unsafe { Box::from_raw(job) };
+  759|      4|    let Some(JobState::Prepared(completion)) = job.state.take() else {
+  760|      0|        write_error("session job was not prepared", error, error_capacity);
+  761|      0|        return false;
+  762|       |    };
+  763|      4|    let Some(callbacks) = required_callbacks(callbacks) else {
+                           ^3
+  764|      1|        let message = "native activation callback table is incomplete";
+  765|      1|        let _ = session
+  766|      1|            .session
+  767|      1|            .complete_mapping(*completion, &mut RejectingHost(message.into()));
+  768|      1|        write_error(message, error, error_capacity);
+  769|      1|        return false;
+  770|       |    };
+  771|      3|    let mut host = NativeHost {
+  772|      3|        callbacks,
+  773|      3|        context,
+  774|      3|        sample_rate_hz: session.sample_rate_hz,
+  775|      3|        max_block_size: session.max_block_size,
+  776|      3|        buses: &session.buses,
+  777|      3|    };
+  778|      3|    let outcome = match session.session.complete_mapping(*completion, &mut host) {
+  779|      3|        Ok(outcome) => outcome,
+  780|      0|        Err(route) => {
+  781|      0|            write_error(&format!("{:?}", route.reason()), error, error_capacity);
+  782|      0|            return false;
+  783|       |        }
+  784|       |    };
+  785|      3|    match &outcome.result {
+  786|      2|        Ok(snapshot) => {
+  787|      2|            unsafe {
+  788|      2|                *revision = snapshot.revision;
+  789|      2|                *undo_count = snapshot.undo_len;
+  790|      2|                *redo_count = snapshot.redo_len;
+  791|      2|            }
+  792|      2|            true
+  793|       |        }
+  794|      1|        Err(failure) => {
+  795|      1|            let message = match failure {
+  796|      0|                RequestFailure::Session(reason) => format!("{reason:?}"),
+  797|      1|                RequestFailure::Activation(reason) => reason.clone(),
+  798|       |            };
+  799|      1|            write_error(&message, error, error_capacity);
+  800|      1|            false
+  801|       |        }
+  802|       |    }
+  803|      4|}
+  804|       |
+  805|       |#[unsafe(no_mangle)]
+  806|      0|pub unsafe extern "C" fn dandrum_instrument_session_undo(
+  807|      0|    session: *mut DandrumInstrumentSession,
+  808|      0|    instance_id: u64,
+  809|      0|    attachment_id: u64,
+  810|      0|    request_id: u64,
+  811|      0|    expected_revision: u64,
+  812|      0|    callbacks: *const DandrumInstrumentSessionHostCallbacks,
+  813|      0|    context: *mut c_void,
+  814|      0|    revision: *mut u64,
+  815|      0|    undo_count: *mut usize,
+  816|      0|    redo_count: *mut usize,
+  817|      0|    error: *mut c_char,
+  818|      0|    error_capacity: usize,
+  819|      0|) -> bool {
+  820|      0|    let Some(session) = (unsafe { session.as_mut() }) else {
+  821|      0|        write_error("invalid instrument session", error, error_capacity);
+  822|      0|        return false;
+  823|       |    };
+  824|      0|    let Some(attachment) = connection(session, instance_id, attachment_id) else {
+  825|      0|        write_error(
+  826|      0|            "invalid instrument session connection",
+  827|      0|            error,
+  828|      0|            error_capacity,
+  829|       |        );
+  830|      0|        return false;
+  831|       |    };
+  832|      0|    let Some(callbacks) = (unsafe { callbacks.as_ref() }).and_then(required_callbacks) else {
+  833|      0|        write_error("invalid native activation callbacks", error, error_capacity);
+  834|      0|        return false;
+  835|       |    };
+  836|      0|    if revision.is_null() || undo_count.is_null() || redo_count.is_null() {
+  837|      0|        write_error("invalid session undo output", error, error_capacity);
+  838|      0|        return false;
+  839|      0|    }
+  840|      0|    if let Err(reason) = session.session.reserve_control_request(
+  841|      0|        &attachment,
+  842|      0|        RequestId(request_id),
+  843|      0|        expected_revision,
+  844|      0|    ) {
+  845|      0|        write_error(&format!("{reason:?}"), error, error_capacity);
+  846|      0|        return false;
+  847|      0|    }
+  848|      0|    let mut host = NativeHost {
+  849|      0|        callbacks,
+  850|      0|        context,
+  851|      0|        sample_rate_hz: session.sample_rate_hz,
+  852|      0|        max_block_size: session.max_block_size,
+  853|      0|        buses: &session.buses,
+  854|      0|    };
+  855|      0|    match session.session.undo(&attachment, &mut host) {
+  856|      0|        Ok(snapshot) => {
+  857|      0|            unsafe {
+  858|      0|                *revision = snapshot.revision;
+  859|      0|                *undo_count = snapshot.undo_len;
+  860|      0|                *redo_count = snapshot.redo_len;
+  861|      0|            }
+  862|      0|            true
+  863|       |        }
+  864|      0|        Err(reason) => {
+  865|      0|            write_error(&format!("{reason:?}"), error, error_capacity);
+  866|      0|            false
+  867|       |        }
+  868|       |    }
+  869|      0|}
+  870|       |
+  871|       |#[unsafe(no_mangle)]
+  872|      2|pub unsafe extern "C" fn dandrum_instrument_session_reconfigure(
+  873|      2|    session: *mut DandrumInstrumentSession,
+  874|      2|    sample_rate_hz: u32,
+  875|      2|    max_block_size: usize,
+  876|      2|    callbacks: *const DandrumInstrumentSessionHostCallbacks,
+  877|      2|    context: *mut c_void,
+  878|      2|    error: *mut c_char,
+  879|      2|    error_capacity: usize,
+  880|      2|) -> bool {
+  881|      2|    let Some(session) = (unsafe { session.as_mut() }) else {
+  882|      0|        write_error("invalid instrument session", error, error_capacity);
+  883|      0|        return false;
+  884|       |    };
+  885|      2|    let Some(callbacks) = (unsafe { callbacks.as_ref() }) else {
+  886|      0|        write_error("invalid native activation callbacks", error, error_capacity);
+  887|      0|        return false;
+  888|       |    };
+  889|      2|    let Some(callbacks) = required_callbacks(callbacks) else {
+                           ^1
+  890|      1|        write_error(
+  891|      1|            "native activation callback table is incomplete",
+  892|      1|            error,
+  893|      1|            error_capacity,
+  894|       |        );
+  895|      1|        return false;
+  896|       |    };
+  897|      1|    if sample_rate_hz == 0 || max_block_size == 0 {
+  898|      0|        write_error("invalid native render configuration", error, error_capacity);
+  899|      0|        return false;
+  900|      1|    }
+  901|      1|    let Some(host_buses) = planar_host_buses(&session.buses) else {
+  902|      0|        write_error(
+  903|      0|            "invalid retained native bus configuration",
+  904|      0|            error,
+  905|      0|            error_capacity,
+  906|       |        );
+  907|      0|        return false;
+  908|       |    };
+  909|      1|    let settings = RenderSettings {
+  910|      1|        sample_rate_hz,
+  911|      1|        block_size_frames: max_block_size.try_into().unwrap_or(u32::MAX),
+  912|      1|        duration_frames: max_block_size as u64,
+  913|      1|    };
+  914|      1|    if settings.block_size_frames as usize != max_block_size {
+  915|      0|        write_error(
+  916|      0|            "native block size exceeds the engine limit",
+  917|      0|            error,
+  918|      0|            error_capacity,
+  919|       |        );
+  920|      0|        return false;
+  921|      1|    }
+  922|      1|    let candidate = match session
+  923|      1|        .session
+  924|      1|        .prepare_render_configuration_owned(settings, host_buses)
+  925|       |    {
+  926|      1|        Ok(candidate) => candidate,
+  927|      0|        Err(reason) => {
+  928|      0|            write_error(&format!("{reason:?}"), error, error_capacity);
+  929|      0|            return false;
+  930|       |        }
+  931|       |    };
+  932|      1|    let mut host = NativeHost {
+  933|      1|        callbacks,
+  934|      1|        context,
+  935|      1|        sample_rate_hz,
+  936|      1|        max_block_size,
+  937|      1|        buses: &session.buses,
+  938|      1|    };
+  939|      1|    match session
+  940|      1|        .session
+  941|      1|        .commit_render_configuration(candidate, &mut host)
+  942|       |    {
+  943|       |        Ok(_) => {
+  944|      1|            session.sample_rate_hz = sample_rate_hz;
+  945|      1|            session.max_block_size = max_block_size;
+  946|      1|            true
+  947|       |        }
+  948|      0|        Err(reason) => {
+  949|      0|            write_error(&format!("{reason:?}"), error, error_capacity);
+  950|      0|            false
+  951|       |        }
+  952|       |    }
+  953|      2|}
+  954|       |
+  955|       |#[unsafe(no_mangle)]
+  956|      0|pub unsafe extern "C" fn dandrum_instrument_session_job_destroy(
+  957|      0|    job: *mut DandrumInstrumentSessionJob,
+  958|      0|) {
+  959|      0|    if !job.is_null() {
+  960|      0|        drop(unsafe { Box::from_raw(job) });
+  961|      0|    }
+  962|      0|}
+  963|       |
+  964|       |#[cfg(test)]
+  965|       |mod tests {
+  966|       |    use super::*;
+  967|       |    use std::ffi::CString;
+  968|       |
+  969|       |    struct TestHost {
+  970|       |        reject: bool,
+  971|       |        activations: usize,
+  972|       |        publications: usize,
+  973|       |        revision: u64,
+  974|       |        undo_count: usize,
+  975|       |        redo_count: usize,
+  976|       |    }
+  977|       |
+  978|       |    struct TestLease {
+  979|       |        candidate: *mut DandrumKernelInstrument,
+  980|       |    }
+  981|       |
+  982|       |    impl Drop for TestLease {
+  983|      3|        fn drop(&mut self) {
+  984|      3|            unsafe { drop(Box::from_raw(self.candidate)) };
+  985|      3|        }
+  986|       |    }
+  987|       |
+  988|      4|    unsafe extern "C" fn activate(
+  989|      4|        context: *mut c_void,
+  990|      4|        candidate: *mut DandrumKernelInstrument,
+  991|      4|        _: *const u8,
+  992|      4|        _: usize,
+  993|      4|        _: u64,
+  994|      4|        _: usize,
+  995|      4|        _: usize,
+  996|      4|    ) -> *mut c_void {
+  997|      4|        let host = unsafe { &mut *context.cast::<TestHost>() };
+  998|      4|        host.activations += 1;
+  999|      4|        if host.reject {
+ 1000|      1|            return ptr::null_mut();
+ 1001|      3|        }
+ 1002|      3|        Box::into_raw(Box::new(TestLease { candidate })).cast()
+ 1003|      4|    }
+ 1004|       |
+ 1005|      3|    unsafe extern "C" fn publish(
+ 1006|      3|        context: *mut c_void,
+ 1007|      3|        lease: *mut c_void,
+ 1008|      3|        revision: u64,
+ 1009|      3|        undo_count: usize,
+ 1010|      3|        redo_count: usize,
+ 1011|      3|    ) {
+ 1012|      3|        let host = unsafe { &mut *context.cast::<TestHost>() };
+ 1013|      3|        host.publications += 1;
+ 1014|      3|        host.revision = revision;
+ 1015|      3|        host.undo_count = undo_count;
+ 1016|      3|        host.redo_count = redo_count;
+ 1017|      3|        drop(unsafe { Box::from_raw(lease.cast::<TestLease>()) });
+ 1018|      3|    }
+ 1019|       |
+ 1020|      0|    unsafe extern "C" fn abort(_: *mut c_void, lease: *mut c_void) {
+ 1021|      0|        drop(unsafe { Box::from_raw(lease.cast::<TestLease>()) });
+ 1022|      0|    }
+ 1023|       |
+ 1024|      1|    fn fixture() -> (
+ 1025|      1|        String,
+ 1026|      1|        CString,
+ 1027|      1|        Vec<CString>,
+ 1028|      1|        Vec<DandrumKernelBusDeclaration>,
+ 1029|      1|    ) {
+ 1030|      1|        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+ 1031|      1|            .join("../../examples/patches/advanced-drum-kit.yaml");
+ 1032|      1|        let yaml = std::fs::read_to_string(&path).unwrap();
+ 1033|      1|        let patch = dandrum_engine::kernel::document::load_kernel_patch_str(&yaml).unwrap();
+ 1034|      1|        let mut names = vec![CString::new("master").unwrap()];
+ 1035|      1|        names.extend(
+ 1036|      1|            patch
+ 1037|      1|                .preset_surface()
+ 1038|      1|                .parameters()
+ 1039|      1|                .iter()
+ 1040|     23|                .map(|parameter| CString::new(parameter.port_name()).unwrap()),
+                               ^1
+ 1041|       |        );
+ 1042|      1|        let declarations = names
+ 1043|      1|            .iter()
+ 1044|      1|            .enumerate()
+ 1045|      1|            .map(|(index, name)| DandrumKernelBusDeclaration {
+ 1046|     24|                name: name.as_ptr(),
+ 1047|     24|                direction: if index == 0 { 2 } else { 1 },
+                                                         ^1         ^23
+ 1048|     24|                channel_count: if index == 0 { 2 } else { 1 },
+                                                             ^1         ^23
+ 1049|     24|            })
+ 1050|      1|            .collect();
+ 1051|      1|        (
+ 1052|      1|            yaml,
+ 1053|      1|            CString::new(path.parent().unwrap().to_str().unwrap()).unwrap(),
+ 1054|      1|            names,
+ 1055|      1|            declarations,
+ 1056|      1|        )
+ 1057|      1|    }
+ 1058|       |
+ 1059|       |    #[test]
+ 1060|      1|    fn native_facade_maps_fails_reconfigures_and_rolls_back_activation() {
+ 1061|      1|        let (yaml, root, _names, declarations) = fixture();
+ 1062|      1|        let session = unsafe {
+ 1063|      1|            dandrum_instrument_session_create(
+ 1064|      1|                yaml.as_ptr(),
+ 1065|      1|                yaml.len(),
+ 1066|      1|                root.as_ptr(),
+ 1067|       |                48_000,
+ 1068|       |                64,
+ 1069|      1|                declarations.as_ptr(),
+ 1070|      1|                declarations.len(),
+ 1071|       |            )
+ 1072|       |        };
+ 1073|      1|        assert!(!session.is_null());
+ 1074|      1|        let mut snapshot = DandrumInstrumentSessionSnapshot {
+ 1075|      1|            contract_version: 0,
+ 1076|      1|            instance_id: 0,
+ 1077|      1|            attachment_id: u64::MAX,
+ 1078|      1|            revision: u64::MAX,
+ 1079|      1|            next_request_id: 0,
+ 1080|      1|            undo_count: usize::MAX,
+ 1081|      1|            redo_count: usize::MAX,
+ 1082|      1|            attachment_limit: 0,
+ 1083|      1|            history_limit: 0,
+ 1084|      1|            outcome_limit: 0,
+ 1085|      1|            active_request_limit: 0,
+ 1086|      1|            yaml_size: 0,
+ 1087|      1|        };
+ 1088|      1|        assert!(unsafe { dandrum_instrument_session_snapshot(session, &mut snapshot) });
+ 1089|      1|        assert_eq!(snapshot.contract_version, 1);
+ 1090|      1|        assert_ne!(snapshot.instance_id, 0);
+ 1091|      1|        assert_eq!(snapshot.attachment_id, 0);
+ 1092|      1|        assert_eq!(snapshot.next_request_id, 1);
+ 1093|      1|        assert_eq!(
+ 1094|      1|            (
+ 1095|      1|                snapshot.attachment_limit,
+ 1096|      1|                snapshot.history_limit,
+ 1097|      1|                snapshot.outcome_limit,
+ 1098|      1|                snapshot.active_request_limit,
+ 1099|      1|            ),
+ 1100|       |            (16, 100, 128, 1)
+ 1101|       |        );
+ 1102|      1|        assert_eq!(
+ 1103|      1|            (snapshot.revision, snapshot.undo_count, snapshot.redo_count),
+ 1104|       |            (0, 0, 0)
+ 1105|       |        );
+ 1106|      1|        let mut connection = snapshot;
+ 1107|      1|        assert!(unsafe { dandrum_instrument_session_connect(session, &mut connection) });
+ 1108|      1|        assert_eq!(connection.instance_id, snapshot.instance_id);
+ 1109|      1|        assert_ne!(connection.attachment_id, 0);
+ 1110|      1|        let attachment_id = connection.attachment_id;
+ 1111|      1|        assert!(unsafe {
+ 1112|      1|            dandrum_instrument_session_connection_snapshot(
+ 1113|      1|                session,
+ 1114|      1|                connection.instance_id,
+ 1115|      1|                attachment_id,
+ 1116|      1|                &mut connection,
+ 1117|       |            )
+ 1118|       |        });
+ 1119|      1|        assert_eq!(connection.attachment_id, attachment_id);
+ 1120|      1|        let mut copied = vec![0; snapshot.yaml_size];
+ 1121|      1|        assert!(unsafe {
+ 1122|      1|            dandrum_instrument_session_copy_yaml(session, copied.as_mut_ptr(), copied.len())
+ 1123|       |        });
+ 1124|      1|        assert_eq!(copied, yaml.as_bytes());
+ 1125|       |
+ 1126|      1|        let callbacks = DandrumInstrumentSessionHostCallbacks {
+ 1127|      1|            activate: Some(activate),
+ 1128|      1|            publish: Some(publish),
+ 1129|      1|            abort: Some(abort),
+ 1130|      1|        };
+ 1131|      1|        let mut host = TestHost {
+ 1132|      1|            reject: false,
+ 1133|      1|            activations: 0,
+ 1134|      1|            publications: 0,
+ 1135|      1|            revision: 0,
+ 1136|      1|            undo_count: 0,
+ 1137|      1|            redo_count: 0,
+ 1138|      1|        };
+ 1139|      1|        let mut error = [0; 256];
+ 1140|      1|        let job = unsafe {
+ 1141|      1|            dandrum_instrument_session_admit_mapping_for_connection(
+ 1142|      1|                session,
+ 1143|      1|                connection.instance_id,
+ 1144|      1|                attachment_id,
+ 1145|       |                1,
+ 1146|       |                0,
+ 1147|      1|                b"kit".as_ptr(),
+ 1148|       |                3,
+ 1149|      1|                b"kick".as_ptr(),
+ 1150|       |                4,
+ 1151|       |                60,
+ 1152|       |                60,
+ 1153|      1|                error.as_mut_ptr(),
+ 1154|      1|                error.len(),
+ 1155|       |            )
+ 1156|       |        };
+ 1157|      1|        assert!(!job.is_null());
+ 1158|      1|        assert!(unsafe {
+ 1159|      1|            dandrum_instrument_session_disconnect(session, connection.instance_id, attachment_id)
+ 1160|       |        });
+ 1161|      1|        assert!(!unsafe {
+ 1162|      1|            dandrum_instrument_session_connection_snapshot(
+ 1163|      1|                session,
+ 1164|      1|                connection.instance_id,
+ 1165|      1|                attachment_id,
+ 1166|      1|                &mut connection,
+ 1167|      1|            )
+ 1168|      1|        });
+ 1169|      1|        assert!(unsafe { dandrum_instrument_session_prepare_job(job) });
+ 1170|      1|        assert!(!unsafe { dandrum_instrument_session_prepare_job(job) });
+ 1171|      1|        let mut revision = 0;
+ 1172|      1|        let mut undo_count = 0;
+ 1173|      1|        let mut redo_count = 0;
+ 1174|      1|        assert!(unsafe {
+ 1175|      1|            dandrum_instrument_session_complete_job(
+ 1176|      1|                session,
+ 1177|      1|                job,
+ 1178|      1|                &callbacks,
+ 1179|      1|                (&mut host as *mut TestHost).cast(),
+ 1180|      1|                &mut revision,
+ 1181|      1|                &mut undo_count,
+ 1182|      1|                &mut redo_count,
+ 1183|      1|                error.as_mut_ptr(),
+ 1184|      1|                error.len(),
+ 1185|       |            )
+ 1186|       |        });
+ 1187|      1|        assert_eq!((revision, undo_count, redo_count), (1, 1, 0));
+ 1188|      1|        assert_eq!((host.activations, host.publications), (1, 1));
+ 1189|      1|        assert_eq!((host.revision, host.undo_count, host.redo_count), (1, 1, 0));
+ 1190|       |
+ 1191|      1|        let failed = unsafe {
+ 1192|      1|            dandrum_instrument_session_admit_mapping(
+ 1193|      1|                session,
+ 1194|       |                2,
+ 1195|       |                1,
+ 1196|      1|                b"kit".as_ptr(),
+ 1197|       |                3,
+ 1198|      1|                b"kick".as_ptr(),
+ 1199|       |                4,
+ 1200|       |                61,
+ 1201|       |                61,
+ 1202|      1|                error.as_mut_ptr(),
+ 1203|      1|                error.len(),
+ 1204|       |            )
+ 1205|       |        };
+ 1206|      1|        assert!(!failed.is_null());
+ 1207|      1|        assert!(unsafe {
+ 1208|      1|            dandrum_instrument_session_fail_job(
+ 1209|      1|                session,
+ 1210|      1|                failed,
+ 1211|      1|                b"cancelled".as_ptr(),
+ 1212|      1|                b"cancelled".len(),
+ 1213|       |            )
+ 1214|       |        });
+ 1215|       |
+ 1216|      1|        let incomplete = DandrumInstrumentSessionHostCallbacks {
+ 1217|      1|            activate: Some(activate),
+ 1218|      1|            publish: Some(publish),
+ 1219|      1|            abort: None,
+ 1220|      1|        };
+ 1221|      1|        let incomplete_job = unsafe {
+ 1222|      1|            dandrum_instrument_session_admit_mapping(
+ 1223|      1|                session,
+ 1224|       |                3,
+ 1225|       |                1,
+ 1226|      1|                b"kit".as_ptr(),
+ 1227|       |                3,
+ 1228|      1|                b"kick".as_ptr(),
+ 1229|       |                4,
+ 1230|       |                62,
+ 1231|       |                62,
+ 1232|      1|                error.as_mut_ptr(),
+ 1233|      1|                error.len(),
+ 1234|       |            )
+ 1235|       |        };
+ 1236|      1|        assert!(!incomplete_job.is_null());
+ 1237|      1|        assert!(unsafe { dandrum_instrument_session_prepare_job(incomplete_job) });
+ 1238|      1|        assert!(!unsafe {
+ 1239|      1|            dandrum_instrument_session_complete_job(
+ 1240|      1|                session,
+ 1241|      1|                incomplete_job,
+ 1242|      1|                &incomplete,
+ 1243|      1|                (&mut host as *mut TestHost).cast(),
+ 1244|      1|                &mut revision,
+ 1245|      1|                &mut undo_count,
+ 1246|      1|                &mut redo_count,
+ 1247|      1|                error.as_mut_ptr(),
+ 1248|      1|                error.len(),
+ 1249|      1|            )
+ 1250|      1|        });
+ 1251|      1|        assert!(unsafe { dandrum_instrument_session_snapshot(session, &mut snapshot) });
+ 1252|      1|        assert_eq!(
+ 1253|      1|            (snapshot.revision, snapshot.undo_count, snapshot.redo_count),
+ 1254|       |            (1, 1, 0)
+ 1255|       |        );
+ 1256|      1|        error.fill(0);
+ 1257|      1|        let retained_incomplete = unsafe {
+ 1258|      1|            dandrum_instrument_session_admit_mapping(
+ 1259|      1|                session,
+ 1260|       |                3,
+ 1261|       |                1,
+ 1262|      1|                b"kit".as_ptr(),
+ 1263|       |                3,
+ 1264|      1|                b"kick".as_ptr(),
+ 1265|       |                4,
+ 1266|       |                62,
+ 1267|       |                62,
+ 1268|      1|                error.as_mut_ptr(),
+ 1269|      1|                error.len(),
+ 1270|       |            )
+ 1271|       |        };
+ 1272|      1|        assert!(retained_incomplete.is_null());
+ 1273|      1|        assert_eq!(
+ 1274|      1|            unsafe { CStr::from_ptr(error.as_ptr()) }.to_str().unwrap(),
+ 1275|       |            "mapping request already completed"
+ 1276|       |        );
+ 1277|      1|        assert_eq!((host.activations, host.publications), (1, 1));
+ 1278|      1|        assert!(!unsafe {
+ 1279|      1|            dandrum_instrument_session_reconfigure(
+ 1280|      1|                session,
+ 1281|      1|                44_100,
+ 1282|      1|                128,
+ 1283|      1|                &incomplete,
+ 1284|      1|                (&mut host as *mut TestHost).cast(),
+ 1285|      1|                error.as_mut_ptr(),
+ 1286|      1|                error.len(),
+ 1287|      1|            )
+ 1288|      1|        });
+ 1289|       |
+ 1290|      1|        assert!(unsafe {
+ 1291|      1|            dandrum_instrument_session_reconfigure(
+ 1292|      1|                session,
+ 1293|       |                44_100,
+ 1294|       |                128,
+ 1295|      1|                &callbacks,
+ 1296|      1|                (&mut host as *mut TestHost).cast(),
+ 1297|      1|                error.as_mut_ptr(),
+ 1298|      1|                error.len(),
+ 1299|       |            )
+ 1300|       |        });
+ 1301|      1|        assert_eq!((host.activations, host.publications), (2, 2));
+ 1302|      1|        assert_eq!((host.revision, host.undo_count, host.redo_count), (1, 1, 0));
+ 1303|       |
+ 1304|      1|        host.reject = true;
+ 1305|      1|        let rejected = unsafe {
+ 1306|      1|            dandrum_instrument_session_admit_mapping(
+ 1307|      1|                session,
+ 1308|       |                4,
+ 1309|       |                1,
+ 1310|      1|                b"kit".as_ptr(),
+ 1311|       |                3,
+ 1312|      1|                b"kick".as_ptr(),
+ 1313|       |                4,
+ 1314|       |                62,
+ 1315|       |                62,
+ 1316|      1|                error.as_mut_ptr(),
+ 1317|      1|                error.len(),
+ 1318|       |            )
+ 1319|       |        };
+ 1320|      1|        assert!(!rejected.is_null());
+ 1321|      1|        assert!(unsafe { dandrum_instrument_session_prepare_job(rejected) });
+ 1322|      1|        assert!(!unsafe {
+ 1323|      1|            dandrum_instrument_session_complete_job(
+ 1324|      1|                session,
+ 1325|      1|                rejected,
+ 1326|      1|                &callbacks,
+ 1327|      1|                (&mut host as *mut TestHost).cast(),
+ 1328|      1|                &mut revision,
+ 1329|      1|                &mut undo_count,
+ 1330|      1|                &mut redo_count,
+ 1331|      1|                error.as_mut_ptr(),
+ 1332|      1|                error.len(),
+ 1333|      1|            )
+ 1334|      1|        });
+ 1335|      1|        assert_ne!(error[0], 0);
+ 1336|      1|        assert_eq!((host.activations, host.publications), (3, 2));
+ 1337|      1|        assert!(unsafe { dandrum_instrument_session_snapshot(session, &mut snapshot) });
+ 1338|      1|        assert_eq!(
+ 1339|      1|            (snapshot.revision, snapshot.undo_count, snapshot.redo_count),
+ 1340|       |            (1, 1, 0)
+ 1341|       |        );
+ 1342|       |
+ 1343|      1|        host.reject = false;
+ 1344|      1|        assert!(unsafe { dandrum_instrument_session_connect(session, &mut connection) });
+ 1345|      1|        let undo_job = unsafe {
+ 1346|      1|            dandrum_instrument_session_admit_undo_for_connection(
+ 1347|      1|                session,
+ 1348|      1|                connection.instance_id,
+ 1349|      1|                connection.attachment_id,
+ 1350|       |                5,
+ 1351|       |                1,
+ 1352|      1|                error.as_mut_ptr(),
+ 1353|      1|                error.len(),
+ 1354|       |            )
+ 1355|       |        };
+ 1356|      1|        assert!(!undo_job.is_null());
+ 1357|      1|        assert!(unsafe {
+ 1358|      1|            dandrum_instrument_session_disconnect(
+ 1359|      1|                session,
+ 1360|      1|                connection.instance_id,
+ 1361|      1|                connection.attachment_id,
+ 1362|       |            )
+ 1363|       |        });
+ 1364|      1|        assert!(unsafe { dandrum_instrument_session_prepare_job(undo_job) });
+ 1365|      1|        assert!(unsafe {
+ 1366|      1|            dandrum_instrument_session_complete_job(
+ 1367|      1|                session,
+ 1368|      1|                undo_job,
+ 1369|      1|                &callbacks,
+ 1370|      1|                (&mut host as *mut TestHost).cast(),
+ 1371|      1|                &mut revision,
+ 1372|      1|                &mut undo_count,
+ 1373|      1|                &mut redo_count,
+ 1374|      1|                error.as_mut_ptr(),
+ 1375|      1|                error.len(),
+ 1376|       |            )
+ 1377|       |        });
+ 1378|      1|        assert_eq!((revision, undo_count, redo_count), (2, 0, 1));
+ 1379|      1|        assert!(unsafe { dandrum_instrument_session_snapshot(session, &mut snapshot) });
+ 1380|      1|        assert_eq!(snapshot.next_request_id, 6);
+ 1381|       |
+ 1382|      1|        unsafe { dandrum_instrument_session_destroy(session) };
+ 1383|      1|    }
+ 1384|       |}
