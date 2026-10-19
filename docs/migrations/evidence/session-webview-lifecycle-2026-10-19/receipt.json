@@ -1,0 +1,58 @@
+{
+  "scope": "OpenSpec task 3.3 only: prove complete destruction and recreation of the original packaged Trigger editor/WebView around an unobserved accepted mapping request, reconnect through a fresh attachment, recover native undo and signed sample output, and preserve a second live instrument. Selected JUCE-free desktop/format, named-DAW and full beta acceptance remain pending.",
+  "base": "28bbf6be70791ca3ea432fbc2e31a37f52be6d31",
+  "implementation_head": "bed967ce0235e97cd0a0afd28b5eb8624d70b12c",
+  "commits": [
+    "71414439763e8a14bea505f98d9856ed36c33e32 Prove native session recovery after bridge loss",
+    "bed967ce0235e97cd0a0afd28b5eb8624d70b12c Prove packaged WebView session recovery"
+  ],
+  "source_sha256": {
+    "CMakeLists.txt": "f5973662fed506d60a6e199095f3ff570a741711bc19de03999d1a1c7cdf0c9e",
+    "tests/cpp/PluginTriggerNativeBridgeTest.cpp": "aacba1c497078231dd76c208609e4eae97e3394efe2e45427255eebe35522cc4",
+    "tests/cpp/PluginTriggerWebRuntimeTest.h": "adc808b6dc83c68d270ebdc6bb055f2fcca26be049d9f826667e742fc8afbe33",
+    "openspec/changes/add-persistent-instrument-session/tasks.md": "55762c224bfa506f069add070a50fe2fcbbd130c3b6629cf17b2e586d03667d4",
+    "docs/migrations/juce-replacement-progress.md": "40d71fec40ae86a42149817b9389b47139a62aa1baae989880bbea875f286bbb",
+    "docs/migrations/evidence/session-webview-lifecycle-2026-10-19/webview-runtime.log": "509cba6cb7b5bb39f41a445ed0dc9336d5767b3908d7596f02da2ea9d273c29e",
+    "docs/migrations/evidence/session-webview-lifecycle-2026-10-19/native-boundaries.log": "c3239eee7844e7efe5dbfd5b684db74f3c778272cb7627740aa67d17c44d8230",
+    "docs/migrations/evidence/session-webview-lifecycle-2026-10-19/native-boundaries-setup-red.log": "09e95f8cb1445b6399d40236223824e4a70c2a25768731aa96107e0b2b1512e2",
+    "docs/migrations/evidence/session-webview-lifecycle-2026-10-19/native-build-setup-incomplete.log": "8562e6e33bccfcb14c3d2135bbb124292bdcbf6e0da0dc7bf9cfd82f9c7ad916",
+    "docs/migrations/evidence/session-webview-lifecycle-2026-10-19/review.md": "df496741d71708ac7f87fbe411522f3953bf001bd00c2691694fba8f3cbaecb8"
+  },
+  "red": [
+    "Opening the actual editor from the headless bridge executable initially terminated through SIGPIPE, demonstrating that the complete editor lifecycle belongs in the existing display-gated packaged WebView lane.",
+    "The first packaged runtime reached the recreated editor but its oracle searched serialized YAML presentation text. Rust serde legitimately normalized that presentation, so the test was corrected to assert the authoritative typed native map and zone key range exposed to React.",
+    "The first adjacent native-boundary command selected the WebView build directory, where the configured native session products had not been built. The final evidence deliberately runs those two tests from the maintained native-session directory and the React tests from web-host.",
+    "A subsequent attempt to build the missing products in the wrong directory was interrupted at the JUCE GUI-extra compilation boundary. Its incomplete log is retained for setup provenance and is excluded from passing evidence."
+  ],
+  "lifecycle": {
+    "lost_reply": "The production bridge admits request 1 but its acknowledgement callback is intentionally discarded before the attachment-owning bridge/editor is destroyed.",
+    "reconnection": "A fresh native bridge and a fresh packaged React editor receive a new attachment while retaining the processor-owned instrument identity, revision 1 and exactly one undo entry.",
+    "undo": "The recreated packaged React page locates and clicks its actual Undo button. Native request 2 completes at revision 2 and empties undo history.",
+    "signed_oracle": "The edited processor renders literal -0.5 at MIDI 60 and zero at 36 before undo, then literal -0.5 at 36 and zero at 60 after undo. The second processor stays at revision 0, empty history, -0.5 at MIDI 36 and zero at 60.",
+    "ownership": "C++ unique_ptr destruction ends the complete editor/WebView and its disposable attachment; the processor-owned session and asynchronous job survive that scope."
+  },
+  "tests": {
+    "actual_packaged_webview": "cxx-trigger-native-bridge and trigger-web-runtime passed 2/2 in 6.81 seconds under DISPLAY=:10.0; trigger-web-runtime executed and did not return unavailable-platform skip code 77.",
+    "native_and_link": "cxx-plugin-instrument-session and native-session-link-graph passed 2/2 in 0.73 seconds from build/native-session.",
+    "adjacent_react": "trigger-native-ui and trigger-native-adapter passed 2/2 in 1.69 seconds, containing 4/4 and 42/42 JavaScript subtests.",
+    "commit_hooks": "Both implementation commits passed the repository hook with 1,084 Rust engine tests and the strict coverage gate.",
+    "mutation": "Excluded by recorded user direction."
+  },
+  "platform": {
+    "executed": "Linux packaged JUCE comparison WebView on DISPLAY=:10.0 with benign libEGL DRI2 warnings.",
+    "availability": "The selected task-3.3 Linux cell was available and executed. No task-3.3 platform cell was converted into a skip claim.",
+    "boundary": "This validates the persistent-session lifecycle before framework cutover; it is not evidence for a JUCE-free editor artifact, native device driver, installed package or DAW host."
+  },
+  "specification": {
+    "task_progress": "9/11 complete after the actual packaged runtime, adjacent boundaries and independent review passed.",
+    "sync": "Canonical synchronization and acceptance-map publication are intentionally recorded in the following focused commit."
+  },
+  "limits": [
+    "Task 4.1 still owns the complete meaningful session coverage/refactoring and full required Rust/native/JavaScript/build checkpoint.",
+    "Task 4.2 still owns final strict OpenSpec/spec-coverage publication and the complete increment review record.",
+    "Selected JUCE-free native desktop and named DAW proof, automation and independent-instance DAW acceptance, installed offline Standalone/VST3 artifacts and the no-JUCE dependency audit remain open.",
+    "Main remains unchanged and no merge is included."
+  ],
+  "review": "PASS at bed967c: independent completion review found no actionable P1/P2 finding and reran both actual packaged runtime tests successfully in 6.73 seconds without a skip.",
+  "raw_evidence": "docs/migrations/evidence/session-webview-lifecycle-2026-10-19"
+}

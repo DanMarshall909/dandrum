@@ -389,3 +389,42 @@ reattach, recover undo and prove signed output while a second instance remains
 unchanged. No canonical scenario is synchronized yet; selected native desktop
 and named DAW acceptance, the JUCE-free installed artifacts and the full beta
 remain open.
+
+## Packaged WebView session recovery — 19 October 2026
+
+Task 3.3 now exercises complete editor and WebView destruction through the
+original packaged Trigger runtime. A production bridge admits the kick mapping
+from MIDI 36 to 60 without consuming its reply. The test destroys the complete
+editor/browser owner, waits for the instrument-owned job, creates a fresh real
+editor and reads the accepted revision, prepared native map/zone and undo count
+through the rendered React page. Clicking that page's actual Undo button sends a
+new native request and restores literal signed `-0.5` output at MIDI 36 with
+silence at 60. A second live sampler retains its original revision, empty
+history and signed output throughout.
+
+The headless bridge regression separately proves the same lost-reply boundary
+without a display. It destroys the attachment-owning bridge before observing
+the result, reattaches, recovers exactly one accepted history entry and invokes
+native undo. In C++ terms, the `std::unique_ptr` owner gives the editor and
+WebView deterministic scope cleanup, similar to a C# `IDisposable` owner, while
+the processor-owned session outlives that disposable scope.
+
+The final Linux display run used `DISPLAY=:10.0`; both
+`cxx-trigger-native-bridge` and `trigger-web-runtime` passed in 6.81 seconds,
+and the WebView test executed rather than returning its unavailable-platform
+skip code. The concrete session/link pair and both adjacent React adapter lanes
+also passed. The task record retains the initial headless `SIGPIPE`, the rejected
+presentation-level YAML oracle and a missing-product build-directory selection.
+The wrong-directory failure and an incomplete build attempt are preserved as raw
+setup logs but are not used as acceptance evidence. The corrected maintained
+build directories pass without source workarounds. Independent review of exact
+head `bed967ce0235e97cd0a0afd28b5eb8624d70b12c` found no actionable P1/P2
+issue, and its fresh two-test run passed on the actual packaged WebView.
+
+This is the retained JUCE comparison WebView on Linux, so it proves the session
+lifecycle contract before framework cutover. It does not satisfy the selected
+JUCE-free desktop/format matrix, named-DAW automation, installed offline
+Standalone/VST3 artifacts or absence-of-JUCE audit required by the beta goal.
+Tasks 4.1–4.2 retain the complete verification and acceptance publication for
+this OpenSpec increment. Mutation remains excluded by the recorded user
+direction.

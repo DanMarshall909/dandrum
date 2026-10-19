@@ -1,0 +1,39 @@
+Internal ctest changing into directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/web-host
+UpdateCTestConfiguration  from :/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/web-host/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/web-host/DartConfiguration.tcl
+Test project /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/web-host
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 44
+    Start 44: cxx-trigger-native-bridge
+
+44: Test command: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/web-host/dandrum-trigger-native-bridge-test
+44: Working Directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/web-host
+44: Test timeout computed to be: 10000000
+44: PASS: native shell session, signed playback, edit/inverse, stale and failure preservation
+1/2 Test #44: cxx-trigger-native-bridge ........   Passed    0.32 sec
+test 45
+    Start 45: trigger-web-runtime
+
+45: Test command: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/web-host/dandrum-trigger-native-bridge-test "--web-runtime"
+45: Working Directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/web-host
+45: Test timeout computed to be: 120
+45: libEGL warning: egl: failed to create dri2 screen
+45: libEGL warning: egl: failed to create dri2 screen
+45: PASS: packaged WebView reconnects after lost reply and recovers independent native undo
+2/2 Test #45: trigger-web-runtime ..............   Passed    6.49 sec
+
+The following tests passed:
+	cxx-trigger-native-bridge
+	trigger-web-runtime
+
+100% tests passed, 0 tests failed out of 2
+
+Label Time Summary:
+runtime    =   6.49 sec*proc (1 test)
+
+Total Test time (real) =   6.81 sec

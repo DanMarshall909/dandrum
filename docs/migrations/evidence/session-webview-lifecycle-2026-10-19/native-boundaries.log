@@ -1,0 +1,316 @@
+Internal ctest changing into directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session
+UpdateCTestConfiguration  from :/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session/DartConfiguration.tcl
+Test project /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 35
+    Start 35: cxx-plugin-instrument-session
+
+35: Test command: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session/dandrum-plugin-instrument-session-test
+35: Working Directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session
+35: Test timeout computed to be: 15
+35: INSTRUMENT_SESSION_HANDOFF held_reader=PASS worker=PASS metadata=PASS failure=PASS reconfigure=PASS concurrent_reconfigure=PASS lease_publish=PASS state_restore=PASS signed_pcm=-0.5
+1/2 Test #35: cxx-plugin-instrument-session ....   Passed    0.34 sec
+test 36
+    Start 36: native-session-link-graph
+
+36: Test command: /home/dan/.local/bin/cmake "-DNM=/usr/bin/nm" "-DSESSION_LIB=/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session/rust-target/release/libdandrum_instrument_session.a" "-DCONSUMER=/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session/dandrum-plugin-instrument-session-test" "-DLINK_FILE=/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session/CMakeFiles/dandrum-plugin-instrument-session-test.dir/link.txt" "-DSTANDALONE=/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session/dandrum-sampler-plugin_artefacts/Release/Standalone/Dandrum Sampler" "-DSTANDALONE_LINK_FILE=/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session/CMakeFiles/dandrum-sampler-plugin_Standalone.dir/link.txt" "-DVST3=/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session/dandrum-sampler-plugin_artefacts/Release/VST3/Dandrum Sampler.vst3/Contents/x86_64-linux/Dandrum Sampler.so" "-DVST3_LINK_FILE=/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session/CMakeFiles/dandrum-sampler-plugin_VST3.dir/link.txt" "-P" "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/tests/cmake/NativeSessionLinkGraph.cmake"
+36: Working Directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/native-session
+36: Test timeout computed to be: 15
+36: -- Native proof, Standalone and VST3 each use one combined Rust archive and one engine symbol set
+2/2 Test #36: native-session-link-graph ........   Passed    0.38 sec
+
+The following tests passed:
+	cxx-plugin-instrument-session
+	native-session-link-graph
+
+100% tests passed, 0 tests failed out of 2
+
+Total Test time (real) =   0.73 sec
+Internal ctest changing into directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/web-host
+UpdateCTestConfiguration  from :/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/web-host/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/web-host/DartConfiguration.tcl
+Test project /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/web-host
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 94
+    Start 94: trigger-native-ui
+
+94: Test command: /usr/bin/node "--test" "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/tests/js/TriggerNativeUiTest.mjs"
+94: Working Directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/web-host
+94: Test timeout computed to be: 10000000
+94: TAP version 13
+94: # Subtest: native source metadata does not display an invented zero-bit format
+94: ok 1 - native source metadata does not display an invented zero-bit format
+94:   ---
+94:   duration_ms: 61.53663
+94:   ...
+94: # Subtest: native sample choice preserves decoded file metadata through the mapping dialog
+94: ok 2 - native sample choice preserves decoded file metadata through the mapping dialog
+94:   ---
+94:   duration_ms: 0.659843
+94:   ...
+94: # Subtest: cancelled native chooser does not create an editor operation
+94: ok 3 - cancelled native chooser does not create an editor operation
+94:   ---
+94:   duration_ms: 0.126209
+94:   ...
+94: # Subtest: native chooser failure is visible and preserves the editor patch
+94: ok 4 - native chooser failure is visible and preserves the editor patch
+94:   ---
+94:   duration_ms: 0.362146
+94:   ...
+94: 1..4
+94: # tests 4
+94: # suites 0
+94: # pass 4
+94: # fail 0
+94: # cancelled 0
+94: # skipped 0
+94: # todo 0
+94: # duration_ms 168.82178
+1/2 Test #94: trigger-native-ui ................   Passed    0.20 sec
+test 95
+    Start 95: trigger-native-adapter
+
+95: Test command: /usr/bin/node "--test" "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/tests/js/TriggerNativeAdapterTest.mjs"
+95: Working Directory: /home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/web-host
+95: Test timeout computed to be: 10000000
+95: TAP version 13
+95: # Subtest: native document projects exact file paths, real frame geometry, public controls and round robin candidates
+95: ok 1 - native document projects exact file paths, real frame geometry, public controls and round robin candidates
+95:   ---
+95:   duration_ms: 36.467356
+95:   ...
+95: # Subtest: compiler preserves real graph controls and metadata while applying regions, map candidates and bounded polyphony
+95: ok 2 - compiler preserves real graph controls and metadata while applying regions, map candidates and bounded polyphony
+95:   ---
+95:   duration_ms: 38.355344
+95:   ...
+95: # Subtest: compiler refuses unsupported DSP, synthetic assets, cyclic selectors and simulated history
+95: ok 3 - compiler refuses unsupported DSP, synthetic assets, cyclic selectors and simulated history
+95:   ---
+95:   duration_ms: 84.693597
+95:   ...
+95: # Subtest: compiler refuses overlapping stacked rules, unsupported loop modes and unmapped native controls
+95: ok 4 - compiler refuses overlapping stacked rules, unsupported loop modes and unmapped native controls
+95:   ---
+95:   duration_ms: 66.373555
+95:   ...
+95: # Subtest: forward loop and pitch/gain candidate edits retain actual units and weighted selection
+95: ok 5 - forward loop and pitch/gain candidate edits retain actual units and weighted selection
+95:   ---
+95:   duration_ms: 20.21093
+95:   ...
+95: # Subtest: mapping roots compile to distinct playable regions while unchanged drums retain native no-root semantics
+95: ok 6 - mapping roots compile to distinct playable regions while unchanged drums retain native no-root semantics
+95:   ---
+95:   duration_ms: 53.73308
+95:   ...
+95: # Subtest: native round robin projection rejects candidates whose bounds cannot be represented by one rule
+95: ok 7 - native round robin projection rejects candidates whose bounds cannot be represented by one rule
+95:   ---
+95:   duration_ms: 10.938506
+95:   ...
+95: # Subtest: native compiler rejects nested selection policies instead of flattening their audible behavior
+95: ok 8 - native compiler rejects nested selection policies instead of flattening their audible behavior
+95:   ---
+95:   duration_ms: 12.506898
+95:   ...
+95: # Subtest: native graph sample paths are canonical authoring-root relatives and outside-root files are rejected
+95: ok 9 - native graph sample paths are canonical authoring-root relatives and outside-root files are rejected
+95:   ---
+95:   duration_ms: 33.450649
+95:   ...
+95: # Subtest: empty native patch compiles a real silent mixer graph without an invalid empty sample map
+95: ok 10 - empty native patch compiles a real silent mixer graph without an invalid empty sample map
+95:   ---
+95:   duration_ms: 12.737125
+95:   ...
+95: # Subtest: versioned session connection preserves unsigned 64-bit identities as decimal strings
+95: ok 11 - versioned session connection preserves unsigned 64-bit identities as decimal strings
+95:   ---
+95:   duration_ms: 0.959789
+95:   ...
+95: # Subtest: native projection retains exact map and zone identities independently of its editor rule id
+95: ok 12 - native projection retains exact map and zone identities independently of its editor rule id
+95:   ---
+95:   duration_ms: 7.350596
+95:   ...
+95: # Subtest: native window title follows accepted patch names, undo and external replacement
+95: ok 13 - native window title follows accepted patch names, undo and external replacement
+95:   ---
+95:   duration_ms: 64.009392
+95:   ...
+95: # Subtest: a window title failure does not reject an already accepted patch edit
+95: ok 14 - a window title failure does not reject an already accepted patch edit
+95:   ---
+95:   duration_ms: 21.841361
+95:   ...
+95: # Subtest: native edits await real publication; failed/stale preparations retain patch and expose failure
+95: ok 15 - native edits await real publication; failed/stale preparations retain patch and expose failure
+95:   ---
+95:   duration_ms: 20.100982
+95:   ...
+95: # Subtest: structural commands serialize through host and reversible operands compile real map changes
+95: ok 16 - structural commands serialize through host and reversible operands compile real map changes
+95:   ---
+95:   duration_ms: 54.026465
+95:   ...
+95: # Subtest: live writes and notes carry current generation and use normalized values without phantom controls
+95: ok 17 - live writes and notes carry current generation and use normalized values without phantom controls
+95:   ---
+95:   duration_ms: 8.866019
+95:   ...
+95: # Subtest: real meter packets are acknowledged, stale data dropped and waveform comes only from native reduction
+95: ok 18 - real meter packets are acknowledged, stale data dropped and waveform comes only from native reduction
+95:   ---
+95:   duration_ms: 7.808241
+95:   ...
+95: # Subtest: native import preserves actual metadata and commits real file URIs atomically, without mock voice additions
+95: ok 19 - native import preserves actual metadata and commits real file URIs atomically, without mock voice additions
+95:   ---
+95:   duration_ms: 28.767883
+95:   ...
+95: # Subtest: native polling waits for completion and close prevents late prepared publication
+95: ok 20 - native polling waits for completion and close prevents late prepared publication
+95:   ---
+95:   duration_ms: 33.42337
+95:   ...
+95: # Subtest: host automation reconciles actual normalized native controls and ignores retired generations
+95: ok 21 - host automation reconciles actual normalized native controls and ignores retired generations
+95:   ---
+95:   duration_ms: 27.697755
+95:   ...
+95: # Subtest: unsupported audio edits reject before native admission and waveform rejections create no fake peaks
+95: ok 22 - unsupported audio edits reject before native admission and waveform rejections create no fake peaks
+95:   ---
+95:   duration_ms: 12.827484
+95:   ...
+95: # Subtest: native background telemetry and note heartbeat stop cleanly with the editor
+95: ok 23 - native background telemetry and note heartbeat stop cleanly with the editor
+95:   ---
+95:   duration_ms: 93.872433
+95:   ...
+95: # Subtest: native preparation has a finite poll budget and preserves accepted patch on timeout
+95: ok 24 - native preparation has a finite poll budget and preserves accepted patch on timeout
+95:   ---
+95:   duration_ms: 26.594708
+95:   ...
+95: # Subtest: successful replacement retires local note intent and stale waveform work without false editor failures
+95: ok 25 - successful replacement retires local note intent and stale waveform work without false editor failures
+95:   ---
+95:   duration_ms: 26.972743
+95:   ...
+95: # Subtest: new empty patch has no phantom controls and importing a staged sample restores an accepted sampler graph
+95: ok 26 - new empty patch has no phantom controls and importing a staged sample restores an accepted sampler graph
+95:   ---
+95:   duration_ms: 30.82291
+95:   ...
+95: # Subtest: a newer device generation refreshes native session and controls while retaining editor undo and selection
+95: ok 27 - a newer device generation refreshes native session and controls while retaining editor undo and selection
+95:   ---
+95:   duration_ms: 39.220944
+95:   ...
+95: # Subtest: external graph replacement retires old history and selections while preserving editor layout
+95: ok 28 - external graph replacement retires old history and selections while preserving editor layout
+95:   ---
+95:   duration_ms: 29.994729
+95:   ...
+95: # Subtest: own native preparation defers generation events and preserves the newly accepted command history
+95: ok 29 - own native preparation defers generation events and preserves the newly accepted command history
+95:   ---
+95:   duration_ms: 45.045788
+95:   ...
+95: # Subtest: native initialization retries one rejected meter subscription and refuses to claim readiness if both fail
+95: ok 30 - native initialization retries one rejected meter subscription and refuses to claim readiness if both fail
+95:   ---
+95:   duration_ms: 14.319397
+95:   ...
+95: # Subtest: native editor resize uses only the requested size mode and reports failed admission
+95: ok 31 - native editor resize uses only the requested size mode and reports failed admission
+95:   ---
+95:   duration_ms: 7.308487
+95:   ...
+95: # Subtest: migrated key mapping uses native identities and native undo without a local closure entry
+95: ok 32 - migrated key mapping uses native identities and native undo without a local closure entry
+95:   ---
+95:   duration_ms: 23.788069
+95:   ...
+95: # Subtest: whole-document edits preserve native zone identity for later mapping and undo
+95: ok 33 - whole-document edits preserve native zone identity for later mapping and undo
+95:   ---
+95:   duration_ms: 45.127647
+95:   ...
+95: # Subtest: copied rules adopt their prepared native zone before migrated mapping and undo
+95: ok 34 - copied rules adopt their prepared native zone before migrated mapping and undo
+95:   ---
+95:   duration_ms: 47.587119
+95:   ...
+95: # Subtest: shipped round robin mapping edits every candidate through whole-document preparation
+95: ok 35 - shipped round robin mapping edits every candidate through whole-document preparation
+95:   ---
+95:   duration_ms: 30.118808
+95:   ...
+95: # Subtest: a successful native mapping retires an abandoned local redo branch
+95: ok 36 - a successful native mapping retires an abandoned local redo branch
+95:   ---
+95:   duration_ms: 16.632031
+95:   ...
+95: # Subtest: native undo preserves the intervening local command as the next mixed-history undo
+95: ok 37 - native undo preserves the intervening local command as the next mixed-history undo
+95:   ---
+95:   duration_ms: 31.994196
+95:   ...
+95: # Subtest: a native mapping remains newest when bounded native history evicts its oldest entry
+95: ok 38 - a native mapping remains newest when bounded native history evicts its oldest entry
+95:   ---
+95:   duration_ms: 23.7022
+95:   ...
+95: # Subtest: a failed native session command refreshes the consumed request identity before retry
+95: ok 39 - a failed native session command refreshes the consumed request identity before retry
+95:   ---
+95:   duration_ms: 21.445926
+95:   ...
+95: # Subtest: every native exposed React knob invokes its actual host parameter with normalized value and generation
+95: ok 40 - every native exposed React knob invokes its actual host parameter with normalized value and generation
+95:   ---
+95:   duration_ms: 113.510039
+95:   ...
+95: # Subtest: native knob displayed units and typed values use the actual declared control range
+95: ok 41 - native knob displayed units and typed values use the actual declared control range
+95:   ---
+95:   duration_ms: 9.384523
+95:   ...
+95: # Subtest: a React knob gesture brackets queued native writes once and preserves the last accepted value
+95: ok 42 - a React knob gesture brackets queued native writes once and preserves the last accepted value
+95:   ---
+95:   duration_ms: 12.789904
+95:   ...
+95: 1..42
+95: # tests 42
+95: # suites 0
+95: # pass 42
+95: # fail 0
+95: # cancelled 0
+95: # skipped 0
+95: # todo 0
+95: # duration_ms 1462.622809
+2/2 Test #95: trigger-native-adapter ...........   Passed    1.49 sec
+
+The following tests passed:
+	trigger-native-ui
+	trigger-native-adapter
+
+100% tests passed, 0 tests failed out of 2
+
+Total Test time (real) =   1.69 sec
