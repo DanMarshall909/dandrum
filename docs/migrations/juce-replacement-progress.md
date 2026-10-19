@@ -535,3 +535,30 @@ JUCE, GTK or WebKit runtime edge.
 contains the exact source, artifact, licence and log hashes. At measurement the
 filesystem had 58 GiB free; the 64 GiB build tree and both 5.6 GiB Cargo targets
 were retained. Mutation remains excluded by the recorded user direction.
+
+## Trigger host and copied-resource scaffold — 19 October 2026
+
+The first implementation boundary adds an opt-in
+`DANDRUM_TRIGGER_CLAP_EDITOR` build and a `dandrum-trigger-host` Rust crate over
+the completed instrument session. The host crate has no Clack, Wry, WebKitGTK,
+GTK or JUCE package edge. The build stages a supplied prebuilt editor bundle,
+the Advanced Drum Kit document and its sample into a regular-file sibling
+resource tree. The existing CLAP binary and its two fixture descriptors are
+unchanged.
+
+The initial build-boundary test failed because the editor and host targets did
+not exist. A second RED proved that tracking only `index.html`, `app.js` and
+`app.css` left a changed nested font stale. The final rule tracks the complete
+bundle recursively. Its isolated fixture has no `third_party/JUCE`, `web` or
+`ui` tree; it rebuilds a changed nested asset, copies the binary and resources
+outside the source snapshot, removes all resource inputs, and verifies every
+copied payload byte-for-byte without a source path. The real dynamic host test
+then confirms both prior descriptors still load.
+
+All four CLAP build-boundary tests pass in 72.33 seconds. The new crate passes
+formatting, Clippy with warnings denied and its empty scaffold test/doc-test
+lanes. [Portable evidence](evidence/trigger-clap-editor-scaffold-2026-10-19/receipt.json)
+retains source and log hashes. Its local Cargo target is retained and explicitly
+ignored beside the other crate caches. This is build scaffolding only: it does not yet
+resolve packaged resources at runtime, own a prepared Trigger session, add Wry
+or expose a Trigger CLAP descriptor.

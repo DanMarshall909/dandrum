@@ -4,6 +4,7 @@ build-native/
 .idea/
 src/rust-engine/target/
 src/instrument-session/target/
+src/trigger-host/target/
 src/rust-engine/mutants.out/
 src/rust-engine/mutants.out.old/
 .claude/settings.local.json

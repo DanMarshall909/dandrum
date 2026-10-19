@@ -1,0 +1,13 @@
+F
+======================================================================
+FAIL: test_trigger_editor_scaffold_stages_copied_resources_without_host_sources (__main__.ClapProofBuildTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/tests/python/test_engine_only_build.py", line 218, in test_trigger_editor_scaffold_stages_copied_resources_without_host_sources
+    self.assertEqual((resources / "editor/fonts/fixture.woff2").read_bytes(), updated_font)
+AssertionError: b'first-font-revision' != b'second-font-revision'
+
+----------------------------------------------------------------------
+Ran 1 test in 49.579s
+
+FAILED (failures=1)

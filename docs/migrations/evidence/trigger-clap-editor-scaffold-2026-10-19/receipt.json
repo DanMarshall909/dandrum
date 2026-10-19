@@ -1,0 +1,119 @@
+{
+  "scope": "Task 1.2 format-neutral Trigger host and copied-resource build scaffold; no editor/runtime behavior",
+  "source_base": "74fe542a858d7aaae976f8370b8b25cc4d4e81b2",
+  "candidate_source_sha256": {
+    "CMakeLists.txt": "ecf46f5a573cca9d92b53d9ff2415e69bf634aebbb5d15e74f1f0da56a96cb53",
+    "tests/python/test_engine_only_build.py": "2bff7f1fe2aaf254955a2bf66be713617cf48e53c7565cc596f028a796b25177",
+    "src/trigger-host/Cargo.toml": "25bd035be4b6794d51e4b2676724168fe946fa2d7ed48d3aec9791292cc6d845",
+    "src/trigger-host/Cargo.lock": "41fc2332672552cb97b5b3c9ca925762c4ae80093558ccb3222d80300f3bc9cd",
+    "src/trigger-host/src/lib.rs": "9e74230ed91e34bbea8ec2c48faf7cd9b4d9a50275fe235449203dbcc5966827",
+    "examples/patches/advanced-drum-kit.yaml": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008",
+    "examples/patches/assets/advanced-drums.wav": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503",
+    "src/clap-adapter/src/lib.rs": "cb4256a54f9d8f8d8bf4f34f596cf80611286aef44582223fa2e824a9460d477",
+    ".gitignore": "47842218da795a10c8d3a0db935bb2056c6098e68307ef35942dbc9b0492be62"
+  },
+  "tdd": {
+    "missing_target_red": "The isolated build target inventory lacked dandrum-trigger-clap-editor and dandrum-trigger-host-rust.",
+    "nested_resource_red": "Changing a nested font left the staged first revision unchanged.",
+    "green": "The complete editor bundle is a configure-aware recursive dependency and is restaged before the external copy check.",
+    "test_oracle_repairs": [
+      "Dependency names are parsed from the cargo-tree first column so the worktree name juce-free-host-adapters cannot create a false JUCE edge.",
+      "The production cargo tree is audited offline rather than cargo metadata trying to fetch an unused locked derive package."
+    ]
+  },
+  "final_checks": {
+    "clap_build_boundary": {
+      "tests": 4,
+      "passed": 4,
+      "elapsed_seconds": 72.333
+    },
+    "trigger_host_fmt": "passed",
+    "trigger_host_clippy_warnings_denied": "passed",
+    "trigger_host_unit_tests": 0,
+    "trigger_host_doc_tests": 0,
+    "dynamic_fixture_test": "passed after the editor scaffold build",
+    "exported_fixture_descriptors": [
+      "org.dandrum.experimental.tb303",
+      "org.dandrum.experimental.signed-gain"
+    ]
+  },
+  "source_boundary": {
+    "fixture_absent_trees": [
+      "third_party",
+      "web",
+      "ui"
+    ],
+    "editor_input": "temporary prebuilt bundle outside the copied source snapshot",
+    "installed_copy": "binary and resource tree copied outside the source snapshot before all editor/instrument/sample inputs were removed",
+    "payload_regular_files": 6,
+    "payloads": {
+      "editor/app.css": {
+        "bytes": 29,
+        "sha256": "c5543899cca95740af3ad66942055c2a972836f754911f41af0641aed05b53ec"
+      },
+      "editor/app.js": {
+        "bytes": 37,
+        "sha256": "2f86a4e4d33d5bac6bea0a00c8b117dc9edc4512f61d905d0f0e2613cbc72c55"
+      },
+      "editor/fonts/fixture.woff2": {
+        "bytes": 20,
+        "sha256": "0f408a102d8699aaeb75bf81d4337b175934839f22075ff633fe46a89e442ad3"
+      },
+      "editor/index.html": {
+        "bytes": 36,
+        "sha256": "bcf0ac824b5914a4808e690ec8f047f8aa24a092dd64830b4c52b8434d944b11"
+      },
+      "instrument/advanced-drum-kit.yaml": {
+        "bytes": 6699,
+        "sha256": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008"
+      },
+      "instrument/assets/advanced-drums.wav": {
+        "bytes": 102044,
+        "sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503"
+      }
+    },
+    "source_path_bytes_in_payloads": false
+  },
+  "format_neutral_dependency_audit": {
+    "production_tree_lines": 211,
+    "unique_package_names": 111,
+    "forbidden_name_fragments": [
+      "clack",
+      "wry",
+      "webkit",
+      "gtk",
+      "juce"
+    ],
+    "matches": [],
+    "direct_dependency": "dandrum_instrument_session"
+  },
+  "fixture_artifact": {
+    "ephemeral_path": "build/engine-only-regression/fixture-g9x8brhk/source/build/trigger-editor/clap/DandrumHeadlessProof.clap",
+    "sha256": "2cdde45308a6bd0526e53b4f82165c97edca58494623e5c68073ece0d2901682",
+    "bytes": 12343632,
+    "portable": false,
+    "note": "The release artifact remains disposable build output; its real dynamic test and source hashes are portable."
+  },
+  "evidence_sha256": {
+    "build-boundary-final.log": "9308ba343b38225af3cbbfd1a0312d16179bfaf24cd1b79a7d13c8950290ab53",
+    "missing-target-red.log": "ae366118a4c5b4ba25d52f5493b016a14f91f88b429512b7d0a7f4b58fd3df76",
+    "nested-resource-red.log": "d7ad0bf1cebd355741410d1d60b17e590577edf28b6e9435c483ae3500e2bda7",
+    "scaffold-green.log": "484dd0759e572d9e3d03531eb5c75b4d77e072d7f1626834286025bd1ba28f6f",
+    "trigger-editor-build.log": "091252be11456246a717d2ffeecd0b164c764166a62c5828ace352b0bcc391bd",
+    "trigger-editor-fixture-runtime.log": "9e1079f6c19a326f644c527fe3216e415be4b25379a87da6e747e77ae11ad825",
+    "trigger-editor-resource-rebuild.log": "e302e3e41328eb23dfc134aa2a9fc4436eb7b8b35980824526d79fdb5d935b37",
+    "trigger-editor-targets.log": "49f291a019df69d7a201322273f84d8a37e4033f1aee1da910fec6a991414450",
+    "trigger-editor.log": "168837cdb2e25bd5acf2df2efa3ae9093bbd605eaaee68d78269754bbd444e99",
+    "trigger-host-checks.log": "7c98230448c0327a727e2ed743374b458833d91df87fecdeda1200370ce32dc0",
+    "trigger-host-dependencies.log": "216de46efe90cbebfb1f549c6b50ae0014334ecda8323f90d79115a25a0d7fed"
+  },
+  "limits": [
+    "The target stages a caller-supplied prebuilt editor bundle; production Trigger build integration is task 3.2.",
+    "The host crate re-exports InstrumentSession but does not yet resolve resources or own a prepared session.",
+    "No Wry, GUI extension, Trigger descriptor, automation, state or runtime handoff exists yet.",
+    "The two existing CLAP fixture identities and source remain unchanged.",
+    "Mutation is excluded by recorded user direction."
+  ],
+  "portable_log_normalization": "Tool-emitted trailing horizontal whitespace and redundant EOF blank lines removed; command content and results retained.",
+  "storage": "The local src/trigger-host/target cache is retained on disk and explicitly ignored."
+}

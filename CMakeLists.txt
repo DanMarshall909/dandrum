@@ -9,6 +9,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(DANDRUM_ENABLE_MUTATION_CTEST "Include the long-running cargo-mutants test in CTest" OFF)
 option(DANDRUM_ENGINE_ONLY "Build only the Rust engine and independent native consumers without JUCE or browser dependencies" OFF)
 option(DANDRUM_CLAP_PROOF "Build the experimental headless CLAP engine proof" OFF)
+option(DANDRUM_TRIGGER_CLAP_EDITOR "Stage the JUCE-free Trigger CLAP editor scaffold" OFF)
+set(DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR "" CACHE PATH "Prebuilt Trigger editor bundle to stage beside the CLAP proof")
 option(DANDRUM_NATIVE_ONLY "Build the plugin with the native JUCE editor and no browser dependencies" OFF)
 option(DANDRUM_TRIGGER_REACT "Embed the full native-backed React sampler shell" OFF)
 option(DANDRUM_BUILD_FILTER_UI_SPIKES "Build optional Slint and JIVE filter experiments" OFF)
@@ -22,6 +24,23 @@ if(DANDRUM_CLAP_PROOF)
     if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
         message(FATAL_ERROR "The experimental CLAP packaging proof is currently verified only on Linux")
     endif()
+endif()
+if(DANDRUM_TRIGGER_CLAP_EDITOR)
+    if(NOT DANDRUM_CLAP_PROOF)
+        message(FATAL_ERROR "DANDRUM_TRIGGER_CLAP_EDITOR requires DANDRUM_CLAP_PROOF")
+    endif()
+    if(NOT IS_DIRECTORY "${DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR}")
+        message(FATAL_ERROR "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR must name a prebuilt Trigger editor bundle")
+    endif()
+    foreach(DANDRUM_TRIGGER_EDITOR_FILE IN ITEMS index.html app.js app.css)
+        if(NOT EXISTS "${DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR}/${DANDRUM_TRIGGER_EDITOR_FILE}")
+            message(FATAL_ERROR
+                "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR is missing ${DANDRUM_TRIGGER_EDITOR_FILE}")
+        endif()
+    endforeach()
+    file(GLOB_RECURSE DANDRUM_TRIGGER_EDITOR_BUNDLE_FILES
+        CONFIGURE_DEPENDS LIST_DIRECTORIES FALSE
+        "${DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR}/*")
 endif()
 if(DANDRUM_ENGINE_ONLY)
     foreach(DANDRUM_PRODUCT_OPTION IN ITEMS
@@ -72,6 +91,8 @@ set(RUST_ENGINE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/rust-engine)
 set(RUST_ENGINE_LIB ${CMAKE_CURRENT_BINARY_DIR}/rust-target/release/libdandrum_engine.a)
 set(RUST_SESSION_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/instrument-session)
 set(RUST_SESSION_LIB ${CMAKE_CURRENT_BINARY_DIR}/rust-target/release/libdandrum_instrument_session.a)
+set(RUST_TRIGGER_HOST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/trigger-host)
+set(RUST_TRIGGER_HOST_LIB ${CMAKE_CURRENT_BINARY_DIR}/rust-target/release/libdandrum_trigger_host.rlib)
 set(CARGO_BIN $ENV{HOME}/.cargo/bin/cargo)
 set(RUST_ENGINE_MUTATION_EXCLUDE_ARGS
     --exclude src/bin/*.rs
@@ -79,6 +100,7 @@ set(RUST_ENGINE_MUTATION_EXCLUDE_ARGS
 
 file(GLOB_RECURSE RUST_ENGINE_SOURCES CONFIGURE_DEPENDS ${RUST_ENGINE_DIR}/src/*.rs)
 file(GLOB_RECURSE RUST_SESSION_SOURCES CONFIGURE_DEPENDS ${RUST_SESSION_DIR}/src/*.rs)
+file(GLOB_RECURSE RUST_TRIGGER_HOST_SOURCES CONFIGURE_DEPENDS ${RUST_TRIGGER_HOST_DIR}/src/*.rs)
 
 add_custom_command(
     OUTPUT ${RUST_ENGINE_LIB}
@@ -105,6 +127,27 @@ add_custom_command(
     COMMENT "Building Rust instrument session facade")
 
 add_custom_target(dandrum-instrument-session-rust DEPENDS ${RUST_SESSION_LIB})
+
+if(DANDRUM_TRIGGER_CLAP_EDITOR)
+    add_custom_command(
+        OUTPUT ${RUST_TRIGGER_HOST_LIB}
+        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+            ${CARGO_BIN} build --release --locked --jobs 2
+            --manifest-path ${RUST_TRIGGER_HOST_DIR}/Cargo.toml --lib
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        DEPENDS
+            ${RUST_TRIGGER_HOST_DIR}/Cargo.toml
+            ${RUST_TRIGGER_HOST_DIR}/Cargo.lock
+            ${RUST_TRIGGER_HOST_SOURCES}
+            ${RUST_SESSION_DIR}/Cargo.toml
+            ${RUST_SESSION_DIR}/Cargo.lock
+            ${RUST_SESSION_SOURCES}
+            ${RUST_ENGINE_DIR}/Cargo.toml
+            ${RUST_ENGINE_DIR}/Cargo.lock
+            ${RUST_ENGINE_SOURCES}
+        COMMENT "Building the format-neutral Trigger host scaffold")
+    add_custom_target(dandrum-trigger-host-rust DEPENDS ${RUST_TRIGGER_HOST_LIB})
+endif()
 
 add_test(
     NAME retired-engine-ffi-symbols
@@ -243,6 +286,36 @@ if(DANDRUM_CLAP_PROOF)
         COMMENT "Building the experimental JUCE-free CLAP proof"
         VERBATIM)
     add_custom_target(dandrum-clap-proof DEPENDS ${DANDRUM_CLAP_ARTIFACT})
+    if(DANDRUM_TRIGGER_CLAP_EDITOR)
+        set(DANDRUM_TRIGGER_RESOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/clap/DandrumTrigger.resources)
+        set(DANDRUM_TRIGGER_RESOURCE_STAMP ${DANDRUM_TRIGGER_RESOURCE_DIR}/.staged)
+        add_custom_command(
+            OUTPUT ${DANDRUM_TRIGGER_RESOURCE_STAMP}
+            COMMAND ${CMAKE_COMMAND} -E rm -rf ${DANDRUM_TRIGGER_RESOURCE_DIR}
+            COMMAND ${CMAKE_COMMAND} -E make_directory
+                ${DANDRUM_TRIGGER_RESOURCE_DIR}/editor
+                ${DANDRUM_TRIGGER_RESOURCE_DIR}/instrument/assets
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR}
+                ${DANDRUM_TRIGGER_RESOURCE_DIR}/editor
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_CURRENT_SOURCE_DIR}/examples/patches/advanced-drum-kit.yaml
+                ${DANDRUM_TRIGGER_RESOURCE_DIR}/instrument/advanced-drum-kit.yaml
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${CMAKE_CURRENT_SOURCE_DIR}/examples/patches/assets/advanced-drums.wav
+                ${DANDRUM_TRIGGER_RESOURCE_DIR}/instrument/assets/advanced-drums.wav
+            COMMAND ${CMAKE_COMMAND} -E touch ${DANDRUM_TRIGGER_RESOURCE_STAMP}
+            DEPENDS
+                ${DANDRUM_TRIGGER_EDITOR_BUNDLE_FILES}
+                ${CMAKE_CURRENT_SOURCE_DIR}/examples/patches/advanced-drum-kit.yaml
+                ${CMAKE_CURRENT_SOURCE_DIR}/examples/patches/assets/advanced-drums.wav
+            COMMENT "Staging copied Trigger editor and instrument resources"
+            VERBATIM)
+        add_custom_target(dandrum-trigger-resources DEPENDS ${DANDRUM_TRIGGER_RESOURCE_STAMP})
+        add_custom_target(dandrum-trigger-clap-editor)
+        add_dependencies(dandrum-trigger-clap-editor
+            dandrum-clap-proof dandrum-trigger-host-rust dandrum-trigger-resources)
+    endif()
     add_test(NAME clap-dynamic-host
         COMMAND ${CMAKE_COMMAND} -E env
             CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target

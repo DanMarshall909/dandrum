@@ -156,6 +156,96 @@ class ClapProofBuildTest(EngineBuildFixture):
         self.assertEqual(code, 0, output)
         self.assertIn("100% tests passed", output)
 
+    def test_trigger_editor_scaffold_stages_copied_resources_without_host_sources(self):
+        editor_input = self.fixture_root / "editor-input"
+        editor_input.mkdir()
+        editor_files = {
+            "index.html": b"<!doctype html><div id='root'></div>",
+            "app.js": b"window.__triggerEditorFixture = true;",
+            "app.css": b":root { color-scheme: dark; }",
+            "fonts/fixture.woff2": b"first-font-revision",
+        }
+        for relative, contents in editor_files.items():
+            destination = editor_input / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(contents)
+
+        instrument_source = self.source / "examples/patches/advanced-drum-kit.yaml"
+        sample_source = self.source / "examples/patches/assets/advanced-drums.wav"
+        expected = {
+            "editor/index.html": editor_files["index.html"],
+            "editor/app.js": editor_files["app.js"],
+            "editor/app.css": editor_files["app.css"],
+            "editor/fonts/fixture.woff2": editor_files["fonts/fixture.woff2"],
+            "instrument/advanced-drum-kit.yaml": instrument_source.read_bytes(),
+            "instrument/assets/advanced-drums.wav": sample_source.read_bytes(),
+        }
+
+        build, code, output = self.configure(
+            "trigger-editor", "-DDANDRUM_ENGINE_ONLY=ON", "-DDANDRUM_CLAP_PROOF=ON",
+            "-DDANDRUM_TRIGGER_CLAP_EDITOR=ON",
+            "-DDANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=" + str(editor_input))
+        self.assertEqual(code, 0, output)
+        cache = (build / "CMakeCache.txt").read_text()
+        self.assertNotIn("DANDRUM_NODE_EXECUTABLE:", cache)
+
+        code, output = self.command(
+            "trigger-editor-targets", [CMAKE, "--build", str(build), "--target", "help"])
+        self.assertEqual(code, 0, output)
+        self.assertRegex(output, r"(?m)(?:^|\s)dandrum-trigger-clap-editor(?:\s|$)")
+        self.assertRegex(output, r"(?m)(?:^|\s)dandrum-trigger-host-rust(?:\s|$)")
+        self.assertNotRegex(output, r"(?m)(?:^|\s)(?:juceaide|dandrum-plugin)(?:\s|$)")
+
+        code, output = self.command(
+            "trigger-editor-build", [CMAKE, "--build", str(build), "--target",
+                                     "dandrum-trigger-clap-editor", "--parallel", "2"])
+        self.assertEqual(code, 0, output)
+        artifact = build / "clap/DandrumHeadlessProof.clap"
+        resources = build / "clap/DandrumTrigger.resources"
+        self.assertTrue(artifact.is_file())
+        for relative, contents in expected.items():
+            copied = resources / relative
+            self.assertTrue(copied.is_file(), relative)
+            self.assertFalse(copied.is_symlink(), relative)
+            self.assertEqual(copied.read_bytes(), contents, relative)
+
+        updated_font = b"second-font-revision"
+        (editor_input / "fonts/fixture.woff2").write_bytes(updated_font)
+        code, output = self.command(
+            "trigger-editor-resource-rebuild", [CMAKE, "--build", str(build), "--target",
+                                                 "dandrum-trigger-clap-editor", "--parallel", "2"])
+        self.assertEqual(code, 0, output)
+        self.assertEqual((resources / "editor/fonts/fixture.woff2").read_bytes(), updated_font)
+        expected["editor/fonts/fixture.woff2"] = updated_font
+
+        code, output = self.command(
+            "trigger-host-dependencies", ["cargo", "tree", "--offline", "--locked",
+                "--manifest-path", str(self.source / "src/trigger-host/Cargo.toml"),
+                "--edges", "normal", "--prefix", "none"])
+        self.assertEqual(code, 0, output)
+        dependency_names = {line.split()[0].lower()
+                            for line in output.splitlines() if line.strip()}
+        for forbidden in ("clack", "wry", "webkit", "gtk", "juce"):
+            self.assertFalse(any(forbidden in name for name in dependency_names),
+                             (forbidden, dependency_names))
+
+        code, output = self.command(
+            "trigger-editor-fixture-runtime", [CTEST, "--test-dir", str(build),
+                "--output-on-failure", "-R", "^clap-dynamic-host$"])
+        self.assertEqual(code, 0, output)
+        self.assertIn("100% tests passed", output)
+
+        installed = self.fixture_root / "installed"
+        installed.mkdir()
+        shutil.copy2(artifact, installed / artifact.name)
+        shutil.copytree(resources, installed / resources.name)
+        shutil.rmtree(editor_input)
+        shutil.rmtree(self.source / "examples/patches")
+        for relative, contents in expected.items():
+            copied = installed / resources.name / relative
+            self.assertEqual(copied.read_bytes(), contents, relative)
+            self.assertNotIn(str(self.source).encode(), copied.read_bytes(), relative)
+
 
 class ComparisonBuildTest(EngineBuildFixture):
     def test_comparison_configure_retains_juce_targets(self):

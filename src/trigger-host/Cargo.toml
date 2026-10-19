@@ -1,0 +1,15 @@
+[package]
+name = "dandrum-trigger-host"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+name = "dandrum_trigger_host"
+
+[dependencies]
+dandrum_instrument_session = { path = "../instrument-session" }
+
+[profile.release]
+codegen-units = 1
+lto = true
