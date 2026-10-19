@@ -1,5 +1,5 @@
 import {emptyPatch} from './presets.mjs';
-import {patchFromSession,compileNativePatch} from './native-document.mjs';
+import {patchFromSession,compileNativePatch,compiledNativeZoneId} from './native-document.mjs';
 import {NativeLive} from './native-live.mjs';
 import {createParameterController} from '../../shared/parameter-controller.mjs';
 import {structureOperations} from './domains/structure.mjs';
@@ -131,6 +131,7 @@ export class NativeEngine {
         if(accepted.rules.length)this.samplerSession=session;
         this.patch=reloadPath?accepted:draft;
         this.patch.params=accepted.params;
+        if(!reloadPath)this.reconcilePreparedRuleIdentities(accepted);
         // Native geometry is authoritative; keep stable editor identities and undo operands.
         for(const asset of this.patch.assets){const decoded=accepted.assets.find(a=>a.id===asset.id||a.uri===asset.uri);if(decoded)Object.assign(asset,{sampleRate:decoded.sampleRate,channels:decoded.channels,duration:decoded.duration,frameCount:decoded.frameCount});}
         await this.startFeedback(true);
@@ -152,10 +153,24 @@ export class NativeEngine {
     const [id,delta]=args,rule=this.patch.rules.find(item=>item.id===id),keys=delta&&typeof delta==='object'?Object.keys(delta):[];
     return !!rule?.nativeMapId&&!!rule?.nativeZoneId&&keys.length>0&&keys.every(key=>key==='noteLo'||key==='noteHi');
   }
+  reconcilePreparedRuleIdentities(accepted){
+    for(const rule of this.patch.rules){
+      const zoneId=compiledNativeZoneId(rule),mapId=rule.nativeMapId;
+      const native=accepted.rules.find(candidate=>candidate.nativeZoneId===zoneId&&(!mapId||candidate.nativeMapId===mapId));
+      if(native)Object.assign(rule,{nativeMapId:native.nativeMapId,nativeZoneId:native.nativeZoneId});
+      else{delete rule.nativeMapId;delete rule.nativeZoneId;}
+    }
+  }
   acceptSessionCommandSnapshot(session,before){
     const connection=parseSessionConnection(session.connection),accepted=patchFromSession(session);
     if(connection.instanceId!==before.instanceId||connection.attachmentId!==before.attachmentId)throw new Error('Native session command returned another connection');
-    this.session=session;this.connection=connection;this.generation=session.document.generation;this.sourcePath=session.sourcePath;this.samplerSession=session;this.patch=accepted;
+    for(const rule of this.patch.rules){
+      if(!rule.nativeMapId||!rule.nativeZoneId)continue;
+      const native=accepted.rules.find(candidate=>candidate.nativeMapId===rule.nativeMapId&&candidate.nativeZoneId===rule.nativeZoneId);
+      if(!native)throw new Error(`Native session command lost zone ${rule.nativeMapId}/${rule.nativeZoneId}`);
+      Object.assign(rule,{noteLo:native.noteLo,noteHi:native.noteHi});
+    }
+    this.session=session;this.connection=connection;this.generation=session.document.generation;this.sourcePath=session.sourcePath;this.samplerSession=session;this.patch.params=accepted.params;
     this.parameters.accept({generation:this.generation,sequence:0,parameters:Object.values(this.patch.params).map(p=>({id:p.id,name:p.name,value:p.value}))});
     return connection;
   }

@@ -236,6 +236,33 @@ test('whole-document edits preserve native zone identity for later mapping and u
   assert.equal(engine.getPatch().rules.find(rule=>rule.id==='kit.kick').noteLo,36);
 });
 
+test('copied rules adopt their prepared native zone before migrated mapping and undo',async t=>{
+  const {engine,bridge}=await setup(t),kick=engine.getPatch().rules.find(rule=>rule.id==='kit.kick');
+  await engine.setRules([...engine.getPatch().rules,{...kick,id:'copied-kick',noteLo:60,noteHi:60}]);
+  const copiedYaml=engine.session.yaml,replacement=engine.connection,accepted=[];
+  bridge.functions.setInstrumentZoneKeyRange=(_instance,_attachment,request,_revision,mapId,zoneId,low,high)=>{
+    accepted.push(['map',request,mapId,zoneId,low,high]);return {status:'accepted',job_id:request};
+  };
+  bridge.functions.undoInstrumentSession=(_instance,_attachment,request)=>{
+    accepted.push(['undo',request]);return {status:'accepted',job_id:request};
+  };
+  bridge.functions.getInstrumentSessionJobStatus=request=>{
+    const undo=accepted.at(-1)[0]==='undo',graph=parse(copiedYaml);
+    if(!undo)graph.assets.sample_maps[0].zones.find(zone=>zone.id===accepted.at(-1)[3]).key_range=[61,61];
+    const revision=undo?'2':'1',nextRequestId=undo?'3':'2',undoCount=undo?0:1;
+    bridge.setSession(session(undo?copiedYaml:stringify(graph),undo?10:9,connection({instanceId:replacement.instanceId,attachmentId:replacement.attachmentId,revision,nextRequestId,history:{undoCount,redoCount:undo?1:0}})));
+    return {state:'completed',request_id:request,revision,undoCount,redoCount:undo?1:0,error:''};
+  };
+  await engine.updateRule('copied-kick',{noteLo:61,noteHi:61});
+  assert.deepEqual(accepted[0],['map','1','kit','copied-kick',61,61]);
+  assert.equal(engine.getPatch().rules.find(rule=>rule.id==='kit.kick').noteLo,36);
+  assert.equal(engine.getPatch().rules.find(rule=>rule.id==='copied-kick').noteLo,61);
+  await engine.undoSession();
+  assert.deepEqual(accepted[1],['undo','2']);
+  assert.equal(engine.getPatch().rules.find(rule=>rule.id==='kit.kick').noteLo,36);
+  assert.equal(engine.getPatch().rules.find(rule=>rule.id==='copied-kick').noteLo,60);
+});
+
 test('shipped round robin mapping edits every candidate through whole-document preparation',async t=>{
   const {engine,bridge}=await setup(t),store=new Store(engine);t.after(()=>store.close());
   const rule=engine.getPatch().rules.find(item=>item.source==='kit.hard_snare');

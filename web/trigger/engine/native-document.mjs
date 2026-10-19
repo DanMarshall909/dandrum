@@ -5,6 +5,10 @@ const clone=value=>structuredClone(value);
 const readable=id=>id.replace(/[_.-]+/g,' ');
 const unsupported=feature=>{throw new Error(`${feature} is unsupported by the native sampler`);};
 const finite=(value,name)=>{if(!Number.isFinite(value))throw new Error(`Invalid ${name}`);return value;};
+export function compiledNativeZoneId(rule){
+  return rule.nativeMapId&&rule.nativeZoneId
+    &&rule.id===`${rule.nativeMapId}.${rule.nativeZoneId}`?rule.nativeZoneId:rule.id;
+}
 export function absoluteSamplePath(path,sourcePath){
   if(typeof path!=='string'||!path||path.includes('://'))throw new Error('Native samples require an absolute file URI');
   if(path.startsWith('/'))return path;
@@ -155,8 +159,7 @@ export function compileNativePatch(patch,session){
           candidate.region=`${source.id}.${id}`;
         }
       }
-      const nativeZoneId=rule.nativeMapId&&rule.nativeZoneId
-        &&rule.id===`${rule.nativeMapId}.${rule.nativeZoneId}`?rule.nativeZoneId:rule.id;
+      const nativeZoneId=compiledNativeZoneId(rule);
       const zone={id:index?`${nativeZoneId}_${index}`:nativeZoneId,region:candidate.region,key_range:[rule.noteLo,rule.noteHi],velocity_range:[rule.velLo,rule.velHi]};
       Object.assign(zone,{gain_db:rule.nativeGain,pan:rule.nativePan,pitch_semitones:rule.nativeTune,choke_group:rule.nativeChokeGroup,control_group:target?.nativeControlGroup??rule.nativeControlGroup},candidate);
       for(const key of Object.keys(zone))if(zone[key]==null||zone[key]==='')delete zone[key];
