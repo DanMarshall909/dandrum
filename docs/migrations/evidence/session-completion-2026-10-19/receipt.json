@@ -18,7 +18,7 @@
     "web/trigger/package-lock.json": "07d6d015bc9148c1f55f3146f38200f835727c0fc4bbe19cf7a415529ba342d9",
     "openspec/specs/instrument-session/spec.md": "309c9bce5ace132705755d4b098655f82070424504f1468bd154efc00bbff93a",
     "spec-tests.map": "10f9888d5e9d9d662695ce6ec640fa8b87868ac2cd47342cf03bc6e333aa29be",
-    "docs/migrations/juce-replacement-progress.md": "c328ece55fc1c0430da19196696352fb4248d8d75b3fb0a1b28b57fb1be0e7b3",
+    "docs/migrations/juce-replacement-progress.md": "e0c8684d5aebee2ed44c1ad7ed6ca9c583739255bd0c479170ae404ebc10e18e",
     "docs/migrations/evidence/session-completion-2026-10-19/build.log": "c1a839933704760eb5c692080c93eee9794cae53d345ba17eb4214ff22442ff9",
     "docs/migrations/evidence/session-completion-2026-10-19/coverage-missing.txt": "0768cbdd82474e178bd25bc28d68335ef79a114ca49c9d05aeee2a7f9104d14b",
     "docs/migrations/evidence/session-completion-2026-10-19/coverage-summary.json": "eed2ffc32b3dc44a52c5904f496bd3636e1557dc0bf453fa0097305ba497b665",
@@ -133,7 +133,7 @@
   "specification": {
     "progress": "11/11 tasks complete after the independent task-4.2 PASS and this closure record are committed.",
     "canonical": "All nine instrument-session scenarios remain mapped at 618 total criteria / 379 tested / 239 unchanged todo backlog. The failed preparation/activation scenario now names the Rust invalid/ambiguous-intent preservation test and concrete C++ session consumer in addition to sample-repreparation and activation-rollback tests.",
-    "remaining": "Normally publish the focused archived branch, then begin the next JUCE-free beta increment."
+    "remaining": "Begin the next verified OpenSpec increment toward the JUCE-free native host, formats, DAW automation and installed artifacts."
   },
   "limits": [
     "The retained native comparison still uses JUCE and therefore does not satisfy the final framework-removal goal.",
@@ -171,5 +171,13 @@
       "archive_inventory": "Proposal, design, delta spec, tasks and .openspec.yaml retained; tasks remain 11/11 complete.",
       "aggregate_note": "openspec validate --all --strict reported 74 passed and three unrelated pre-existing active-change failures: add-creative-sampling, add-sample-streaming and add-workstation-sampling."
     }
+  },
+  "publication": {
+    "branch": "feat/juce-free-host-adapters",
+    "archive_head": "de655b554f51b38ad44f62c06e4a053c41259536",
+    "remote_head": "de655b554f51b38ad44f62c06e4a053c41259536",
+    "remote": "origin",
+    "pre_push": "Full Rust test suite passed; active hook found zero changed src/rust-engine files and skipped mutation normally.",
+    "worktrees": "Feature worktree and main checkout were clean after publication; main remained unchanged."
   }
 }

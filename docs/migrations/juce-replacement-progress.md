@@ -492,3 +492,9 @@ The completed `add-persistent-instrument-session` change is archived at
 requirements and nine scenarios were already synchronized into the canonical
 specification before archival. All artifacts and all 11 tasks were complete;
 no incomplete-work warning or sync exception applies.
+
+Archive head `de655b5` is published on
+`origin/feat/juce-free-host-adapters` with exact local/remote identity. The
+active pre-push hook passed the full Rust suite and reported no changed engine
+Rust source files, so its mutation phase skipped normally. The main checkout
+remains clean and unchanged.
