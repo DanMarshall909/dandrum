@@ -31,7 +31,9 @@ failed preparation or activation leaves accepted state/cursor unchanged. Prepare
 work can publish after its original connection detaches. Foreign/stale candidates,
 retired/foreign history connections, empty history and exhausted revisions reject
 before activation. Snapshots copy the next undo/redo entry and its native label.
-Host automation stays outside this authoring owner.
+The journal retains the latest 100 accepted edits. Once full, it discards the
+oldest entry; undo reaches the state immediately after that discarded edit. A
+failed branch preserves redo, while an accepted branch truncates it.
 
 Structural mapping requests add instrument, request and expected-revision identity
 to the current attachment used for admission. A newly admitted `MappingJob` owns
@@ -51,12 +53,21 @@ references before host installation; retaining it after installation uses the
 preallocated bounded deque. A completion sent to the wrong session returns an
 owned routing error, allowing that same prepared result to finish at its source.
 
+`prepare_document_replacement` validates and prepares an externally supplied
+canonical YAML document without changing accepted state. Its commit uses the same
+activation lease, advances the revision, resets incompatible history and swaps in
+a fresh preallocated outcome window while admission remains closed. Failed,
+foreign, stale and busy replacements preserve the working session. The monotonic
+request high-water mark survives replacement, so retired requests cannot reapply;
+new requests based on the former revision are stale. Host parameter automation
+remains authoritative runtime state outside the authoring journal and is reapplied
+by the host when it installs a replacement runtime.
+
 The test consumer retains an actual graph processor and checks signed output,
 publication ordering, rollback, reconnection and an independent second session.
 It is an in-process protocol fixture; it proves no concrete host's reader safety
-or continuing voices. Native adapter adoption, bounded 100-entry history,
-external replacement reconciliation, the typed browser transport and actual
-WebView destruction proof remain pending in
+or continuing voices. Native adapter adoption, the typed browser transport and
+actual WebView destruction proof remain pending in
 `openspec/changes/add-persistent-instrument-session/tasks.md`.
 
 Internal instance/attachment identities are opaque Rust lifetime anchors; their
@@ -72,7 +83,7 @@ ctest --test-dir build/engine-only --output-on-failure -L '^session-fast$'
 ctest --test-dir build/engine-only --output-on-failure -L '^session-slow$'
 ```
 
-The fast lane currently contains twenty-two session tests (twenty public
+The fast lane currently contains twenty-five session tests (twenty-three public
 component cases and two revision-limit unit cases); the slow selection is empty.
 Combined selection is `-L '^session-(fast|slow)$'`. Full
 `ctest --test-dir build/engine-only` also runs the source-absence build guard,

@@ -413,6 +413,7 @@ use std::sync::Arc;
 struct RuntimeHost {
     runtime: NoteRenderer,
     published: SessionSnapshot,
+    kick_level: f32,
     closed: bool,
     reject: bool,
     attempts: usize,
@@ -431,7 +432,12 @@ impl ActivationHost for RuntimeHost {
         prepared: &PreparedKernelInstrument,
         next: &SessionSnapshot,
     ) -> Result<Self::Lease<'a>, Self::Error> {
-        let runtime = NoteRenderer::new(prepared);
+        let mut runtime = NoteRenderer::new(prepared);
+        assert!(runtime.runtime.set_numeric_parameter_by_target(
+            "player",
+            "group_1_level",
+            self.kick_level,
+        ));
         let next = next.clone();
         self.closed = true;
         let previous = std::mem::replace(&mut self.runtime, runtime);
@@ -481,6 +487,7 @@ impl RuntimeHost {
         Self {
             runtime: NoteRenderer::new(session.prepared()),
             published: snapshot.clone(),
+            kick_level: 1.0,
             closed: false,
             reject: false,
             attempts: 0,
@@ -489,6 +496,14 @@ impl RuntimeHost {
     fn render(&mut self, note: u8) -> Vec<Vec<f32>> {
         assert!(!self.closed, "audio admission closed");
         self.runtime.render(note)
+    }
+    fn automate_kick_level(&mut self, value: f32) {
+        self.kick_level = value;
+        assert!(self.runtime.runtime.set_numeric_parameter_by_target(
+            "player",
+            "group_1_level",
+            value,
+        ));
     }
 }
 
@@ -1026,4 +1041,223 @@ fn terminal_request_outcomes_are_capped_at_one_hundred_twenty_eight() {
     assert_eq!(host.attempts, 0);
     assert_eq!(host.render(36)[0][0], -0.5);
     assert_eq!(host.render(60), vec![vec![0.0; 16]; 2]);
+}
+
+fn yaml_with_kick_mapping(yaml: &str, note: u8) -> String {
+    let mut document: serde_yaml::Value = serde_yaml::from_str(yaml).unwrap();
+    let map = document["assets"]["sample_maps"]
+        .as_sequence_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|map| map["id"].as_str() == Some("kit"))
+        .unwrap();
+    let zone = map["zones"]
+        .as_sequence_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|zone| zone["id"].as_str() == Some("kick"))
+        .unwrap();
+    zone["key_range"] = serde_yaml::to_value([note, note]).unwrap();
+    serde_yaml::to_string(&document).unwrap()
+}
+
+#[test]
+fn history_retains_one_hundred_entries_and_branching_preserves_then_retires_redo() {
+    let (yaml, context, settings) = fixture();
+    let mut session = InstrumentSession::new(&yaml, context, settings).unwrap();
+    let (connection, initial) = session.attach().unwrap();
+    let mut host = RuntimeHost::new(&session, &initial);
+
+    let mut accepted = initial;
+    for edit in 0..101 {
+        let note = if edit % 2 == 0 { 60 } else { 61 };
+        let candidate = session
+            .prepare_mapping(&connection, kick_mapping(note))
+            .unwrap();
+        accepted = session.commit_mapping(candidate, &mut host).unwrap();
+    }
+    assert_eq!(accepted.revision, 101);
+    assert_eq!((accepted.undo_len, accepted.redo_len), (100, 0));
+    assert_eq!(accepted.undo.as_ref().unwrap().change.before, [61, 61]);
+    assert_eq!(accepted.undo.as_ref().unwrap().change.after, [60, 60]);
+    assert_eq!(host.render(60)[0][0], -0.5);
+
+    let undone = session.undo(&connection, &mut host).unwrap();
+    assert_eq!((undone.undo_len, undone.redo_len), (99, 1));
+    assert_eq!(host.render(61)[0][0], -0.5);
+    let branch = session
+        .prepare_mapping(&connection, kick_mapping(62))
+        .unwrap();
+    host.reject = true;
+    assert_eq!(
+        session.commit_mapping(branch, &mut host),
+        Err(CommitError::Activation("activation rejected"))
+    );
+    assert_eq!(session.snapshot(&connection).unwrap(), undone);
+    assert_eq!(host.render(61)[0][0], -0.5);
+
+    host.reject = false;
+    let branch = session
+        .prepare_mapping(&connection, kick_mapping(62))
+        .unwrap();
+    let branched = session.commit_mapping(branch, &mut host).unwrap();
+    assert_eq!((branched.undo_len, branched.redo_len), (100, 0));
+    assert_eq!(host.render(62)[0][0], -0.5);
+    assert_eq!(
+        session.redo(&connection, &mut host),
+        Err(CommitError::Session(SessionError::NothingToRedo))
+    );
+
+    let mut fully_undone = branched;
+    for _ in 0..100 {
+        fully_undone = session.undo(&connection, &mut host).unwrap();
+    }
+    assert_eq!((fully_undone.undo_len, fully_undone.redo_len), (0, 100));
+    assert_eq!(host.render(60)[0][0], -0.5);
+    assert_eq!(host.render(36), vec![vec![0.0; 16]; 2]);
+    assert_eq!(
+        session.undo(&connection, &mut host),
+        Err(CommitError::Session(SessionError::NothingToUndo))
+    );
+}
+
+#[test]
+fn accepted_document_replacement_resets_history_and_requests_but_preserves_host_automation() {
+    let (yaml, context, settings) = fixture();
+    let mut session = InstrumentSession::new(&yaml, context, settings).unwrap();
+    let (connection, initial) = session.attach().unwrap();
+    let mut host = RuntimeHost::new(&session, &initial);
+    let request = mapping_request(&initial, 7, 60);
+    let job = admitted(session.admit_mapping(&connection, request.clone()));
+    let terminal = session.complete_mapping(job.prepare(), &mut host).unwrap();
+    let accepted = accepted_outcome(&terminal).clone();
+    assert_eq!((accepted.undo_len, accepted.redo_len), (1, 0));
+
+    host.automate_kick_level(0.5);
+    assert_eq!(session.snapshot(&connection).unwrap(), accepted);
+    assert_eq!(host.render(60)[0][0], -0.25);
+
+    let replacement_yaml = yaml_with_kick_mapping(&yaml, 64);
+    let replacement = session
+        .prepare_document_replacement(&connection, &replacement_yaml)
+        .unwrap();
+    host.reject = true;
+    assert_eq!(
+        session.commit_document_replacement(replacement, &mut host),
+        Err(CommitError::Activation("activation rejected"))
+    );
+    assert_eq!(session.snapshot(&connection).unwrap(), accepted);
+    assert!(
+        session
+            .request_outcome(&connection, RequestId(7))
+            .unwrap()
+            .is_some()
+    );
+    assert_eq!(host.render(60)[0][0], -0.25);
+
+    host.reject = false;
+    let replacement = session
+        .prepare_document_replacement(&connection, &replacement_yaml)
+        .unwrap();
+    let replaced = session
+        .commit_document_replacement(replacement, &mut host)
+        .unwrap();
+    assert_eq!(replaced.revision, 2);
+    assert_eq!(replaced.yaml, replacement_yaml);
+    assert_eq!((replaced.undo_len, replaced.redo_len), (0, 0));
+    assert_eq!(host.published, replaced);
+    assert_eq!(host.render(64)[0][0], -0.25);
+    assert_eq!(host.render(60), vec![vec![0.0; 16]; 2]);
+    assert!(
+        session
+            .request_outcome(&connection, RequestId(7))
+            .unwrap()
+            .is_none()
+    );
+    assert_admission_error(
+        session.admit_mapping(&connection, request),
+        SessionError::RetiredRequest,
+    );
+    assert_admission_error(
+        session.admit_mapping(&connection, mapping_request(&accepted, 8, 65)),
+        SessionError::StaleRequest,
+    );
+    assert_eq!(
+        session.undo(&connection, &mut host),
+        Err(CommitError::Session(SessionError::NothingToUndo))
+    );
+
+    let current_request = mapping_request(&replaced, 8, 65);
+    let current_job = admitted(session.admit_mapping(&connection, current_request));
+    let current = session
+        .complete_mapping(current_job.prepare(), &mut host)
+        .unwrap();
+    assert_eq!(accepted_outcome(&current).undo_len, 1);
+    assert_eq!(host.render(65)[0][0], -0.25);
+}
+
+#[test]
+fn document_replacement_rejects_invalid_foreign_stale_and_busy_work_before_activation() {
+    let (yaml, context, settings) = fixture();
+    let mut session = InstrumentSession::new(&yaml, context.clone(), settings.clone()).unwrap();
+    let mut other = InstrumentSession::new(&yaml, context, settings).unwrap();
+    let (connection, initial) = session.attach().unwrap();
+    let (foreign, other_initial) = other.attach().unwrap();
+    let mut host = RuntimeHost::new(&session, &initial);
+    let replacement_yaml = yaml_with_kick_mapping(&yaml, 64);
+
+    assert!(matches!(
+        session.prepare_document_replacement(&foreign, &replacement_yaml),
+        Err(SessionError::InvalidAttachment)
+    ));
+    assert!(matches!(
+        session.prepare_document_replacement(&connection, "not: a patch"),
+        Err(SessionError::InvalidDocument(_))
+    ));
+    let missing = replacement_yaml.replace(
+        "assets/advanced-drums.wav",
+        "assets/missing-replacement-sample.wav",
+    );
+    assert!(matches!(
+        session.prepare_document_replacement(&connection, &missing),
+        Err(SessionError::PreparationFailed(_))
+    ));
+    assert_eq!(session.snapshot(&connection).unwrap(), initial);
+
+    let foreign_replacement = other
+        .prepare_document_replacement(&foreign, &replacement_yaml)
+        .unwrap();
+    assert_eq!(
+        session.commit_document_replacement(foreign_replacement, &mut host),
+        Err(CommitError::Session(SessionError::ForeignCandidate))
+    );
+    let stale_replacement = session
+        .prepare_document_replacement(&connection, &replacement_yaml)
+        .unwrap();
+    let mapping = session
+        .prepare_mapping(&connection, kick_mapping(60))
+        .unwrap();
+    let accepted = session.commit_mapping(mapping, &mut host).unwrap();
+    assert_eq!(
+        session.commit_document_replacement(stale_replacement, &mut host),
+        Err(CommitError::Session(SessionError::StaleCandidate))
+    );
+
+    let blocked_replacement = session
+        .prepare_document_replacement(&connection, &replacement_yaml)
+        .unwrap();
+    let job = admitted(session.admit_mapping(&connection, mapping_request(&accepted, 1, 61)));
+    assert!(matches!(
+        session.prepare_document_replacement(&connection, &replacement_yaml),
+        Err(SessionError::Busy)
+    ));
+    assert_eq!(
+        session.commit_document_replacement(blocked_replacement, &mut host),
+        Err(CommitError::Session(SessionError::Busy))
+    );
+    let completed = session.complete_mapping(job.prepare(), &mut host).unwrap();
+    assert_eq!(accepted_outcome(&completed).revision, 2);
+    assert_eq!(host.attempts, 2);
+    assert_eq!(host.render(61)[0][0], -0.5);
+    assert_eq!(other.snapshot(&foreign).unwrap(), other_initial);
 }

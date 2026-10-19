@@ -11,6 +11,7 @@ use std::{
 };
 
 const ATTACHMENT_LIMIT: usize = 16;
+const HISTORY_LIMIT: usize = 100;
 const OUTCOME_LIMIT: usize = 128;
 
 /// An opaque lifetime identity, never a serialized pointer or platform handle.
@@ -184,6 +185,14 @@ pub struct PreparedMapping {
     base_revision: u64,
 }
 
+/// A fully prepared external document that has not changed accepted state.
+pub struct PreparedDocumentReplacement {
+    yaml: String,
+    prepared: PreparedKernelInstrument,
+    owner: SessionIdentity,
+    base_revision: u64,
+}
+
 /// Owned preparation work. It can move to a worker without retaining an editor.
 pub struct MappingJob {
     request: MappingRequest,
@@ -224,7 +233,6 @@ impl PreparedMapping {
         &self.change
     }
 }
-
 /// Off-audio owner. Renderers consume the prepared engine directly.
 pub struct InstrumentSession {
     accepted: AcceptedState,
@@ -356,7 +364,7 @@ impl InstrumentSession {
                         result: Ok(snapshot.clone()),
                     });
                     let returned = Arc::clone(&accepted);
-                    match self.install_staged(staged, &snapshot, host) {
+                    match self.install_staged(staged, &snapshot, host, None) {
                         Ok(()) => {
                             self.retain_outcome(request, accepted);
                             return Ok(returned);
@@ -395,6 +403,42 @@ impl InstrumentSession {
     ) -> Result<SessionSnapshot, CommitError<H::Error>> {
         self.ensure_idle().map_err(CommitError::Session)?;
         self.publish(candidate, HistoryAction::Append, host)
+    }
+
+    /// Prepare an externally supplied canonical document without publishing it.
+    pub fn prepare_document_replacement(
+        &self,
+        attachment: &Attachment,
+        yaml: &str,
+    ) -> Result<PreparedDocumentReplacement, SessionError> {
+        self.attachment_index(attachment)
+            .ok_or(SessionError::InvalidAttachment)?;
+        self.ensure_idle()?;
+        let prepared = Self::prepare_document(yaml, &self.context, &self.settings)?;
+        Ok(PreparedDocumentReplacement {
+            yaml: yaml.into(),
+            prepared,
+            owner: self.identity.clone(),
+            base_revision: self.accepted.revision,
+        })
+    }
+
+    /// Publish a prepared external document and retire incompatible recovery state.
+    pub fn commit_document_replacement<H: ActivationHost>(
+        &mut self,
+        candidate: PreparedDocumentReplacement,
+        host: &mut H,
+    ) -> Result<SessionSnapshot, CommitError<H::Error>> {
+        self.ensure_idle().map_err(CommitError::Session)?;
+        let staged = self
+            .stage_document_replacement(candidate)
+            .map_err(CommitError::Session)?;
+        let snapshot = self.snapshot_of(&staged);
+        // Allocate the next bounded recovery window before host installation.
+        let outcomes = VecDeque::with_capacity(OUTCOME_LIMIT);
+        self.install_staged(staged, &snapshot, host, Some(outcomes))
+            .map_err(CommitError::Activation)?;
+        Ok(snapshot)
     }
 
     pub fn undo<H: ActivationHost>(
@@ -456,7 +500,7 @@ impl InstrumentSession {
             .map_err(CommitError::Session)?;
         // Snapshot/history/string allocations all precede host installation.
         let snapshot = self.snapshot_of(&staged);
-        self.install_staged(staged, &snapshot, host)
+        self.install_staged(staged, &snapshot, host, None)
             .map_err(CommitError::Activation)?;
         Ok(snapshot)
     }
@@ -466,11 +510,15 @@ impl InstrumentSession {
         staged: AcceptedState,
         snapshot: &SessionSnapshot,
         host: &mut H,
+        replacement_outcomes: Option<VecDeque<RetainedOutcome>>,
     ) -> Result<(), H::Error> {
         let lease = host.activate(&staged.prepared, snapshot)?;
         let previous = std::mem::replace(&mut self.accepted, staged);
+        let retired_outcomes =
+            replacement_outcomes.map(|outcomes| std::mem::replace(&mut self.outcomes, outcomes));
         lease.publish(self.accepted.publication());
         drop(previous); // Retire accepted resources off audio after release.
+        drop(retired_outcomes);
         Ok(())
     }
 
@@ -479,17 +527,7 @@ impl InstrumentSession {
         candidate: PreparedMapping,
         action: HistoryAction,
     ) -> Result<AcceptedState, SessionError> {
-        if candidate.owner != self.identity {
-            return Err(SessionError::ForeignCandidate);
-        }
-        if candidate.base_revision != self.accepted.revision {
-            return Err(SessionError::StaleCandidate);
-        }
-        let revision = self
-            .accepted
-            .revision
-            .checked_add(1)
-            .ok_or(SessionError::RevisionExhausted)?;
+        let revision = self.next_candidate_revision(&candidate.owner, candidate.base_revision)?;
         let mut journal = self.accepted.journal.clone();
         let cursor = match action {
             HistoryAction::Append => {
@@ -499,6 +537,9 @@ impl InstrumentSession {
                     label: "Change Key Range".into(),
                     change: candidate.change,
                 });
+                if journal.len() > HISTORY_LIMIT {
+                    journal.remove(0);
+                }
                 journal.len()
             }
             HistoryAction::Undo => self.accepted.cursor - 1,
@@ -511,6 +552,37 @@ impl InstrumentSession {
             journal,
             cursor,
         })
+    }
+
+    fn stage_document_replacement(
+        &self,
+        candidate: PreparedDocumentReplacement,
+    ) -> Result<AcceptedState, SessionError> {
+        let revision = self.next_candidate_revision(&candidate.owner, candidate.base_revision)?;
+        Ok(AcceptedState {
+            yaml: candidate.yaml,
+            prepared: candidate.prepared,
+            revision,
+            journal: Vec::with_capacity(HISTORY_LIMIT),
+            cursor: 0,
+        })
+    }
+
+    fn next_candidate_revision(
+        &self,
+        owner: &SessionIdentity,
+        base_revision: u64,
+    ) -> Result<u64, SessionError> {
+        if owner != &self.identity {
+            return Err(SessionError::ForeignCandidate);
+        }
+        if base_revision != self.accepted.revision {
+            return Err(SessionError::StaleCandidate);
+        }
+        self.accepted
+            .revision
+            .checked_add(1)
+            .ok_or(SessionError::RevisionExhausted)
     }
 
     fn ensure_idle(&self) -> Result<(), SessionError> {
@@ -616,7 +688,7 @@ impl InstrumentSession {
                 yaml: yaml.into(),
                 prepared,
                 revision: 0,
-                journal: Vec::new(),
+                journal: Vec::with_capacity(HISTORY_LIMIT),
                 cursor: 0,
             },
             identity: SessionIdentity(Arc::new(())),

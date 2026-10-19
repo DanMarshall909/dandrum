@@ -241,3 +241,42 @@ and independent-instance host proof. No canonical scenario is synced, no main
 merge is included and the full JUCE-free beta remains active.
 
 Independent publication review passed for the exact repaired task 2.2 candidate.
+
+## Bounded history and document replacement — 19 October 2026
+
+Task 2.3 caps the native authoring journal at 100 accepted edits. When the cap
+is exceeded, the oldest inverse is discarded and undo reaches the state after
+that retired edit. Failed validation, preparation or activation preserves the
+redo branch; the next accepted edit from an undone state truncates redo. The
+existing terminal request recovery remains capped at 128 outcomes.
+
+An external canonical YAML document can now be prepared without mutation and
+published through the existing activation lease. Acceptance advances the same
+session revision, installs the prepared runtime/document, resets incompatible
+history and swaps in a fresh preallocated outcome window while admission is
+closed. The monotonic request high-water mark remains, so retired identities
+cannot execute again and requests based on the replaced revision are stale.
+Invalid, foreign, stale, busy and activation-rejected replacements preserve the
+working session.
+
+The protocol host keeps parameter automation outside the authoring owner and
+reapplies it to each installed runtime. At half kick level, both the edited and
+externally replaced mappings render literal signed `-0.25`; automation does not
+change revision or history. The retained-bound test accepts 101 real edits,
+rejects a branch, accepts a new branch and executes 100 real undos, ending at
+the earliest still-reconstructible signed mapping.
+
+All 25 session tests pass. The named session lane passes in 4.44 seconds, and
+the complete engine-only checkpoint passes 21/21 targets in 113.46 seconds.
+Owner coverage executes 48/48 functions, 495/499 LLVM-counted lines and 624/627
+regions; the merged source report lists no uncovered source line, with the four
+zero counts confined to generic monomorphization spans. Clippy with warnings
+denied, formatting, strict OpenSpec validation and the unchanged 609/370/239
+spec-coverage ratchet pass. Mutation remains excluded by the recorded user
+direction.
+
+This remains an in-process real-engine protocol proof. Tasks 3.1–3.3 retain the
+concrete native reader handoff, typed React contract, actual WebView destruction
+and independent-instance host proof. No canonical scenario is synced, no main
+merge is included and the full JUCE-free beta remains active. Independent
+publication review passed for the exact task-2.3 candidate.

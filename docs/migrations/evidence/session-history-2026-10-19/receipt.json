@@ -1,0 +1,73 @@
+{
+  "scope": "Only OpenSpec task 2.3: 100-entry native history, redo branching, retained 128-outcome bound, external accepted-document reconciliation and host automation outside the journal. Concrete native consumers, React/WebView lifecycle and full beta acceptance remain pending.",
+  "base": "11e1850f010a6c24fa09ccb9410915531df7f960",
+  "upstream_before_review": "11e1850f010a6c24fa09ccb9410915531df7f960",
+  "source_sha256": {
+    "src/instrument-session/src/lib.rs": "b10c66861ab44a54155c9e2afd7385a661b965a51bf0081052faa85d0acf9933",
+    "src/instrument-session/tests/session.rs": "1a377e79cf65f4e751f33764aaf43f312d0c6fd739417bc7ec78d6f780aea052",
+    "src/instrument-session/README.md": "64851f80b3c44445b9e176f38e16f5f4c21a58fe67fbdf09dc7b3fd261fe1c29",
+    "openspec/changes/add-persistent-instrument-session/tasks.md": "55e508d06de6ec742b759dcad0830a502703fcb7cacd9804c58be0c3e4d8eac0",
+    "docs/migrations/juce-replacement-progress.md": "e8f166d06d1eaecd3b211c9ab9f919a211415e5f7576d37a7b96e8589095563f"
+  },
+  "red": {
+    "command": "cargo test --locked --manifest-path src/instrument-session/Cargo.toml",
+    "result": "Expected E0599 compilation failures: the task-2.2 base had no prepare_document_replacement or commit_document_replacement API. The new bounded-history behavior was also not implemented."
+  },
+  "tests": {
+    "component": "25 passed: twenty-three public component cases and two revision-exhaustion unit boundaries",
+    "package_command": "cargo test --locked --manifest-path src/instrument-session/Cargo.toml",
+    "package_result": "25/25 passed",
+    "fast_command": "ctest --test-dir build/engine-only --output-on-failure -L '^session-fast$'",
+    "fast_result": "1/1 CTest target passed in 4.44 seconds; the target runs all 25 session tests",
+    "slow_command": "ctest --test-dir build/engine-only --output-on-failure -L '^session-slow$'",
+    "slow_result": "Named selection is empty",
+    "full_command": "ctest --test-dir build/engine-only --output-on-failure",
+    "full_result": "21/21 passed in 113.46 seconds",
+    "boundary_result": "The full gate includes absent-JUCE/browser/UI source build, both C++ FFI/callback checks, dynamic CLAP host and isolated CLAP build boundary",
+    "clippy": "cargo clippy --locked --manifest-path src/instrument-session/Cargo.toml --all-targets -- -D warnings passed",
+    "signed_oracle": "The 101-edit/100-undo test retains literal -0.5 at the earliest reconstructible MIDI 60 mapping. Host automation produces literal -0.25 before and after external replacement without appending history."
+  },
+  "coverage": {
+    "tool": "cargo-llvm-cov 0.8.7",
+    "command": "cargo llvm-cov --locked --manifest-path src/instrument-session/Cargo.toml --json --summary-only --output-path coverage.json --ignore-filename-regex 'src/rust-engine' --fail-uncovered-lines 0 --fail-uncovered-functions 0",
+    "lines": [495, 499],
+    "functions": [48, 48],
+    "regions": [624, 627],
+    "classification": "The merged source report lists no uncovered source line. Four zero-count line items and three regions are generic-instantiation spans in LLVM's per-monomorph accounting; every owner function executes.",
+    "branches": "Not instrumented",
+    "mutation": "Excluded by recorded user direction"
+  },
+  "history_evidence": {
+    "bound": "After 101 accepted real sample-map edits, native undo length is exactly 100. One hundred successful undos stop at the MIDI 60 state immediately after the discarded first edit; another undo returns NothingToUndo.",
+    "branching": "After undo, activation rejection preserves the exact redo snapshot and signed MIDI 61 output. A successful MIDI 62 branch restores length 100, removes redo and renders literal -0.5.",
+    "outcomes": "The existing 129-terminal-request test continues to prove exact 128-outcome retention and high-water rejection of an evicted identity."
+  },
+  "replacement_evidence": {
+    "success": "A prepared external YAML mapping publishes revision 2, the real prepared graph, an empty journal and a fresh empty outcome window through the same activation lease.",
+    "retirement": "The old outcome becomes unavailable, its exact request identity is retired by the preserved high-water mark, and a higher request based on the former revision is stale.",
+    "failure": "Invalid document, missing sample, foreign/stale candidate, pending-work busy rejection and activation rejection leave accepted runtime/document/history/outcomes unchanged.",
+    "automation": "The protocol host owns player.group_1_level, reapplies it to replacement runtimes and renders literal -0.25 without changing session revision/history."
+  },
+  "allocation_boundary": {
+    "replacement": "The next accepted state, snapshot, 100-entry journal capacity and fresh 128-entry outcome deque are allocated before host activation. Accepted-state and outcome swaps are infallible; retired runtime/history/outcomes drop after lease publication.",
+    "ordinary_edits": "Journal cloning, truncation, append and oldest-entry removal remain in pre-activation staging."
+  },
+  "specification": {
+    "task_progress": "6/11 complete; task 2.3 checked only after relevant tests and full registered gates passed",
+    "strict_change_validation": "passed",
+    "canonical_specs": 50,
+    "acceptance_criteria": 609,
+    "mapped": 370,
+    "ratchet_todo": 239,
+    "sync": "No new canonical scenario is synchronized because the proposed scenario also requires later concrete native host/editor proof."
+  },
+  "limits": [
+    "This is an in-process protocol boundary over the real Rust graph; task 3.1 must calibrate installation, rollback and held-reader behavior at the actual native consumer.",
+    "Wire attachment/request identities and lossless decimal representation remain deferred to task 3.2.",
+    "No React transport, actual WebView destruction, VST3/standalone packaging, named DAW proof or full beta claim is made.",
+    "Main remains unchanged and no merge is included."
+  ],
+  "storage_before_coverage": "107 GiB free; engine-only build 25 GiB, session target 4.8 GiB and engine target 5.2 GiB retained as reusable outputs.",
+  "review": "Independent completion review PASS for the exact task-2.3 candidate and finite publication envelope.",
+  "raw_evidence": "/tmp/dandrum-session-history-task23"
+}
