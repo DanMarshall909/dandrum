@@ -33,31 +33,54 @@ fn owned_sample() -> (tempfile::TempDir, PathBuf) {
     (directory, path)
 }
 
+struct NoteRenderer {
+    runtime: RealtimeGraphProcessor,
+    inputs: Vec<Vec<Vec<f32>>>,
+    output: Vec<Vec<Vec<f32>>>,
+}
+impl NoteRenderer {
+    fn new(prepared: &PreparedKernelInstrument) -> Self {
+        let metadata = prepared.root_port_metadata();
+        let inputs = metadata
+            .iter()
+            .filter(|p| p.direction() == PortDirection::Input)
+            .map(|p| {
+                let ChannelCount::Literal(channels) = p.channels() else {
+                    panic!("prepared channel count")
+                };
+                vec![
+                    vec![p.control_default().map_or(0.0, |c| c.default()) as f32; 16];
+                    *channels as usize
+                ]
+            })
+            .collect::<Vec<_>>();
+        let runtime = RealtimeGraphProcessor::from_compiled_patch(
+            prepared.compiled_patch().clone(),
+            48_000.0,
+            &PreparedSamplerAssets::empty(),
+            16,
+        );
+        Self {
+            runtime,
+            inputs,
+            output: vec![vec![vec![0.0; 16]; 2]],
+        }
+    }
+    fn render(&mut self, note: u8) -> Vec<Vec<f32>> {
+        // Independent single-hit oracle; continuing-voice safety belongs to the
+        // concrete host lifecycle tests rather than this mapping protocol fixture.
+        self.runtime.reset();
+        assert!(self.runtime.try_note_on_at(note, 100, 0));
+        assert_eq!(
+            self.runtime
+                .render_root_buses(&self.inputs, &mut self.output),
+            16
+        );
+        self.output[0].clone()
+    }
+}
 fn render_note(prepared: &PreparedKernelInstrument, note: u8) -> Vec<Vec<f32>> {
-    let metadata = prepared.root_port_metadata();
-    let inputs = metadata
-        .iter()
-        .filter(|p| p.direction() == PortDirection::Input)
-        .map(|p| {
-            let ChannelCount::Literal(channels) = p.channels() else {
-                panic!("prepared channel count")
-            };
-            vec![
-                vec![p.control_default().map_or(0.0, |c| c.default()) as f32; 16];
-                *channels as usize
-            ]
-        })
-        .collect::<Vec<_>>();
-    let mut runtime = RealtimeGraphProcessor::from_compiled_patch(
-        prepared.compiled_patch().clone(),
-        48_000.0,
-        &PreparedSamplerAssets::empty(),
-        16,
-    );
-    assert!(runtime.try_note_on_at(note, 100, 0));
-    let mut output = vec![vec![vec![0.0; 16]; 2]];
-    assert_eq!(runtime.render_root_buses(&inputs, &mut output), 16);
-    output.remove(0)
+    NoteRenderer::new(prepared).render(note)
 }
 
 #[test]
@@ -369,4 +392,316 @@ fn unusable_documents_or_missing_samples_cannot_create_accepted_sessions() {
         InstrumentSession::new(&missing, context, settings),
         Err(SessionError::PreparationFailed(_))
     ));
+}
+
+use dandrum_instrument_session::{
+    ActivationHost, ActivationLease, CommitError, Publication, SessionSnapshot,
+};
+
+// Protocol fixture only: real graph execution, no claim about a concrete host's
+// reader synchronization or editor lifecycle. Those require the native tests.
+struct RuntimeHost {
+    runtime: NoteRenderer,
+    published: SessionSnapshot,
+    closed: bool,
+    reject: bool,
+    attempts: usize,
+}
+struct RuntimeLease<'a> {
+    host: &'a mut RuntimeHost,
+    previous: Option<NoteRenderer>,
+    next: Option<SessionSnapshot>,
+    published: bool,
+}
+impl ActivationHost for RuntimeHost {
+    type Error = &'static str;
+    type Lease<'a> = RuntimeLease<'a>;
+    fn activate<'a>(
+        &'a mut self,
+        prepared: &PreparedKernelInstrument,
+        next: &SessionSnapshot,
+    ) -> Result<Self::Lease<'a>, Self::Error> {
+        let runtime = NoteRenderer::new(prepared);
+        let next = next.clone();
+        self.closed = true;
+        let previous = std::mem::replace(&mut self.runtime, runtime);
+        self.attempts += 1;
+        let lease = RuntimeLease {
+            host: self,
+            previous: Some(previous),
+            next: Some(next),
+            published: false,
+        };
+        if lease.host.reject {
+            return Err("activation rejected");
+        }
+        Ok(lease)
+    }
+}
+impl ActivationLease for RuntimeLease<'_> {
+    fn publish(mut self, accepted: Publication<'_>) {
+        assert!(
+            self.host.closed,
+            "lease must hold admission during publication"
+        );
+        let next = self.next.take().unwrap();
+        assert_eq!(accepted.revision, next.revision);
+        assert_eq!(accepted.yaml, next.yaml);
+        assert_eq!(
+            (accepted.undo_len, accepted.redo_len),
+            (next.undo_len, next.redo_len)
+        );
+        assert_eq!(accepted.undo, next.undo.as_ref());
+        assert_eq!(accepted.redo, next.redo.as_ref());
+        self.host.published = next;
+        self.host.closed = false;
+        self.published = true;
+    }
+}
+impl Drop for RuntimeLease<'_> {
+    fn drop(&mut self) {
+        if !self.published {
+            self.host.runtime = self.previous.take().unwrap();
+            self.host.closed = false;
+        }
+    }
+}
+impl RuntimeHost {
+    fn new(session: &InstrumentSession, snapshot: &SessionSnapshot) -> Self {
+        Self {
+            runtime: NoteRenderer::new(session.prepared()),
+            published: snapshot.clone(),
+            closed: false,
+            reject: false,
+            attempts: 0,
+        }
+    }
+    fn render(&mut self, note: u8) -> Vec<Vec<f32>> {
+        assert!(!self.closed, "audio admission closed");
+        self.runtime.render(note)
+    }
+}
+
+#[test]
+fn accepted_mapping_and_native_undo_redo_publish_document_history_and_signed_audio() {
+    let (yaml, context, settings) = fixture();
+    let mut session = InstrumentSession::new(&yaml, context.clone(), settings.clone()).unwrap();
+    let mut other = InstrumentSession::new(&yaml, context, settings).unwrap();
+    let (old, initial) = session.attach().unwrap();
+    let (other_connection, other_initial) = other.attach().unwrap();
+    let mut host = RuntimeHost::new(&session, &initial);
+    let candidate = session
+        .prepare_mapping(
+            &old,
+            SetZoneKeyRange {
+                map_id: "kit".into(),
+                zone_id: "kick".into(),
+                key_range: [60, 60],
+            },
+        )
+        .unwrap();
+    session.detach(&old).unwrap();
+    let accepted = session.commit_mapping(candidate, &mut host).unwrap();
+    let (fresh, reattached) = session.attach().unwrap();
+    assert_eq!(accepted, reattached);
+    assert_eq!(session.snapshot(&fresh).unwrap(), accepted);
+    assert_eq!(accepted.instance, initial.instance);
+    assert_eq!(accepted.revision, 1);
+    assert_eq!((accepted.undo_len, accepted.redo_len), (1, 0));
+    let entry = accepted.undo.as_ref().unwrap();
+    assert_eq!(entry.version, 1);
+    assert_eq!(entry.label, "Change Key Range");
+    assert_eq!(entry.change.map_id, "kit");
+    assert_eq!(entry.change.zone_id, "kick");
+    assert_eq!(entry.change.before, [36, 36]);
+    assert_eq!(entry.change.after, [60, 60]);
+    assert_eq!(host.published, accepted);
+    assert_eq!(host.render(60)[0][0], -0.5);
+    assert_eq!(host.render(60)[1][0], -0.5);
+    assert_eq!(host.render(36), vec![vec![0.0; 16]; 2]);
+    assert_eq!(render_note(session.prepared(), 60)[0][0], -0.5);
+    let undone = session.undo(&fresh, &mut host).unwrap();
+    assert_eq!(undone.revision, 2);
+    assert_eq!((undone.undo_len, undone.redo_len), (0, 1));
+    assert_eq!(undone.redo, accepted.undo);
+    let original: serde_yaml::Value = serde_yaml::from_str(&yaml).unwrap();
+    assert_eq!(
+        serde_yaml::from_str::<serde_yaml::Value>(&undone.yaml).unwrap(),
+        original
+    );
+    assert_eq!(host.published, undone);
+    assert_eq!(host.render(36)[0][0], -0.5);
+    assert_eq!(host.render(60), vec![vec![0.0; 16]; 2]);
+    let redone = session.redo(&fresh, &mut host).unwrap();
+    assert_eq!(redone.revision, 3);
+    assert_eq!((redone.undo_len, redone.redo_len), (1, 0));
+    assert_eq!(redone.yaml, accepted.yaml);
+    assert_eq!(redone.undo, accepted.undo);
+    assert_eq!(host.published, redone);
+    assert_eq!(host.render(60)[0][0], -0.5);
+    assert_eq!(host.render(36), vec![vec![0.0; 16]; 2]);
+    assert_eq!(other.snapshot(&other_connection).unwrap(), other_initial);
+    assert_eq!(render_note(other.prepared(), 36)[0][0], -0.5);
+    assert_eq!(render_note(other.prepared(), 60), vec![vec![0.0; 16]; 2]);
+}
+
+fn kick_mapping(note: u8) -> SetZoneKeyRange {
+    SetZoneKeyRange {
+        map_id: "kit".into(),
+        zone_id: "kick".into(),
+        key_range: [note, note],
+    }
+}
+
+#[test]
+fn activation_failure_rolls_back_runtime_document_and_every_history_transition() {
+    let (yaml, context, settings) = fixture();
+    let mut session = InstrumentSession::new(&yaml, context, settings).unwrap();
+    let (connection, initial) = session.attach().unwrap();
+    let mut host = RuntimeHost::new(&session, &initial);
+    host.reject = true;
+    let candidate = session
+        .prepare_mapping(&connection, kick_mapping(60))
+        .unwrap();
+    assert_eq!(
+        session.commit_mapping(candidate, &mut host),
+        Err(CommitError::Activation("activation rejected"))
+    );
+    assert_eq!(session.snapshot(&connection).unwrap(), initial);
+    assert_eq!(host.published, initial);
+    assert_eq!(host.render(36)[0][0], -0.5);
+    assert_eq!(host.render(60), vec![vec![0.0; 16]; 2]);
+    host.reject = false;
+    let candidate = session
+        .prepare_mapping(&connection, kick_mapping(60))
+        .unwrap();
+    let accepted = session.commit_mapping(candidate, &mut host).unwrap();
+    host.reject = true;
+    assert_eq!(
+        session.undo(&connection, &mut host),
+        Err(CommitError::Activation("activation rejected"))
+    );
+    assert_eq!(session.snapshot(&connection).unwrap(), accepted);
+    assert_eq!(host.published, accepted);
+    assert_eq!(host.render(60)[0][0], -0.5);
+    assert_eq!(host.render(36), vec![vec![0.0; 16]; 2]);
+    host.reject = false;
+    let undone = session.undo(&connection, &mut host).unwrap();
+    host.reject = true;
+    assert_eq!(
+        session.redo(&connection, &mut host),
+        Err(CommitError::Activation("activation rejected"))
+    );
+    assert_eq!(session.snapshot(&connection).unwrap(), undone);
+    assert_eq!(host.published, undone);
+    assert_eq!(host.render(36)[0][0], -0.5);
+    assert_eq!(host.render(60), vec![vec![0.0; 16]; 2]);
+}
+
+#[test]
+fn empty_history_foreign_connections_and_obsolete_candidates_never_activate() {
+    let (yaml, context, settings) = fixture();
+    let mut session = InstrumentSession::new(&yaml, context.clone(), settings.clone()).unwrap();
+    let mut other = InstrumentSession::new(&yaml, context, settings).unwrap();
+    let (connection, initial) = session.attach().unwrap();
+    let (foreign, other_initial) = other.attach().unwrap();
+    let mut host = RuntimeHost::new(&session, &initial);
+    assert_eq!(
+        session.undo(&connection, &mut host),
+        Err(CommitError::Session(SessionError::NothingToUndo))
+    );
+    assert_eq!(
+        session.redo(&connection, &mut host),
+        Err(CommitError::Session(SessionError::NothingToRedo))
+    );
+    for direction in [true, false] {
+        let result = if direction {
+            session.undo(&foreign, &mut host)
+        } else {
+            session.redo(&foreign, &mut host)
+        };
+        assert_eq!(
+            result,
+            Err(CommitError::Session(SessionError::InvalidAttachment))
+        );
+    }
+    let foreign_candidate = other.prepare_mapping(&foreign, kick_mapping(61)).unwrap();
+    assert_eq!(
+        session.commit_mapping(foreign_candidate, &mut host),
+        Err(CommitError::Session(SessionError::ForeignCandidate))
+    );
+    assert_eq!(host.attempts, 0);
+    let candidate = session
+        .prepare_mapping(&connection, kick_mapping(60))
+        .unwrap();
+    let obsolete = session
+        .prepare_mapping(&connection, kick_mapping(62))
+        .unwrap();
+    let accepted = session.commit_mapping(candidate, &mut host).unwrap();
+    assert_eq!(
+        session.commit_mapping(obsolete, &mut host),
+        Err(CommitError::Session(SessionError::StaleCandidate))
+    );
+    session.detach(&connection).unwrap();
+    assert_eq!(
+        session.undo(&connection, &mut host),
+        Err(CommitError::Session(SessionError::InvalidAttachment))
+    );
+    assert_eq!(
+        session.redo(&connection, &mut host),
+        Err(CommitError::Session(SessionError::InvalidAttachment))
+    );
+    assert_eq!(host.attempts, 1);
+    let (fresh, state) = session.attach().unwrap();
+    assert_eq!(state, accepted);
+    assert_eq!(session.snapshot(&fresh).unwrap(), accepted);
+    assert_eq!(host.published, accepted);
+    assert_eq!(host.render(60)[0][0], -0.5);
+    assert_eq!(other.snapshot(&foreign).unwrap(), other_initial);
+    assert_eq!(render_note(other.prepared(), 36)[0][0], -0.5);
+}
+
+#[test]
+fn failed_undo_preparation_preserves_accepted_mapping_and_native_history() {
+    let (yaml, _, settings) = fixture();
+    let (directory, sample) = owned_sample();
+    let mut session = InstrumentSession::new(
+        &yaml,
+        PreparationContext::new(directory.path(), 48_000),
+        settings,
+    )
+    .unwrap();
+    let (connection, initial) = session.attach().unwrap();
+    let mut host = RuntimeHost::new(&session, &initial);
+    let candidate = session
+        .prepare_mapping(&connection, kick_mapping(60))
+        .unwrap();
+    let accepted = session.commit_mapping(candidate, &mut host).unwrap();
+    std::fs::remove_file(&sample).unwrap();
+    assert!(matches!(
+        session.undo(&connection, &mut host),
+        Err(CommitError::Session(SessionError::PreparationFailed(_)))
+    ));
+    assert_eq!(session.snapshot(&connection).unwrap(), accepted);
+    assert_eq!(host.attempts, 1);
+    assert_eq!(host.published, accepted);
+    assert_eq!(host.render(60)[0][0], -0.5);
+    assert_eq!(host.render(36), vec![vec![0.0; 16]; 2]);
+    std::fs::copy(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../examples/patches/assets/advanced-drums.wav"),
+        &sample,
+    )
+    .unwrap();
+    let undone = session.undo(&connection, &mut host).unwrap();
+    std::fs::remove_file(sample).unwrap();
+    assert!(matches!(
+        session.redo(&connection, &mut host),
+        Err(CommitError::Session(SessionError::PreparationFailed(_)))
+    ));
+    assert_eq!(session.snapshot(&connection).unwrap(), undone);
+    assert_eq!(host.attempts, 2);
+    assert_eq!(host.published, undone);
+    assert_eq!(host.render(36)[0][0], -0.5);
+    assert_eq!(host.render(60), vec![vec![0.0; 16]; 2]);
 }

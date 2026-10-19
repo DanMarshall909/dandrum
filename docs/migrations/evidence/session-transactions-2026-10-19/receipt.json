@@ -1,0 +1,71 @@
+{
+  "scope": "Only OpenSpec task 2.1: staged runtime/document/journal publication, native mapping undo/redo and transition failure preservation. Concrete native-host reader safety, worker/request recovery, bounded retention, React/WebView lifecycle and full beta acceptance remain pending.",
+  "base": "fb787aadc82275a692baf0f91e5d31f6c3485934",
+  "upstream_before_review": "fb787aadc82275a692baf0f91e5d31f6c3485934",
+  "source_sha256": {
+    "src/instrument-session/src/lib.rs": "cb8193773554b8fee77e3832d2302fba2948bec0631cdeb95dd492edc57bffbb",
+    "src/instrument-session/tests/session.rs": "843388191b70d72f273a43d8ad3aa68f3b2a2a80673d9cf2d7b4864f745f4150",
+    "src/instrument-session/tests/internal/revision_limit.rs": "b0ea16b8ff459e087da904147159f95b997ae8fef1fef16f0f89c27a444ba619",
+    "src/instrument-session/README.md": "6142d4d901b7503daccf5696e586363bde5ab0092347c4bf47e8156e8263b434",
+    "openspec/changes/add-persistent-instrument-session/tasks.md": "0ff29b8c5adab24a0be5b61859ea11b6cfb8d00561b1b7079b14e973785e9409"
+  },
+  "red": {
+    "command": "CARGO_TARGET_DIR=<candidate-session-target> cargo test --locked --manifest-path src/instrument-session/Cargo.toml",
+    "source": "Final task-2.1 integration tests applied alone to detached base fb787aadc82275a692baf0f91e5d31f6c3485934",
+    "exit": 101,
+    "result": "Expected E0432: the base has no ActivationHost, ActivationLease, CommitError or Publication contract",
+    "log": "red-base-tests.log"
+  },
+  "tests": {
+    "component": "16 passed: fifteen public component cases and one revision-exhaustion unit boundary",
+    "fast_command": "ctest --test-dir build/engine-only --output-on-failure -L '^session-fast$'",
+    "fast_result": "1/1 CTest target passed; the target runs all 16 session tests",
+    "slow_command": "ctest --test-dir build/engine-only --output-on-failure -L '^session-slow$'",
+    "slow_result": "Named selection is empty",
+    "full_command": "ctest --test-dir build/engine-only --output-on-failure",
+    "full_result": "21/21 passed in 111.75 seconds",
+    "boundary_result": "The full gate includes the absent-JUCE/browser/UI source build, both C++ FFI/callback checks, dynamic CLAP host and CLAP build boundary",
+    "signed_oracle": "The accepted edit renders literal stereo -0.5 at MIDI 60 and silence at 36; native undo restores literal -0.5 at 36 and silence at 60; a second session remains unchanged"
+  },
+  "coverage": {
+    "command": "cargo llvm-cov --locked --manifest-path src/instrument-session/Cargo.toml --json --summary-only --output-path coverage.json --ignore-filename-regex 'src/rust-engine' --fail-uncovered-lines 0 --fail-uncovered-functions 0",
+    "lines": [268, 268],
+    "functions": [28, 28],
+    "regions": [351, 352],
+    "region_limit": "The sole uncovered region is LLVM's error-conversion span for the checked revision-exhaustion path in a second generic monomorphization; the public exhaustion result and no-activation invariant execute and pass.",
+    "branches": "Not instrumented",
+    "mutation": "Excluded by recorded user direction"
+  },
+  "transaction_evidence": {
+    "staging": "Candidate engine, cloned/truncated journal, checked next revision and owned SessionSnapshot are constructed before ActivationHost::activate.",
+    "installed_section": "After activate succeeds, production code only replaces AcceptedState, passes borrowed accepted metadata to the infallible lease publication method, and retires the previous resources off audio after release.",
+    "failure": "Validation/preparation errors never activate; activation rejection restores the old fixture runtime and preserves document, revision, journal cursor and signed sound for edit, undo and redo.",
+    "callback": "The test host renders through its owned RealtimeGraphProcessor and never reads InstrumentSession from render; concrete host calibration is explicitly deferred to task 3.1."
+  },
+  "refactor": {
+    "production": "Accepted document, prepared engine, revision and journal/cursor now move together as AcceptedState; one stage/publish path serves edit, undo and redo. Further extraction would split the atomic invariant without reducing responsibility.",
+    "tests": "A real-graph RuntimeHost fixture centralizes install/rollback/publication assertions. Separate cases retain distinct success, activation failure, admission/staleness and missing-resource preparation protection."
+  },
+  "lanes": {
+    "fast": "All 16 session tests; the registered target passed in 1.65 seconds cold and 0.27 seconds in the full warm checkpoint.",
+    "slow": "Session-specific selection is empty; no lane move is justified. Concrete native host/editor boundaries remain later tasks rather than mislabeled headless slow tests."
+  },
+  "specification": {
+    "strict_change_validation": "passed",
+    "canonical_specs": 50,
+    "acceptance_criteria": 609,
+    "mapped": 370,
+    "ratchet_todo": 239,
+    "sync": "No new canonical scenario is synchronized because the proposed scenario also requires the later concrete host/editor proof."
+  },
+  "limits": [
+    "ActivationHost is an in-process protocol boundary over the real Rust graph; task 3.1 must calibrate installation, rollback and held-reader behavior at the actual native consumer.",
+    "History is not yet capped at 100 entries and request outcomes are not yet capped at 128; those are task 2.3.",
+    "There is no pending worker, request identity, retry deduplication or outcome recovery yet; those are task 2.2.",
+    "No React transport, actual WebView destruction, VST3/standalone packaging, named DAW proof or full beta claim is made.",
+    "Main remains unchanged and no merge is included."
+  ],
+  "storage_before_coverage": "117 GiB free; engine-only build 18 GiB and session target 3.6 GiB retained as reusable outputs.",
+  "review": "Independent completion review PASS for the exact task-2.1 candidate and finite publication envelope.",
+  "raw_evidence": "/tmp/dandrum-session-transactions-final"
+}

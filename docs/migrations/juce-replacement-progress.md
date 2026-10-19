@@ -158,3 +158,38 @@ records retained commands and limits.
 Independent publication review passed for task 1.3 only; full session and beta acceptance remain pending. Atomic activation,
 native undo/redo, bounded jobs/recovery and concrete consumers remain pending;
 no complete session scenario is synchronized and the full beta stays active.
+
+## Session transaction and native history — 19 October 2026
+
+Task 2.1 adds one off-audio transaction boundary for accepted runtime, YAML,
+revision and native journal state. A prepared mapping candidate is staged with
+its next snapshot and history before a host activation lease closes admission.
+After installation, the session swaps the already allocated accepted state and
+publishes borrowed metadata through an infallible lease operation; old resources
+retire off audio after release. Failed validation, preparation or activation
+preserves the prior runtime, document, revision and undo/redo cursor.
+
+Native undo and redo derive their target from the versioned journal, prepare the
+real Advanced Drum Kit again and use the same activation boundary. The executable
+protocol proof maps the kick from MIDI 36 to 60, renders literal stereo `-0.5` at
+60 with silence at 36, undoes to the original signed output, redoes the edit and
+keeps a second instrument unchanged. Admitted prepared work can complete after
+its originating attachment detaches. Foreign/stale candidates, invalid history
+connections, empty history and revision exhaustion reject before activation.
+
+All 16 session tests pass in the named fast lane; the session slow lane remains
+empty. The complete 21-test engine-only checkpoint passes in 111.75 seconds,
+including the absent-JUCE/browser/UI source build, C++ FFI/callback checks and
+CLAP boundaries. Owner coverage is 268/268 lines, 28/28 functions and 351/352
+LLVM regions; the single region is a compiler-generated error-conversion span in
+a second generic monomorphization, while the revision-exhaustion behavior itself
+passes. Strict OpenSpec validation and the unchanged 609/370/239 spec-coverage
+ratchet pass. Mutation remains excluded by the recorded user direction.
+
+[Portable evidence](evidence/session-transactions-2026-10-19/receipt.json)
+records the commands, source hashes, RED base reconstruction and explicit limits.
+This protocol fixture does not prove the concrete native host's reader handoff or
+editor lifecycle. Tasks 2.2–2.3 and 3.1–3.3 retain request recovery, bounds,
+actual host calibration, React/WebView destruction and independent-instance host
+proof. No canonical scenario is synced, no main merge is included and the full
+JUCE-free beta remains active. Independent publication review passed for task 2.1.

@@ -1,0 +1,17 @@
+Script started on 2026-10-19 10:54:36+10:00 [<not executed on terminal>]
+   Compiling dandrum_engine v0.1.0 (/tmp/dandrum-session-transaction-red/src/rust-engine)
+   Compiling dandrum_instrument_session v0.1.0 (/tmp/dandrum-session-transaction-red/src/instrument-session)
+error[E0432]: unresolved imports `dandrum_instrument_session::ActivationHost`, `dandrum_instrument_session::ActivationLease`, `dandrum_instrument_session::CommitError`, `dandrum_instrument_session::Publication`
+   --> tests/session.rs:398:5
+    |
+398 |     ActivationHost, ActivationLease, CommitError, Publication, SessionSnapshot,
+    |     ^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^  ^^^^^^^^^^^  ^^^^^^^^^^^ no `Publication` in the root
+    |     |               |                |
+    |     |               |                no `CommitError` in the root
+    |     |               no `ActivationLease` in the root
+    |     no `ActivationHost` in the root
+
+For more information about this error, try `rustc --explain E0432`.
+error: could not compile `dandrum_instrument_session` (test "session") due to 1 previous error
+
+Script done on 2026-10-19 10:54:49+10:00 [COMMAND_EXIT_CODE="101"]

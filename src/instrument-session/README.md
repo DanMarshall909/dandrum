@@ -17,8 +17,28 @@ candidate. Invalid ranges, unknown/ambiguous targets, invalid connections and
 failed sample preparation leave the accepted document and sound unchanged.
 
 Candidate preparation does not publish an edit or change revision/history.
-Mapping transactions, native history, worker/handoff integration, the typed
-browser transport and actual WebView destruction proof remain pending in
+`commit_mapping` consumes a candidate belonging to the same instrument/revision.
+The off-audio session stages its next document, revision, journal and returned
+snapshot before asking an `ActivationHost` to install prepared resources. The
+returned lease keeps audio and host snapshot admission closed while the session
+swaps accepted state. Its infallible `publish` receives borrowed, already accepted
+metadata, then releases admission. Unpublished leases must restore the old host
+runtime. Publication must not allocate, notify or unwind; concrete adapters must
+prove this contract at their own reader/handoff boundary.
+
+Native undo/redo prepare the range recorded by the native version-1 journal;
+failed preparation or activation leaves accepted state/cursor unchanged. Prepared
+work can publish after its original connection detaches. Foreign/stale candidates,
+retired/foreign history connections, empty history and exhausted revisions reject
+before activation. Snapshots copy the next undo/redo entry and its native label.
+Host automation stays outside this authoring owner.
+
+The test consumer retains an actual graph processor and checks signed output,
+publication ordering, rollback, reconnection and an independent second session.
+It is an in-process protocol fixture; it proves no concrete host's reader safety
+or continuing voices. Native adapter adoption, bounded 100-entry history and
+128-outcome recovery, one pending worker, the typed browser transport and actual
+WebView destruction proof remain pending in
 `openspec/changes/add-persistent-instrument-session/tasks.md`.
 
 Internal instance/attachment identities are opaque Rust lifetime anchors; their
@@ -34,7 +54,7 @@ ctest --test-dir build/engine-only --output-on-failure -L '^session-fast$'
 ctest --test-dir build/engine-only --output-on-failure -L '^session-slow$'
 ```
 
-The fast lane currently contains eleven session component tests; the slow
+The fast lane currently contains sixteen session tests (fifteen component cases and one revision-limit unit case); the slow
 selection is empty. Combined selection is `-L '^session-(fast|slow)$'`. Full
 `ctest --test-dir build/engine-only` also runs the source-absence build guard,
 which executes these tests with JUCE/browser/UI source trees absent. The

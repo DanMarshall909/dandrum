@@ -1,0 +1,36 @@
+Script started on 2026-10-19 10:50:44+10:00 [<not executed on terminal>]
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+   Compiling dandrum_instrument_session v0.1.0 (/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/instrument-session)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.58s
+     Running unittests src/lib.rs (src/instrument-session/target/llvm-cov-target/debug/deps/dandrum_instrument_session-f77cdf83edea9fff)
+
+running 1 test
+test revision_limit::revision_exhaustion_rejects_without_wrapping_accepted_identity_or_activating ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/session.rs (src/instrument-session/target/llvm-cov-target/debug/deps/session-06759a4f0334f646)
+
+running 15 tests
+test documents_without_sample_maps_reject_mapping_without_changing_accepted_state ... ok
+test unusable_documents_or_missing_samples_cannot_create_accepted_sessions ... ok
+test accepted_document_survives_detach_and_reattach_without_reloading_samples ... ok
+test existing_sampler_baseline_uses_real_assets_and_signed_key_mapping ... ok
+test attachment_limit_reclaims_dropped_and_explicitly_retired_connections ... ok
+test foreign_and_retired_connections_cannot_read_another_session ... ok
+test failed_sample_repreparation_preserves_the_working_document_and_sound ... ok
+test inclusive_midi_boundaries_and_nondefault_inverse_come_from_native_state ... ok
+test mapping_admission_rejects_foreign_and_retired_connections ... ok
+test mapping_candidate_derives_inverse_and_prepares_only_the_requested_zone_change ... ok
+test invalid_or_ambiguous_mapping_intents_preserve_the_accepted_instrument ... ok
+test failed_undo_preparation_preserves_accepted_mapping_and_native_history ... ok
+test empty_history_foreign_connections_and_obsolete_candidates_never_activate ... ok
+test accepted_mapping_and_native_undo_redo_publish_document_history_and_signed_audio ... ok
+test activation_failure_rolls_back_runtime_document_and_every_history_transition ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+
+    Finished report saved to /tmp/dandrum-session-transactions-final/coverage.json
+
+Script done on 2026-10-19 10:50:47+10:00 [COMMAND_EXIT_CODE="0"]
