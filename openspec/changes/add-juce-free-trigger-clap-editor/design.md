@@ -1,0 +1,84 @@
+## Context
+
+The existing `dandrum_clap_adapter` is a JUCE-free, dynamically loaded CLAP binary with proven audio, MIDI, parameter, state and lifecycle behavior for two embedded fixture documents. It has no GUI and prepares its runtime directly from fixture text. The completed `dandrum_instrument_session` crate owns accepted sampler YAML, preparation, bounded native history, disposable attachments and atomic activation, while the production Trigger bundle currently obtains native functions and events through a JUCE-specific JavaScript object.
+
+The selected proof platform is Linux x86_64 with X11 parenting and WebKitGTK 2.50.4. Clack already exposes the CLAP GUI extension at the pinned repository revision, and the investigation selected Wry 0.57.0 as the first child-WebView backend. The render callback must remain free of locks, allocation, file I/O, serialization, browser access and resource reclamation.
+
+## Goals / Non-Goals
+
+**Goals:**
+
+- Add one real Trigger sampler identity to the JUCE-free CLAP binary, using the persistent session and existing Rust engine.
+- Run the production Trigger bundle as an actual X11 child of a host-owned window and event loop.
+- Keep the editor disposable while accepted session state, admitted work, native history and audio survive.
+- Translate one real Trigger parameter gesture to CLAP automation and return host parameter feedback to React.
+- Exercise a native mapping edit and undo through the same session implementation already used by the comparison host.
+- Prove signed sample rendering, state restore, lifecycle failures and independent instances from a copied artifact/resource tree outside the checkout.
+- Leave a format-neutral host core suitable for the following VST3 and standalone projection.
+
+**Non-Goals:**
+
+- VST3 wrapping, standalone audio/MIDI device ownership, named-DAW acceptance or installed release packaging.
+- Wayland, Windows or macOS editor support in this increment.
+- Full migration of every Trigger editing command, analysis service or telemetry stream.
+- Retaining unreleased JUCE product/state/parameter identities.
+- Changing DSP algorithms or using a WebView from the render callback.
+
+## Decisions
+
+### Separate the format-neutral Trigger host core from CLAP and Wry adapters
+
+Add a focused Rust host crate that owns the instrument session, versioned editor protocol, public parameter model and runtime handoff. Its core modules contain no Clack, Wry, GTK, X11 or JUCE types. CLAP and Wry modules adapt their concrete lifecycle and handles at the edge. This gives the next VST3/standalone change one tested owner instead of copying CLAP policy.
+
+Extending the fixture-only adapter directly would be initially smaller, but it would entangle session, GUI and CLAP types and force the format projections to repeat that work. Adopting Nice-plug now would discard the already proven Clack binary before the selected route has failed a gate.
+
+### Keep session ownership off audio and transfer prepared runtimes through bounded slots
+
+The main-thread host owns `InstrumentSession`. Activation constructs the next realtime processor and all scratch buffers off audio, then offers the owned runtime through a capacity-one nonblocking handoff. At a block boundary the audio processor swaps the pending runtime and returns the retired runtime through a preallocated reclamation slot; only the main thread destroys it. One in-flight replacement keeps capacity provable and maps naturally to the session's one admitted structural job.
+
+Atomics carry scalar parameter values. Bounded single-producer/single-consumer queues carry parameter events, runtime replacements and acknowledgements. No mutex or reference-count destruction is permitted in `process`.
+
+### Use a versioned local editor protocol and transport-neutral JavaScript backend
+
+The Trigger native adapter selects a `window.__DANDRUM__` backend contract with an explicit protocol version. The existing JUCE bridge supplies the same contract for comparison builds. The Wry adapter serves the production build and packaged fonts through an application-local scheme and exchanges bounded request/reply/event JSON with monotonically increasing request IDs. Unknown methods, malformed payloads, oversized messages and stale attachment IDs receive explicit errors.
+
+The initial JUCE-free method set is deliberately the subset required for session snapshot, public parameter gestures/feedback, note ownership, key-range mapping, job outcome recovery and native undo. Existing unsupported operations continue to report capability limits; the frontend never simulates native acceptance.
+
+### Let CLAP own the parent window, event loop, automation and state boundary
+
+Implement the pinned Clack GUI extension for the Trigger identity only. Creation records a supported X11 configuration; `set_parent` validates and stores the host window; the Wry child is created and destroyed on the CLAP main thread. `show`, `hide`, accepted fixed sizes and failure results follow the host calls without starting a private GTK loop.
+
+React gestures enter a bounded main-thread queue as begin/value/end events. CLAP parameter flush emits the corresponding host events, and audio/stopped host changes return through a bounded feedback queue plus `request_callback` to the main thread, which publishes an editor event. Structural history stays in the instrument session and scalar host automation stays outside that journal.
+
+CLAP state version 2 stores the replacement product identity, accepted session YAML, resource identity and public values with strict size/version validation. Restore prepares a complete candidate before publishing any field. Packaged sample resources resolve relative to the copied plugin resource tree, never the source checkout or an absolute developer path.
+
+### Test the binary through an actual host parent and copied resource tree
+
+Extend the dynamic Clack host fixture with the GUI host extension and a real X11 parent. The test loads the exported release binary, copies the plugin plus Trigger resources to a temporary directory outside the checkout, creates the WebView, drives real DOM controls and inspects host automation/events, state and signed audio. It covers invalid parents, create failure, hide/show, resize rejection, complete destruction/recreation, lost acknowledgement, held-note/gesture cleanup and two instances.
+
+Unit tests remain close to the format-neutral protocol and handoff. Browser tests prove transport selection without needing native audio. The existing JUCE packaged-WebView suite remains a comparison, not proof of this adapter.
+
+## Risks / Trade-offs
+
+- **Wry/GTK main-thread constraints conflict with CLAP host behavior** → store the WebView only in the plugin main-thread object, use the host loop, assert callback thread identity and reject creation when the contract cannot be met.
+- **A runtime replacement could be dropped on audio** → use capacity-proved bidirectional slots, prohibit a second activation until retirement is reclaimed and add an allocation/destructor sentinel test.
+- **IPC scope grows toward a second backend implementation** → expose only methods required by mapped scenarios and keep unsupported Trigger operations explicit.
+- **CLAP host callbacks differ between the synthetic host and a DAW** → exercise the official validator where applicable and retain named-DAW acceptance as a separate required gate.
+- **Linux child WebView behavior differs under Wayland** → claim X11 only and fail unsupported APIs explicitly.
+- **Resource lookup accidentally depends on the checkout** → run the acceptance binary and resources from a temporary external tree after hiding source asset paths from the process.
+
+## Migration Plan
+
+1. Characterize the current Trigger transport, CLAP fixture behavior and session/runtime ownership with failing tests.
+2. Add the format-neutral host crate and bounded runtime/parameter/session protocol with complete focused coverage.
+3. Add the transport-neutral Trigger backend while keeping the JUCE comparison tests green.
+4. Add Wry resource serving and X11 child lifecycle tests.
+5. Add the Trigger CLAP identity, GUI/automation/state extensions and dynamic host acceptance.
+6. Run strict build, dependency/link, validator, callback-safety, browser and source-bound evidence gates; independently review before syncing and publishing.
+
+Rollback is removal of the opt-in Trigger identity and its new host/editor crate. The existing two headless CLAP fixtures and JUCE comparison product remain intact until the later format cutover.
+
+## Open Questions
+
+- The exact installed resource-directory convention belongs to the packaging increment; this proof uses a deterministic sibling resource tree that can be copied independently.
+- Physical device and named-DAW availability on the selected native Linux machine must be established before the following VST3/standalone acceptance plan is finalized.
