@@ -47,6 +47,30 @@ juce::var waitJob (InstrumentHostWebBridge& bridge, const juce::var& ticket,
     throw std::runtime_error ("preparation timed out");
 }
 
+void callWithoutReply (InstrumentHostWebBridge& bridge, const char* name,
+                       juce::Array<juce::var> args)
+{
+    for (const auto& entry : bridge.nativeFunctions())
+        if (entry.first.toString() == name)
+        {
+            entry.second (args, [] (juce::var) {});
+            return;
+        }
+    throw std::runtime_error (std::string ("Missing native function: ") + name);
+}
+
+juce::var waitSessionJob (InstrumentHostWebBridge& bridge, const juce::var& requestId)
+{
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds (10);
+    do
+    {
+        auto status = call (bridge, "getInstrumentSessionJobStatus", { requestId });
+        if (! status.isString() && status["state"].toString() != "running") return status;
+        std::this_thread::sleep_for (std::chrono::milliseconds (2));
+    } while (std::chrono::steady_clock::now() < deadline);
+    throw std::runtime_error ("instrument session job timed out after editor recreation");
+}
+
 float hit (DandrumAudioProcessor& processor, int note)
 {
     juce::AudioBuffer<float> buffer (2, 16);
@@ -63,6 +87,75 @@ float hit (DandrumAudioProcessor& processor, int note)
     processor.processBlock (buffer, midi);
     return buffer.getSample (0, 0);
 }
+
+void verifyDestroyedBridgeRecoversLostReplyAndUndo()
+{
+    DandrumAudioProcessor edited (InstrumentDemoConfiguration::sampler());
+    DandrumAudioProcessor unaffected (InstrumentDemoConfiguration::sampler());
+    for (auto* processor : { &edited, &unaffected })
+    {
+        processor->setPlayConfigDetails (0, 2, 48000, 16);
+        processor->prepareToPlay (48000, 16);
+    }
+
+    auto firstBridge = std::make_unique<InstrumentHostWebBridge> (edited);
+    auto otherBridge = std::make_unique<InstrumentHostWebBridge> (unaffected);
+    const auto original = call (*firstBridge, "getSamplerSession");
+    const auto otherOriginal = call (*otherBridge, "getSamplerSession");
+    const auto originalConnection = original["connection"];
+    const auto requestId = originalConnection["nextRequestId"];
+
+    callWithoutReply (*firstBridge, "setInstrumentZoneKeyRange",
+        { originalConnection["instanceId"], originalConnection["attachmentId"], requestId,
+          originalConnection["revision"], juce::var ("kit"), juce::var ("kick"),
+          juce::var (60), juce::var (60) });
+
+    // The bridge owns the disposable editor attachment. Destroy it before
+    // observing the admitted request's acknowledgement or terminal status.
+    firstBridge.reset();
+
+    InstrumentHostWebBridge reopenedBridge (edited);
+    const auto completed = waitSessionJob (reopenedBridge, requestId);
+    require (completed["state"].toString() == "completed"
+                 && completed["revision"].toString() == "1"
+                 && static_cast<int> (completed["undoCount"]) == 1,
+             "recreated editor did not recover the admitted request exactly once");
+
+    const auto recovered = call (reopenedBridge, "getSamplerSession");
+    const auto recoveredConnection = recovered["connection"];
+    require (recoveredConnection["instanceId"].toString()
+                 == originalConnection["instanceId"].toString()
+                 && recoveredConnection["attachmentId"].toString()
+                     != originalConnection["attachmentId"].toString()
+                 && recoveredConnection["revision"].toString() == "1"
+                 && static_cast<int> (recoveredConnection["history"]["undoCount"]) == 1,
+             "recreated editor did not reattach to accepted native history");
+    require (std::abs (hit (edited, 60) + 0.5f) < 0.0001f
+                 && std::abs (hit (edited, 36)) < 0.0001f,
+             "lost-reply edit did not retain its known signed mapping");
+
+    const auto otherRecovered = call (*otherBridge, "getSamplerSession");
+    require (otherRecovered["connection"]["instanceId"].toString()
+                 == otherOriginal["connection"]["instanceId"].toString()
+                 && otherRecovered["connection"]["revision"].toString() == "0"
+                 && static_cast<int> (otherRecovered["connection"]["history"]["undoCount"]) == 0
+                 && std::abs (hit (unaffected, 36) + 0.5f) < 0.0001f
+                 && std::abs (hit (unaffected, 60)) < 0.0001f,
+             "lost reply or editor recreation changed the second instrument");
+
+    const auto undone = waitJob (reopenedBridge, call (reopenedBridge, "undoInstrumentSession",
+        { recoveredConnection["instanceId"], recoveredConnection["attachmentId"],
+          recoveredConnection["nextRequestId"], recoveredConnection["revision"] }),
+        "getInstrumentSessionJobStatus");
+    require (undone["state"].toString() == "completed"
+                 && undone["revision"].toString() == "2"
+                 && static_cast<int> (undone["undoCount"]) == 0,
+             "recreated editor could not invoke recovered native undo");
+    require (std::abs (hit (edited, 36) + 0.5f) < 0.0001f
+                 && std::abs (hit (edited, 60)) < 0.0001f
+                 && std::abs (hit (unaffected, 36) + 0.5f) < 0.0001f,
+             "recovered undo did not restore signed audio independently");
+}
 }
 
 int main (int argc, char** argv)
@@ -73,6 +166,7 @@ int main (int argc, char** argv)
     const juce::ScopedJuceInitialiser_GUI gui;
     try
     {
+        verifyDestroyedBridgeRecoversLostReplyAndUndo();
         DandrumAudioProcessor processor (InstrumentDemoConfiguration::sampler());
         processor.setPlayConfigDetails (0, 2, 48000, 16);
         processor.prepareToPlay (48000, 16);
