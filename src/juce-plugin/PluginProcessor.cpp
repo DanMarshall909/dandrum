@@ -737,26 +737,26 @@ bool DandrumAudioProcessor::createInstrumentSession (std::uint32_t sampleRate,
                                                       std::size_t preparedBlockSize)
 {
     auto* prepared = prepareInstrumentSession (
-        loadedInstrument, sampleRate, preparedBlockSize);
+        loadedInstrument, loadedInstrument.sourceFile, sampleRate, preparedBlockSize);
     if (prepared == nullptr) return false;
     instrumentSession.reset (prepared);
     return true;
 }
 
 DandrumInstrumentSession* DandrumAudioProcessor::prepareInstrumentSession (
-    const LoadedInstrument& instrument, std::uint32_t sampleRate,
-    std::size_t preparedBlockSize)
+    const LoadedInstrument& instrument, const juce::File& preparationFile,
+    std::uint32_t sampleRate, std::size_t preparedBlockSize)
 {
     std::vector<std::string> controlNames;
     std::vector<DandrumKernelBusDeclaration> buses;
-    const auto sourcePath = instrument.sourceFile.getFullPathName().toStdString();
+    const auto sourcePath = preparationFile.getFullPathName().toStdString();
     if (! prepareKernelBusDeclarations (sourcePath, controlNames, buses))
     {
         lastLoadError = "Failed to discover instrument-session host buses";
         return nullptr;
     }
     const auto yaml = instrument.yamlContent.toStdString();
-    const auto root = instrument.sourceFile.getParentDirectory().getFullPathName().toStdString();
+    const auto root = preparationFile.getParentDirectory().getFullPathName().toStdString();
     auto* prepared = dandrum_instrument_session_create (
         reinterpret_cast<const std::uint8_t*> (yaml.data()), yaml.size(), root.c_str(),
         sampleRate, preparedBlockSize, buses.data(), buses.size());
@@ -928,7 +928,8 @@ void DandrumAudioProcessor::installPreparedEngine (
         juce::jmax (1, getBlockSize() > 0 ? getBlockSize() : 512));
     std::unique_ptr<DandrumInstrumentSession, decltype (&dandrum_instrument_session_destroy)>
         candidateSession (
-            prepareInstrumentSession (candidateInstrument, sessionSampleRate, sessionBlockSize),
+            prepareInstrumentSession (candidateInstrument, sourceHint,
+                                      sessionSampleRate, sessionBlockSize),
             &dandrum_instrument_session_destroy);
     if (candidateSession == nullptr)
         throw std::runtime_error (lastLoadError.toStdString());
@@ -946,6 +947,7 @@ void DandrumAudioProcessor::installPreparedEngine (
     // The prior identity/history retire while the accepted document remains
     // immediately attachable by the existing or a reopened editor bridge.
     instrumentSession.swap (candidateSession);
+    instrumentSessionJobHistory.clear();
     lastLoadError.clear();
     if (reloadWarning != nullptr) *reloadWarning = std::move (candidateWarning);
     publishParameterSurface();
@@ -1607,6 +1609,9 @@ void DandrumAudioProcessor::setStateInformation (const void* data, int sizeInByt
     juce::File restoreFile;
 
     DandrumKernelInstrument* candidateKernel = nullptr;
+    LoadedInstrument candidateInstrument;
+    std::unique_ptr<DandrumInstrumentSession, decltype (&dandrum_instrument_session_destroy)>
+        candidateSession (nullptr, &dandrum_instrument_session_destroy);
     if (instrumentYaml.isNotEmpty())
     {
         const auto assetRoot = sourceHint.existsAsFile()
@@ -1623,13 +1628,28 @@ void DandrumAudioProcessor::setStateInformation (const void* data, int sizeInByt
         const auto sampleRate = getSampleRate() > 0.0 ? getSampleRate() : 44100.0;
         const auto blockSize = getBlockSize() > 0 ? getBlockSize() : 512;
         const auto restorePath = restoreFile.getFullPathName().toStdString();
+        const auto preparedSampleRate = static_cast<std::uint32_t> (juce::jmax (1.0, sampleRate));
+        const auto preparedBlockSize = static_cast<std::size_t> (juce::jmax (1, blockSize));
         candidateKernel = prepareKernelWithPublicControls (
-            restorePath, static_cast<std::uint32_t> (juce::jmax (1.0, sampleRate)),
-            static_cast<std::size_t> (juce::jmax (1, blockSize)));
+            restorePath, preparedSampleRate, preparedBlockSize);
         if (candidateKernel == nullptr)
         {
             restoreFile.deleteFile();
             lastLoadError = "Failed to restore embedded instrument from plugin state";
+            return;
+        }
+        juce::String instrumentId;
+        int schema = 0;
+        readInstrumentIdentity (instrumentYaml, instrumentId, schema);
+        candidateInstrument = {
+            sourceHint, instrumentYaml, instrumentId, schema, true
+        };
+        candidateSession.reset (prepareInstrumentSession (
+            candidateInstrument, restoreFile, preparedSampleRate, preparedBlockSize));
+        if (candidateSession == nullptr)
+        {
+            dandrum_kernel_destroy (candidateKernel);
+            restoreFile.deleteFile();
             return;
         }
     }
@@ -1641,19 +1661,13 @@ void DandrumAudioProcessor::setStateInformation (const void* data, int sizeInByt
     {
         auto* previousKernel = kernel.exchange (candidateKernel, std::memory_order_acq_rel);
 
-        juce::String instrumentId;
-        int schema = 0;
-        readInstrumentIdentity (instrumentYaml, instrumentId, schema);
         instrumentLoaded = true;
-        loadedInstrument.sourceFile = sourceHint;
-        loadedInstrument.yamlContent = instrumentYaml;
-        loadedInstrument.instrumentId = instrumentId;
-        loadedInstrument.presetSchemaVersion = schema;
-        loadedInstrument.reprepareFromEmbeddedYaml = true;
-        // Embedded host state becomes the authoritative document. Retire the
-        // previous session before parameter-surface notifications can re-enter
-        // structural admission, so later host preparation cannot republish it.
-        instrumentSession.reset();
+        std::swap (loadedInstrument, candidateInstrument);
+        // Embedded host state becomes the authoritative document and session.
+        // Retire prior identities/outcomes before notifications can re-enter
+        // structural admission.
+        instrumentSession.swap (candidateSession);
+        instrumentSessionJobHistory.clear();
         preparePublicParameterSlots (restoreFile, &lastReloadWarning, true);
         restoreFile.deleteFile();
 

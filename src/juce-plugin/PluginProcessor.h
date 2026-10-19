@@ -435,7 +435,8 @@ private:
     void finishInstrumentReloadJob (UiJobStatus, bool previousMute);
     bool createInstrumentSession (std::uint32_t sampleRate, std::size_t blockSize);
     DandrumInstrumentSession* prepareInstrumentSession (
-        const LoadedInstrument&, std::uint32_t sampleRate, std::size_t blockSize);
+        const LoadedInstrument&, const juce::File& preparationFile,
+        std::uint32_t sampleRate, std::size_t blockSize);
     void runInstrumentSessionJob (std::uint64_t, DandrumInstrumentSessionJob*);
     std::optional<std::uint64_t> requestInstrumentSessionMappingJobInternal (
         std::optional<std::pair<std::uint64_t, std::uint64_t>> connection,

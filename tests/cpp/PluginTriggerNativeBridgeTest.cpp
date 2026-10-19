@@ -158,6 +158,17 @@ int main (int argc, char** argv)
         require (replacedSession["connection"]["instanceId"].toString()
                      != connection["instanceId"].toString(),
                  "whole-document edit retained its retired session identity");
+        const auto replacementConnection = replacedSession["connection"];
+        const auto remapped = waitJob (bridge, call (bridge, "setInstrumentZoneKeyRange",
+            { replacementConnection["instanceId"], replacementConnection["attachmentId"],
+              replacementConnection["nextRequestId"], replacementConnection["revision"],
+              juce::var ("kit"), juce::var ("kick"), juce::var (61), juce::var (61) }),
+            "getInstrumentSessionJobStatus");
+        require (remapped["state"].toString() == "completed"
+                     && remapped["revision"].toString() == "1",
+                 "replacement session request one resolved to a retired outcome");
+        require (std::abs (hit (processor, 61) + 0.5f) < 0.0001f,
+                 "replacement session request one did not render signed sample");
         const auto activeGeneration = processor.getParameterSurfaceGeneration();
         const auto rejected = call (bridge, "prepareSampler", { original, resumedGeneration });
         require (rejected.isString(), "stale generation accepted");
@@ -165,7 +176,7 @@ int main (int argc, char** argv)
             { juce::var ("invalid: ["), juce::var (static_cast<juce::int64> (activeGeneration)) }));
         require (failed["state"].toString() == "failed", "invalid YAML accepted");
         require (processor.getParameterSurfaceGeneration() == activeGeneration, "failure changed generation");
-        require (std::abs (hit (processor, 60) + 0.5f) < 0.0001f, "failed edit lost working sample");
+        require (std::abs (hit (processor, 61) + 0.5f) < 0.0001f, "failed edit lost working sample");
         const auto undo = waitJob (bridge, call (bridge, "prepareSampler",
             { original, static_cast<juce::int64> (activeGeneration) }));
         require (undo["state"].toString() == "completed", "inverse edit failed");

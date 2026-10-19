@@ -243,12 +243,55 @@ void sessionHandoff()
     restorePreparation.released = true;
     stateRestore.get();
     preparationRecording = nullptr;
-    const auto restoreRace = processor.getInstrumentSessionJobStatus (*restoreRaceId);
-    require (restoreWaitedForWorker && restoreRace
-                 && restoreRace->state == DandrumAudioProcessor::UiJobState::completed,
-             "Host state restore discarded or bypassed admitted session work");
-    require (! processor.getInstrumentSessionSnapshot(),
-             "Host state restore retained a stale persistent session");
+    require (restoreWaitedForWorker,
+             "Host state restore bypassed an admitted session worker");
+    const auto restoredSession = processor.getInstrumentSessionSnapshot();
+    require (restoredSession && restoredSession->revision == 0
+                 && restoredSession->undoCount == 0 && restoredSession->redoCount == 0
+                 && restoredSession->yaml == editedYaml.toStdString(),
+             "Host state restore did not publish a fresh attachable session");
+    const auto restoredConnection = processor.openInstrumentSessionConnection();
+    require (restoredConnection && restoredConnection->revision == 0
+                 && restoredConnection->nextRequestId == 1,
+             "React connection was unavailable immediately after state restore");
+    const auto restoredMap = processor.requestInstrumentSessionMappingJobForConnection (
+        restoredConnection->instanceId, restoredConnection->attachmentId,
+        restoredConnection->nextRequestId, restoredConnection->revision,
+        "kit", "kick", 64, 64);
+    require (restoredMap && *restoredMap == 1,
+             "Restored React connection rejected its first mapping");
+    std::optional<DandrumAudioProcessor::InstrumentSessionJobStatus> restoredMapped;
+    await ([&] {
+        restoredMapped = processor.getInstrumentSessionJobStatus (*restoredMap);
+        return restoredMapped && restoredMapped->state != DandrumAudioProcessor::UiJobState::running;
+    }, "Restored React mapping did not complete");
+    require (restoredMapped->state == DandrumAudioProcessor::UiJobState::completed
+                 && std::bit_cast<std::uint32_t> (renderOnset (processor, 64, 128))
+                        == std::bit_cast<std::uint32_t> (-0.5f),
+             "Restored React mapping did not publish known signed output");
+    const auto mappedConnection = processor.getInstrumentSessionConnectionSnapshot (
+        restoredConnection->instanceId, restoredConnection->attachmentId);
+    require (mappedConnection && mappedConnection->revision == 1
+                 && mappedConnection->nextRequestId == 2,
+             "Restored React mapping did not advance connection identity");
+    const auto restoredUndo = processor.requestInstrumentSessionUndoJob (
+        mappedConnection->instanceId, mappedConnection->attachmentId,
+        mappedConnection->nextRequestId, mappedConnection->revision);
+    require (restoredUndo && *restoredUndo == 2,
+             "Restored React connection rejected native undo");
+    std::optional<DandrumAudioProcessor::InstrumentSessionJobStatus> restoredUndone;
+    await ([&] {
+        restoredUndone = processor.getInstrumentSessionJobStatus (*restoredUndo);
+        return restoredUndone && restoredUndone->state != DandrumAudioProcessor::UiJobState::running;
+    }, "Restored React undo did not complete");
+    require (restoredUndone->state == DandrumAudioProcessor::UiJobState::completed
+                 && restoredUndone->undoCount == 0 && restoredUndone->redoCount == 1
+                 && std::bit_cast<std::uint32_t> (renderOnset (processor, 62, 128))
+                        == std::bit_cast<std::uint32_t> (-0.5f),
+             "Restored React undo did not recover the saved signed mapping");
+    require (processor.closeInstrumentSessionConnection (
+                 mappedConnection->instanceId, mappedConnection->attachmentId),
+             "Restored React connection did not close");
     processor.setRateAndBufferSizeDetails (48000, 128);
     processor.prepareToPlay (48000, 128);
     const auto restoredDocument = processor.getPreparedUiDocument();
@@ -314,6 +357,59 @@ void admittedUndoSurvivesConnectionClosure()
                  == std::bit_cast<std::uint32_t> (-0.5f),
              "Detached native undo did not restore known signed output");
 }
+
+void replacementRetiresRequestOutcomes()
+{
+    DandrumAudioProcessor processor (InstrumentDemoConfiguration::sampler());
+    processor.setFileWatchEnabled (false);
+    processor.setRateAndBufferSizeDetails (48000, 64);
+    processor.prepareToPlay (48000, 64);
+    const auto initial = processor.getInstrumentSessionSnapshot();
+    require (initial.has_value(), "Request collision fixture did not create a session");
+    const auto first = processor.requestInstrumentSessionMappingJob (
+        1, initial->revision, "kit", "kick", 60, 60);
+    require (first && *first == 1, "Request collision fixture rejected old request one");
+    await ([&] {
+        const auto status = processor.getInstrumentSessionJobStatus (*first);
+        return status && status->state != DandrumAudioProcessor::UiJobState::running;
+    }, "Old request one did not complete");
+
+    const auto reload = processor.requestInstrumentReloadJob (
+        processor.currentInstrumentFile(), processor.getParameterSurfaceGeneration(),
+        processor.currentInstrumentYaml());
+    require (reload.has_value(), "Whole-document replacement was not admitted");
+    await ([&] {
+        const auto status = processor.getInstrumentUiJobStatus (*reload);
+        return status && status->state != DandrumAudioProcessor::UiJobState::running;
+    }, "Whole-document replacement did not complete");
+    const auto replacement = processor.getInstrumentSessionSnapshot();
+    require (replacement && replacement->revision == 0,
+             "Whole-document replacement did not create a fresh session");
+
+    PreparationBarrier preparation;
+    preparationRecording = &preparation;
+    preparation.armed = true;
+    const auto next = processor.requestInstrumentSessionMappingJob (
+        1, replacement->revision, "kit", "kick", 61, 61);
+    require (next && *next == 1, "Fresh session rejected its own request one");
+    await ([&] { return preparation.entered.load(); },
+           "Fresh request one did not reach held preparation");
+    const auto held = processor.getInstrumentSessionJobStatus (*next);
+    require (held && held->state == DandrumAudioProcessor::UiJobState::running,
+             "Fresh request one resolved to a retired session outcome");
+    preparation.released = true;
+    std::optional<DandrumAudioProcessor::InstrumentSessionJobStatus> completed;
+    await ([&] {
+        completed = processor.getInstrumentSessionJobStatus (*next);
+        return completed && completed->state != DandrumAudioProcessor::UiJobState::running;
+    }, "Fresh request one did not complete");
+    preparationRecording = nullptr;
+    require (completed->state == DandrumAudioProcessor::UiJobState::completed
+                 && completed->revision == 1
+                 && std::bit_cast<std::uint32_t> (renderOnset (processor, 61))
+                        == std::bit_cast<std::uint32_t> (-0.5f),
+             "Fresh request one did not publish its own status and signed output");
+}
 }
 
 extern "C" int __real_pthread_mutex_lock (pthread_mutex_t*);
@@ -377,6 +473,7 @@ int main()
     {
         sessionHandoff();
         admittedUndoSurvivesConnectionClosure();
+        replacementRetiresRequestOutcomes();
     }
     catch (const std::exception& error)
     {
