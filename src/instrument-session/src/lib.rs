@@ -12,9 +12,11 @@ use std::{
     sync::{Arc, Weak},
 };
 
-const ATTACHMENT_LIMIT: usize = 16;
-const HISTORY_LIMIT: usize = 100;
-const OUTCOME_LIMIT: usize = 128;
+pub const CONNECTION_CONTRACT_VERSION: u32 = 1;
+pub const ATTACHMENT_LIMIT: usize = 16;
+pub const HISTORY_LIMIT: usize = 100;
+pub const OUTCOME_LIMIT: usize = 128;
+pub const ACTIVE_REQUEST_LIMIT: usize = 1;
 
 /// An opaque lifetime identity, never a serialized pointer or platform handle.
 #[derive(Clone, Debug)]
@@ -312,6 +314,20 @@ impl InstrumentSession {
     ) -> Result<MappingAdmission, SessionError> {
         self.attachment_index(attachment)
             .ok_or(SessionError::InvalidAttachment)?;
+        self.admit_mapping_request(request)
+    }
+
+    pub(crate) fn admit_mapping_owned(
+        &mut self,
+        request: MappingRequest,
+    ) -> Result<MappingAdmission, SessionError> {
+        self.admit_mapping_request(request)
+    }
+
+    fn admit_mapping_request(
+        &mut self,
+        request: MappingRequest,
+    ) -> Result<MappingAdmission, SessionError> {
         if request.instance != self.identity {
             return Err(SessionError::InvalidRequestInstance);
         }
@@ -484,6 +500,14 @@ impl InstrumentSession {
     ) -> Result<PreparedRenderConfiguration, SessionError> {
         self.attachment_index(attachment)
             .ok_or(SessionError::InvalidAttachment)?;
+        self.prepare_render_configuration_owned(settings, host_buses)
+    }
+
+    pub(crate) fn prepare_render_configuration_owned(
+        &self,
+        settings: RenderSettings,
+        host_buses: HostBuses,
+    ) -> Result<PreparedRenderConfiguration, SessionError> {
         self.ensure_idle()?;
         let context =
             PreparationContext::new(self.context.document_root(), settings.sample_rate_hz)
@@ -838,6 +862,42 @@ impl InstrumentSession {
         self.attachment_index(attachment)
             .ok_or(SessionError::InvalidAttachment)?;
         Ok(self.accepted_snapshot())
+    }
+
+    pub(crate) fn owner_snapshot(&self) -> SessionSnapshot {
+        self.accepted_snapshot()
+    }
+
+    pub fn next_request_id(&self) -> Result<RequestId, SessionError> {
+        self.highest_request_id.map_or(Ok(RequestId(1)), |highest| {
+            highest
+                .0
+                .checked_add(1)
+                .map(RequestId)
+                .ok_or(SessionError::RevisionExhausted)
+        })
+    }
+
+    pub(crate) fn reserve_control_request(
+        &mut self,
+        attachment: &Attachment,
+        request_id: RequestId,
+        expected_revision: u64,
+    ) -> Result<(), SessionError> {
+        self.attachment_index(attachment)
+            .ok_or(SessionError::InvalidAttachment)?;
+        self.ensure_idle()?;
+        if self
+            .highest_request_id
+            .is_some_and(|highest| request_id <= highest)
+        {
+            return Err(SessionError::RetiredRequest);
+        }
+        if expected_revision != self.accepted.revision {
+            return Err(SessionError::StaleRequest);
+        }
+        self.highest_request_id = Some(request_id);
+        Ok(())
     }
 
     pub fn prepared(&self) -> &PreparedKernelInstrument {

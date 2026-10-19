@@ -1,7 +1,8 @@
 use crate::{
-    ActivationHost, ActivationLease, Attachment, InstrumentSession, MappingAdmission, MappingJob,
-    MappingRequest, PreparedMappingJob, Publication, RequestFailure, RequestId, SessionError,
-    SessionSnapshot, SetZoneKeyRange,
+    ACTIVE_REQUEST_LIMIT, ATTACHMENT_LIMIT, ActivationHost, ActivationLease,
+    CONNECTION_CONTRACT_VERSION, HISTORY_LIMIT, InstrumentSession, MappingAdmission, MappingJob,
+    MappingRequest, OUTCOME_LIMIT, PreparedMappingJob, Publication, RequestFailure, RequestId,
+    SessionError, SessionSnapshot, SetZoneKeyRange,
 };
 use dandrum_engine::{
     ffi::{
@@ -16,11 +17,21 @@ use std::{
     ffi::{CStr, c_char, c_void},
     path::PathBuf,
     ptr,
+    sync::atomic::{AtomicU64, Ordering},
 };
+
+static NEXT_SESSION_ID: AtomicU64 = AtomicU64::new(1);
+
+struct NativeConnection {
+    id: u64,
+    attachment: crate::Attachment,
+}
 
 pub struct DandrumInstrumentSession {
     session: InstrumentSession,
-    attachment: Attachment,
+    instance_id: u64,
+    next_attachment_id: u64,
+    connections: Vec<NativeConnection>,
     sample_rate_hz: u32,
     max_block_size: usize,
     buses: Vec<PlanarBusDeclaration>,
@@ -36,10 +47,19 @@ pub struct DandrumInstrumentSessionJob {
 }
 
 #[repr(C)]
+#[derive(Clone, Copy)]
 pub struct DandrumInstrumentSessionSnapshot {
+    pub contract_version: u32,
+    pub instance_id: u64,
+    pub attachment_id: u64,
     pub revision: u64,
+    pub next_request_id: u64,
     pub undo_count: usize,
     pub redo_count: usize,
+    pub attachment_limit: usize,
+    pub history_limit: usize,
+    pub outcome_limit: usize,
+    pub active_request_limit: usize,
     pub yaml_size: usize,
 }
 
@@ -256,17 +276,57 @@ unsafe fn bus_declarations(
         .collect()
 }
 
-fn fill_snapshot(value: &SessionSnapshot, output: *mut DandrumInstrumentSessionSnapshot) -> bool {
+fn fill_snapshot(
+    session: &DandrumInstrumentSession,
+    attachment_id: u64,
+    value: &SessionSnapshot,
+    output: *mut DandrumInstrumentSessionSnapshot,
+) -> bool {
     let Some(output) = (unsafe { output.as_mut() }) else {
         return false;
     };
     *output = DandrumInstrumentSessionSnapshot {
+        contract_version: CONNECTION_CONTRACT_VERSION,
+        instance_id: session.instance_id,
+        attachment_id,
         revision: value.revision,
+        next_request_id: match session.session.next_request_id() {
+            Ok(id) => id.0,
+            Err(_) => return false,
+        },
         undo_count: value.undo_len,
         redo_count: value.redo_len,
+        attachment_limit: ATTACHMENT_LIMIT,
+        history_limit: HISTORY_LIMIT,
+        outcome_limit: OUTCOME_LIMIT,
+        active_request_limit: ACTIVE_REQUEST_LIMIT,
         yaml_size: value.yaml.len(),
     };
     true
+}
+
+fn allocate_session_id() -> Option<u64> {
+    NEXT_SESSION_ID
+        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
+            value.checked_add(1)
+        })
+        .ok()
+}
+
+fn connection(
+    session: &DandrumInstrumentSession,
+    instance_id: u64,
+    attachment_id: u64,
+) -> Option<crate::Attachment> {
+    (session.instance_id == instance_id)
+        .then(|| {
+            session
+                .connections
+                .iter()
+                .find(|connection| connection.id == attachment_id)
+                .map(|connection| connection.attachment.clone())
+        })
+        .flatten()
 }
 
 fn write_error(message: &str, output: *mut c_char, capacity: usize) {
@@ -318,17 +378,18 @@ pub unsafe extern "C" fn dandrum_instrument_session_create(
     if let Ok(roots) = dandrum_engine::module_library::default_host_macro_roots() {
         context = context.with_macro_roots(roots);
     }
-    let Ok(mut session) =
-        InstrumentSession::new_for_planar_host(yaml, context, settings, host_buses)
+    let Ok(session) = InstrumentSession::new_for_planar_host(yaml, context, settings, host_buses)
     else {
         return ptr::null_mut();
     };
-    let Ok((attachment, _)) = session.attach() else {
+    let Some(instance_id) = allocate_session_id() else {
         return ptr::null_mut();
     };
     Box::into_raw(Box::new(DandrumInstrumentSession {
         session,
-        attachment,
+        instance_id,
+        next_attachment_id: 1,
+        connections: Vec::with_capacity(ATTACHMENT_LIMIT),
         sample_rate_hz,
         max_block_size,
         buses,
@@ -352,10 +413,81 @@ pub unsafe extern "C" fn dandrum_instrument_session_snapshot(
     let Some(session) = (unsafe { session.as_ref() }) else {
         return false;
     };
+    fill_snapshot(session, 0, &session.session.owner_snapshot(), output)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_instrument_session_connect(
+    session: *mut DandrumInstrumentSession,
+    output: *mut DandrumInstrumentSessionSnapshot,
+) -> bool {
+    let Some(session) = (unsafe { session.as_mut() }) else {
+        return false;
+    };
+    let Some(next_attachment_id) = session.next_attachment_id.checked_add(1) else {
+        return false;
+    };
+    let Ok((attachment, snapshot)) = session.session.attach() else {
+        return false;
+    };
+    let attachment_id = session.next_attachment_id;
+    session.next_attachment_id = next_attachment_id;
+    session.connections.push(NativeConnection {
+        id: attachment_id,
+        attachment,
+    });
+    if fill_snapshot(session, attachment_id, &snapshot, output) {
+        true
+    } else {
+        let connection = session
+            .connections
+            .pop()
+            .expect("connection was just appended");
+        let _ = session.session.detach(&connection.attachment);
+        false
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_instrument_session_disconnect(
+    session: *mut DandrumInstrumentSession,
+    instance_id: u64,
+    attachment_id: u64,
+) -> bool {
+    let Some(session) = (unsafe { session.as_mut() }) else {
+        return false;
+    };
+    if session.instance_id != instance_id {
+        return false;
+    }
+    let Some(index) = session
+        .connections
+        .iter()
+        .position(|connection| connection.id == attachment_id)
+    else {
+        return false;
+    };
+    let connection = session.connections.swap_remove(index);
+    session.session.detach(&connection.attachment).is_ok()
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_instrument_session_connection_snapshot(
+    session: *const DandrumInstrumentSession,
+    instance_id: u64,
+    attachment_id: u64,
+    output: *mut DandrumInstrumentSessionSnapshot,
+) -> bool {
+    let Some(session) = (unsafe { session.as_ref() }) else {
+        return false;
+    };
+    let Some(attachment) = connection(session, instance_id, attachment_id) else {
+        return false;
+    };
     session
         .session
-        .snapshot(&session.attachment)
-        .is_ok_and(|snapshot| fill_snapshot(&snapshot, output))
+        .snapshot(&attachment)
+        .is_ok_and(|snapshot| fill_snapshot(session, attachment_id, &snapshot, output))
 }
 
 #[unsafe(no_mangle)]
@@ -367,9 +499,7 @@ pub unsafe extern "C" fn dandrum_instrument_session_copy_yaml(
     let Some(session) = (unsafe { session.as_ref() }) else {
         return false;
     };
-    let Ok(snapshot) = session.session.snapshot(&session.attachment) else {
-        return false;
-    };
+    let snapshot = session.session.owner_snapshot();
     if capacity != snapshot.yaml.len() || (capacity > 0 && output.is_null()) {
         return false;
     }
@@ -402,7 +532,72 @@ pub unsafe extern "C" fn dandrum_instrument_session_admit_mapping(
         write_error("invalid UTF-8 mapping identity", error, error_capacity);
         return ptr::null_mut();
     };
-    let snapshot = match session.session.snapshot(&session.attachment) {
+    let snapshot = session.session.owner_snapshot();
+    let request = MappingRequest {
+        instance: snapshot.instance,
+        request_id: RequestId(request_id),
+        expected_revision,
+        intent: SetZoneKeyRange {
+            map_id: map_id.into(),
+            zone_id: zone_id.into(),
+            key_range: [key_low, key_high],
+        },
+    };
+    match session.session.admit_mapping_owned(request) {
+        Ok(MappingAdmission::Admitted(job)) => {
+            Box::into_raw(Box::new(DandrumInstrumentSessionJob {
+                state: Some(JobState::Admitted(job)),
+            }))
+        }
+        Ok(MappingAdmission::Pending) => {
+            write_error("mapping request is already pending", error, error_capacity);
+            ptr::null_mut()
+        }
+        Ok(MappingAdmission::Completed(_)) => {
+            write_error("mapping request already completed", error, error_capacity);
+            ptr::null_mut()
+        }
+        Err(reason) => {
+            write_error(&format!("{reason:?}"), error, error_capacity);
+            ptr::null_mut()
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_instrument_session_admit_mapping_for_connection(
+    session: *mut DandrumInstrumentSession,
+    instance_id: u64,
+    attachment_id: u64,
+    request_id: u64,
+    expected_revision: u64,
+    map_id: *const u8,
+    map_id_size: usize,
+    zone_id: *const u8,
+    zone_id_size: usize,
+    key_low: u8,
+    key_high: u8,
+    error: *mut c_char,
+    error_capacity: usize,
+) -> *mut DandrumInstrumentSessionJob {
+    let Some(session) = (unsafe { session.as_mut() }) else {
+        write_error("invalid instrument session", error, error_capacity);
+        return ptr::null_mut();
+    };
+    let Some(attachment) = connection(session, instance_id, attachment_id) else {
+        write_error(
+            "invalid instrument session connection",
+            error,
+            error_capacity,
+        );
+        return ptr::null_mut();
+    };
+    let (Some(map_id), Some(zone_id)) = (bytes(map_id, map_id_size), bytes(zone_id, zone_id_size))
+    else {
+        write_error("invalid UTF-8 mapping identity", error, error_capacity);
+        return ptr::null_mut();
+    };
+    let snapshot = match session.session.snapshot(&attachment) {
         Ok(snapshot) => snapshot,
         Err(reason) => {
             write_error(&format!("{reason:?}"), error, error_capacity);
@@ -419,7 +614,7 @@ pub unsafe extern "C" fn dandrum_instrument_session_admit_mapping(
             key_range: [key_low, key_high],
         },
     };
-    match session.session.admit_mapping(&session.attachment, request) {
+    match session.session.admit_mapping(&attachment, request) {
         Ok(MappingAdmission::Admitted(job)) => {
             Box::into_raw(Box::new(DandrumInstrumentSessionJob {
                 state: Some(JobState::Admitted(job)),
@@ -562,6 +757,72 @@ pub unsafe extern "C" fn dandrum_instrument_session_complete_job(
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_instrument_session_undo(
+    session: *mut DandrumInstrumentSession,
+    instance_id: u64,
+    attachment_id: u64,
+    request_id: u64,
+    expected_revision: u64,
+    callbacks: *const DandrumInstrumentSessionHostCallbacks,
+    context: *mut c_void,
+    revision: *mut u64,
+    undo_count: *mut usize,
+    redo_count: *mut usize,
+    error: *mut c_char,
+    error_capacity: usize,
+) -> bool {
+    let Some(session) = (unsafe { session.as_mut() }) else {
+        write_error("invalid instrument session", error, error_capacity);
+        return false;
+    };
+    let Some(attachment) = connection(session, instance_id, attachment_id) else {
+        write_error(
+            "invalid instrument session connection",
+            error,
+            error_capacity,
+        );
+        return false;
+    };
+    let Some(callbacks) = (unsafe { callbacks.as_ref() }).and_then(required_callbacks) else {
+        write_error("invalid native activation callbacks", error, error_capacity);
+        return false;
+    };
+    if revision.is_null() || undo_count.is_null() || redo_count.is_null() {
+        write_error("invalid session undo output", error, error_capacity);
+        return false;
+    }
+    if let Err(reason) = session.session.reserve_control_request(
+        &attachment,
+        RequestId(request_id),
+        expected_revision,
+    ) {
+        write_error(&format!("{reason:?}"), error, error_capacity);
+        return false;
+    }
+    let mut host = NativeHost {
+        callbacks,
+        context,
+        sample_rate_hz: session.sample_rate_hz,
+        max_block_size: session.max_block_size,
+        buses: &session.buses,
+    };
+    match session.session.undo(&attachment, &mut host) {
+        Ok(snapshot) => {
+            unsafe {
+                *revision = snapshot.revision;
+                *undo_count = snapshot.undo_len;
+                *redo_count = snapshot.redo_len;
+            }
+            true
+        }
+        Err(reason) => {
+            write_error(&format!("{reason:?}"), error, error_capacity);
+            false
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_instrument_session_reconfigure(
     session: *mut DandrumInstrumentSession,
     sample_rate_hz: u32,
@@ -612,11 +873,10 @@ pub unsafe extern "C" fn dandrum_instrument_session_reconfigure(
         );
         return false;
     }
-    let candidate = match session.session.prepare_render_configuration(
-        &session.attachment,
-        settings,
-        host_buses,
-    ) {
+    let candidate = match session
+        .session
+        .prepare_render_configuration_owned(settings, host_buses)
+    {
         Ok(candidate) => candidate,
         Err(reason) => {
             write_error(&format!("{reason:?}"), error, error_capacity);
@@ -766,16 +1026,51 @@ mod tests {
         };
         assert!(!session.is_null());
         let mut snapshot = DandrumInstrumentSessionSnapshot {
+            contract_version: 0,
+            instance_id: 0,
+            attachment_id: u64::MAX,
             revision: u64::MAX,
+            next_request_id: 0,
             undo_count: usize::MAX,
             redo_count: usize::MAX,
+            attachment_limit: 0,
+            history_limit: 0,
+            outcome_limit: 0,
+            active_request_limit: 0,
             yaml_size: 0,
         };
         assert!(unsafe { dandrum_instrument_session_snapshot(session, &mut snapshot) });
+        assert_eq!(snapshot.contract_version, 1);
+        assert_ne!(snapshot.instance_id, 0);
+        assert_eq!(snapshot.attachment_id, 0);
+        assert_eq!(snapshot.next_request_id, 1);
+        assert_eq!(
+            (
+                snapshot.attachment_limit,
+                snapshot.history_limit,
+                snapshot.outcome_limit,
+                snapshot.active_request_limit,
+            ),
+            (16, 100, 128, 1)
+        );
         assert_eq!(
             (snapshot.revision, snapshot.undo_count, snapshot.redo_count),
             (0, 0, 0)
         );
+        let mut connection = snapshot;
+        assert!(unsafe { dandrum_instrument_session_connect(session, &mut connection) });
+        assert_eq!(connection.instance_id, snapshot.instance_id);
+        assert_ne!(connection.attachment_id, 0);
+        let attachment_id = connection.attachment_id;
+        assert!(unsafe {
+            dandrum_instrument_session_connection_snapshot(
+                session,
+                connection.instance_id,
+                attachment_id,
+                &mut connection,
+            )
+        });
+        assert_eq!(connection.attachment_id, attachment_id);
         let mut copied = vec![0; snapshot.yaml_size];
         assert!(unsafe {
             dandrum_instrument_session_copy_yaml(session, copied.as_mut_ptr(), copied.len())
@@ -797,8 +1092,10 @@ mod tests {
         };
         let mut error = [0; 256];
         let job = unsafe {
-            dandrum_instrument_session_admit_mapping(
+            dandrum_instrument_session_admit_mapping_for_connection(
                 session,
+                connection.instance_id,
+                attachment_id,
                 1,
                 0,
                 b"kit".as_ptr(),
@@ -812,6 +1109,17 @@ mod tests {
             )
         };
         assert!(!job.is_null());
+        assert!(unsafe {
+            dandrum_instrument_session_disconnect(session, connection.instance_id, attachment_id)
+        });
+        assert!(!unsafe {
+            dandrum_instrument_session_connection_snapshot(
+                session,
+                connection.instance_id,
+                attachment_id,
+                &mut connection,
+            )
+        });
         assert!(unsafe { dandrum_instrument_session_prepare_job(job) });
         assert!(!unsafe { dandrum_instrument_session_prepare_job(job) });
         let mut revision = 0;
@@ -985,6 +1293,35 @@ mod tests {
             (snapshot.revision, snapshot.undo_count, snapshot.redo_count),
             (1, 1, 0)
         );
+
+        host.reject = false;
+        assert!(unsafe { dandrum_instrument_session_connect(session, &mut connection) });
+        assert!(unsafe {
+            dandrum_instrument_session_undo(
+                session,
+                connection.instance_id,
+                connection.attachment_id,
+                5,
+                1,
+                &callbacks,
+                (&mut host as *mut TestHost).cast(),
+                &mut revision,
+                &mut undo_count,
+                &mut redo_count,
+                error.as_mut_ptr(),
+                error.len(),
+            )
+        });
+        assert_eq!((revision, undo_count, redo_count), (2, 0, 1));
+        assert!(unsafe {
+            dandrum_instrument_session_connection_snapshot(
+                session,
+                connection.instance_id,
+                connection.attachment_id,
+                &mut connection,
+            )
+        });
+        assert_eq!(connection.next_request_id, 6);
 
         unsafe { dandrum_instrument_session_destroy(session) };
     }

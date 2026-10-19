@@ -6,7 +6,10 @@ use dandrum_engine::patch::RenderSettings;
 use dandrum_engine::preparation::{
     HostBuses, PreparationContext, PreparedKernelInstrument, prepare_kernel_patch_with_context,
 };
-use dandrum_instrument_session::{InstrumentSession, SessionError, SetZoneKeyRange};
+use dandrum_instrument_session::{
+    ACTIVE_REQUEST_LIMIT, ATTACHMENT_LIMIT, CONNECTION_CONTRACT_VERSION, HISTORY_LIMIT,
+    InstrumentSession, OUTCOME_LIMIT, SessionError, SetZoneKeyRange,
+};
 use std::path::PathBuf;
 
 fn fixture() -> (String, PreparationContext, RenderSettings) {
@@ -105,6 +108,15 @@ fn existing_sampler_baseline_uses_real_assets_and_signed_key_mapping() {
         patch.sample_assets().sample_maps[0].zones[0].id.as_deref(),
         Some("kick")
     );
+}
+
+#[test]
+fn connection_contract_version_and_resource_bounds_are_stable() {
+    assert_eq!(CONNECTION_CONTRACT_VERSION, 1);
+    assert_eq!(ATTACHMENT_LIMIT, 16);
+    assert_eq!(HISTORY_LIMIT, 100);
+    assert_eq!(OUTCOME_LIMIT, 128);
+    assert_eq!(ACTIVE_REQUEST_LIMIT, 1);
 }
 
 #[test]
