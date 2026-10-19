@@ -486,3 +486,9 @@ change and all 51 canonical specs, the 618/379/239 acceptance-coverage gate, all
 33 receipt hashes and both retained comparison-artifact hashes. This completes
 the bounded retained-JUCE session increment; archive and normal publication do
 not complete the larger JUCE-free beta goal.
+
+The completed `add-persistent-instrument-session` change is archived at
+`openspec/changes/archive/2026-10-19-add-persistent-instrument-session`. Its five
+requirements and nine scenarios were already synchronized into the canonical
+specification before archival. All artifacts and all 11 tasks were complete;
+no incomplete-work warning or sync exception applies.

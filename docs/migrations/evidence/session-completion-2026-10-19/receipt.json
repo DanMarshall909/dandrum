@@ -18,8 +18,7 @@
     "web/trigger/package-lock.json": "07d6d015bc9148c1f55f3146f38200f835727c0fc4bbe19cf7a415529ba342d9",
     "openspec/specs/instrument-session/spec.md": "309c9bce5ace132705755d4b098655f82070424504f1468bd154efc00bbff93a",
     "spec-tests.map": "10f9888d5e9d9d662695ce6ec640fa8b87868ac2cd47342cf03bc6e333aa29be",
-    "openspec/changes/add-persistent-instrument-session/tasks.md": "af87d071db6e0ec0e05d6863874a82647971b88498c116de0593d9858fb46a86",
-    "docs/migrations/juce-replacement-progress.md": "b9da9d8f5d4f89af4c09105bf25c1b7ba3f64c974615656a2bbc0070db905fb9",
+    "docs/migrations/juce-replacement-progress.md": "c328ece55fc1c0430da19196696352fb4248d8d75b3fb0a1b28b57fb1be0e7b3",
     "docs/migrations/evidence/session-completion-2026-10-19/build.log": "c1a839933704760eb5c692080c93eee9794cae53d345ba17eb4214ff22442ff9",
     "docs/migrations/evidence/session-completion-2026-10-19/coverage-missing.txt": "0768cbdd82474e178bd25bc28d68335ef79a114ca49c9d05aeee2a7f9104d14b",
     "docs/migrations/evidence/session-completion-2026-10-19/coverage-summary.json": "eed2ffc32b3dc44a52c5904f496bd3636e1557dc0bf453fa0097305ba497b665",
@@ -35,7 +34,8 @@
     "docs/migrations/evidence/session-completion-2026-10-19/review-retired-undo-build.log": "62956e438198620396552db18e0979cd450f94ada2e5c23f49b7b1f91bd979ec",
     "docs/migrations/evidence/session-completion-2026-10-19/review-retired-undo-native-green.log": "6d637522ff9ac27e615d1732db715c1ce35f6ce48dde186afbef59747b762e32",
     "docs/migrations/evidence/session-completion-2026-10-19/review-retired-undo-web-green.log": "8445ef245d00e592bae1d86873e88668dbc7bbb1530423c5b2d1604cc24724de",
-    "docs/migrations/evidence/session-completion-2026-10-19/task-4.2-independent-review.md": "51ffbc9ddd00d050d8398e6e955d24ab193475f4eaac861435945aa361b0cd96"
+    "docs/migrations/evidence/session-completion-2026-10-19/task-4.2-independent-review.md": "51ffbc9ddd00d050d8398e6e955d24ab193475f4eaac861435945aa361b0cd96",
+    "openspec/changes/archive/2026-10-19-add-persistent-instrument-session/tasks.md": "af87d071db6e0ec0e05d6863874a82647971b88498c116de0593d9858fb46a86"
   },
   "preflight": {
     "free_space": "65 GiB available on the 478 GiB filesystem before coverage and full builds",
@@ -133,7 +133,7 @@
   "specification": {
     "progress": "11/11 tasks complete after the independent task-4.2 PASS and this closure record are committed.",
     "canonical": "All nine instrument-session scenarios remain mapped at 618 total criteria / 379 tested / 239 unchanged todo backlog. The failed preparation/activation scenario now names the Rust invalid/ambiguous-intent preservation test and concrete C++ session consumer in addition to sample-repreparation and activation-rollback tests.",
-    "remaining": "Archive the already-synced change and normally publish the focused branch commits."
+    "remaining": "Normally publish the focused archived branch, then begin the next JUCE-free beta increment."
   },
   "limits": [
     "The retained native comparison still uses JUCE and therefore does not satisfy the final framework-removal goal.",
@@ -156,5 +156,20 @@
     "fresh_checks": "29/29 session tests plus formatting and Clippy; native session/link 2/2; Trigger bridge/actual packaged WebView 2/2 without skip; strict change and 51/51 canonical specs; spec coverage 618/379/239; 33/33 prior receipt hashes plus both artifact hashes and whitespace checks.",
     "scope_limit": "Completes the retained JUCE comparison session increment only; the larger JUCE-free beta remains open.",
     "publication_guard": "Closure edits are limited to review/status records, archive bookkeeping and corresponding hashes. Implementation changes require re-review."
+  },
+  "archive": {
+    "change": "add-persistent-instrument-session",
+    "schema": "spec-driven",
+    "path": "openspec/changes/archive/2026-10-19-add-persistent-instrument-session",
+    "artifacts": "All planning artifacts complete.",
+    "tasks": "11/11 complete.",
+    "specs": "Five requirements and nine scenarios were already synchronized to openspec/specs/instrument-session/spec.md before archival.",
+    "warnings": "None.",
+    "post_validation": {
+      "canonical_specs": "51/51 passed with openspec validate --specs --strict.",
+      "spec_coverage": "618 total / 379 mapped / 239 unchanged backlog passed.",
+      "archive_inventory": "Proposal, design, delta spec, tasks and .openspec.yaml retained; tasks remain 11/11 complete.",
+      "aggregate_note": "openspec validate --all --strict reported 74 passed and three unrelated pre-existing active-change failures: add-creative-sampling, add-sample-streaming and add-workstation-sampling."
+    }
   }
 }
