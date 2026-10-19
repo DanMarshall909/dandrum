@@ -437,8 +437,6 @@ private:
     DandrumInstrumentSession* prepareInstrumentSession (
         const LoadedInstrument&, std::uint32_t sampleRate, std::size_t blockSize);
     void runInstrumentSessionJob (std::uint64_t, DandrumInstrumentSessionJob*);
-    void runInstrumentSessionUndoJob (std::uint64_t, std::uint64_t, std::uint64_t,
-                                      std::uint64_t);
     std::optional<std::uint64_t> requestInstrumentSessionMappingJobInternal (
         std::optional<std::pair<std::uint64_t, std::uint64_t>> connection,
         std::uint64_t requestId, std::uint64_t expectedRevision,

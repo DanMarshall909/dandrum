@@ -210,6 +210,7 @@ pub struct PreparedRenderConfiguration {
 /// Owned preparation work. It can move to a worker without retaining an editor.
 pub struct MappingJob {
     request: MappingRequest,
+    action: HistoryAction,
     yaml: String,
     context: PreparationContext,
     settings: RenderSettings,
@@ -218,6 +219,7 @@ pub struct MappingJob {
 
 pub struct PreparedMappingJob {
     request: MappingRequest,
+    action: HistoryAction,
     result: Result<PreparedMapping, SessionError>,
 }
 
@@ -234,6 +236,7 @@ impl MappingJob {
         );
         PreparedMappingJob {
             request: self.request,
+            action: self.action,
             result,
         }
     }
@@ -241,6 +244,7 @@ impl MappingJob {
     pub fn fail(self, error: SessionError) -> PreparedMappingJob {
         PreparedMappingJob {
             request: self.request,
+            action: self.action,
             result: Err(error),
         }
     }
@@ -271,7 +275,7 @@ pub struct InstrumentSession {
     context: PreparationContext,
     settings: RenderSettings,
     host_buses: Option<HostBuses>,
-    pending: Option<MappingRequest>,
+    pending: Option<PendingRequest>,
     outcomes: VecDeque<RetainedOutcome>,
     highest_request_id: Option<RequestId>,
 }
@@ -282,13 +286,20 @@ struct AcceptedState {
     journal: Vec<JournalEntry>,
     cursor: usize,
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum HistoryAction {
     Append,
     Undo,
     Redo,
 }
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct PendingRequest {
+    request: MappingRequest,
+    action: HistoryAction,
+}
 struct RetainedOutcome {
     request: MappingRequest,
+    action: HistoryAction,
     outcome: Arc<RequestOutcome>,
 }
 impl AcceptedState {
@@ -314,19 +325,46 @@ impl InstrumentSession {
     ) -> Result<MappingAdmission, SessionError> {
         self.attachment_index(attachment)
             .ok_or(SessionError::InvalidAttachment)?;
-        self.admit_mapping_request(request)
+        self.admit_mapping_request(request, HistoryAction::Append)
     }
 
     pub(crate) fn admit_mapping_owned(
         &mut self,
         request: MappingRequest,
     ) -> Result<MappingAdmission, SessionError> {
-        self.admit_mapping_request(request)
+        self.admit_mapping_request(request, HistoryAction::Append)
+    }
+
+    pub(crate) fn admit_undo(
+        &mut self,
+        attachment: &Attachment,
+        request_id: RequestId,
+        expected_revision: u64,
+    ) -> Result<MappingAdmission, SessionError> {
+        self.attachment_index(attachment)
+            .ok_or(SessionError::InvalidAttachment)?;
+        let entry = self
+            .accepted
+            .publication()
+            .undo
+            .ok_or(SessionError::NothingToUndo)?;
+        let request = MappingRequest {
+            instance: self.identity.clone(),
+            request_id,
+            expected_revision,
+            intent: SetZoneKeyRange {
+                map_id: entry.change.map_id.clone(),
+                zone_id: entry.change.zone_id.clone(),
+                key_range: entry.change.before,
+            },
+        };
+        self.admit_mapping_request(request, HistoryAction::Undo)
     }
 
     fn admit_mapping_request(
         &mut self,
         request: MappingRequest,
+        action: HistoryAction,
     ) -> Result<MappingAdmission, SessionError> {
         if request.instance != self.identity {
             return Err(SessionError::InvalidRequestInstance);
@@ -336,15 +374,15 @@ impl InstrumentSession {
             .iter()
             .find(|retained| retained.request.request_id == request.request_id)
         {
-            return if retained.request == request {
+            return if retained.request == request && retained.action == action {
                 Ok(MappingAdmission::Completed(Arc::clone(&retained.outcome)))
             } else {
                 Err(SessionError::ConflictingRequest)
             };
         }
         if let Some(pending) = &self.pending {
-            return if pending.request_id == request.request_id {
-                if pending == &request {
+            return if pending.request.request_id == request.request_id {
+                if pending.request == request && pending.action == action {
                     Ok(MappingAdmission::Pending)
                 } else {
                     Err(SessionError::ConflictingRequest)
@@ -364,13 +402,14 @@ impl InstrumentSession {
         }
         let job = MappingJob {
             request: request.clone(),
+            action,
             yaml: self.accepted.yaml.clone(),
             context: self.context.clone(),
             settings: self.settings.clone(),
             host_buses: self.host_buses.clone().map(Box::new),
         };
         self.highest_request_id = Some(request.request_id);
-        self.pending = Some(request);
+        self.pending = Some(PendingRequest { request, action });
         Ok(MappingAdmission::Admitted(job))
     }
 
@@ -382,22 +421,28 @@ impl InstrumentSession {
     where
         H::Error: ToString,
     {
-        if self.pending.as_ref() != Some(&completion.request) {
+        if self.pending.as_ref()
+            != Some(&PendingRequest {
+                request: completion.request.clone(),
+                action: completion.action,
+            })
+        {
             return Err(CompletionRouteError {
                 reason: SessionError::InvalidJob,
                 completion: Box::new(completion),
             });
         }
-        let request = self
+        let pending = self
             .pending
             .take()
             .expect("matching pending request exists");
+        let request = pending.request;
         let outcome = match completion.result {
             Err(error) => Arc::new(RequestOutcome {
                 request_id: request.request_id,
                 result: Err(RequestFailure::Session(error)),
             }),
-            Ok(candidate) => match self.stage(candidate, HistoryAction::Append) {
+            Ok(candidate) => match self.stage(candidate, completion.action) {
                 Err(error) => Arc::new(RequestOutcome {
                     request_id: request.request_id,
                     result: Err(RequestFailure::Session(error)),
@@ -412,7 +457,7 @@ impl InstrumentSession {
                     let returned = Arc::clone(&accepted);
                     match self.install_staged(staged, &snapshot, host, None) {
                         Ok(()) => {
-                            self.retain_outcome(request, accepted);
+                            self.retain_outcome(request, completion.action, accepted);
                             return Ok(returned);
                         }
                         Err(error) => Arc::new(RequestOutcome {
@@ -424,7 +469,7 @@ impl InstrumentSession {
             },
         };
         let returned = Arc::clone(&outcome);
-        self.retain_outcome(request, outcome);
+        self.retain_outcome(request, completion.action, outcome);
         Ok(returned)
     }
 
@@ -708,12 +753,20 @@ impl InstrumentSession {
         }
     }
 
-    fn retain_outcome(&mut self, request: MappingRequest, outcome: Arc<RequestOutcome>) {
+    fn retain_outcome(
+        &mut self,
+        request: MappingRequest,
+        action: HistoryAction,
+        outcome: Arc<RequestOutcome>,
+    ) {
         if self.outcomes.len() == OUTCOME_LIMIT {
             self.outcomes.pop_front();
         }
-        self.outcomes
-            .push_back(RetainedOutcome { request, outcome });
+        self.outcomes.push_back(RetainedOutcome {
+            request,
+            action,
+            outcome,
+        });
     }
 
     /// Prepare off audio without publishing or changing accepted state.

@@ -67,6 +67,10 @@ DandrumInstrumentSessionJob* dandrum_instrument_session_admit_mapping_for_connec
     std::size_t mapIdSize, const std::uint8_t* zoneId, std::size_t zoneIdSize,
     std::uint8_t keyLow, std::uint8_t keyHigh, char* error,
     std::size_t errorCapacity);
+DandrumInstrumentSessionJob* dandrum_instrument_session_admit_undo_for_connection (
+    DandrumInstrumentSession* session, std::uint64_t instanceId,
+    std::uint64_t attachmentId, std::uint64_t requestId,
+    std::uint64_t expectedRevision, char* error, std::size_t errorCapacity);
 bool dandrum_instrument_session_prepare_job (DandrumInstrumentSessionJob* job);
 bool dandrum_instrument_session_fail_job (
     DandrumInstrumentSession* session, DandrumInstrumentSessionJob* job,

@@ -269,6 +269,51 @@ void sessionHandoff()
 
     std::cout << "INSTRUMENT_SESSION_HANDOFF held_reader=PASS worker=PASS metadata=PASS failure=PASS reconfigure=PASS concurrent_reconfigure=PASS lease_publish=PASS state_restore=PASS signed_pcm=-0.5\n";
 }
+
+void admittedUndoSurvivesConnectionClosure()
+{
+    DandrumAudioProcessor processor (InstrumentDemoConfiguration::sampler());
+    processor.setFileWatchEnabled (false);
+    processor.setRateAndBufferSizeDetails (48000, 64);
+    processor.prepareToPlay (48000, 64);
+    const auto initial = processor.getInstrumentSessionSnapshot();
+    require (initial.has_value(), "Undo fixture did not create a session");
+    const auto map = processor.requestInstrumentSessionMappingJob (
+        1, initial->revision, "kit", "kick", 60, 60);
+    require (map.has_value(), "Undo fixture mapping was not admitted");
+    await ([&] {
+        const auto status = processor.getInstrumentSessionJobStatus (*map);
+        return status && status->state != DandrumAudioProcessor::UiJobState::running;
+    }, "Undo fixture mapping did not complete");
+    const auto connection = processor.openInstrumentSessionConnection();
+    require (connection && connection->undoCount == 1,
+             "Undo fixture connection has no native history");
+    PreparationBarrier preparation;
+    preparationRecording = &preparation;
+    preparation.armed = true;
+    const auto undo = processor.requestInstrumentSessionUndoJob (
+        connection->instanceId, connection->attachmentId,
+        connection->nextRequestId, connection->revision);
+    require (undo.has_value(), "Native undo was not admitted before editor closure");
+    await ([&] { return preparation.entered.load(); },
+           "Admitted native undo did not reach held owned preparation");
+    require (processor.closeInstrumentSessionConnection (
+                 connection->instanceId, connection->attachmentId),
+             "Editor connection did not close while native undo was preparing");
+    preparation.released = true;
+    std::optional<DandrumAudioProcessor::InstrumentSessionJobStatus> completed;
+    await ([&] {
+        completed = processor.getInstrumentSessionJobStatus (*undo);
+        return completed && completed->state != DandrumAudioProcessor::UiJobState::running;
+    }, "Owned native undo did not finish after editor closure");
+    preparationRecording = nullptr;
+    require (completed->state == DandrumAudioProcessor::UiJobState::completed
+                 && completed->undoCount == 0 && completed->redoCount == 1,
+             "Accepted native undo still depended on its closed editor connection");
+    require (std::bit_cast<std::uint32_t> (renderOnset (processor, 36))
+                 == std::bit_cast<std::uint32_t> (-0.5f),
+             "Detached native undo did not restore known signed output");
+}
 }
 
 extern "C" int __real_pthread_mutex_lock (pthread_mutex_t*);
@@ -331,6 +376,7 @@ int main()
     try
     {
         sessionHandoff();
+        admittedUndoSurvivesConnectionClosure();
     }
     catch (const std::exception& error)
     {

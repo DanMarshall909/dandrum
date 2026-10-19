@@ -636,6 +636,52 @@ pub unsafe extern "C" fn dandrum_instrument_session_admit_mapping_for_connection
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_instrument_session_admit_undo_for_connection(
+    session: *mut DandrumInstrumentSession,
+    instance_id: u64,
+    attachment_id: u64,
+    request_id: u64,
+    expected_revision: u64,
+    error: *mut c_char,
+    error_capacity: usize,
+) -> *mut DandrumInstrumentSessionJob {
+    let Some(session) = (unsafe { session.as_mut() }) else {
+        write_error("invalid instrument session", error, error_capacity);
+        return ptr::null_mut();
+    };
+    let Some(attachment) = connection(session, instance_id, attachment_id) else {
+        write_error(
+            "invalid instrument session connection",
+            error,
+            error_capacity,
+        );
+        return ptr::null_mut();
+    };
+    match session
+        .session
+        .admit_undo(&attachment, RequestId(request_id), expected_revision)
+    {
+        Ok(MappingAdmission::Admitted(job)) => {
+            Box::into_raw(Box::new(DandrumInstrumentSessionJob {
+                state: Some(JobState::Admitted(job)),
+            }))
+        }
+        Ok(MappingAdmission::Pending) => {
+            write_error("undo request is already pending", error, error_capacity);
+            ptr::null_mut()
+        }
+        Ok(MappingAdmission::Completed(_)) => {
+            write_error("undo request already completed", error, error_capacity);
+            ptr::null_mut()
+        }
+        Err(reason) => {
+            write_error(&format!("{reason:?}"), error, error_capacity);
+            ptr::null_mut()
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_instrument_session_prepare_job(
     job: *mut DandrumInstrumentSessionJob,
 ) -> bool {
@@ -1296,13 +1342,30 @@ mod tests {
 
         host.reject = false;
         assert!(unsafe { dandrum_instrument_session_connect(session, &mut connection) });
-        assert!(unsafe {
-            dandrum_instrument_session_undo(
+        let undo_job = unsafe {
+            dandrum_instrument_session_admit_undo_for_connection(
                 session,
                 connection.instance_id,
                 connection.attachment_id,
                 5,
                 1,
+                error.as_mut_ptr(),
+                error.len(),
+            )
+        };
+        assert!(!undo_job.is_null());
+        assert!(unsafe {
+            dandrum_instrument_session_disconnect(
+                session,
+                connection.instance_id,
+                connection.attachment_id,
+            )
+        });
+        assert!(unsafe { dandrum_instrument_session_prepare_job(undo_job) });
+        assert!(unsafe {
+            dandrum_instrument_session_complete_job(
+                session,
+                undo_job,
                 &callbacks,
                 (&mut host as *mut TestHost).cast(),
                 &mut revision,
@@ -1313,15 +1376,8 @@ mod tests {
             )
         });
         assert_eq!((revision, undo_count, redo_count), (2, 0, 1));
-        assert!(unsafe {
-            dandrum_instrument_session_connection_snapshot(
-                session,
-                connection.instance_id,
-                connection.attachment_id,
-                &mut connection,
-            )
-        });
-        assert_eq!(connection.next_request_id, 6);
+        assert!(unsafe { dandrum_instrument_session_snapshot(session, &mut snapshot) });
+        assert_eq!(snapshot.next_request_id, 6);
 
         unsafe { dandrum_instrument_session_destroy(session) };
     }
