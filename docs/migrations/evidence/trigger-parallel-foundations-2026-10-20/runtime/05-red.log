@@ -1,0 +1,23 @@
+   Compiling dandrum-trigger-host v0.1.0 (/tmp/dandrum-lanes/runtime/src/trigger-host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.91s
+     Running tests/runtime.rs (/tmp/dandrum-lanes/cache-runtime/debug/deps/runtime-b756499cb62cad96)
+
+running 1 test
+test unbound_control_roots_are_rejected_before_exposing_an_audio_runtime ... FAILED
+
+failures:
+
+---- unbound_control_roots_are_rejected_before_exposing_an_audio_runtime stdout ----
+
+thread 'unbound_control_roots_are_rejected_before_exposing_an_audio_runtime' (153) panicked at tests/runtime.rs:247:5:
+assertion failed: matches!(PreparedRuntime::new(unbound.prepared(), configuration()),
+    Err(RuntimeError::UnsupportedLayout))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    unbound_control_roots_are_rejected_before_exposing_an_audio_runtime
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.03s
+
+error: test failed, to rerun pass `--test runtime`

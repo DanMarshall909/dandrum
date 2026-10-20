@@ -1,0 +1,76 @@
+TAP version 13
+# Subtest: the comparison host default backend preserves native calls, feedback and cleanup
+ok 1 - the comparison host default backend preserves native calls, feedback and cleanup
+  ---
+  duration_ms: 34.614157
+  type: 'test'
+  ...
+# Subtest: only absent native hosts select the silent browser preview
+ok 2 - only absent native hosts select the silent browser preview
+  ---
+  duration_ms: 0.155829
+  type: 'test'
+  ...
+# Subtest: incompatible native protocol versions fail without falling back to JUCE or preview
+not ok 3 - incompatible native protocol versions fail without falling back to JUCE or preview
+  ---
+  duration_ms: 16.943097
+  type: 'test'
+  location: '/tmp/dandrum-lanes/frontend/web/trigger/tests/native-transport.test.mjs:24:1'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected exception.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  operator: 'throws'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/dandrum-lanes/frontend/web/trigger/tests/native-transport.test.mjs:27:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: a declared native host must expose its identity and callable transport contract
+not ok 4 - a declared native host must expose its identity and callable transport contract
+  ---
+  duration_ms: 18.553661
+  type: 'test'
+  location: '/tmp/dandrum-lanes/frontend/web/trigger/tests/native-transport.test.mjs:33:1'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected exception.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  operator: 'throws'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/dandrum-lanes/frontend/web/trigger/tests/native-transport.test.mjs:36:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: native invocation preserves comparison host rejection and absolute preset paths
+ok 5 - native invocation preserves comparison host rejection and absolute preset paths
+  ---
+  duration_ms: 5.309206
+  type: 'test'
+  ...
+# Subtest: the versioned backend takes precedence over the comparison host and carries native capability errors
+ok 6 - the versioned backend takes precedence over the comparison host and carries native capability errors
+  ---
+  duration_ms: 17.63813
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 4
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 105.227446

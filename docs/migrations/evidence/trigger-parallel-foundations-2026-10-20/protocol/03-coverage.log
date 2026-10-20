@@ -1,0 +1,14 @@
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+   Compiling dandrum-trigger-host v0.1.0 (/tmp/dandrum-lanes/protocol/src/trigger-host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.23s
+     Running tests/protocol.rs (/tmp/dandrum-lanes/cache-protocol/llvm-cov-target/debug/deps/protocol-1b914db9be45bef2)
+
+running 3 tests
+test supported_methods_preserve_distinct_session_job_parameter_and_note_values ... ok
+test editor_connections_use_distinct_serializable_ids_and_native_accepted_snapshots ... ok
+test versioned_snapshot_requests_are_typed_and_invalid_envelopes_preserve_accepted_state ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+
+    Finished report saved to /tmp/dandrum-lanes/evidence-protocol/03-coverage.json

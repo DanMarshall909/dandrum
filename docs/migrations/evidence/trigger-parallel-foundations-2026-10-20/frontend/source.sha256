@@ -1,0 +1,5 @@
+7001e64253272ee491e686a2123fee84b0167d18e174815a5f643bfdbc5f1787  web/trigger/engine/native-engine.mjs
+967ddae802dbf3b49a61e6e5b427ea957bd971814799ffbae8375aa653489970  web/trigger/main.jsx
+08eabe7509419d3d04e2f2e1748c81c2813eb4c580750e8cd93d6dec6779c297  web/trigger/engine/native-transport.mjs
+f91ad393cd0f90ae1904c093b00341059fd5794f926973fd21a0a76b752cd23f  web/trigger/tests/native-transport.test.mjs
+a5a5ae0b108cd3bdf563ada32b54f21e699d9a8836fe087ef8c5f53a6d08d42d  web/trigger/tests/browser/native-transport.spec.mjs

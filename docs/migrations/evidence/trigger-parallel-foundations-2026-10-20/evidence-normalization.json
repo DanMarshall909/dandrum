@@ -1,0 +1,357 @@
+{
+  "reason": "Staged whitespace check found trailing spaces and blank EOF lines in copied raw evidence; display copies are normalized. Exact original bytes are preserved in deterministic .raw.gz companions. Existing embedded raw-log hashes identify decompressed originals; SHA256SUMS.json identifies packaged current bytes. Display patch copies are evidence, not executable patches.",
+  "transformation": "Strip spaces, tabs and CR at line endings; retain one final LF. No test result or production source changed.",
+  "stopped_commit": "Premature commit command was stopped before commit; HEAD remained 8ccbb5487a8cc4dc4c739f3bf9ef886920a6f638. No hook was bypassed.",
+  "files": [
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/clap-needs-engine-mode.log",
+      "original_sha256": "98e64bb48e9f547390cf64f70d3dbfea86b2f66677c77bf411abf7d13f535bc5",
+      "display_sha256": "a38ac24d9617bc19c34667e08c5dff2b3069be5b355efbfd6d8f17ede52f8e6e",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/clap-needs-engine-mode.log.raw.gz",
+      "archive_sha256": "558a9d4edccd4d967579b57131947b1cc6431b12463f79753718b36c9280bd33"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/conflict-DANDRUM_ADVANCED_SAMPLER_ONLY.log",
+      "original_sha256": "de395c87185a72b13b170cf454cb75f90693ba6f05fe46098278092d70c1016b",
+      "display_sha256": "0ab0524512902f3520a5a99f30404b0f3489b1cbad7b22a0bcf491c58cc89100",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/conflict-DANDRUM_ADVANCED_SAMPLER_ONLY.log.raw.gz",
+      "archive_sha256": "8c8f92a16621d74de562583a0d567b121a7b22b8262a907b50e9b5a98fc2f8da"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/conflict-DANDRUM_BUILD_FILTER_UI_SPIKES.log",
+      "original_sha256": "9560cce1ac1cea52b71c676ed9f0c8e16d1a88a4de76c46a0c1f90abefd13e0d",
+      "display_sha256": "9567bbede8ceae328a4106672518a71f8485bfe6362eff88fddaa8bdf47874cf",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/conflict-DANDRUM_BUILD_FILTER_UI_SPIKES.log.raw.gz",
+      "archive_sha256": "8020f13dc2eb9d3a83c35619ee89c133646b33dca53e3001c7f7db70fd496ec8"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/conflict-DANDRUM_BUILD_TRIGGER_SLINT.log",
+      "original_sha256": "33f208b786ce28162c40711ccc9384843ef5e9edb01d364db1acba67c66391d5",
+      "display_sha256": "0a0fadef7b4ee1a7e2bcc65e97d6bb0604cbfc36090abecbf845ddc72bdd4074",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/conflict-DANDRUM_BUILD_TRIGGER_SLINT.log.raw.gz",
+      "archive_sha256": "21ee40f503870a786f34b48cec85eb9531730f1e4e5b92118bee46946cd331b5"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/conflict-DANDRUM_NATIVE_ONLY.log",
+      "original_sha256": "70971e1fe081f64306798580553ea194d3bcb07551824f53163cd71d98b449f3",
+      "display_sha256": "dd853e3a0061688fef3efe6ac22f24e49f211c0dba100ee9891472ca12255386",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/conflict-DANDRUM_NATIVE_ONLY.log.raw.gz",
+      "archive_sha256": "9a36bc5ce167893319c3e880819a2c026b7d2f0c7cbfa7b7b8e8a8cc94eb30f0"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/conflict-DANDRUM_SLINT_LIBRARY_ONLY.log",
+      "original_sha256": "76410030f1c8a87bd5d01aac7b76a9ecb4188132afbd5ce12a1e5f0f0b06a86e",
+      "display_sha256": "e4762b437ef702593b5e62ac9dcd30bd98181b2a0f360810d091b4edc78f0363",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/conflict-DANDRUM_SLINT_LIBRARY_ONLY.log.raw.gz",
+      "archive_sha256": "35052411596f0b12016e70a6cbb4bd901b413c622b68efa4a6dde9101154c468"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/conflict-DANDRUM_TRIGGER_REACT.log",
+      "original_sha256": "61536a5eb0dc6c6d9c36c9dfd14dbe15ac651e63f608ca3039534b138d530b20",
+      "display_sha256": "940a23234ee5a57688669c84ca05843252c34b45a77c25b519e7cab4c723c1e7",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/conflict-DANDRUM_TRIGGER_REACT.log.raw.gz",
+      "archive_sha256": "2518d2760f380577340f36ed962286216837613a0d1edc16e83b9d90ef33f057"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/default-host.log",
+      "original_sha256": "cd3f5e3b406f8d0c321582f5c4440723e15d505b7e5293cbdbb8375cabed4c3e",
+      "display_sha256": "217904d0831d60e5e744adf0c7eb0b5af1f86a8bd5434b726cef22b130189bb1",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/default-host.log.raw.gz",
+      "archive_sha256": "f2523f9f9f9a19db05f48665d2a02228822ab9e97e4baf36a98a7f0eb6ab2a8a"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/engine-inventory.log",
+      "original_sha256": "31e085091989f0ddff151a792450ee14936e480f6d3e4efaa6a9e55410394b1e",
+      "display_sha256": "8f415489a8403d2bd0c5e6db2a5e5df06fe631e8aeb3e15e5ca63750f7a1d3e2",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/engine-inventory.log.raw.gz",
+      "archive_sha256": "ae3971a602ee5d94ef4a3a0bdd7e7b2c8c01a8fe71d990c2994e8d7fc928d33c"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/explicit-host.log",
+      "original_sha256": "cd3f5e3b406f8d0c321582f5c4440723e15d505b7e5293cbdbb8375cabed4c3e",
+      "display_sha256": "217904d0831d60e5e744adf0c7eb0b5af1f86a8bd5434b726cef22b130189bb1",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/explicit-host.log.raw.gz",
+      "archive_sha256": "f2523f9f9f9a19db05f48665d2a02228822ab9e97e4baf36a98a7f0eb6ab2a8a"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/trigger-host-test-inventory.log",
+      "original_sha256": "c75a263166add0d9085a70316cc54735db8f8376046b05c9e547e06df9483f7d",
+      "display_sha256": "78842c7f115011ad94fbbc5d9a0616c8c6fdc6fb633889f449ca4580b3fa2648",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/build-boundaries/trigger-host-test-inventory.log.raw.gz",
+      "archive_sha256": "e3dc8336505a47635587fafff6337f864e8a66e979dca051729023df38da240a"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/frontend/baseline-coverage.log",
+      "original_sha256": "f98193ba36ea628944d916ad5c1ee5b17ef99af1df226963c5fab17a6400f086",
+      "display_sha256": "9964203cabf38c6907c89dbb61dc0ba55ea9efb066f475991984eb8372417cc6",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/frontend/baseline-coverage.log.raw.gz",
+      "archive_sha256": "b8710d2d729f0fc87d2167456812169aa1de931620e976cdf0ae20be333fc544"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/frontend/characterization-coverage.log",
+      "original_sha256": "aab54bbc8a77b3dca920e9b90636a748607a65a3cfed5768211804612cf3e688",
+      "display_sha256": "0590328712bfdfda0f4c9b17012a6b0c20a5f0b3c16a814a59453f66003e6290",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/frontend/characterization-coverage.log.raw.gz",
+      "archive_sha256": "a6401084ae5ec6ef2f63d7a639600368cc3398e1a57af60580ad354a0c339583"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/frontend/final-coverage.log",
+      "original_sha256": "2263573d37dda10ef02ee63471bda1572d38c8bb79643cf90c6ddb866dfa8a9d",
+      "display_sha256": "e6fda6e35a09999dba62f33b2f58fefcb5844d9f1a372352695fbd20a3354180",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/frontend/final-coverage.log.raw.gz",
+      "archive_sha256": "cabfcdf49f93c156c914225ba7432d1dd2728d6097d43a2579453caa0af90f0d"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/frontend/selector-green-coverage.log",
+      "original_sha256": "7fa51215af46cd9cece5d38c21077f2da59913c13b1d7e89c3b6e8c850993ff6",
+      "display_sha256": "0b196c1a9cfb59eebe0c0dab0d6b29fc4b744d70715c85914474468a0a06c5df",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/frontend/selector-green-coverage.log.raw.gz",
+      "archive_sha256": "abd95f8ef2afc027cd179e9d7e29f97e26b33a10fab03fdcaa4f29b68f84b2bf"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/frontend/selector-red-detail.log",
+      "original_sha256": "88836c13758d4a9ce2f540eb9a3c907bd5b1e5d7faf40cfb1f372e70576489b3",
+      "display_sha256": "a33eb900392bd2375c2afbac653762c2822cd0987b9d55f59b15f22c4d27e28c",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/frontend/selector-red-detail.log.raw.gz",
+      "archive_sha256": "57102d41a2ef32a632264e655138486773bfe6b2c5e5c60999e85747e9a4da92"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/frontend/validation-green-coverage.log",
+      "original_sha256": "8f745d8b36109802c7c485a350a25859fb696f74f3a6d206d82482bf1f065e5a",
+      "display_sha256": "a70e0ff01704460abe74b4f3b54b08070ffa65fdb59c85d2deea12bb0b4efb5d",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/frontend/validation-green-coverage.log.raw.gz",
+      "archive_sha256": "46fdda12e23fcdf3f20fdb294c3a3f2871040d8ea1b0dddfeb7d1749a035d415"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/integration/combined-host-annotated.txt",
+      "original_sha256": "e96b7ec2dfd62ccf1949a24f0263ab51076c446a8f5e7f327d6c4178578840e9",
+      "display_sha256": "84ef412ad0d7c81833aa04ae58ceb8155861c3945971a4e863165eadcaa8dbf4",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/integration/combined-host-annotated.txt.raw.gz",
+      "archive_sha256": "61d9410841d105cb5ab862e7b76ed76aa4fd4c2fa390335307ba9ec96a9d5f1a"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/integration/combined-host-tests.log",
+      "original_sha256": "ab4ea8b2061b83131345f4e081e0fa6d20eb2efffd5cb0833443ef447587ef0c",
+      "display_sha256": "8b2920fc607b7180a02ee55dcd458fc8ae7d258f3edfdc2634d3e69831615837",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/integration/combined-host-tests.log.raw.gz",
+      "archive_sha256": "7c0d9ec8999256cad1a925c823e5f33b4ddd32ba2d7d6de0230888113dbfb2e9"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/integration/ctest-registration.patch",
+      "original_sha256": "4787527069b70d14b89b63ce3f25f1672796c03ad67cf00a30b69b1a3a3c00f9",
+      "display_sha256": "287e27d53e78849790c4e1ad1bfce47f96185efde9e599baa6142198f708fbe2",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/integration/ctest-registration.patch.raw.gz",
+      "archive_sha256": "527f021bf821b6caa2d26dcc56990166f27b4e7a5f19fc44f0fab4f4ccdddf9c"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/integration/final-ctest-LastTest.log",
+      "original_sha256": "e97318d206687ff956af6552a77344266ad0e2bb38da6779930601ea87b1d45a",
+      "display_sha256": "94ea0e59e34235bc9b5532630e07e1c1c983a2afef274b0fd904211c24596bc7",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/integration/final-ctest-LastTest.log.raw.gz",
+      "archive_sha256": "471dbc9d4f3eaee8f89ec1df95803714c35bd437c77bd36cec04a67406477b42"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/integration/host-binding-test.patch",
+      "original_sha256": "f535e9b30cd0a8210311397e855b876dc8df9c8a5831a6688f52746e49788914",
+      "display_sha256": "e9cf62e7e5191a79177c1f8d20c41b0d841d895ca8822135fde647f56b5cb64b",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/integration/host-binding-test.patch.raw.gz",
+      "archive_sha256": "d413bbf38b692d26f89d7cf50a42d6345baa3877905436d6f19460478e194619"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/integration/host-bindings-annotated.txt",
+      "original_sha256": "5bd162a08cd36c7793aa130666bf50d86396a53ed46d0db106e523905201f406",
+      "display_sha256": "ef89d953c874299b9adc6071c5f3f2cc5fa28faf44e6407873db64abb5026910",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/integration/host-bindings-annotated.txt.raw.gz",
+      "archive_sha256": "0e631deeaba5a036b3677a9e601ace975b8f9ca41804b4d12b3e8632df3f740c"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/integration/host-bindings-green.log",
+      "original_sha256": "8e8bd8bc0f2462f4dc905c17b74cfbc3b21f97bd9846638c134657b2ed0a2ad2",
+      "display_sha256": "b999ad1bec1fd7d2b75483a186b8447ff1568bf59fad93b7a08016e996ea4c53",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/integration/host-bindings-green.log.raw.gz",
+      "archive_sha256": "d88c76e83fe7299a50e6df922a1e9108163ec515d58e1907629f854e64858564"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/integration/host-bindings.patch",
+      "original_sha256": "493cb0872df6141177d15f0068050fb676248560d699f60f9e13844e53ed530f",
+      "display_sha256": "ebb629a9aec8fffbdbfe8dda93d8c706269560cb2407bb0437967f3ac1ce8900",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/integration/host-bindings.patch.raw.gz",
+      "archive_sha256": "cbbbd50e22bcdad4fb7eb390785cf68323af1783e219c9bbb19d29b94248ec69"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol-review/review-tests.log",
+      "original_sha256": "699d88dca36897239ec5e3e6eefe9dad0af66c42e5f5148182683eb479bc0c5e",
+      "display_sha256": "8abc14ccfafb66176aaf4a17bf97d0757a8bd64e99415a7bcff56649e5d19767",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol-review/review-tests.log.raw.gz",
+      "archive_sha256": "8beb0507e9b5d9cb63435d8e493d5b270b4f186ec1fb3cf395e848c5b72a2a43"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/01-connection-green.log",
+      "original_sha256": "d6ff2a17fcfc97f8fa3049e3832757dc5acf08d64f36ca1f4f97db5abc9acba6",
+      "display_sha256": "012197f182c6f8346e5b8e5f2eb2f9d9e2219c056a86ec93e01195ee2cde2345",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/01-connection-green.log.raw.gz",
+      "archive_sha256": "57d539450833be5b4fbc762adf93613e67899b4c74e519ade6d2fffd35b460cd"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/02-envelope-green.log",
+      "original_sha256": "cc9726c2c532298c545bae5bfe3465e37794518fba01ac7b967b49c0dee343c6",
+      "display_sha256": "1f13e1df75e2c4ab04108253e2f45854c740a66dc154c173ac8d51cfacca0267",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/02-envelope-green.log.raw.gz",
+      "archive_sha256": "3e4f12e4c47fd56b4c6f7c1e57341faa6412e2ab2b7eea4251a59db52f01f19e"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/02-envelope-refactor.log",
+      "original_sha256": "a38d9519a45d57d73fadf87cac0289df061be3c723b033c5f15459bf2757ed69",
+      "display_sha256": "2db898f8d032f861de30c114bd433bab659913e6b227d40ecd71af9df50d3eb6",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/02-envelope-refactor.log.raw.gz",
+      "archive_sha256": "826cca63737162d851e59b4b8bc2df0870056831a515c14b3f8b3701335fb6b3"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/03-methods-green.log",
+      "original_sha256": "66284c47931a6d26ae563f67ff2d8e72b5565ab01229c2384ed8fb341f5b3b1d",
+      "display_sha256": "6457ae5cc33adca9fedd317330045aa740b769ac13950885d9bb7096d4b11e89",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/03-methods-green.log.raw.gz",
+      "archive_sha256": "fb7ad22fdf8f4355c40d65a171ca591feb348b37c7168828c5fab6dc3fcf155d"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/04-arguments-green.log",
+      "original_sha256": "1e900f11f32544bbbcaef06e949dd9fe5ab4b66ce8c6bf713bd6b771ef0bd0b6",
+      "display_sha256": "65433a02d14e525f84b254161c672d69887cd55ce10221deac584b0362cd6509",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/04-arguments-green.log.raw.gz",
+      "archive_sha256": "ad9cacf73712baf6b64cd95a4325afcb04aba18a0f4227770bad26083e09b441"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/05-replay-green.log",
+      "original_sha256": "60c8bf01a48f87193ce331528aa063f54938ecee66a7595df6a8eb0a23ddb4c8",
+      "display_sha256": "e85453aa52595545f122ed86df4125ab8511f8d5a16e3e44c7d01e7d1b456d2d",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/05-replay-green.log.raw.gz",
+      "archive_sha256": "cc591050f2b8679f5001bb538b4761a23dae06108cf0ec09180a7c336f283025"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/06-lifecycle-green.log",
+      "original_sha256": "4d047c17622c4c5664345bb99b2184956a1b164aac87a12e0ed023d45e0cbb1a",
+      "display_sha256": "2a80fcb1f938344406e98ef3de476adf56dbd5fdf28e0d600a1bf2f890579c35",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/06-lifecycle-green.log.raw.gz",
+      "archive_sha256": "e1dffab7acf477f5b38f9ee1cfa688f3a2d25a3f87fb139f13fbca6866a40225"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/07-outbound-green.log",
+      "original_sha256": "64597a6ea6ff39bdc8a8051d0aaaa0fecc874112bb7c09f967b71beb86ef10c9",
+      "display_sha256": "a15ee20e8b1b3ae9ff6e2bb4a9d44c8bcc6539301234dea1b304384811b5af05",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/07-outbound-green.log.raw.gz",
+      "archive_sha256": "6298440a4ba3979016700b7124d7f277d5545898677e513376b26c69b142523f"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/08-refactor.log",
+      "original_sha256": "3a8871ef074a7f2484b9f8623d3f61078c186196800d8ef5b65537b0fec0a2f5",
+      "display_sha256": "d2214b1c5f6db92bb7fcf54a8dc738f4de10d53395e8ad80deba5130a93db92b",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/08-refactor.log.raw.gz",
+      "archive_sha256": "f3c59b26639fd22c6802f085560702d9353cc2fef61767dd7c8b91fd8644181a"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/09-package-tests.log",
+      "original_sha256": "0db021dbb1168a954e7204ceb44dfa94ad49a0133e187910a92a3806e2c5f063",
+      "display_sha256": "07b7dcbd175cbf56332d718f26068aa829b53b073bdc9fd51a8da3967aded5d8",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/09-package-tests.log.raw.gz",
+      "archive_sha256": "21d87ea5f63a21f2926deb8dd8e660cf57a803a0c2e2b45a61ad2133c79d2fac"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/10-boundary-tests.log",
+      "original_sha256": "dc8c8c8bb831b1424a47cc1c43989326d88e4eee84563dae299635d34bd951eb",
+      "display_sha256": "4a879e46a9bb7806e30fc68d435bb59efec14e936b6a1bcb89583fe20c4c1deb",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/protocol/10-boundary-tests.log.raw.gz",
+      "archive_sha256": "a6db725a84402f24f835c130b4d623035684c40954246a6b99afa3d71aa963ab"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime-review/staged.diff",
+      "original_sha256": "b2e3962329c5b4beb4cfc1214517ea6dd5d7278570605043f6565274dc2aade7",
+      "display_sha256": "3a708daa81919c693f1504363f13e8fe08ecdf04819783539e085ac4e69a3d59",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime-review/staged.diff.raw.gz",
+      "archive_sha256": "2713b40ce160b69743839952dbf05895118444faf9a772512753f360c3e28aef"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/01-block-coverage.log",
+      "original_sha256": "c8b70425a56850023f031a47862ba03580e3c957c0f71ef142bd0bf044c84796",
+      "display_sha256": "1b12a120e85a64e335e8a0fc406a5c061a4067a6743dd73399c61a2e823ee6e6",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/01-block-coverage.log.raw.gz",
+      "archive_sha256": "32f8adb05b8695bbabac3792cc9d49d0f297adc7f526eb1a0c0006fa7c88acf9"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/01-green.log",
+      "original_sha256": "abae94cdad64ddafd9fa175b74d9d432f5c5e68f3259c8f20efa355cfca3c86c",
+      "display_sha256": "2dcb4aaac2adb0d55fd1e4646acc8119a770410bb19e696430cabd1e600d1ede",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/01-green.log.raw.gz",
+      "archive_sha256": "09b6d5ac7df06929c208796891d079cb462d6936ac97c397061247b17e45dcd5"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/01-refactor.log",
+      "original_sha256": "c2bb9200904cf27ef176b5248f50b669217c90355bd078204f82c19c83b72da2",
+      "display_sha256": "12a8e6e520e15731c70c67448fad3728edee1198ad245dc83024bf0a53aec9c0",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/01-refactor.log.raw.gz",
+      "archive_sha256": "1ee3c418b727f19d52e639227e2e34142aab6b2ce39af66960d48302535948e9"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/02-green.log",
+      "original_sha256": "6fdffafa2a2e07c6662bf89f35144d5f205b3dd8f3746b8620090d1a2e0381af",
+      "display_sha256": "313b3dd431b48757b3cfe8c3f8a792e103f91b1cfe458f0d542cf338da425722",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/02-green.log.raw.gz",
+      "archive_sha256": "544db8d0af57b4a32872f0296236085dd0c9adb431a540001ee9f814496dda2f"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/02-refactor.log",
+      "original_sha256": "aaf9eb3a43a1dc12428d3650ff7e3de68130838ee8b62138fb049f5d313c8a9e",
+      "display_sha256": "6f071e528a3f4a75a9e1334414167d9a17c4aa7ff431c0243a2324906ee0d811",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/02-refactor.log.raw.gz",
+      "archive_sha256": "b6c80de6e53e4f42407ee71ea7e14d4a325282edb200ff94f790e02bf32ac575"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/03-green-planar.log",
+      "original_sha256": "747e6a3a48cb0ac266eee74e5b12519fc10158881b83be3eb03dc733c64327dc",
+      "display_sha256": "ccd45b9f8fcdb1ef2833437cd7ab992fe392ba394071c51be994b1fd923f86e1",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/03-green-planar.log.raw.gz",
+      "archive_sha256": "17985a5ffcc97ee6530068beb32d2878d2c0a72d69261cabc882f561a41dbce7"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/07-callback-audit.log",
+      "original_sha256": "525bb8b33f0c9b94f091d710cf62954d4cc6ebfefdaf1f77783eb4758e350da9",
+      "display_sha256": "aa26c7764e24593262793bde2374e7a599d7d54a101248c62c4a6e873336f4f4",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/07-callback-audit.log.raw.gz",
+      "archive_sha256": "740ef031c159676d1797370902cafc6496157e84ceb935069349c8b5ed0b74a7"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/08-admission-green.log",
+      "original_sha256": "4138d893e81dd410de18c769b655d6ed39ca6a85d078e38ec62b23abcea52e1d",
+      "display_sha256": "116f2a710da43e09917ba8037c5875ce0cf1878fed03952e56d264141f2b2b6e",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/08-admission-green.log.raw.gz",
+      "archive_sha256": "6fada4f05cce2b11351c63fe196f4bebdfff6e5af747a287bfd793b0d5cfc0c8"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/10-owner-test.log",
+      "original_sha256": "b13816970abf77927190ff7e029996d05f5acaf016b196755b051f747dad8dd9",
+      "display_sha256": "2471198aca496694e4b6bcedc7fe5433346ce6f42690fd121b0dab3158703c74",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/10-owner-test.log.raw.gz",
+      "archive_sha256": "7bfc0d57bb396f0947490f424cd2632abbde595077a101e207f1ffc07d109d53"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/13-owner-tests.log",
+      "original_sha256": "347a36bd84473acc0655cfded404261ae9a38f4c9b6fe56f66ed31cc0349fcb1",
+      "display_sha256": "d82d5e8b686bf7622eb6f1b03ac5f6bdf020703f933cc03c3b09bce4a0ec17e2",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/13-owner-tests.log.raw.gz",
+      "archive_sha256": "b70931b3809a1e1284cb53c67bbf6d6272bb7a7747ba442d630d7356e314ffa0"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/pre-integration-duplicate-declarations.patch",
+      "original_sha256": "d3aa043878cfa1d7f6193b4d20b620caa3c46b43b7380d8eccee32b0fdef60e7",
+      "display_sha256": "119dbb41f92b9447cbe84c973c6c898cd3068e3db33f079c8d78123cdab24411",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/pre-integration-duplicate-declarations.patch.raw.gz",
+      "archive_sha256": "833173533be46afa4c7cd33ba7ce289001d573bdc76c591d8dbef953c3857889"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/timing-reruns.log",
+      "original_sha256": "0d5e56b836750304b976495e44095074d33c47df6d86d4050e828c9f312feac8",
+      "display_sha256": "0bd7564b2a342a9da3a071312eb363a147d87cdbe26f82902c560908983bec4c",
+      "original_archive": "docs/migrations/evidence/trigger-parallel-foundations-2026-10-20/runtime/timing-reruns.log.raw.gz",
+      "archive_sha256": "622f8180ed7eae140ba1d4e9016d39e379b8bdafc25f8b803ad6fa3d01d4012c"
+    }
+  ]
+}

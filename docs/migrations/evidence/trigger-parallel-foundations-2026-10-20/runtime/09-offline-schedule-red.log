@@ -1,0 +1,23 @@
+   Compiling dandrum-trigger-host v0.1.0 (/tmp/dandrum-lanes/runtime/src/trigger-host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.23s
+     Running tests/runtime.rs (/tmp/dandrum-lanes/cache-runtime/debug/deps/runtime-b756499cb62cad96)
+
+running 1 test
+test unsupported_realtime_schedules_are_rejected_off_audio_before_activation ... FAILED
+
+failures:
+
+---- unsupported_realtime_schedules_are_rejected_off_audio_before_activation stdout ----
+
+thread 'unsupported_realtime_schedules_are_rejected_off_audio_before_activation' (175) panicked at tests/runtime.rs:421:5:
+assertion failed: matches!(PreparedRuntime::new(script.prepared(), configuration()),
+    Err(RuntimeError::UnsupportedLayout))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    unsupported_realtime_schedules_are_rejected_off_audio_before_activation
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `--test runtime`

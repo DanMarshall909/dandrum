@@ -1,0 +1,39 @@
+{
+  "base": "a116c2cc3ff0d14f3fc128010db3a4e9365964e2",
+  "head": "a116c2cc3ff0d14f3fc128010db3a4e9365964e2",
+  "upstream_ref": "refs/remotes/origin/feat/juce-free-host-adapters",
+  "upstream_object": "16184e21e957e2adcca2f50845cf33f3b49ec510",
+  "original_manifest_sha256": "098d5431e1b74ae9ea2ac339be4affc699fa5875593c3c3a6f1168494a16580f",
+  "paths": [
+    {
+      "path": "web/trigger/engine/native-engine.mjs",
+      "sha256": "7001e64253272ee491e686a2123fee84b0167d18e174815a5f643bfdbc5f1787",
+      "candidate_git_blob": "275730b3f796ead334f03689849654171e3c5e95",
+      "git_mode": "100644"
+    },
+    {
+      "path": "web/trigger/engine/native-transport.mjs",
+      "sha256": "08eabe7509419d3d04e2f2e1748c81c2813eb4c580750e8cd93d6dec6779c297",
+      "candidate_git_blob": "edd420c8f9ecb834b36a8d7de517068251d7b817",
+      "git_mode": "100644"
+    },
+    {
+      "path": "web/trigger/main.jsx",
+      "sha256": "967ddae802dbf3b49a61e6e5b427ea957bd971814799ffbae8375aa653489970",
+      "candidate_git_blob": "12ad2e35cb9fc193571b592b6d007d994d8e502f",
+      "git_mode": "100644"
+    },
+    {
+      "path": "web/trigger/tests/browser/native-transport.spec.mjs",
+      "sha256": "a5a5ae0b108cd3bdf563ada32b54f21e699d9a8836fe087ef8c5f53a6d08d42d",
+      "candidate_git_blob": "71f417caebe8dde170e929832d55f22e13ed4911",
+      "git_mode": "100644"
+    },
+    {
+      "path": "web/trigger/tests/native-transport.test.mjs",
+      "sha256": "f91ad393cd0f90ae1904c093b00341059fd5794f926973fd21a0a76b752cd23f",
+      "candidate_git_blob": "5f0b81901acee3daf9db9696e4c4a460ed511887",
+      "git_mode": "100644"
+    }
+  ]
+}

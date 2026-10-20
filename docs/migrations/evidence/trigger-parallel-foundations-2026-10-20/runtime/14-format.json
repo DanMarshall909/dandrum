@@ -1,0 +1,17 @@
+{
+  "command": [
+    "/home/dan/.cargo/bin/rustfmt",
+    "--check",
+    "--edition",
+    "2024",
+    "src/trigger-host/src/runtime.rs",
+    "src/trigger-host/tests/runtime.rs"
+  ],
+  "cwd": "/tmp/dandrum-lanes/runtime",
+  "environment": {
+    "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+    "CARGO_BUILD_JOBS": "2"
+  },
+  "elapsed_seconds": 0.029,
+  "exit_code": 0
+}

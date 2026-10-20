@@ -1,0 +1,9 @@
+   Compiling dandrum-trigger-host v0.1.0 (/tmp/dandrum-lanes/runtime/src/trigger-host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.51s
+     Running tests/runtime.rs (/tmp/dandrum-lanes/cache-runtime/debug/deps/runtime-b756499cb62cad96)
+
+running 2 tests
+test invalid_blocks_are_silent_and_preserve_the_pending_replacement ... ok
+test replacement_is_block_boundary_only_and_backpressure_lasts_until_reclamation ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s

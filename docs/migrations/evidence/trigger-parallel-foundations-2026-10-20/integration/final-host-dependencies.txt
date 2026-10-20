@@ -1,0 +1,215 @@
+dandrum-trigger-host v0.1.0 (/tmp/dandrum-lanes/integration/src/trigger-host)
+dandrum_engine v0.1.0 (/tmp/dandrum-lanes/integration/src/rust-engine)
+crossterm v0.29.0
+bitflags v2.13.2
+derive_more v2.1.1
+derive_more-impl v2.1.1 (proc-macro)
+convert_case v0.10.0
+unicode-segmentation v1.13.3
+proc-macro2 v1.0.107
+unicode-ident v1.0.26
+quote v1.0.47
+proc-macro2 v1.0.107 (*)
+syn v2.0.119
+proc-macro2 v1.0.107 (*)
+quote v1.0.47 (*)
+unicode-ident v1.0.26
+document-features v0.2.12 (proc-macro)
+litrs v1.0.0
+mio v1.2.3
+libc v0.2.189
+log v0.4.34
+parking_lot v0.12.5
+lock_api v0.4.14
+scopeguard v1.2.0
+parking_lot_core v0.9.12
+cfg-if v1.0.5
+libc v0.2.189
+smallvec v1.16.1
+rustix v1.1.5
+bitflags v2.13.2
+linux-raw-sys v0.12.1
+signal-hook v0.3.18
+libc v0.2.189
+signal-hook-registry v1.4.8
+errno v0.3.14
+libc v0.2.189
+libc v0.2.189
+signal-hook-mio v0.2.5
+libc v0.2.189
+mio v1.2.3 (*)
+signal-hook v0.3.18 (*)
+jsonschema v0.58.2
+ahash v0.8.12
+cfg-if v1.0.5
+const-random v0.1.18
+const-random-macro v0.1.16 (proc-macro)
+getrandom v0.2.17
+cfg-if v1.0.5
+libc v0.2.189
+once_cell v1.21.4
+tiny-keccak v2.0.2
+crunchy v0.2.4
+getrandom v0.3.4
+cfg-if v1.0.5
+libc v0.2.189
+once_cell v1.21.4
+portable-atomic v1.15.0
+serde v1.0.229
+serde_core v1.0.229
+serde_derive v1.0.229 (proc-macro)
+proc-macro2 v1.0.107 (*)
+quote v1.0.47 (*)
+syn v3.0.6
+proc-macro2 v1.0.107 (*)
+quote v1.0.47 (*)
+unicode-ident v1.0.26
+zerocopy v0.8.58
+bytecount v0.6.9
+data-encoding v2.11.1
+email_address v0.2.9
+serde v1.0.229 (*)
+fancy-regex v0.19.2
+bit-set v0.8.0
+bit-vec v0.8.0
+regex-automata v0.4.18
+aho-corasick v1.1.5
+memchr v2.8.3
+memchr v2.8.3
+regex-syntax v0.8.11
+regex-syntax v0.8.11
+fraction v0.17.0
+num v0.4.3
+num-bigint v0.4.8
+num-integer v0.1.47
+num-traits v0.2.19
+num-traits v0.2.19
+num-complex v0.4.6
+num-traits v0.2.19
+num-integer v0.1.47 (*)
+num-iter v0.1.46
+num-integer v0.1.47 (*)
+num-traits v0.2.19
+num-rational v0.4.2
+num-bigint v0.4.8 (*)
+num-integer v0.1.47 (*)
+num-traits v0.2.19
+num-traits v0.2.19
+num-bigint v0.4.8 (*)
+itoa v1.0.18
+jsonschema-regex v0.58.2
+regex-syntax v0.8.11
+jsonschema-value v0.58.2
+ahash v0.8.12 (*)
+bytecount v0.6.9
+fraction v0.17.0 (*)
+num-cmp v0.1.0
+num-traits v0.2.19
+serde_json v1.0.151
+itoa v1.0.18
+memchr v2.8.3
+serde_core v1.0.229
+zmij v1.0.23
+zmij v1.0.23
+num-cmp v0.1.0
+num-traits v0.2.19
+percent-encoding v2.3.2
+referencing v0.58.2
+ahash v0.8.12 (*)
+fluent-uri v0.4.1
+borrow-or-share v0.2.4
+ref-cast v1.0.27
+ref-cast-impl v1.0.27 (proc-macro)
+proc-macro2 v1.0.107 (*)
+quote v1.0.47 (*)
+syn v3.0.6 (*)
+serde v1.0.229 (*)
+hashbrown v0.17.1
+allocator-api2 v0.2.21
+equivalent v1.0.2
+foldhash v0.2.0
+itoa v1.0.18
+micromap v0.3.0
+parking_lot v0.12.5 (*)
+percent-encoding v2.3.2
+serde_json v1.0.151 (*)
+regex v1.13.1
+aho-corasick v1.1.5 (*)
+memchr v2.8.3
+regex-automata v0.4.18 (*)
+regex-syntax v0.8.11
+serde v1.0.229 (*)
+serde_json v1.0.151 (*)
+strum v0.28.0
+strum_macros v0.28.0 (proc-macro)
+heck v0.5.0
+proc-macro2 v1.0.107 (*)
+quote v1.0.47 (*)
+syn v2.0.119 (*)
+unicode-general-category v1.1.0
+uuid-simd v0.8.0
+outref v0.5.2
+vsimd v0.8.0
+num-complex v0.4.6 (*)
+rhai v1.26.1
+ahash v0.8.12 (*)
+bitflags v2.13.2
+num-traits v0.2.19
+once_cell v1.21.4 (*)
+rhai_codegen v3.2.0 (proc-macro)
+proc-macro2 v1.0.107 (*)
+quote v1.0.47 (*)
+syn v2.0.119 (*)
+smallvec v1.16.1
+smartstring v1.0.1
+static_assertions v1.1.0
+thin-vec v0.2.20
+rustfft v6.4.1
+num-complex v0.4.6 (*)
+num-integer v0.1.47 (*)
+num-traits v0.2.19
+primal-check v0.3.4
+num-integer v0.1.47 (*)
+strength_reduce v0.2.4
+transpose v0.2.3
+num-integer v0.1.47 (*)
+strength_reduce v0.2.4
+serde v1.0.229 (*)
+serde_json v1.0.151 (*)
+serde_yaml v0.9.34+deprecated
+indexmap v2.14.2
+equivalent v1.0.2
+hashbrown v0.17.1 (*)
+itoa v1.0.18
+ryu v1.0.23
+serde v1.0.229 (*)
+unsafe-libyaml v0.2.11
+sha2 v0.10.9
+cfg-if v1.0.5
+cpufeatures v0.2.17
+digest v0.10.7
+block-buffer v0.10.4
+generic-array v0.14.7
+typenum v1.20.1
+crypto-common v0.1.7
+generic-array v0.14.7 (*)
+typenum v1.20.1
+tempfile v3.27.0
+fastrand v2.5.0
+getrandom v0.4.3
+cfg-if v1.0.5
+libc v0.2.189
+once_cell v1.21.4 (*)
+rustix v1.1.5 (*)
+zip v8.6.0
+crc32fast v1.5.2
+cfg-if v1.0.5
+indexmap v2.14.2 (*)
+memchr v2.8.3
+typed-path v0.12.3
+dandrum_instrument_session v0.1.0 (/tmp/dandrum-lanes/integration/src/instrument-session)
+dandrum_engine v0.1.0 (/tmp/dandrum-lanes/integration/src/rust-engine) (*)
+serde_yaml v0.9.34+deprecated (*)
+rtrb v0.3.2
+serde v1.0.229 (*)
+serde_json v1.0.151 (*)

@@ -1,0 +1,22 @@
+   Compiling dandrum-trigger-host v0.1.0 (/tmp/dandrum-lanes/runtime/src/trigger-host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.04s
+     Running tests/runtime.rs (/tmp/dandrum-lanes/cache-runtime/debug/deps/runtime-b756499cb62cad96)
+
+running 1 test
+test session_publication_uses_a_cancellable_lease_and_rolls_back_under_backpressure ... FAILED
+
+failures:
+
+---- session_publication_uses_a_cancellable_lease_and_rolls_back_under_backpressure stdout ----
+
+thread 'session_publication_uses_a_cancellable_lease_and_rolls_back_under_backpressure' (175) panicked at tests/runtime.rs:265:5:
+assertion failed: closed.admission_closed
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    session_publication_uses_a_cancellable_lease_and_rolls_back_under_backpressure
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.06s
+
+error: test failed, to rerun pass `--test runtime`

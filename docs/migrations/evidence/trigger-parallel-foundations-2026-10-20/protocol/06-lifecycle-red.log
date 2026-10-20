@@ -1,0 +1,29 @@
+   Compiling dandrum-trigger-host v0.1.0 (/tmp/dandrum-lanes/protocol/src/trigger-host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.02s
+     Running tests/protocol.rs (/tmp/dandrum-lanes/cache-protocol/debug/deps/protocol-1b914db9be45bef2)
+
+running 6 tests
+test supported_methods_preserve_distinct_session_job_parameter_and_note_values ... ok
+test editor_connections_use_distinct_serializable_ids_and_native_accepted_snapshots ... ok
+test transport_retries_never_repeat_admission_conflicting_or_retired_ids_are_rejected ... ok
+test versioned_snapshot_requests_are_typed_and_invalid_envelopes_preserve_accepted_state ... ok
+test invalid_method_arguments_and_stale_session_intents_cannot_change_controls_or_sound ... ok
+test retired_editor_ids_and_foreign_native_sessions_cannot_recover_authority ... FAILED
+
+failures:
+
+---- retired_editor_ids_and_foreign_native_sessions_cannot_recover_authority stdout ----
+
+thread 'retired_editor_ids_and_foreign_native_sessions_cannot_recover_authority' (160) panicked at tests/protocol.rs:173:48:
+assertion `left == right` failed
+  left: "1"
+ right: "41"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    retired_editor_ids_and_foreign_native_sessions_cannot_recover_authority
+
+test result: FAILED. 5 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+error: test failed, to rerun pass `--test protocol`

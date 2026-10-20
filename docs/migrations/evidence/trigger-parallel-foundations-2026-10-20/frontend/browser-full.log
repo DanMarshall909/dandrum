@@ -1,0 +1,46 @@
+
+> dandrum-trigger@0.1.0 test:browser
+> playwright test --config=/tmp/dandrum-evidence/frontend/playwright.config.mjs
+
+[WebServer] (node:1822193) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 31 tests using 1 worker
+
+(node:1822235) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/browser/catalog.spec.mjs:2:1 › every public component renders independently in all nine catalog states, with editable props and width/background controls (25.5s)
+  ✓   2 tests/browser/editing.spec.mjs:4:1 › supplied knob drawing supports full-range drag, fine mode, typing and default reset with separate gesture undo (1.7s)
+  ✓   3 tests/browser/editing.spec.mjs:19:1 › sample handles and playback edit the accepted region and undo follows navigation (1.8s)
+  ✓   4 tests/browser/editing.spec.mjs:29:1 › multi-file import offers all mapping policies, shows filename interpretation and undo restores Empty (2.1s)
+  ✓   5 tests/browser/frame.spec.mjs:3:1 › the supplied workspaces and frame controls remain reachable (2.3s)
+  ✓   6 tests/browser/instrument.spec.mjs:3:1 › selector policies, crossfade and candidate mute/solo are accepted edits and undo updates their controls (3.9s)
+  ✓   7 tests/browser/instrument.spec.mjs:14:1 › voice module modes, voice policy, envelope values and template order use the model (3.0s)
+  ✓   8 tests/browser/instrument.spec.mjs:24:1 › routing inheritance, sends, graph, processor add and bypass are editable through the reused widgets (2.4s)
+  ✓   9 tests/browser/log-drawer.spec.mjs:20:1 › event log inclusion matches names, kinds and payload text without changing recorded rows (1.4s)
+  ✓  10 tests/browser/log-drawer.spec.mjs:37:1 › event log exclusions hide matching rows, combine with inclusion and reveal retained events when cleared (1.8s)
+  ✓  11 tests/browser/log-drawer.spec.mjs:65:1 › event log filters stay reachable within each editor width and Clear removes recorded matches (2.1s)
+  ✓  12 tests/browser/modulation.spec.mjs:3:1 › modulation amount, grouping, bypass and nested control menus reflect accepted routes and undo (2.6s)
+  ✓  13 tests/browser/modulation.spec.mjs:12:1 › macro inspector edits value, accepts MIDI learn, binds a destination and renames through real operations (2.3s)
+  ✓  14 tests/browser/native-transport.spec.mjs:4:1 › the production entrypoint uses the versioned host instead of the comparison bridge (510ms)
+  ✓  15 tests/browser/native-transport.spec.mjs:24:1 › an incompatible declared native host displays an error and never opens the silent preview (286ms)
+  ✓  16 tests/browser/native-transport.spec.mjs:31:1 › a rejected native snapshot displays its capability error without simulating an instrument (292ms)
+  ✓  17 tests/browser/native-transport.spec.mjs:41:1 › an ordinary browser continues to show an explicitly silent preview (394ms)
+  ✓  18 tests/browser/patch.spec.mjs:3:1 › New empty patch replaces the accepted preset and returns the editor to Empty (975ms)
+  ✓  19 tests/browser/patch.spec.mjs:16:1 › Reload asks before discarding edits and Cancel preserves the patch and undo (1.6s)
+  ✓  20 tests/browser/runtime.spec.mjs:3:1 › computer keys drive silent voice telemetry and the event drawer switches and filter work (1.9s)
+  ✓  21 tests/browser/shared-controls.spec.mjs:3:1 › every processor and add button stays exposed at minimum and default sizes (1.3s)
+  ✓  22 tests/browser/shared-controls.spec.mjs:13:1 › editing and confirming displayed envelope units preserves tiny durations and sustain, while real edits update the curve (1.5s)
+  ✓  23 tests/browser/shared-controls.spec.mjs:23:1 › composed processor knobs share context controls and synth source menus explain asset-only actions (1.3s)
+  ✓  24 tests/browser/shared-controls.spec.mjs:30:1 › slice history inspector edits the same markers and mapping and bypass restores their identities (1.8s)
+  ✓  25 tests/browser/shared-controls.spec.mjs:41:1 › a narrow browser preserves the native minimum editor and anchors patch menus inside it (749ms)
+  ✓  26 tests/browser/shared-controls.spec.mjs:52:1 › a cancelled shared knob gesture restores the accepted value and does not add undo (984ms)
+  ✓  27 tests/browser/shell.spec.mjs:2:1 › a visible parameter edit enables named undo and restores the previous value (1.0s)
+  ✓  28 tests/browser/slices.spec.mjs:3:1 › transient results require explicit apply, undo restores eight slices and failed or cancelled jobs preserve them (4.3s)
+  ✓  29 tests/browser/slices.spec.mjs:14:1 › slice selection, marker editing, bulk properties and sample history use real undoable operations (2.1s)
+  ✓  30 tests/browser/states.spec.mjs:3:1 › all 24 supplied states are reached through ordinary actions and mock switches, with actual loading and recovery (7.8s)
+(node:1828902) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  31 tests/browser/native-frame.spec.mjs:6:1 › native backend status stays in the header and the editor fits actual host viewports (2.0s)
+
+  31 passed (1.4m)

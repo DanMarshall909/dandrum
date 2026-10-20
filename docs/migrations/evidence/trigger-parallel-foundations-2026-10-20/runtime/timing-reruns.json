@@ -1,0 +1,291 @@
+{
+  "a_changed_parameter_surface_is_refused_before_session_publication": {
+    "runs": [
+      {
+        "elapsed_seconds": 0.09011,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.08913,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.094704,
+        "exit_code": 0
+      }
+    ],
+    "median_seconds": 0.09011
+  },
+  "allocation_audit_independently_detects_allocation_and_preexisting_destruction": {
+    "runs": [
+      {
+        "elapsed_seconds": 0.002043,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.002379,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.002066,
+        "exit_code": 0
+      }
+    ],
+    "median_seconds": 0.002066
+  },
+  "bounded_note_handoff_reports_backpressure_and_preserves_the_rejected_note": {
+    "runs": [
+      {
+        "elapsed_seconds": 0.038107,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.037551,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.038978,
+        "exit_code": 0
+      }
+    ],
+    "median_seconds": 0.038107
+  },
+  "dropping_the_control_endpoint_first_never_reclaims_resources_in_process": {
+    "runs": [
+      {
+        "elapsed_seconds": 0.055728,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.054404,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.057404,
+        "exit_code": 0
+      }
+    ],
+    "median_seconds": 0.055728
+  },
+  "feedback_overflow_is_explicit_and_the_latest_scalar_remains_recoverable": {
+    "runs": [
+      {
+        "elapsed_seconds": 0.037658,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.047639,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.038978,
+        "exit_code": 0
+      }
+    ],
+    "median_seconds": 0.038978
+  },
+  "first_callback_swaps_events_feedback_reset_and_short_blocks_allocate_or_free_nothing": {
+    "runs": [
+      {
+        "elapsed_seconds": 0.055804,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.05718,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.056341,
+        "exit_code": 0
+      }
+    ],
+    "median_seconds": 0.056341
+  },
+  "handoff_capacity_is_bounded_by_both_the_protocol_limit_and_dsp_queue": {
+    "runs": [
+      {
+        "elapsed_seconds": 0.091434,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.088844,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.089226,
+        "exit_code": 0
+      }
+    ],
+    "median_seconds": 0.089226
+  },
+  "host_notes_are_sample_accurate_and_invalid_batches_preserve_pending_work": {
+    "runs": [
+      {
+        "elapsed_seconds": 0.056911,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.0555,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.05567,
+        "exit_code": 0
+      }
+    ],
+    "median_seconds": 0.05567
+  },
+  "invalid_blocks_are_silent_and_preserve_the_pending_replacement": {
+    "runs": [
+      {
+        "elapsed_seconds": 0.055615,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.055173,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.054791,
+        "exit_code": 0
+      }
+    ],
+    "median_seconds": 0.055173
+  },
+  "invalid_configuration_or_foreign_layout_cannot_replace_the_running_runtime": {
+    "runs": [
+      {
+        "elapsed_seconds": 0.089426,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.092236,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.090003,
+        "exit_code": 0
+      }
+    ],
+    "median_seconds": 0.090003
+  },
+  "invalid_parameter_events_preserve_the_scalar_values_and_signed_audio": {
+    "runs": [
+      {
+        "elapsed_seconds": 0.038213,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.038696,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.037635,
+        "exit_code": 0
+      }
+    ],
+    "median_seconds": 0.038213
+  },
+  "parameter_handoff_updates_signed_audio_and_reports_nonzero_host_offset": {
+    "runs": [
+      {
+        "elapsed_seconds": 0.072593,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.073284,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.072966,
+        "exit_code": 0
+      }
+    ],
+    "median_seconds": 0.072966
+  },
+  "replacement_is_block_boundary_only_and_backpressure_lasts_until_reclamation": {
+    "runs": [
+      {
+        "elapsed_seconds": 0.089372,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.093748,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.089211,
+        "exit_code": 0
+      }
+    ],
+    "median_seconds": 0.089372
+  },
+  "reset_stops_active_and_queued_notes_and_retains_host_owned_values": {
+    "runs": [
+      {
+        "elapsed_seconds": 0.056267,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.055924,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.055525,
+        "exit_code": 0
+      }
+    ],
+    "median_seconds": 0.055924
+  },
+  "session_publication_uses_a_cancellable_lease_and_rolls_back_under_backpressure": {
+    "runs": [
+      {
+        "elapsed_seconds": 0.091796,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.097434,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.104511,
+        "exit_code": 0
+      }
+    ],
+    "median_seconds": 0.097434
+  },
+  "unbound_control_roots_are_rejected_before_exposing_an_audio_runtime": {
+    "runs": [
+      {
+        "elapsed_seconds": 0.033316,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.034164,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.038051,
+        "exit_code": 0
+      }
+    ],
+    "median_seconds": 0.034164
+  },
+  "unsupported_realtime_schedules_are_rejected_off_audio_before_activation": {
+    "runs": [
+      {
+        "elapsed_seconds": 0.081194,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.081091,
+        "exit_code": 0
+      },
+      {
+        "elapsed_seconds": 0.082061,
+        "exit_code": 0
+      }
+    ],
+    "median_seconds": 0.081194
+  }
+}

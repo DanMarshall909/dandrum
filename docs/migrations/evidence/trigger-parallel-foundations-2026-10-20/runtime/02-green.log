@@ -1,0 +1,12 @@
+   Compiling dandrum-trigger-host v0.1.0 (/tmp/dandrum-lanes/runtime/src/trigger-host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.90s
+     Running tests/runtime.rs (/tmp/dandrum-lanes/cache-runtime/debug/deps/runtime-b756499cb62cad96)
+
+running 5 tests
+test bounded_note_handoff_reports_backpressure_and_preserves_the_rejected_note ... ok
+test invalid_blocks_are_silent_and_preserve_the_pending_replacement ... ok
+test host_notes_are_sample_accurate_and_invalid_batches_preserve_pending_work ... ok
+test invalid_configuration_or_foreign_layout_cannot_replace_the_running_runtime ... ok
+test replacement_is_block_boundary_only_and_backpressure_lasts_until_reclamation ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s

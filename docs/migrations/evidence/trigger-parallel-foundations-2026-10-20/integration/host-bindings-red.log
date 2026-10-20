@@ -1,0 +1,139 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.26
+   Compiling autocfg v1.5.1
+   Compiling libc v0.2.189
+   Compiling version_check v0.9.5
+   Compiling cfg-if v1.0.5
+   Compiling num-traits v0.2.19
+   Compiling syn v3.0.6
+   Compiling serde_core v1.0.229
+   Compiling num-integer v0.1.47
+   Compiling crunchy v0.2.4
+   Compiling serde v1.0.229
+   Compiling serde_derive v1.0.229
+   Compiling memchr v2.8.3
+   Compiling portable-atomic v1.15.0
+   Compiling tiny-keccak v2.0.2
+   Compiling syn v2.0.119
+   Compiling getrandom v0.2.17
+   Compiling getrandom v0.3.4
+   Compiling zerocopy v0.8.58
+   Compiling once_cell v1.21.4
+   Compiling const-random-macro v0.1.16
+   Compiling ahash v0.8.12
+   Compiling generic-array v0.14.7
+   Compiling smallvec v1.16.1
+   Compiling foldhash v0.2.0
+   Compiling equivalent v1.0.2
+   Compiling parking_lot_core v0.9.12
+   Compiling allocator-api2 v0.2.21
+   Compiling zmij v1.0.23
+   Compiling hashbrown v0.17.1
+   Compiling const-random v0.1.18
+   Compiling num-bigint v0.4.8
+   Compiling num-complex v0.4.6
+   Compiling serde_json v1.0.151
+   Compiling regex-syntax v0.8.11
+   Compiling itoa v1.0.18
+   Compiling scopeguard v1.2.0
+   Compiling ref-cast v1.0.27
+   Compiling typenum v1.20.1
+   Compiling lock_api v0.4.14
+   Compiling num-rational v0.4.2
+   Compiling aho-corasick v1.1.5
+   Compiling num-iter v0.1.46
+   Compiling ref-cast-impl v1.0.27
+   Compiling errno v0.3.14
+   Compiling signal-hook v0.3.18
+   Compiling bitflags v2.13.2
+   Compiling unicode-segmentation v1.13.3
+   Compiling rustix v1.1.5
+   Compiling convert_case v0.10.0
+   Compiling regex-automata v0.4.18
+   Compiling signal-hook-registry v1.4.8
+   Compiling num v0.4.3
+   Compiling parking_lot v0.12.5
+   Compiling smartstring v1.0.1
+   Compiling borrow-or-share v0.2.4
+   Compiling unicode-general-category v1.1.0
+   Compiling jsonschema-value v0.58.2
+   Compiling log v0.4.34
+   Compiling getrandom v0.4.3
+   Compiling linux-raw-sys v0.12.1
+   Compiling heck v0.5.0
+   Compiling crc32fast v1.5.2
+   Compiling bit-vec v0.8.0
+   Compiling bit-set v0.8.0
+   Compiling strum_macros v0.28.0
+   Compiling mio v1.2.3
+   Compiling fluent-uri v0.4.1
+   Compiling fraction v0.17.0
+   Compiling derive_more-impl v2.1.1
+   Compiling block-buffer v0.10.4
+   Compiling crypto-common v0.1.7
+   Compiling indexmap v2.14.2
+   Compiling static_assertions v1.1.0
+   Compiling num-cmp v0.1.0
+   Compiling outref v0.5.2
+   Compiling strength_reduce v0.2.4
+   Compiling litrs v1.0.0
+   Compiling bytecount v0.6.9
+   Compiling micromap v0.3.0
+   Compiling vsimd v0.8.0
+   Compiling percent-encoding v2.3.2
+   Compiling referencing v0.58.2
+   Compiling uuid-simd v0.8.0
+   Compiling document-features v0.2.12
+   Compiling transpose v0.2.3
+   Compiling derive_more v2.1.1
+   Compiling digest v0.10.7
+   Compiling signal-hook-mio v0.2.5
+   Compiling strum v0.28.0
+   Compiling fancy-regex v0.19.2
+   Compiling regex v1.13.1
+   Compiling jsonschema-regex v0.58.2
+   Compiling rhai_codegen v3.2.0
+   Compiling email_address v0.2.9
+   Compiling primal-check v0.3.4
+   Compiling thin-vec v0.2.20
+   Compiling cpufeatures v0.2.17
+   Compiling typed-path v0.12.3
+   Compiling unsafe-libyaml v0.2.11
+   Compiling fastrand v2.5.0
+   Compiling ryu v1.0.23
+   Compiling data-encoding v2.11.1
+   Compiling serde_yaml v0.9.34+deprecated
+   Compiling jsonschema v0.58.2
+   Compiling tempfile v3.27.0
+   Compiling zip v8.6.0
+   Compiling rhai v1.26.1
+   Compiling sha2 v0.10.9
+   Compiling rustfft v6.4.1
+   Compiling crossterm v0.29.0
+   Compiling dandrum_engine v0.1.0 (/tmp/dandrum-lanes/integration/src/rust-engine)
+   Compiling dandrum_instrument_session v0.1.0 (/tmp/dandrum-lanes/integration/src/instrument-session)
+   Compiling dandrum-trigger-host v0.1.0 (/tmp/dandrum-lanes/integration/src/trigger-host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 55.96s
+     Running tests/packaged_resources.rs (/tmp/dandrum-lanes/cache-parent/debug/deps/packaged_resources-53b5c1d6f3475b3a)
+
+running 1 test
+test packaged_host_binds_public_controls_to_the_rendered_sample_without_editing_history ... FAILED
+
+failures:
+
+---- packaged_host_binds_public_controls_to_the_rendered_sample_without_editing_history stdout ----
+
+thread 'packaged_host_binds_public_controls_to_the_rendered_sample_without_editing_history' (2687) panicked at tests/packaged_resources.rs:83:5:
+assertion `left == right` failed
+  left: -0.5
+ right: -0.125
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    packaged_host_binds_public_controls_to_the_rendered_sample_without_editing_history
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.03s
+
+error: test failed, to rerun pass `--test packaged_resources`

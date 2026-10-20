@@ -1,0 +1,35 @@
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+   Compiling dandrum-trigger-host v0.1.0 (/tmp/dandrum-lanes/runtime/src/trigger-host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.50s
+     Running unittests src/lib.rs (/tmp/dandrum-lanes/cache-runtime/llvm-cov-target/debug/deps/dandrum_trigger_host-f45f535d7c09a279)
+
+running 1 test
+test runtime::admission_tests::publication_waits_for_admitted_callback_then_cancel_reopens_admission ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/runtime.rs (/tmp/dandrum-lanes/cache-runtime/llvm-cov-target/debug/deps/runtime-b756499cb62cad96)
+
+running 17 tests
+test allocation_audit_independently_detects_allocation_and_preexisting_destruction ... ok
+test bounded_note_handoff_reports_backpressure_and_preserves_the_rejected_note ... ok
+test invalid_parameter_events_preserve_the_scalar_values_and_signed_audio ... ok
+test unbound_control_roots_are_rejected_before_exposing_an_audio_runtime ... ok
+test feedback_overflow_is_explicit_and_the_latest_scalar_remains_recoverable ... ok
+test invalid_blocks_are_silent_and_preserve_the_pending_replacement ... ok
+test dropping_the_control_endpoint_first_never_reclaims_resources_in_process ... ok
+test first_callback_swaps_events_feedback_reset_and_short_blocks_allocate_or_free_nothing ... ok
+test reset_stops_active_and_queued_notes_and_retains_host_owned_values ... ok
+test host_notes_are_sample_accurate_and_invalid_batches_preserve_pending_work ... ok
+test parameter_handoff_updates_signed_audio_and_reports_nonzero_host_offset ... ok
+test handoff_capacity_is_bounded_by_both_the_protocol_limit_and_dsp_queue ... ok
+test unsupported_realtime_schedules_are_rejected_off_audio_before_activation ... ok
+test invalid_configuration_or_foreign_layout_cannot_replace_the_running_runtime ... ok
+test session_publication_uses_a_cancellable_lease_and_rolls_back_under_backpressure ... ok
+test replacement_is_block_boundary_only_and_backpressure_lasts_until_reclamation ... ok
+test a_changed_parameter_surface_is_refused_before_session_publication ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+
+    Finished report saved to /tmp/dandrum-lanes/evidence-runtime/12-final.lcov

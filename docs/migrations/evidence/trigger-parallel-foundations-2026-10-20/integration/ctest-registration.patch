@@ -1,0 +1,42 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 8934690..d33f93a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -147,6 +147,11 @@ if(DANDRUM_TRIGGER_CLAP_EDITOR)
+             ${RUST_ENGINE_SOURCES}
+         COMMENT "Building the format-neutral Trigger host scaffold")
+     add_custom_target(dandrum-trigger-host-rust DEPENDS ${RUST_TRIGGER_HOST_LIB})
++    add_test(NAME trigger-host-tests
++        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
++            ${CARGO_BIN} test --locked --jobs 2
++            --manifest-path ${RUST_TRIGGER_HOST_DIR}/Cargo.toml)
++    set_tests_properties(trigger-host-tests PROPERTIES LABELS "trigger-host-fast" TIMEOUT 1200)
+ endif()
+
+ add_test(
+diff --git a/tests/python/test_engine_only_build.py b/tests/python/test_engine_only_build.py
+index 2a05947..6b3a17b 100644
+--- a/tests/python/test_engine_only_build.py
++++ b/tests/python/test_engine_only_build.py
+@@ -196,6 +196,13 @@ class ClapProofBuildTest(EngineBuildFixture):
+         self.assertRegex(output, r"(?m)(?:^|\s)dandrum-trigger-host-rust(?:\s|$)")
+         self.assertNotRegex(output, r"(?m)(?:^|\s)(?:juceaide|dandrum-plugin)(?:\s|$)")
+
++        code, output = self.command(
++            "trigger-host-test-inventory", [CTEST, "--test-dir", str(build),
++                "--show-only=json-v1"])
++        self.assertEqual(code, 0, output)
++        names = {test["name"] for test in json.loads(output)["tests"]}
++        self.assertIn("trigger-host-tests", names)
++
+         code, output = self.command(
+             "trigger-editor-build", [CMAKE, "--build", str(build), "--target",
+                                      "dandrum-trigger-clap-editor", "--parallel", "2"])
+@@ -231,7 +238,7 @@ class ClapProofBuildTest(EngineBuildFixture):
+
+         code, output = self.command(
+             "trigger-editor-fixture-runtime", [CTEST, "--test-dir", str(build),
+-                "--output-on-failure", "-R", "^clap-dynamic-host$"])
++                "--output-on-failure", "-R", "^(clap-dynamic-host|trigger-host-tests)$"])
+         self.assertEqual(code, 0, output)
+         self.assertIn("100% tests passed", output)

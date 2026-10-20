@@ -1,0 +1,5 @@
+    Checking dandrum-trigger-host v0.1.0 (/tmp/dandrum-lanes/protocol/src/trigger-host)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.61s
+real 0.64
+user 0.33
+sys 0.23

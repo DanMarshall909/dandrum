@@ -1,0 +1,15 @@
+   Compiling dandrum-trigger-host v0.1.0 (/tmp/dandrum-lanes/integration/src/trigger-host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.76s
+     Running tests/packaged_resources.rs (/tmp/dandrum-lanes/cache-parent/debug/deps/packaged_resources-53b5c1d6f3475b3a)
+
+running 8 tests
+test resource_and_session_errors_have_stable_actionable_diagnostics ... ok
+test missing_installed_sample_never_falls_back_to_the_checkout ... ok
+test permission_denials_are_reported_without_searching_elsewhere ... ok
+test symbolic_resource_files_are_rejected_instead_of_followed ... ok
+test unavailable_roots_nonregular_files_and_unreadable_documents_are_explicit ... ok
+test packaged_host_binds_public_controls_to_the_rendered_sample_without_editing_history ... ok
+test copied_package_owns_the_real_kit_and_renders_known_signed_midi_36_output ... ok
+test invalid_or_missing_packaged_resources_preserve_the_accepted_session_and_sound ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s

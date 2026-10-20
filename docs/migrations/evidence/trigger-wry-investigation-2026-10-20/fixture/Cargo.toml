@@ -1,0 +1,10 @@
+[package]
+name = "dandrum-wry-lifecycle-probe"
+version = "0.0.0"
+edition = "2024"
+publish = false
+[dependencies]
+wry = "=0.57.0"
+gtk = "=0.18.2"
+x11-dl = "=2.21.0"
+raw-window-handle = "=0.6.2"

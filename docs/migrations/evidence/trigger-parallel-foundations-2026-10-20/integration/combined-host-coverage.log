@@ -1,0 +1,62 @@
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+   Compiling dandrum-trigger-host v0.1.0 (/tmp/dandrum-lanes/runtime/src/trigger-host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.72s
+     Running unittests src/lib.rs (/tmp/dandrum-lanes/cache-runtime/llvm-cov-target/debug/deps/dandrum_trigger_host-01d6e3922b9b3ad5)
+
+running 1 test
+test runtime::admission_tests::publication_waits_for_admitted_callback_then_cancel_reopens_admission ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/packaged_resources.rs (/tmp/dandrum-lanes/cache-runtime/llvm-cov-target/debug/deps/packaged_resources-845a37e6d5eafa6f)
+
+running 8 tests
+test resource_and_session_errors_have_stable_actionable_diagnostics ... ok
+test missing_installed_sample_never_falls_back_to_the_checkout ... ok
+test symbolic_resource_files_are_rejected_instead_of_followed ... ok
+test permission_denials_are_reported_without_searching_elsewhere ... ok
+test unavailable_roots_nonregular_files_and_unreadable_documents_are_explicit ... ok
+test copied_package_owns_the_real_kit_and_renders_known_signed_midi_36_output ... ok
+test packaged_host_binds_public_controls_to_the_rendered_sample_without_editing_history ... ok
+test invalid_or_missing_packaged_resources_preserve_the_accepted_session_and_sound ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/protocol.rs (/tmp/dandrum-lanes/cache-runtime/llvm-cov-target/debug/deps/protocol-a9e4488799b990d7)
+
+running 7 tests
+test editor_connections_use_distinct_serializable_ids_and_native_accepted_snapshots ... ok
+test transport_retries_never_repeat_admission_conflicting_or_retired_ids_are_rejected ... ok
+test supported_methods_preserve_distinct_session_job_parameter_and_note_values ... ok
+test versioned_snapshot_requests_are_typed_and_invalid_envelopes_preserve_accepted_state ... ok
+test retired_editor_ids_and_foreign_native_sessions_cannot_recover_authority ... ok
+test invalid_method_arguments_and_stale_session_intents_cannot_change_controls_or_sound ... ok
+test replies_and_events_are_versioned_correlated_bounded_and_retired_with_the_editor ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/runtime.rs (/tmp/dandrum-lanes/cache-runtime/llvm-cov-target/debug/deps/runtime-32f72c984a29c4b4)
+
+running 17 tests
+test allocation_audit_independently_detects_allocation_and_preexisting_destruction ... ok
+test bounded_note_handoff_reports_backpressure_and_preserves_the_rejected_note ... ok
+test feedback_overflow_is_explicit_and_the_latest_scalar_remains_recoverable ... ok
+test unbound_control_roots_are_rejected_before_exposing_an_audio_runtime ... ok
+test invalid_parameter_events_preserve_the_scalar_values_and_signed_audio ... ok
+test host_notes_are_sample_accurate_and_invalid_batches_preserve_pending_work ... ok
+test first_callback_swaps_events_feedback_reset_and_short_blocks_allocate_or_free_nothing ... ok
+test reset_stops_active_and_queued_notes_and_retains_host_owned_values ... ok
+test dropping_the_control_endpoint_first_never_reclaims_resources_in_process ... ok
+test invalid_blocks_are_silent_and_preserve_the_pending_replacement ... ok
+test parameter_handoff_updates_signed_audio_and_reports_nonzero_host_offset ... ok
+test unsupported_realtime_schedules_are_rejected_off_audio_before_activation ... ok
+test invalid_configuration_or_foreign_layout_cannot_replace_the_running_runtime ... ok
+test a_changed_parameter_surface_is_refused_before_session_publication ... ok
+test replacement_is_block_boundary_only_and_backpressure_lasts_until_reclamation ... ok
+test handoff_capacity_is_bounded_by_both_the_protocol_limit_and_dsp_queue ... ok
+test session_publication_uses_a_cancellable_lease_and_rolls_back_under_backpressure ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+
+    Finished report saved to /tmp/dandrum-evidence/integration/combined-host-coverage.json

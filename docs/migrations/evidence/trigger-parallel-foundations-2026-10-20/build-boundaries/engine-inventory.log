@@ -1,0 +1,536 @@
+{
+  "backtraceGraph" :
+  {
+    "commands" :
+    [
+      "add_test"
+    ],
+    "files" :
+    [
+      "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/CMakeLists.txt"
+    ],
+    "nodes" :
+    [
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 157,
+        "parent" : 0
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 164,
+        "parent" : 2
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 168,
+        "parent" : 4
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 173,
+        "parent" : 6
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 200,
+        "parent" : 8
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 205,
+        "parent" : 10
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 207,
+        "parent" : 12
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 218,
+        "parent" : 14
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 222,
+        "parent" : 16
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 226,
+        "parent" : 18
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 230,
+        "parent" : 20
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 234,
+        "parent" : 22
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 238,
+        "parent" : 24
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 242,
+        "parent" : 26
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 250,
+        "parent" : 28
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 255,
+        "parent" : 30
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 259,
+        "parent" : 32
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 265,
+        "parent" : 34
+      },
+      {
+        "file" : 0
+      },
+      {
+        "command" : 0,
+        "file" : 0,
+        "line" : 267,
+        "parent" : 36
+      }
+    ]
+  },
+  "kind" : "ctestInfo",
+  "tests" :
+  [
+    {
+      "backtrace" : 1,
+      "command" :
+      [
+        "/home/dan/.local/bin/cmake",
+        "-DNM=/usr/bin/nm",
+        "-DRUST_ENGINE_LIB=/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine/rust-target/release/libdandrum_engine.a",
+        "-P",
+        "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/tests/cmake/RetiredEngineFfiSymbols.cmake"
+      ],
+      "name" : "retired-engine-ffi-symbols",
+      "properties" :
+      [
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine"
+        }
+      ]
+    },
+    {
+      "backtrace" : 3,
+      "command" :
+      [
+        "/usr/bin/python3",
+        "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/scripts/check-kernel-retirement.py"
+      ],
+      "name" : "retired-kernel-fields",
+      "properties" :
+      [
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine"
+        }
+      ]
+    },
+    {
+      "backtrace" : 5,
+      "command" :
+      [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "CARGO_TARGET_DIR=/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine/rust-target",
+        "/home/dan/.cargo/bin/cargo",
+        "test"
+      ],
+      "name" : "rust-engine-tests",
+      "properties" :
+      [
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/src/rust-engine"
+        }
+      ]
+    },
+    {
+      "backtrace" : 7,
+      "command" :
+      [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "CARGO_TARGET_DIR=/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine/rust-target",
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/src/instrument-session/Cargo.toml"
+      ],
+      "name" : "instrument-session-tests",
+      "properties" :
+      [
+        {
+          "name" : "LABELS",
+          "value" :
+          [
+            "session-fast"
+          ]
+        },
+        {
+          "name" : "TIMEOUT",
+          "value" : 1200.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine"
+        }
+      ]
+    },
+    {
+      "backtrace" : 9,
+      "command" :
+      [
+        "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine/dandrum-ffi-smoke"
+      ],
+      "name" : "cxx-rust-engine-ffi-smoke",
+      "properties" :
+      [
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine"
+        }
+      ]
+    },
+    {
+      "backtrace" : 11,
+      "command" :
+      [
+        "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine/dandrum-sample-accurate-midi-smoke"
+      ],
+      "name" : "cxx-rust-engine-sample-accurate-midi-smoke",
+      "properties" :
+      [
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine"
+        }
+      ]
+    },
+    {
+      "backtrace" : 13,
+      "command" :
+      [
+        "/home/dan/.local/bin/cmake",
+        "-DSOURCE_ROOT=/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source",
+        "-P",
+        "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/tests/cmake/RealtimeCallbackSafety.cmake"
+      ],
+      "name" : "realtime-callback-safety",
+      "properties" :
+      [
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine"
+        }
+      ]
+    },
+    {
+      "backtrace" : 15,
+      "command" :
+      [
+        "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine/dandrum-sound-lab-controller-test"
+      ],
+      "name" : "sound-lab-controller",
+      "properties" :
+      [
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine"
+        }
+      ]
+    },
+    {
+      "backtrace" : 17,
+      "command" :
+      [
+        "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine/dandrum-plugin-ui-command-test"
+      ],
+      "name" : "cxx-plugin-ui-command",
+      "properties" :
+      [
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine"
+        }
+      ]
+    },
+    {
+      "backtrace" : 19,
+      "command" :
+      [
+        "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine/dandrum-plugin-meter-capture-test"
+      ],
+      "name" : "cxx-plugin-meter-capture",
+      "properties" :
+      [
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine"
+        }
+      ]
+    },
+    {
+      "backtrace" : 21,
+      "command" :
+      [
+        "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine/dandrum-plugin-live-capture-test"
+      ],
+      "name" : "cxx-plugin-live-capture",
+      "properties" :
+      [
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine"
+        }
+      ]
+    },
+    {
+      "backtrace" : 23,
+      "command" :
+      [
+        "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine/dandrum-plugin-meter-aggregation-test"
+      ],
+      "name" : "cxx-plugin-meter-aggregation",
+      "properties" :
+      [
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine"
+        }
+      ]
+    },
+    {
+      "backtrace" : 25,
+      "command" :
+      [
+        "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine/dandrum-plugin-meter-delivery-test"
+      ],
+      "name" : "cxx-plugin-meter-delivery",
+      "properties" :
+      [
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine"
+        }
+      ]
+    },
+    {
+      "backtrace" : 27,
+      "command" :
+      [
+        "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine/dandrum-plugin-meter-display-test"
+      ],
+      "name" : "cxx-plugin-meter-display",
+      "properties" :
+      [
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine"
+        }
+      ]
+    },
+    {
+      "backtrace" : 29,
+      "command" :
+      [
+        "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine/dandrum-plugin-waveform-service-test"
+      ],
+      "name" : "cxx-plugin-waveform-service",
+      "properties" :
+      [
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine"
+        }
+      ]
+    },
+    {
+      "backtrace" : 31,
+      "command" :
+      [
+        "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine/dandrum-plugin-waveform-geometry-test"
+      ],
+      "name" : "cxx-plugin-waveform-geometry",
+      "properties" :
+      [
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine"
+        }
+      ]
+    },
+    {
+      "backtrace" : 33,
+      "command" :
+      [
+        "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine/dandrum-plugin-spectral-geometry-test"
+      ],
+      "name" : "cxx-plugin-spectral-geometry",
+      "properties" :
+      [
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine"
+        }
+      ]
+    },
+    {
+      "backtrace" : 35,
+      "command" :
+      [
+        "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine/dandrum-filter-spike-engine-test"
+      ],
+      "name" : "filter-spike-engine",
+      "properties" :
+      [
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine"
+        }
+      ]
+    },
+    {
+      "backtrace" : 37,
+      "command" :
+      [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "PYTHONDONTWRITEBYTECODE=1",
+        "python3",
+        "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/tests/python/test_engine_only_build.py",
+        "EngineOnlyBuildTest"
+      ],
+      "name" : "engine-only-build",
+      "properties" :
+      [
+        {
+          "name" : "LABELS",
+          "value" :
+          [
+            "build-boundary"
+          ]
+        },
+        {
+          "name" : "RUN_SERIAL",
+          "value" : true
+        },
+        {
+          "name" : "TIMEOUT",
+          "value" : 1200.0
+        },
+        {
+          "name" : "WORKING_DIRECTORY",
+          "value" : "/tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-rcvls6_l/source/build/engine"
+        }
+      ]
+    }
+  ],
+  "version" :
+  {
+    "major" : 1,
+    "minor" : 0
+  }
+}

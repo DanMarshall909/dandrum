@@ -1,0 +1,250 @@
+dandrum-wry-lifecycle-probe v0.0.0 (/tmp/dandrum-lanes/wry-probe)
+gtk v0.18.2
+atk v0.18.2
+atk-sys v0.18.2
+glib-sys v0.18.1
+libc v0.2.191
+gobject-sys v0.18.0
+glib-sys v0.18.1 (*)
+libc v0.2.191
+libc v0.2.191
+glib v0.18.5
+bitflags v2.13.2
+futures-channel v0.3.34
+futures-core v0.3.34
+futures-core v0.3.34
+futures-executor v0.3.34
+futures-core v0.3.34
+futures-task v0.3.34
+futures-util v0.3.34
+futures-core v0.3.34
+futures-macro v0.3.34 (proc-macro)
+proc-macro2 v1.0.107
+unicode-ident v1.0.27
+quote v1.0.47
+proc-macro2 v1.0.107 (*)
+syn v3.0.9
+proc-macro2 v1.0.107 (*)
+quote v1.0.47 (*)
+unicode-ident v1.0.27
+futures-task v0.3.34
+pin-project-lite v0.2.17
+slab v0.4.12
+futures-task v0.3.34
+futures-util v0.3.34 (*)
+gio-sys v0.18.1
+glib-sys v0.18.1 (*)
+gobject-sys v0.18.0 (*)
+libc v0.2.191
+glib-macros v0.18.5 (proc-macro)
+heck v0.4.1
+proc-macro-crate v2.0.2
+toml_datetime v0.6.3
+serde v1.0.229
+serde_core v1.0.229
+toml_edit v0.20.2
+indexmap v2.14.2
+equivalent v1.0.3
+hashbrown v0.17.1
+serde v1.0.229 (*)
+serde_spanned v0.6.9
+serde v1.0.229 (*)
+toml_datetime v0.6.3 (*)
+winnow v0.5.40
+proc-macro-error v1.0.4
+proc-macro-error-attr v1.0.4 (proc-macro)
+proc-macro2 v1.0.107 (*)
+quote v1.0.47 (*)
+proc-macro2 v1.0.107 (*)
+quote v1.0.47 (*)
+syn v1.0.109
+proc-macro2 v1.0.107 (*)
+unicode-ident v1.0.27
+proc-macro2 v1.0.107 (*)
+quote v1.0.47 (*)
+syn v2.0.119
+proc-macro2 v1.0.107 (*)
+quote v1.0.47 (*)
+unicode-ident v1.0.27
+glib-sys v0.18.1 (*)
+gobject-sys v0.18.0 (*)
+libc v0.2.191
+memchr v2.8.3
+once_cell v1.21.4
+smallvec v1.16.3
+thiserror v1.0.69
+thiserror-impl v1.0.69 (proc-macro)
+proc-macro2 v1.0.107 (*)
+quote v1.0.47 (*)
+syn v2.0.119 (*)
+libc v0.2.191
+cairo-rs v0.18.5
+bitflags v2.13.2
+cairo-sys-rs v0.18.2
+glib-sys v0.18.1 (*)
+libc v0.2.191
+glib v0.18.5 (*)
+libc v0.2.191
+once_cell v1.21.4
+thiserror v1.0.69 (*)
+field-offset v0.3.6
+memoffset v0.9.1
+futures-channel v0.3.34 (*)
+gdk v0.18.2
+cairo-rs v0.18.5 (*)
+gdk-pixbuf v0.18.5
+gdk-pixbuf-sys v0.18.0
+gio-sys v0.18.1 (*)
+glib-sys v0.18.1 (*)
+gobject-sys v0.18.0 (*)
+libc v0.2.191
+gio v0.18.4
+futures-channel v0.3.34 (*)
+futures-core v0.3.34
+futures-io v0.3.34
+futures-util v0.3.34 (*)
+gio-sys v0.18.1 (*)
+glib v0.18.5 (*)
+libc v0.2.191
+once_cell v1.21.4
+pin-project-lite v0.2.17
+smallvec v1.16.3
+thiserror v1.0.69 (*)
+glib v0.18.5 (*)
+libc v0.2.191
+once_cell v1.21.4
+gdk-sys v0.18.2
+cairo-sys-rs v0.18.2 (*)
+gdk-pixbuf-sys v0.18.0 (*)
+gio-sys v0.18.1 (*)
+glib-sys v0.18.1 (*)
+gobject-sys v0.18.0 (*)
+libc v0.2.191
+pango-sys v0.18.0
+glib-sys v0.18.1 (*)
+gobject-sys v0.18.0 (*)
+libc v0.2.191
+gio v0.18.4 (*)
+glib v0.18.5 (*)
+libc v0.2.191
+pango v0.18.3
+gio v0.18.4 (*)
+glib v0.18.5 (*)
+libc v0.2.191
+once_cell v1.21.4
+pango-sys v0.18.0 (*)
+gdk-pixbuf v0.18.5 (*)
+gio v0.18.4 (*)
+glib v0.18.5 (*)
+gtk-sys v0.18.2
+atk-sys v0.18.2 (*)
+cairo-sys-rs v0.18.2 (*)
+gdk-pixbuf-sys v0.18.0 (*)
+gdk-sys v0.18.2 (*)
+gio-sys v0.18.1 (*)
+glib-sys v0.18.1 (*)
+gobject-sys v0.18.0 (*)
+libc v0.2.191
+pango-sys v0.18.0 (*)
+gtk3-macros v0.18.2 (proc-macro)
+proc-macro-crate v1.3.1
+once_cell v1.21.4
+toml_edit v0.19.15
+indexmap v2.14.2 (*)
+toml_datetime v0.6.3 (*)
+winnow v0.5.40
+proc-macro-error v1.0.4 (*)
+proc-macro2 v1.0.107 (*)
+quote v1.0.47 (*)
+syn v2.0.119 (*)
+libc v0.2.191
+pango v0.18.3 (*)
+raw-window-handle v0.6.2
+wry v0.57.0
+cookie v0.18.2
+time v0.3.55
+deranged v0.5.9
+num-conv v0.2.2
+powerfmt v0.2.1
+time-core v0.1.9
+time-macros v0.2.32 (proc-macro)
+num-conv v0.2.2
+time-core v0.1.9
+dirs v7.0.0
+dirs-sys v0.5.0
+libc v0.2.191
+option-ext v0.2.0
+dpi v0.1.2
+gdkx11 v0.18.2
+gdk v0.18.2 (*)
+gdkx11-sys v0.18.2
+gdk-sys v0.18.2 (*)
+glib-sys v0.18.1 (*)
+libc v0.2.191
+x11 v2.21.0
+libc v0.2.191
+gio v0.18.4 (*)
+glib v0.18.5 (*)
+libc v0.2.191
+x11 v2.21.0 (*)
+gtk v0.18.2 (*)
+http v1.5.0
+bytes v1.12.1
+itoa v1.0.18
+javascriptcore-rs v1.1.2
+bitflags v1.3.2
+glib v0.18.5 (*)
+javascriptcore-rs-sys v1.1.1
+glib-sys v0.18.1 (*)
+gobject-sys v0.18.0 (*)
+libc v0.2.191
+once_cell v1.21.4
+percent-encoding v2.3.2
+raw-window-handle v0.6.2
+soup3 v0.5.0
+futures-channel v0.3.34 (*)
+gio v0.18.4 (*)
+glib v0.18.5 (*)
+libc v0.2.191
+soup3-sys v0.5.0
+gio-sys v0.18.1 (*)
+glib-sys v0.18.1 (*)
+gobject-sys v0.18.0 (*)
+libc v0.2.191
+thiserror v2.0.21
+thiserror-impl v2.0.21 (proc-macro)
+proc-macro2 v1.0.107 (*)
+quote v1.0.47 (*)
+syn v3.0.9 (*)
+webkit2gtk v2.0.2
+bitflags v1.3.2
+cairo-rs v0.18.5 (*)
+gdk v0.18.2 (*)
+gdk-sys v0.18.2 (*)
+gio v0.18.4 (*)
+gio-sys v0.18.1 (*)
+glib v0.18.5 (*)
+glib-sys v0.18.1 (*)
+gobject-sys v0.18.0 (*)
+gtk v0.18.2 (*)
+gtk-sys v0.18.2 (*)
+javascriptcore-rs v1.1.2 (*)
+libc v0.2.191
+once_cell v1.21.4
+soup3 v0.5.0 (*)
+webkit2gtk-sys v2.0.2
+bitflags v1.3.2
+cairo-sys-rs v0.18.2 (*)
+gdk-sys v0.18.2 (*)
+gio-sys v0.18.1 (*)
+glib-sys v0.18.1 (*)
+gobject-sys v0.18.0 (*)
+gtk-sys v0.18.2 (*)
+javascriptcore-rs-sys v1.1.1 (*)
+libc v0.2.191
+soup3-sys v0.5.0 (*)
+webkit2gtk-sys v2.0.2 (*)
+x11-dl v2.21.0
+libc v0.2.191
+once_cell v1.21.4
+x11-dl v2.21.0 (*)

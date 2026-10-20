@@ -1,0 +1,6 @@
+{
+  "src/trigger-host/src/runtime.rs": "cd7bc42d796b9b439ef59118418be509a68bd2da76ff215115fc30621240ae2e",
+  "src/trigger-host/tests/runtime.rs": "647b95c0e4749e5970510eaf3869339b7a75a28bb3cda4fa067bb95682e232bc",
+  "src/trigger-host/Cargo.toml": "31648d215d1d049f634d3cc9438be3df23ebfcd42ca58ca40e9515fc2d083193",
+  "src/trigger-host/Cargo.lock": "852639d6c848bdf3ae3f396d11663da7249b6e5f81df71ce41203fd8d78f6d2a"
+}

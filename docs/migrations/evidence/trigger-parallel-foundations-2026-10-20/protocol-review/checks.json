@@ -1,0 +1,41 @@
+[
+  {
+    "name": "review-tests",
+    "command": [
+      "/home/dan/.cargo/bin/cargo",
+      "test",
+      "--offline",
+      "--locked",
+      "--manifest-path",
+      "src/trigger-host/Cargo.toml"
+    ],
+    "cwd": "/tmp/dandrum-lanes/protocol",
+    "exit": 0,
+    "elapsed_s": 0.229
+  },
+  {
+    "name": "review-format",
+    "command": [
+      "/home/dan/.cargo/bin/cargo",
+      "fmt",
+      "--manifest-path",
+      "src/trigger-host/Cargo.toml",
+      "--check"
+    ],
+    "cwd": "/tmp/dandrum-lanes/protocol",
+    "exit": 0,
+    "elapsed_s": 0.052
+  },
+  {
+    "name": "review-openspec",
+    "command": [
+      "openspec",
+      "validate",
+      "add-juce-free-trigger-clap-editor",
+      "--strict"
+    ],
+    "cwd": "/tmp/dandrum-lanes/protocol",
+    "exit": 0,
+    "elapsed_s": 0.267
+  }
+]

@@ -1,0 +1,42 @@
+[  3%] Building CXX object CMakeFiles/dandrum-plugin-ui-command-test.dir/tests/cpp/PluginUiCommandTest.cpp.o
+[  6%] Built target dandrum-engine-rust
+[ 10%] Building CXX object CMakeFiles/dandrum-plugin-meter-capture-test.dir/tests/cpp/PluginMeterCaptureTest.cpp.o
+[ 13%] Linking CXX executable dandrum-plugin-meter-capture-test
+[ 13%] Built target dandrum-plugin-meter-capture-test
+[ 17%] Building CXX object CMakeFiles/dandrum-plugin-live-capture-test.dir/tests/cpp/PluginLiveCaptureTest.cpp.o
+[ 20%] Linking CXX executable dandrum-plugin-ui-command-test
+[ 20%] Built target dandrum-plugin-ui-command-test
+[ 24%] Building CXX object CMakeFiles/dandrum-plugin-meter-aggregation-test.dir/tests/cpp/PluginMeterAggregationTest.cpp.o
+[ 27%] Linking CXX executable dandrum-plugin-live-capture-test
+[ 27%] Built target dandrum-plugin-live-capture-test
+[ 31%] Building CXX object CMakeFiles/dandrum-plugin-meter-delivery-test.dir/tests/cpp/PluginMeterDeliveryTest.cpp.o
+[ 34%] Linking CXX executable dandrum-plugin-meter-aggregation-test
+[ 34%] Built target dandrum-plugin-meter-aggregation-test
+[ 37%] Building CXX object CMakeFiles/dandrum-plugin-meter-display-test.dir/tests/cpp/PluginMeterDisplayTest.cpp.o
+[ 41%] Linking CXX executable dandrum-plugin-meter-delivery-test
+[ 41%] Built target dandrum-plugin-meter-delivery-test
+[ 44%] Building CXX object CMakeFiles/dandrum-plugin-waveform-service-test.dir/tests/cpp/PluginWaveformServiceTest.cpp.o
+[ 48%] Linking CXX executable dandrum-plugin-meter-display-test
+[ 48%] Built target dandrum-plugin-meter-display-test
+[ 51%] Building CXX object CMakeFiles/dandrum-plugin-waveform-geometry-test.dir/tests/cpp/PluginWaveformGeometryTest.cpp.o
+[ 55%] Linking CXX executable dandrum-plugin-waveform-geometry-test
+[ 55%] Built target dandrum-plugin-waveform-geometry-test
+[ 58%] Building CXX object CMakeFiles/dandrum-plugin-spectral-geometry-test.dir/tests/cpp/PluginSpectralGeometryTest.cpp.o
+[ 62%] Building CXX object CMakeFiles/dandrum-plugin-waveform-service-test.dir/src/juce-plugin/InstrumentUiWaveformService.cpp.o
+[ 65%] Linking CXX executable dandrum-plugin-spectral-geometry-test
+[ 65%] Built target dandrum-plugin-spectral-geometry-test
+[ 68%] Building CXX object CMakeFiles/dandrum-filter-spike-engine-test.dir/tests/cpp/FilterSpikeEngineTest.cpp.o
+[ 72%] Linking CXX executable dandrum-filter-spike-engine-test
+[ 75%] Linking CXX executable dandrum-plugin-waveform-service-test
+[ 75%] Built target dandrum-filter-spike-engine-test
+[ 79%] Building CXX object CMakeFiles/dandrum-ffi-smoke.dir/tests/cpp/RustEngineFfiSmoke.cpp.o
+[ 79%] Built target dandrum-plugin-waveform-service-test
+[ 82%] Building CXX object CMakeFiles/dandrum-sample-accurate-midi-smoke.dir/tests/cpp/RustEngineSampleAccurateMidiSmoke.cpp.o
+[ 86%] Linking CXX executable dandrum-sample-accurate-midi-smoke
+[ 89%] Linking CXX executable dandrum-ffi-smoke
+[ 89%] Built target dandrum-sample-accurate-midi-smoke
+[ 93%] Building CXX object CMakeFiles/dandrum-sound-lab-controller-test.dir/tests/cpp/SoundLabControllerTest.cpp.o
+[ 93%] Built target dandrum-ffi-smoke
+[ 96%] Building CXX object CMakeFiles/dandrum-sound-lab-controller-test.dir/src/juce-plugin/SoundLabController.cpp.o
+[100%] Linking CXX executable dandrum-sound-lab-controller-test
+[100%] Built target dandrum-sound-lab-controller-test

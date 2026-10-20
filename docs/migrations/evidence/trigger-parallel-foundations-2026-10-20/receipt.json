@@ -1,0 +1,346 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-20",
+  "scope": "Parallel implementation of tasks2.2,2.3,3.1 and bounded Wry investigation only; no complete JUCE-free Trigger CLAP editor/beta claim",
+  "owning_change": "add-juce-free-trigger-clap-editor",
+  "task_status_owner": "openspec/changes/add-juce-free-trigger-clap-editor/tasks.md",
+  "task_progress_snapshot": {
+    "complete": 6,
+    "total": 14,
+    "completed_this_session": [
+      "2.2",
+      "2.3",
+      "3.1"
+    ],
+    "remaining": [
+      "2.4",
+      "3.2",
+      "3.3",
+      "4.1",
+      "4.2",
+      "4.3",
+      "5.1",
+      "5.2"
+    ]
+  },
+  "integration": {
+    "base": "a116c2cc3ff0d14f3fc128010db3a4e9365964e2",
+    "source_head": "8ccbb5487a8cc4dc4c739f3bf9ef886920a6f638",
+    "intended_branch": "feat/juce-free-host-adapters",
+    "remote_destination": "github.com/DanMarshall909/dandrum.git",
+    "recorded_upstream": "16184e21e957e2adcca2f50845cf33f3b49ec510",
+    "main_merge": false,
+    "commits": {
+      "frontend": "86c198a",
+      "protocol": "2480ad8",
+      "runtime": "8ccbb54"
+    }
+  },
+  "independent_reviews": {
+    "frontend": {
+      "verdict": "PASS",
+      "record": "frontend-review/review.md",
+      "manifest": "frontend-review/manifest.json",
+      "manifest_sha256": "098d5431e1b74ae9ea2ac339be4affc699fa5875593c3c3a6f1168494a16580f"
+    },
+    "protocol": {
+      "verdict": "PASS",
+      "record": "protocol-review/review.md",
+      "manifest": "protocol-review/manifest.json",
+      "manifest_sha256": "cce4a9023889a4f78031c38f5d24a5de91b7a4896043ecade200173675a0bb77"
+    },
+    "runtime": {
+      "verdict": "PASS",
+      "record": "runtime-review/review.md",
+      "manifest": "runtime-review/manifest.json",
+      "manifest_sha256": "7027f4b241591750bfb4884ef5438e1c2d2924e66f50254eba8b2a5642e6b90f"
+    }
+  },
+  "source_sha256": {
+    "CMakeLists.txt": "e83cf08fea4c5d68ef263a41f22c248017b239d744456a47f3ea0dc85cbd269a",
+    "src/trigger-host/Cargo.lock": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+    "src/trigger-host/Cargo.toml": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+    "src/trigger-host/src/lib.rs": "57cb22f629dd2335b7b4a3bbce0d114b84c1ff79b0d3d813396e44c1c0d96dc8",
+    "src/trigger-host/src/protocol.rs": "65ccbc6ab9e48d2356ef6ad49c90811109d6f0a38dfe95265a616d8d6222cb7d",
+    "src/trigger-host/src/runtime.rs": "cd7bc42d796b9b439ef59118418be509a68bd2da76ff215115fc30621240ae2e",
+    "src/trigger-host/tests/packaged_resources.rs": "14cf8d062ef37c69434e3e6a5de4ecc8c29381944cbd3ceec2a84d58962d9003",
+    "src/trigger-host/tests/protocol.rs": "6ac729489e479f6457e23ba56be48c0f1ca11b431b6e968abfa27352012a70e0",
+    "src/trigger-host/tests/runtime.rs": "647b95c0e4749e5970510eaf3869339b7a75a28bb3cda4fa067bb95682e232bc",
+    "tests/python/test_engine_only_build.py": "029afa4ed913c1a306602f7dcaa4480c2dc76d52e0b923d9e2dc0f88a898e995",
+    "web/trigger/engine/native-engine.mjs": "7001e64253272ee491e686a2123fee84b0167d18e174815a5f643bfdbc5f1787",
+    "web/trigger/engine/native-transport.mjs": "08eabe7509419d3d04e2f2e1748c81c2813eb4c580750e8cd93d6dec6779c297",
+    "web/trigger/main.jsx": "967ddae802dbf3b49a61e6e5b427ea957bd971814799ffbae8375aa653489970",
+    "web/trigger/tests/browser/native-transport.spec.mjs": "a5a5ae0b108cd3bdf563ada32b54f21e699d9a8836fe087ef8c5f53a6d08d42d",
+    "web/trigger/tests/native-transport.test.mjs": "f91ad393cd0f90ae1904c093b00341059fd5794f926973fd21a0a76b752cd23f"
+  },
+  "commands": [
+    {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": "CARGO_TARGET_DIR=/tmp/dandrum-lanes/cache-runtime CARGO_BUILD_JOBS=2 cargo test --offline --locked --manifest-path src/trigger-host/Cargo.toml",
+      "exit_code": 0,
+      "tests": 33,
+      "log": "integration/combined-host-tests.log"
+    },
+    {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": "CARGO_TARGET_DIR=/tmp/dandrum-lanes/cache-runtime CARGO_BUILD_JOBS=2 cargo clippy --offline --locked --manifest-path src/trigger-host/Cargo.toml --all-targets -- -D warnings",
+      "exit_code": 0,
+      "log": "integration/combined-host-clippy.log"
+    },
+    {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": "CARGO_TARGET_DIR=/tmp/dandrum-lanes/cache-runtime CARGO_BUILD_JOBS=2 cargo llvm-cov --offline --locked --manifest-path src/trigger-host/Cargo.toml --json --output-path /tmp/dandrum-evidence/integration/combined-host-coverage.json --ignore-filename-regex 'rust-engine|instrument-session'",
+      "exit_code": 0,
+      "log": "integration/combined-host-coverage.log",
+      "note": "Regex argument is one quoted shell argument; owning host coverage only."
+    },
+    {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": "python3 tests/python/test_engine_only_build.py ClapProofBuildTest",
+      "exit_code": 0,
+      "tests": 4,
+      "elapsed_seconds": 146.641,
+      "log": "integration/combined-build-boundary.log"
+    },
+    {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": "cmake -S . -B build/parallel-final -DCMAKE_BUILD_TYPE=Release -DDANDRUM_ENGINE_ONLY=ON -DDANDRUM_CLAP_PROOF=ON -DDANDRUM_TRIGGER_CLAP_EDITOR=ON -DDANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=/tmp/dandrum-lanes/frontend/web/trigger/dist-native",
+      "exit_code": 0,
+      "log": "integration/final-cmake-configure.log"
+    },
+    {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": "cmake --build build/parallel-final --parallel 2",
+      "exit_code": 0,
+      "log": "integration/final-cmake-build.log"
+    },
+    {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": "cmake --build build/parallel-final --target dandrum-trigger-clap-editor --parallel 2",
+      "exit_code": 0,
+      "log": "integration/final-opt-in-build.log"
+    },
+    {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": "ctest --test-dir build/parallel-final --output-on-failure",
+      "execution": "unrestricted existing module-library test fixture access",
+      "exit_code": 0,
+      "tests": 22,
+      "elapsed_seconds": 126.99,
+      "log": "integration/final-ctest.log"
+    },
+    {
+      "cwd": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters",
+      "command": "PATH=/home/dan/.nvm/versions/node/v22.19.0/bin:$PATH cmake --build build/web-host --target dandrum-trigger-native-bridge-test --parallel 2 && DISPLAY=:10.0 ctest --test-dir build/web-host --output-on-failure -R '^(cxx-trigger-native-bridge|trigger-web-runtime)$'",
+      "exit_code": 0,
+      "tests": 2,
+      "elapsed_seconds": 6.81,
+      "log": "integration/retained-webview-tests.log",
+      "note": "The actual tool invocation used sequential && and a quoted regex; both exited0."
+    }
+  ],
+  "coverage": {
+    "host_files": {
+      "lib.rs": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 21,
+          "covered": 21,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 44,
+          "covered": 23,
+          "percent": 52.27272727272727
+        },
+        "lines": {
+          "count": 120,
+          "covered": 119,
+          "percent": 99.16666666666667
+        },
+        "regions": {
+          "count": 173,
+          "covered": 171,
+          "notcovered": 2,
+          "percent": 98.84393063583815
+        }
+      },
+      "protocol.rs": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 21,
+          "covered": 21,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 48,
+          "covered": 27,
+          "percent": 56.25
+        },
+        "lines": {
+          "count": 329,
+          "covered": 329,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 481,
+          "covered": 466,
+          "notcovered": 15,
+          "percent": 96.88149688149689
+        }
+      },
+      "runtime.rs": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 45,
+          "covered": 45,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 88,
+          "covered": 50,
+          "percent": 56.81818181818182
+        },
+        "lines": {
+          "count": 393,
+          "covered": 393,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 556,
+          "covered": 555,
+          "notcovered": 1,
+          "percent": 99.82014388489208
+        }
+      }
+    },
+    "runtime_physical_production_lines": {
+      "covered": 346,
+      "total": 346
+    },
+    "interpretation": "All new-module source lines execute; no100% branch or region claim. Branch instrumentation unavailable. Hostlib119/120 counted lines and171/173regions with no zero-hit annotated source line; generic/instantiation accounting retained. Runtime file count includes unit/generic instantiations.",
+    "frontend_selector": "100% Node-measured lines/branches/functions; NativeEngine100% lines with branch/function gaps retained",
+    "raw_v8_source_bound_reports": "/tmp/dandrum-evidence/frontend/v8 (retained locally; portable final-coverage.log and source hashes included)"
+  },
+  "frontend_evidence": "frontend/handoff.md",
+  "normal_commit_hooks": {
+    "frontend": {
+      "engine_tests": 1084,
+      "test_seconds": 38.39,
+      "strict_coverage": "PASS",
+      "exit_code": 0
+    },
+    "protocol": {
+      "engine_tests": 1084,
+      "test_seconds": 37.73,
+      "strict_coverage": "PASS",
+      "exit_code": 0
+    },
+    "runtime": {
+      "engine_tests": 1084,
+      "test_seconds": 38.41,
+      "strict_coverage": "PASS",
+      "exit_code": 0
+    }
+  },
+  "specification": {
+    "scoped_strict": "PASS",
+    "canonical_strict": "PASS",
+    "canonical_scenarios": 618,
+    "mapped": 379,
+    "unchanged_backlog": 239,
+    "new_scenarios_synchronized": false
+  },
+  "mutation": {
+    "status": "excluded",
+    "authority": "Recorded user direction retained in accepted tasks5.1 and prior migration record"
+  },
+  "setup_failures_retained": [
+    {
+      "log": "integration/final-ctest-restricted.log",
+      "result": "20/22 passed; rust-engine-tests readonly ~/.dandrum fixture and clap-dynamic-host missing opt-in artifact",
+      "resolution": "Explicitly build opt-in target; rerun full22 with required filesystem access, no source change"
+    },
+    {
+      "log": "frontend/baseline-test.log",
+      "result": "Sandbox child process EPERM in existing component guard",
+      "resolution": "Unrestricted maintained driver and independent reviewer102/102 pass; guard unchanged"
+    }
+  ],
+  "wry_investigation": {
+    "receipt": "../trigger-wry-investigation-2026-10-20/receipt.json",
+    "findings": "../trigger-wry-investigation-2026-10-20/findings.md",
+    "decision": "adopt pinned0.57.0 for next implementation fixture; defer product integration",
+    "cycles_passed": 2,
+    "task3_2_complete": false
+  },
+  "publication": {
+    "status": "authorized_pending_normal_push",
+    "rejected_action": "git push origin HEAD:feat/juce-free-host-adapters",
+    "automatic_review_reason": "Historical initial refusal: normal push publishes source/history remotely and explicit user payload/destination authority was then unavailable.",
+    "push_attempt_executed": false,
+    "candidate_remains_local": true,
+    "authorization": "User20October full-beta continuation explicitly requests focused commits and normal publication on feat/juce-free-host-adapters; the prior automatic review refusal is retained as history."
+  },
+  "resources": {
+    "initial_free_gib": 43,
+    "late_free_gib_approx": 11,
+    "memory_reserve_mib_per_active_worktree": 4096,
+    "parallel_worktrees": [
+      "/tmp/dandrum-lanes/runtime",
+      "/tmp/dandrum-lanes/protocol",
+      "/tmp/dandrum-lanes/frontend",
+      "/tmp/dandrum-lanes/integration"
+    ],
+    "reusable_caches_retained": [
+      "/tmp/dandrum-lanes/cache-runtime",
+      "/tmp/dandrum-lanes/cache-protocol",
+      "/tmp/dandrum-lanes/cache-parent",
+      "/tmp/dandrum-lanes/integration/build/engine-only-regression/cargo-target",
+      "/tmp/dandrum-lanes/wry-probe/target"
+    ],
+    "cleanup": "Task browser server and Wry child processes completed. Build/Cargo/dependency caches and unpublished review worktrees retained; none deleted."
+  },
+  "material_finding": {
+    "issue": "Packaged session initially left planar control inputs unbound; supplied level0.25 still rendered-0.5.",
+    "resolution": "Prepare named host buses and prove actual TriggerHost\u2192runtime\u2192signed-0.125 without journal changes.",
+    "guidance_change": "None; existing signed-DSP assertion rule already owns the lesson."
+  },
+  "evidence_packaging": {
+    "normalization": "evidence-normalization.json",
+    "originals": "Deterministic .raw.gz companions preserve exact original bytes; embedded historical raw-log hashes apply to decompressed originals."
+  }
+}

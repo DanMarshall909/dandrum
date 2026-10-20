@@ -1,0 +1,70 @@
+diff --git a/src/trigger-host/Cargo.lock b/src/trigger-host/Cargo.lock
+index 4d06972..3c5dab3 100644
+--- a/src/trigger-host/Cargo.lock
++++ b/src/trigger-host/Cargo.lock
+@@ -26,6 +26,12 @@ dependencies = [
+  "memchr",
+ ]
+
++[[package]]
++name = "allocation-counter"
++version = "0.8.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "beb9e990c0a33699f1984d85a6abead615ccc72dd8130bf3e15dcabe2ca149c9"
++
+ [[package]]
+ name = "allocator-api2"
+ version = "0.2.21"
+@@ -186,8 +192,10 @@ dependencies = [
+ name = "dandrum-trigger-host"
+ version = "0.1.0"
+ dependencies = [
++ "allocation-counter",
+  "dandrum_engine",
+  "dandrum_instrument_session",
++ "rtrb",
+  "tempfile",
+ ]
+
+@@ -842,6 +850,12 @@ dependencies = [
+  "syn 2.0.119",
+ ]
+
++[[package]]
++name = "rtrb"
++version = "0.3.2"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "ad8388ea1a9e0ea807e442e8263a699e7edcb320ecbcd21b4fa8ff859acce3ba"
++
+ [[package]]
+ name = "rustc_version"
+ version = "0.4.1"
+diff --git a/src/trigger-host/Cargo.toml b/src/trigger-host/Cargo.toml
+index 094fe02..f918e58 100644
+--- a/src/trigger-host/Cargo.toml
++++ b/src/trigger-host/Cargo.toml
+@@ -10,9 +10,11 @@ name = "dandrum_trigger_host"
+ [dependencies]
+ dandrum_engine = { path = "../rust-engine" }
+ dandrum_instrument_session = { path = "../instrument-session" }
++rtrb = "=0.3.2"
+
+ [dev-dependencies]
+ tempfile = "3"
++allocation-counter = "=0.8.1"
+
+ [profile.release]
+ codegen-units = 1
+diff --git a/src/trigger-host/src/lib.rs b/src/trigger-host/src/lib.rs
+index 4987643..b390dc5 100644
+--- a/src/trigger-host/src/lib.rs
++++ b/src/trigger-host/src/lib.rs
+@@ -5,6 +5,8 @@
+
+ #![forbid(unsafe_code)]
+
++pub mod runtime;
++
+ use dandrum_engine::patch::RenderSettings;
+ use dandrum_engine::preparation::PreparationContext;
+ use dandrum_instrument_session::{Attachment, PreparedDocumentReplacement, SessionError};

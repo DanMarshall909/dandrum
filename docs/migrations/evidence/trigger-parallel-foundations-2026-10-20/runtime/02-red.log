@@ -1,0 +1,36 @@
+   Compiling dandrum-trigger-host v0.1.0 (/tmp/dandrum-lanes/runtime/src/trigger-host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.95s
+     Running tests/runtime.rs (/tmp/dandrum-lanes/cache-runtime/debug/deps/runtime-b756499cb62cad96)
+
+running 5 tests
+test bounded_note_handoff_reports_backpressure_and_preserves_the_rejected_note ... FAILED
+test host_notes_are_sample_accurate_and_invalid_batches_preserve_pending_work ... FAILED
+test invalid_blocks_are_silent_and_preserve_the_pending_replacement ... ok
+test invalid_configuration_or_foreign_layout_cannot_replace_the_running_runtime ... ok
+test replacement_is_block_boundary_only_and_backpressure_lasts_until_reclamation ... ok
+
+failures:
+
+---- bounded_note_handoff_reports_backpressure_and_preserves_the_rejected_note stdout ----
+
+thread 'bounded_note_handoff_reports_backpressure_and_preserves_the_rejected_note' (140) panicked at tests/runtime.rs:82:9:
+assertion `left == right` failed
+  left: Err(QueueFull)
+ right: Ok(())
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- host_notes_are_sample_accurate_and_invalid_batches_preserve_pending_work stdout ----
+
+thread 'host_notes_are_sample_accurate_and_invalid_batches_preserve_pending_work' (141) panicked at tests/runtime.rs:106:9:
+assertion `left == right` failed
+  left: ([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+ right: ([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+
+failures:
+    bounded_note_handoff_reports_backpressure_and_preserves_the_rejected_note
+    host_notes_are_sample_accurate_and_invalid_batches_preserve_pending_work
+
+test result: FAILED. 3 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+error: test failed, to rerun pass `--test runtime`

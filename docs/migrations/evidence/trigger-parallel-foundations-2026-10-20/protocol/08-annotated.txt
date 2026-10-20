@@ -1,0 +1,570 @@
+    1|       |//! Bounded, main-thread admission for editor messages. Dispatch belongs to adapters.
+    2|       |
+    3|       |use dandrum_instrument_session::{Attachment, InstrumentSession, SessionError, SessionSnapshot};
+    4|       |
+    5|       |pub const PROTOCOL_VERSION: u32 = 1;
+    6|       |pub const MESSAGE_BYTES_LIMIT: usize = 16 * 1024;
+    7|       |pub const REPLAY_LIMIT: usize = 128;
+    8|       |
+    9|       |#[derive(Debug, PartialEq, Eq, serde::Serialize)]
+   10|       |#[serde(tag = "code", rename_all = "camelCase")]
+   11|       |pub enum ProtocolError {
+   12|       |    Malformed,
+   13|       |    Oversized,
+   14|       |    UnsupportedVersion,
+   15|       |    StaleAttachment,
+   16|       |    InvalidArguments,
+   17|       |    CapabilityUnavailable,
+   18|       |    ConflictingRequest,
+   19|       |    StaleRequest,
+   20|       |    RetiredRequest,
+   21|       |    IdentityExhausted,
+   22|       |    Session(#[serde(skip)] SessionError),
+   23|       |}
+   24|       |
+   25|       |pub struct EditorConnection {
+   26|       |    pub instance_id: String,
+   27|       |    pub attachment_id: String,
+   28|       |    pub snapshot: SessionSnapshot,
+   29|       |}
+   30|       |struct Connection {
+   31|       |    id: u64,
+   32|       |    attachment: Attachment,
+   33|       |    highest_request: u64,
+   34|       |    next_event: u64,
+   35|       |    retained: std::collections::VecDeque<(u64, EditorCommand)>,
+   36|       |}
+   37|       |pub struct EditorProtocol {
+   38|       |    instance_id: std::num::NonZeroU64,
+   39|       |    owner: Option<dandrum_instrument_session::SessionIdentity>,
+   40|       |    connections: Vec<Connection>,
+   41|       |    next_attachment: u64,
+   42|       |}
+   43|       |impl Default for EditorProtocol {
+   44|      6|    fn default() -> Self {
+   45|      6|        Self::new(std::num::NonZeroU64::MIN)
+   46|      6|    }
+   47|       |}
+   48|       |impl EditorProtocol {
+   49|     29|    pub fn attach(
+   50|     29|        &mut self,
+   51|     29|        session: &mut InstrumentSession,
+   52|     29|    ) -> Result<EditorConnection, ProtocolError> {
+   53|     29|        if self.connections.len() == dandrum_instrument_session::ATTACHMENT_LIMIT {
+   54|      1|            return Err(ProtocolError::Session(SessionError::AttachmentLimit));
+   55|     28|        }
+   56|     28|        let next = self
+   57|     28|            .next_attachment
+   58|     28|            .checked_add(1)
+   59|     28|            .ok_or(ProtocolError::IdentityExhausted)?;
+                                                                  ^0
+   60|     28|        let (attachment, snapshot) = session.attach().map_err(ProtocolError::Session)?;
+                                                                                                   ^0
+   61|     28|        if self
+   62|     28|            .owner
+   63|     28|            .as_ref()
+   64|     28|            .is_some_and(|owner| *owner != snapshot.instance)
+                                               ^21       ^21
+   65|       |        {
+   66|      1|            session
+   67|      1|                .detach(&attachment)
+   68|      1|                .expect("newly attached native editor is live");
+   69|      1|            return Err(ProtocolError::StaleAttachment);
+   70|     27|        }
+   71|     27|        self.owner = Some(snapshot.instance.clone());
+   72|     27|        let id = self.next_attachment;
+   73|     27|        self.connections.push(Connection {
+   74|     27|            id,
+   75|     27|            attachment,
+   76|     27|            highest_request: 0,
+   77|     27|            next_event: 1,
+   78|     27|            retained: std::collections::VecDeque::new(),
+   79|     27|        });
+   80|     27|        self.next_attachment = next;
+   81|     27|        Ok(EditorConnection {
+   82|     27|            instance_id: self.instance_id.to_string(),
+   83|     27|            attachment_id: id.to_string(),
+   84|     27|            snapshot,
+   85|     27|        })
+   86|     29|    }
+   87|       |}
+   88|       |
+   89|       |#[derive(Clone, Debug, PartialEq)]
+   90|       |pub enum EditorCommand {
+   91|       |    GetSamplerSession,
+   92|       |    GetParameterState,
+   93|       |    SetZoneKeyRange {
+   94|       |        identity: SessionCommandIdentity,
+   95|       |        intent: dandrum_instrument_session::SetZoneKeyRange,
+   96|       |    },
+   97|       |    UndoInstrumentSession {
+   98|       |        identity: SessionCommandIdentity,
+   99|       |    },
+  100|       |    GetInstrumentSessionJobStatus {
+  101|       |        request_id: dandrum_instrument_session::RequestId,
+  102|       |    },
+  103|       |    BeginGesture {
+  104|       |        parameter_id: String,
+  105|       |        generation: u64,
+  106|       |    },
+  107|       |    SetParameter {
+  108|       |        parameter_id: String,
+  109|       |        value: f64,
+  110|       |        generation: u64,
+  111|       |    },
+  112|       |    EndGesture {
+  113|       |        parameter_id: String,
+  114|       |        generation: u64,
+  115|       |    },
+  116|       |    NoteOn {
+  117|       |        note: u8,
+  118|       |        velocity: f64,
+  119|       |        generation: u64,
+  120|       |    },
+  121|       |    NoteOff {
+  122|       |        note: u8,
+  123|       |        generation: u64,
+  124|       |    },
+  125|       |    NoteHeartbeat,
+  126|       |}
+  127|       |#[derive(Clone, Debug, PartialEq, Eq)]
+  128|       |pub struct SessionCommandIdentity {
+  129|       |    pub instance_id: u64,
+  130|       |    pub attachment_id: u64,
+  131|       |    pub request_id: dandrum_instrument_session::RequestId,
+  132|       |    pub expected_revision: u64,
+  133|       |}
+  134|       |
+  135|       |#[derive(Debug)]
+  136|       |pub struct AdmittedRequest {
+  137|       |    pub request_id: u64,
+  138|       |    pub attachment: Attachment,
+  139|       |    pub command: EditorCommand,
+  140|       |}
+  141|       |#[derive(Debug)]
+  142|       |pub enum Admission {
+  143|       |    New(AdmittedRequest),
+  144|       |    Duplicate { request_id: u64 },
+  145|       |}
+  146|       |impl EditorProtocol {
+  147|    192|    pub fn admit(
+  148|    192|        &mut self,
+  149|    192|        session: &InstrumentSession,
+  150|    192|        message: &str,
+  151|    192|    ) -> Result<Admission, ProtocolError> {
+  152|    192|        if message.len() > MESSAGE_BYTES_LIMIT {
+  153|      1|            return Err(ProtocolError::Oversized);
+  154|    191|        }
+  155|    186|        let envelope: Envelope =
+  156|    191|            serde_json::from_str(message).map_err(|_| ProtocolError::Malformed)?;
+                                                                                             ^5
+  157|    186|        if envelope.version != PROTOCOL_VERSION {
+  158|      1|            return Err(ProtocolError::UnsupportedVersion);
+  159|    185|        }
+  160|    185|        let attachment_id = decimal(&envelope.attachment_id, false)?;
+                                                                                 ^0
+  161|    185|        let request_id = decimal(&envelope.request_id, false)?;
+                          ^182                                             ^3
+  162|    182|        let connection = self
+                          ^180
+  163|    182|            .connections
+  164|    182|            .iter_mut()
+  165|    182|            .find(|connection| connection.id == attachment_id)
+  166|    182|            .ok_or(ProtocolError::StaleAttachment)?;
+                                                                ^2
+  167|    180|        let snapshot = session
+                          ^179
+  168|    180|            .snapshot(&connection.attachment)
+  169|    180|            .map_err(|_| ProtocolError::StaleAttachment)?;
+                                                                      ^1
+  170|    179|        let command = parse_command(&envelope.method, envelope.args)?;
+                          ^166                                                    ^13
+  171|  8.45k|        if let Some((_, retained)) = connection.retained.iter().find(|(id, _)| *id == request_id) {
+                                      ^4           ^166                       ^166
+  172|      4|            return if *retained == command {
+  173|      3|                Ok(Admission::Duplicate { request_id })
+  174|       |            } else {
+  175|      1|                Err(ProtocolError::ConflictingRequest)
+  176|       |            };
+  177|    162|        }
+  178|    162|        if request_id <= connection.highest_request {
+  179|      1|            return Err(ProtocolError::RetiredRequest);
+  180|    161|        }
+  181|    161|        command.validate(self.instance_id.get(), attachment_id, snapshot.revision)?;
+                                                                                                ^17
+  182|    144|        if connection.retained.len() == REPLAY_LIMIT {
+  183|      1|            connection.retained.pop_front();
+  184|    143|        }
+  185|    144|        connection.retained.push_back((request_id, command.clone()));
+  186|    144|        connection.highest_request = request_id;
+  187|    144|        Ok(Admission::New(AdmittedRequest {
+  188|    144|            request_id,
+  189|    144|            attachment: connection.attachment.clone(),
+  190|    144|            command,
+  191|    144|        }))
+  192|    192|    }
+  193|       |}
+  194|       |
+  195|       |#[derive(serde::Deserialize)]
+  196|       |#[serde(rename_all = "camelCase", deny_unknown_fields)]
+  197|       |struct Envelope {
+  198|       |    version: u32,
+  199|       |    attachment_id: String,
+  200|       |    request_id: String,
+  201|       |    method: String,
+  202|       |    args: serde_json::Value,
+  203|       |}
+  204|    438|fn decimal(text: &str, zero: bool) -> Result<u64, ProtocolError> {
+  205|    438|    if text.is_empty()
+  206|    624|        || !text.bytes().all(|byte| byte.is_ascii_digit())
+                          ^437         ^437
+  207|    435|        || (text.starts_with('0') && text != "0")
+                                                   ^13
+  208|       |    {
+  209|      5|        return Err(ProtocolError::InvalidArguments);
+  210|    433|    }
+  211|    433|    let value = text
+                      ^432
+  212|    433|        .parse::<u64>()
+  213|    433|        .map_err(|_| ProtocolError::InvalidArguments)?;
+                                                                   ^1
+  214|    432|    if !zero && value == 0 {
+                              ^423
+  215|      3|        return Err(ProtocolError::InvalidArguments);
+  216|    429|    }
+  217|    429|    Ok(value)
+  218|    438|}
+  219|       |
+  220|    179|fn parse_command(method: &str, args: serde_json::Value) -> Result<EditorCommand, ProtocolError> {
+  221|       |    use EditorCommand::*;
+  222|    179|    Ok(match method {
+  223|    179|        "getSamplerSession" | "getParameterState" | "noteHeartbeat" => {
+                                            ^43                   ^41
+  224|    140|            if args != serde_json::json!([]) {
+  225|      3|                return Err(ProtocolError::InvalidArguments);
+  226|    137|            }
+  227|    137|            match method {
+  228|    137|                "getSamplerSession" => GetSamplerSession,
+                                                     ^135
+  229|      2|                "getParameterState" => GetParameterState,
+                                                     ^1
+  230|      1|                _ => NoteHeartbeat,
+  231|       |            }
+  232|       |        }
+  233|     39|        "setInstrumentZoneKeyRange" => {
+  234|      7|            let (instance, attachment, request, revision, map_id, zone_id, low, high): (
+  235|      7|                String,
+  236|      7|                String,
+  237|      7|                String,
+  238|      7|                String,
+  239|      7|                String,
+  240|      7|                String,
+  241|      7|                u8,
+  242|      7|                u8,
+  243|      7|            ) = arguments(args)?;
+                                             ^0
+  244|       |            SetZoneKeyRange {
+  245|      7|                identity: command_identity(instance, attachment, request, revision)?,
+                                                                                                 ^0
+  246|      7|                intent: dandrum_instrument_session::SetZoneKeyRange {
+  247|      7|                    map_id,
+  248|      7|                    zone_id,
+  249|      7|                    key_range: [low, high],
+  250|      7|                },
+  251|       |            }
+  252|       |        }
+  253|     32|        "undoInstrumentSession" => {
+  254|      4|            let (instance, attachment, request, revision): (String, String, String, String) =
+  255|      4|                arguments(args)?;
+                                             ^0
+  256|       |            UndoInstrumentSession {
+  257|      4|                identity: command_identity(instance, attachment, request, revision)?,
+                                                                                                 ^2
+  258|       |            }
+  259|       |        }
+  260|     28|        "getInstrumentSessionJobStatus" => {
+  261|      4|            let (request,): (String,) = arguments(args)?;
+                                                                     ^0
+  262|       |            GetInstrumentSessionJobStatus {
+  263|      4|                request_id: dandrum_instrument_session::RequestId(decimal(&request, false)?),
+                                                                                                        ^3
+  264|       |            }
+  265|       |        }
+  266|     24|        "beginGesture" | "endGesture" => {
+                                       ^22
+  267|      4|            let (parameter_id, generation): (String, u64) = arguments(args)?;
+                                                                                         ^0
+  268|      4|            if method == "beginGesture" {
+  269|      2|                BeginGesture {
+  270|      2|                    parameter_id,
+  271|      2|                    generation,
+  272|      2|                }
+  273|       |            } else {
+  274|      2|                EndGesture {
+  275|      2|                    parameter_id,
+  276|      2|                    generation,
+  277|      2|                }
+  278|       |            }
+  279|       |        }
+  280|     20|        "setParameter" => {
+  281|     11|            let (parameter_id, value, generation): (String, f64, u64) = arguments(args)?;
+                               ^8            ^8     ^8           ^8                                  ^3
+  282|      8|            SetParameter {
+  283|      8|                parameter_id,
+  284|      8|                value,
+  285|      8|                generation,
+  286|      8|            }
+  287|       |        }
+  288|      9|        "noteOn" => {
+  289|      5|            let (note, velocity, generation): (u8, f64, u64) = arguments(args)?;
+                               ^4    ^4        ^4           ^4                              ^1
+  290|      4|            NoteOn {
+  291|      4|                note,
+  292|      4|                velocity,
+  293|      4|                generation,
+  294|      4|            }
+  295|       |        }
+  296|      4|        "noteOff" => {
+  297|      3|            let (note, generation): (u8, u64) = arguments(args)?;
+                                                                             ^0
+  298|      3|            NoteOff { note, generation }
+  299|       |        }
+  300|      1|        _ => return Err(ProtocolError::CapabilityUnavailable),
+  301|       |    })
+  302|    179|}
+  303|     38|fn arguments<T: serde::de::DeserializeOwned>(args: serde_json::Value) -> Result<T, ProtocolError> {
+  304|     38|    serde_json::from_value(args).map_err(|_| ProtocolError::InvalidArguments)
+  305|     38|}
+  306|     11|fn command_identity(
+  307|     11|    instance: String,
+  308|     11|    attachment: String,
+  309|     11|    request: String,
+  310|     11|    revision: String,
+  311|     11|) -> Result<SessionCommandIdentity, ProtocolError> {
+  312|       |    Ok(SessionCommandIdentity {
+  313|     11|        instance_id: decimal(&instance, false)?,
+                                                            ^0
+  314|     11|        attachment_id: decimal(&attachment, false)?,
+                                                                ^0
+  315|     11|        request_id: dandrum_instrument_session::RequestId(decimal(&request, false)?),
+                                                                                                ^1
+  316|     10|        expected_revision: decimal(&revision, true)?,
+                                                                 ^1
+  317|       |    })
+  318|     11|}
+  319|       |
+  320|       |pub const IDENTIFIER_BYTES_LIMIT: usize = 256;
+  321|       |pub const MAX_SAFE_GENERATION: u64 = 9_007_199_254_740_991;
+  322|       |impl EditorCommand {
+  323|    161|    fn validate(
+  324|    161|        &self,
+  325|    161|        instance_id: u64,
+  326|    161|        attachment_id: u64,
+  327|    161|        revision: u64,
+  328|    161|    ) -> Result<(), ProtocolError> {
+  329|       |        use EditorCommand::*;
+  330|    161|        let valid = match self {
+                          ^158
+  331|      7|            SetZoneKeyRange { identity, intent } => {
+  332|      7|                validate_identity(identity, instance_id, attachment_id, revision)?;
+                                                                                               ^2
+  333|      5|                identifier(&intent.map_id)
+  334|      4|                    && identifier(&intent.zone_id)
+  335|      3|                    && intent.key_range[0] <= intent.key_range[1]
+  336|      2|                    && intent.key_range[1] <= 127
+  337|       |            }
+  338|      2|            UndoInstrumentSession { identity } => {
+  339|      2|                validate_identity(identity, instance_id, attachment_id, revision)?;
+                                                                                               ^1
+  340|      1|                true
+  341|       |            }
+  342|       |            BeginGesture {
+  343|      2|                parameter_id,
+  344|      2|                generation,
+  345|       |            }
+  346|       |            | EndGesture {
+  347|      2|                parameter_id,
+  348|      2|                generation,
+  349|      4|            } => identifier(parameter_id) && *generation <= MAX_SAFE_GENERATION,
+                                                           ^2
+  350|       |            SetParameter {
+  351|      5|                parameter_id,
+  352|      5|                value,
+  353|      5|                generation,
+  354|       |            } => {
+  355|      5|                identifier(parameter_id)
+  356|      4|                    && value.is_finite()
+  357|      4|                    && (0.0..=1.0).contains(value)
+  358|      2|                    && *generation <= MAX_SAFE_GENERATION
+  359|       |            }
+  360|       |            NoteOn {
+  361|      4|                note,
+  362|      4|                velocity,
+  363|      4|                generation,
+  364|       |            } => {
+  365|      4|                *note <= 127
+  366|      3|                    && velocity.is_finite()
+  367|      3|                    && *velocity > 0.0
+  368|      2|                    && *velocity <= 1.0
+  369|      1|                    && *generation <= MAX_SAFE_GENERATION
+  370|       |            }
+  371|      3|            NoteOff { note, generation } => *note <= 127 && *generation <= MAX_SAFE_GENERATION,
+                                                                          ^2
+  372|    136|            _ => true,
+  373|       |        };
+  374|    158|        if valid {
+  375|    144|            Ok(())
+  376|       |        } else {
+  377|     14|            Err(ProtocolError::InvalidArguments)
+  378|       |        }
+  379|    161|    }
+  380|       |}
+  381|     18|fn identifier(text: &str) -> bool {
+  382|     18|    !text.is_empty() && text.len() <= IDENTIFIER_BYTES_LIMIT && !text.chars().any(char::is_control)
+                                      ^15                                     ^14
+  383|     18|}
+  384|      9|fn validate_identity(
+  385|      9|    identity: &SessionCommandIdentity,
+  386|      9|    instance: u64,
+  387|      9|    attachment: u64,
+  388|      9|    revision: u64,
+  389|      9|) -> Result<(), ProtocolError> {
+  390|      9|    if identity.instance_id != instance || identity.attachment_id != attachment {
+                                                         ^8
+  391|      2|        return Err(ProtocolError::StaleAttachment);
+  392|      7|    }
+  393|      7|    if identity.expected_revision != revision {
+  394|      1|        return Err(ProtocolError::StaleRequest);
+  395|      6|    }
+  396|      6|    Ok(())
+  397|      9|}
+  398|       |
+  399|       |impl EditorProtocol {
+  400|      7|    pub fn new(instance_id: std::num::NonZeroU64) -> Self {
+  401|      7|        Self {
+  402|      7|            instance_id,
+  403|      7|            owner: None,
+  404|      7|            connections: Vec::new(),
+  405|      7|            next_attachment: 1,
+  406|      7|        }
+  407|      7|    }
+  408|      5|    pub fn detach(
+  409|      5|        &mut self,
+  410|      5|        session: &mut InstrumentSession,
+  411|      5|        attachment_id: &str,
+  412|      5|    ) -> Result<(), ProtocolError> {
+  413|      5|        let id = decimal(attachment_id, false)?;
+                                                            ^0
+  414|      5|        let index = self
+                          ^4
+  415|      5|            .connections
+  416|      5|            .iter()
+  417|      5|            .position(|connection| connection.id == id)
+                                                 ^4               ^4
+  418|      5|            .ok_or(ProtocolError::StaleAttachment)?;
+                                                                ^1
+  419|      4|        session
+  420|      4|            .detach(&self.connections[index].attachment)
+  421|      4|            .map_err(|_| ProtocolError::StaleAttachment)?;
+                                                                      ^1
+  422|      3|        self.connections.swap_remove(index);
+  423|      3|        Ok(())
+  424|      5|    }
+  425|       |}
+  426|       |
+  427|       |pub const OUTBOUND_BYTES_LIMIT: usize = 64 * 1024;
+  428|       |impl EditorProtocol {
+  429|      5|    pub fn encode_reply(
+  430|      5|        &self,
+  431|      5|        session: &InstrumentSession,
+  432|      5|        attachment_id: &str,
+  433|      5|        request_id: &str,
+  434|      5|        result: Result<serde_json::Value, ProtocolError>,
+  435|      5|    ) -> Result<String, ProtocolError> {
+  436|      5|        let (index, _) = self.connection_snapshot(session, attachment_id)?;
+                           ^4                                                          ^1
+  437|      4|        let request = decimal(request_id, false)?;
+                          ^3                                  ^1
+  438|      3|        let mut envelope = serde_json::json!({"version":PROTOCOL_VERSION,"instanceId":self.instance_id.to_string(),"attachmentId":self.connections[index].id.to_string(),"requestId":request.to_string()});
+  439|      3|        match result {
+  440|      2|            Ok(value) => {
+  441|      2|                envelope["status"] = "accepted".into();
+  442|      2|                envelope["result"] = value;
+  443|      2|            }
+  444|      1|            Err(error) => {
+  445|      1|                envelope["status"] = "rejected".into();
+  446|      1|                envelope["error"] =
+  447|      1|                    serde_json::to_value(error).map_err(|_| ProtocolError::Malformed)?;
+                                                                                                   ^0
+  448|       |            }
+  449|       |        }
+  450|      3|        encode_bounded(&envelope)
+  451|      5|    }
+  452|      7|    pub fn encode_event(
+  453|      7|        &mut self,
+  454|      7|        session: &InstrumentSession,
+  455|      7|        attachment_id: &str,
+  456|      7|        event: &str,
+  457|      7|        payload: serde_json::Value,
+  458|      7|    ) -> Result<String, ProtocolError> {
+  459|      7|        let (index, _) = self.connection_snapshot(session, attachment_id)?;
+                           ^5                                                          ^2
+  460|      5|        if !matches!(event, "parameterStateChanged" | "instrumentSessionChanged") {
+                          ^4                                        ^3
+  461|      1|            return Err(ProtocolError::CapabilityUnavailable);
+  462|      4|        }
+  463|      4|        let connection = &mut self.connections[index];
+  464|      4|        let next = connection
+  465|      4|            .next_event
+  466|      4|            .checked_add(1)
+  467|      4|            .ok_or(ProtocolError::IdentityExhausted)?;
+                                                                  ^0
+  468|      4|        let envelope = serde_json::json!({"version":PROTOCOL_VERSION,"instanceId":self.instance_id.to_string(),"attachmentId":connection.id.to_string(),"sequence":connection.next_event.to_string(),"event":event,"payload":payload});
+  469|      4|        let encoded = encode_bounded(&envelope)?;
+                          ^3                                 ^1
+  470|      3|        connection.next_event = next;
+  471|      3|        Ok(encoded)
+  472|      7|    }
+  473|     12|    fn connection_snapshot(
+  474|     12|        &self,
+  475|     12|        session: &InstrumentSession,
+  476|     12|        attachment_id: &str,
+  477|     12|    ) -> Result<(usize, SessionSnapshot), ProtocolError> {
+  478|     12|        let id = decimal(attachment_id, false)?;
+                                                            ^0
+  479|     12|        let index = self
+                          ^10
+  480|     12|            .connections
+  481|     12|            .iter()
+  482|     13|            .position(|connection| connection.id == id)
+                           ^12
+  483|     12|            .ok_or(ProtocolError::StaleAttachment)?;
+                                                                ^2
+  484|     10|        let snapshot = session
+                          ^9
+  485|     10|            .snapshot(&self.connections[index].attachment)
+  486|     10|            .map_err(|_| ProtocolError::StaleAttachment)?;
+                                                                      ^1
+  487|      9|        Ok((index, snapshot))
+  488|     12|    }
+  489|       |}
+  490|       |
+  491|      7|fn encode_bounded(value: &serde_json::Value) -> Result<String, ProtocolError> {
+  492|       |    struct LimitedWriter(Vec<u8>);
+  493|       |    impl std::io::Write for LimitedWriter {
+  494|    346|        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+  495|    346|            if bytes.len() > OUTBOUND_BYTES_LIMIT - self.0.len() {
+  496|      2|                return Err(std::io::Error::other("editor message exceeds byte limit"));
+  497|    344|            }
+  498|    344|            self.0.extend_from_slice(bytes);
+  499|    344|            Ok(bytes.len())
+  500|    346|        }
+  501|      0|        fn flush(&mut self) -> std::io::Result<()> {
+  502|      0|            Ok(())
+  503|      0|        }
+  504|       |    }
+  505|      7|    let mut writer = LimitedWriter(Vec::new());
+  506|      7|    serde_json::to_writer(&mut writer, value).map_err(|_| ProtocolError::Oversized)?;
+                                                                                                 ^2
+  507|      5|    Ok(String::from_utf8(writer.0).expect("JSON writer emits UTF-8"))
+  508|      7|}

@@ -1,0 +1,5 @@
+
+> dandrum-trigger@0.1.0 check
+> tsc --noEmit && node scripts/check-components.mjs
+
+70 authored React files checked; largest components/pages/SamplePage.jsx: 99 lines.

@@ -1,0 +1,19 @@
+{
+  "command": [
+    "/home/dan/.cargo/bin/cargo",
+    "clippy",
+    "--manifest-path",
+    "src/trigger-host/Cargo.toml",
+    "--all-targets",
+    "--",
+    "-D",
+    "warnings"
+  ],
+  "cwd": "/tmp/dandrum-lanes/runtime",
+  "environment": {
+    "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+    "CARGO_BUILD_JOBS": "2"
+  },
+  "elapsed_seconds": 0.259,
+  "exit_code": 0
+}

@@ -1,0 +1,5 @@
+65ccbc6ab9e48d2356ef6ad49c90811109d6f0a38dfe95265a616d8d6222cb7d  src/trigger-host/src/protocol.rs
+6ac729489e479f6457e23ba56be48c0f1ca11b431b6e968abfa27352012a70e0  src/trigger-host/tests/protocol.rs
+a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937  src/trigger-host/Cargo.toml
+69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b  src/trigger-host/Cargo.lock
+f20513236e149b6553fe60b3c29271d8a7c12648f2fc49a4e02e51822ee5d59b  src/trigger-host/src/lib.rs

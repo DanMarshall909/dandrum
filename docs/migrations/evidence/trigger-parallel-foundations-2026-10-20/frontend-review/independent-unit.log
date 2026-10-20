@@ -1,0 +1,128 @@
+
+> dandrum-trigger@0.1.0 test
+> node --test tests/*.test.mjs
+
+TAP version 13
+# Subtest: tests/adapter-operations.test.mjs
+ok 1 - tests/adapter-operations.test.mjs
+  ---
+  duration_ms: 322.021213
+  type: 'test'
+  ...
+# Subtest: tests/component-guard.test.mjs
+not ok 2 - tests/component-guard.test.mjs
+  ---
+  duration_ms: 420.59721
+  type: 'test'
+  location: '/tmp/dandrum-lanes/frontend/web/trigger/tests/component-guard.test.mjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: tests/contract-consumer.test.mjs
+ok 3 - tests/contract-consumer.test.mjs
+  ---
+  duration_ms: 507.732854
+  type: 'test'
+  ...
+# Subtest: tests/control-regressions.test.mjs
+ok 4 - tests/control-regressions.test.mjs
+  ---
+  duration_ms: 334.211309
+  type: 'test'
+  ...
+# Subtest: tests/engine.test.mjs
+ok 5 - tests/engine.test.mjs
+  ---
+  duration_ms: 84.750978
+  type: 'test'
+  ...
+# Subtest: tests/import.test.mjs
+ok 6 - tests/import.test.mjs
+  ---
+  duration_ms: 174.445085
+  type: 'test'
+  ...
+# Subtest: tests/mapping.test.mjs
+ok 7 - tests/mapping.test.mjs
+  ---
+  duration_ms: 182.581032
+  type: 'test'
+  ...
+# Subtest: tests/model-bindings.test.mjs
+ok 8 - tests/model-bindings.test.mjs
+  ---
+  duration_ms: 405.548783
+  type: 'test'
+  ...
+# Subtest: tests/native-controls.test.mjs
+ok 9 - tests/native-controls.test.mjs
+  ---
+  duration_ms: 467.421753
+  type: 'test'
+  ...
+# Subtest: tests/native-document.test.mjs
+ok 10 - tests/native-document.test.mjs
+  ---
+  duration_ms: 597.55503
+  type: 'test'
+  ...
+# Subtest: tests/native-engine.test.mjs
+ok 11 - tests/native-engine.test.mjs
+  ---
+  duration_ms: 1091.384314
+  type: 'test'
+  ...
+# Subtest: tests/native-transport.test.mjs
+ok 12 - tests/native-transport.test.mjs
+  ---
+  duration_ms: 340.776773
+  type: 'test'
+  ...
+# Subtest: tests/preparation.test.mjs
+ok 13 - tests/preparation.test.mjs
+  ---
+  duration_ms: 95.35239
+  type: 'test'
+  ...
+# Subtest: tests/presentation.test.mjs
+ok 14 - tests/presentation.test.mjs
+  ---
+  duration_ms: 346.148088
+  type: 'test'
+  ...
+# Subtest: tests/session-connection.test.mjs
+ok 15 - tests/session-connection.test.mjs
+  ---
+  duration_ms: 165.400217
+  type: 'test'
+  ...
+# Subtest: tests/slices-history.test.mjs
+ok 16 - tests/slices-history.test.mjs
+  ---
+  duration_ms: 934.960777
+  type: 'test'
+  ...
+# Subtest: tests/store-boundary.test.mjs
+ok 17 - tests/store-boundary.test.mjs
+  ---
+  duration_ms: 293.144447
+  type: 'test'
+  ...
+# Subtest: tests/telemetry.test.mjs
+ok 18 - tests/telemetry.test.mjs
+  ---
+  duration_ms: 85.54229
+  type: 'test'
+  ...
+1..18
+# tests 18
+# suites 0
+# pass 17
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1118.566268

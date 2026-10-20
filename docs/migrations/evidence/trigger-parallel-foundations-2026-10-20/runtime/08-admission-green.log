@@ -1,0 +1,22 @@
+   Compiling dandrum-trigger-host v0.1.0 (/tmp/dandrum-lanes/runtime/src/trigger-host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.18s
+     Running tests/runtime.rs (/tmp/dandrum-lanes/cache-runtime/debug/deps/runtime-b756499cb62cad96)
+
+running 15 tests
+test allocation_audit_independently_detects_allocation_and_preexisting_destruction ... ok
+test unbound_control_roots_are_rejected_before_exposing_an_audio_runtime ... ok
+test bounded_note_handoff_reports_backpressure_and_preserves_the_rejected_note ... ok
+test feedback_overflow_is_explicit_and_the_latest_scalar_remains_recoverable ... ok
+test invalid_parameter_events_preserve_the_scalar_values_and_signed_audio ... ok
+test first_callback_swaps_events_feedback_reset_and_short_blocks_allocate_or_free_nothing ... ok
+test invalid_blocks_are_silent_and_preserve_the_pending_replacement ... ok
+test host_notes_are_sample_accurate_and_invalid_batches_preserve_pending_work ... ok
+test reset_stops_active_and_queued_notes_and_retains_host_owned_values ... ok
+test invalid_configuration_or_foreign_layout_cannot_replace_the_running_runtime ... ok
+test dropping_the_control_endpoint_first_never_reclaims_resources_in_process ... ok
+test parameter_handoff_updates_signed_audio_and_reports_nonzero_host_offset ... ok
+test session_publication_uses_a_cancellable_lease_and_rolls_back_under_backpressure ... ok
+test replacement_is_block_boundary_only_and_backpressure_lasts_until_reclamation ... ok
+test handoff_capacity_is_bounded_by_both_the_protocol_limit_and_dsp_queue ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s

@@ -1,0 +1,31 @@
+   Compiling dandrum-trigger-host v0.1.0 (/tmp/dandrum-lanes/runtime/src/trigger-host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.00s
+     Running tests/runtime.rs (/tmp/dandrum-lanes/cache-runtime/debug/deps/runtime-b756499cb62cad96)
+
+running 8 tests
+test invalid_parameter_events_preserve_the_scalar_values_and_signed_audio ... ok
+test bounded_note_handoff_reports_backpressure_and_preserves_the_rejected_note ... ok
+test parameter_handoff_updates_signed_audio_and_reports_nonzero_host_offset ... FAILED
+test invalid_blocks_are_silent_and_preserve_the_pending_replacement ... ok
+test host_notes_are_sample_accurate_and_invalid_batches_preserve_pending_work ... ok
+test invalid_configuration_or_foreign_layout_cannot_replace_the_running_runtime ... ok
+test replacement_is_block_boundary_only_and_backpressure_lasts_until_reclamation ... ok
+test handoff_capacity_is_bounded_by_both_the_protocol_limit_and_dsp_queue ... ok
+
+failures:
+
+---- parameter_handoff_updates_signed_audio_and_reports_nonzero_host_offset stdout ----
+
+thread 'parameter_handoff_updates_signed_audio_and_reports_nonzero_host_offset' (155) panicked at tests/runtime.rs:140:5:
+assertion `left == right` failed
+  left: (-0.5, -0.5)
+ right: (-0.125, -0.125)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    parameter_handoff_updates_signed_audio_and_reports_nonzero_host_offset
+
+test result: FAILED. 7 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+error: test failed, to rerun pass `--test runtime`

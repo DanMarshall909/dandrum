@@ -1,0 +1,2 @@
+import config from '/tmp/dandrum-lanes/frontend/web/trigger/playwright.config.mjs';
+export default {...config,testDir:'/tmp/dandrum-lanes/frontend/web/trigger/tests/browser',outputDir:'/tmp/dandrum-evidence/frontend/browser-artifacts',use:{...config.use,baseURL:'http://127.0.0.1:8343'},webServer:{cwd:'/tmp/dandrum-lanes/frontend/web/trigger',command:'npm run dev -- --port 8343 --strictPort',url:'http://127.0.0.1:8343',reuseExistingServer:false}};

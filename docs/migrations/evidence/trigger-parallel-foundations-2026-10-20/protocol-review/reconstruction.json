@@ -1,0 +1,81 @@
+{
+  "paths": [
+    {
+      "path": "src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "mode": "664",
+      "index": "100644 4d069723278380cab74331ed126cf09c6f7503ca 0\tsrc/trigger-host/Cargo.lock",
+      "hash_matches": true
+    },
+    {
+      "path": "src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "mode": "664",
+      "index": "100644 094fe020e108441dc7694a420f92597d26f6786f 0\tsrc/trigger-host/Cargo.toml",
+      "hash_matches": true
+    },
+    {
+      "path": "src/trigger-host/src/lib.rs",
+      "sha256": "f20513236e149b6553fe60b3c29271d8a7c12648f2fc49a4e02e51822ee5d59b",
+      "mode": "664",
+      "index": "100644 4987643ef5485dc1d4784dc9ab7b619002008dd5 0\tsrc/trigger-host/src/lib.rs",
+      "hash_matches": true
+    },
+    {
+      "path": "src/trigger-host/src/protocol.rs",
+      "sha256": "65ccbc6ab9e48d2356ef6ad49c90811109d6f0a38dfe95265a616d8d6222cb7d",
+      "mode": "664",
+      "index": "",
+      "hash_matches": true
+    },
+    {
+      "path": "src/trigger-host/tests/protocol.rs",
+      "sha256": "6ac729489e479f6457e23ba56be48c0f1ca11b431b6e968abfa27352012a70e0",
+      "mode": "664",
+      "index": "",
+      "hash_matches": true
+    }
+  ],
+  "HEAD": "86c198a9191fb9d152c65d0d7384783df51d8ed0",
+  "refs/remotes/origin/feat/juce-free-host-adapters": "16184e21e957e2adcca2f50845cf33f3b49ec510",
+  "protocol_coverage": [
+    {
+      "filename": "/tmp/dandrum-lanes/protocol/src/trigger-host/src/protocol.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 21,
+          "covered": 21,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 48,
+          "covered": 27,
+          "percent": 56.25
+        },
+        "lines": {
+          "count": 329,
+          "covered": 329,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 481,
+          "covered": 466,
+          "notcovered": 15,
+          "percent": 96.88149688149689
+        }
+      }
+    }
+  ]
+}

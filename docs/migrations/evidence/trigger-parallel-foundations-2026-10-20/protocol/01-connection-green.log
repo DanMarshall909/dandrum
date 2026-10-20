@@ -1,0 +1,19 @@
+   Compiling dandrum-trigger-host v0.1.0 (/tmp/dandrum-lanes/protocol/src/trigger-host)
+warning: fields `id` and `attachment` are never read
+  --> src/protocol.rs:13:21
+   |
+13 | struct Connection { id: u64, attachment: Attachment }
+   |        ----------   ^^       ^^^^^^^^^^
+   |        |
+   |        fields in this struct
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `dandrum-trigger-host` (lib) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.75s
+     Running tests/protocol.rs (/tmp/dandrum-lanes/cache-protocol/debug/deps/protocol-1b914db9be45bef2)
+
+running 1 test
+test editor_connections_use_distinct_serializable_ids_and_native_accepted_snapshots ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s

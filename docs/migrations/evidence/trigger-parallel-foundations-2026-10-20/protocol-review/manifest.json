@@ -1,0 +1,49 @@
+{
+  "base": "86c198a9191fb9d152c65d0d7384783df51d8ed0",
+  "current": "86c198a9191fb9d152c65d0d7384783df51d8ed0",
+  "upstream_ref": "refs/remotes/origin/feat/juce-free-host-adapters",
+  "upstream_object": "16184e21e957e2adcca2f50845cf33f3b49ec510",
+  "integration_base": "16184e21e957e2adcca2f50845cf33f3b49ec510",
+  "paths": [
+    {
+      "path": "src/trigger-host/Cargo.lock",
+      "change": "modified",
+      "index_worktree_status": " M",
+      "mode": "100644",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "staged_object": "4d069723278380cab74331ed126cf09c6f7503ca"
+    },
+    {
+      "path": "src/trigger-host/Cargo.toml",
+      "change": "modified",
+      "index_worktree_status": " M",
+      "mode": "100644",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "staged_object": "094fe020e108441dc7694a420f92597d26f6786f"
+    },
+    {
+      "path": "src/trigger-host/src/lib.rs",
+      "change": "modified",
+      "index_worktree_status": " M",
+      "mode": "100644",
+      "sha256": "f20513236e149b6553fe60b3c29271d8a7c12648f2fc49a4e02e51822ee5d59b",
+      "staged_object": "4987643ef5485dc1d4784dc9ab7b619002008dd5"
+    },
+    {
+      "path": "src/trigger-host/src/protocol.rs",
+      "change": "added",
+      "index_worktree_status": "??",
+      "mode": "100644",
+      "sha256": "65ccbc6ab9e48d2356ef6ad49c90811109d6f0a38dfe95265a616d8d6222cb7d",
+      "staged_object": null
+    },
+    {
+      "path": "src/trigger-host/tests/protocol.rs",
+      "change": "added",
+      "index_worktree_status": "??",
+      "mode": "100644",
+      "sha256": "6ac729489e479f6457e23ba56be48c0f1ca11b431b6e968abfa27352012a70e0",
+      "staged_object": null
+    }
+  ]
+}

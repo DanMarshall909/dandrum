@@ -1,0 +1,57 @@
+{
+  "base": "2480ad8098a303b6a92f896be046d479deea8b19",
+  "current": "2480ad8098a303b6a92f896be046d479deea8b19",
+  "upstream_ref": "refs/remotes/origin/feat/juce-free-host-adapters",
+  "upstream_object": "16184e21e957e2adcca2f50845cf33f3b49ec510",
+  "integration_base": "16184e21e957e2adcca2f50845cf33f3b49ec510",
+  "paths": [
+    {
+      "path": "CMakeLists.txt",
+      "change": "modified",
+      "index_worktree_status": " M",
+      "mode": "100644",
+      "sha256": "e83cf08fea4c5d68ef263a41f22c248017b239d744456a47f3ea0dc85cbd269a",
+      "staged_object": "89346908ad02c01bc8322ea2daece8ea70559110"
+    },
+    {
+      "path": "src/trigger-host/src/lib.rs",
+      "change": "modified",
+      "index_worktree_status": " M",
+      "mode": "100644",
+      "sha256": "57cb22f629dd2335b7b4a3bbce0d114b84c1ff79b0d3d813396e44c1c0d96dc8",
+      "staged_object": "91a5ee60634ac194371e551770fb3f3908d8739c"
+    },
+    {
+      "path": "src/trigger-host/src/runtime.rs",
+      "change": "added",
+      "index_worktree_status": "??",
+      "mode": "100644",
+      "sha256": "cd7bc42d796b9b439ef59118418be509a68bd2da76ff215115fc30621240ae2e",
+      "staged_object": null
+    },
+    {
+      "path": "src/trigger-host/tests/packaged_resources.rs",
+      "change": "modified",
+      "index_worktree_status": " M",
+      "mode": "100644",
+      "sha256": "14cf8d062ef37c69434e3e6a5de4ecc8c29381944cbd3ceec2a84d58962d9003",
+      "staged_object": "4a8c3f39ff6c9b2ea4ddff23526b61b82ab08643"
+    },
+    {
+      "path": "src/trigger-host/tests/runtime.rs",
+      "change": "added",
+      "index_worktree_status": "??",
+      "mode": "100644",
+      "sha256": "647b95c0e4749e5970510eaf3869339b7a75a28bb3cda4fa067bb95682e232bc",
+      "staged_object": null
+    },
+    {
+      "path": "tests/python/test_engine_only_build.py",
+      "change": "modified",
+      "index_worktree_status": " M",
+      "mode": "100644",
+      "sha256": "029afa4ed913c1a306602f7dcaa4480c2dc76d52e0b923d9e2dc0f88a898e995",
+      "staged_object": "2a059476c75eb7dada7185d7b216d62d47c9c95d"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+Internal ctest changing into directory: /tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-_5sn7n__/source/build/trigger-editor
+Test project /tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-_5sn7n__/source/build/trigger-editor
+    Start  1: trigger-host-tests
+1/2 Test  #1: trigger-host-tests ...............   Passed   17.60 sec
+    Start 21: clap-dynamic-host
+2/2 Test #21: clap-dynamic-host ................   Passed    0.17 sec
+
+100% tests passed, 0 tests failed out of 2
+
+Label Time Summary:
+trigger-host-fast    =  17.60 sec*proc (1 test)
+
+Total Test time (real) =  17.77 sec

@@ -1,0 +1,18 @@
+
+> dandrum-trigger@0.1.0 build:native
+> vite build --config vite.native.config.mjs
+
+vite v6.4.4 building for production...
+transforming...
+✓ 239 modules transformed.
+rendering chunks...
+computing gzip size...
+dist-native/index.html    0.33 kB │ gzip:   0.24 kB
+dist-native/app.css      11.02 kB │ gzip:   3.22 kB
+dist-native/app.js      805.70 kB │ gzip: 235.92 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.16s

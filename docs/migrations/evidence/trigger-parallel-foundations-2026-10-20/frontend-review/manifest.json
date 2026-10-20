@@ -1,0 +1,49 @@
+{
+  "base": "a116c2cc3ff0d14f3fc128010db3a4e9365964e2",
+  "current": "a116c2cc3ff0d14f3fc128010db3a4e9365964e2",
+  "upstream_ref": "refs/remotes/origin/feat/juce-free-host-adapters",
+  "upstream_object": "16184e21e957e2adcca2f50845cf33f3b49ec510",
+  "integration_base": "16184e21e957e2adcca2f50845cf33f3b49ec510",
+  "paths": [
+    {
+      "path": "web/trigger/engine/native-engine.mjs",
+      "change": "modified",
+      "index_worktree_status": " M",
+      "mode": "100644",
+      "sha256": "7001e64253272ee491e686a2123fee84b0167d18e174815a5f643bfdbc5f1787",
+      "staged_object": "8a9458ba5e0bd494671a5f93a4f135299c1d4143"
+    },
+    {
+      "path": "web/trigger/engine/native-transport.mjs",
+      "change": "added",
+      "index_worktree_status": "??",
+      "mode": "100644",
+      "sha256": "08eabe7509419d3d04e2f2e1748c81c2813eb4c580750e8cd93d6dec6779c297",
+      "staged_object": null
+    },
+    {
+      "path": "web/trigger/main.jsx",
+      "change": "modified",
+      "index_worktree_status": " M",
+      "mode": "100644",
+      "sha256": "967ddae802dbf3b49a61e6e5b427ea957bd971814799ffbae8375aa653489970",
+      "staged_object": "77764a2353fb21d268cd94329092b8274acb33ac"
+    },
+    {
+      "path": "web/trigger/tests/browser/native-transport.spec.mjs",
+      "change": "added",
+      "index_worktree_status": "??",
+      "mode": "100644",
+      "sha256": "a5a5ae0b108cd3bdf563ada32b54f21e699d9a8836fe087ef8c5f53a6d08d42d",
+      "staged_object": null
+    },
+    {
+      "path": "web/trigger/tests/native-transport.test.mjs",
+      "change": "added",
+      "index_worktree_status": "??",
+      "mode": "100644",
+      "sha256": "f91ad393cd0f90ae1904c093b00341059fd5794f926973fd21a0a76b752cd23f",
+      "staged_object": null
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "scope": "Task 3.2 investigation only; no production Wry dependency or CLAP integration",
+  "base": "a116c2cc",
+  "date": "2026-10-20",
+  "outcome": "adopt Wry 0.57.0 for the next implementation fixture; defer production integration",
+  "commands": [
+    {
+      "command": "cargo check --offline --manifest-path /tmp/dandrum-lanes/wry-probe/Cargo.toml",
+      "exit": 101,
+      "reason": "uncached dirs 7 index; setup failure retained"
+    },
+    {
+      "command": "CARGO_BUILD_JOBS=2 cargo check --manifest-path /tmp/dandrum-lanes/wry-probe/Cargo.toml",
+      "exit": 0
+    },
+    {
+      "command": "cargo check --offline --locked --manifest-path /tmp/dandrum-lanes/wry-probe/Cargo.toml",
+      "exit": 0
+    },
+    {
+      "command": "DISPLAY=:10.0 GDK_BACKEND=x11 CARGO_BUILD_JOBS=2 cargo run --offline --locked --manifest-path /tmp/dandrum-lanes/wry-probe/Cargo.toml",
+      "exit": 0,
+      "build_seconds": 33.53,
+      "cycles": 2
+    }
+  ],
+  "system": {
+    "webkitgtk": "2.50.4",
+    "gtk": "3.24.33",
+    "x11": "1.7.5",
+    "display": ":10.0",
+    "warning": "libEGL failed to create dri2 screen; assertions still executed and passed"
+  },
+  "limitations": [
+    "Not production Trigger bundle/fonts",
+    "No actual CLAP timer or GUI extension integration",
+    "No failure injection, invalid parent, fixed-size policy, held activity, or callback-after-destruction oracle",
+    "System redistribution attribution not resolved",
+    "Only Linux x86_64 X11, not Wayland or named DAW"
+  ],
+  "files_sha256": {
+    "check-fixture.log": "9c54d152944be4dbf4539fafb45b4f4a5884d451b15859a7c208db1980fcfffa",
+    "check-offline.log": "ace25ad437b309d9ed9c4075bf4f1b172e1708dc52bfd95c5aa16a5255b3b0bc",
+    "check-online.log": "f0122cfaff1b29d168f884ba6397f00cfa1ada019033577e51b901330df82363",
+    "dependencies.txt": "c59701c6b7e729aba3fb46cdfcf86f6c673a2bc9d3dfd1403b7bc09f3ae79913",
+    "findings.md": "8dc62e7f3748d1992769c319914a0abe4aaca1999a240af500a3a248515bceaa",
+    "fixture/Cargo.lock": "9658c81b2aa5d3498f1bb0cb37d52d7de958ddf35d22ad94ea41764d937f27f9",
+    "fixture/Cargo.toml": "e35d035266894da30f16d426308ec38cba7247840cd7c2e6f676d6a8fe5f92a2",
+    "fixture/src/main.rs": "bf2894cadf2865fecba986ff4231c201845e7aa585ec15e6255af1843dbeeb7f",
+    "linux-license-declarations.json": "ef327c22608a1a9339b653b38ea113ca9f0a593e80614063d0c9092b8ff11b71",
+    "run-x11.log": "1224d10cd063629bb6b6c9e6566f20dde40e6c8479bc28b405594b4e8a4c8ffb"
+  }
+}

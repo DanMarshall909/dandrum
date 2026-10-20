@@ -1,0 +1,1542 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 8934690..d33f93a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -147,6 +147,11 @@ if(DANDRUM_TRIGGER_CLAP_EDITOR)
+             ${RUST_ENGINE_SOURCES}
+         COMMENT "Building the format-neutral Trigger host scaffold")
+     add_custom_target(dandrum-trigger-host-rust DEPENDS ${RUST_TRIGGER_HOST_LIB})
++    add_test(NAME trigger-host-tests
++        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
++            ${CARGO_BIN} test --locked --jobs 2
++            --manifest-path ${RUST_TRIGGER_HOST_DIR}/Cargo.toml)
++    set_tests_properties(trigger-host-tests PROPERTIES LABELS "trigger-host-fast" TIMEOUT 1200)
+ endif()
+
+ add_test(
+diff --git a/src/trigger-host/src/lib.rs b/src/trigger-host/src/lib.rs
+index 91a5ee6..a44bf4e 100644
+--- a/src/trigger-host/src/lib.rs
++++ b/src/trigger-host/src/lib.rs
+@@ -1,14 +1,17 @@
+ //! Format-neutral ownership boundary for the production Trigger instrument.
+ //!
+-//! Session, runtime handoff and editor protocol behavior will be added here.
++//! Packaged session resources, runtime handoff and editor protocol live here.
+ //! CLAP and native WebView types stay in their adapter modules.
+
+ #![forbid(unsafe_code)]
+
+ pub mod protocol;
++pub mod runtime;
+
++use dandrum_engine::graph::PortDirection;
++use dandrum_engine::kernel::document::load_kernel_patch_str;
+ use dandrum_engine::patch::RenderSettings;
+-use dandrum_engine::preparation::PreparationContext;
++use dandrum_engine::preparation::{HostBuses, PreparationContext};
+ use dandrum_instrument_session::{Attachment, PreparedDocumentReplacement, SessionError};
+ use std::fmt;
+ use std::path::{Path, PathBuf};
+@@ -177,7 +180,20 @@ impl TriggerHost {
+         };
+         let context =
+             PreparationContext::new(resources.instrument_root(), configuration.sample_rate_hz);
+-        let session = InstrumentSession::new(resources.document(), context, settings)?;
++        let patch = load_kernel_patch_str(resources.document())
++            .map_err(|error| SessionError::InvalidDocument(error.to_string()))?;
++        // The Trigger host supplies mono controls and stereo output. Preparation
++        // validates those channel constraints against each named root port.
++        let buses = patch
++            .root()
++            .ports()
++            .iter()
++            .fold(HostBuses::new(), |buses, port| match port.direction() {
++                PortDirection::Input => buses.with_input(port.name(), 1),
++                PortDirection::Output => buses.with_output(port.name(), 2),
++            });
++        let session =
++            InstrumentSession::new_for_planar_host(resources.document(), context, settings, buses)?;
+         Ok(Self { resources, session })
+     }
+
+diff --git a/src/trigger-host/src/runtime.rs b/src/trigger-host/src/runtime.rs
+new file mode 100644
+index 0000000..26b683c
+--- /dev/null
++++ b/src/trigger-host/src/runtime.rs
+@@ -0,0 +1,592 @@
++//! Bounded ownership transfer between the control thread and audio callback.
++//!
++//! Construct both endpoints and every replacement off audio. The audio endpoint
++//! must also be returned to the control thread before it is dropped. `process`
++//! never destroys a runtime, even if the control endpoint has already gone away.
++
++use crate::TriggerHostConfiguration;
++use dandrum_engine::PreparedSamplerAssets;
++use dandrum_engine::graph::{PortDirection, SignalType};
++use dandrum_engine::graph_processor::RealtimeGraphProcessor;
++use dandrum_engine::kernel::{ChannelCount, PortMetadata};
++use dandrum_engine::preparation::PreparedKernelInstrument;
++use dandrum_instrument_session::{ActivationHost, ActivationLease, Publication, SessionSnapshot};
++use rtrb::{Consumer, Producer, RingBuffer};
++use std::sync::{
++    Arc,
++    atomic::{AtomicU64, Ordering},
++};
++
++pub const MAX_BLOCK_FRAMES: u32 = 16_384;
++pub const MAX_EVENTS: usize = 1_024;
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub enum RuntimeError {
++    InvalidConfiguration,
++    UnsupportedLayout,
++    InvalidBlock,
++    InvalidEvent,
++    QueueFull,
++    Busy,
++    IncompatibleRuntime,
++}
++
++#[derive(Clone, Copy, Debug, PartialEq)]
++pub enum ControlEvent {
++    NoteOn { note: u8, velocity: u8 },
++    NoteOff { note: u8 },
++    Parameter { index: usize, value: f64 },
++}
++
++#[derive(Clone, Copy, Debug, PartialEq)]
++pub struct ParameterFeedback {
++    pub index: usize,
++    pub value: f64,
++    pub frame_offset: u32,
++}
++
++#[derive(Clone, Copy, Debug, PartialEq)]
++pub struct TimedEvent {
++    pub frame_offset: u32,
++    pub event: ControlEvent,
++}
++
++/// Fully constructed processor and scratch storage; moving it does not allocate.
++pub struct PreparedRuntime(Box<Processor>);
++
++struct Processor {
++    graph: RealtimeGraphProcessor,
++    configuration: TriggerHostConfiguration,
++    layout: Vec<PortMetadata>,
++    inputs: Vec<Vec<Vec<f32>>>,
++    outputs: Vec<Vec<Vec<f32>>>,
++}
++
++impl PreparedRuntime {
++    pub fn new(
++        prepared: &PreparedKernelInstrument,
++        configuration: TriggerHostConfiguration,
++    ) -> Result<Self, RuntimeError> {
++        if configuration.sample_rate_hz == 0
++            || !(1..=MAX_BLOCK_FRAMES).contains(&configuration.max_block_frames)
++            || prepared.compiled_patch().render_settings().sample_rate_hz
++                != configuration.sample_rate_hz
++            || prepared
++                .compiled_patch()
++                .render_settings()
++                .block_size_frames
++                != configuration.max_block_frames
++        {
++            return Err(RuntimeError::InvalidConfiguration);
++        }
++        let layout = prepared.root_port_metadata();
++        let outputs = layout
++            .iter()
++            .filter(|port| port.direction() == PortDirection::Output)
++            .collect::<Vec<_>>();
++        if outputs.len() != 1
++            || outputs[0].signal_type() != SignalType::Audio
++            || outputs[0].channels() != &ChannelCount::Literal(2)
++            || layout.iter().any(|port| {
++                port.direction() == PortDirection::Input
++                    && (port.signal_type() != SignalType::Control
++                        || port.channels() != &ChannelCount::Literal(1))
++            })
++            || prepared
++                .compiled_patch()
++                .root_bus_plan()
++                .inputs()
++                .iter()
++                .any(|port| !port.is_bound())
++        {
++            return Err(RuntimeError::UnsupportedLayout);
++        }
++        let frames = configuration.max_block_frames as usize;
++        let inputs = layout
++            .iter()
++            .filter(|port| port.direction() == PortDirection::Input)
++            .map(|port| {
++                vec![vec![
++                    port.control_default().map_or(0.0, |value| value.default())
++                        as f32;
++                    frames
++                ]]
++            })
++            .collect();
++        let mut processor = Processor {
++            graph: RealtimeGraphProcessor::from_compiled_patch(
++                prepared.compiled_patch().clone(),
++                configuration.sample_rate_hz as f32,
++                &PreparedSamplerAssets::empty(),
++                frames,
++            ),
++            configuration,
++            layout,
++            inputs,
++            outputs: vec![vec![vec![0.0; frames]; 2]],
++        };
++        // The engine checks the immutable root schedule before rendering any
++        // voices; preparation already rejects unsupported poly child schedules.
++        // Probe off audio, then restore fresh DSP state before publication.
++        if processor
++            .graph
++            .render_root_buses(&processor.inputs, &mut processor.outputs)
++            != frames
++        {
++            return Err(RuntimeError::UnsupportedLayout);
++        }
++        processor.graph.reset();
++        Ok(Self(Box::new(processor)))
++    }
++}
++
++#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
++pub struct ProcessReport {
++    pub swapped: bool,
++    pub admission_closed: bool,
++    pub parameter_updates: usize,
++    pub dropped_feedback: usize,
++}
++
++pub struct RuntimeControl {
++    pending: Producer<PreparedRuntime>,
++    retired: Consumer<PreparedRuntime>,
++    events: Producer<ControlEvent>,
++    feedback: Consumer<ParameterFeedback>,
++    values: Arc<[AtomicU64]>,
++    admission: Arc<AtomicU64>,
++    in_flight: bool,
++    configuration: TriggerHostConfiguration,
++    layout: Vec<PortMetadata>,
++}
++
++pub struct RuntimeAudio {
++    state: AudioState,
++    admission: Arc<AtomicU64>,
++}
++
++struct AudioState {
++    current: PreparedRuntime,
++    pending: Consumer<PreparedRuntime>,
++    retired: Producer<PreparedRuntime>,
++    events: Consumer<ControlEvent>,
++    feedback: Producer<ParameterFeedback>,
++    values: Arc<[AtomicU64]>,
++    event_capacity: usize,
++}
++
++/// Reserving this lease does not publish a processor. Dropping it cancels the
++/// candidate on the control thread without altering accepted or audio state.
++pub struct RuntimeLease<'a> {
++    _admission: ClosedAdmission<'a>,
++    slot: rtrb::chunks::WriteChunkUninit<'a, PreparedRuntime>,
++    in_flight: &'a mut bool,
++    candidate: PreparedRuntime,
++}
++
++impl ActivationLease for RuntimeLease<'_> {
++    fn publish(self, _: Publication<'_>) {
++        *self.in_flight = true;
++        self.slot.fill_from_iter(std::iter::once(self.candidate));
++    }
++}
++
++impl ActivationHost for RuntimeControl {
++    type Error = RuntimeError;
++    type Lease<'a> = RuntimeLease<'a>;
++
++    fn activate<'a>(
++        &'a mut self,
++        prepared: &PreparedKernelInstrument,
++        _: &SessionSnapshot,
++    ) -> Result<Self::Lease<'a>, Self::Error> {
++        if self.in_flight {
++            return Err(RuntimeError::Busy);
++        }
++        let candidate = PreparedRuntime::new(prepared, self.configuration)?;
++        if !self.compatible(&candidate) {
++            return Err(RuntimeError::IncompatibleRuntime);
++        }
++        let slot = self
++            .pending
++            .write_chunk_uninit(1)
++            .expect("idle activation slot");
++        let admission = ClosedAdmission::close(&self.admission);
++        Ok(RuntimeLease {
++            _admission: admission,
++            slot,
++            in_flight: &mut self.in_flight,
++            candidate,
++        })
++    }
++}
++
++/// Allocate the two capacity-one runtime slots off audio. `event_capacity`
++/// bounds each control/feedback queue and the host event count in one block.
++pub fn runtime_handoff(
++    initial: PreparedRuntime,
++    event_capacity: usize,
++) -> Result<(RuntimeControl, RuntimeAudio), RuntimeError> {
++    if event_capacity == 0
++        || event_capacity > MAX_EVENTS
++        || event_capacity > initial.0.graph.pending_event_capacity() / 2
++    {
++        return Err(RuntimeError::InvalidConfiguration);
++    }
++    let admission = Arc::new(AtomicU64::new(0));
++    let (event_tx, event_rx) = RingBuffer::new(event_capacity);
++    let (feedback_tx, feedback_rx) = RingBuffer::new(event_capacity);
++    let values: Arc<[AtomicU64]> = initial
++        .0
++        .layout
++        .iter()
++        .filter(|port| port.direction() == PortDirection::Input)
++        .map(|port| {
++            AtomicU64::new(
++                port.control_default()
++                    .map_or(0.0, |value| value.default())
++                    .to_bits(),
++            )
++        })
++        .collect();
++    let (pending_tx, pending_rx) = RingBuffer::new(1);
++    let (retired_tx, retired_rx) = RingBuffer::new(1);
++    let control = RuntimeControl {
++        pending: pending_tx,
++        retired: retired_rx,
++        events: event_tx,
++        feedback: feedback_rx,
++        values: values.clone(),
++        admission: admission.clone(),
++        in_flight: false,
++        configuration: initial.0.configuration,
++        layout: initial.0.layout.clone(),
++    };
++    let audio = RuntimeAudio {
++        state: AudioState {
++            current: initial,
++            pending: pending_rx,
++            retired: retired_tx,
++            events: event_rx,
++            feedback: feedback_tx,
++            values,
++            event_capacity,
++        },
++        admission,
++    };
++    Ok((control, audio))
++}
++
++impl RuntimeControl {
++    /// Parameter indices are the prepared root control-input order. Format
++    /// adapters map their public parameter identities to these stable names.
++    pub fn parameter_index(&self, root_name: &str) -> Option<usize> {
++        self.layout
++            .iter()
++            .filter(|port| port.direction() == PortDirection::Input)
++            .position(|port| port.name() == root_name)
++    }
++    pub fn parameter_value(&self, index: usize) -> Option<f64> {
++        self.values
++            .get(index)
++            .map(|value| f64::from_bits(value.load(Ordering::Relaxed)))
++    }
++    pub fn take_feedback(&mut self) -> Option<ParameterFeedback> {
++        self.feedback.pop().ok()
++    }
++    pub fn try_send(&mut self, event: ControlEvent) -> Result<(), RuntimeError> {
++        if !event.valid(&self.layout) {
++            return Err(RuntimeError::InvalidEvent);
++        }
++        self.events.push(event).map_err(|_| RuntimeError::QueueFull)
++    }
++    fn compatible(&self, next: &PreparedRuntime) -> bool {
++        next.0.configuration == self.configuration && next.0.layout == self.layout
++    }
++
++    /// A rejected value remains owned by the caller, including under backpressure.
++    pub fn offer(&mut self, next: PreparedRuntime) -> Result<(), PreparedRuntime> {
++        if self.in_flight || !self.compatible(&next) {
++            return Err(next);
++        }
++        // The control-owned in-flight flag is cleared only after retirement;
++        // therefore this slot cannot still hold a previous candidate.
++        self.pending
++            .write_chunk_uninit(1)
++            .expect("idle activation slot")
++            .fill_from_iter(std::iter::once(next));
++        self.in_flight = true;
++        Ok(())
++    }
++
++    /// Reclamation and destruction belong to the control thread. Until this
++    /// succeeds a second replacement is refused, even after the first swap.
++    pub fn reclaim(&mut self) -> Option<PreparedRuntime> {
++        let retired = self.retired.pop().ok()?;
++        self.in_flight = false;
++        Some(retired)
++    }
++}
++
++impl ControlEvent {
++    fn valid(self, layout: &[PortMetadata]) -> bool {
++        match self {
++            Self::NoteOn { note, velocity } => note <= 127 && (1..=127).contains(&velocity),
++            Self::NoteOff { note } => note <= 127,
++            Self::Parameter { index, value } => {
++                let port = layout
++                    .iter()
++                    .filter(|port| port.direction() == PortDirection::Input)
++                    .nth(index);
++                port.is_some_and(|port| {
++                    value.is_finite()
++                        && (value as f32).is_finite()
++                        && port.control_default().is_none_or(|range| {
++                            range.min().is_none_or(|min| value >= min)
++                                && range.max().is_none_or(|max| value <= max)
++                        })
++                })
++            }
++        }
++    }
++}
++
++const ADMISSION_CLOSED: u64 = 1;
++const CALLBACK_ACTIVE: u64 = 2;
++
++struct CallbackAdmission<'a>(&'a AtomicU64);
++
++impl<'a> CallbackAdmission<'a> {
++    fn enter(gate: &'a AtomicU64) -> Option<Self> {
++        gate.compare_exchange(0, CALLBACK_ACTIVE, Ordering::Acquire, Ordering::Relaxed)
++            .ok()
++            .map(|_| Self(gate))
++    }
++}
++
++impl Drop for CallbackAdmission<'_> {
++    fn drop(&mut self) {
++        self.0.fetch_and(!CALLBACK_ACTIVE, Ordering::Release);
++    }
++}
++
++struct ClosedAdmission<'a>(&'a AtomicU64);
++
++impl<'a> ClosedAdmission<'a> {
++    fn close(gate: &'a AtomicU64) -> Self {
++        gate.fetch_or(ADMISSION_CLOSED, Ordering::AcqRel);
++        // Waiting is confined to the control thread. Once closed, no new
++        // callback can enter. Acquire observes the previous callback's release.
++        while gate.load(Ordering::Acquire) & CALLBACK_ACTIVE != 0 {
++            std::thread::yield_now();
++        }
++        Self(gate)
++    }
++}
++
++impl Drop for ClosedAdmission<'_> {
++    fn drop(&mut self) {
++        self.0.store(0, Ordering::Release);
++    }
++}
++
++impl RuntimeAudio {
++    pub fn reset(&mut self) {
++        let Some(_admission) = CallbackAdmission::enter(&self.admission) else {
++            return;
++        };
++        self.state.reset();
++    }
++
++    pub fn process(
++        &mut self,
++        left: &mut [f32],
++        right: &mut [f32],
++    ) -> Result<ProcessReport, RuntimeError> {
++        self.process_events(left, right, &[])
++    }
++
++    pub fn process_events(
++        &mut self,
++        left: &mut [f32],
++        right: &mut [f32],
++        events: &[TimedEvent],
++    ) -> Result<ProcessReport, RuntimeError> {
++        let Some(_admission) = CallbackAdmission::enter(&self.admission) else {
++            left.fill(0.0);
++            right.fill(0.0);
++            return Ok(ProcessReport {
++                admission_closed: true,
++                ..ProcessReport::default()
++            });
++        };
++        self.state.process_events(left, right, events)
++    }
++}
++
++impl AudioState {
++    /// Panic/reset discards pre-reset queued activity and resets voices/DSP,
++    /// while retaining host-owned scalar values and admitted replacements.
++    pub fn reset(&mut self) {
++        for _ in 0..self.event_capacity {
++            if self.events.pop().is_err() {
++                break;
++            }
++        }
++        self.current.0.graph.reset();
++    }
++    /// Control-thread events are applied at the next block boundary; host events
++    /// carry ordered offsets in this block. A rejected batch changes no state.
++    pub fn process_events(
++        &mut self,
++        left: &mut [f32],
++        right: &mut [f32],
++        events: &[TimedEvent],
++    ) -> Result<ProcessReport, RuntimeError> {
++        let error = if left.len() != right.len()
++            || left.is_empty()
++            || left.len() > self.current.0.configuration.max_block_frames as usize
++        {
++            Some(RuntimeError::InvalidBlock)
++        } else if events.len() > self.event_capacity
++            || events.iter().any(|event| {
++                event.frame_offset as usize >= left.len()
++                    || !event.event.valid(&self.current.0.layout)
++            })
++            || events
++                .windows(2)
++                .any(|pair| pair[0].frame_offset > pair[1].frame_offset)
++        {
++            Some(RuntimeError::InvalidEvent)
++        } else {
++            None
++        };
++        if let Some(error) = error {
++            left.fill(0.0);
++            right.fill(0.0);
++            return Err(error);
++        }
++        let mut report = ProcessReport::default();
++        // Reserve retirement storage before consuming a candidate. The safe
++        // chunk API transfers ownership infallibly once a slot is available.
++        if let Ok(slot) = self.retired.write_chunk_uninit(1)
++            && let Ok(next) = self.pending.pop()
++        {
++            let previous = std::mem::replace(&mut self.current, next);
++            slot.fill_from_iter(std::iter::once(previous));
++            report.swapped = true;
++        }
++        // A producer may refill concurrently. The finite iteration bound is the
++        // configured queue capacity, never "until the queue becomes empty".
++        for _ in 0..self.event_capacity {
++            let Ok(event) = self.events.pop() else {
++                break;
++            };
++            self.apply_event(event, 0, &mut report);
++        }
++        let mut start = 0;
++        for event in events {
++            let end = event.frame_offset as usize;
++            if end > start {
++                self.current
++                    .0
++                    .render(&self.values, &mut left[start..end], &mut right[start..end]);
++            }
++            self.apply_event(event.event, event.frame_offset, &mut report);
++            start = end;
++        }
++        self.current
++            .0
++            .render(&self.values, &mut left[start..], &mut right[start..]);
++        Ok(report)
++    }
++
++    fn apply_event(&mut self, event: ControlEvent, frame_offset: u32, report: &mut ProcessReport) {
++        match event {
++            ControlEvent::NoteOn { note, velocity } => {
++                self.current.0.graph.note_on_at(note, velocity, 0)
++            }
++            ControlEvent::NoteOff { note } => self.current.0.graph.note_off_at(note, 0),
++            ControlEvent::Parameter { index, value } => {
++                self.values[index].store(value.to_bits(), Ordering::Relaxed);
++                report.parameter_updates += 1;
++                if self
++                    .feedback
++                    .push(ParameterFeedback {
++                        index,
++                        value,
++                        frame_offset,
++                    })
++                    .is_err()
++                {
++                    // Scalar values remain available atomically even when the
++                    // bounded event queue is full. The caller requests a main
++                    // callback and reports/reconciles this explicit overflow.
++                    report.dropped_feedback += 1;
++                }
++            }
++        }
++    }
++}
++
++impl Processor {
++    fn render(&mut self, values: &[AtomicU64], left: &mut [f32], right: &mut [f32]) {
++        for (plane, value) in self.inputs.iter_mut().flatten().zip(values) {
++            let value = f64::from_bits(value.load(Ordering::Relaxed)) as f32;
++            plane.resize(left.len(), value);
++            plane.fill(value);
++        }
++        for plane in self.outputs.iter_mut().flatten() {
++            plane.resize(left.len(), 0.0);
++        }
++        // Construction proves schedule support, and the callback validates
++        // 1..=max frames in owned stereo planes. Neither the immutable schedule
++        // nor its support flag can change: the engine returns exactly this size.
++        let rendered = self
++            .graph
++            .render_root_buses(&self.inputs, &mut self.outputs);
++        debug_assert_eq!(rendered, left.len(), "validated realtime render invariant");
++        left.copy_from_slice(&self.outputs[0][0]);
++        right.copy_from_slice(&self.outputs[0][1]);
++    }
++}
++
++#[cfg(test)]
++mod admission_tests {
++    use super::*;
++    use std::sync::mpsc;
++    use std::time::{Duration, Instant};
++
++    #[test]
++    fn publication_waits_for_admitted_callback_then_cancel_reopens_admission() {
++        let gate = Arc::new(AtomicU64::new(0));
++        let callback = CallbackAdmission::enter(&gate).expect("callback admitted");
++        let (closed_tx, closed_rx) = mpsc::channel();
++        let (release_tx, release_rx) = mpsc::channel();
++        let worker_gate = gate.clone();
++        let worker = std::thread::spawn(move || {
++            let closed = ClosedAdmission::close(&worker_gate);
++            closed_tx.send(()).unwrap();
++            release_rx.recv_timeout(Duration::from_secs(5)).unwrap();
++            drop(closed);
++        });
++        let deadline = Instant::now() + Duration::from_secs(5);
++        while gate.load(Ordering::Acquire) & ADMISSION_CLOSED == 0 {
++            assert!(
++                Instant::now() < deadline,
++                "control thread must close admission"
++            );
++            std::thread::yield_now();
++        }
++        assert!(
++            matches!(closed_rx.try_recv(), Err(mpsc::TryRecvError::Empty)),
++            "publication cannot proceed while the callback owns its guard"
++        );
++        drop(callback);
++        closed_rx.recv_timeout(Duration::from_secs(5)).unwrap();
++        assert!(CallbackAdmission::enter(&gate).is_none());
++        release_tx.send(()).unwrap();
++        worker.join().unwrap();
++        assert!(CallbackAdmission::enter(&gate).is_some());
++    }
++}
+diff --git a/src/trigger-host/tests/packaged_resources.rs b/src/trigger-host/tests/packaged_resources.rs
+index 4a8c3f3..387cdb6 100644
+--- a/src/trigger-host/tests/packaged_resources.rs
++++ b/src/trigger-host/tests/packaged_resources.rs
+@@ -64,6 +64,35 @@ fn render_note(prepared: &PreparedKernelInstrument, note: u8) -> Vec<Vec<f32>> {
+     output.remove(0)
+ }
+
++#[test]
++fn packaged_host_binds_public_controls_to_the_rendered_sample_without_editing_history() {
++    use dandrum_trigger_host::runtime::{ControlEvent, PreparedRuntime, runtime_handoff};
++    let (_temporary, root) = copied_package();
++    let mut host = TriggerHost::open(&root, configuration()).unwrap();
++    let (attachment, before) = host.session_mut().attach().unwrap();
++    let prepared = PreparedRuntime::new(host.session().prepared(), configuration()).unwrap();
++    let (mut control, mut audio) = runtime_handoff(prepared, 4).unwrap();
++    let level = control.parameter_index("level").unwrap();
++    control
++        .try_send(ControlEvent::Parameter {
++            index: level,
++            value: 0.25,
++        })
++        .unwrap();
++    control
++        .try_send(ControlEvent::NoteOn {
++            note: 36,
++            velocity: 100,
++        })
++        .unwrap();
++    let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
++    audio.process(&mut left, &mut right).unwrap();
++    assert_eq!(left[0], -0.125);
++    assert_eq!(right[0], -0.125);
++    assert_eq!(control.parameter_value(level), Some(0.25));
++    assert_eq!(host.session().snapshot(&attachment).unwrap(), before);
++}
++
+ #[test]
+ fn copied_package_owns_the_real_kit_and_renders_known_signed_midi_36_output() {
+     let (_temporary, root) = copied_package();
+diff --git a/src/trigger-host/tests/runtime.rs b/src/trigger-host/tests/runtime.rs
+new file mode 100644
+index 0000000..39e2824
+--- /dev/null
++++ b/src/trigger-host/tests/runtime.rs
+@@ -0,0 +1,810 @@
++use dandrum_engine::graph::PortDirection;
++use dandrum_engine::kernel::{ChannelCount, document::load_kernel_patch_str};
++use dandrum_engine::patch::RenderSettings;
++use dandrum_engine::preparation::{HostBuses, PreparationContext};
++use dandrum_instrument_session::{ActivationHost, CommitError, InstrumentSession, SetZoneKeyRange};
++use dandrum_trigger_host::TriggerHostConfiguration;
++use dandrum_trigger_host::runtime::{
++    ControlEvent, ParameterFeedback, PreparedRuntime, RuntimeError, TimedEvent, runtime_handoff,
++};
++use std::path::PathBuf;
++
++fn configuration() -> TriggerHostConfiguration {
++    TriggerHostConfiguration {
++        sample_rate_hz: 48_000,
++        max_block_frames: 16,
++    }
++}
++
++fn session(note: u8) -> InstrumentSession {
++    let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
++    let yaml = std::fs::read_to_string(repository.join("examples/patches/advanced-drum-kit.yaml"))
++        .unwrap()
++        .replace(
++            "key_range: [36, 36]",
++            &format!("key_range: [{note}, {note}]"),
++        );
++    planar_session(&yaml)
++}
++
++fn planar_session(yaml: &str) -> InstrumentSession {
++    planar_session_at(yaml, configuration())
++}
++
++fn planar_session_at(yaml: &str, configuration: TriggerHostConfiguration) -> InstrumentSession {
++    let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
++    let document = load_kernel_patch_str(yaml).unwrap();
++    let mut buses = HostBuses::new();
++    for port in document.root().ports() {
++        let ChannelCount::Literal(channels) = port.channels() else {
++            panic!("literal root channel count");
++        };
++        buses = match port.direction() {
++            PortDirection::Input => buses.with_input(port.name(), *channels as usize),
++            PortDirection::Output => buses.with_output(port.name(), *channels as usize),
++        };
++    }
++    InstrumentSession::new_for_planar_host(
++        yaml,
++        PreparationContext::new(
++            repository.join("examples/patches"),
++            configuration.sample_rate_hz,
++        ),
++        RenderSettings {
++            sample_rate_hz: configuration.sample_rate_hz,
++            block_size_frames: configuration.max_block_frames,
++            duration_frames: u64::from(configuration.max_block_frames),
++        },
++        buses,
++    )
++    .unwrap()
++}
++
++#[test]
++fn a_changed_parameter_surface_is_refused_before_session_publication() {
++    let mut original = session(36);
++    let (_, snapshot) = original.attach().unwrap();
++    let changed = planar_session(
++        &snapshot
++            .yaml
++            .replace("min: -1, max: 1", "min: -0.5, max: 0.5"),
++    );
++    let (mut control, _audio) = runtime_handoff(prepared(36), 4).unwrap();
++    let candidate = PreparedRuntime::new(changed.prepared(), configuration()).unwrap();
++    assert!(control.offer(candidate).is_err());
++    assert!(matches!(
++        control.activate(changed.prepared(), &snapshot),
++        Err(RuntimeError::IncompatibleRuntime)
++    ));
++    assert!(
++        control.offer(prepared(60)).is_ok(),
++        "failure leaves the slot available"
++    );
++}
++
++fn prepared(note: u8) -> PreparedRuntime {
++    PreparedRuntime::new(session(note).prepared(), configuration()).unwrap()
++}
++
++#[test]
++fn invalid_configuration_or_foreign_layout_cannot_replace_the_running_runtime() {
++    let session = session(36);
++    for configuration in [
++        TriggerHostConfiguration {
++            sample_rate_hz: 0,
++            max_block_frames: 16,
++        },
++        TriggerHostConfiguration {
++            sample_rate_hz: 48_000,
++            max_block_frames: 0,
++        },
++        TriggerHostConfiguration {
++            sample_rate_hz: 48_000,
++            max_block_frames: 16_385,
++        },
++        TriggerHostConfiguration {
++            sample_rate_hz: 44_100,
++            max_block_frames: 16,
++        },
++        TriggerHostConfiguration {
++            sample_rate_hz: 48_000,
++            max_block_frames: 8,
++        },
++    ] {
++        assert!(matches!(
++            PreparedRuntime::new(session.prepared(), configuration),
++            Err(RuntimeError::InvalidConfiguration)
++        ));
++    }
++    let (mut control, _audio) = runtime_handoff(prepared(36), 4).unwrap();
++    let changed_configuration = TriggerHostConfiguration {
++        sample_rate_hz: 44_100,
++        max_block_frames: 16,
++    };
++    let changed_session = planar_session_at(
++        &std::fs::read_to_string(
++            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
++                .join("../../examples/patches/advanced-drum-kit.yaml"),
++        )
++        .unwrap(),
++        changed_configuration,
++    );
++    let changed_settings =
++        PreparedRuntime::new(changed_session.prepared(), changed_configuration).unwrap();
++    assert!(control.offer(changed_settings).is_err());
++
++    let yaml = include_str!("../../clap-adapter/fixtures/signed-gain.yaml");
++    let foreign = InstrumentSession::new(
++        yaml,
++        PreparationContext::new(".", 48_000),
++        RenderSettings {
++            sample_rate_hz: 48_000,
++            block_size_frames: 16,
++            duration_frames: 16,
++        },
++    )
++    .unwrap();
++    assert!(matches!(
++        PreparedRuntime::new(foreign.prepared(), configuration()),
++        Err(RuntimeError::UnsupportedLayout)
++    ));
++    assert!(control.offer(prepared(60)).is_ok());
++}
++
++#[test]
++fn handoff_capacity_is_bounded_by_both_the_protocol_limit_and_dsp_queue() {
++    for capacity in [0, 65, 1_025] {
++        assert!(matches!(
++            runtime_handoff(prepared(36), capacity),
++            Err(RuntimeError::InvalidConfiguration)
++        ));
++    }
++    assert!(runtime_handoff(prepared(36), 64).is_ok());
++}
++
++#[test]
++fn invalid_blocks_are_silent_and_preserve_the_pending_replacement() {
++    let (mut control, mut audio) = runtime_handoff(prepared(36), 4).unwrap();
++    assert!(control.offer(prepared(60)).is_ok());
++    for (left_frames, right_frames) in [(0, 0), (16, 15), (17, 17)] {
++        let mut left = vec![1.0; left_frames];
++        let mut right = vec![1.0; right_frames];
++        assert_eq!(
++            audio.process(&mut left, &mut right),
++            Err(RuntimeError::InvalidBlock)
++        );
++        assert!(left.iter().chain(&right).all(|&value| value == 0.0));
++        assert!(control.reclaim().is_none());
++    }
++    audio.process(&mut [1.0; 16], &mut [1.0; 16]).unwrap();
++    assert!(control.reclaim().is_some());
++}
++
++#[test]
++fn replacement_is_block_boundary_only_and_backpressure_lasts_until_reclamation() {
++    let (mut control, mut audio) = runtime_handoff(prepared(36), 4).unwrap();
++    assert!(control.reclaim().is_none());
++    assert!(control.offer(prepared(60)).is_ok());
++    let rejected = control
++        .offer(prepared(72))
++        .expect_err("one in-flight replacement");
++    assert!(control.reclaim().is_none(), "no swap before process");
++    audio.process(&mut [0.0; 16], &mut [0.0; 16]).unwrap();
++    assert!(
++        control.offer(rejected).is_err(),
++        "retirement must first be reclaimed"
++    );
++    assert!(control.reclaim().is_some());
++    assert!(control.reclaim().is_none());
++    assert!(control.offer(prepared(72)).is_ok());
++}
++
++#[test]
++fn bounded_note_handoff_reports_backpressure_and_preserves_the_rejected_note() {
++    let (mut control, mut audio) = runtime_handoff(prepared(36), 4).unwrap();
++    for _ in 0..4 {
++        assert_eq!(control.try_send(ControlEvent::NoteOff { note: 0 }), Ok(()));
++    }
++    let hit = ControlEvent::NoteOn {
++        note: 36,
++        velocity: 100,
++    };
++    assert_eq!(control.try_send(hit), Err(RuntimeError::QueueFull));
++    let (mut left, mut right) = ([1.0; 16], [1.0; 16]);
++    audio.process(&mut left, &mut right).unwrap();
++    assert_eq!(left, [0.0; 16]);
++    assert_eq!(right, [0.0; 16]);
++    control.try_send(hit).unwrap();
++    audio.process(&mut left, &mut right).unwrap();
++    assert_eq!((left[0], right[0]), (-0.5, -0.5));
++}
++
++#[test]
++fn host_notes_are_sample_accurate_and_invalid_batches_preserve_pending_work() {
++    let (mut control, mut audio) = runtime_handoff(prepared(36), 4).unwrap();
++    assert!(control.offer(prepared(60)).is_ok());
++    let note = |frame_offset, note| TimedEvent {
++        frame_offset,
++        event: ControlEvent::NoteOn {
++            note,
++            velocity: 100,
++        },
++    };
++    for invalid in [
++        vec![note(16, 60)],
++        vec![note(3, 60), note(2, 60)],
++        vec![note(0, 128)],
++        vec![note(0, 60); 5],
++    ] {
++        let (mut left, mut right) = ([1.0; 16], [1.0; 16]);
++        assert_eq!(
++            audio.process_events(&mut left, &mut right, &invalid),
++            Err(RuntimeError::InvalidEvent)
++        );
++        assert_eq!((left, right), ([0.0; 16], [0.0; 16]));
++        assert!(control.reclaim().is_none());
++    }
++    let (mut left, mut right) = ([1.0; 16], [1.0; 16]);
++    audio
++        .process_events(&mut left, &mut right, &[note(5, 60)])
++        .unwrap();
++    assert_eq!(&left[..5], &[0.0; 5]);
++    assert_eq!(&right[..5], &[0.0; 5]);
++    assert_eq!((left[5], right[5]), (-0.5, -0.5));
++    assert!(control.reclaim().is_some());
++    assert_eq!(
++        control.try_send(ControlEvent::NoteOn {
++            note: 36,
++            velocity: 0
++        }),
++        Err(RuntimeError::InvalidEvent)
++    );
++    assert_eq!(
++        control.try_send(ControlEvent::NoteOff { note: 128 }),
++        Err(RuntimeError::InvalidEvent)
++    );
++}
++
++#[test]
++fn parameter_handoff_updates_signed_audio_and_reports_nonzero_host_offset() {
++    let (mut control, mut audio) = runtime_handoff(prepared(36), 4).unwrap();
++    let level = control
++        .parameter_index("level")
++        .expect("named control input");
++    assert_eq!(control.parameter_index("missing"), None);
++    assert_eq!(control.parameter_value(usize::MAX), None);
++    assert_eq!(control.parameter_value(level), Some(1.0));
++    control
++        .try_send(ControlEvent::Parameter {
++            index: level,
++            value: 0.25,
++        })
++        .unwrap();
++    assert_eq!(
++        control.parameter_value(level),
++        Some(1.0),
++        "pending is not applied"
++    );
++    control
++        .try_send(ControlEvent::NoteOn {
++            note: 36,
++            velocity: 100,
++        })
++        .unwrap();
++    let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
++    audio.process(&mut left, &mut right).unwrap();
++    assert_eq!((left[0], right[0]), (-0.125, -0.125));
++    assert_eq!(control.parameter_value(level), Some(0.25));
++    assert_eq!(
++        control.take_feedback(),
++        Some(ParameterFeedback {
++            index: level,
++            value: 0.25,
++            frame_offset: 0
++        })
++    );
++    assert_eq!(control.take_feedback(), None);
++
++    assert!(control.offer(prepared(60)).is_ok());
++    control
++        .try_send(ControlEvent::NoteOn {
++            note: 60,
++            velocity: 100,
++        })
++        .unwrap();
++    audio.process(&mut left, &mut right).unwrap();
++    assert_eq!(
++        (left[0], right[0]),
++        (-0.125, -0.125),
++        "replacement retains host-owned scalar"
++    );
++
++    let (mut control, mut audio) = runtime_handoff(prepared(36), 4).unwrap();
++    audio
++        .process_events(
++            &mut left,
++            &mut right,
++            &[
++                TimedEvent {
++                    frame_offset: 5,
++                    event: ControlEvent::Parameter {
++                        index: level,
++                        value: 0.5,
++                    },
++                },
++                TimedEvent {
++                    frame_offset: 5,
++                    event: ControlEvent::NoteOn {
++                        note: 36,
++                        velocity: 100,
++                    },
++                },
++            ],
++        )
++        .unwrap();
++    assert_eq!(&left[..5], &[0.0; 5]);
++    assert_eq!((left[5], right[5]), (-0.25, -0.25));
++    assert_eq!(control.parameter_value(level), Some(0.5));
++    assert_eq!(
++        control.take_feedback(),
++        Some(ParameterFeedback {
++            index: level,
++            value: 0.5,
++            frame_offset: 5
++        })
++    );
++}
++
++#[test]
++fn invalid_parameter_events_preserve_the_scalar_values_and_signed_audio() {
++    let (mut control, mut audio) = runtime_handoff(prepared(36), 4).unwrap();
++    let level = control.parameter_index("level").unwrap();
++    for (index, value) in [
++        (usize::MAX, 1.0),
++        (level, f64::NAN),
++        (level, f64::INFINITY),
++        (level, -0.1),
++        (level, 4.1),
++    ] {
++        let invalid = ControlEvent::Parameter { index, value };
++        assert_eq!(control.try_send(invalid), Err(RuntimeError::InvalidEvent));
++        let (mut left, mut right) = ([1.0; 16], [1.0; 16]);
++        assert_eq!(
++            audio.process_events(
++                &mut left,
++                &mut right,
++                &[
++                    TimedEvent {
++                        frame_offset: 0,
++                        event: ControlEvent::Parameter {
++                            index: level,
++                            value: 0.125
++                        }
++                    },
++                    TimedEvent {
++                        frame_offset: 3,
++                        event: invalid
++                    },
++                ]
++            ),
++            Err(RuntimeError::InvalidEvent)
++        );
++        assert_eq!(control.parameter_value(level), Some(1.0));
++        assert_eq!((left, right), ([0.0; 16], [0.0; 16]));
++        assert_eq!(control.take_feedback(), None);
++    }
++    control
++        .try_send(ControlEvent::NoteOn {
++            note: 36,
++            velocity: 100,
++        })
++        .unwrap();
++    let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
++    audio.process(&mut left, &mut right).unwrap();
++    assert_eq!((left[0], right[0]), (-0.5, -0.5));
++}
++
++#[test]
++fn feedback_overflow_is_explicit_and_the_latest_scalar_remains_recoverable() {
++    let (mut control, mut audio) = runtime_handoff(prepared(36), 2).unwrap();
++    let level = control.parameter_index("level").unwrap();
++    let mut left = [0.0; 16];
++    let mut right = [0.0; 16];
++    for (values, expected_dropped) in [([0.25, 0.5], 0), ([0.75, 0.125], 2)] {
++        let events = values.map(|value| TimedEvent {
++            frame_offset: 0,
++            event: ControlEvent::Parameter {
++                index: level,
++                value,
++            },
++        });
++        let report = audio
++            .process_events(&mut left, &mut right, &events)
++            .unwrap();
++        assert_eq!(
++            (report.parameter_updates, report.dropped_feedback),
++            (2, expected_dropped)
++        );
++    }
++    assert_eq!(control.parameter_value(level), Some(0.125));
++    assert_eq!(control.take_feedback().unwrap().value, 0.25);
++    assert_eq!(control.take_feedback().unwrap().value, 0.5);
++    assert_eq!(control.take_feedback(), None);
++    control
++        .try_send(ControlEvent::NoteOn {
++            note: 36,
++            velocity: 100,
++        })
++        .unwrap();
++    audio.process(&mut left, &mut right).unwrap();
++    assert_eq!((left[0], right[0]), (-0.0625, -0.0625));
++}
++
++#[test]
++fn reset_stops_active_and_queued_notes_and_retains_host_owned_values() {
++    let (mut control, mut audio) = runtime_handoff(prepared(36), 4).unwrap();
++    let level = control.parameter_index("level").unwrap();
++    control
++        .try_send(ControlEvent::Parameter {
++            index: level,
++            value: 0.5,
++        })
++        .unwrap();
++    control
++        .try_send(ControlEvent::NoteOn {
++            note: 36,
++            velocity: 100,
++        })
++        .unwrap();
++    let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
++    audio.process(&mut left, &mut right).unwrap();
++    assert_eq!((left[0], right[0]), (-0.25, -0.25));
++    control
++        .try_send(ControlEvent::NoteOn {
++            note: 36,
++            velocity: 100,
++        })
++        .unwrap();
++    control
++        .try_send(ControlEvent::Parameter {
++            index: level,
++            value: 0.25,
++        })
++        .unwrap();
++    audio.reset();
++    audio.process(&mut left, &mut right).unwrap();
++    assert_eq!((left, right), ([0.0; 16], [0.0; 16]));
++    assert_eq!(control.parameter_value(level), Some(0.5));
++    assert!(control.offer(prepared(60)).is_ok());
++    audio.reset();
++    control
++        .try_send(ControlEvent::NoteOn {
++            note: 60,
++            velocity: 100,
++        })
++        .unwrap();
++    assert!(audio.process(&mut left, &mut right).unwrap().swapped);
++    assert_eq!((left[0], right[0]), (-0.25, -0.25));
++    assert!(control.reclaim().is_some());
++}
++
++#[test]
++fn unbound_control_roots_are_rejected_before_exposing_an_audio_runtime() {
++    let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
++    let yaml = std::fs::read_to_string(repository.join("examples/patches/advanced-drum-kit.yaml"))
++        .unwrap();
++    let unbound = InstrumentSession::new(
++        &yaml,
++        PreparationContext::new(repository.join("examples/patches"), 48_000),
++        RenderSettings {
++            sample_rate_hz: 48_000,
++            block_size_frames: 16,
++            duration_frames: 16,
++        },
++    )
++    .unwrap();
++    assert!(matches!(
++        PreparedRuntime::new(unbound.prepared(), configuration()),
++        Err(RuntimeError::UnsupportedLayout)
++    ));
++}
++
++#[test]
++fn session_publication_uses_a_cancellable_lease_and_rolls_back_under_backpressure() {
++    let mut session = session(36);
++    let initial = PreparedRuntime::new(session.prepared(), configuration()).unwrap();
++    let (mut control, mut audio) = runtime_handoff(initial, 4).unwrap();
++    let (attachment, original) = session.attach().unwrap();
++    let intent = |note| SetZoneKeyRange {
++        map_id: "kit".into(),
++        zone_id: "kick".into(),
++        key_range: [note, note],
++    };
++    let candidate = session.prepare_mapping(&attachment, intent(60)).unwrap();
++    control
++        .try_send(ControlEvent::NoteOn {
++            note: 36,
++            velocity: 100,
++        })
++        .unwrap();
++    let lease = control.activate(candidate.prepared(), &original).unwrap();
++    let (mut left, mut right) = ([1.0; 16], [1.0; 16]);
++    let mut closed = None;
++    let waiting_callback = allocation_counter::measure(|| {
++        audio.reset();
++        closed = Some(audio.process(&mut left, &mut right).unwrap());
++    });
++    assert!(closed.unwrap().admission_closed);
++    assert_eq!(
++        (waiting_callback.count_total, waiting_callback.count_current),
++        (0, 0)
++    );
++    assert_eq!((left, right), ([0.0; 16], [0.0; 16]));
++    let cancelled = allocation_counter::measure(|| drop(lease));
++    assert_eq!(cancelled.count_total, 0);
++    assert!(
++        cancelled.count_current < 0,
++        "cancelled candidate is destroyed off audio"
++    );
++    assert_eq!(session.snapshot(&attachment).unwrap(), original);
++    audio.process(&mut left, &mut right).unwrap();
++    assert_eq!((left[0], right[0]), (-0.5, -0.5));
++    audio.reset();
++    let accepted = session.commit_mapping(candidate, &mut control).unwrap();
++    assert_eq!((accepted.revision, accepted.undo_len), (1, 1));
++    let blocked = session.prepare_mapping(&attachment, intent(72)).unwrap();
++    assert!(matches!(
++        session.commit_mapping(blocked, &mut control),
++        Err(CommitError::Activation(RuntimeError::Busy))
++    ));
++    assert_eq!(session.snapshot(&attachment).unwrap(), accepted);
++    assert!(control.reclaim().is_none());
++    let report = audio
++        .process_events(
++            &mut left,
++            &mut right,
++            &[TimedEvent {
++                frame_offset: 3,
++                event: ControlEvent::NoteOn {
++                    note: 60,
++                    velocity: 100,
++                },
++            }],
++        )
++        .unwrap();
++    assert!(report.swapped);
++    assert_eq!(&left[..3], &[0.0; 3]);
++    assert_eq!((left[3], right[3]), (-0.5, -0.5));
++    drop(
++        control
++            .reclaim()
++            .expect("retired runtime returned off audio"),
++    );
++    let retry = session.prepare_mapping(&attachment, intent(72)).unwrap();
++    assert_eq!(
++        session
++            .commit_mapping(retry, &mut control)
++            .unwrap()
++            .revision,
++        2
++    );
++}
++
++#[test]
++fn allocation_audit_independently_detects_allocation_and_preexisting_destruction() {
++    let allocated = allocation_counter::measure(|| {
++        std::hint::black_box(Box::new([0u8; 64]));
++    });
++    assert!(allocated.count_total > 0);
++    let existing = Box::new([0u8; 64]);
++    let destroyed = allocation_counter::measure(|| drop(std::hint::black_box(existing)));
++    assert_eq!(destroyed.count_total, 0);
++    assert!(destroyed.count_current < 0);
++    assert!(destroyed.bytes_current < 0);
++}
++
++#[test]
++fn first_callback_swaps_events_feedback_reset_and_short_blocks_allocate_or_free_nothing() {
++    let session = session(36);
++    let mut initial = None;
++    let construction = allocation_counter::measure(|| {
++        initial = Some(PreparedRuntime::new(session.prepared(), configuration()).unwrap());
++    });
++    assert!(
++        construction.count_total > 0,
++        "construction is an off-audio operation"
++    );
++    let (mut control, mut audio) = runtime_handoff(initial.unwrap(), 4).unwrap();
++    let level = control.parameter_index("level").unwrap();
++    assert!(control.offer(prepared(60)).is_ok());
++    control.try_send(ControlEvent::NoteOff { note: 0 }).unwrap();
++    control
++        .try_send(ControlEvent::Parameter {
++            index: level,
++            value: 0.25,
++        })
++        .unwrap();
++    let main_thread = std::thread::current().id();
++    let audio = std::thread::spawn(move || {
++        assert_ne!(std::thread::current().id(), main_thread);
++        let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
++        let callback = allocation_counter::measure(|| {
++            let report = audio
++                .process_events(
++                    &mut left,
++                    &mut right,
++                    &[
++                        TimedEvent {
++                            frame_offset: 5,
++                            event: ControlEvent::Parameter {
++                                index: level,
++                                value: 0.5,
++                            },
++                        },
++                        TimedEvent {
++                            frame_offset: 5,
++                            event: ControlEvent::NoteOn {
++                                note: 60,
++                                velocity: 100,
++                            },
++                        },
++                    ],
++                )
++                .unwrap();
++            assert!(report.swapped);
++            assert_eq!(&left[..5], &[0.0; 5]);
++            assert_eq!((left[5], right[5]), (-0.25, -0.25));
++            for frames in [1, 7, 16, 3, 16] {
++                audio
++                    .process(&mut left[..frames], &mut right[..frames])
++                    .unwrap();
++            }
++            for _ in 0..4 {
++                audio
++                    .process_events(
++                        &mut left,
++                        &mut right,
++                        &[
++                            TimedEvent {
++                                frame_offset: 0,
++                                event: ControlEvent::Parameter {
++                                    index: level,
++                                    value: 0.75,
++                                },
++                            },
++                            TimedEvent {
++                                frame_offset: 15,
++                                event: ControlEvent::Parameter {
++                                    index: level,
++                                    value: 0.125,
++                                },
++                            },
++                        ],
++                    )
++                    .unwrap();
++            }
++            assert_eq!(
++                audio.process_events(
++                    &mut left,
++                    &mut right,
++                    &[TimedEvent {
++                        frame_offset: 16,
++                        event: ControlEvent::NoteOff { note: 60 }
++                    },]
++                ),
++                Err(RuntimeError::InvalidEvent)
++            );
++            audio.reset();
++            audio.process(&mut left, &mut right).unwrap();
++            assert_eq!((left, right), ([0.0; 16], [0.0; 16]));
++        });
++        assert_eq!(
++            (
++                callback.count_total,
++                callback.count_current,
++                callback.bytes_current
++            ),
++            (0, 0, 0)
++        );
++        audio
++    })
++    .join()
++    .unwrap();
++    let retired = control
++        .reclaim()
++        .expect("retired ownership returns to main");
++    let reclamation = allocation_counter::measure(|| drop(retired));
++    assert_eq!(reclamation.count_total, 0);
++    assert!(
++        reclamation.count_current < 0,
++        "retired DSP is destroyed off audio"
++    );
++    let stopped = allocation_counter::measure(|| drop(audio));
++    assert!(
++        stopped.count_current < 0,
++        "active DSP is destroyed off audio after stop"
++    );
++}
++
++#[test]
++fn dropping_the_control_endpoint_first_never_reclaims_resources_in_process() {
++    let (mut control, mut audio) = runtime_handoff(prepared(36), 2).unwrap();
++    let level = control.parameter_index("level").unwrap();
++    assert!(control.offer(prepared(60)).is_ok());
++    control
++        .try_send(ControlEvent::Parameter {
++            index: level,
++            value: 0.5,
++        })
++        .unwrap();
++    control
++        .try_send(ControlEvent::NoteOn {
++            note: 60,
++            velocity: 100,
++        })
++        .unwrap();
++    drop(control);
++    let audio = std::thread::spawn(move || {
++        let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
++        let callback = allocation_counter::measure(|| {
++            assert!(audio.process(&mut left, &mut right).unwrap().swapped);
++            assert_eq!((left[0], right[0]), (-0.25, -0.25));
++            assert!(!audio.process(&mut left, &mut right).unwrap().swapped);
++            audio.reset();
++            audio.process(&mut left, &mut right).unwrap();
++            assert_eq!((left, right), ([0.0; 16], [0.0; 16]));
++        });
++        assert_eq!(
++            (
++                callback.count_total,
++                callback.count_current,
++                callback.bytes_current
++            ),
++            (0, 0, 0)
++        );
++        audio
++    })
++    .join()
++    .unwrap();
++    let stopped = allocation_counter::measure(|| drop(audio));
++    assert!(stopped.count_current < 0);
++}
++
++#[test]
++fn unsupported_realtime_schedules_are_rejected_off_audio_before_activation() {
++    let script = planar_session(
++        r#"
++metadata: { name: offline only }
++ports:
++  - { name: master, direction: output, signal: audio, channels: 2, maps_from: amp.audio_out }
++module_definitions:
++  - type: script_control
++    implementation: script
++    static_params:
++      - { name: language, type: enum, default: rhai, allowed_values: [rhai] }
++      - { name: source, type: string }
++    ports:
++      - { name: value, direction: output, signal: control, channels: 1 }
++modules:
++  - id: source
++    type: script_control
++    static:
++      source: |
++        fn process(ctx) { ctx.control("value", 0.5); }
++  - { id: amp, type: gain, static: { channels: 2 } }
++connections:
++  - { from: source.value, to: amp.gain }
++"#,
++    );
++    assert!(matches!(
++        PreparedRuntime::new(script.prepared(), configuration()),
++        Err(RuntimeError::UnsupportedLayout)
++    ));
++    let (mut control, _audio) = runtime_handoff(prepared(36), 4).unwrap();
++    let (_, snapshot) = session(36).attach().unwrap();
++    assert!(matches!(
++        control.activate(script.prepared(), &snapshot),
++        Err(RuntimeError::UnsupportedLayout)
++    ));
++    assert!(control.offer(prepared(60)).is_ok());
++}
+diff --git a/tests/python/test_engine_only_build.py b/tests/python/test_engine_only_build.py
+index 2a05947..6b3a17b 100644
+--- a/tests/python/test_engine_only_build.py
++++ b/tests/python/test_engine_only_build.py
+@@ -196,6 +196,13 @@ class ClapProofBuildTest(EngineBuildFixture):
+         self.assertRegex(output, r"(?m)(?:^|\s)dandrum-trigger-host-rust(?:\s|$)")
+         self.assertNotRegex(output, r"(?m)(?:^|\s)(?:juceaide|dandrum-plugin)(?:\s|$)")
+
++        code, output = self.command(
++            "trigger-host-test-inventory", [CTEST, "--test-dir", str(build),
++                "--show-only=json-v1"])
++        self.assertEqual(code, 0, output)
++        names = {test["name"] for test in json.loads(output)["tests"]}
++        self.assertIn("trigger-host-tests", names)
++
+         code, output = self.command(
+             "trigger-editor-build", [CMAKE, "--build", str(build), "--target",
+                                      "dandrum-trigger-clap-editor", "--parallel", "2"])
+@@ -231,7 +238,7 @@ class ClapProofBuildTest(EngineBuildFixture):
+
+         code, output = self.command(
+             "trigger-editor-fixture-runtime", [CTEST, "--test-dir", str(build),
+-                "--output-on-failure", "-R", "^clap-dynamic-host$"])
++                "--output-on-failure", "-R", "^(clap-dynamic-host|trigger-host-tests)$"])
+         self.assertEqual(code, 0, output)
+         self.assertIn("100% tests passed", output)

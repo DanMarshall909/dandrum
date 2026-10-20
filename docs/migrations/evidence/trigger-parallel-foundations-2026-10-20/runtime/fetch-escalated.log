@@ -1,0 +1,8 @@
+    Updating crates.io index
+     Locking 2 packages to latest Rust 1.96.0 compatible versions
+      Adding allocation-counter v0.8.1
+      Adding rtrb v0.3.2 (available: v0.3.5)
+ Downloading crates ...
+  Downloaded allocation-counter v0.8.1
+  Downloaded rtrb v0.3.2
+  Downloaded zerocopy-derive v0.8.58

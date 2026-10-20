@@ -1,0 +1,5 @@
+[ 33%] Staging copied Trigger editor and instrument resources
+[ 66%] Built target dandrum-trigger-host-rust
+[100%] Built target dandrum-clap-proof
+[100%] Built target dandrum-trigger-resources
+[100%] Built target dandrum-trigger-clap-editor

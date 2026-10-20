@@ -6,13 +6,13 @@
 ## 2. Format-Neutral Trigger Host
 
 - [x] 2.1 Specify and implement deterministic packaged-resource resolution plus a session owner for the real Advanced Drum Kit; prove copied external resources, known signed MIDI-36 output and invalid/missing-resource preservation.
-- [ ] 2.2 Specify and implement capacity-one runtime activation/reclamation and bounded parameter/event handoffs; prove off-audio construction/destruction, block-boundary swaps, backpressure, reset and allocation/lock-free callback safety.
-- [ ] 2.3 Specify and implement the versioned bounded editor protocol with attachment/request identities, explicit capability errors and malformed/oversized/stale/conflicting input rejection that preserves accepted state.
+- [x] 2.2 Specify and implement capacity-one runtime activation/reclamation and bounded parameter/event handoffs; prove off-audio construction/destruction, block-boundary swaps, backpressure, reset and allocation/lock-free callback safety.
+- [x] 2.3 Specify and implement the versioned bounded editor protocol with attachment/request identities, explicit capability errors and malformed/oversized/stale/conflicting input rejection that preserves accepted state.
 - [ ] 2.4 Specify and implement public parameter gesture/feedback and version-2 atomic Trigger state; prove balanced automation, nonzero-offset host feedback, fresh-instance document/resource/value restore and complete invalid-state rollback without structural journal pollution.
 
 ## 3. Production React And Wry Editor
 
-- [ ] 3.1 Refactor the Trigger native adapter onto the versioned transport selector with behavior-first JavaScript tests; retain the silent browser preview and all existing JUCE comparison behavior.
+- [x] 3.1 Refactor the Trigger native adapter onto the versioned transport selector with behavior-first JavaScript tests; retain the silent browser preview and all existing JUCE comparison behavior.
 - [ ] 3.2 Package the production Trigger bundle/fonts and implement the Wry Linux-X11 child owner on the CLAP main thread; prove actual parenting, local-only resource loading, fixed-size acceptance, resize rejection, show/hide and create/order/API failure cleanup.
 - [ ] 3.3 Connect the required session snapshot, mapping/job recovery, native undo, notes and parameter methods; prove complete WebView destruction releases notes/gestures/callbacks exactly once while admitted work and accepted history survive reconnect.
 

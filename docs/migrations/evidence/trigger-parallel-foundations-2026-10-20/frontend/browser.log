@@ -1,0 +1,20 @@
+
+> dandrum-trigger@0.1.0 test:browser
+> playwright test --config=/tmp/dandrum-evidence/frontend/playwright.config.mjs tests/browser/native-transport.spec.mjs tests/browser/native-frame.spec.mjs
+
+[WebServer] (node:1815362) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 5 tests using 1 worker
+
+(node:1815400) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/browser/native-frame.spec.mjs:6:1 › native backend status stays in the header and the editor fits actual host viewports (1.9s)
+(node:1815728) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  2 tests/browser/native-transport.spec.mjs:4:1 › the production entrypoint uses the versioned host instead of the comparison bridge (591ms)
+  ✓  3 tests/browser/native-transport.spec.mjs:24:1 › an incompatible declared native host displays an error and never opens the silent preview (281ms)
+  ✓  4 tests/browser/native-transport.spec.mjs:31:1 › a rejected native snapshot displays its capability error without simulating an instrument (289ms)
+  ✓  5 tests/browser/native-transport.spec.mjs:41:1 › an ordinary browser continues to show an explicitly silent preview (405ms)
+
+  5 passed (5.7s)

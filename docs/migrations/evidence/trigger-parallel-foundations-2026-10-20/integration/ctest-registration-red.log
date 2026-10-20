@@ -1,0 +1,13 @@
+F
+======================================================================
+FAIL: test_trigger_editor_scaffold_stages_copied_resources_without_host_sources (__main__.ClapProofBuildTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/dandrum-lanes/integration/tests/python/test_engine_only_build.py", line 204, in test_trigger_editor_scaffold_stages_copied_resources_without_host_sources
+    self.assertIn("trigger-host-tests", names)
+AssertionError: 'trigger-host-tests' not found in {'realtime-callback-safety', 'cxx-plugin-spectral-geometry', 'retired-engine-ffi-symbols', 'retired-kernel-fields', 'cxx-plugin-meter-aggregation', 'cxx-plugin-meter-delivery', 'cxx-plugin-waveform-service', 'rust-engine-tests', 'instrument-session-tests', 'engine-only-build', 'filter-spike-engine', 'cxx-plugin-live-capture', 'clap-build-boundary', 'cxx-plugin-meter-capture', 'cxx-rust-engine-sample-accurate-midi-smoke', 'sound-lab-controller', 'clap-dynamic-host', 'cxx-plugin-ui-command', 'cxx-plugin-meter-display', 'cxx-rust-engine-ffi-smoke', 'cxx-plugin-waveform-geometry'}
+
+----------------------------------------------------------------------
+Ran 1 test in 2.048s
+
+FAILED (failures=1)

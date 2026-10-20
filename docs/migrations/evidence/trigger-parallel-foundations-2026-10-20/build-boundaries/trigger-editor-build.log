@@ -1,0 +1,8 @@
+[ 33%] Staging copied Trigger editor and instrument resources
+[ 66%] Built target dandrum-trigger-host-rust
+[100%] Building the experimental JUCE-free CLAP proof
+[100%] Built target dandrum-trigger-resources
+[100%] Built target dandrum-clap-proof
+[100%] Built target dandrum-trigger-clap-editor
+warning: failed to connect to jobserver from environment variable `MAKEFLAGS="s -j2 --jobserver-auth=3,4"`: cannot open file descriptor 3 from the jobserver environment variable value: Bad file descriptor (os error 9)
+    Finished `release` profile [optimized] target(s) in 0.06s

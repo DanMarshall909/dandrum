@@ -1,0 +1,8 @@
+Internal ctest changing into directory: /tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-_5sn7n__/source/build/clap
+Test project /tmp/dandrum-lanes/runtime/build/engine-only-regression/fixture-_5sn7n__/source/build/clap
+    Start 20: clap-dynamic-host
+1/1 Test #20: clap-dynamic-host ................   Passed   16.50 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =  16.50 sec

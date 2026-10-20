@@ -1,0 +1,24 @@
+   Compiling dandrum-trigger-host v0.1.0 (/tmp/dandrum-lanes/runtime/src/trigger-host)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.17s
+     Running tests/runtime.rs (/tmp/dandrum-lanes/cache-runtime/debug/deps/runtime-b756499cb62cad96)
+
+running 1 test
+test reset_stops_active_and_queued_notes_and_retains_host_owned_values ... FAILED
+
+failures:
+
+---- reset_stops_active_and_queued_notes_and_retains_host_owned_values stdout ----
+
+thread 'reset_stops_active_and_queued_notes_and_retains_host_owned_values' (153) panicked at tests/runtime.rs:230:5:
+assertion `left == right` failed
+  left: ([-0.034446716, 0.050994873, 0.09577942, 0.107551575, 0.03954315, 0.06367493, 0.100112915, 0.1084137, 0.059539795, 0.15718079, 0.124809265, 0.13002014, 0.14120483, 0.20185852, 0.17531586, 0.1842575], [-0.034446716, 0.050994873, 0.09577942, 0.107551575, 0.03954315, 0.06367493, 0.100112915, 0.1084137, 0.059539795, 0.15718079, 0.124809265, 0.13002014, 0.14120483, 0.20185852, 0.17531586, 0.1842575])
+ right: ([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    reset_stops_active_and_queued_notes_and_retains_host_owned_values
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.03s
+
+error: test failed, to rerun pass `--test runtime`
