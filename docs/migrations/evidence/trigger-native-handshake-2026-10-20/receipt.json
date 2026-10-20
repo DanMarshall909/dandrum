@@ -1,0 +1,67 @@
+{
+  "component": "Native Wry initialization and delivery handshake",
+  "base": "b52a3b406c6f88f53308fdf52b112702c2b11bd8",
+  "platform": "Linux x86_64 X11; WebKitGTK2.50.4; pinned Wry0.57.0",
+  "tasks": {
+    "3.2": "open; actual CLAP facade proof remains",
+    "3.3": "open; shared native execution prerequisite only"
+  },
+  "behavior": [
+    "Trusted host initialization precedes first packaged application script",
+    "UI-thread evaluation consumed by real JavaScript, DOM text and IPC acknowledgement",
+    "Existing empty preview initializer and complete native lifecycle remain tested",
+    "Synchronous callback release and no later IPC after destruction"
+  ],
+  "tests": {
+    "unchanged_native_baseline_seconds": 6.781458860001294,
+    "red": "E0599 absent create_initialized; exact log/source retained; honest compile-time API RED",
+    "native_green_seconds": 5.029944118985441,
+    "fast_tests": 4,
+    "registered_editor_ctests": "3/3, wrapper4.775284s, CTest4.67s",
+    "clippy": "all-targets -D warnings pass",
+    "fmt": "pass",
+    "default_dependency_graph": "only dandrum-trigger-editor; no optional browser dependency"
+  },
+  "coverage": {
+    "native": {
+      "lines": "163/168",
+      "functions": "16/18",
+      "regions": "224/246"
+    },
+    "baseline_native": {
+      "lines": "148/153",
+      "functions": "14/16",
+      "regions": "208/229"
+    },
+    "new_measured_lines": 15,
+    "new_measured_lines_hit": 15,
+    "qualifications": [
+      "five physical zero lines inherited",
+      "one additional error-propagation region not exercised",
+      "generic closure/instantiation counts separate from source functions",
+      "no branch/MCDC/assertion completeness or whole-module100%claim"
+    ],
+    "fast_native_binary_sha256": "323a78c3fc1368c5f0e24d2d3b420cd3bbd70c479708253ebf59b96155945e85"
+  },
+  "raw": {
+    "members": 227,
+    "archive_sha256": "051a8dcdbf586f14f456680b50d721cbb4ad732250e395292a5b3e30bb4106e9"
+  },
+  "sourcefree": "Qualified published affected-guard reuse: same587 input paths585identical; two changed native-only cfg/test paths. No fresh complete guard or artifact byte-identity claim.",
+  "limitations": [
+    "Generic trusted-script edge only; wire serialization and bounds remain protocol/facade responsibility",
+    "Successful evaluation queueing alone is not semantic delivery",
+    "Production native broker/bootstrap/session facade and emitted rejection/event calibration remain unwired/unproved",
+    "Actual CLAP thread/API/order/timer, audio lifecycle, next format/device/DAW/offline gates remain",
+    "No native release product build claimed; native all-target compilation and registered real-boundary test are component evidence"
+  ],
+  "review": {
+    "status": "PASS",
+    "manifest_sha256": "c6c03e8709846631599fd0e092ae7f2b797b3236f40e1e2ad6c81da9485b3330",
+    "review_sha256": "34b59fc6e14d2aadba08c8607e46bbd8bfff3ad5390712392029860d3fa0203b",
+    "verdict_sha256": "cafcab76899aec21ab23fa390544038aea9ccf0f514f5564af6b428cad743d3c"
+  },
+  "mutation": "excluded by user",
+  "caches": "preserved; no owned workers remain",
+  "full_beta_complete": false
+}

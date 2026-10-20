@@ -1,0 +1,17 @@
+{
+  "verdict": "PASS",
+  "scope": "Native Wry trusted initialization and UI-thread delivery library component only",
+  "reviewer": "/root/native_handshake_review",
+  "candidate_manifest_sha256": "c6c03e8709846631599fd0e092ae7f2b797b3236f40e1e2ad6c81da9485b3330",
+  "base": "b52a3b406c6f88f53308fdf52b112702c2b11bd8",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "b52a3b406c6f88f53308fdf52b112702c2b11bd8",
+  "required_corrections": [],
+  "limitations": [
+    "Tasks 3.2 and 3.3 remain open; no actual Trigger CLAP or full beta completion",
+    "Native failure/coverage and qualified source-free reuse limits are detailed in review.md",
+    "Normal hooks, named final validations, same-reviewer envelope addendum and publication remain",
+    "No cache deletion authority"
+  ],
+  "post_pass_envelope": "Exact five metadata outputs and thirteen-path final manifest in external approved-envelope.json"
+}

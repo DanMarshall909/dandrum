@@ -1,0 +1,19 @@
+{
+  "head": "b52a3b406c6f88f53308fdf52b112702c2b11bd8",
+  "source_hashes": {
+    "src/trigger-editor/src/native_x11.rs": "7ee8ccda4f8ab61fe2cf6f2dc3bdb46761e7ee73fbd2ae6d2c15c9ccdc8ed2bf",
+    "src/trigger-editor/tests/internal/native_x11.rs": "e9576a69ac72269199f0b74cb8c8810e646ce04a411180fa9525891d704f804b",
+    "src/trigger-editor/Cargo.toml": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c",
+    "src/trigger-editor/Cargo.lock": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814",
+    "src/trigger-editor/src/lib.rs": "79f49cb29ed9376f8119c06f687ad069d6a7f33114da686797d9962f034b2d2c",
+    "CMakeLists.txt": "e3b627179eb529887b33f6cc9c3a39542c1252628134f15b2b638dd9125ecd08",
+    "tests/python/test_engine_only_build.py": "44c2074f4b2c440372a419a028fcff37b78b8bb1800d592cb6ef4a7fe51186da",
+    "openspec/changes/add-juce-free-trigger-clap-editor/design.md": "2d5b157c55d4d00cdbd2018c6f6e8ad2a790895168eed850c5818096f06dc4ce"
+  },
+  "native_fast_binary_sha256": "323a78c3fc1368c5f0e24d2d3b420cd3bbd70c479708253ebf59b96155945e85",
+  "owned_processes_remaining": [],
+  "caches_preserved": true,
+  "task3_2_complete": false,
+  "task3_3_complete": false,
+  "full_beta_complete": false
+}

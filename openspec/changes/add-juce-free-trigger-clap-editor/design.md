@@ -58,6 +58,10 @@ Task 3.2 first verifies the concrete Wry library boundary: packaged assets, loca
 
 The first snapshot projection reads the accepted session, prepared sources/maps, applied public parameter values and copied-resource provenance off audio. It preserves decimal session/attachment/revision/request identities, distinguishes structural request cursors from transport IDs, and does not create a new attachment on each read. Default source-free Rust tests remain independent of browser tooling; production parser and real Wry integration receive separate boundary checks.
 
+### Initialize the local native transport before the application entry point
+
+The Wry edge accepts a trusted host initialization script when constructing its child, installing it before loading the fixed packaged entry document. The default preview constructor keeps an empty initializer. A UI-thread-only evaluation method delivers trusted host reply/event scripts to that same browser; successful queueing is not evidence of JavaScript consumption. A real X11/WebKit test observes bootstrap data from the first application script and an IPC acknowledgement after native delivery, then verifies callback release on destruction. Wire serialization, attachment admission and bounded request/reply policy stay in the protocol and browser broker rather than this generic execution edge. This library proof does not complete the CLAP facade or task 3.3.
+
 ### Let CLAP own the parent window, event loop, automation and state boundary
 
 Implement the pinned Clack GUI extension for the Trigger identity only. Creation records a supported X11 configuration; `set_parent` validates and stores the host window; the Wry child is created and destroyed on the CLAP main thread. `show`, `hide`, accepted fixed sizes and failure results follow the host calls without starting a private GTK loop.

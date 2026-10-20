@@ -65,9 +65,21 @@ impl NativeEditor {
         assets: EditorAssets,
         on_message: impl Fn(String) + 'static,
     ) -> Result<Self, NativeError> {
+        Self::create_initialized(parent, assets, "", on_message)
+    }
+
+    /// Install trusted host JavaScript before the packaged application loads.
+    /// Attachment validation and bounded wire serialization belong to the caller.
+    pub fn create_initialized(
+        parent: u32,
+        assets: EditorAssets,
+        initialization_script: &str,
+        on_message: impl Fn(String) + 'static,
+    ) -> Result<Self, NativeError> {
         let connection = Self::parent_connection(parent)?;
-        let builder =
-            WebViewBuilder::new().with_custom_protocol("dandrum".into(), move |_, request| {
+        let builder = WebViewBuilder::new()
+            .with_initialization_script(initialization_script)
+            .with_custom_protocol("dandrum".into(), move |_, request| {
                 let (status, mime, bytes) = match assets.serve(&request.uri().to_string()) {
                     Ok(asset) => (200, asset.mime, asset.bytes.to_vec()),
                     Err(_) => (404, "text/plain", Vec::new()),
@@ -100,6 +112,15 @@ impl NativeEditor {
         owner.ipc = Some((manager, handler));
         owner.view.webview().load_uri(ENTRY_URI);
         Ok(owner)
+    }
+
+    /// Queue trusted host JavaScript on this child's UI thread. Success means
+    /// queueing only; the protocol consumer must acknowledge actual delivery.
+    pub fn evaluate_script(&self, script: &str) -> Result<(), NativeError> {
+        Self::check_thread()?;
+        self.view
+            .evaluate_script(script)
+            .map_err(NativeError::WebView)
     }
 
     /// At most 64 nonblocking iterations per external host tick; no private loop.

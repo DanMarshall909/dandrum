@@ -1106,3 +1106,41 @@ Independent completion review passed for the frozen browser transport source/evi
 Tasks3.2 and3.3 remain open,7/14 overall. The full beta continues through the
 required shared owners, concrete CLAP and subsequent VST3/standalone/DAW/offline
 and native proof. Main stays clean68dd655; caches remain and mutation is excluded.
+
+
+## Native initialization and delivery handshake — 20 October 2026
+
+The Wry child now accepts trusted host initialization before loading its fixed
+packaged entry document. The existing preview constructor delegates with an
+empty initializer. A UI-thread evaluation method queues trusted native scripts;
+wire bounds, identity admission and serialization stay in the protocol/facade.
+Actual JavaScript consumption is separate from successful queueing.
+
+The real X11/WebKit test observes precise decimal identity9007199254740993 and
+Unicode bootstrap data from the first app script, then a native-delivered reply
+updates DOM text and returns the exact IPC acknowledgement with request identity
+18446744073709551615. Destruction synchronously releases the callback and later
+host ticks produce no IPC. Existing parenting, visibility, CSP, production shell,
+eight-font and immediate destruction tests remain in the same native run.
+
+An honest E0599 missing-API RED precedes production changes. Native GREEN5.030s,
+four fast tests, all three registered editor CTests4.775s, formatting, strict
+all-target Clippy and default dependency graph pass. Native LLVM163/168lines,
+16/18functions224/246regions includes all15 additional measured executable lines;
+five inherited line gaps and one new error-propagation region remain disclosed.
+Fast/native profiles bind the same instrumented binary; execution is not a claim
+of complete assertions, branches or MCDC.
+
+[Portable evidence](evidence/trigger-native-handshake-2026-10-20/receipt.json)
+retains exact source snapshots, raw logs/profiles, timings, hashes and assessment.
+Qualified published source-free guard reuse compares all587 inputs:585identical,
+two changed native-only files excluded from the default graph. This is not a
+fresh whole guard or production native CLAP artifact proof. No dependency/build
+manifest changed; the native owner and tests compile through the selected feature.
+
+Independent completion review passed for the frozen native handshake source/evidence candidate; normal-hook publication remains.
+Tasks3.2 and3.3 remain open,7/14 overall: the bounded broker, real session facade,
+worker/wake, notes/heartbeat and actual CLAP GUI integration still need joined
+acceptance. Full beta remains active through CLAP, VST3, standalone, named DAW,
+installed/offline and native proof. Main stays clean68dd655; caches are retained
+and mutation remains excluded.

@@ -196,6 +196,7 @@ fn real_child_loads_local_content_and_drops_without_owning_the_host_parent() {
             "no late callback after drop"
         );
     }
+    initialized_child_consumes_native_delivery_before_releasing_its_callback(parent);
     acquisition_errors_leave_no_owned_window(&x, parent, root, baseline);
     local_policy::external_fetch_is_blocked_by_enforcing_csp(parent);
     local_policy::top_level_document_stays_at_fixed_entry(parent);
@@ -203,6 +204,77 @@ fn real_child_loads_local_content_and_drops_without_owning_the_host_parent() {
     resource_policy::external_resources_are_blocked_by_enforcing_csp(parent);
     parent_can_be_destroyed_immediately_after_editor(&x, root);
     x.destroy_window(parent).unwrap().check().unwrap();
+}
+
+fn initialized_child_consumes_native_delivery_before_releasing_its_callback(parent: u32) {
+    let package = common::Package::new();
+    for file in common::FILES {
+        package.write(file, b"fixture");
+    }
+    package.write(
+        "index.html",
+        b"<!doctype html><output id='reply'></output><script src='/app.js'></script>",
+    );
+    package.write("app.js", br#"const bootstrap=window.__nativeHandshake;
+window.ipc.postMessage('boot|'+bootstrap?.attachmentId+'|'+bootstrap?.label);
+window.receiveNativeHandshake=reply=>{
+  document.getElementById('reply').textContent=reply.value;
+  window.ipc.postMessage('reply|'+reply.requestId+'|'+document.getElementById('reply').textContent+'|'+bootstrap.attachmentId);
+};"#);
+    let messages = Rc::new(RefCell::new(Vec::new()));
+    let sink = messages.clone();
+    let callback_lifetime = Rc::new(());
+    let weak = Rc::downgrade(&callback_lifetime);
+    let owner = NativeEditor::create_initialized(
+        parent,
+        EditorAssets::open(package.root()).unwrap(),
+        r#"window.__nativeHandshake={attachmentId:"9007199254740993",label:"host π"};"#,
+        move |message| {
+            let _keep_alive = &callback_lifetime;
+            sink.borrow_mut().push(message);
+        },
+    )
+    .expect("initialized child accepts the real X11 parent");
+    let deadline = Instant::now() + Duration::from_secs(15);
+    while messages.borrow().is_empty() && Instant::now() < deadline {
+        NativeEditor::service().unwrap();
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    assert_eq!(
+        &*messages.borrow(),
+        &["boot|9007199254740993|host π"],
+        "first packaged application script sees the native initializer"
+    );
+    owner
+        .evaluate_script(
+            r#"window.receiveNativeHandshake({requestId:"18446744073709551615",value:"-0.5"});"#,
+        )
+        .expect("main-thread native delivery is queued");
+    while messages.borrow().len() < 2 && Instant::now() < deadline {
+        NativeEditor::service().unwrap();
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    assert_eq!(
+        &*messages.borrow(),
+        &[
+            "boot|9007199254740993|host π",
+            "reply|18446744073709551615|-0.5|9007199254740993",
+        ],
+        "actual JavaScript consumption changes the DOM and acknowledges through IPC"
+    );
+    drop(owner);
+    assert!(
+        weak.upgrade().is_none(),
+        "initialized callback releases synchronously"
+    );
+    for _ in 0..8 {
+        NativeEditor::service().unwrap();
+    }
+    assert_eq!(
+        messages.borrow().len(),
+        2,
+        "no callback after owner destruction"
+    );
 }
 
 fn exercise_visibility_and_fixed_size(
