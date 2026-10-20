@@ -12,6 +12,7 @@ use dandrum_engine::kernel::{ChannelCount, PortMetadata};
 use dandrum_engine::preparation::PreparedKernelInstrument;
 use dandrum_instrument_session::{ActivationHost, ActivationLease, Publication, SessionSnapshot};
 use rtrb::{Consumer, Producer, RingBuffer};
+use std::num::NonZeroU64;
 use std::sync::{
     Arc,
     atomic::{AtomicU64, Ordering},
@@ -29,6 +30,8 @@ pub enum RuntimeError {
     QueueFull,
     Busy,
     IncompatibleRuntime,
+    EditorOwnerConflict,
+    EditorSequenceExhausted,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -180,6 +183,10 @@ pub struct RuntimeControl {
     epoch: Arc<AtomicU64>,
     admission: Arc<AtomicU64>,
     scalar_stamp: Arc<AtomicU64>,
+    // Each word packs a 50-bit sequence, 7-bit onset, and 7-bit desired velocity.
+    editor_intent: Arc<[AtomicU64; 128]>,
+    editor_owners: [Option<NonZeroU64>; 128],
+    editor_publishers: [Option<NonZeroU64>; 128],
     in_flight: bool,
     configuration: TriggerHostConfiguration,
     layout: Vec<PortMetadata>,
@@ -201,6 +208,12 @@ struct AudioState {
     settlement: Arc<AtomicU64>,
     epoch: Arc<AtomicU64>,
     event_capacity: usize,
+    editor_intent: Arc<[AtomicU64; 128]>,
+    editor_gates: [u64; 128],
+    editor_seen: [u64; 128],
+    editor_suppressed: [u64; 128],
+    host_held: [bool; 128],
+    editor_cursor: usize,
 }
 
 /// Reserving this lease does not publish a processor. Dropping it cancels the
@@ -217,6 +230,9 @@ pub struct RuntimeLease<'a> {
     restored: Option<RestoredScalars>,
     epoch: &'a AtomicU64,
     scalar_stamp: &'a AtomicU64,
+    editor_intent: &'a [AtomicU64; 128],
+    editor_owners: &'a mut [Option<NonZeroU64>; 128],
+    editor_publishers: &'a mut [Option<NonZeroU64>; 128],
 }
 
 struct RestoredScalars {
@@ -263,6 +279,14 @@ impl ActivationLease for RuntimeLease<'_> {
             }
             self.settlement.store(0, Ordering::Release);
             self.epoch.store(restored.epoch, Ordering::Relaxed);
+            // The retained admission guard excludes audio until all restore
+            // state is published. Preserve sequence exhaustion across restore.
+            for intent in self.editor_intent {
+                let sequence = intent.load(Ordering::Relaxed) >> 14;
+                intent.store(sequence << 14, Ordering::Release);
+            }
+            self.editor_owners.fill(None);
+            self.editor_publishers.fill(None);
         }
     }
 }
@@ -292,6 +316,7 @@ pub fn runtime_handoff(
     {
         return Err(RuntimeError::InvalidConfiguration);
     }
+    let editor_intent = Arc::new(std::array::from_fn(|_| AtomicU64::new(0)));
     let admission = Arc::new(AtomicU64::new(0));
     let settlement = Arc::new(AtomicU64::new(0));
     let epoch = Arc::new(AtomicU64::new(0));
@@ -323,6 +348,9 @@ pub fn runtime_handoff(
         epoch: epoch.clone(),
         admission: admission.clone(),
         scalar_stamp: scalar_stamp.clone(),
+        editor_intent: editor_intent.clone(),
+        editor_owners: [None; 128],
+        editor_publishers: [None; 128],
         in_flight: false,
         configuration: initial.0.configuration,
         layout: initial.0.layout.clone(),
@@ -338,6 +366,12 @@ pub fn runtime_handoff(
             settlement,
             epoch,
             event_capacity,
+            editor_intent,
+            editor_gates: [0; 128],
+            editor_seen: [0; 128],
+            editor_suppressed: [0; 128],
+            host_held: [false; 128],
+            editor_cursor: 0,
         },
         admission,
         scalar_stamp,
@@ -346,6 +380,69 @@ pub fn runtime_handoff(
 }
 
 impl RuntimeControl {
+    pub(crate) fn activation_available(&self) -> bool {
+        !self.in_flight
+    }
+
+    /// The caller authenticates the attachment; publication is one coherent word
+    /// per MIDI pitch, independent of the ordinary event queue's capacity.
+    pub fn editor_note_on(
+        &mut self,
+        owner: NonZeroU64,
+        note: u8,
+        velocity: u8,
+    ) -> Result<(), RuntimeError> {
+        if note > 127 || !(1..=127).contains(&velocity) {
+            return Err(RuntimeError::InvalidEvent);
+        }
+        let pitch = usize::from(note);
+        if self.editor_owners[pitch].is_some_and(|held| held != owner) {
+            return Err(RuntimeError::EditorOwnerConflict);
+        }
+        let previous = self.editor_intent[pitch].load(Ordering::Relaxed) >> 14;
+        if previous == u64::MAX >> 14 {
+            return Err(RuntimeError::EditorSequenceExhausted);
+        }
+        self.editor_owners[pitch] = Some(owner);
+        self.editor_publishers[pitch] = Some(owner);
+        self.editor_intent[pitch].store(
+            ((previous + 1) << 14) | (u64::from(velocity) << 7) | u64::from(velocity),
+            Ordering::Release,
+        );
+        Ok(())
+    }
+
+    /// Ordinary release retains an unheard onset, so a short keyboard tap
+    /// remains audible. Only its holder may release a currently held pitch.
+    pub fn editor_note_off(&mut self, owner: NonZeroU64, note: u8) -> Result<(), RuntimeError> {
+        if note > 127 {
+            return Err(RuntimeError::InvalidEvent);
+        }
+        let pitch = usize::from(note);
+        if self.editor_owners[pitch].is_some_and(|held| held != owner) {
+            return Err(RuntimeError::EditorOwnerConflict);
+        }
+        if self.editor_owners[pitch] == Some(owner) {
+            self.editor_owners[pitch] = None;
+            let intent = self.editor_intent[pitch].load(Ordering::Relaxed);
+            self.editor_intent[pitch].store(intent & !127, Ordering::Release);
+        }
+        Ok(())
+    }
+
+    /// Detachment cancels both held intent and an unheard released tap. A newer
+    /// publisher owns its row, so stale attachment cleanup cannot clear it.
+    pub fn detach_editor_notes(&mut self, owner: NonZeroU64) {
+        for (pitch, publisher) in self.editor_publishers.iter_mut().enumerate() {
+            if *publisher == Some(owner) {
+                *publisher = None;
+                self.editor_owners[pitch] = None;
+                let sequence = self.editor_intent[pitch].load(Ordering::Relaxed) >> 14;
+                self.editor_intent[pitch].store(sequence << 14, Ordering::Release);
+            }
+        }
+    }
+
     pub(crate) fn restoring(&mut self, values: Vec<f64>) -> RestoringControl<'_> {
         RestoringControl {
             control: self,
@@ -357,7 +454,7 @@ impl RuntimeControl {
         prepared: &PreparedKernelInstrument,
         restored: Option<RestoredScalars>,
     ) -> Result<RuntimeLease<'_>, RuntimeError> {
-        if self.in_flight {
+        if !self.activation_available() {
             return Err(RuntimeError::Busy);
         }
         let candidate = PreparedRuntime::new(prepared, self.configuration)?;
@@ -381,6 +478,9 @@ impl RuntimeControl {
             restored,
             epoch: &self.epoch,
             scalar_stamp: &self.scalar_stamp,
+            editor_intent: &self.editor_intent,
+            editor_owners: &mut self.editor_owners,
+            editor_publishers: &mut self.editor_publishers,
         })
     }
     /// Parameter indices are the prepared root control-input order. Format
@@ -495,7 +595,7 @@ impl RuntimeControl {
 
     /// A rejected value remains owned by the caller, including under backpressure.
     pub fn offer(&mut self, next: PreparedRuntime) -> Result<(), PreparedRuntime> {
-        if self.in_flight || !self.compatible(&next) {
+        if !self.activation_available() || !self.compatible(&next) {
             return Err(next);
         }
         // The control-owned in-flight flag is cleared only after retirement;
@@ -649,6 +749,13 @@ impl AudioState {
             }
         }
         self.current.0.graph.reset();
+        self.editor_gates.fill(0);
+        self.host_held.fill(false);
+        for (pitch, intent) in self.editor_intent.iter().enumerate() {
+            let sequence = intent.load(Ordering::Acquire) >> 14;
+            self.editor_suppressed[pitch] = sequence;
+            self.editor_seen[pitch] = sequence;
+        }
         if cancelled != 0 {
             // The low bit marks that the latest UI settlement was cancelled by
             // reset. A single Release store pairs cause/sequence atomically;
@@ -699,16 +806,71 @@ impl AudioState {
             slot.fill_from_iter(std::iter::once(previous));
             report.swapped = true;
         }
-        // A producer may refill concurrently. The finite iteration bound is the
-        // configured queue capacity, never "until the queue becomes empty".
-        for _ in 0..self.event_capacity {
-            let Ok(event) = self.events.pop() else {
-                break;
-            };
-            if event.epoch == self.epoch.load(Ordering::Relaxed) {
-                self.apply_event(event.event, 0, event.command_sequence, &mut report);
+        let intents =
+            std::array::from_fn(|pitch| self.editor_intent[pitch].load(Ordering::Acquire));
+        if report.swapped {
+            // Accepted gates belonged to the retired processor. A fresh graph
+            // resumes desired pitches but must not replay a released tap.
+            self.editor_gates.fill(0);
+            for (seen, intent) in self.editor_seen.iter_mut().zip(intents) {
+                *seen = intent >> 14;
             }
         }
+        let mut touched = [false; 128];
+        let mut takeover_credit = [false; 128];
+        for event in events {
+            match event.event {
+                ControlEvent::NoteOn { note, .. } => {
+                    let pitch = usize::from(note);
+                    touched[pitch] = true;
+                    takeover_credit[pitch] = self.editor_gates[pitch] != 0;
+                }
+                ControlEvent::NoteOff { note } => touched[usize::from(note)] = true,
+                ControlEvent::Parameter { .. } => {}
+            }
+        }
+        // The validated host count is <= E and possible takeovers <= E;
+        // construction proves 2E <= P. Reserve both before any other work.
+        let mut budget = self.current.0.graph.pending_event_capacity()
+            - events.len()
+            - takeover_credit.iter().filter(|&&reserved| reserved).count();
+        self.release_editor_notes(&intents, &mut takeover_credit, &mut budget);
+        // A producer may refill concurrently. The finite bound is E, never
+        // "until empty". Peek preserves a deferred or rejected queue head.
+        for _ in 0..self.event_capacity {
+            let Ok(&event) = self.events.peek() else {
+                break;
+            };
+            if event.epoch != self.epoch.load(Ordering::Relaxed) {
+                let _consumed = self.events.pop().expect("observed queue head");
+                continue;
+            }
+            let takeover = match event.event {
+                ControlEvent::NoteOn { note, .. } if self.editor_gates[usize::from(note)] != 0 => {
+                    Some(usize::from(note))
+                }
+                _ => None,
+            };
+            let cost = 1 + usize::from(takeover.is_some_and(|pitch| !takeover_credit[pitch]));
+            if cost > budget
+                || self
+                    .apply_event(event.event, 0, event.command_sequence, &mut report)
+                    .is_err()
+            {
+                break;
+            }
+            budget -= cost;
+            if let Some(pitch) = takeover {
+                takeover_credit[pitch] = false;
+            }
+            let _consumed = self.events.pop().expect("accepted queue head");
+            if let ControlEvent::NoteOn { note, .. } | ControlEvent::NoteOff { note } = event.event
+            {
+                touched[usize::from(note)] = true;
+            }
+        }
+        self.start_editor_notes(&intents, &touched, &mut budget);
+        self.editor_cursor = (self.editor_cursor + 1) % 128;
         let mut start = 0;
         for event in events {
             let end = event.frame_offset as usize;
@@ -717,7 +879,7 @@ impl AudioState {
                     .0
                     .render(&self.values, &mut left[start..end], &mut right[start..end]);
             }
-            self.apply_event(event.event, event.frame_offset, 0, &mut report);
+            self.apply_event(event.event, event.frame_offset, 0, &mut report)?;
             start = end;
         }
         self.current
@@ -726,18 +888,87 @@ impl AudioState {
         Ok(report)
     }
 
+    fn release_editor_notes(
+        &mut self,
+        intents: &[u64; 128],
+        takeover_credit: &mut [bool; 128],
+        budget: &mut usize,
+    ) {
+        for offset in 0..128 {
+            let pitch = (self.editor_cursor + offset) % 128;
+            let intent = intents[pitch];
+            if self.editor_gates[pitch] != 0
+                && (intent & 127 == 0 || intent >> 14 != self.editor_gates[pitch])
+                && (takeover_credit[pitch] || *budget != 0)
+                && self.current.0.graph.try_note_off_at(pitch as u8, 0)
+            {
+                self.editor_gates[pitch] = 0;
+                if takeover_credit[pitch] {
+                    takeover_credit[pitch] = false;
+                } else {
+                    *budget -= 1;
+                }
+            }
+        }
+    }
+
+    fn start_editor_notes(
+        &mut self,
+        intents: &[u64; 128],
+        touched: &[bool; 128],
+        budget: &mut usize,
+    ) {
+        for offset in 0..128 {
+            let pitch = (self.editor_cursor + offset) % 128;
+            let intent = intents[pitch];
+            let sequence = intent >> 14;
+            if self.host_held[pitch] || touched[pitch] {
+                self.editor_seen[pitch] = sequence;
+                continue;
+            }
+            let onset = ((intent >> 7) & 127) as u8;
+            if onset != 0
+                && sequence != self.editor_suppressed[pitch]
+                && (intent & 127 != 0 || sequence != self.editor_seen[pitch])
+                && self.editor_gates[pitch] == 0
+                && *budget != 0
+                && self.current.0.graph.try_note_on_at(pitch as u8, onset, 0)
+            {
+                self.editor_gates[pitch] = sequence;
+                self.editor_seen[pitch] = sequence;
+                *budget -= 1;
+            }
+        }
+    }
+
     fn apply_event(
         &mut self,
         event: ControlEvent,
         frame_offset: u32,
         command_sequence: u64,
         report: &mut ProcessReport,
-    ) {
+    ) -> Result<(), RuntimeError> {
         match event {
             ControlEvent::NoteOn { note, velocity } => {
-                self.current.0.graph.note_on_at(note, velocity, 0)
+                let pitch = usize::from(note);
+                if self.editor_gates[pitch] != 0 {
+                    if !self.current.0.graph.try_note_off_at(note, 0) {
+                        return Err(RuntimeError::QueueFull);
+                    }
+                    self.editor_gates[pitch] = 0;
+                }
+                if !self.current.0.graph.try_note_on_at(note, velocity, 0) {
+                    return Err(RuntimeError::QueueFull);
+                }
+                self.host_held[pitch] = true;
             }
-            ControlEvent::NoteOff { note } => self.current.0.graph.note_off_at(note, 0),
+            ControlEvent::NoteOff { note } => {
+                if !self.current.0.graph.try_note_off_at(note, 0) {
+                    return Err(RuntimeError::QueueFull);
+                }
+                self.host_held[usize::from(note)] = false;
+                self.editor_gates[usize::from(note)] = 0;
+            }
             ControlEvent::Parameter { index, value } => {
                 self.values[index].store(value.to_bits(), Ordering::SeqCst);
                 if command_sequence != 0 {
@@ -765,6 +996,7 @@ impl AudioState {
                 }
             }
         }
+        Ok(())
     }
 }
 
@@ -970,6 +1202,282 @@ mod admission_tests {
         drop(callback);
         assert_eq!(finished, vec![0.5]);
         assert_eq!(admission_during_read, CALLBACK_ACTIVE);
+    }
+
+    mod editor_note_fixture {
+        include!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/support/editor_notes.rs"
+        ));
+    }
+
+    fn callback(audio: &mut RuntimeAudio) -> ([f32; 16], [f32; 16]) {
+        let (mut left, mut right) = ([1.0; 16], [1.0; 16]);
+        let measured = allocation_counter::measure(|| {
+            audio.process(&mut left, &mut right).unwrap();
+        });
+        assert_eq!(
+            (
+                measured.count_total,
+                measured.count_current,
+                measured.bytes_current
+            ),
+            (0, 0, 0)
+        );
+        (left, right)
+    }
+
+    fn assert_gated_prefix(output: ([f32; 16], [f32; 16])) {
+        assert_eq!(&output.0[..4], &editor_note_fixture::PREFIX_L);
+        assert_eq!(&output.1[..4], &editor_note_fixture::PREFIX_R);
+        assert_eq!(&output.0[4..], &[-0.125; 12]);
+        assert_eq!(&output.1[4..], &[-0.0625; 12]);
+    }
+
+    // Valid public calls obey the P-budget and cannot prefill this queue.
+    // These internal preconditions protect defensive retention, while the
+    // integration suite separately proves real public saturation and PCM.
+    fn fill_actual_graph_queue(audio: &mut RuntimeAudio, available: usize) {
+        let capacity = audio.state.current.0.graph.pending_event_capacity();
+        assert_eq!(capacity, 128);
+        for _ in 0..capacity - available {
+            assert!(audio.state.current.0.graph.try_note_off_at(127, 0));
+        }
+    }
+
+    #[test]
+    fn editor_note_lifecycle_and_restore_are_independent_between_runtime_instances() {
+        let mut fixture = editor_note_fixture::Fixture::new("gated", 4);
+        let other_fixture = editor_note_fixture::Fixture::with_pan("gated", 4, 0.5);
+        let (mut control, mut audio) = fixture.runtime(4);
+        let (mut other, mut other_audio) = other_fixture.runtime(4);
+        let owner = NonZeroU64::new(17).unwrap();
+        control.editor_note_on(owner, 60, 100).unwrap();
+        other.editor_note_on(owner, 60, 100).unwrap();
+        assert_gated_prefix(callback(&mut audio));
+        let output = callback(&mut other_audio);
+        assert_eq!(&output.0[..4], &editor_note_fixture::PREFIX_R);
+        assert_eq!(&output.1[..4], &editor_note_fixture::PREFIX_L);
+        control.detach_editor_notes(owner);
+        assert_eq!(callback(&mut audio), ([0.0; 16], [0.0; 16]));
+        assert_eq!(callback(&mut other_audio), ([-0.0625; 16], [-0.125; 16]));
+        control.editor_note_on(owner, 60, 100).unwrap();
+        assert_gated_prefix(callback(&mut audio));
+        let reset = allocation_counter::measure(|| {
+            audio.reset();
+        });
+        assert_eq!(
+            (reset.count_total, reset.count_current, reset.bytes_current),
+            (0, 0, 0)
+        );
+        assert_eq!(callback(&mut audio), ([0.0; 16], [0.0; 16]));
+        assert_eq!(callback(&mut other_audio), ([-0.0625; 16], [-0.125; 16]));
+        control.editor_note_on(owner, 60, 100).unwrap();
+        assert!(control.offer(other_fixture.prepared()).is_ok());
+        let output = callback(&mut audio);
+        assert_eq!(&output.0[..4], &editor_note_fixture::PREFIX_R);
+        assert_eq!(&output.1[..4], &editor_note_fixture::PREFIX_L);
+        drop(control.reclaim().unwrap());
+        assert_eq!(callback(&mut other_audio), ([-0.0625; 16], [-0.125; 16]));
+        let yaml = fixture.session.owner_snapshot().yaml;
+        let candidate = fixture
+            .session
+            .prepare_document_replacement_owned(&yaml)
+            .unwrap();
+        fixture
+            .session
+            .commit_document_replacement(candidate, &mut control.restoring(Vec::new()))
+            .unwrap();
+        assert_eq!(callback(&mut audio), ([0.0; 16], [0.0; 16]));
+        drop(control.reclaim().unwrap());
+        assert_eq!(callback(&mut other_audio), ([-0.0625; 16], [-0.125; 16]));
+        other.detach_editor_notes(owner);
+        assert_eq!(callback(&mut other_audio), ([0.0; 16], [0.0; 16]));
+    }
+
+    #[test]
+    fn cancelled_and_busy_restore_preserve_held_and_unheard_editor_intent() {
+        for heard in [false, true] {
+            let fixture = editor_note_fixture::Fixture::new("gated", 4);
+            let (mut control, mut audio) = fixture.runtime(4);
+            let owner = NonZeroU64::new(17).unwrap();
+            control.editor_note_on(owner, 60, 100).unwrap();
+            if heard {
+                assert_gated_prefix(callback(&mut audio));
+            }
+            let before = fixture.session.owner_snapshot();
+            let mut restoration = control.restoring(Vec::new());
+            let lease = restoration
+                .activate(fixture.session.prepared(), &before)
+                .unwrap();
+            assert_eq!(callback(&mut audio), ([0.0; 16], [0.0; 16]));
+            drop(lease);
+            drop(restoration);
+            if heard {
+                assert_eq!(callback(&mut audio), ([-0.125; 16], [-0.0625; 16]));
+            } else {
+                assert_gated_prefix(callback(&mut audio));
+            }
+            assert!(control.offer(fixture.prepared()).is_ok());
+            assert!(matches!(
+                control
+                    .restoring(Vec::new())
+                    .activate(fixture.session.prepared(), &before),
+                Err(RuntimeError::Busy)
+            ));
+            assert_gated_prefix(callback(&mut audio));
+            drop(control.reclaim().unwrap());
+            control.detach_editor_notes(owner);
+            assert_eq!(callback(&mut audio), ([0.0; 16], [0.0; 16]));
+        }
+    }
+
+    #[test]
+    fn successful_restore_clears_old_editor_intent_and_allows_a_new_owner() {
+        for (heard, released) in [(true, false), (false, false), (false, true)] {
+            let mut fixture = editor_note_fixture::Fixture::new("gated", 4);
+            let (mut control, mut audio) = fixture.runtime(4);
+            let old = NonZeroU64::new(17).unwrap();
+            let new = NonZeroU64::new(18).unwrap();
+            control.editor_note_on(old, 60, 100).unwrap();
+            if heard {
+                assert_gated_prefix(callback(&mut audio));
+            }
+            if released {
+                control.editor_note_off(old, 60).unwrap();
+            }
+            let changed = fixture
+                .session
+                .owner_snapshot()
+                .yaml
+                .replace("pan: -0.5", "pan: 0.5");
+            let candidate = fixture
+                .session
+                .prepare_document_replacement_owned(&changed)
+                .unwrap();
+            fixture
+                .session
+                .commit_document_replacement(candidate, &mut control.restoring(Vec::new()))
+                .unwrap();
+            assert_eq!(
+                callback(&mut audio),
+                ([0.0; 16], [0.0; 16]),
+                "restore retires old desired and unheard intent"
+            );
+            drop(control.reclaim().unwrap());
+            control.editor_note_on(new, 60, 100).unwrap();
+            control.detach_editor_notes(old);
+            let output = callback(&mut audio);
+            assert_eq!(&output.0[..4], &editor_note_fixture::PREFIX_R);
+            assert_eq!(&output.1[..4], &editor_note_fixture::PREFIX_L);
+            assert_eq!(callback(&mut audio), ([-0.0625; 16], [-0.125; 16]));
+            control.detach_editor_notes(new);
+            assert_eq!(callback(&mut audio), ([0.0; 16], [0.0; 16]));
+        }
+    }
+
+    #[test]
+    fn failed_checked_release_retains_gate_and_new_owner_onset_until_release_succeeds() {
+        let (mut control, mut audio) = editor_note_fixture::Fixture::new("gated", 4).runtime(4);
+        let old = NonZeroU64::new(17).unwrap();
+        let new = NonZeroU64::new(18).unwrap();
+        control.editor_note_on(old, 60, 100).unwrap();
+        assert_gated_prefix(callback(&mut audio));
+        control.editor_note_off(old, 60).unwrap();
+        control.editor_note_on(new, 60, 100).unwrap();
+        fill_actual_graph_queue(&mut audio, 0);
+        assert_eq!(callback(&mut audio), ([-0.125; 16], [-0.0625; 16]));
+        assert_gated_prefix(callback(&mut audio));
+        control.detach_editor_notes(old);
+        assert_eq!(callback(&mut audio), ([-0.125; 16], [-0.0625; 16]));
+        control.detach_editor_notes(new);
+        assert_eq!(callback(&mut audio), ([0.0; 16], [0.0; 16]));
+    }
+
+    #[test]
+    fn failed_checked_onset_and_ordinary_takeover_keep_their_pending_work() {
+        let (mut control, mut audio) = editor_note_fixture::Fixture::new("gated", 4).runtime(4);
+        let owner = NonZeroU64::new(17).unwrap();
+        control.editor_note_on(owner, 60, 100).unwrap();
+        fill_actual_graph_queue(&mut audio, 0);
+        assert_eq!(callback(&mut audio), ([0.0; 16], [0.0; 16]));
+        assert_gated_prefix(callback(&mut audio));
+        control
+            .try_send(ControlEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            })
+            .unwrap();
+        fill_actual_graph_queue(&mut audio, 0);
+        assert_eq!(callback(&mut audio), ([-0.125; 16], [-0.0625; 16]));
+        assert_gated_prefix(callback(&mut audio));
+        control.detach_editor_notes(owner);
+        assert_eq!(callback(&mut audio), ([-0.125; 16], [-0.0625; 16]));
+        control
+            .try_send(ControlEvent::NoteOff { note: 60 })
+            .unwrap();
+        fill_actual_graph_queue(&mut audio, 0);
+        assert_eq!(callback(&mut audio), ([-0.125; 16], [-0.0625; 16]));
+        assert_eq!(callback(&mut audio), ([0.0; 16], [0.0; 16]));
+    }
+
+    #[test]
+    fn checked_takeover_release_success_does_not_lose_queued_onset_when_only_one_slot_was_free() {
+        let (mut control, mut audio) = editor_note_fixture::Fixture::new("gated", 4).runtime(4);
+        let owner = NonZeroU64::new(17).unwrap();
+        control.editor_note_on(owner, 60, 100).unwrap();
+        assert_gated_prefix(callback(&mut audio));
+        control
+            .try_send(ControlEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            })
+            .unwrap();
+        fill_actual_graph_queue(&mut audio, 1);
+        assert_eq!(callback(&mut audio), ([0.0; 16], [0.0; 16]));
+        assert_gated_prefix(callback(&mut audio));
+        control.detach_editor_notes(owner);
+        assert_eq!(callback(&mut audio), ([-0.125; 16], [-0.0625; 16]));
+    }
+
+    #[test]
+    fn exhausted_editor_sequence_is_rejected_and_release_does_not_wrap_it() {
+        let (mut control, _audio) = gain_runtime();
+        let owner = NonZeroU64::new(17).unwrap();
+        // Seed the finite counter boundary: reaching it by 2^50 calls is not a
+        // useful test. Assertions use the public admission/release contract.
+        control.editor_intent[60].store(!16383, Ordering::Relaxed);
+        assert_eq!(
+            control.editor_note_on(owner, 60, 100),
+            Err(RuntimeError::EditorSequenceExhausted)
+        );
+        control.editor_note_off(owner, 60).unwrap();
+        control.detach_editor_notes(owner);
+        assert_eq!(
+            control.editor_note_on(owner, 60, 100),
+            Err(RuntimeError::EditorSequenceExhausted)
+        );
+        control.editor_note_on(owner, 61, 100).unwrap();
+        control.editor_note_off(owner, 61).unwrap();
+    }
+
+    #[test]
+    fn activation_readiness_returns_only_after_control_reclaims_retired_runtime() {
+        let (mut control, mut audio) = gain_runtime();
+        assert!(control.activation_available());
+        let (_, replacement) = gain_runtime();
+        assert!(control.offer(replacement.state.current).is_ok());
+        assert!(
+            !control.activation_available(),
+            "pending publication owns the slot"
+        );
+        audio.process(&mut [0.0; 16], &mut [0.0; 16]).unwrap();
+        assert!(
+            !control.activation_available(),
+            "audio consumption does not reclaim"
+        );
+        drop(control.reclaim().unwrap());
+        assert!(control.activation_available());
     }
 
     #[test]

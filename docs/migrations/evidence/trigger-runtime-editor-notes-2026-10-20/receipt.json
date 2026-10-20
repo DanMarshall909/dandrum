@@ -1,0 +1,124 @@
+{
+  "component": "Bounded runtime editor-note ownership and arbitration",
+  "base": "d1662501a375710d9892371453c2614ad96518ed",
+  "scope": "Task3.3 shared runtime prerequisite, not controller/native/editor/CLAP/beta completion",
+  "source_hashes": {
+    "src/trigger-host/src/runtime.rs": "3db6c16c237c0bbb024e57b34b72507dcf70111ead88c3c6b88f66df08d81c0b",
+    "src/trigger-host/tests/editor_notes.rs": "669c8d141661eb649eb2a5d83b1d71783cca6e09d15ba8e85093cd0b938f270a",
+    "src/trigger-host/tests/support/editor_notes.rs": "8eff39ddbb42447a45f58700da84e65f87fc30d0c58ad7dfa8c13939e098ceae",
+    "src/trigger-host/tests/runtime.rs": "49e3abd589ed590d5c223b41296c9951722ec20aa368858c3701ca40e3ccf461"
+  },
+  "behavior": [
+    "Fixed128 coherent atomic intents with explicit owner/sequence/validation errors",
+    "Ordinary unheard tap retained; detach cancels held and unheard work including released taps",
+    "Host pitch priority and editor resume; old attachment cleanup preserves new publisher",
+    "Finite graph-event budget preserves cleanup and deferred ordinary work without raising engine capacity",
+    "Reset suppresses prior intent; mapping resumes desired physical pitch only; accepted external restore clears old intent",
+    "Gated sample child, signed stereo prefixes/tails, callback sentinels, actual separate audio thread and independent instances"
+  ],
+  "tests": {
+    "host": 92,
+    "profile": "Cargo dev/test opt0 with CARGO_PROFILE_DEV_DEBUG=0 and CARGO_PROFILE_TEST_DEBUG=0; not default-symbol debug profile; assertions/overflow/panic settings unchanged; actual compiler commands retained",
+    "host_seconds": 6.528670209983829,
+    "editor_tests": 17,
+    "focused_llvm_tests": 49,
+    "focused_llvm_seconds": 4.520439054002054,
+    "clippy": "all-targets -D warnings pass",
+    "fmt": "pass",
+    "actual_sourcefree_optimized_host": 92,
+    "sourcefree_compile_and_test_seconds": 566.8435978989874,
+    "sourcefree_inputs": 589
+  },
+  "coverage": {
+    "whole_file_includes_test_module": {
+      "functions": "90/93",
+      "instantiations": "145/162",
+      "lines": "1121/1154",
+      "regions": "1817/1855"
+    },
+    "production_distinct_functions": "66/69",
+    "production_distinct_regions": "942/963",
+    "production_emitted_function_records": "121/138",
+    "qualifications": [
+      "21 uncovered production regions include three existing helpers and other focused-scope feedback/reset paths",
+      "host apply_event error propagation is unreachable under validated public event budget",
+      "private real-graph prefill laws are defensive preconditions, not public saturation failure proof",
+      "private sequence-limit seed proves boundary law, not2^50 public call execution",
+      "no branch/MCDC/whole-owner100%or complete assertion claim"
+    ]
+  },
+  "provenance_limitations": [
+    "First19 phase source captures had basename collisions overwriting production snapshot with integration runtime test",
+    "Logs and contemporaneous hashes retained; three reconstructions explicitly labelled and hash-matched",
+    "Four intermediate production snapshots remain unrecovered; no complete contemporaneous archive claim",
+    "Source capture repaired to crate-relative paths; final source and later criterion evidence exact"
+  ],
+  "sourcefree_qualification": "Affected actual source-free optimized Cargo host tests and dependency audit in retained fixture; not fresh complete default-profile guard, CMake artifact restaging, browser/native CLAP or full beta acceptance; current92 optimized tests use new RAM target, default release; earlier90-test run/archive retained separately",
+  "archives": {
+    "author_members": 420,
+    "author_sha256": "7d950b84ac7a732134cecaf3db12b0ed54a851c29e7ef307ae61db17923a174d",
+    "sourcefree_members": 9,
+    "sourcefree_sha256": "5470412822c961d5993dfa53333fb8e4fd26dace2d77da8c124851f673b8fbc1",
+    "repair_r1": {
+      "members": 79,
+      "sha256": "5f692aaeab5c92e58f25cf965b911a25aa1a693ed360366583b135d6b8b9e0ed"
+    },
+    "repair_r1_sourcefree": {
+      "members": 9,
+      "sha256": "00184de69831bfb528c0c702478be10b29dbc4906e90c11eeacf4bc2c9c88a80"
+    }
+  },
+  "integration": "Native d166250 integrated before review with author bytes preserved; R1 subsequently changes only two test paths, production remains byte-identical. Shared runtime readiness overlaps pending job lane; Display/combined behavior require explicit later integration checks.",
+  "limitations": [
+    "Trusted NonZero owner runtime API; controller must authenticate attachments, match recorded document generations and expire heartbeats",
+    "Same-generation wire has no physical press nonce; no stronger stale-release promise",
+    "Generated WAV channels identical because sample_player downmixes; pan creates unequal signed stereo, no independent asset-channel preservation claim",
+    "PCM proves audible cleanup effect, not a count of idempotent internal Off calls",
+    "No new production module/dependency/engine change; no current protocol/native facade wiring"
+  ],
+  "review": {
+    "status": "PASS",
+    "manifest_sha256": "b48133815b61d239c6d2f3e0d2b735d70f2756e98df01d42508566149d5c2422",
+    "review_sha256": "5b787e6d14fcc3403fd39e2236fa5d514c8c02dda2a0c7bf852e6d599078364d",
+    "verdict_sha256": "8c1fca307719c189505744f91cc8cb4ce31fb548c869321ed746a86c6fe13c6c"
+  },
+  "mutation": "excluded by user",
+  "caches": "all preserved; sourcefree release binaries retained and hashed separately; no owned workers",
+  "task3_3_complete": false,
+  "full_beta_complete": false,
+  "pre_repair_source_hashes": {
+    "src/trigger-host/src/runtime.rs": "3db6c16c237c0bbb024e57b34b72507dcf70111ead88c3c6b88f66df08d81c0b",
+    "src/trigger-host/tests/editor_notes.rs": "3fefaaa91258f2b80565e5b8fba91026a7083205e2159227872f2a2900732cf0",
+    "src/trigger-host/tests/support/editor_notes.rs": "eeb915d620c5d3b0037dab506f53fd4970854acb17a8c2bd78256cf8847308e4",
+    "src/trigger-host/tests/runtime.rs": "49e3abd589ed590d5c223b41296c9951722ec20aa368858c3701ca40e3ccf461"
+  },
+  "pre_repair_tests": {
+    "debug_host": 90,
+    "debug_seconds": 5.020855913986452,
+    "focused_llvm_tests": 47,
+    "focused_llvm_seconds": 4.019917328987503,
+    "clippy": "all-targets -D warnings pass",
+    "fmt": "pass",
+    "actual_sourcefree_optimized_host": 90,
+    "sourcefree_compile_and_test_seconds": 202.27202641099575,
+    "sourcefree_dependency_seconds": 0.25151935999747366,
+    "sourcefree_inputs": 589
+  },
+  "repair_r1": "Velocity-observable real child and independent signed PCM for both coalesced orders, held/released unheard tap; passing characterization, production unchanged; no fabricated RED or mutation",
+  "profile_and_resource_qualification": {
+    "repair_profile": "Cargo dev/test opt0 with CARGO_PROFILE_DEV_DEBUG=0 and CARGO_PROFILE_TEST_DEBUG=0; not default-symbol debug profile; assertions/overflow/panic settings unchanged; actual compiler commands retained",
+    "sourcefree_profile": "Default optimized release; no dev/test profile override; jobs1; all new target/temp/log outputs on RAM filesystem",
+    "sourcefree_resource_floors": {
+      "target": 536870912,
+      "disk_nonwriting": 805306368,
+      "dev_shm": 268435456,
+      "memory": 4294967296
+    },
+    "sourcefree_resource_qualification": "Disk floor adapted for RAM-only output; prior runs used1GiB; no original cache writes or deletions"
+  },
+  "prior_review": {
+    "prior_verdict": "FAIL",
+    "prior_manifest_sha256": "d0c1455c2a1efb4435098248348e5dbee8c7d65198b1dfa36019809520151f63",
+    "prior_review_sha256": "49a35c08aaefb526d27d2ad9a16d6b00b69e0afb3264a4bbf3e4ba25c2a666fc"
+  }
+}

@@ -1,0 +1,47 @@
+[
+  {
+    "path": "artifact-binding.json",
+    "bytes": 2055,
+    "sha256": "b5b915dd1cb634e96c88909ab7b5a2f40ccb83013fd119feb1c9bed7855278b9"
+  },
+  {
+    "path": "dependencies.json",
+    "bytes": 1056,
+    "sha256": "1adda0e7d94bf4b718409983ca9786ee6b9d0c0c26cc129bd1ce1cb7b053183f"
+  },
+  {
+    "path": "dependencies.log",
+    "bytes": 4674,
+    "sha256": "77d2b3c90c58395f0afa032c9d2ee6a8cfac70e47ada1681e89e3927f444f605"
+  },
+  {
+    "path": "fixture-update.json",
+    "bytes": 4351,
+    "sha256": "091faaf81b5c4cf3e56397ceb20c9b617b32d4519aa334ab1caefddbda9f992e"
+  },
+  {
+    "path": "receipt.json",
+    "bytes": 687,
+    "sha256": "3ce77676d7b701dcc830860d2b1952a05a31b2cfeb2bd11ae78bd6160f646391"
+  },
+  {
+    "path": "release-tests.json",
+    "bytes": 108348,
+    "sha256": "ea0bcece2d2749124b718fa3bff643a52503de8454960e161b6a5222d7660414"
+  },
+  {
+    "path": "release-tests.log",
+    "bytes": 10630,
+    "sha256": "2cb0ca20ee9264f27ac1111e5343ce8bc99e4b0130138d8dda472d5667bd8628"
+  },
+  {
+    "path": "run-sourcefree-release.py",
+    "bytes": 5301,
+    "sha256": "81ac35ee64b6178c25f4c35ce4d6131e4aa7216da58e60211470b36cd6797bf6"
+  },
+  {
+    "path": "source-manifest.json",
+    "bytes": 68342,
+    "sha256": "38e4d083a4e32395a7e644368e35b9d583192c2b5eb9c8e44548630baa4ea55a"
+  }
+]

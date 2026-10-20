@@ -1144,3 +1144,56 @@ worker/wake, notes/heartbeat and actual CLAP GUI integration still need joined
 acceptance. Full beta remains active through CLAP, VST3, standalone, named DAW,
 installed/offline and native proof. Main stays clean68dd655; caches are retained
 and mutation remains excluded.
+
+
+## Bounded runtime editor-note ownership — 20 October 2026
+
+The shared runtime now retains coherent note intent for128 pitches independently
+of ordinary queue capacity. Ordinary release preserves an unheard drum tap;
+attachment cleanup cancels held and unheard work, including an already released
+tap, while preserving a newer publisher. Audio arbitrates host pitch ownership,
+services bounded cleanup before ordinary queued work, and resumes desired editor
+notes after host release or a structural swap. Reset suppresses prior intent;
+accepted external restore clears it. Failed/deferred operations retain ownership.
+
+Real gated sample-child tests pin signed unequal stereo prefix/tails and actual
+sample-offset host release. WAV source channels are identical because the player
+downmixes; pan supplies the distinguishable stereo oracle. One-shot release keeps
+its natural tail. Callback allocation/deallocation sentinels, actual separate
+control/audio threads, public saturation and independent instances pass. Private
+real-graph prefill and sequence-limit laws are explicitly internal preconditions;
+they are not public failure/huge-iteration or counts of idempotent Off effects.
+
+The original90 default-symbol debug host tests and47 focused LLVM tests passed.
+After review R1, all92 host tests,17 editor tests,49 focused LLVM tests, strict
+Clippy and formatting pass with explicitly disabled dev/test debug symbols;
+optimization remains0 and debug assertions/overflow settings are unchanged.
+A real velocity-to-level cable and independent signed PCM now check both
+coalesced velocity orders and already-released unheard taps. Production is
+unchanged; this assertion repair is passing characterization, with no fake RED.
+Production coverage merges emitted duplicates:66/69 distinct functions942/963
+regions; whole-file including tests is90/93functions1121/1154lines1817/1855regions.
+Unexecuted existing feedback/reset helpers and a public-budget-unreachable error
+propagation remain disclosed. No branch/MCDC/whole-owner100%claim is made.
+All92 optimized host tests and normal dependency audit also pass in the retained
+actual copied fixture with web/ui/third_party absent, all589 source inputs matched.
+The refreshed optimized build/test took566.844s on the new RAM target;
+the original90-test202.272s archive remains retained. These are affected Cargo
+boundary checks, not a fresh complete guard or native CLAP acceptance.
+New build/temp/log outputs use RAM; disk reserve for that RAM-only run was
+768MiB rather than the earlier1GiB. No existing cache was deleted or rewritten.
+
+[Portable evidence](evidence/trigger-runtime-editor-notes-2026-10-20/receipt.json)
+retains raw logs/hashes and exact later/final source. An early basename capture
+collision lost intermediate production snapshots: three reconstruct from retained
+hashes, four remain unrecovered; no complete contemporaneous archive is claimed.
+Existing source-bound RED diagnostics and later exact behavior phases are retained
+for independent assessment. Native d166250 is integrated; R1 changes only the
+two test paths. The prior FAIL and repair evidence are preserved for reassessment.
+
+Independent completion review passed for the frozen runtime editor-note source/evidence candidate; normal-hook publication remains.
+Controller authentication/press-generation matching, heartbeat, worker/native
+servicing and actual browser/CLAP wiring remain required. The v1 wire has document
+generation rather than a physical press nonce. Tasks3.2/3.3 stay open7/14, full beta
+active through CLAP and subsequent VST3/standalone/DAW/offline/native acceptance.
+Main remains clean68dd655; all reusable caches remain and mutation is excluded.

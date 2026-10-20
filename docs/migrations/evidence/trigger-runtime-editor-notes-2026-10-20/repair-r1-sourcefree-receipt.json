@@ -1,0 +1,33 @@
+{
+  "base": "d1662501a375710d9892371453c2614ad96518ed",
+  "source_inputs": 589,
+  "all_inputs_match": true,
+  "absent_trees": [
+    "web",
+    "ui",
+    "third_party"
+  ],
+  "tests": 92,
+  "qualification": "Affected actual source-free optimized Cargo host tests and dependency audit in retained fixture; not fresh complete default-profile guard, CMake artifact restaging, browser/native CLAP or full beta acceptance.",
+  "results": [
+    {
+      "gate": "release-tests",
+      "exit_code": 0,
+      "elapsed_seconds": 566.8435978989874
+    },
+    {
+      "gate": "dependencies",
+      "exit_code": 0,
+      "elapsed_seconds": 0.251416376006091
+    }
+  ],
+  "caches_preserved": true,
+  "profile": "Default optimized release; no dev/test profile override; jobs1; all new target/temp/log outputs on RAM filesystem",
+  "resource_floors": {
+    "target": 536870912,
+    "disk_nonwriting": 805306368,
+    "dev_shm": 268435456,
+    "memory": 4294967296
+  },
+  "resource_qualification": "Disk floor adapted for RAM-only output; prior runs used1GiB; no original cache writes or deletions"
+}

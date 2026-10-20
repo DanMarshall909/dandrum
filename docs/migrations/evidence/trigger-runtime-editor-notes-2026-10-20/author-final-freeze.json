@@ -1,0 +1,127 @@
+{
+  "head": "b52a3b406c6f88f53308fdf52b112702c2b11bd8",
+  "source_hashes": {
+    "src/trigger-host/src/runtime.rs": "3db6c16c237c0bbb024e57b34b72507dcf70111ead88c3c6b88f66df08d81c0b",
+    "src/trigger-host/tests/editor_notes.rs": "3fefaaa91258f2b80565e5b8fba91026a7083205e2159227872f2a2900732cf0",
+    "src/trigger-host/tests/support/editor_notes.rs": "eeb915d620c5d3b0037dab506f53fd4970854acb17a8c2bd78256cf8847308e4",
+    "src/trigger-host/tests/runtime.rs": "49e3abd589ed590d5c223b41296c9951722ec20aa368858c3701ca40e3ccf461"
+  },
+  "normal_host_test_count": 90,
+  "final_gates": {
+    "final-all-host-tests": {
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--manifest-path",
+        "src/trigger-host/Cargo.toml"
+      ],
+      "exit": 0,
+      "duration_seconds": 5.020855913986452,
+      "source_hashes": {
+        "src/trigger-host/src/runtime.rs": "3db6c16c237c0bbb024e57b34b72507dcf70111ead88c3c6b88f66df08d81c0b",
+        "src/trigger-host/tests/editor_notes.rs": "3fefaaa91258f2b80565e5b8fba91026a7083205e2159227872f2a2900732cf0",
+        "src/trigger-host/tests/runtime.rs": "49e3abd589ed590d5c223b41296c9951722ec20aa368858c3701ca40e3ccf461",
+        "src/trigger-host/tests/support/editor_notes.rs": "eeb915d620c5d3b0037dab506f53fd4970854acb17a8c2bd78256cf8847308e4",
+        "src/trigger-host/Cargo.toml": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+        "src/trigger-host/Cargo.lock": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b"
+      },
+      "resource_min": {
+        "disk": 1885573120,
+        "ramfs": 1155194880,
+        "memory": 15689351168
+      }
+    },
+    "final-clippy": {
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "clippy",
+        "--manifest-path",
+        "src/trigger-host/Cargo.toml",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit": 0,
+      "duration_seconds": 1.0059462650096975,
+      "source_hashes": {
+        "src/trigger-host/src/runtime.rs": "3db6c16c237c0bbb024e57b34b72507dcf70111ead88c3c6b88f66df08d81c0b",
+        "src/trigger-host/tests/editor_notes.rs": "3fefaaa91258f2b80565e5b8fba91026a7083205e2159227872f2a2900732cf0",
+        "src/trigger-host/tests/runtime.rs": "49e3abd589ed590d5c223b41296c9951722ec20aa368858c3701ca40e3ccf461",
+        "src/trigger-host/tests/support/editor_notes.rs": "eeb915d620c5d3b0037dab506f53fd4970854acb17a8c2bd78256cf8847308e4",
+        "src/trigger-host/Cargo.toml": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+        "src/trigger-host/Cargo.lock": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b"
+      },
+      "resource_min": {
+        "disk": 1899302912,
+        "ramfs": 1156337664,
+        "memory": 15337693184
+      }
+    },
+    "final-fmt": {
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "fmt",
+        "--manifest-path",
+        "src/trigger-host/Cargo.toml",
+        "--check"
+      ],
+      "exit": 0,
+      "duration_seconds": 0.5026253559917677,
+      "source_hashes": {
+        "src/trigger-host/src/runtime.rs": "3db6c16c237c0bbb024e57b34b72507dcf70111ead88c3c6b88f66df08d81c0b",
+        "src/trigger-host/tests/editor_notes.rs": "3fefaaa91258f2b80565e5b8fba91026a7083205e2159227872f2a2900732cf0",
+        "src/trigger-host/tests/runtime.rs": "49e3abd589ed590d5c223b41296c9951722ec20aa368858c3701ca40e3ccf461",
+        "src/trigger-host/tests/support/editor_notes.rs": "eeb915d620c5d3b0037dab506f53fd4970854acb17a8c2bd78256cf8847308e4",
+        "src/trigger-host/Cargo.toml": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+        "src/trigger-host/Cargo.lock": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b"
+      },
+      "resource_min": {
+        "disk": 1898754048,
+        "ramfs": 1156337664,
+        "memory": 16413237248
+      }
+    },
+    "09-refactor-coverage": {
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "llvm-cov",
+        "--manifest-path",
+        "src/trigger-host/Cargo.toml",
+        "--lib",
+        "--test",
+        "runtime",
+        "--test",
+        "editor_notes",
+        "--json",
+        "--output-path",
+        "/tmp/dandrum-lanes/evidence-runtime-notes/09-refactor-coverage.json"
+      ],
+      "exit": 0,
+      "duration_seconds": 4.019917328987503,
+      "source_hashes": {
+        "src/trigger-host/src/runtime.rs": "3db6c16c237c0bbb024e57b34b72507dcf70111ead88c3c6b88f66df08d81c0b",
+        "src/trigger-host/tests/editor_notes.rs": "3fefaaa91258f2b80565e5b8fba91026a7083205e2159227872f2a2900732cf0",
+        "src/trigger-host/tests/runtime.rs": "49e3abd589ed590d5c223b41296c9951722ec20aa368858c3701ca40e3ccf461",
+        "src/trigger-host/tests/support/editor_notes.rs": "eeb915d620c5d3b0037dab506f53fd4970854acb17a8c2bd78256cf8847308e4",
+        "src/trigger-host/Cargo.toml": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+        "src/trigger-host/Cargo.lock": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b"
+      },
+      "resource_min": {
+        "disk": 1879941120,
+        "ramfs": 1155194880,
+        "memory": 16021811200
+      }
+    }
+  },
+  "owned_processes_remaining": [],
+  "resources": {
+    "disk_free": 1102757888,
+    "ramfs_free": 1039937536,
+    "memory_available": 16296611840
+  },
+  "released_caches": [
+    "/tmp/dandrum-lanes/cache-runtime",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov"
+  ]
+}

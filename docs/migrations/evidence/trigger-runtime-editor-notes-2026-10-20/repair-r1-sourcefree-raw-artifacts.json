@@ -1,0 +1,50 @@
+{
+  "archive_sha256": "00184de69831bfb528c0c702478be10b29dbc4906e90c11eeacf4bc2c9c88a80",
+  "members": [
+    {
+      "path": "dependencies.json",
+      "bytes": 1163,
+      "sha256": "4e30935c784cd9136e25a9921dd2bbd1cfd678d9ea43ba983a5a9eb5fc47cd0d"
+    },
+    {
+      "path": "dependencies.log",
+      "bytes": 4674,
+      "sha256": "77d2b3c90c58395f0afa032c9d2ee6a8cfac70e47ada1681e89e3927f444f605"
+    },
+    {
+      "path": "fixture-update.json",
+      "bytes": 3751,
+      "sha256": "fac7704825b925f722da55c89725f4a20e48c3aa250c40869e8077c4d74fb90a"
+    },
+    {
+      "path": "receipt.json",
+      "bytes": 1082,
+      "sha256": "5a909580f91dcaa3014bf9ff591c63879402fc06509341997b275588de82a9cf"
+    },
+    {
+      "path": "release-tests.json",
+      "bytes": 364060,
+      "sha256": "46fbb5076f8cabdd9fd57cb2f8ba7ec02ebcf1735917226cb8daa655766b56d9"
+    },
+    {
+      "path": "release-tests.log",
+      "bytes": 14903,
+      "sha256": "8c4db0ae7e353bc7076a4404c5cea30576dd3173d8c3719e0cb733f9530adef7"
+    },
+    {
+      "path": "retained-binaries.json",
+      "bytes": 1851,
+      "sha256": "5b56842479e6f99525d146c3ce07a2b27b577cd7f49a692a43662db0904ffbfd"
+    },
+    {
+      "path": "source-manifest.json",
+      "bytes": 68342,
+      "sha256": "c20bf949a334aa9bfad4c477aaf7675b5ea0edca7830d45287a8fd81d596378d"
+    },
+    {
+      "path": "verification-helper.py",
+      "bytes": 5850,
+      "sha256": "797844ade0d1c039441cd64853a5306f35a16284d28dad4d5fb6d36f4d57b185"
+    }
+  ]
+}

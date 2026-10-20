@@ -1,0 +1,326 @@
+{
+  "head": "d1662501a375710d9892371453c2614ad96518ed",
+  "source_hashes": {
+    "src/trigger-host/src/runtime.rs": "3db6c16c237c0bbb024e57b34b72507dcf70111ead88c3c6b88f66df08d81c0b",
+    "src/trigger-host/tests/editor_notes.rs": "669c8d141661eb649eb2a5d83b1d71783cca6e09d15ba8e85093cd0b938f270a",
+    "src/trigger-host/tests/support/editor_notes.rs": "8eff39ddbb42447a45f58700da84e65f87fc30d0c58ad7dfa8c13939e098ceae",
+    "src/trigger-host/tests/runtime.rs": "49e3abd589ed590d5c223b41296c9951722ec20aa368858c3701ca40e3ccf461"
+  },
+  "checks": {
+    "06-focused-coverage": {
+      "exit": 0,
+      "seconds": 4.520439054002054,
+      "passed_tests": 49,
+      "resource_min": {
+        "target_free": 1794453504,
+        "disk_free": 1187536896,
+        "ramfs_free": 1057980416,
+        "memory_available": 13157199872
+      }
+    },
+    "05-clippy": {
+      "exit": 0,
+      "seconds": 29.14506591000827,
+      "passed_tests": 0,
+      "resource_min": {
+        "target_free": 1794621440,
+        "disk_free": 1204658176,
+        "ramfs_free": 1057980416,
+        "memory_available": 12947898368
+      }
+    },
+    "04-fmt": {
+      "exit": 0,
+      "seconds": 0.5031190409790725,
+      "passed_tests": 0,
+      "resource_min": {
+        "target_free": 1949114368,
+        "disk_free": 1259569152,
+        "ramfs_free": 1057980416,
+        "memory_available": 13348388864
+      }
+    },
+    "03-all-host-tests": {
+      "exit": 0,
+      "seconds": 6.528670209983829,
+      "passed_tests": 92,
+      "resource_min": {
+        "target_free": 1948188672,
+        "disk_free": 1267032064,
+        "ramfs_free": 1057980416,
+        "memory_available": 13223694336
+      }
+    },
+    "02-all-editor-tests": {
+      "exit": 0,
+      "seconds": 0.5022290500055533,
+      "passed_tests": 17,
+      "resource_min": {
+        "target_free": 2376843264,
+        "disk_free": 1280397312,
+        "ramfs_free": 1057980416,
+        "memory_available": 13869035520
+      }
+    },
+    "01-editor-velocity-characterization": {
+      "exit": 0,
+      "seconds": 69.84932408700115,
+      "passed_tests": 1,
+      "resource_min": {
+        "target_free": 2377113600,
+        "disk_free": 1285689344,
+        "ramfs_free": 1057980416,
+        "memory_available": 13583839232
+      }
+    }
+  },
+  "profile": "Cargo dev/test opt0 with CARGO_PROFILE_DEV_DEBUG=0 and CARGO_PROFILE_TEST_DEBUG=0; not default-symbol debug profile; assertions/overflow/panic settings unchanged; actual compiler commands retained",
+  "coverage": {
+    "whole_file_including_unit_tests": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "functions": {
+        "count": 93,
+        "covered": 90,
+        "percent": 96.7741935483871
+      },
+      "instantiations": {
+        "count": 162,
+        "covered": 145,
+        "percent": 89.50617283950618
+      },
+      "lines": {
+        "count": 1154,
+        "covered": 1121,
+        "percent": 97.14038128249567
+      },
+      "regions": {
+        "count": 1855,
+        "covered": 1817,
+        "notcovered": 38,
+        "percent": 97.95148247978437
+      }
+    },
+    "production_emitted_functions": [
+      121,
+      138
+    ],
+    "production_distinct_functions_by_first_region": [
+      66,
+      69
+    ],
+    "production_distinct_regions": [
+      942,
+      963
+    ],
+    "uncovered_production_regions": [
+      {
+        "coordinates": [
+          502,
+          5,
+          502,
+          95
+        ],
+        "source": "    pub(crate) fn take_sequenced_feedback(&mut self) -> Option<(ParameterFeedback, u64, bool)> {"
+      },
+      {
+        "coordinates": [
+          503,
+          9,
+          503,
+          13
+        ],
+        "source": "        self.current_feedback().map(|feedback| {"
+      },
+      {
+        "coordinates": [
+          503,
+          14,
+          503,
+          30
+        ],
+        "source": "        self.current_feedback().map(|feedback| {"
+      },
+      {
+        "coordinates": [
+          503,
+          33,
+          503,
+          36
+        ],
+        "source": "        self.current_feedback().map(|feedback| {"
+      },
+      {
+        "coordinates": [
+          503,
+          48,
+          503,
+          49
+        ],
+        "source": "        self.current_feedback().map(|feedback| {"
+      },
+      {
+        "coordinates": [
+          504,
+          13,
+          508,
+          14
+        ],
+        "source": "            ("
+      },
+      {
+        "coordinates": [
+          505,
+          17,
+          505,
+          35
+        ],
+        "source": "                feedback.parameter,"
+      },
+      {
+        "coordinates": [
+          509,
+          9,
+          509,
+          10
+        ],
+        "source": "        })"
+      },
+      {
+        "coordinates": [
+          510,
+          5,
+          510,
+          6
+        ],
+        "source": "    }"
+      },
+      {
+        "coordinates": [
+          517,
+          13,
+          517,
+          14
+        ],
+        "source": "            }"
+      },
+      {
+        "coordinates": [
+          519,
+          9,
+          519,
+          13
+        ],
+        "source": "        None"
+      },
+      {
+        "coordinates": [
+          525,
+          5,
+          525,
+          50
+        ],
+        "source": "    pub(crate) fn event_slots(&mut self) -> usize {"
+      },
+      {
+        "coordinates": [
+          526,
+          9,
+          526,
+          20
+        ],
+        "source": "        self.events.slots()"
+      },
+      {
+        "coordinates": [
+          526,
+          21,
+          526,
+          26
+        ],
+        "source": "        self.events.slots()"
+      },
+      {
+        "coordinates": [
+          527,
+          5,
+          527,
+          6
+        ],
+        "source": "    }"
+      },
+      {
+        "coordinates": [
+          558,
+          13,
+          558,
+          14
+        ],
+        "source": "            }"
+      },
+      {
+        "coordinates": [
+          746,
+          97,
+          749,
+          14
+        ],
+        "source": "            if event.epoch == self.epoch.load(Ordering::Relaxed) && event.command_sequence != 0 {"
+      },
+      {
+        "coordinates": [
+          759,
+          27,
+          765,
+          10
+        ],
+        "source": "        if cancelled != 0 {"
+      },
+      {
+        "coordinates": [
+          763,
+          13,
+          763,
+          28
+        ],
+        "source": "            self.settlement"
+      },
+      {
+        "coordinates": [
+          764,
+          18,
+          764,
+          23
+        ],
+        "source": "                .store((cancelled << 1) | 1, Ordering::Release);"
+      },
+      {
+        "coordinates": [
+          882,
+          78,
+          882,
+          79
+        ],
+        "source": "            self.apply_event(event.event, event.frame_offset, 0, &mut report)?;"
+      }
+    ]
+  },
+  "owned_processes_remaining": [],
+  "resources": {
+    "/run/user/1000": 2117758976,
+    "/tmp": 1113546752,
+    "/dev/shm": 1057980416
+  },
+  "target_returned": "/run/user/1000/dandrum-beta-20261020/runtime-notes-r1-target",
+  "scratch_returned": "/run/user/1000/dandrum-beta-20261020/runtime-notes-r1-scratch"
+}

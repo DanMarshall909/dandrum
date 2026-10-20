@@ -1,0 +1,25 @@
+{
+  "base": "d1662501a375710d9892371453c2614ad96518ed",
+  "source_inputs": 589,
+  "all_inputs_match": true,
+  "absent_trees": [
+    "web",
+    "ui",
+    "third_party"
+  ],
+  "tests": 90,
+  "qualification": "Affected actual source-free optimized Cargo host tests and dependency audit in retained fixture; not fresh complete default-profile guard, CMake artifact restaging, browser/native CLAP or full beta acceptance.",
+  "results": [
+    {
+      "gate": "release-tests",
+      "exit_code": 0,
+      "elapsed_seconds": 202.27202641099575
+    },
+    {
+      "gate": "dependencies",
+      "exit_code": 0,
+      "elapsed_seconds": 0.25151935999747366
+    }
+  ],
+  "caches_preserved": true
+}

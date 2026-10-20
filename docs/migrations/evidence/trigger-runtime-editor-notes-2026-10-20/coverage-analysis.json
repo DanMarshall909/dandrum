@@ -1,0 +1,242 @@
+{
+  "source_sha256": "3db6c16c237c0bbb024e57b34b72507dcf70111ead88c3c6b88f66df08d81c0b",
+  "production_end_before_line": 1025,
+  "llvm_whole_file_summary_including_test_module": {
+    "branches": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0.0
+    },
+    "mcdc": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0.0
+    },
+    "functions": {
+      "count": 93,
+      "covered": 90,
+      "percent": 96.7741935483871
+    },
+    "instantiations": {
+      "count": 162,
+      "covered": 145,
+      "percent": 89.50617283950618
+    },
+    "lines": {
+      "count": 1154,
+      "covered": 1121,
+      "percent": 97.14038128249567
+    },
+    "regions": {
+      "count": 1855,
+      "covered": 1817,
+      "notcovered": 38,
+      "percent": 97.95148247978437
+    }
+  },
+  "production_emitted_functions": {
+    "covered": 121,
+    "total": 138
+  },
+  "production_distinct_functions_by_first_code_region": {
+    "covered": 66,
+    "total": 69
+  },
+  "production_distinct_code_regions_by_coordinates": {
+    "covered": 942,
+    "total": 963
+  },
+  "uncovered_production_regions": [
+    {
+      "coordinates": [
+        502,
+        5,
+        502,
+        95
+      ],
+      "source": "    pub(crate) fn take_sequenced_feedback(&mut self) -> Option<(ParameterFeedback, u64, bool)> {"
+    },
+    {
+      "coordinates": [
+        503,
+        9,
+        503,
+        13
+      ],
+      "source": "        self.current_feedback().map(|feedback| {"
+    },
+    {
+      "coordinates": [
+        503,
+        14,
+        503,
+        30
+      ],
+      "source": "        self.current_feedback().map(|feedback| {"
+    },
+    {
+      "coordinates": [
+        503,
+        33,
+        503,
+        36
+      ],
+      "source": "        self.current_feedback().map(|feedback| {"
+    },
+    {
+      "coordinates": [
+        503,
+        48,
+        503,
+        49
+      ],
+      "source": "        self.current_feedback().map(|feedback| {"
+    },
+    {
+      "coordinates": [
+        504,
+        13,
+        508,
+        14
+      ],
+      "source": "            ("
+    },
+    {
+      "coordinates": [
+        505,
+        17,
+        505,
+        35
+      ],
+      "source": "                feedback.parameter,"
+    },
+    {
+      "coordinates": [
+        509,
+        9,
+        509,
+        10
+      ],
+      "source": "        })"
+    },
+    {
+      "coordinates": [
+        510,
+        5,
+        510,
+        6
+      ],
+      "source": "    }"
+    },
+    {
+      "coordinates": [
+        517,
+        13,
+        517,
+        14
+      ],
+      "source": "            }"
+    },
+    {
+      "coordinates": [
+        519,
+        9,
+        519,
+        13
+      ],
+      "source": "        None"
+    },
+    {
+      "coordinates": [
+        525,
+        5,
+        525,
+        50
+      ],
+      "source": "    pub(crate) fn event_slots(&mut self) -> usize {"
+    },
+    {
+      "coordinates": [
+        526,
+        9,
+        526,
+        20
+      ],
+      "source": "        self.events.slots()"
+    },
+    {
+      "coordinates": [
+        526,
+        21,
+        526,
+        26
+      ],
+      "source": "        self.events.slots()"
+    },
+    {
+      "coordinates": [
+        527,
+        5,
+        527,
+        6
+      ],
+      "source": "    }"
+    },
+    {
+      "coordinates": [
+        558,
+        13,
+        558,
+        14
+      ],
+      "source": "            }"
+    },
+    {
+      "coordinates": [
+        746,
+        97,
+        749,
+        14
+      ],
+      "source": "            if event.epoch == self.epoch.load(Ordering::Relaxed) && event.command_sequence != 0 {"
+    },
+    {
+      "coordinates": [
+        759,
+        27,
+        765,
+        10
+      ],
+      "source": "        if cancelled != 0 {"
+    },
+    {
+      "coordinates": [
+        763,
+        13,
+        763,
+        28
+      ],
+      "source": "            self.settlement"
+    },
+    {
+      "coordinates": [
+        764,
+        18,
+        764,
+        23
+      ],
+      "source": "                .store((cancelled << 1) | 1, Ordering::Release);"
+    },
+    {
+      "coordinates": [
+        882,
+        78,
+        882,
+        79
+      ],
+      "source": "            self.apply_event(event.event, event.frame_offset, 0, &mut report)?;"
+    }
+  ]
+}

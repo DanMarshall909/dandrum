@@ -1,0 +1,33 @@
+{
+  "verdict": "PASS",
+  "candidate_manifest_sha256": "b48133815b61d239c6d2f3e0d2b735d70f2756e98df01d42508566149d5c2422",
+  "base": "d1662501a375710d9892371453c2614ad96518ed",
+  "review_sha256": "5b787e6d14fcc3403fd39e2236fa5d514c8c02dda2a0c7bf852e6d599078364d",
+  "scope": "Task3.3 trusted-owner runtime prerequisite only; not whole task/editor/CLAP/beta completion",
+  "findings": [],
+  "resolved_findings": [
+    {
+      "id": "R1",
+      "outcome": "Real velocity-to-level child and independently calculated signed PCM prove latest coalesced velocity in both orders and retained unheard released-tap velocity."
+    }
+  ],
+  "required_corrections": [],
+  "publication": "Approved only within exact finite envelope and same-reviewer final metadata addendum before commit",
+  "provenance_limits": [
+    "Four early intermediate production snapshots unrecovered; no complete contemporaneous archive claim",
+    "API-absence compiler RED is not executed assertion RED",
+    "R1 is passing characterization; no fabricated RED or mutation"
+  ],
+  "verification": {
+    "host_tests": 92,
+    "editor_tests": 17,
+    "focused_llvm_tests": 49,
+    "actual_sourcefree_release_tests": 92,
+    "actual_inputs_matched": 589,
+    "actual_binary_hashes_matched": 8,
+    "profile": "Dev/test opt0 debuginfo0; sourcefree default release separately verified",
+    "mutation": "excluded by user"
+  },
+  "reviewer_source_git_cache_mutations": false,
+  "reviewer_tests_or_builds": false
+}
