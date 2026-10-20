@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "base": "6df759172f51556356a8901c53fedfa25ff9106f",
+  "scope": "Task 3.2 first native acquisition/ownership tracer only",
+  "task_3_2_complete": false,
+  "full_beta_complete": false,
+  "sources": {
+    "CMakeLists.txt": "cbd35159ea1082c263a1484a0829ac8b81e114891c2b7d16d1999f1e82e61d4b",
+    "src/trigger-editor/Cargo.toml": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c",
+    "src/trigger-editor/Cargo.lock": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814",
+    "src/trigger-editor/src/lib.rs": "ce55f6e5ad9617dcac9d3aa017145612f0bfcbd9ccb83a866149c60e5419e27b",
+    "src/trigger-editor/src/native_x11.rs": "a407d045b0a413c4c9a53a854cf9191976cac692f5c9df82ca1339e0144a0dd5",
+    "src/trigger-editor/tests/internal/native_x11.rs": "26b3e952b2d436adbfa2b5cea571f2d08d945864230f06cbf92df7f0d1f822e4",
+    "src/trigger-editor/tests/internal/assets.rs": "dace7c0861a8eebb2b4ca36891809bb7f9d63367122ecb44faed21aa41db4c4e"
+  },
+  "author_artifacts": 698,
+  "author_archive_sha256": "e93aa990e9e62f11e023889ba5483885f94410d4f846fc61cb2d49215bf6e487",
+  "coverage": {
+    "native_owner": {
+      "lines": "129/134 (96.26865671641791%)",
+      "functions": "11/13 (84.61538461538461%)",
+      "regions": "184/203 (90.64039408866995%)",
+      "fast_owner_lines": "0/134",
+      "exclusions": [],
+      "branch_instrumentation": "Not enabled; LLVM reports zero branch counters. No branch coverage claim."
+    },
+    "assets_fast": {
+      "lines": "52/52 (100%)",
+      "regions": "86/87 (98.85057471264368%)"
+    },
+    "gaps": [
+      {
+        "lines": [
+          79,
+          80
+        ],
+        "case": "IPC registration refusal cleanup",
+        "reachability": "A public create cannot arrange duplicate registration on its fresh private manager with the pinned Wry built-in IPC callback disabled; retained graceful fallback, no invented manager seam."
+      },
+      {
+        "lines": [
+          113
+        ],
+        "case": "Non-X11 GDK display rejection",
+        "reachability": "Publicly reachable on another GDK backend; selected machine has X11 only and no Wayland fixture. Not globally unreachable."
+      },
+      {
+        "lines": [
+          116
+        ],
+        "case": "New checked X11 connection fails",
+        "reachability": "Requires auth/server loss/refusal while GTK already has a usable display; not safely induced on shared real server. Happens before native allocation."
+      },
+      {
+        "lines": [
+          170
+        ],
+        "case": "Checked reparent request enqueue fails with a transport IO error",
+        "reachability": "Requires connection transport failure during construction. Actual checked server BadWindow reply at172 is covered after full WebKit creation, including native/container/resource closure cleanup."
+      },
+      {
+        "regions": "Other unhit region directions",
+        "cases": [
+          "GDK default display absent / realized window cast failure under the fixed initialized-X11 construction",
+          "parent wrong-screen or unsupported depth on the single-screen/default-depth fixture",
+          "protocol transport errors or parent loss between separate validation replies",
+          "non-value WebKit JavascriptResult conversion",
+          "generic create instantiations rejected before callback construction"
+        ]
+      },
+      {
+        "dependency_limit": "No Wry-internal post-WebKit-allocation Err was reproduced; shared-context duplicate is a pre-WebKit builder error."
+      }
+    ]
+  },
+  "checks": {
+    "registered_ctests": "3/3",
+    "source_free_guard_exit": 0,
+    "source_free_guard_seconds": 89.453992,
+    "formatting": "pass",
+    "clippy_warnings_denied": "pass",
+    "mutation": "excluded by user"
+  },
+  "review": {
+    "status": "PASS",
+    "manifest_sha256": "845fda27496326e147a12ed1d44688e2bca4aa935c67f752d1179938e4606757",
+    "review_sha256": "8967402791351a98e5f11dc878c2de3eeb2532b15d9f1f21c2497de9c61e3671",
+    "verdict_sha256": "4761c3f6b90ce0bdbc9c5bcab9692512cc9e53a0e696f088b690574cc337346b"
+  },
+  "publication": {
+    "target": "origin/feat/juce-free-host-adapters",
+    "status": "pending normal hooks"
+  },
+  "main": {
+    "head": "68dd6553a2f07e71e2fe09ee1d7094d518559937",
+    "changes_authorized": false
+  }
+}

@@ -718,3 +718,45 @@ retains exact source, logs, commands and coverage accounting. Independent
 completion review passed for the exact asset component; its review and verdict
 are retained with the receipt. Final metadata verification and normal-hook
 publication remain the next gates.
+
+
+## First native Trigger editor owner — 20 October 2026
+
+The asset component was normally published at 6df7591. The next isolated part
+of task 3.2 adds an optional Linux-X11 Wry owner: it validates the real host
+parent, creates its own initially hidden 1200 by 800 child, loads fixture local
+JavaScript and IPC, and services at most 64 nonblocking GTK iterations per host
+tick. Actual X11 queries and browser/callback weak references prove cleanup,
+including checked reparent failure after WebKit construction. Explicitly owned
+IPC disconnection prevents a retained browser cycle; synchronizing GDK after
+close makes destruction visible to the host's independent X11 connection.
+Rust drops fields in declaration order, so the browser precedes its GTK container.
+
+The registered fast, production-package and real native lanes pass 3/3. Final
+formatting, Clippy with warnings denied, native build and source-bound LLVM
+checks pass. Native coverage is 129/134 lines, 11/13 functions and 184/203 regions,
+with no exclusions or branch claim. External/invariant error gaps are retained.
+Review strengthened geometry to independent literal dimensions; initial lint
+findings were fixed through shared test-fixture wiring without suppression.
+The affected maintained source-free guard also passes from hash-matched RAM
+inputs; original caches and every raw evidence byte are preserved.
+Three attempts stopped at storage floors. After explicit user approval, only
+the named 30 GiB debug cache was removed and the RAM guard cache was preserved
+on disk with matching hashes and its logical path retained. The final guard
+passes at its default profile; interruption and resource receipts remain explicit.
+
+The duplicate-protocol calibration rejects in Wry's builder before WebKit
+allocation. A stricter diagnostic disproved the earlier investigation claim;
+the separate checked-reparent fixture supplies the actual post-WebKit rollback
+proof. Historical source-capture limits remain explicit.
+
+[Portable evidence](evidence/trigger-native-owner-2026-10-20/receipt.json)
+retains commands, source snapshots/hashes, full raw archives and dependency/licence
+audit. Independent completion review passed for the exact native-owner component;
+its review and verdict are retained with the receipt. Final metadata verification
+and normal-hook publication remain the next gates. Task 3.2 remains unchecked for production React/font loading, local-only
+browser policy, show/hide, size/order/API lifecycle and actual CLAP main-thread
+integration. No native audio/session continuity claim is made. The full beta
+remains active through CLAP and the later VST3, standalone, named-DAW and installed
+offline/native acceptance increments. Main remains clean at 68dd655, mutation
+is excluded, and reusable caches are preserved.

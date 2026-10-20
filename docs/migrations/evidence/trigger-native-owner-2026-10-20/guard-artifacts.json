@@ -1,0 +1,236 @@
+[
+  {
+    "original": "guard-default-interrupted/guard.log",
+    "stored": "guard-default-interrupted/guard.log.gz",
+    "bytes": 2140,
+    "sha256": "5f550f1f85cdde275669443d2ad57491bcf4ff99a3dba8ac35eda61f784199fb"
+  },
+  {
+    "original": "guard-default-interrupted/run.json",
+    "stored": "guard-default-interrupted/run.json.gz",
+    "bytes": 11367,
+    "sha256": "7fa03e543c2df79a871c12ea9b669c9eb2b2d9060a885a4869523f71752b0837"
+  },
+  {
+    "original": "guard-default-interrupted/source-manifest.json",
+    "stored": "guard-default-interrupted/source-manifest.json.gz",
+    "bytes": 67002,
+    "sha256": "f58b507ab1046207230a3ac0d4c2830ce674af8169f0e192798f19338e28a4a9"
+  },
+  {
+    "original": "guard-default-interrupted/stage-log-provenance.json",
+    "stored": "guard-default-interrupted/stage-log-provenance.json.gz",
+    "bytes": 1221,
+    "sha256": "29282364da03ebb79afb5a17415c9162489e72cf99e93146d1bed3f15e0becaf"
+  },
+  {
+    "original": "guard-default-interrupted/trigger-editor-build.log",
+    "stored": "guard-default-interrupted/trigger-editor-build.log.gz",
+    "bytes": 1610,
+    "sha256": "da60ad0864b689b52ac40de2e297df5c94a8d463ebea534e02fcbff8db1e119f"
+  },
+  {
+    "original": "guard-default-interrupted/trigger-editor-fixture-runtime.log",
+    "stored": "guard-default-interrupted/trigger-editor-fixture-runtime.log.gz",
+    "bytes": 815,
+    "sha256": "6c14eccddd62d36d02a6c6342458b700ee202300170ddd9328cca4ae2989775c"
+  },
+  {
+    "original": "guard-default-interrupted/trigger-editor-resource-rebuild.log",
+    "stored": "guard-default-interrupted/trigger-editor-resource-rebuild.log.gz",
+    "bytes": 289,
+    "sha256": "ed15d31b694c756e74b63a5c692444e5f852be707a854ec58685b2d26825adac"
+  },
+  {
+    "original": "guard-default-interrupted/trigger-editor-targets.log",
+    "stored": "guard-default-interrupted/trigger-editor-targets.log.gz",
+    "bytes": 2718,
+    "sha256": "a2814bde6d8fa46c8ac03ea916df5db2b263b452ed7c65fa6b929ac87044b372"
+  },
+  {
+    "original": "guard-default-interrupted/trigger-editor.log",
+    "stored": "guard-default-interrupted/trigger-editor.log.gz",
+    "bytes": 720,
+    "sha256": "3eec532f06034ecdb3f8bbb8e40a0a923f131b0a4ab39f6721035459644c0436"
+  },
+  {
+    "original": "guard-default-interrupted/trigger-host-dependencies.log",
+    "stored": "guard-default-interrupted/trigger-host-dependencies.log.gz",
+    "bytes": 4674,
+    "sha256": "8944e32f37df0d766ce4e0ca94840c1ea0181dc8dcc98182ec096811554da6e6"
+  },
+  {
+    "original": "guard-default-interrupted/trigger-host-test-inventory.log",
+    "stored": "guard-default-interrupted/trigger-host-test-inventory.log.gz",
+    "bytes": 18231,
+    "sha256": "6dcbe58f6c566ac304cc3314a9976d7c4afafbd557cc7f62258be97076eeea6f"
+  },
+  {
+    "original": "guard-compact-interrupted/guard.log",
+    "stored": "guard-compact-interrupted/guard.log.gz",
+    "bytes": 2140,
+    "sha256": "5f550f1f85cdde275669443d2ad57491bcf4ff99a3dba8ac35eda61f784199fb"
+  },
+  {
+    "original": "guard-compact-interrupted/run.json",
+    "stored": "guard-compact-interrupted/run.json.gz",
+    "bytes": 14377,
+    "sha256": "befaddc3fc944c37bc61d330c4bc8e23472670963d0a10a59dda42e7e0f09fd5"
+  },
+  {
+    "original": "guard-compact-interrupted/source-manifest.json",
+    "stored": "guard-compact-interrupted/source-manifest.json.gz",
+    "bytes": 67002,
+    "sha256": "f58b507ab1046207230a3ac0d4c2830ce674af8169f0e192798f19338e28a4a9"
+  },
+  {
+    "original": "guard-compact-interrupted/trigger-editor-build.log",
+    "stored": "guard-compact-interrupted/trigger-editor-build.log.gz",
+    "bytes": 945,
+    "sha256": "049071b99ba430b9a56ac7a004cf510fd33e6973cb7926bf7979658925eae780"
+  },
+  {
+    "original": "guard-compact-interrupted/trigger-editor-resource-rebuild.log",
+    "stored": "guard-compact-interrupted/trigger-editor-resource-rebuild.log.gz",
+    "bytes": 289,
+    "sha256": "5b637f4b5ec62cd08e4bda480747d861e19fafda8368153c74c83ee387fc94b1"
+  },
+  {
+    "original": "guard-compact-interrupted/trigger-editor-targets.log",
+    "stored": "guard-compact-interrupted/trigger-editor-targets.log.gz",
+    "bytes": 2718,
+    "sha256": "a2814bde6d8fa46c8ac03ea916df5db2b263b452ed7c65fa6b929ac87044b372"
+  },
+  {
+    "original": "guard-compact-interrupted/trigger-editor.log",
+    "stored": "guard-compact-interrupted/trigger-editor.log.gz",
+    "bytes": 720,
+    "sha256": "4cf20ef551f67a0186b813eb6cbb3f0dbb440036edacc4eed1642664b687eb34"
+  },
+  {
+    "original": "guard-compact-interrupted/trigger-host-dependencies.log",
+    "stored": "guard-compact-interrupted/trigger-host-dependencies.log.gz",
+    "bytes": 4674,
+    "sha256": "f51a3bd78fd82d187bf26694f8a7d58ef7d5e23b53431cb226d568384022a565"
+  },
+  {
+    "original": "guard-compact-interrupted/trigger-host-test-inventory.log",
+    "stored": "guard-compact-interrupted/trigger-host-test-inventory.log.gz",
+    "bytes": 18231,
+    "sha256": "2fc0756ea0df5486ebd20ae398c53ca9e69c0e8a33c213ac023bc587e56bd0ef"
+  },
+  {
+    "original": "guard-compact-interrupted-2/guard.log",
+    "stored": "guard-compact-interrupted-2/guard.log.gz",
+    "bytes": 2140,
+    "sha256": "5f550f1f85cdde275669443d2ad57491bcf4ff99a3dba8ac35eda61f784199fb"
+  },
+  {
+    "original": "guard-compact-interrupted-2/run.json",
+    "stored": "guard-compact-interrupted-2/run.json.gz",
+    "bytes": 10793,
+    "sha256": "8cff9e2a2857e79bd903cbfcc3b384e52f664ca5157ad0aba8238e4b41c33603"
+  },
+  {
+    "original": "guard-compact-interrupted-2/source-manifest.json",
+    "stored": "guard-compact-interrupted-2/source-manifest.json.gz",
+    "bytes": 67002,
+    "sha256": "f58b507ab1046207230a3ac0d4c2830ce674af8169f0e192798f19338e28a4a9"
+  },
+  {
+    "original": "guard-compact-interrupted-2/trigger-editor-build.log",
+    "stored": "guard-compact-interrupted-2/trigger-editor-build.log.gz",
+    "bytes": 945,
+    "sha256": "020a44afb80f09b04b2105e6854bc27ab3434f106bffa3430f0c89644351da95"
+  },
+  {
+    "original": "guard-compact-interrupted-2/trigger-editor-resource-rebuild.log",
+    "stored": "guard-compact-interrupted-2/trigger-editor-resource-rebuild.log.gz",
+    "bytes": 289,
+    "sha256": "5b637f4b5ec62cd08e4bda480747d861e19fafda8368153c74c83ee387fc94b1"
+  },
+  {
+    "original": "guard-compact-interrupted-2/trigger-editor-targets.log",
+    "stored": "guard-compact-interrupted-2/trigger-editor-targets.log.gz",
+    "bytes": 2718,
+    "sha256": "a2814bde6d8fa46c8ac03ea916df5db2b263b452ed7c65fa6b929ac87044b372"
+  },
+  {
+    "original": "guard-compact-interrupted-2/trigger-editor.log",
+    "stored": "guard-compact-interrupted-2/trigger-editor.log.gz",
+    "bytes": 720,
+    "sha256": "ab2734c8210e96e869788ddb72c5e67b4c69f3558b2c11d4f5e35d4a875e24e3"
+  },
+  {
+    "original": "guard-compact-interrupted-2/trigger-host-dependencies.log",
+    "stored": "guard-compact-interrupted-2/trigger-host-dependencies.log.gz",
+    "bytes": 4674,
+    "sha256": "5ff47320d155ac9960a68009b316dbc4e7c5cb09abbf41c5247e23379068e2b9"
+  },
+  {
+    "original": "guard-compact-interrupted-2/trigger-host-test-inventory.log",
+    "stored": "guard-compact-interrupted-2/trigger-host-test-inventory.log.gz",
+    "bytes": 18231,
+    "sha256": "4279b2b2c4d446a3494af7f863dcf04f4c0065f60203c7d60d873ba63092ff4e"
+  },
+  {
+    "original": "guard/guard.log",
+    "stored": "guard/guard.log.gz",
+    "bytes": 209,
+    "sha256": "4b92e48647bf55427ff64aed5a4d918df2575b71d5cc3e4e68948865c3ba92e6"
+  },
+  {
+    "original": "guard/run.json",
+    "stored": "guard/run.json.gz",
+    "bytes": 15184,
+    "sha256": "bc78567c5dee74b9b3b394878a3edb9a63cdf46237fe2e2fd5b6b2246bb6bf6c"
+  },
+  {
+    "original": "guard/source-manifest.json",
+    "stored": "guard/source-manifest.json.gz",
+    "bytes": 67002,
+    "sha256": "f58b507ab1046207230a3ac0d4c2830ce674af8169f0e192798f19338e28a4a9"
+  },
+  {
+    "original": "guard/trigger-editor-build.log",
+    "stored": "guard/trigger-editor-build.log.gz",
+    "bytes": 945,
+    "sha256": "6f79db65b9f72f785dd8bcceffe77af9b8029dcc13a71fcaf3c50f62861ff6f7"
+  },
+  {
+    "original": "guard/trigger-editor-fixture-runtime.log",
+    "stored": "guard/trigger-editor-fixture-runtime.log.gz",
+    "bytes": 815,
+    "sha256": "d08ce8a4dd3d50670b993f109258624320c8986ea42a7ec70bd7a2dbc787d100"
+  },
+  {
+    "original": "guard/trigger-editor-resource-rebuild.log",
+    "stored": "guard/trigger-editor-resource-rebuild.log.gz",
+    "bytes": 289,
+    "sha256": "5b637f4b5ec62cd08e4bda480747d861e19fafda8368153c74c83ee387fc94b1"
+  },
+  {
+    "original": "guard/trigger-editor-targets.log",
+    "stored": "guard/trigger-editor-targets.log.gz",
+    "bytes": 2718,
+    "sha256": "a2814bde6d8fa46c8ac03ea916df5db2b263b452ed7c65fa6b929ac87044b372"
+  },
+  {
+    "original": "guard/trigger-editor.log",
+    "stored": "guard/trigger-editor.log.gz",
+    "bytes": 720,
+    "sha256": "3b4a040acb6965e8559a2a8105cc1878973c93cf04e010a7550dc32a1b9f04b1"
+  },
+  {
+    "original": "guard/trigger-host-dependencies.log",
+    "stored": "guard/trigger-host-dependencies.log.gz",
+    "bytes": 4674,
+    "sha256": "a48898c37ed0acb224d46970b78724e88f7f1f47309ef944ee3b6cca7af0145a"
+  },
+  {
+    "original": "guard/trigger-host-test-inventory.log",
+    "stored": "guard/trigger-host-test-inventory.log.gz",
+    "bytes": 18231,
+    "sha256": "bfffd110ada5c794caa4227073f6841338a492af20a6b89543a00f227633c8e9"
+  }
+]

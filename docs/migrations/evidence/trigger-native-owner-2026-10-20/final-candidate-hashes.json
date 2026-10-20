@@ -1,0 +1,9 @@
+{
+  "CMakeLists.txt": "cbd35159ea1082c263a1484a0829ac8b81e114891c2b7d16d1999f1e82e61d4b",
+  "src/trigger-editor/Cargo.toml": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c",
+  "src/trigger-editor/Cargo.lock": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814",
+  "src/trigger-editor/src/lib.rs": "ce55f6e5ad9617dcac9d3aa017145612f0bfcbd9ccb83a866149c60e5419e27b",
+  "src/trigger-editor/src/native_x11.rs": "a407d045b0a413c4c9a53a854cf9191976cac692f5c9df82ca1339e0144a0dd5",
+  "src/trigger-editor/tests/internal/native_x11.rs": "26b3e952b2d436adbfa2b5cea571f2d08d945864230f06cbf92df7f0d1f822e4",
+  "src/trigger-editor/tests/internal/assets.rs": "dace7c0861a8eebb2b4ca36891809bb7f9d63367122ecb44faed21aa41db4c4e"
+}

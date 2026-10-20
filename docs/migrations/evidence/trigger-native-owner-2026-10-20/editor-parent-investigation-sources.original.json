@@ -1,0 +1,67 @@
+[
+  {
+    "path": "/home/dan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wry-0.57.0/src/lib.rs",
+    "bytes": 102979,
+    "sha256": "f5c9e28fbb1b6a4ddfed7ddface796a9e91689e8663457ed69b651ad00149ba7"
+  },
+  {
+    "path": "/home/dan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wry-0.57.0/src/webkitgtk/mod.rs",
+    "bytes": 40597,
+    "sha256": "20a4064b352747b46d7e15ae6962922dfa85017660e109e87e255219c6ee2017"
+  },
+  {
+    "path": "/home/dan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wry-0.57.0/src/webkitgtk/web_context.rs",
+    "bytes": 13946,
+    "sha256": "ef43edb59e19e60743c7858be846cac23ce8e7a188f77b12ac7e0a82a907628f"
+  },
+  {
+    "path": "/home/dan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wry-0.57.0/src/web_context.rs",
+    "bytes": 3591,
+    "sha256": "dd9912d669f3a5de10aeda7b8e1361751a1137a602385d31964439f101773aac"
+  },
+  {
+    "path": "/home/dan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gdkx11-0.18.2/src/auto/x11_display.rs",
+    "bytes": 5862,
+    "sha256": "184132c37d04197136b088513f5d53b2a149bcd2d831b2f18ae17d053bff1379"
+  },
+  {
+    "path": "/home/dan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gdkx11-0.18.2/src/auto/x11_window.rs",
+    "bytes": 3720,
+    "sha256": "ceb2a58db0565b72c23a9336edabd164dc14587cb63fe46034acd8e43556b6ab"
+  },
+  {
+    "path": "/home/dan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gtk-0.18.2/src/rt.rs",
+    "bytes": 5164,
+    "sha256": "192a109c1f733550aad37a46ef714da0a38897db4087dae198fdc4907c923e77"
+  },
+  {
+    "path": "/home/dan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/x11rb-0.13.2/src/cookie.rs",
+    "bytes": 15957,
+    "sha256": "bc17c9b822d7742fba49ed45e2407a98606464b1af367c9976743a8e95459729"
+  },
+  {
+    "path": "/home/dan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/x11rb-0.13.2/src/protocol/xproto.rs",
+    "bytes": 226691,
+    "sha256": "b1b26e377c65d30df4d37ddcf91abfc823fb1fbf8293ce089957bdd333a2f376"
+  },
+  {
+    "path": "/home/dan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/x11rb-0.13.2/src/rust_connection/mod.rs",
+    "bytes": 33466,
+    "sha256": "b17b9452b2e5f7498268fba5c60ffd9c9d5cb91046a9365f5c5762a03cb1aaf8"
+  },
+  {
+    "path": "/usr/share/gir-1.0/GdkX11-3.0.gir",
+    "bytes": 122021,
+    "sha256": "2eebeb37b89a62f2c440c7a979501eaba2c5da57dbc5d50e7ae9de18afd187ea"
+  },
+  {
+    "path": "/usr/lib/x86_64-linux-gnu/libgdk-3.so.0",
+    "bytes": 1068344,
+    "sha256": "65444438dce4b145a61cdf9ccee7dd3feb2ae249c939056eff89c04d8766e5a7"
+  },
+  {
+    "path": "/tmp/dandrum-lanes/wry-probe/src/main.rs",
+    "bytes": 3800,
+    "sha256": "bf2894cadf2865fecba986ff4231c201845e7aa585ec15e6255af1843dbeeb7f"
+  }
+]

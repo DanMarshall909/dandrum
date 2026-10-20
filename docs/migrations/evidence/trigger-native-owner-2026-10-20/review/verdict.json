@@ -1,0 +1,26 @@
+{
+  "verdict": "PASS",
+  "scope": "First task 3.2 native X11 ownership component only",
+  "base": "6df759172f51556356a8901c53fedfa25ff9106f",
+  "current": "6df759172f51556356a8901c53fedfa25ff9106f",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "6df759172f51556356a8901c53fedfa25ff9106f",
+  "integration_base": "6df759172f51556356a8901c53fedfa25ff9106f",
+  "manifest_sha256": "845fda27496326e147a12ed1d44688e2bca4aa935c67f752d1179938e4606757",
+  "manifest_paths": 70,
+  "manifest_independently_reconstructed": true,
+  "resolved_findings": [
+    "R1: Native X11 geometry now asserts literal (0, 0, 1200, 800), independently of production constants."
+  ],
+  "actionable_findings": [],
+  "task_3_2_complete": false,
+  "full_beta_complete": false,
+  "publication_envelope": "Only the exact five metadata transformations and finite validation/normal-hook/unchanged-upstream/normal-push operations declared in review-packet.md; exact metadata-only addendum required before commit.",
+  "limitations": [
+    "Native owner coverage is 129/134 lines with disclosed external-error and invariant gaps; no branch or 100% coverage claim.",
+    "Intermediate IPC-failure source snapshot is unavailable and disclosed; original stub/external-script REDs and canonical teardown RED have source snapshots.",
+    "Duplicate custom protocol tests a pre-WebKit builder error; separate checked reparent proves post-WebKit edge rollback.",
+    "Production React, network policy, full GUI lifecycle, CLAP integration, session/audio continuity and installed/DAW acceptance remain open.",
+    "Mutation is excluded by recorded user direction; no passing mutation result is claimed."
+  ]
+}

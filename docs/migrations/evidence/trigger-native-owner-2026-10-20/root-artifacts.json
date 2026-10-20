@@ -1,0 +1,32 @@
+[
+  {
+    "original": "approved-cleanup.json",
+    "stored": "approved-cleanup.json.gz",
+    "bytes": 714,
+    "sha256": "a834832d4d4ef15ccaa7bc114cd2b86af8be81c93e623359071505f05b9f4595"
+  },
+  {
+    "original": "incremental-relocation.json",
+    "stored": "incremental-relocation.json.gz",
+    "bytes": 685290,
+    "sha256": "a4023e131532efdc8b0486a707d00da8e27b62544c9d071c19c9717a80f4c50e"
+  },
+  {
+    "original": "guard-cache-relocation.json",
+    "stored": "guard-cache-relocation.json.gz",
+    "bytes": 1034479,
+    "sha256": "16266c7a84f4eeb7bef3573c3202b5e2631aeef44a6e89bf679f8c4277e70fa4"
+  },
+  {
+    "original": "root-final-native-build.json",
+    "stored": "root-final-native-build.json.gz",
+    "bytes": 1316,
+    "sha256": "fba5c42077c6bfc5f0eeeebdebce6d4b4688c692749b32b67fa2a6b9617ee4e9"
+  },
+  {
+    "original": "root-final-native-build.log",
+    "stored": "root-final-native-build.log.gz",
+    "bytes": 163,
+    "sha256": "4620ce2a55088c6253faa5d2fecc678f91f0977405ca84b739544e8269f63993"
+  }
+]

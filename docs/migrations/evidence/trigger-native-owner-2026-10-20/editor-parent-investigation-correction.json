@@ -1,0 +1,12 @@
+{
+  "corrected_at_utc": "2026-10-20T06:15:18.995060+00:00",
+  "operation": "Source/log read-only reconstruction; external investigation report and manifests corrected only; no tests/builds/probes run",
+  "original_manifest": "/tmp/dandrum-evidence/editor-parent-investigation-sources.original.json",
+  "cached_source_hashes_changed_since_original": [],
+  "original_claim": "shared-context duplicate reaches ContextDuplicateCustomProtocol after WebKit allocation",
+  "status": "superseded: public with_custom_protocol records DuplicateCustomProtocol; build_gtk returns before backend allocation",
+  "diagnostic_log": "/tmp/dandrum-lanes/evidence-native-editor/specific-wry-diagnostic.log",
+  "post_webkit_edge_log": "/tmp/dandrum-lanes/evidence-native-editor/post-webkit-resource-native.log",
+  "build_binding_limit": "Current source hashes are inspected snapshots, not a reconstructed historical build-source identity",
+  "report_sha256": "cdc2052290e71a02bce60efb8a7a1db0cfa9e530f627d262a82387a7da7d0da3"
+}

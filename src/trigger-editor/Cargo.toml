@@ -6,3 +6,14 @@ publish = false
 
 [lib]
 name = "dandrum_trigger_editor"
+
+[features]
+default = []
+native-x11 = ["dep:wry", "dep:gtk", "dep:gdkx11", "dep:x11rb", "dep:webkit2gtk"]
+
+[target.'cfg(target_os = "linux")'.dependencies]
+wry = { version = "=0.57.0", default-features = false, features = ["os-webview", "x11"], optional = true }
+gtk = { version = "=0.18.2", optional = true }
+gdkx11 = { version = "=0.18.2", optional = true }
+x11rb = { version = "=0.13.2", default-features = false, optional = true }
+webkit2gtk = { version = "=2.0.2", optional = true }

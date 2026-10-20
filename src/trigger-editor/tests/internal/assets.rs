@@ -1,7 +1,5 @@
 use super::*;
-#[path = "../common/mod.rs"]
-mod common;
-use common::{FILES, Package};
+use crate::test_support::{FILES, Package};
 
 fn fixture() -> Package {
     let package = Package::new();

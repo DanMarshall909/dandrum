@@ -10,6 +10,7 @@ option(DANDRUM_ENABLE_MUTATION_CTEST "Include the long-running cargo-mutants tes
 option(DANDRUM_ENGINE_ONLY "Build only the Rust engine and independent native consumers without JUCE or browser dependencies" OFF)
 option(DANDRUM_CLAP_PROOF "Build the experimental headless CLAP engine proof" OFF)
 option(DANDRUM_TRIGGER_CLAP_EDITOR "Stage the JUCE-free Trigger CLAP editor scaffold" OFF)
+option(DANDRUM_TRIGGER_EDITOR_NATIVE_X11 "Enable the real GTK/Wry X11 editor boundary tests" OFF)
 set(DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR "" CACHE PATH "Prebuilt Trigger editor bundle to stage beside the CLAP proof")
 option(DANDRUM_NATIVE_ONLY "Build the plugin with the native JUCE editor and no browser dependencies" OFF)
 option(DANDRUM_TRIGGER_REACT "Embed the full native-backed React sampler shell" OFF)
@@ -17,6 +18,9 @@ option(DANDRUM_BUILD_FILTER_UI_SPIKES "Build optional Slint and JIVE filter expe
 option(DANDRUM_BUILD_TRIGGER_SLINT "Build the silent Trigger Slint performance preview" OFF)
 option(DANDRUM_SLINT_LIBRARY_ONLY "Build only the Slint design library catalog and its tests" OFF)
 option(DANDRUM_ADVANCED_SAMPLER_ONLY "Build only the native silent advanced sampler and its tests" OFF)
+if(DANDRUM_TRIGGER_EDITOR_NATIVE_X11 AND NOT DANDRUM_TRIGGER_CLAP_EDITOR)
+    message(FATAL_ERROR "DANDRUM_TRIGGER_EDITOR_NATIVE_X11 requires DANDRUM_TRIGGER_CLAP_EDITOR")
+endif()
 if(DANDRUM_CLAP_PROOF)
     if(NOT DANDRUM_ENGINE_ONLY)
         message(FATAL_ERROR "DANDRUM_CLAP_PROOF requires DANDRUM_ENGINE_ONLY")
@@ -348,6 +352,18 @@ if(DANDRUM_CLAP_PROOF)
                 --test packaged_assets -- --ignored)
         set_tests_properties(trigger-editor-packaged-assets PROPERTIES
             LABELS "trigger-editor-boundary" TIMEOUT 60)
+        if(DANDRUM_TRIGGER_EDITOR_NATIVE_X11)
+            add_test(NAME trigger-editor-native-x11
+                COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+                    GDK_BACKEND=x11
+                    ${CARGO_BIN} test --locked --jobs 2
+                    --manifest-path ${RUST_TRIGGER_EDITOR_DIR}/Cargo.toml
+                    --features native-x11 --lib
+                    native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent
+                    -- --ignored --exact --nocapture --test-threads=1)
+            set_tests_properties(trigger-editor-native-x11 PROPERTIES
+                LABELS "trigger-editor-boundary;native-x11" TIMEOUT 60)
+        endif()
         add_custom_target(dandrum-trigger-clap-editor)
         add_dependencies(dandrum-trigger-clap-editor
             dandrum-clap-proof dandrum-trigger-host-rust dandrum-trigger-editor-rust dandrum-trigger-resources)
