@@ -1,0 +1,381 @@
+{
+  "scope": "Task3.3 format-neutral accepted session snapshot projection component",
+  "testedSourceBase": "0f02f575ff2419082370f4d35986d086c03b5d0b",
+  "sourcePaths": {
+    "src/trigger-host/src/parameters.rs": "cfcfed9254885573cd4bf7253865df9d5ab9e5f88c3068492f39d0dc5aabb4b2",
+    "src/trigger-host/src/protocol.rs": "1e12b7c163de522478ffe081cff47385209edc7427d8cf8366bc4271c1483a21",
+    "src/trigger-host/tests/snapshot.rs": "d93cbf1f16216c1413d25027f56d731832b3aad62a20e13603ede69f3179f9be"
+  },
+  "hostTests": 67,
+  "snapshotTests": 5,
+  "checks": {
+    "final-llvm-run": {
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "llvm-cov",
+        "--manifest-path",
+        "src/trigger-host/Cargo.toml",
+        "--offline",
+        "--locked",
+        "--json",
+        "--output-path",
+        "/tmp/dandrum-lanes/evidence-host-snapshot-final-verification/final-llvm.json"
+      ],
+      "cwd": "/tmp/dandrum-lanes/protocol",
+      "exit": 0,
+      "seconds": 6.28193299099803,
+      "pidAndPgid": 3183331,
+      "environment": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/host-snapshot-cov",
+        "CARGO_LLVM_COV_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/host-snapshot-cov",
+        "CARGO_LLVM_COV_BUILD_DIR": "/dev/shm/dandrum-beta-20261020/host-snapshot-cov",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "resourceSamples": [
+        {
+          "disk": 1421402112,
+          "shm": 1943949312,
+          "memAvailable": 14751162368
+        },
+        {
+          "disk": 1421402112,
+          "shm": 1943949312,
+          "memAvailable": 14751105024
+        },
+        {
+          "disk": 1421398016,
+          "shm": 2424324096,
+          "memAvailable": 15126138880
+        },
+        {
+          "disk": 1421357056,
+          "shm": 3483508736,
+          "memAvailable": 16134746112
+        },
+        {
+          "disk": 1421398016,
+          "shm": 3474825216,
+          "memAvailable": 16097820672
+        },
+        {
+          "disk": 1421398016,
+          "shm": 3467980800,
+          "memAvailable": 16035057664
+        },
+        {
+          "disk": 1421398016,
+          "shm": 3459178496,
+          "memAvailable": 15967076352
+        },
+        {
+          "disk": 1421398016,
+          "shm": 3449856000,
+          "memAvailable": 15939289088
+        },
+        {
+          "disk": 1421398016,
+          "shm": 3427508224,
+          "memAvailable": 15978999808
+        },
+        {
+          "disk": 1421398016,
+          "shm": 3419746304,
+          "memAvailable": 15949889536
+        },
+        {
+          "disk": 1421398016,
+          "shm": 3410587648,
+          "memAvailable": 15851782144
+        },
+        {
+          "disk": 1421398016,
+          "shm": 3058814976,
+          "memAvailable": 15419265024
+        },
+        {
+          "disk": 1421398016,
+          "shm": 3014516736,
+          "memAvailable": 15502360576
+        },
+        {
+          "disk": 1421553664,
+          "shm": 3006140416,
+          "memAvailable": 15442714624
+        },
+        {
+          "disk": 1421553664,
+          "shm": 2819035136,
+          "memAvailable": 15203012608
+        },
+        {
+          "disk": 1421553664,
+          "shm": 2799816704,
+          "memAvailable": 15245746176
+        },
+        {
+          "disk": 1421553664,
+          "shm": 2788679680,
+          "memAvailable": 15217840128
+        },
+        {
+          "disk": 1421553664,
+          "shm": 2783145984,
+          "memAvailable": 15115706368
+        },
+        {
+          "disk": 1421549568,
+          "shm": 2491981824,
+          "memAvailable": 14979301376
+        },
+        {
+          "disk": 1421541376,
+          "shm": 2382823424,
+          "memAvailable": 14930173952
+        },
+        {
+          "disk": 1420808192,
+          "shm": 2373632000,
+          "memAvailable": 14852513792
+        },
+        {
+          "disk": 1419993088,
+          "shm": 2366050304,
+          "memAvailable": 14765826048
+        },
+        {
+          "disk": 1419509760,
+          "shm": 2166358016,
+          "memAvailable": 14640631808
+        },
+        {
+          "disk": 1419509760,
+          "shm": 1969750016,
+          "memAvailable": 14422732800
+        },
+        {
+          "disk": 1419382784,
+          "shm": 1969709056,
+          "memAvailable": 14422638592
+        },
+        {
+          "disk": 1425276928,
+          "shm": 1969668096,
+          "memAvailable": 14408081408
+        }
+      ],
+      "stopped": null
+    },
+    "final-clippy": {
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "clippy",
+        "--manifest-path",
+        "src/trigger-host/Cargo.toml",
+        "--offline",
+        "--locked",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "cwd": "/tmp/dandrum-lanes/protocol",
+      "exit": 0,
+      "seconds": 1.2575922739924863,
+      "pidAndPgid": 3185022,
+      "environment": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/host-snapshot-cov",
+        "CARGO_LLVM_COV_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/host-snapshot-cov",
+        "CARGO_LLVM_COV_BUILD_DIR": "/dev/shm/dandrum-beta-20261020/host-snapshot-cov",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "resourceSamples": [
+        {
+          "disk": 1400455168,
+          "shm": 1969532928,
+          "memAvailable": 14857891840
+        },
+        {
+          "disk": 1400455168,
+          "shm": 1969532928,
+          "memAvailable": 14857891840
+        },
+        {
+          "disk": 1400451072,
+          "shm": 1963405312,
+          "memAvailable": 14786125824
+        },
+        {
+          "disk": 1400451072,
+          "shm": 1958739968,
+          "memAvailable": 14732136448
+        },
+        {
+          "disk": 1400451072,
+          "shm": 1950724096,
+          "memAvailable": 14723444736
+        },
+        {
+          "disk": 1400451072,
+          "shm": 1944522752,
+          "memAvailable": 14723764224
+        }
+      ],
+      "stopped": null
+    },
+    "final-format": {
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "fmt",
+        "--manifest-path",
+        "src/trigger-host/Cargo.toml",
+        "--",
+        "--check"
+      ],
+      "cwd": "/tmp/dandrum-lanes/protocol",
+      "exit": 0,
+      "seconds": 0.25200044800294563,
+      "pidAndPgid": 3185081,
+      "environment": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/host-snapshot-cov",
+        "CARGO_LLVM_COV_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/host-snapshot-cov",
+        "CARGO_LLVM_COV_BUILD_DIR": "/dev/shm/dandrum-beta-20261020/host-snapshot-cov",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "resourceSamples": [
+        {
+          "disk": 1400446976,
+          "shm": 1943666688,
+          "memAvailable": 14777921536
+        },
+        {
+          "disk": 1400446976,
+          "shm": 1943666688,
+          "memAvailable": 14777921536
+        }
+      ],
+      "stopped": null
+    },
+    "final-parser": {
+      "command": [
+        "/usr/bin/python3",
+        "/tmp/dandrum-lanes/evidence-host-snapshot-final-verification/parser/calibrate.py"
+      ],
+      "cwd": "/tmp/dandrum-lanes/protocol",
+      "exit": 0,
+      "seconds": 0.7543132009741385,
+      "pidAndPgid": 3185100,
+      "environment": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/host-snapshot-cov",
+        "CARGO_LLVM_COV_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/host-snapshot-cov",
+        "CARGO_LLVM_COV_BUILD_DIR": "/dev/shm/dandrum-beta-20261020/host-snapshot-cov",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "resourceSamples": [
+        {
+          "disk": 1400442880,
+          "shm": 1943666688,
+          "memAvailable": 14763859968
+        },
+        {
+          "disk": 1400442880,
+          "shm": 1943666688,
+          "memAvailable": 14763859968
+        },
+        {
+          "disk": 1400123392,
+          "shm": 1943666688,
+          "memAvailable": 14717853696
+        },
+        {
+          "disk": 1208512512,
+          "shm": 1943666688,
+          "memAvailable": 14846693376
+        }
+      ],
+      "stopped": null
+    }
+  },
+  "coverage": {
+    "parameters": {
+      "functions": "49/49",
+      "lines": "414/415",
+      "regions": "702/714",
+      "inheritedZeroPhysicalLine": 181
+    },
+    "protocol": {
+      "functions": "24/24",
+      "lines": "357/357",
+      "regions": "497/513"
+    },
+    "branchCoverage": "not collected",
+    "qualification": "Distinct source-function/file summaries, not emitted monomorphized record totals; raw report and diagnostic union retained"
+  },
+  "redEvidence": [
+    "Missing intended API compile failure, not runtime assertion",
+    "Absent authored zone ID must remain empty, not invented index",
+    "Valid Linux non-UTF8 provenance must return explicit error rather than panic"
+  ],
+  "authority": "Protocol-private per-connection Arc identity and retained request/command; public native attachment field is ignored as read authority, not claimed universally immutable",
+  "limits": [
+    "Required notes/mapping/jobs/general facade not implemented by this component",
+    "Production parser check is a separate one-off calibration; default source-free Rust tests do not depend on browser tooling",
+    "No actual Wry/CLAP/editor lifecycle, DAW, installed artifact or full-beta acceptance claim",
+    "Affected source-free release/dependency/3CTest qualification reuses the retained fixture; not a fresh complete default-profile guard"
+  ],
+  "rawArtifacts": 119,
+  "portableArtifacts": 114,
+  "review": {
+    "status": "PASS",
+    "manifest_sha256": "e8fe36ad712ffdc6cd4b9f0436151c6523f8d0fa6635dc140b227dcffd8651dd",
+    "review_sha256": "8bf5babf6de72d6ae4c0ee990365615601e27078973f4d4d495380a685997b6b",
+    "verdict_sha256": "0072ae523ed34c04723e5cd7e28e6d5ef610c10d615f1818d3b56cb5e57c34b5"
+  },
+  "task3_2Complete": false,
+  "task3_3Complete": false,
+  "betaComplete": false,
+  "mutations": "excluded by user",
+  "caches": "preserved",
+  "publicationExtensionBase": "dd47ec4635d9bd1e9af6de2f4f82bc77a88083ac",
+  "sourcefree": {
+    "integrationBase": "dd47ec4635d9bd1e9af6de2f4f82bc77a88083ac",
+    "results": [
+      {
+        "gate": "release-build",
+        "exit_code": 0,
+        "elapsed_seconds": 2.5133328670053743
+      },
+      {
+        "gate": "dependencies",
+        "exit_code": 0,
+        "elapsed_seconds": 0.5032606940076221
+      },
+      {
+        "gate": "runtime-ctests",
+        "exit_code": 0,
+        "elapsed_seconds": 5.52880070800893
+      }
+    ],
+    "sourceInputs": 587,
+    "changedInputs": {
+      "src/trigger-host/src/parameters.rs": {
+        "prior_sha256": "2258a171ca23c20bea26c0a638a083b4dd261e8b974f58508a347549e6929660",
+        "current_sha256": "cfcfed9254885573cd4bf7253865df9d5ab9e5f88c3068492f39d0dc5aabb4b2"
+      },
+      "src/trigger-host/src/protocol.rs": {
+        "prior_sha256": "65ccbc6ab9e48d2356ef6ad49c90811109d6f0a38dfe95265a616d8d6222cb7d",
+        "current_sha256": "1e12b7c163de522478ffe081cff47385209edc7427d8cf8366bc4271c1483a21"
+      }
+    },
+    "newInput": "src/trigger-host/tests/snapshot.rs",
+    "allCurrentInputsMatch": true,
+    "absentTrees": [
+      "web",
+      "ui",
+      "third_party"
+    ],
+    "compilerTarget": "/tmp/dandrum-lanes/cache-editor-guard",
+    "qualification": "Affected release rebuild/dependency check/all3runtimeCTests in existing actual source-free fixture; nonincremental disk output. Not a fresh full default-profile guard, actual production React/Wry/CLAP Trigger acceptance or full beta proof.",
+    "cachesPreserved": true,
+    "initialFailedAttempt": "integration.tar.gz:initial/attempt-summary.json"
+  }
+}

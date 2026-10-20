@@ -1,0 +1,15 @@
+{
+  "verdict": "PASS",
+  "scope": "Task 3.3 accepted native snapshot component only",
+  "candidate_manifest_sha256": "e8fe36ad712ffdc6cd4b9f0436151c6523f8d0fa6635dc140b227dcffd8651dd",
+  "base": "dd47ec4635d9bd1e9af6de2f4f82bc77a88083ac",
+  "current": "dd47ec4635d9bd1e9af6de2f4f82bc77a88083ac",
+  "intended_publication_upstream_ref": "origin/feat/juce-free-host-adapters",
+  "intended_publication_upstream_object": "dd47ec4635d9bd1e9af6de2f4f82bc77a88083ac",
+  "lane_has_configured_tracking_upstream": false,
+  "review_sha256": "8bf5babf6de72d6ae4c0ee990365615601e27078973f4d4d495380a685997b6b",
+  "required_corrections": [],
+  "task_3_3_complete": false,
+  "full_beta_complete": false,
+  "publication_condition": "Apply only approved-envelope.json transformations, obtain same-reviewer final-manifest addendum, pass named validations and normal hooks, and require unchanged explicit upstream before normal feature push."
+}

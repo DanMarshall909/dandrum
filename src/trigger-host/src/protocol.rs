@@ -59,6 +59,7 @@ pub struct EditorConnection {
     pub snapshot: SessionSnapshot,
 }
 struct Connection {
+    admission_owner: std::sync::Arc<()>,
     id: u64,
     attachment: Attachment,
     highest_request: u64,
@@ -98,6 +99,7 @@ impl EditorProtocol {
         self.owner = Some(snapshot.instance.clone());
         let id = self.next_attachment;
         self.connections.push(Connection {
+            admission_owner: std::sync::Arc::new(()),
             id,
             attachment,
             highest_request: 0,
@@ -161,6 +163,7 @@ pub struct SessionCommandIdentity {
 
 #[derive(Debug)]
 pub struct AdmittedRequest {
+    admission_owner: std::sync::Arc<()>,
     /// Transport correlation, independent of a structural session request.
     pub request_id: u64,
     pub attachment_id: u64,
@@ -214,6 +217,7 @@ impl EditorProtocol {
         connection.retained.push_back((request_id, command.clone()));
         connection.highest_request = request_id;
         Ok(Admission::New(AdmittedRequest {
+            admission_owner: connection.admission_owner.clone(),
             request_id,
             attachment_id,
             attachment: connection.attachment.clone(),
@@ -454,6 +458,33 @@ impl EditorProtocol {
 
 pub const OUTBOUND_BYTES_LIMIT: usize = 64 * 1024;
 impl EditorProtocol {
+    /// Recover native authority from this protocol's retained admission. Public
+    /// request fields carry correlation, not permission to read another owner.
+    pub(crate) fn admitted_snapshot(
+        &self,
+        session: &InstrumentSession,
+        request: &AdmittedRequest,
+    ) -> Result<(String, SessionSnapshot), ProtocolError> {
+        let connection = self
+            .connections
+            .iter()
+            .find(|connection| {
+                connection.id == request.attachment_id
+                    && std::sync::Arc::ptr_eq(&connection.admission_owner, &request.admission_owner)
+            })
+            .ok_or(ProtocolError::StaleAttachment)?;
+        if !connection
+            .retained
+            .iter()
+            .any(|(id, command)| *id == request.request_id && *command == request.command)
+        {
+            return Err(ProtocolError::StaleRequest);
+        }
+        let snapshot = session
+            .snapshot(&connection.attachment)
+            .map_err(|_| ProtocolError::StaleAttachment)?;
+        Ok((self.instance_id.to_string(), snapshot))
+    }
     pub fn encode_reply(
         &self,
         session: &InstrumentSession,

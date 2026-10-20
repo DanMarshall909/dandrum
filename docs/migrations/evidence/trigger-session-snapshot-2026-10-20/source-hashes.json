@@ -1,0 +1,5 @@
+{
+  "src/trigger-host/src/parameters.rs": "cfcfed9254885573cd4bf7253865df9d5ab9e5f88c3068492f39d0dc5aabb4b2",
+  "src/trigger-host/src/protocol.rs": "1e12b7c163de522478ffe081cff47385209edc7427d8cf8366bc4271c1483a21",
+  "src/trigger-host/tests/snapshot.rs": "d93cbf1f16216c1413d25027f56d731832b3aad62a20e13603ede69f3179f9be"
+}

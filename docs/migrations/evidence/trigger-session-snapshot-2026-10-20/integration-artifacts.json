@@ -1,0 +1,122 @@
+[
+  {
+    "path": "initial/attempt-summary.json",
+    "bytes": 667,
+    "mode": "0o664",
+    "sha256": "d40a2ba610f2df782a85a29a0685d6c9b8455ac528678283ceea54e200bf4c62"
+  },
+  {
+    "path": "initial/dependencies.json",
+    "bytes": 1016,
+    "mode": "0o664",
+    "sha256": "0ff336f645c3e1b3b42557e4c53339aa6236aaaab21f97ff7ae1825972b52732"
+  },
+  {
+    "path": "initial/dependencies.log",
+    "bytes": 4674,
+    "mode": "0o664",
+    "sha256": "77d2b3c90c58395f0afa032c9d2ee6a8cfac70e47ada1681e89e3927f444f605"
+  },
+  {
+    "path": "initial/release-build.json",
+    "bytes": 1606,
+    "mode": "0o664",
+    "sha256": "fdb35b7d900fba21a1d587ffdf173ea35cfd779b0aa8179054edf26252aa744d"
+  },
+  {
+    "path": "initial/release-build.log",
+    "bytes": 1171,
+    "mode": "0o664",
+    "sha256": "8cb8ccf51e96f0fdb9f4dff8bce9a0bfbce44c3af2fa5609f64377190736be19"
+  },
+  {
+    "path": "initial/run-sourcefree.py",
+    "bytes": 4854,
+    "mode": "0o664",
+    "sha256": "fbfbe79936bc76ca0ea87918b4cbdb72f3a22d91fc1c43c6cbd7724e16bb8c84"
+  },
+  {
+    "path": "initial/runtime-ctests.json",
+    "bytes": 1269,
+    "mode": "0o664",
+    "sha256": "7bff87d80964cdeeba5eb93937321887675e2dec1b2b3763db5a92cabf48eb5c"
+  },
+  {
+    "path": "initial/runtime-ctests.log",
+    "bytes": 13465,
+    "mode": "0o664",
+    "sha256": "217ef21c23afccebaaad95e00bd0978b812f131a10318e0d23fda469f9447c7f"
+  },
+  {
+    "path": "initial/source-manifest.json",
+    "bytes": 68110,
+    "mode": "0o664",
+    "sha256": "e04fc360aefe42fa70c65e0a0cc98c608705a362d8f0d94d1c225afdf7567218"
+  },
+  {
+    "path": "retry/dependencies.json",
+    "bytes": 1016,
+    "mode": "0o664",
+    "sha256": "3a1a665f77b194a1a31edbe5361400635c3ee7a92d0f2af8e0942f58af841a27"
+  },
+  {
+    "path": "retry/dependencies.log",
+    "bytes": 4674,
+    "mode": "0o664",
+    "sha256": "77d2b3c90c58395f0afa032c9d2ee6a8cfac70e47ada1681e89e3927f444f605"
+  },
+  {
+    "path": "retry/owned-process-check.json",
+    "bytes": 191,
+    "mode": "0o664",
+    "sha256": "320efa0dda6b826fb2c2efdd9850eaec13174cb9a7a12da3d8a7b92a9f8df73d"
+  },
+  {
+    "path": "retry/receipt.json",
+    "bytes": 1423,
+    "mode": "0o664",
+    "sha256": "f86b3151eef4e9f7763a488c4c2ec8cc83988b9c01fdeb31dade2268a0a30d15"
+  },
+  {
+    "path": "retry/release-build.json",
+    "bytes": 1482,
+    "mode": "0o664",
+    "sha256": "9e90c3ca95592c790dcf65f1a8a3a3deda61b4f735db9907870a22c1e0f77b1c"
+  },
+  {
+    "path": "retry/release-build.log",
+    "bytes": 1171,
+    "mode": "0o664",
+    "sha256": "e62e9b93764efaf0368238fd294aece704078ccfb127cee7fdec99c5de60d5b1"
+  },
+  {
+    "path": "retry/retry-sourcefree.py",
+    "bytes": 5477,
+    "mode": "0o664",
+    "sha256": "4a0956dedd8cdb6aa9381a41a28eee30719aa73423b36b65281cd629908218da"
+  },
+  {
+    "path": "retry/runtime-ctests.json",
+    "bytes": 2272,
+    "mode": "0o664",
+    "sha256": "943f81c5724462d889572593281b99a2c663e8b3498664c50aa278596d340bf7"
+  },
+  {
+    "path": "retry/runtime-ctests.log",
+    "bytes": 16180,
+    "mode": "0o664",
+    "sha256": "e4ae3748af2d0f1515bd5e04d77dccf3ba17f76619e0e0ac43e48aae4171a932"
+  },
+  {
+    "path": "retry/source-manifest.json",
+    "bytes": 68110,
+    "mode": "0o664",
+    "sha256": "e04fc360aefe42fa70c65e0a0cc98c608705a362d8f0d94d1c225afdf7567218"
+  },
+  {
+    "path": "retry/timestamp-invalidation.json",
+    "bytes": 571,
+    "mode": "0o664",
+    "sha256": "0531c33ff5f0bcc529708ef3dde058ed598a117fa65e6607f5f30f33637856c8"
+  }
+]

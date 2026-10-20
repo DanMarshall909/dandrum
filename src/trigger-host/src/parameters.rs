@@ -309,6 +309,112 @@ impl ParameterController {
             .map_err(ParameterError::Protocol)
     }
 
+    /// Project the accepted native session off audio and encode one bounded v1
+    /// reply. This read reuses its admitted editor and never changes history.
+    pub fn sampler_session_reply(
+        &self,
+        request: &AdmittedRequest,
+    ) -> Result<String, ParameterError> {
+        use dandrum_instrument_session::{
+            ACTIVE_REQUEST_LIMIT, ATTACHMENT_LIMIT, CONNECTION_CONTRACT_VERSION, HISTORY_LIMIT,
+            OUTCOME_LIMIT,
+        };
+        use serde_json::{Value, json};
+        let (instance_id, snapshot) = self
+            .protocol
+            .admitted_snapshot(self.host.session(), request)
+            .map_err(ParameterError::Protocol)?;
+        if request.command != EditorCommand::GetSamplerSession {
+            return Err(ParameterError::UnsupportedCommand);
+        }
+        let source_path = self
+            .host
+            .resource_root()
+            .join(crate::ADVANCED_DRUM_KIT_DOCUMENT);
+        let source_path = source_path.to_str().ok_or_else(|| {
+            ParameterError::Host("Trigger resource path cannot be represented as UTF-8".into())
+        })?;
+        let patch =
+            load_kernel_patch_str(&snapshot.yaml).expect("accepted session document is valid");
+        let state = self.parameter_state();
+        let parameters = self.parameters.iter().zip(&state.parameters).map(|(parameter, current)| {
+            let alias = patch.preset_surface().parameters().iter().find(|alias| alias.name() == parameter.id)
+                .expect("accepted Trigger surface retains public aliases");
+            let group = patch.root().ports().iter().find(|port| port.name() == alias.port_name())
+                .and_then(|port| match port.internal_targets() { [target] => Some(target), _ => None })
+                .and_then(|target| patch.root().nodes().iter().find(|node| node.id() == target.node())
+                    .filter(|node| node.definition_ref() == "sample_map_player").map(|_| target))
+                .and_then(|target| target.port().strip_prefix("group_"))
+                .and_then(|suffix| suffix.split_once('_'))
+                .and_then(|(group, _)| group.parse::<u8>().ok()).filter(|group| *group > 0);
+            let mut value = json!({"id":parameter.id,"name":parameter.id,"normalisedValue":current.value,
+                "normalisedDefaultValue":parameter.project(parameter.physical_default).value,
+                "minValue":parameter.physical_min,"maxValue":parameter.physical_max,
+                "scope":if group.is_some() {"sampleGroup"} else {"instrument"}});
+            if let Some(group) = group { value["controlGroup"] = group.into(); }
+            value
+        }).collect::<Vec<_>>();
+        // Omit absent authored optionals, retaining the comparison DTO's default
+        // semantics without manufacturing values or exposing PCM.
+        let present = |mut value: Value| {
+            value
+                .as_object_mut()
+                .expect("DTO is an object")
+                .retain(|_, value| !value.is_null());
+            value
+        };
+        let assets = self.host.session().prepared().sample_assets();
+        let sources = assets.sources().iter().map(|source| {
+            let regions = source.declaration().regions.iter().map(|region| {
+                let loop_settings = region.loop_settings.as_ref().map(|settings| json!({
+                    "mode":settings.mode,"startFrame":settings.start_frame.to_string(),
+                    "endFrame":settings.end_frame.to_string(),"crossfadeMs":settings.crossfade_ms.unwrap_or(0.0)}));
+                present(json!({"id":region.id,"startFrame":region.start_frame.to_string(),"endFrame":region.end_frame.to_string(),
+                    "rootNote":region.root_note,"gainDb":region.gain_db,"pan":region.pan,"reverse":region.reverse,
+                    "fadeInMs":region.fade_in_ms.unwrap_or(0.0),"fadeOutMs":region.fade_out_ms.unwrap_or(0.0),"loop":loop_settings}))
+            }).collect::<Vec<_>>();
+            json!({"id":source.id(),"sampleRateHz":source.sample().sample_rate_hz(),
+                "channelCount":source.sample().source_channel_count(),"frameCount":source.sample().frame_count().to_string(),"regions":regions})
+        }).collect::<Vec<_>>();
+        let maps = assets.maps().iter().map(|map| {
+            let prepared = assets.map_by_id(&map.id).expect("prepared map is indexed");
+            let zones = prepared.zones().iter().map(|zone| {
+                let declaration = zone.declaration();
+                present(json!({"id":declaration.id.as_deref().unwrap_or(""),
+                    "sourceIndex":zone.source_index(),"regionIndex":zone.region_index(),
+                    "startFrame":zone.effective_region().start_frame.to_string(),"endFrame":zone.effective_region().end_frame.to_string(),
+                    "keyLow":declaration.key_range[0],"keyHigh":declaration.key_range[1],
+                    "velocityLow":declaration.velocity_range[0],"velocityHigh":declaration.velocity_range[1],
+                    "roundRobinGroup":declaration.round_robin_group,"chokeGroup":declaration.choke_group,
+                    "controlGroup":declaration.control_group,"weight":declaration.weight.unwrap_or(1),
+                    "gainDb":declaration.gain_db,"pan":declaration.pan,"pitchSemitones":declaration.pitch_semitones}))
+            }).collect::<Vec<_>>();
+            json!({"id":map.id,"selectionMode":prepared.selection_mode().unwrap_or("first_match"),"selectionSeed":prepared.selection_seed().to_string(),"zones":zones})
+        }).collect::<Vec<_>>();
+        let next_request = self
+            .host
+            .session()
+            .next_request_id()
+            .map_err(ProtocolError::Session)
+            .map_err(ParameterError::Protocol)?;
+        let result = json!({"yaml":snapshot.yaml,
+            "sourcePath":source_path,
+            "document":{"generation":state.generation,"instrumentId":patch.instrument().map(|identity| identity.id.as_str()).unwrap_or(""),
+                "parameters":parameters,"sources":sources,"maps":maps},
+            "connection":{"version":CONNECTION_CONTRACT_VERSION,"instanceId":instance_id,
+                "attachmentId":request.attachment_id.to_string(),"revision":snapshot.revision.to_string(),"nextRequestId":next_request.0.to_string(),
+                "limits":{"attachments":ATTACHMENT_LIMIT,"history":HISTORY_LIMIT,"outcomes":OUTCOME_LIMIT,"activeRequests":ACTIVE_REQUEST_LIMIT},
+                "history":{"undoCount":snapshot.undo_len,"redoCount":snapshot.redo_len}}});
+        self.protocol
+            .encode_reply(
+                self.host.session(),
+                &request.attachment_id.to_string(),
+                &request.request_id.to_string(),
+                Ok(result),
+            )
+            .map_err(ParameterError::Protocol)
+    }
+
     pub fn apply(&mut self, request: &AdmittedRequest) -> Result<ParameterReply, ParameterError> {
         let snapshot = self
             .host

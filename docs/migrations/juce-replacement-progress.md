@@ -1030,3 +1030,46 @@ Independent completion review passed for the frozen runtime continuity source/ev
 The full beta remains active through the remaining CLAP work and next VST3,
 standalone, DAW and installed/offline/native increments. Main stays clean at
 68dd655; reusable caches remain and mutation is excluded.
+
+
+## Accepted native Trigger session snapshot — 20 October 2026
+
+The format-neutral controller now projects an admitted session snapshot from
+accepted YAML, prepared sample geometry, actual applied public values and copied
+resource provenance. It preserves precise decimal identities, structural request
+cursors, history and the existing attachment. Defaults remain distinct from
+current values; target ports determine control groups. A private per-connection
+identity and retained request/command check reject foreign or forged read
+admission. Oversized replies and unrepresentable Linux provenance fail explicitly
+without partial messages or changing the accepted instrument.
+
+Five new real-package tests and all 67 host tests pass, with literal signed
+stereo -1 after applied gain. Final formatting, strict Clippy and separate actual
+Rust-to-unchanged-production-JavaScript parser calibration pass. The frozen
+snapshot owner LLVM run at planning base0f02f57 measures parameters49/49 source
+functions,414/415 lines,702/714 regions and protocol24/24,357/357,497/513;
+parameter line181 is an inherited uncovered fallback. Raw emitted generic records
+and region gaps remain disclosed; no branch or whole-host100% claim is made.
+
+The candidate extends published frontend/runtime base dd47ec4. All 587 copied
+source inputs match the combined candidate in the actual source-free fixture,
+with web/ui/third_party absent. Affected release rebuild, dependency boundary and
+all three registered runtime CTests pass, including all 67 combined host tests.
+The initial test compilation linked a stale debug library after copying older
+source timestamps; advancing only two owned fixture timestamps fixes that run.
+Both attempts are retained. This qualified affected-boundary reuse is not a fresh
+complete default-profile guard or actual native editor acceptance.
+
+[Portable evidence](evidence/trigger-session-snapshot-2026-10-20/receipt.json)
+retains source-bound REDs, final checks, both integration attempts and coverage
+qualifications. Rebuildable calibration binaries and raw profiles are hashed and
+retained externally; their reports and exported coverage are portable. No new
+dependency, extracted module, browser-dependent default Rust test or test-only
+state setter was introduced.
+
+Independent completion review passed for the frozen session snapshot source/evidence candidate; normal-hook publication remains.
+Tasks3.2 and3.3 remain open,7/14 overall. Notes/heartbeat, mapping/job recovery,
+native undo, parameter dispatch and the real Wry/CLAP facade still require their
+joined behavior and destruction proof. The full beta remains active through
+CLAP and the next VST3, standalone, named-DAW, installed/offline and native gates.
+Main remains clean68dd655; mutation is excluded and reusable caches are retained.

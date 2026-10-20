@@ -1,0 +1,242 @@
+{
+  "definitions": {
+    "emitted": "Raw llvm-cov function/region records across compiled instantiations. Unexecuted duplicate instantiations are retained, not treated as distinct untested source behavior.",
+    "distinct_primary": "Unique primary region filename/start/end line+column, covered if any associated emitted function has nonzero execution.",
+    "distinct_region": "Unique owning-file start/end line+column for LLVM kind0 code regions, covered if any emitted region at that span has nonzero count. This is a diagnostic source-span union, not branch coverage or a replacement for LLVM file summary.",
+    "physical_zero": "Region-entry lines with zero execution and no positive segment starting on that same physical line; inherited/new distinction reviewed separately."
+  },
+  "files": {
+    "lib.rs": {
+      "llvm_file_summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 21,
+          "covered": 21,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 64,
+          "covered": 47,
+          "percent": 73.4375
+        },
+        "lines": {
+          "count": 120,
+          "covered": 119,
+          "percent": 99.16666666666667
+        },
+        "regions": {
+          "count": 173,
+          "covered": 171,
+          "notcovered": 2,
+          "percent": 98.84393063583815
+        }
+      },
+      "raw_emitted_function_records": 64,
+      "raw_executed_function_records": 47,
+      "distinct_primary_source_spans": 21,
+      "executed_distinct_primary_source_spans": 21,
+      "raw_emitted_kind0_regions": 651,
+      "raw_executed_kind0_regions": 518,
+      "distinct_kind0_region_source_spans": 173,
+      "executed_distinct_kind0_region_source_spans": 172,
+      "zero_hit_annotated_physical_lines": []
+    },
+    "parameters.rs": {
+      "llvm_file_summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 49,
+          "covered": 49,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 120,
+          "covered": 74,
+          "percent": 61.66666666666667
+        },
+        "lines": {
+          "count": 415,
+          "covered": 414,
+          "percent": 99.75903614457832
+        },
+        "regions": {
+          "count": 714,
+          "covered": 702,
+          "notcovered": 12,
+          "percent": 98.31932773109243
+        }
+      },
+      "raw_emitted_function_records": 120,
+      "raw_executed_function_records": 74,
+      "distinct_primary_source_spans": 49,
+      "executed_distinct_primary_source_spans": 49,
+      "raw_emitted_kind0_regions": 1913,
+      "raw_executed_kind0_regions": 1246,
+      "distinct_kind0_region_source_spans": 714,
+      "executed_distinct_kind0_region_source_spans": 703,
+      "zero_hit_annotated_physical_lines": [
+        181
+      ]
+    },
+    "protocol.rs": {
+      "llvm_file_summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 24,
+          "covered": 24,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 54,
+          "covered": 31,
+          "percent": 57.407407407407405
+        },
+        "lines": {
+          "count": 357,
+          "covered": 357,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 513,
+          "covered": 497,
+          "notcovered": 16,
+          "percent": 96.88109161793372
+        }
+      },
+      "raw_emitted_function_records": 54,
+      "raw_executed_function_records": 31,
+      "distinct_primary_source_spans": 24,
+      "executed_distinct_primary_source_spans": 24,
+      "raw_emitted_kind0_regions": 1056,
+      "raw_executed_kind0_regions": 531,
+      "distinct_kind0_region_source_spans": 513,
+      "executed_distinct_kind0_region_source_spans": 497,
+      "zero_hit_annotated_physical_lines": []
+    },
+    "runtime.rs": {
+      "llvm_file_summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 66,
+          "covered": 66,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 123,
+          "covered": 119,
+          "percent": 96.7479674796748
+        },
+        "lines": {
+          "count": 703,
+          "covered": 703,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 1024,
+          "covered": 1022,
+          "notcovered": 2,
+          "percent": 99.8046875
+        }
+      },
+      "raw_emitted_function_records": 123,
+      "raw_executed_function_records": 119,
+      "distinct_primary_source_spans": 66,
+      "executed_distinct_primary_source_spans": 66,
+      "raw_emitted_kind0_regions": 1709,
+      "raw_executed_kind0_regions": 1643,
+      "distinct_kind0_region_source_spans": 1024,
+      "executed_distinct_kind0_region_source_spans": 1022,
+      "zero_hit_annotated_physical_lines": []
+    },
+    "state.rs": {
+      "llvm_file_summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 10,
+          "covered": 10,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 24,
+          "covered": 24,
+          "percent": 100.0
+        },
+        "lines": {
+          "count": 105,
+          "covered": 105,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 177,
+          "covered": 176,
+          "notcovered": 1,
+          "percent": 99.43502824858757
+        }
+      },
+      "raw_emitted_function_records": 24,
+      "raw_executed_function_records": 24,
+      "distinct_primary_source_spans": 10,
+      "executed_distinct_primary_source_spans": 10,
+      "raw_emitted_kind0_regions": 445,
+      "raw_executed_kind0_regions": 402,
+      "distinct_kind0_region_source_spans": 177,
+      "executed_distinct_kind0_region_source_spans": 177,
+      "zero_hit_annotated_physical_lines": []
+    }
+  }
+}
