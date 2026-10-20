@@ -27,6 +27,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "allocation-counter"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "beb9e990c0a33699f1984d85a6abead615ccc72dd8130bf3e15dcabe2ca149c9"
+
+[[package]]
 name = "allocator-api2"
 version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -186,8 +192,12 @@ dependencies = [
 name = "dandrum-trigger-host"
 version = "0.1.0"
 dependencies = [
+ "allocation-counter",
  "dandrum_engine",
  "dandrum_instrument_session",
+ "rtrb",
+ "serde",
+ "serde_json",
  "tempfile",
 ]
 
@@ -841,6 +851,12 @@ dependencies = [
  "quote",
  "syn 2.0.119",
 ]
+
+[[package]]
+name = "rtrb"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ad8388ea1a9e0ea807e442e8263a699e7edcb320ecbcd21b4fa8ff859acce3ba"
 
 [[package]]
 name = "rustc_version"

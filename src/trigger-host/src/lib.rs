@@ -5,6 +5,8 @@
 
 #![forbid(unsafe_code)]
 
+pub mod protocol;
+
 use dandrum_engine::patch::RenderSettings;
 use dandrum_engine::preparation::PreparationContext;
 use dandrum_instrument_session::{Attachment, PreparedDocumentReplacement, SessionError};

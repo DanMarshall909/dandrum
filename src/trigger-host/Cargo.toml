@@ -11,8 +11,13 @@ name = "dandrum_trigger_host"
 dandrum_engine = { path = "../rust-engine" }
 dandrum_instrument_session = { path = "../instrument-session" }
 
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rtrb = "=0.3.2"
+
 [dev-dependencies]
 tempfile = "3"
+allocation-counter = "=0.8.1"
 
 [profile.release]
 codegen-units = 1
