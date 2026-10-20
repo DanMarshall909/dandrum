@@ -1,0 +1,27 @@
+{
+  "configure_exit": 0,
+  "configure_argv": [
+    "/home/dan/.local/bin/cmake",
+    "-S",
+    "/tmp/dandrum-lanes/runtime",
+    "-B",
+    "/dev/shm/dandrum-beta-20261020/editor-cmake",
+    "-DDANDRUM_ENGINE_ONLY=ON",
+    "-DDANDRUM_CLAP_PROOF=ON",
+    "-DDANDRUM_TRIGGER_CLAP_EDITOR=ON",
+    "-DDANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=/tmp/dandrum-lanes/frontend/web/trigger/dist-native"
+  ],
+  "elapsed_seconds": 0.414,
+  "missing_registered_tests": [
+    "trigger-editor-packaged-assets",
+    "trigger-editor-tests"
+  ],
+  "inventory_argv": [
+    "/home/dan/.local/bin/ctest",
+    "--test-dir",
+    "/dev/shm/dandrum-beta-20261020/editor-cmake",
+    "--show-only=json-v1"
+  ],
+  "wrapper_exit_code": 1,
+  "correction": "Original receipt accidentally stored inventory argv in configure_argv after reusing local variable. Original retained; both exact commands recovered from the original tool script."
+}

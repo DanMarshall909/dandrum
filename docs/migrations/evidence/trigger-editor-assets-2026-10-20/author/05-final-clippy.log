@@ -1,0 +1,12 @@
+    Checking dandrum-trigger-editor v0.1.0 (/tmp/dandrum-lanes/runtime/src/trigger-editor)
+error: using a non-octal value to set unix file permissions
+   --> src/../tests/internal/assets.rs:164:69
+    |
+164 |     std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0)).unwrap();
+    |                                                                     ^ help: consider using an octal literal instead: `0o0`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#non_octal_unix_permissions
+    = note: `#[deny(clippy::non_octal_unix_permissions)]` on by default
+
+error: could not compile `dandrum-trigger-editor` (lib test) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...

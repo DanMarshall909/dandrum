@@ -1,0 +1,43 @@
+   Compiling dandrum-trigger-editor v0.1.0 (/tmp/dandrum-lanes/runtime/src/trigger-editor)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.17s
+     Running unittests src/lib.rs (/dev/shm/dandrum-beta-20261020/editor-target/debug/deps/dandrum_trigger_editor-65be5036b113befa)
+
+running 4 tests
+test assets::tests::missing_empty_and_nonregular_package_files_never_publish_a_partial_owner ... FAILED
+test assets::tests::immutable_copied_assets_serve_only_the_exact_local_origin_and_declared_names ... FAILED
+test assets::tests::unreadable_assets_fail_preload_and_do_not_affect_an_existing_immutable_owner ... FAILED
+test assets::tests::symlinked_roots_editor_directories_files_and_font_directories_are_rejected ... FAILED
+
+failures:
+
+---- assets::tests::missing_empty_and_nonregular_package_files_never_publish_a_partial_owner stdout ----
+
+thread 'assets::tests::missing_empty_and_nonregular_package_files_never_publish_a_partial_owner' (2250271) panicked at src/assets.rs:20:9:
+not yet implemented: preload the complete copied production editor package
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- assets::tests::immutable_copied_assets_serve_only_the_exact_local_origin_and_declared_names stdout ----
+
+thread 'assets::tests::immutable_copied_assets_serve_only_the_exact_local_origin_and_declared_names' (2250270) panicked at src/assets.rs:20:9:
+not yet implemented: preload the complete copied production editor package
+
+---- assets::tests::unreadable_assets_fail_preload_and_do_not_affect_an_existing_immutable_owner stdout ----
+
+thread 'assets::tests::unreadable_assets_fail_preload_and_do_not_affect_an_existing_immutable_owner' (2250273) panicked at src/assets.rs:20:9:
+not yet implemented: preload the complete copied production editor package
+
+---- assets::tests::symlinked_roots_editor_directories_files_and_font_directories_are_rejected stdout ----
+
+thread 'assets::tests::symlinked_roots_editor_directories_files_and_font_directories_are_rejected' (2250272) panicked at src/assets.rs:20:9:
+not yet implemented: preload the complete copied production editor package
+
+
+failures:
+    assets::tests::immutable_copied_assets_serve_only_the_exact_local_origin_and_declared_names
+    assets::tests::missing_empty_and_nonregular_package_files_never_publish_a_partial_owner
+    assets::tests::symlinked_roots_editor_directories_files_and_font_directories_are_rejected
+    assets::tests::unreadable_assets_fail_preload_and_do_not_affect_an_existing_immutable_owner
+
+test result: FAILED. 0 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`

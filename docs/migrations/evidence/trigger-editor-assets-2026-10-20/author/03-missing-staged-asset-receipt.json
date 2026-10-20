@@ -1,0 +1,17 @@
+{
+  "argv": [
+    "/home/dan/.local/bin/ctest",
+    "--test-dir",
+    "/dev/shm/dandrum-beta-20261020/editor-cmake",
+    "--output-on-failure",
+    "-V",
+    "-R",
+    "^trigger-editor-packaged-assets$"
+  ],
+  "cwd": "/tmp/dandrum-lanes/runtime",
+  "fault": "Only task-owned staged editor/app.js renamed temporarily; original production input untouched",
+  "exit_code": 8,
+  "elapsed_seconds": 0.222,
+  "expected_diagnostic": "required production asset app.js",
+  "restored": true
+}

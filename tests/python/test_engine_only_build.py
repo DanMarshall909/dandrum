@@ -194,6 +194,7 @@ class ClapProofBuildTest(EngineBuildFixture):
         self.assertEqual(code, 0, output)
         self.assertRegex(output, r"(?m)(?:^|\s)dandrum-trigger-clap-editor(?:\s|$)")
         self.assertRegex(output, r"(?m)(?:^|\s)dandrum-trigger-host-rust(?:\s|$)")
+        self.assertRegex(output, r"(?m)(?:^|\s)dandrum-trigger-editor-rust(?:\s|$)")
         self.assertNotRegex(output, r"(?m)(?:^|\s)(?:juceaide|dandrum-plugin)(?:\s|$)")
 
         code, output = self.command(
@@ -202,6 +203,8 @@ class ClapProofBuildTest(EngineBuildFixture):
         self.assertEqual(code, 0, output)
         names = {test["name"] for test in json.loads(output)["tests"]}
         self.assertIn("trigger-host-tests", names)
+        self.assertIn("trigger-editor-tests", names)
+        self.assertIn("trigger-editor-packaged-assets", names)
 
         code, output = self.command(
             "trigger-editor-build", [CMAKE, "--build", str(build), "--target",
@@ -238,7 +241,7 @@ class ClapProofBuildTest(EngineBuildFixture):
 
         code, output = self.command(
             "trigger-editor-fixture-runtime", [CTEST, "--test-dir", str(build),
-                "--output-on-failure", "-R", "^(clap-dynamic-host|trigger-host-tests)$"])
+                "--output-on-failure", "-R", "^(clap-dynamic-host|trigger-host-tests|trigger-editor-tests)$"])
         self.assertEqual(code, 0, output)
         self.assertIn("100% tests passed", output)
 

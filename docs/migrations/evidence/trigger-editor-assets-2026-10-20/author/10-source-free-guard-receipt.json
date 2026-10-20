@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "python3",
+    "tests/python/test_engine_only_build.py",
+    "ClapProofBuildTest.test_trigger_editor_scaffold_stages_copied_resources_without_host_sources",
+    "-v"
+  ],
+  "cwd": "/tmp/dandrum-lanes/runtime",
+  "environment": {
+    "PATH": "/home/dan/.local/bin:/home/dan/.cargo/bin:/home/dan/.local/bin:/home/dan/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/dan/.codex/tmp/arg0-linux/codex-arg0C8LWXa:/home/dan/.codex/tmp/arg0/codex-arg0DZuP2u:/home/dan/.nvm/versions/node/v22.19.0/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex-path:/home/dan/.local/bin:/home/dan/go/bin:/home/dan/Applications/godot:/home/linuxbrew/.linuxbrew/bin:/home/dan/.local/bin:/home/dan/.dotnet:/home/dan/go/bin:/home/dan/.cargo/bin:/home/dan/.nvm/versions/node/v22.19.0/bin:/home/dan/Applications/godot:/home/linuxbrew/.linuxbrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/dan/.dotnet/tools:/home/dan/.npm-global/bin:/home/dan/.local/share/JetBrains/Toolbox/scripts:/home/dan/.dotnet/tools:/home/dan/.local/share/JetBrains/Toolbox/scripts:/home/dan/.dotnet/tools:/home/dan/.local/share/JetBrains/Toolbox/scripts",
+    "CARGO_NET_OFFLINE": "true"
+  },
+  "exit_code": -2,
+  "elapsed_seconds": 74.47,
+  "min_physical_free_bytes": 1069330432,
+  "stopped_for_resource_guard": true,
+  "shared_cache_preserved": true,
+  "source_manifest": "pre-guard-source-manifest.json"
+}

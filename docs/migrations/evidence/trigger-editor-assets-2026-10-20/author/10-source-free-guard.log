@@ -1,0 +1,36 @@
+test_trigger_editor_scaffold_stages_copied_resources_without_host_sources (__main__.ClapProofBuildTest) ... Traceback (most recent call last):
+  File "/tmp/dandrum-lanes/runtime/tests/python/test_engine_only_build.py", line 278, in <module>
+    unittest.main()
+  File "/usr/lib/python3.10/unittest/main.py", line 101, in __init__
+    self.runTests()
+  File "/usr/lib/python3.10/unittest/main.py", line 271, in runTests
+    self.result = testRunner.run(self.test)
+  File "/usr/lib/python3.10/unittest/runner.py", line 184, in run
+    test(result)
+  File "/usr/lib/python3.10/unittest/suite.py", line 84, in __call__
+    return self.run(*args, **kwds)
+  File "/usr/lib/python3.10/unittest/suite.py", line 122, in run
+    test(result)
+  File "/usr/lib/python3.10/unittest/suite.py", line 84, in __call__
+    return self.run(*args, **kwds)
+  File "/usr/lib/python3.10/unittest/suite.py", line 122, in run
+    test(result)
+  File "/usr/lib/python3.10/unittest/case.py", line 650, in __call__
+    return self.run(*args, **kwds)
+  File "/usr/lib/python3.10/unittest/case.py", line 591, in run
+    self._callTestMethod(testMethod)
+  File "/usr/lib/python3.10/unittest/case.py", line 549, in _callTestMethod
+    method()
+  File "/tmp/dandrum-lanes/runtime/tests/python/test_engine_only_build.py", line 242, in test_trigger_editor_scaffold_stages_copied_resources_without_host_sources
+    code, output = self.command(
+  File "/tmp/dandrum-lanes/runtime/tests/python/test_engine_only_build.py", line 37, in command
+    result = subprocess.run(args, capture_output=True, text=True,
+  File "/usr/lib/python3.10/subprocess.py", line 505, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+  File "/usr/lib/python3.10/subprocess.py", line 1154, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+  File "/usr/lib/python3.10/subprocess.py", line 2021, in _communicate
+    ready = selector.select(timeout)
+  File "/usr/lib/python3.10/selectors.py", line 416, in select
+    fd_event_list = self._selector.poll(timeout)
+KeyboardInterrupt

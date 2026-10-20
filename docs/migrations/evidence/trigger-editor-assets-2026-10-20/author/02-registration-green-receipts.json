@@ -1,0 +1,50 @@
+[
+  {
+    "name": "02-configure-green",
+    "argv": [
+      "/home/dan/.local/bin/cmake",
+      "-S",
+      "/tmp/dandrum-lanes/runtime",
+      "-B",
+      "/dev/shm/dandrum-beta-20261020/editor-cmake",
+      "-DDANDRUM_ENGINE_ONLY=ON",
+      "-DDANDRUM_CLAP_PROOF=ON",
+      "-DDANDRUM_TRIGGER_CLAP_EDITOR=ON",
+      "-DDANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=/tmp/dandrum-lanes/frontend/web/trigger/dist-native"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "exit_code": 0,
+    "elapsed_seconds": 0.024
+  },
+  {
+    "name": "02-build-green",
+    "argv": [
+      "/home/dan/.local/bin/cmake",
+      "--build",
+      "/dev/shm/dandrum-beta-20261020/editor-cmake",
+      "--target",
+      "dandrum-trigger-editor-rust",
+      "dandrum-trigger-resources",
+      "--parallel",
+      "2"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "exit_code": 0,
+    "elapsed_seconds": 0.138
+  },
+  {
+    "name": "02-registered-green",
+    "argv": [
+      "/home/dan/.local/bin/ctest",
+      "--test-dir",
+      "/dev/shm/dandrum-beta-20261020/editor-cmake",
+      "--output-on-failure",
+      "-V",
+      "-R",
+      "^trigger-editor-(tests|packaged-assets)$"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "exit_code": 0,
+    "elapsed_seconds": 0.053
+  }
+]

@@ -1,0 +1,20 @@
+{
+  "verdict": "PASS",
+  "scope": "Bounded task 3.2 immutable packaged Trigger assets and maintained build/test wiring",
+  "candidate_manifest_sha256": "9542e5c9c3ecc79efdf1919790be25fe5087d4db40a15e38d639abfe1be15fac",
+  "candidate_paths": 85,
+  "base": "dbabae61f19543ee97d91cadcebe56b4c0bf043b",
+  "current": "dbabae61f19543ee97d91cadcebe56b4c0bf043b",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "dbabae61f19543ee97d91cadcebe56b4c0bf043b",
+  "integration_base": "dbabae61f19543ee97d91cadcebe56b4c0bf043b",
+  "manifest_independently_reconstructed": true,
+  "portable_checksums_verified": 73,
+  "original_author_hashes_verified": 65,
+  "findings": [],
+  "task_3_2_complete": false,
+  "full_beta_complete": false,
+  "mutation": "excluded by recorded user direction",
+  "review_sha256": "8ac363a9713cd69130b61f8aea509f13aa77a08b799c9569fade9d792ced5023",
+  "publication_envelope": "Metadata-only addendum must bind exact resulting allowed bytes before commit; normal hooks and unchanged-upstream checks remain mandatory."
+}

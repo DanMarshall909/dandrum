@@ -682,3 +682,39 @@ Final metadata verification and normal-hook publication remain the next gates. N
 tests in place of the required dynamic CLAP/native acceptance. Task 3.2 is next;
 the full beta, later formats, devices, DAW and installed offline products remain
 active. Main is unchanged and all reusable caches are preserved.
+
+
+## Packaged Trigger editor assets — 20 October 2026
+
+The asset component of task 3.2 loads the production React bundle, eight local
+fonts and three font licence notices from the explicit copied resource root.
+The new concrete editor crate preloads the complete package before exposing an
+owner; browser requests borrow its immutable bytes through exact local URLs.
+Missing, empty, unreadable, nonregular or symlinked required assets reject the
+package. Undeclared paths, alternate origins, queries and encoded names are not
+served. This component has no browser dependency and adds no GUI types to the
+format-neutral host.
+
+Four fast tests and a separately selected production-bundle calibration pass.
+The registered CTest lanes execute both scopes against freshly built, staged
+production assets; their missing-staged-file calibration fails as expected.
+Focused LLVM coverage hits all 49 distinct emitted asset-module source lines and
+all five unique source function/closure starts. LLVM's raw line summary is 52/52;
+duplicate generic instantiations remain explicit in the evidence. The source-free build
+fixture uses a deliberately tiny bundle, so its build isolation and test
+registration evidence is kept distinct from production font calibration.
+
+Task 3.2 remains open for the Wry/X11 owner, real local-only browser loading,
+parenting, main-thread servicing, show/hide and failure cleanup. This asset
+component does not prove native lifecycle or uninterrupted audio. Task 2.4 was
+normally published at dbabae61; main remains unchanged at 68dd655. Mutation
+remains excluded and reusable caches are preserved.
+
+The affected source-free guard passes from the hash-matched RAM candidate in
+138.70 seconds, including all three selected runtime CTests. Its initial
+disk-threshold interruption is retained as an incomplete verification run.
+[Portable evidence](evidence/trigger-editor-assets-2026-10-20/receipt.json)
+retains exact source, logs, commands and coverage accounting. Independent
+completion review passed for the exact asset component; its review and verdict
+are retained with the receipt. Final metadata verification and normal-hook
+publication remain the next gates.

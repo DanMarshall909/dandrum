@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "base": "dbabae61f19543ee97d91cadcebe56b4c0bf043b",
+  "scope": "OpenSpec task 3.2: immutable packaged editor assets and maintained build/test wiring only",
+  "task_3_2_complete": false,
+  "full_beta_complete": false,
+  "sources": {
+    ".gitignore": "fc90002239799ca985d643fdbd5bd5f900038b19433621c28eff5006a010dbf7",
+    "CMakeLists.txt": "df61d3397eb2cd8ae6338fbc4cc0e6fe746faf31f2bbf74e08915eb20a7bc621",
+    "tests/python/test_engine_only_build.py": "fddc570629f5b637c9447ecd1efe1de31f771c0a5f35481e96981328880edeca",
+    "src/trigger-editor/Cargo.lock": "72041177e305807f7e4acc3e20f4d870a466ce1356fc8b045ea7e1f2d29c932f",
+    "src/trigger-editor/Cargo.toml": "beb6f14ae034e0c09cd307e7a4a4e99e22cb6dae37c564c2e3e09d991077eb22",
+    "src/trigger-editor/src/assets.rs": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584",
+    "src/trigger-editor/src/lib.rs": "bd1cfda392dbe1e5bc0998861fdd47999aee3196b85073fd41036c2790b2a30c",
+    "src/trigger-editor/tests/common/mod.rs": "46746923660a618e87bdb1f65f4ca63ef3a1f5defc250ef251f7fa2e096ef5aa",
+    "src/trigger-editor/tests/internal/assets.rs": "e1c41f2827ddd79c0f29dbee27c2ff5fb4d6a91a64d848f32893cdd1ecf5698d",
+    "src/trigger-editor/tests/packaged_assets.rs": "2520e026f6921fa697220bc40bcc4eda58711dde76529f1ac6957add63d5411c"
+  },
+  "author_evidence_files": 65,
+  "checks": {
+    "fast_tests": 4,
+    "explicit_production_calibration": 1,
+    "registered_ctests": 2,
+    "source_free_selected_ctests": 3,
+    "source_free_guard_seconds": 138.699,
+    "formatting": "pass",
+    "clippy_warnings_denied": "pass",
+    "mutation": "excluded by user"
+  },
+  "coverage": {
+    "raw_llvm_lines": [
+      52,
+      52
+    ],
+    "distinct_emitted_lines": [
+      49,
+      49
+    ],
+    "unique_source_starts": [
+      5,
+      5
+    ],
+    "raw_mangled_instances": [
+      7,
+      11
+    ],
+    "branch_evidence": "unavailable",
+    "lcov_sha256": "7f4137fa2039b5e60a4165c8ec9f42259334a84a1de5d23033c3148189b0fc67"
+  },
+  "review": {
+    "status": "PASS",
+    "candidate_manifest_sha256": "9542e5c9c3ecc79efdf1919790be25fe5087d4db40a15e38d639abfe1be15fac",
+    "files": {
+      "review/review.md": "8ac363a9713cd69130b61f8aea509f13aa77a08b799c9569fade9d792ced5023",
+      "review/verdict.json": "9290b8749600e479311f6f4f90a1860fa95d3c6b66610e495673a75c52418c91"
+    },
+    "final_metadata": "Exact administrative addendum required before commit"
+  },
+  "publication": {
+    "target": "origin/feat/juce-free-host-adapters",
+    "status": "pending normal hooks"
+  },
+  "main": {
+    "head": "68dd6553a2f07e71e2fe09ee1d7094d518559937",
+    "changes_authorized": false
+  },
+  "limitations": [
+    "No Wry dependency adopted by this asset component",
+    "No browser/network, native lifecycle, real CLAP GUI or native audio continuity proof",
+    "RED source reconstructed retrospectively; unavailable historical timing disclosed",
+    "First source-free run safely interrupted at resource threshold; caches preserved"
+  ]
+}

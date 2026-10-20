@@ -1,0 +1,19 @@
+build/
+build-native/
+.tools/
+.idea/
+src/rust-engine/target/
+src/instrument-session/target/
+src/trigger-host/target/
+src/trigger-editor/target/
+src/rust-engine/mutants.out/
+src/rust-engine/mutants.out.old/
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
+# Generated coverage reports (regenerate with scripts/check-rust-coverage)
+coverage-report.txt
+coverage.lcov
+
+# Preserve generated Python bytecode without tracking local test artifacts.
+__pycache__/

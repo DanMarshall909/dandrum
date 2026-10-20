@@ -1,0 +1,141 @@
+[
+  {
+    "name": "04-final-format",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "fmt",
+      "--manifest-path",
+      "src/trigger-editor/Cargo.toml",
+      "--",
+      "--check"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "environment": {
+      "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+      "CARGO_BUILD_JOBS": "2",
+      "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.044
+  },
+  {
+    "name": "05-final-clippy",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "clippy",
+      "--manifest-path",
+      "src/trigger-editor/Cargo.toml",
+      "--all-targets",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "environment": {
+      "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+      "CARGO_BUILD_JOBS": "2",
+      "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+    },
+    "exit_code": 101,
+    "elapsed_seconds": 0.196
+  },
+  {
+    "name": "05b-final-clippy",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "clippy",
+      "--manifest-path",
+      "src/trigger-editor/Cargo.toml",
+      "--all-targets",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "environment": {
+      "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+      "CARGO_BUILD_JOBS": "2",
+      "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.123
+  },
+  {
+    "name": "06-final-tests",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "test",
+      "--locked",
+      "--manifest-path",
+      "src/trigger-editor/Cargo.toml"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "environment": {
+      "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+      "CARGO_BUILD_JOBS": "2",
+      "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.165
+  },
+  {
+    "name": "07-final-coverage",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "llvm-cov",
+      "--manifest-path",
+      "src/trigger-editor/Cargo.toml",
+      "--lib",
+      "--lcov",
+      "--output-path",
+      "/tmp/dandrum-lanes/evidence-editor/07-final-coverage.lcov"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "environment": {
+      "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+      "CARGO_BUILD_JOBS": "2",
+      "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.407
+  },
+  {
+    "name": "08-final-registered",
+    "argv": [
+      "/home/dan/.local/bin/ctest",
+      "--test-dir",
+      "/dev/shm/dandrum-beta-20261020/editor-cmake",
+      "--output-on-failure",
+      "-V",
+      "-R",
+      "^trigger-editor-(tests|packaged-assets)$"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "environment": {
+      "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+      "CARGO_BUILD_JOBS": "2",
+      "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.056
+  },
+  {
+    "name": "09-final-format",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "fmt",
+      "--manifest-path",
+      "src/trigger-editor/Cargo.toml",
+      "--",
+      "--check"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "environment": {
+      "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+      "CARGO_BUILD_JOBS": "2",
+      "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+    },
+    "exit_code": 0,
+    "elapsed_seconds": 0.042
+  }
+]

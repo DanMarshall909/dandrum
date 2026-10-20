@@ -1,0 +1,15 @@
+{
+  "base_commit": "dbabae61f19543ee97d91cadcebe56b4c0bf043b",
+  "files": {
+    ".gitignore": "fc90002239799ca985d643fdbd5bd5f900038b19433621c28eff5006a010dbf7",
+    "CMakeLists.txt": "df61d3397eb2cd8ae6338fbc4cc0e6fe746faf31f2bbf74e08915eb20a7bc621",
+    "tests/python/test_engine_only_build.py": "fddc570629f5b637c9447ecd1efe1de31f771c0a5f35481e96981328880edeca",
+    "src/trigger-editor/Cargo.lock": "72041177e305807f7e4acc3e20f4d870a466ce1356fc8b045ea7e1f2d29c932f",
+    "src/trigger-editor/Cargo.toml": "beb6f14ae034e0c09cd307e7a4a4e99e22cb6dae37c564c2e3e09d991077eb22",
+    "src/trigger-editor/src/assets.rs": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584",
+    "src/trigger-editor/src/lib.rs": "bd1cfda392dbe1e5bc0998861fdd47999aee3196b85073fd41036c2790b2a30c",
+    "src/trigger-editor/tests/common/mod.rs": "46746923660a618e87bdb1f65f4ca63ef3a1f5defc250ef251f7fa2e096ef5aa",
+    "src/trigger-editor/tests/internal/assets.rs": "e1c41f2827ddd79c0f29dbee27c2ff5fb4d6a91a64d848f32893cdd1ecf5698d",
+    "src/trigger-editor/tests/packaged_assets.rs": "2520e026f6921fa697220bc40bcc4eda58711dde76529f1ac6957add63d5411c"
+  }
+}

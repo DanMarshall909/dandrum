@@ -1,0 +1,14 @@
+{
+  "configure_exit": 0,
+  "configure_argv": [
+    "/home/dan/.local/bin/ctest",
+    "--test-dir",
+    "/dev/shm/dandrum-beta-20261020/editor-cmake",
+    "--show-only=json-v1"
+  ],
+  "elapsed_seconds": 0.414,
+  "missing_registered_tests": [
+    "trigger-editor-packaged-assets",
+    "trigger-editor-tests"
+  ]
+}

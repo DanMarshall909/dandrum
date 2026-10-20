@@ -1,0 +1,9 @@
+{
+  "source": "/tmp/dandrum-lanes/runtime",
+  "candidate": "/dev/shm/dandrum-beta-20261020/editor-guard-source",
+  "release_seed_source": "/tmp/dandrum-lanes/runtime/build/engine-only-regression/cargo-target/release",
+  "target": "/dev/shm/dandrum-beta-20261020/editor-guard-target",
+  "elapsed_seconds": 6.676,
+  "shm_free_bytes": 9366040576,
+  "original_caches_preserved": true
+}

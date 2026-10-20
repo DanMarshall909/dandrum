@@ -1,0 +1,11 @@
+{
+  "notice": "Reconstructed after GREEN from the exact initial toolwrite. Not captured on disk at RED; no historical timestamp/hash claim. Original raw REDs independently retained.",
+  "stub_sha256": "f6f1c37f3ddab04c6ae76a421bb4c53c7e26f206131803b37a731d8547886038",
+  "historical_red_exit": 101,
+  "historical_wall_seconds": null,
+  "immutable_registration_baseline": "dbabae61f19543ee97d91cadcebe56b4c0bf043b",
+  "baseline_files": {
+    "CMakeLists.txt": "e83cf08fea4c5d68ef263a41f22c248017b239d744456a47f3ea0dc85cbd269a",
+    "tests/python/test_engine_only_build.py": "029afa4ed913c1a306602f7dcaa4480c2dc76d52e0b923d9e2dc0f88a898e995"
+  }
+}

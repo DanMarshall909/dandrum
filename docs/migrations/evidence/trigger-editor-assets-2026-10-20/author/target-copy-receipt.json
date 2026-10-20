@@ -1,0 +1,10 @@
+{
+  "source": "/tmp/dandrum-lanes/wry-probe/target",
+  "destination": "/dev/shm/dandrum-beta-20261020/editor-target",
+  "copied_bytes": 1219177612,
+  "elapsed_seconds": 2.76,
+  "tmpfs_free_before": 13060718592,
+  "MemAvailable_before": 21706743808,
+  "tmpfs_free_after": 11836416000,
+  "original_preserved": true
+}

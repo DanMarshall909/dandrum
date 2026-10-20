@@ -1,0 +1,21 @@
+{
+  "tool": "cargo-llvm-cov 0.8.7",
+  "scope": "--lib; owning assets.rs only; no branch/native/browser coverage claim",
+  "lcov_sha256": "7f4137fa2039b5e60a4165c8ec9f42259334a84a1de5d23033c3148189b0fc67",
+  "records": [
+    {
+      "source": "/tmp/dandrum-lanes/runtime/src/trigger-editor/src/assets.rs",
+      "source_sha256": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584",
+      "llvm_lh": 52,
+      "llvm_lf": 52,
+      "emitted_da_records_hit": 49,
+      "emitted_da_records_total": 49,
+      "source_starts_hit": 5,
+      "source_starts_total": 5,
+      "raw_instantiations_hit": 7,
+      "raw_instantiations_total": 11,
+      "uncovered_lines": [],
+      "uncovered_source_starts": []
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+   Compiling dandrum-trigger-editor v0.1.0 (/tmp/dandrum-lanes/runtime/src/trigger-editor)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.28s
+     Running tests/packaged_assets.rs (/dev/shm/dandrum-beta-20261020/editor-target/debug/deps/packaged_assets-9d12e4bf831ca4b8)
+
+running 1 test
+test copied_production_bundle_serves_all_root_assets_eight_fonts_and_three_notices_without_source_lookup ... FAILED
+
+failures:
+
+---- copied_production_bundle_serves_all_root_assets_eight_fonts_and_three_notices_without_source_lookup stdout ----
+
+thread 'copied_production_bundle_serves_all_root_assets_eight_fonts_and_three_notices_without_source_lookup' (2247109) panicked at src/assets.rs:20:9:
+not yet implemented: preload the complete copied production editor package
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    copied_production_bundle_serves_all_root_assets_eight_fonts_and_three_notices_without_source_lookup
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test packaged_assets`

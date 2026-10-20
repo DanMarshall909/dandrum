@@ -1,0 +1,7 @@
+[100%] Building the concrete Trigger editor asset boundary
+warning: failed to connect to jobserver from environment variable `MAKEFLAGS="s -j2 --jobserver-auth=3,4"`: cannot open file descriptor 3 from the jobserver environment variable value: Bad file descriptor (os error 9)
+   Compiling dandrum-trigger-editor v0.1.0 (/tmp/dandrum-lanes/runtime/src/trigger-editor)
+    Finished `release` profile [optimized] target(s) in 0.07s
+[100%] Built target dandrum-trigger-editor-rust
+[100%] Staging copied Trigger editor and instrument resources
+[100%] Built target dandrum-trigger-resources

@@ -93,6 +93,8 @@ set(RUST_SESSION_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/instrument-session)
 set(RUST_SESSION_LIB ${CMAKE_CURRENT_BINARY_DIR}/rust-target/release/libdandrum_instrument_session.a)
 set(RUST_TRIGGER_HOST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/trigger-host)
 set(RUST_TRIGGER_HOST_LIB ${CMAKE_CURRENT_BINARY_DIR}/rust-target/release/libdandrum_trigger_host.rlib)
+set(RUST_TRIGGER_EDITOR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/trigger-editor)
+set(RUST_TRIGGER_EDITOR_LIB ${CMAKE_CURRENT_BINARY_DIR}/rust-target/release/libdandrum_trigger_editor.rlib)
 set(CARGO_BIN $ENV{HOME}/.cargo/bin/cargo)
 set(RUST_ENGINE_MUTATION_EXCLUDE_ARGS
     --exclude src/bin/*.rs
@@ -101,6 +103,7 @@ set(RUST_ENGINE_MUTATION_EXCLUDE_ARGS
 file(GLOB_RECURSE RUST_ENGINE_SOURCES CONFIGURE_DEPENDS ${RUST_ENGINE_DIR}/src/*.rs)
 file(GLOB_RECURSE RUST_SESSION_SOURCES CONFIGURE_DEPENDS ${RUST_SESSION_DIR}/src/*.rs)
 file(GLOB_RECURSE RUST_TRIGGER_HOST_SOURCES CONFIGURE_DEPENDS ${RUST_TRIGGER_HOST_DIR}/src/*.rs)
+file(GLOB_RECURSE RUST_TRIGGER_EDITOR_SOURCES CONFIGURE_DEPENDS ${RUST_TRIGGER_EDITOR_DIR}/src/*.rs)
 
 add_custom_command(
     OUTPUT ${RUST_ENGINE_LIB}
@@ -152,6 +155,23 @@ if(DANDRUM_TRIGGER_CLAP_EDITOR)
             ${CARGO_BIN} test --locked --jobs 2
             --manifest-path ${RUST_TRIGGER_HOST_DIR}/Cargo.toml)
     set_tests_properties(trigger-host-tests PROPERTIES LABELS "trigger-host-fast" TIMEOUT 1200)
+    add_custom_command(
+        OUTPUT ${RUST_TRIGGER_EDITOR_LIB}
+        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+            ${CARGO_BIN} build --release --locked --jobs 2
+            --manifest-path ${RUST_TRIGGER_EDITOR_DIR}/Cargo.toml --lib
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        DEPENDS
+            ${RUST_TRIGGER_EDITOR_DIR}/Cargo.toml
+            ${RUST_TRIGGER_EDITOR_DIR}/Cargo.lock
+            ${RUST_TRIGGER_EDITOR_SOURCES}
+        COMMENT "Building the concrete Trigger editor asset boundary")
+    add_custom_target(dandrum-trigger-editor-rust DEPENDS ${RUST_TRIGGER_EDITOR_LIB})
+    add_test(NAME trigger-editor-tests
+        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+            ${CARGO_BIN} test --locked --jobs 2
+            --manifest-path ${RUST_TRIGGER_EDITOR_DIR}/Cargo.toml --lib)
+    set_tests_properties(trigger-editor-tests PROPERTIES LABELS "trigger-editor-fast" TIMEOUT 60)
 endif()
 
 add_test(
@@ -317,9 +337,20 @@ if(DANDRUM_CLAP_PROOF)
             COMMENT "Staging copied Trigger editor and instrument resources"
             VERBATIM)
         add_custom_target(dandrum-trigger-resources DEPENDS ${DANDRUM_TRIGGER_RESOURCE_STAMP})
+        # This lane requires the complete production bundle, including local
+        # fonts/notices. The Python source-free build fixture deliberately uses
+        # a tiny build-only bundle and separately checks this test's registration.
+        add_test(NAME trigger-editor-packaged-assets
+            COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+                DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=${DANDRUM_TRIGGER_RESOURCE_DIR}/editor
+                ${CARGO_BIN} test --locked --jobs 2
+                --manifest-path ${RUST_TRIGGER_EDITOR_DIR}/Cargo.toml
+                --test packaged_assets -- --ignored)
+        set_tests_properties(trigger-editor-packaged-assets PROPERTIES
+            LABELS "trigger-editor-boundary" TIMEOUT 60)
         add_custom_target(dandrum-trigger-clap-editor)
         add_dependencies(dandrum-trigger-clap-editor
-            dandrum-clap-proof dandrum-trigger-host-rust dandrum-trigger-resources)
+            dandrum-clap-proof dandrum-trigger-host-rust dandrum-trigger-editor-rust dandrum-trigger-resources)
     endif()
     add_test(NAME clap-dynamic-host
         COMMAND ${CMAKE_COMMAND} -E env
