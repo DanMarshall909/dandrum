@@ -14,6 +14,16 @@ The JUCE-free editor SHALL load the locally packaged production Trigger bundle a
 - **WHEN** the WebView sends an unknown method, malformed or oversized payload, stale attachment identity or duplicate conflicting request
 - **THEN** the bridge SHALL reject it within documented bounds while preserving accepted session state, public controls and signed audio
 
+#### Scenario: Explicitly unavailable optional services remain honest
+
+- **WHEN** a native backend declares metering, source waveforms, window-title publication or editor resizing unavailable
+- **THEN** the editor SHALL initialize and refresh from the real accepted session without requesting the absent services, preserve required notes, heartbeat, public controls and supported mapping/undo, and show unavailable measurements and host-controlled size without simulated native acceptance
+
+#### Scenario: Optional service metadata preserves existing consumers
+
+- **WHEN** a version-1 backend omits optional service metadata or supplies invalid present metadata
+- **THEN** omission SHALL retain existing full-contract behavior for every backend identity, while invalid metadata SHALL fail visibly before invoking native methods
+
 ### Requirement: Host-parented WebView lifecycle is disposable
 
 The CLAP host SHALL own the native parent and event loop. The editor SHALL create and destroy its child WebView on the plugin main thread, support its declared show/hide and size lifecycle, reject unsupported window APIs or invalid ordering, and release view-owned notes, gestures, callbacks and messages without destroying instrument-owned state.

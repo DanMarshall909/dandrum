@@ -44,6 +44,20 @@ The Trigger native adapter selects a `window.__DANDRUM__` backend contract with 
 
 The initial JUCE-free method set is deliberately the subset required for session snapshot, public parameter gestures/feedback, note ownership, key-range mapping, job outcome recovery and native undo. Existing unsupported operations continue to report capability limits; the frontend never simulates native acceptance.
 
+### Declare optional editor services without fabricating native success
+
+The bootstrap descriptor may include `capabilities` with strictly boolean `metering`, `sourceWaveforms`, `windowTitle` and `editorResize` fields. An omitted profile or field preserves the existing full-contract behavior for every backend identity, including existing version-1 `juce-free` descriptors. The legacy JUCE selector and explicitly injected comparison backend retain their behavior. Present invalid metadata fails visibly before invoking native methods; backend names never imply service availability.
+
+The new Wry bootstrap explicitly declares those four services unavailable. This is local bootstrap metadata, not another protocol method. Session snapshot, parameter gestures/feedback, note ownership/heartbeat, supported mapping, job recovery and native undo remain real required services. No successful meter subscriptions, measured values, waveform jobs or resize acceptance are invented.
+
+The frontend gates absent services during initialization, generation refresh, mapping/undo, rendering and disposal. Heartbeat and note cleanup remain independent of metering. It shows unavailable meters, unknown active voice count, an accessible unavailable-waveform state and host-controlled size; it supplies no generated preview peaks or fake silence measurements. Direct requests for absent waveform service return an explicit capability error without native mutation. Supported-service failures retain their existing errors and retry behavior.
+
+### Verify shared owners before their format facade
+
+Task 3.2 first verifies the concrete Wry library boundary: packaged assets, local loading, X11 child ownership, presentation and destruction. Its actual CLAP main-thread, API and call-order acceptance depends on the GUI facade in task 4.2. Keep 3.2 open until that proof exists. Task 3.3 may develop the shared snapshot and transport-neutral frontend independently after those library boundaries are verified; this does not claim a working CLAP editor or skip final integration. Use separate existing worktrees and focused commits, then verify each combined boundary.
+
+The first snapshot projection reads the accepted session, prepared sources/maps, applied public parameter values and copied-resource provenance off audio. It preserves decimal session/attachment/revision/request identities, distinguishes structural request cursors from transport IDs, and does not create a new attachment on each read. Default source-free Rust tests remain independent of browser tooling; production parser and real Wry integration receive separate boundary checks.
+
 ### Let CLAP own the parent window, event loop, automation and state boundary
 
 Implement the pinned Clack GUI extension for the Trigger identity only. Creation records a supported X11 configuration; `set_parent` validates and stores the host window; the Wry child is created and destroyed on the CLAP main thread. `show`, `hide`, accepted fixed sizes and failure results follow the host calls without starting a private GTK loop.

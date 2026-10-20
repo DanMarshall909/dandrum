@@ -16,6 +16,8 @@
 - [ ] 3.2 Package the production Trigger bundle/fonts and implement the Wry Linux-X11 child owner on the CLAP main thread; prove actual parenting, local-only resource loading, fixed-size acceptance, resize rejection, show/hide and create/order/API failure cleanup.
 - [ ] 3.3 Connect the required session snapshot, mapping/job recovery, native undo, notes and parameter methods; prove complete WebView destruction releases notes/gestures/callbacks exactly once while admitted work and accepted history survive reconnect.
 
+Task 3.2 remains open through task 4.2's actual CLAP thread/API/order proof. Its verified Wry library facets permit isolated task 3.3 snapshot and frontend work in parallel. Task 3.3 includes explicit optional-service metadata, omission compatibility and honest unavailable presentation as specified in the design; required session/notes/parameter/mapping/undo behavior remains native. Neither lane alone completes 3.3 or the editor acceptance gate.
+
 ## 4. Actual CLAP Product Boundary
 
 - [ ] 4.1 Add the deliberate Trigger identity to the dynamically loaded release binary with session-backed audio/MIDI/parameters and copied resources; prove descriptor stability, sample-offset signed playback, reset/reactivation and no JUCE/source-tree dependency.
