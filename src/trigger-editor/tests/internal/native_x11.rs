@@ -126,6 +126,7 @@ fn real_child_loads_local_content_and_drops_without_owning_the_host_parent() {
     }
     acquisition_errors_leave_no_owned_window(&x, parent, root, baseline);
     local_policy::external_fetch_is_blocked_by_enforcing_csp(parent);
+    local_policy::top_level_document_stays_at_fixed_entry(parent);
     x.destroy_window(parent).unwrap().check().unwrap();
 }
 

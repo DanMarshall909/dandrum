@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "verdict": "PASS",
+  "candidate_manifest_sha256": "470c8e004026906072b04731a1a1cb4934dfc9d894b712bcd6107b89e990152b",
+  "candidate_paths": 17,
+  "base": "8d002a1201e59e03da94381e8411672767200853",
+  "current": "8d002a1201e59e03da94381e8411672767200853",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "8d002a1201e59e03da94381e8411672767200853",
+  "scope": "One fixed-entry ordinary-page top-level navigation criterion within open task3.2",
+  "task_3_2_complete": false,
+  "full_beta_complete": false,
+  "actionable_findings": [],
+  "archive_members_verified": 234,
+  "final_metadata_addendum_required": true,
+  "publication_complete": false,
+  "mutations": "excluded by user",
+  "reviewer_resources_released": true,
+  "review_sha256": "a8d1749a3a0848f53ef441c84adab5478f7b670d784cd2ddca2b266bd2847f2a"
+}

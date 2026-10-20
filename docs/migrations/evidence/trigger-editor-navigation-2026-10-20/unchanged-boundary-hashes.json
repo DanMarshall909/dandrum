@@ -1,0 +1,27 @@
+{
+  "CMakeLists.txt": {
+    "worktree_sha256": "cbd35159ea1082c263a1484a0829ac8b81e114891c2b7d16d1999f1e82e61d4b",
+    "base_sha256": "cbd35159ea1082c263a1484a0829ac8b81e114891c2b7d16d1999f1e82e61d4b",
+    "unchanged": true
+  },
+  "src/trigger-editor/Cargo.toml": {
+    "worktree_sha256": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c",
+    "base_sha256": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c",
+    "unchanged": true
+  },
+  "src/trigger-editor/Cargo.lock": {
+    "worktree_sha256": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814",
+    "base_sha256": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814",
+    "unchanged": true
+  },
+  "src/trigger-editor/src/lib.rs": {
+    "worktree_sha256": "ce55f6e5ad9617dcac9d3aa017145612f0bfcbd9ccb83a866149c60e5419e27b",
+    "base_sha256": "ce55f6e5ad9617dcac9d3aa017145612f0bfcbd9ccb83a866149c60e5419e27b",
+    "unchanged": true
+  },
+  "src/trigger-editor/src/assets.rs": {
+    "worktree_sha256": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584",
+    "base_sha256": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584",
+    "unchanged": true
+  }
+}

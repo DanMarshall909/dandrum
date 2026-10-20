@@ -9,6 +9,8 @@ use x11rb::{
     rust_connection::RustConnection,
 };
 
+const ENTRY_URI: &str = "dandrum://localhost/index.html";
+
 #[derive(Debug)]
 pub enum NativeError {
     WrongThread,
@@ -63,6 +65,7 @@ impl NativeEditor {
                     .body(Cow::Owned(bytes))
                     .unwrap()
             });
+        let builder = builder.with_navigation_handler(|uri| uri == ENTRY_URI);
         let mut owner = Self::build_child(parent, &connection, builder)?;
         let manager = owner
             .view
@@ -81,10 +84,7 @@ impl NativeEditor {
             return Err(NativeError::IpcRegistration);
         }
         owner.ipc = Some((manager, handler));
-        owner
-            .view
-            .webview()
-            .load_uri("dandrum://localhost/index.html");
+        owner.view.webview().load_uri(ENTRY_URI);
         Ok(owner)
     }
 

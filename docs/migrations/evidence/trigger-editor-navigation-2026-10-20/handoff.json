@@ -1,0 +1,496 @@
+{
+  "base_head": "8d002a1201e59e03da94381e8411672767200853",
+  "cwd": "/tmp/dandrum-lanes/runtime",
+  "criterion": "Task3.2 fixed top-level entry: ordinary packaged page script cannot replace its document with an owned HTTP page or the packaged root alias; only exact dandrum://localhost/index.html is allowed.",
+  "production_delta": "One private navigation predicate at the concrete Wry edge compares requested URI to the fixed entry; private ENTRY_URI also supplies initial load. No public option/seam/API, dependency or build wiring change. CSP remains connect-src self (quoted self in source).",
+  "frozen_source_manifest": "final-candidate-hashes.json",
+  "final_source_sha256": {
+    "src/trigger-editor/src/native_x11.rs": "881a9d0197d06afe41a1ead11bfbc84e3fb54f2247960fae57a66eff31741281",
+    "src/trigger-editor/tests/internal/native_x11.rs": "8751b0784188dc7505f1972200011ee0fabc5cb33a07670e9dd530bf4ee4729d",
+    "src/trigger-editor/tests/internal/local_policy.rs": "4083dfe3a1938c7d3b5a21ff5408bd5e455fab6f54691d1007bd8dba8ca081f2",
+    "src/trigger-editor/tests/fixtures/navigation.mjs": "3626e1d47e5d3be9d2c84d571c043005cb6ce797271e55826b46aefcfa0e8ff9"
+  },
+  "source_binding": "final-source-binding.json confirms all four frozen files match the exact pre-run source snapshots for final Clippy, native+fast LLVM, registered CTests, library build, fmt, diff and default-graph checks. All baseline/RED/GREEN/refactor raw logs, sources/hashes and command/cwd/env/exit/duration receipts retained separately. Prior evidence immutable.",
+  "runs": {
+    "final-build": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "build",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 0.3376659369969275
+    },
+    "final-clippy": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--all-targets",
+        "--features",
+        "native-x11",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 0.3627414379734546
+    },
+    "final-ctest": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.local/bin/ctest",
+        "--test-dir",
+        "/dev/shm/dandrum-beta-20261020/editor-cmake",
+        "-R",
+        "^trigger-editor-(tests|packaged-assets|native-x11)$",
+        "--output-on-failure"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 1.5726978849852458
+    },
+    "final-default-graph": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "tree",
+        "--locked",
+        "--offline",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--no-default-features",
+        "--target",
+        "x86_64-unknown-linux-gnu"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 0.06593257299391553
+    },
+    "final-diff": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 0.005301600001985207
+    },
+    "final-fast-coverage": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "env",
+        "RUSTC_WORKSPACE_WRAPPER=/tmp/dandrum-lanes/evidence-native-editor/coverage-wrapper",
+        "LLVM_PROFILE_FILE=/tmp/dandrum-lanes/evidence-editor-navigation/final-fast-%p-%m.profraw",
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "--",
+        "--skip",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 0.12516093897284009
+    },
+    "final-fmt": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "fmt",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--",
+        "--check"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 0.04848985900753178
+    },
+    "final-native-coverage": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "env",
+        "RUSTC_WORKSPACE_WRAPPER=/tmp/dandrum-lanes/evidence-native-editor/coverage-wrapper",
+        "LLVM_PROFILE_FILE=/tmp/dandrum-lanes/evidence-editor-navigation/final-native-%p-%m.profraw",
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 2.019964398990851
+    },
+    "green-fixed-entry-navigation": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 2.001645529991947
+    },
+    "initial-native-coverage": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "env",
+        "RUSTC_WORKSPACE_WRAPPER=/tmp/dandrum-lanes/evidence-native-editor/coverage-wrapper",
+        "LLVM_PROFILE_FILE=/tmp/dandrum-lanes/evidence-editor-navigation/initial-native-%p-%m.profraw",
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 2.1931745409965515
+    },
+    "missing-navigation-policy-baseline": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 2.400156549003441
+    },
+    "red-fixed-entry-navigation": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 101,
+      "elapsed_seconds": 1.6477558980113827
+    },
+    "refactor-fixed-entry-navigation": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 2.031105582980672
+    }
+  },
+  "runtime_oracles": {
+    "calibration": "Owned127.0.0.1 ephemeral HTTP endpoint only. Independent Rust TCP client checks HTTP200 known text response, then HTTP200 Content-Type:text/html navigation route with known HTML title. Browser baseline independently reaches same route.",
+    "unchanged_baseline": "missing-navigation-policy-baseline exit0: ordinary module location.assign to http://127.0.0.1:32985/navigation commits actual URI and title owned-navigation-sentinel. Ledger records calibration GET, independent navigation GET and browser navigation GET. A second ordinary page navigation to dandrum://localhost/ also commits that actual URI. Published production code unchanged in baseline.",
+    "red": "red-fixed-entry-navigation exit101: assertion at tests/internal/local_policy.rs126 fails specifically because actual URI is http://127.0.0.1:40319/navigation rather than literal dandrum://localhost/index.html; actual title owned-navigation-sentinel; endpoint records browser GET after independent health checks. Existing local/CSP controls passed. Contemporaneous source/hash retained before production edit; failure is actual successful unwanted navigation, not network/CORS/timeout.",
+    "green": "Both HTTPtarget and local root alias remain at actual WebKit URI dandrum://localhost/index.html with actual title packaged-navigation-control. Ordinary module reports intended navigation-attempt, local|404|43px|37px and navigation-survived|404|dandrum://localhost/index.html. Independent endpoint ledger contains only two Rust health-check GETs; no browser navigation GET. Final native run uses owned port36843.",
+    "script_boundary": "location.assign runs from normal packaged app.js module; no native evaluated script is used for policy proof. Required app.js, app.css, inline style, local404 fetch and existing enforcing external-fetch CSP assertions remain active.",
+    "allowlist": "Only fixed exact index is allowed, as the accepted fixed entry contract specifies. Asset resolver root alias does not expand document navigation authority; explicit alternate-local root case is rejected. No other allowed URL exception introduced.",
+    "cleanup": "Endpoint workers use existing nonblocking/timeout/header-bound server and stop/join on Drop including RED unwind. HTTPtarget explicitly text/html with no attachment or download behavior. No requests target uncontrolled network destinations.",
+    "limits": "Proof is normal page top-level replacement for representative external and alternate packaged URLs, with predicate exact matching. Does not claim navigation of every browser mechanism, new windows, downloads or subresources is covered."
+  },
+  "coverage": {
+    "owner_native": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 14,
+        "covered": 12,
+        "percent": 85.71428571428571
+      },
+      "instantiations": {
+        "count": 34,
+        "covered": 23,
+        "percent": 67.64705882352942
+      },
+      "lines": {
+        "count": 134,
+        "covered": 129,
+        "percent": 96.26865671641791
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 209,
+        "covered": 190,
+        "notcovered": 19,
+        "percent": 90.9090909090909
+      }
+    },
+    "assets_fast": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 5,
+        "covered": 5,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 11,
+        "covered": 7,
+        "percent": 63.63636363636363
+      },
+      "lines": {
+        "count": 52,
+        "covered": 52,
+        "percent": 100
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 87,
+        "covered": 86,
+        "notcovered": 1,
+        "percent": 98.85057471264368
+      }
+    },
+    "new_production_code": "Navigation callback line68 executed7 times: five initial fixed-entry navigations accepted and two ordinary-script alternate targets denied, independently distinguished by actual URI/title/endpoint observations. Shared fixed-entry load line87 executed5 times. No new extracted production module.",
+    "native_owner_fast": "0/134 lines; separate lane attribution retained.",
+    "instrumentation": "Rust local crate instrumented by retained workspace wrapper using -Cinstrument-coverage; exact instrumentation/env/export commands, binary SHA256, raw profiles/profdata/JSON/annotated source retained. final-coverage-export-runs.json binds binary d76f71f9f1986e283f8d41925f5746aad889b2e652560b7d506d05f8e00534d1. Shared LLVM target untouched.",
+    "limits": "No exclusions, branch or MC/DC claim; LLVM reports zero branch counters. Owner retains19 inherited uncovered regions. New navigation predicate is observed accepting and denying real loads; coverage count alone does not establish policy.",
+    "inherited_gaps": [
+      {
+        "lines": [
+          83,
+          84
+        ],
+        "case": "IPC refusal cleanup: fresh manager/sole registration invariant prevents a public duplicate in fixed pinned construction."
+      },
+      {
+        "lines": [
+          114
+        ],
+        "case": "Non-X11 display guard: public on other backends, selected machine has no Wayland fixture."
+      },
+      {
+        "lines": [
+          117
+        ],
+        "case": "New checked X11 connection failure requires auth/server loss while existing GDK display is already usable; not disrupted on shared server."
+      },
+      {
+        "lines": [
+          171
+        ],
+        "case": "Reparent enqueue IO failure requires transport loss; actual checked BadWindow reply and post-WebKit resource/native cleanup remain covered."
+      },
+      {
+        "regions": "Other inherited direction gaps: default display missing/realization cast failure under fixed initialized X11 construction; wrong-screen/depth; validation transport/race errors; non-value JavascriptResult; generic callbacks skipped by rejected creates."
+      },
+      {
+        "dependency_limit": "No Wry-internal post-WebKit-allocation Err claim; prior shared-context duplicate calibration remains accurately classified as builder preflight."
+      }
+    ]
+  },
+  "refactor": {
+    "production": "After GREEN and initial instrumented coverage, unified initial load and private predicate with immutable ENTRY_URI. Expected test URIs remain independent literals. Refactor real native rerun passes; final source receives fresh coverage, lint, CTests and build. No abstraction/public policy configuration justified for one exact comparison.",
+    "fixture": "Shared covered page_package and read_response helpers reuse existing package and endpoint controls; added explicit HTTP200/text-html/title calibration. Existing CSP helper passes through these changes. One existing ignored native runner retains captured GTK main-thread contract.",
+    "timing": "Normal GREEN test1.28s and covered-refactor test1.27s versus earlier CSP-only roughly0.78s. Two additional real WebKit contexts and ordinary-page100ms continuity checks supply unique boundary evidence; native CTest1.42s, all3 CTests1.57s. Default fast CTest0.08s remains separate. No lane change or broad stress sweep."
+  },
+  "maintained_checks": "Final3/3 registered editor CTests pass: fast, actual full packaged-assets calibration, native-X11 invoking new assertions. Final all-target native Clippy -Dwarnings, native library build, fmt/check and diff/check pass. Native and fast focused LLVM exports pass. All exact sources bound in final-source-binding.json.",
+  "unchanged_boundary": "unchanged-boundary-hashes.json confirms CMake, Cargo.toml, Cargo.lock, lib.rs and assets.rs byte-identical to base. Default cargo tree contains editor crate only (std-only). Reuse independently accepted4d85b25 source-free guard per root instruction; no redundant large guard rerun for this cfg-native-only change.",
+  "dependencies": "No dependency/version/feature/license changes; pinned audited Wry/GTK/WebKit/x11rb graph and no-core-GUI boundary unchanged.",
+  "explicit_remaining": [
+    "Full resource policy and production React/all8fonts rendering remain later material slices.",
+    "New-window/download behavior requires actual unchanged baseline first; current Wry absent new-window handler is not assumed to allow a view. No extra handler introduced.",
+    "Show/hide/fixed-size resize/API/order lifecycle and actual CLAP main-thread/timer integration remain later.",
+    "No initialized native session/backend/audio/device/DAW/VST3 acceptance or overall completion claim; task3.2 remains unchecked."
+  ],
+  "next_ready_criterion": "After independent review/commit/publication, characterize next new-window/download or complete-resource boundary; do not manufacture RED where existing WebKit behavior already meets contract.",
+  "git_scope": "No Git/index/worktree/commit/push/docs/task/progress mutations. Only four assigned paths differ. Main remains clean68dd6553a2f07e71e2fe09ee1d7094d518559937; runtime base8d002a1.",
+  "resource_scope": "Only existing editor-target and editor-cmake staging used. Shared LLVM/guard/caches preserved; no deletion. final-environment-checks.json records physical free16431566848bytes, real tmpfs10919817216bytes, target1.9G. owned-process-check.json records0 Cargo/rustc/editor processes. No active execution session remains.",
+  "ownership_release": "Source is frozen. Explicitly release all four source paths, editor-target, editor-cmake and native build ownership to root for independent review/publication. Author makes no further source/index/build changes until reassigned."
+}

@@ -11,21 +11,15 @@ use std::{
     thread::JoinHandle,
     time::{Duration, Instant},
 };
+use webkit2gtk::WebViewExt;
+use wry::WebViewExtUnix;
 
 pub(super) fn external_fetch_is_blocked_by_enforcing_csp(parent: u32) {
     let endpoint = Endpoint::start();
     endpoint.calibrate();
-    let package = common::Package::new();
-    for path in common::FILES {
-        package.write(path, b"fixture");
-    }
-    package.write("index.html", br#"<!doctype html><link rel="stylesheet" href="/app.css"><div id="control" style="width:37px">local policy</div><script type="module" src="/app.js"></script>"#);
-    package.write("app.css", b"#control { height:43px; }");
-    package.write(
-        "app.js",
+    let package = page_package(
         include_str!("../fixtures/local-policy.mjs")
-            .replace("__LOCAL_POLICY_ENDPOINT__", &endpoint.origin())
-            .as_bytes(),
+            .replace("__LOCAL_POLICY_ENDPOINT__", &endpoint.origin()),
     );
     let messages = Rc::new(RefCell::new(Vec::new()));
     let sink = messages.clone();
@@ -77,6 +71,92 @@ pub(super) fn external_fetch_is_blocked_by_enforcing_csp(parent: u32) {
     drop(owner);
 }
 
+pub(super) fn top_level_document_stays_at_fixed_entry(parent: u32) {
+    let endpoint = Endpoint::start();
+    endpoint.calibrate();
+    let response = endpoint.read_response("/navigation");
+    assert!(response.starts_with("HTTP/1.1 200 OK\r\n"));
+    assert!(response.contains("Content-Type: text/html\r\n"));
+    assert!(response.ends_with("<!doctype html><title>owned-navigation-sentinel</title>"));
+    for target in [
+        format!("{}/navigation", endpoint.origin()),
+        "dandrum://localhost/".into(),
+    ] {
+        let package = page_package(
+            include_str!("../fixtures/navigation.mjs").replace("__NAVIGATION_TARGET__", &target),
+        );
+        let messages = Rc::new(RefCell::new(Vec::new()));
+        let sink = messages.clone();
+        let owner = NativeEditor::create(
+            parent,
+            EditorAssets::open(package.root()).unwrap(),
+            move |message| sink.borrow_mut().push(message),
+        )
+        .unwrap();
+        let view = owner.view.webview();
+        let deadline = Instant::now() + Duration::from_secs(15);
+        while Instant::now() < deadline {
+            NativeEditor::service().unwrap();
+            if (view.uri().as_deref() == Some(target.as_str()) && !view.is_loading())
+                || messages.borrow().iter().any(|message| {
+                    message == "navigation-survived|404|dandrum://localhost/index.html"
+                })
+            {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        let observed = messages.borrow();
+        let requests = endpoint.requests.lock().unwrap();
+        eprintln!(
+            "navigation target: {target}; browser receipt: {observed:?}; actual URI: {:?}; actual title: {:?}; owned endpoint requests: {requests:?}",
+            view.uri(),
+            view.title()
+        );
+        assert!(
+            observed
+                .iter()
+                .any(|message| message == "local|404|43px|37px")
+        );
+        assert!(
+            observed
+                .iter()
+                .any(|message| message == &format!("navigation-attempt|{target}")),
+            "normal page script attempts the target navigation"
+        );
+        assert_eq!(
+            view.uri().as_deref(),
+            Some("dandrum://localhost/index.html"),
+            "the actual top-level document stays at the exact packaged entry"
+        );
+        assert_eq!(view.title().as_deref(), Some("packaged-navigation-control"));
+        assert!(
+            observed
+                .iter()
+                .any(|message| message == "navigation-survived|404|dandrum://localhost/index.html"),
+            "the ordinary local page remains responsive after denied navigation"
+        );
+        assert_eq!(
+            &*requests,
+            &["GET /calibration HTTP/1.1", "GET /navigation HTTP/1.1"],
+            "only the independent calibration reaches the external HTML route"
+        );
+        drop(view);
+        drop(owner);
+    }
+}
+
+fn page_package(script: String) -> common::Package {
+    let package = common::Package::new();
+    for path in common::FILES {
+        package.write(path, b"fixture");
+    }
+    package.write("index.html", br#"<!doctype html><title>packaged-navigation-control</title><link rel="stylesheet" href="/app.css"><div id="control" style="width:37px">local policy</div><script type="module" src="/app.js"></script>"#);
+    package.write("app.css", b"#control { height:43px; }");
+    package.write("app.js", script.as_bytes());
+    package
+}
+
 /// An owned loopback-only endpoint, independent of WebKit's load/error signals.
 /// Its nonblocking accept loop and finite read timeout also bound failure cleanup.
 struct Endpoint {
@@ -123,9 +203,20 @@ impl Endpoint {
                             if !complete {
                                 continue;
                             }
+                            let (mime, body) = if first_line == "GET /navigation HTTP/1.1" {
+                                (
+                                    "text/html",
+                                    "<!doctype html><title>owned-navigation-sentinel</title>",
+                                )
+                            } else {
+                                ("text/plain", "local-policy-sentinel")
+                            };
                             received.lock().unwrap().push(first_line);
-                            let response = b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 21\r\nConnection: close\r\n\r\nlocal-policy-sentinel";
-                            stream.write_all(response).unwrap();
+                            let response = format!(
+                                "HTTP/1.1 200 OK\r\nContent-Type: {mime}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                                body.len()
+                            );
+                            stream.write_all(response.as_bytes()).unwrap();
                         }
                     }
                     Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
@@ -148,6 +239,16 @@ impl Endpoint {
     }
 
     fn calibrate(&self) {
+        let response = self.read_response("/calibration");
+        assert!(response.starts_with("HTTP/1.1 200 OK\r\n"));
+        assert!(response.ends_with("\r\n\r\nlocal-policy-sentinel"));
+        assert_eq!(
+            &*self.requests.lock().unwrap(),
+            &["GET /calibration HTTP/1.1"]
+        );
+    }
+
+    fn read_response(&self, path: &str) -> String {
         let mut client = TcpStream::connect_timeout(&self.address, Duration::from_secs(1)).unwrap();
         client
             .set_read_timeout(Some(Duration::from_secs(1)))
@@ -156,16 +257,14 @@ impl Endpoint {
             .set_write_timeout(Some(Duration::from_secs(1)))
             .unwrap();
         client
-            .write_all(b"GET /calibration HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")
+            .write_all(
+                format!("GET {path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")
+                    .as_bytes(),
+            )
             .unwrap();
         let mut response = String::new();
         client.read_to_string(&mut response).unwrap();
-        assert!(response.starts_with("HTTP/1.1 200 OK\r\n"));
-        assert!(response.ends_with("\r\n\r\nlocal-policy-sentinel"));
-        assert_eq!(
-            &*self.requests.lock().unwrap(),
-            &["GET /calibration HTTP/1.1"]
-        );
+        response
     }
 }
 impl Drop for Endpoint {

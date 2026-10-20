@@ -793,3 +793,35 @@ and remains unproved here. The full beta continues through all remaining CLAP
 tasks and the subsequent VST3, standalone, DAW and installed offline/native
 acceptance increments. Main stays at 68dd655, mutation is excluded and all caches
 apart from the explicitly approved 30 GiB debug deletion remain preserved.
+
+
+## Trigger editor fixed-entry navigation — 20 October 2026
+
+The external-fetch CSP criterion was normally published at 8d002a1. Its next
+covered task 3.2 criterion restricts the top-level document to the fixed packaged
+entry. Independently calibrated owned HTTP HTML plus actual WebKit URI/title/GET
+observations prove genuine unwanted navigation before implementation; the local
+root alias also commits in baseline. Exact RED fails on the unwanted actual URI.
+GREEN rejects both targets, keeps the exact local URI/title, and continues the
+ordinary page's local fetch/IPC with no browser request at the healthy endpoint.
+Existing local module/CSS/inline styling and enforcing-fetch controls still pass.
+
+Covered refactoring shares a private immutable entry constant for initial load
+and exact comparison; tests keep independent literal expected URLs. The endpoint
+and page helpers are reused under both existing and new native assertions.
+Final 3/3 registered CTests pass in 1.572698 s, including native 1.42 s; Clippy-Dwarnings,
+native build, fmt, source-bound native/fast LLVM and default graph pass. The new
+predicate executes7times across5entry accepts and 2 denials. Native 129/134 lines,
+12/14functions,190/209regions retains5 inherited lines/19 regions without exclusions
+or branch claims; fast assets 52/52 and native 0/134 remain distinct scopes.
+
+[Portable evidence](evidence/trigger-editor-navigation-2026-10-20/receipt.json)
+retains exact raw source snapshots/logs/profiles and all command identities.
+CMake/manifests/lock/default graph are unchanged; published 4d85b25 source-free
+boundary remains applicable through 8d002a1 without another large guard run.
+Independent completion review passed for the frozen source/evidence candidate; normal-hook publication is the remaining gate.
+Task 3.2 stays unchecked, 7/14 overall. Resource policy, actual production React/fonts,
+show/hide/size and popup/download behavior remain; actual CLAP main-thread/API/order
+proof depends on 4.2 integration. Full beta continues through 3.3/4.x/5.x and the
+next VST3/standalone/DAW/offline/native increments. Main remains at 68dd655, mutation
+excluded, all remaining reusable caches preserved; no further deletion authorized.

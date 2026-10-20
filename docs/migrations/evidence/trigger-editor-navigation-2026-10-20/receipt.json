@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "base": "8d002a1201e59e03da94381e8411672767200853",
+  "scope": "Task3.2 fixed top-level entry navigation only",
+  "task_3_2_complete": false,
+  "full_beta_complete": false,
+  "sources": {
+    "src/trigger-editor/src/native_x11.rs": "881a9d0197d06afe41a1ead11bfbc84e3fb54f2247960fae57a66eff31741281",
+    "src/trigger-editor/tests/internal/native_x11.rs": "8751b0784188dc7505f1972200011ee0fabc5cb33a07670e9dd530bf4ee4729d",
+    "src/trigger-editor/tests/internal/local_policy.rs": "4083dfe3a1938c7d3b5a21ff5408bd5e455fab6f54691d1007bd8dba8ca081f2",
+    "src/trigger-editor/tests/fixtures/navigation.mjs": "3626e1d47e5d3be9d2c84d571c043005cb6ce797271e55826b46aefcfa0e8ff9"
+  },
+  "author_artifacts": 234,
+  "coverage": {
+    "owner_native": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 14,
+        "covered": 12,
+        "percent": 85.71428571428571
+      },
+      "instantiations": {
+        "count": 34,
+        "covered": 23,
+        "percent": 67.64705882352942
+      },
+      "lines": {
+        "count": 134,
+        "covered": 129,
+        "percent": 96.26865671641791
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 209,
+        "covered": 190,
+        "notcovered": 19,
+        "percent": 90.9090909090909
+      }
+    },
+    "assets_fast": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 5,
+        "covered": 5,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 11,
+        "covered": 7,
+        "percent": 63.63636363636363
+      },
+      "lines": {
+        "count": 52,
+        "covered": 52,
+        "percent": 100
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 87,
+        "covered": 86,
+        "notcovered": 1,
+        "percent": 98.85057471264368
+      }
+    },
+    "new_production_code": "Navigation callback line68 executed7 times: five initial fixed-entry navigations accepted and two ordinary-script alternate targets denied, independently distinguished by actual URI/title/endpoint observations. Shared fixed-entry load line87 executed5 times. No new extracted production module.",
+    "native_owner_fast": "0/134 lines; separate lane attribution retained.",
+    "instrumentation": "Rust local crate instrumented by retained workspace wrapper using -Cinstrument-coverage; exact instrumentation/env/export commands, binary SHA256, raw profiles/profdata/JSON/annotated source retained. final-coverage-export-runs.json binds binary d76f71f9f1986e283f8d41925f5746aad889b2e652560b7d506d05f8e00534d1. Shared LLVM target untouched.",
+    "limits": "No exclusions, branch or MC/DC claim; LLVM reports zero branch counters. Owner retains19 inherited uncovered regions. New navigation predicate is observed accepting and denying real loads; coverage count alone does not establish policy.",
+    "inherited_gaps": [
+      {
+        "lines": [
+          83,
+          84
+        ],
+        "case": "IPC refusal cleanup: fresh manager/sole registration invariant prevents a public duplicate in fixed pinned construction."
+      },
+      {
+        "lines": [
+          114
+        ],
+        "case": "Non-X11 display guard: public on other backends, selected machine has no Wayland fixture."
+      },
+      {
+        "lines": [
+          117
+        ],
+        "case": "New checked X11 connection failure requires auth/server loss while existing GDK display is already usable; not disrupted on shared server."
+      },
+      {
+        "lines": [
+          171
+        ],
+        "case": "Reparent enqueue IO failure requires transport loss; actual checked BadWindow reply and post-WebKit resource/native cleanup remain covered."
+      },
+      {
+        "regions": "Other inherited direction gaps: default display missing/realization cast failure under fixed initialized X11 construction; wrong-screen/depth; validation transport/race errors; non-value JavascriptResult; generic callbacks skipped by rejected creates."
+      },
+      {
+        "dependency_limit": "No Wry-internal post-WebKit-allocation Err claim; prior shared-context duplicate calibration remains accurately classified as builder preflight."
+      }
+    ]
+  },
+  "checks": {
+    "registered_ctests": "3/3",
+    "clippy_warnings_denied": "pass",
+    "formatting": "pass",
+    "mutation": "excluded by user"
+  },
+  "unchanged_build_boundary": {
+    "source_free_guard_base": "4d85b25deabcd533521fb51e5d160b74f9041ae1",
+    "immediate_base": "8d002a1201e59e03da94381e8411672767200853",
+    "guard_repeated": false,
+    "reason": "Only cfg-native owner/test changes; CMake/manifest/lock/default graph unchanged"
+  },
+  "review": {
+    "status": "PASS",
+    "manifest_sha256": "470c8e004026906072b04731a1a1cb4934dfc9d894b712bcd6107b89e990152b",
+    "review_sha256": "a8d1749a3a0848f53ef441c84adab5478f7b670d784cd2ddca2b266bd2847f2a",
+    "verdict_sha256": "803b0f6f23e593cced057f7be46b13dc22318d0c4765c9e5603a939a0ccfa4f4"
+  },
+  "publication": {
+    "target": "origin/feat/juce-free-host-adapters",
+    "status": "pending normal hooks"
+  }
+}
