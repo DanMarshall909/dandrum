@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "base": "4d85b25deabcd533521fb51e5d160b74f9041ae1",
+  "scope": "Task 3.2 enforcing external-fetch CSP foundation only",
+  "task_3_2_complete": false,
+  "full_beta_complete": false,
+  "sources": {
+    "src/trigger-editor/src/native_x11.rs": "7c7a558c9a04f6cde23c8133ae2d8da135398394bfb12c2780e5065aaeb32038",
+    "src/trigger-editor/tests/internal/native_x11.rs": "2dce05faee91533eba1aa9b8495875abdbf0f7e4ff22cbdb3c2cefe95353d562",
+    "src/trigger-editor/tests/internal/local_policy.rs": "574f789a7f31293dee7033d4ccb24354b0f25998ee4915b8eaa3a88570cd0841",
+    "src/trigger-editor/tests/fixtures/local-policy.mjs": "136578e291e562367d8e3f220218d5e99c149e905bb61c48b5e32c5fda9d2033"
+  },
+  "author_artifacts": 200,
+  "coverage": {
+    "new_production_code": "The only new production line, native_x11.rs62, executed10 times in the final native run; unchanged fast lane correctly executes no native-owner code.",
+    "owner_native": {
+      "lines": "130/135 (96.29629629629629%)",
+      "functions": "11/13 (84.61538461538461%)",
+      "regions": "185/204 (90.68627450980392%)",
+      "instantiations": "17/25 (68%)"
+    },
+    "assets_fast": {
+      "lines": "52/52 (100%)",
+      "regions": "86/87 (98.85057471264368%)"
+    },
+    "native_owner_fast": "0/135 lines, explicit separate lane attribution",
+    "tooling": "Rust local crate only instrumented with retained workspace wrapper; exact commands/env and binary SHA256 in final-coverage-export-runs.json. Raw profiles, profdata, JSON and annotated owner text retained. Actual source header has positive counts, not merely dependency/test coverage.",
+    "limits": "No exclusions added and no branch-coverage claim; LLVM reports zero branch counters. The19 uncovered owner regions are inherited from published4d85b25.",
+    "inherited_gaps": [
+      {
+        "lines": [
+          80,
+          81
+        ],
+        "case": "IPC refusal cleanup: fresh manager/sole registration invariant prevents a public duplicate in fixed pinned construction."
+      },
+      {
+        "lines": [
+          114
+        ],
+        "case": "Non-X11 display guard: public on other backends, selected machine has no Wayland fixture."
+      },
+      {
+        "lines": [
+          117
+        ],
+        "case": "New checked X11 connection failure requires auth/server loss while existing GDK display is already usable; not disrupted on shared server."
+      },
+      {
+        "lines": [
+          171
+        ],
+        "case": "Reparent enqueue IO failure requires transport loss; actual checked BadWindow reply and post-WebKit resource/native cleanup remain covered."
+      },
+      {
+        "regions": "Other inherited direction gaps: default display missing/realization cast failure under fixed initialized X11 construction; wrong-screen/depth; validation transport/race errors; non-value JavascriptResult; generic callbacks skipped by rejected creates."
+      },
+      {
+        "dependency_limit": "No Wry-internal post-WebKit-allocation Err claim; prior shared-context duplicate calibration remains accurately classified as builder preflight."
+      }
+    ]
+  },
+  "checks": {
+    "registered_ctests": "3/3",
+    "clippy_warnings_denied": "pass",
+    "formatting": "pass",
+    "mutation": "excluded by user"
+  },
+  "unchanged_build_boundary": {
+    "source_free_guard_base": "4d85b25deabcd533521fb51e5d160b74f9041ae1",
+    "guard_repeated": false,
+    "reason": "Only cfg(native-x11) implementation/test files change; CMake/manifest/lock/default graph unchanged"
+  },
+  "review": {
+    "status": "PASS",
+    "manifest_sha256": "b4b1aa8367b8029b8516ca50a0ecba79224d4edaebdcfbfeb3686d5caabe7de1",
+    "review_sha256": "6e05705650e8779c593a58f46b7219c3f3304e5c95ff7602e08af7a5e279775b",
+    "verdict_sha256": "d8f01baba1fa48d38455367d5e97fb94fdae6052c6aaf612514466dc50d6f9a6"
+  },
+  "publication": {
+    "target": "origin/feat/juce-free-host-adapters",
+    "status": "pending normal hooks"
+  }
+}

@@ -1,0 +1,1202 @@
+[
+  {
+    "path": "clippy-version.txt",
+    "bytes": 38,
+    "mode": "0o664",
+    "sha256": "bbad497025b736fef6248108743f7d93b5421664e5d3c86c44119cad8d381ad9"
+  },
+  {
+    "path": "coverage-wrapper",
+    "bytes": 42,
+    "mode": "0o775",
+    "sha256": "35d419d903fecad419af6d889885a9e67a45d9fa91a3ba5834aa8d1966e39788"
+  },
+  {
+    "path": "export_coverage.py",
+    "bytes": 1637,
+    "mode": "0o664",
+    "sha256": "ade4043fe7e57590116db9f91aabdd79af2a6af32b67009bfbabba527062e9f3"
+  },
+  {
+    "path": "final-candidate-hashes.json",
+    "bytes": 481,
+    "mode": "0o664",
+    "sha256": "1ac2373be750a6127afb93c435189a5ff805fb930fcc13500e63e3979778f9fa"
+  },
+  {
+    "path": "final-check-receipts.json",
+    "bytes": 2456,
+    "mode": "0o664",
+    "sha256": "a9725ec73e29b8ea898ca9145ac1c85869f5cd79c05cb684c7053af178d7fd88"
+  },
+  {
+    "path": "final-clippy-hashes.json",
+    "bytes": 1330,
+    "mode": "0o664",
+    "sha256": "cc75f8dc40d41bfe26ae983413a79b2e62b19e4c085e50c6a46d6ede315a86f1"
+  },
+  {
+    "path": "final-clippy-run.json",
+    "bytes": 572,
+    "mode": "0o664",
+    "sha256": "bd1a55dc21bcffca6fd081b6b57282ee6a447bec05b220b0657ed5412bae9f15"
+  },
+  {
+    "path": "final-clippy-source/CMakeLists.txt",
+    "bytes": 65237,
+    "mode": "0o664",
+    "sha256": "cbd35159ea1082c263a1484a0829ac8b81e114891c2b7d16d1999f1e82e61d4b"
+  },
+  {
+    "path": "final-clippy-source/src/trigger-editor/Cargo.lock",
+    "bytes": 59582,
+    "mode": "0o664",
+    "sha256": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814"
+  },
+  {
+    "path": "final-clippy-source/src/trigger-editor/Cargo.toml",
+    "bytes": 620,
+    "mode": "0o664",
+    "sha256": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c"
+  },
+  {
+    "path": "final-clippy-source/src/trigger-editor/src/assets.rs",
+    "bytes": 3961,
+    "mode": "0o664",
+    "sha256": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584"
+  },
+  {
+    "path": "final-clippy-source/src/trigger-editor/src/lib.rs",
+    "bytes": 429,
+    "mode": "0o664",
+    "sha256": "ce55f6e5ad9617dcac9d3aa017145612f0bfcbd9ccb83a866149c60e5419e27b"
+  },
+  {
+    "path": "final-clippy-source/src/trigger-editor/src/native_x11.rs",
+    "bytes": 6817,
+    "mode": "0o664",
+    "sha256": "7c7a558c9a04f6cde23c8133ae2d8da135398394bfb12c2780e5065aaeb32038"
+  },
+  {
+    "path": "final-clippy-source/src/trigger-editor/tests/common/mod.rs",
+    "bytes": 1506,
+    "mode": "0o664",
+    "sha256": "46746923660a618e87bdb1f65f4ca63ef3a1f5defc250ef251f7fa2e096ef5aa"
+  },
+  {
+    "path": "final-clippy-source/src/trigger-editor/tests/fixtures/local-policy.mjs",
+    "bytes": 970,
+    "mode": "0o664",
+    "sha256": "136578e291e562367d8e3f220218d5e99c149e905bb61c48b5e32c5fda9d2033"
+  },
+  {
+    "path": "final-clippy-source/src/trigger-editor/tests/internal/assets.rs",
+    "bytes": 6355,
+    "mode": "0o664",
+    "sha256": "dace7c0861a8eebb2b4ca36891809bb7f9d63367122ecb44faed21aa41db4c4e"
+  },
+  {
+    "path": "final-clippy-source/src/trigger-editor/tests/internal/local_policy.rs",
+    "bytes": 6826,
+    "mode": "0o664",
+    "sha256": "574f789a7f31293dee7033d4ccb24354b0f25998ee4915b8eaa3a88570cd0841"
+  },
+  {
+    "path": "final-clippy-source/src/trigger-editor/tests/internal/native_x11.rs",
+    "bytes": 10606,
+    "mode": "0o664",
+    "sha256": "2dce05faee91533eba1aa9b8495875abdbf0f7e4ff22cbdb3c2cefe95353d562"
+  },
+  {
+    "path": "final-clippy-source/src/trigger-editor/tests/packaged_assets.rs",
+    "bytes": 3069,
+    "mode": "0o664",
+    "sha256": "2520e026f6921fa697220bc40bcc4eda58711dde76529f1ac6957add63d5411c"
+  },
+  {
+    "path": "final-clippy.log",
+    "bytes": 163,
+    "mode": "0o664",
+    "sha256": "6b9015a47672614a3f8b408096cd00693c7675c67df88b0faf7fdcd0ecfabe46"
+  },
+  {
+    "path": "final-coverage-export-runs.json",
+    "bytes": 3536,
+    "mode": "0o664",
+    "sha256": "bafce2606850087cfae5cb171be7d6a4d5fd3d8409da4108c84e393f87f6a16f"
+  },
+  {
+    "path": "final-ctest-hashes.json",
+    "bytes": 1330,
+    "mode": "0o664",
+    "sha256": "cc75f8dc40d41bfe26ae983413a79b2e62b19e4c085e50c6a46d6ede315a86f1"
+  },
+  {
+    "path": "final-ctest-run.json",
+    "bytes": 514,
+    "mode": "0o664",
+    "sha256": "70fe5110766f4cc92928a5d3d2b4c988cf35261ecd50c0a7f97fb484dfd78298"
+  },
+  {
+    "path": "final-ctest-source/CMakeLists.txt",
+    "bytes": 65237,
+    "mode": "0o664",
+    "sha256": "cbd35159ea1082c263a1484a0829ac8b81e114891c2b7d16d1999f1e82e61d4b"
+  },
+  {
+    "path": "final-ctest-source/src/trigger-editor/Cargo.lock",
+    "bytes": 59582,
+    "mode": "0o664",
+    "sha256": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814"
+  },
+  {
+    "path": "final-ctest-source/src/trigger-editor/Cargo.toml",
+    "bytes": 620,
+    "mode": "0o664",
+    "sha256": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c"
+  },
+  {
+    "path": "final-ctest-source/src/trigger-editor/src/assets.rs",
+    "bytes": 3961,
+    "mode": "0o664",
+    "sha256": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584"
+  },
+  {
+    "path": "final-ctest-source/src/trigger-editor/src/lib.rs",
+    "bytes": 429,
+    "mode": "0o664",
+    "sha256": "ce55f6e5ad9617dcac9d3aa017145612f0bfcbd9ccb83a866149c60e5419e27b"
+  },
+  {
+    "path": "final-ctest-source/src/trigger-editor/src/native_x11.rs",
+    "bytes": 6817,
+    "mode": "0o664",
+    "sha256": "7c7a558c9a04f6cde23c8133ae2d8da135398394bfb12c2780e5065aaeb32038"
+  },
+  {
+    "path": "final-ctest-source/src/trigger-editor/tests/common/mod.rs",
+    "bytes": 1506,
+    "mode": "0o664",
+    "sha256": "46746923660a618e87bdb1f65f4ca63ef3a1f5defc250ef251f7fa2e096ef5aa"
+  },
+  {
+    "path": "final-ctest-source/src/trigger-editor/tests/fixtures/local-policy.mjs",
+    "bytes": 970,
+    "mode": "0o664",
+    "sha256": "136578e291e562367d8e3f220218d5e99c149e905bb61c48b5e32c5fda9d2033"
+  },
+  {
+    "path": "final-ctest-source/src/trigger-editor/tests/internal/assets.rs",
+    "bytes": 6355,
+    "mode": "0o664",
+    "sha256": "dace7c0861a8eebb2b4ca36891809bb7f9d63367122ecb44faed21aa41db4c4e"
+  },
+  {
+    "path": "final-ctest-source/src/trigger-editor/tests/internal/local_policy.rs",
+    "bytes": 6826,
+    "mode": "0o664",
+    "sha256": "574f789a7f31293dee7033d4ccb24354b0f25998ee4915b8eaa3a88570cd0841"
+  },
+  {
+    "path": "final-ctest-source/src/trigger-editor/tests/internal/native_x11.rs",
+    "bytes": 10606,
+    "mode": "0o664",
+    "sha256": "2dce05faee91533eba1aa9b8495875abdbf0f7e4ff22cbdb3c2cefe95353d562"
+  },
+  {
+    "path": "final-ctest-source/src/trigger-editor/tests/packaged_assets.rs",
+    "bytes": 3069,
+    "mode": "0o664",
+    "sha256": "2520e026f6921fa697220bc40bcc4eda58711dde76529f1ac6957add63d5411c"
+  },
+  {
+    "path": "final-ctest.log",
+    "bytes": 736,
+    "mode": "0o664",
+    "sha256": "97e6b4c589772d679fb3d5734556344dcbc6d9e9bbb32d4918185a105f940ef5"
+  },
+  {
+    "path": "final-default-graph-hashes.json",
+    "bytes": 1330,
+    "mode": "0o664",
+    "sha256": "cc75f8dc40d41bfe26ae983413a79b2e62b19e4c085e50c6a46d6ede315a86f1"
+  },
+  {
+    "path": "final-default-graph-run.json",
+    "bytes": 532,
+    "mode": "0o664",
+    "sha256": "2e12c5805c5c1bc80df3ef8733ffbd92ee2186aadb8c81e34ed8854f13635039"
+  },
+  {
+    "path": "final-default-graph-source/CMakeLists.txt",
+    "bytes": 65237,
+    "mode": "0o664",
+    "sha256": "cbd35159ea1082c263a1484a0829ac8b81e114891c2b7d16d1999f1e82e61d4b"
+  },
+  {
+    "path": "final-default-graph-source/src/trigger-editor/Cargo.lock",
+    "bytes": 59582,
+    "mode": "0o664",
+    "sha256": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814"
+  },
+  {
+    "path": "final-default-graph-source/src/trigger-editor/Cargo.toml",
+    "bytes": 620,
+    "mode": "0o664",
+    "sha256": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c"
+  },
+  {
+    "path": "final-default-graph-source/src/trigger-editor/src/assets.rs",
+    "bytes": 3961,
+    "mode": "0o664",
+    "sha256": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584"
+  },
+  {
+    "path": "final-default-graph-source/src/trigger-editor/src/lib.rs",
+    "bytes": 429,
+    "mode": "0o664",
+    "sha256": "ce55f6e5ad9617dcac9d3aa017145612f0bfcbd9ccb83a866149c60e5419e27b"
+  },
+  {
+    "path": "final-default-graph-source/src/trigger-editor/src/native_x11.rs",
+    "bytes": 6817,
+    "mode": "0o664",
+    "sha256": "7c7a558c9a04f6cde23c8133ae2d8da135398394bfb12c2780e5065aaeb32038"
+  },
+  {
+    "path": "final-default-graph-source/src/trigger-editor/tests/common/mod.rs",
+    "bytes": 1506,
+    "mode": "0o664",
+    "sha256": "46746923660a618e87bdb1f65f4ca63ef3a1f5defc250ef251f7fa2e096ef5aa"
+  },
+  {
+    "path": "final-default-graph-source/src/trigger-editor/tests/fixtures/local-policy.mjs",
+    "bytes": 970,
+    "mode": "0o664",
+    "sha256": "136578e291e562367d8e3f220218d5e99c149e905bb61c48b5e32c5fda9d2033"
+  },
+  {
+    "path": "final-default-graph-source/src/trigger-editor/tests/internal/assets.rs",
+    "bytes": 6355,
+    "mode": "0o664",
+    "sha256": "dace7c0861a8eebb2b4ca36891809bb7f9d63367122ecb44faed21aa41db4c4e"
+  },
+  {
+    "path": "final-default-graph-source/src/trigger-editor/tests/internal/local_policy.rs",
+    "bytes": 6826,
+    "mode": "0o664",
+    "sha256": "574f789a7f31293dee7033d4ccb24354b0f25998ee4915b8eaa3a88570cd0841"
+  },
+  {
+    "path": "final-default-graph-source/src/trigger-editor/tests/internal/native_x11.rs",
+    "bytes": 10606,
+    "mode": "0o664",
+    "sha256": "2dce05faee91533eba1aa9b8495875abdbf0f7e4ff22cbdb3c2cefe95353d562"
+  },
+  {
+    "path": "final-default-graph-source/src/trigger-editor/tests/packaged_assets.rs",
+    "bytes": 3069,
+    "mode": "0o664",
+    "sha256": "2520e026f6921fa697220bc40bcc4eda58711dde76529f1ac6957add63d5411c"
+  },
+  {
+    "path": "final-default-graph.log",
+    "bytes": 78,
+    "mode": "0o664",
+    "sha256": "2fc97f45a6da36216e4901bc271843d05372f7b2fda3a20a3d01963a5e6b6c26"
+  },
+  {
+    "path": "final-diff-hashes.json",
+    "bytes": 1330,
+    "mode": "0o664",
+    "sha256": "cc75f8dc40d41bfe26ae983413a79b2e62b19e4c085e50c6a46d6ede315a86f1"
+  },
+  {
+    "path": "final-diff-run.json",
+    "bytes": 355,
+    "mode": "0o664",
+    "sha256": "a238336ad5c25a4516f764918c81692baab677962b262e5a7d6d1e8054b2f85d"
+  },
+  {
+    "path": "final-diff-source/CMakeLists.txt",
+    "bytes": 65237,
+    "mode": "0o664",
+    "sha256": "cbd35159ea1082c263a1484a0829ac8b81e114891c2b7d16d1999f1e82e61d4b"
+  },
+  {
+    "path": "final-diff-source/src/trigger-editor/Cargo.lock",
+    "bytes": 59582,
+    "mode": "0o664",
+    "sha256": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814"
+  },
+  {
+    "path": "final-diff-source/src/trigger-editor/Cargo.toml",
+    "bytes": 620,
+    "mode": "0o664",
+    "sha256": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c"
+  },
+  {
+    "path": "final-diff-source/src/trigger-editor/src/assets.rs",
+    "bytes": 3961,
+    "mode": "0o664",
+    "sha256": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584"
+  },
+  {
+    "path": "final-diff-source/src/trigger-editor/src/lib.rs",
+    "bytes": 429,
+    "mode": "0o664",
+    "sha256": "ce55f6e5ad9617dcac9d3aa017145612f0bfcbd9ccb83a866149c60e5419e27b"
+  },
+  {
+    "path": "final-diff-source/src/trigger-editor/src/native_x11.rs",
+    "bytes": 6817,
+    "mode": "0o664",
+    "sha256": "7c7a558c9a04f6cde23c8133ae2d8da135398394bfb12c2780e5065aaeb32038"
+  },
+  {
+    "path": "final-diff-source/src/trigger-editor/tests/common/mod.rs",
+    "bytes": 1506,
+    "mode": "0o664",
+    "sha256": "46746923660a618e87bdb1f65f4ca63ef3a1f5defc250ef251f7fa2e096ef5aa"
+  },
+  {
+    "path": "final-diff-source/src/trigger-editor/tests/fixtures/local-policy.mjs",
+    "bytes": 970,
+    "mode": "0o664",
+    "sha256": "136578e291e562367d8e3f220218d5e99c149e905bb61c48b5e32c5fda9d2033"
+  },
+  {
+    "path": "final-diff-source/src/trigger-editor/tests/internal/assets.rs",
+    "bytes": 6355,
+    "mode": "0o664",
+    "sha256": "dace7c0861a8eebb2b4ca36891809bb7f9d63367122ecb44faed21aa41db4c4e"
+  },
+  {
+    "path": "final-diff-source/src/trigger-editor/tests/internal/local_policy.rs",
+    "bytes": 6826,
+    "mode": "0o664",
+    "sha256": "574f789a7f31293dee7033d4ccb24354b0f25998ee4915b8eaa3a88570cd0841"
+  },
+  {
+    "path": "final-diff-source/src/trigger-editor/tests/internal/native_x11.rs",
+    "bytes": 10606,
+    "mode": "0o664",
+    "sha256": "2dce05faee91533eba1aa9b8495875abdbf0f7e4ff22cbdb3c2cefe95353d562"
+  },
+  {
+    "path": "final-diff-source/src/trigger-editor/tests/packaged_assets.rs",
+    "bytes": 3069,
+    "mode": "0o664",
+    "sha256": "2520e026f6921fa697220bc40bcc4eda58711dde76529f1ac6957add63d5411c"
+  },
+  {
+    "path": "final-diff.log",
+    "bytes": 0,
+    "mode": "0o664",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "final-fast-2568006-2047025960250303926_0.profraw",
+    "bytes": 8712,
+    "mode": "0o664",
+    "sha256": "8bc546b07624d41d19d6e897a66f9cf3f710c5bfd06f5e99719243a1c8f5cd46"
+  },
+  {
+    "path": "final-fast-coverage-hashes.json",
+    "bytes": 1330,
+    "mode": "0o664",
+    "sha256": "cc75f8dc40d41bfe26ae983413a79b2e62b19e4c085e50c6a46d6ede315a86f1"
+  },
+  {
+    "path": "final-fast-coverage-run.json",
+    "bytes": 848,
+    "mode": "0o664",
+    "sha256": "766c80173fc96edb271055a22baee9cfcab14f0d3caa6dd5ce70e57ab7fa0649"
+  },
+  {
+    "path": "final-fast-coverage-source/CMakeLists.txt",
+    "bytes": 65237,
+    "mode": "0o664",
+    "sha256": "cbd35159ea1082c263a1484a0829ac8b81e114891c2b7d16d1999f1e82e61d4b"
+  },
+  {
+    "path": "final-fast-coverage-source/src/trigger-editor/Cargo.lock",
+    "bytes": 59582,
+    "mode": "0o664",
+    "sha256": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814"
+  },
+  {
+    "path": "final-fast-coverage-source/src/trigger-editor/Cargo.toml",
+    "bytes": 620,
+    "mode": "0o664",
+    "sha256": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c"
+  },
+  {
+    "path": "final-fast-coverage-source/src/trigger-editor/src/assets.rs",
+    "bytes": 3961,
+    "mode": "0o664",
+    "sha256": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584"
+  },
+  {
+    "path": "final-fast-coverage-source/src/trigger-editor/src/lib.rs",
+    "bytes": 429,
+    "mode": "0o664",
+    "sha256": "ce55f6e5ad9617dcac9d3aa017145612f0bfcbd9ccb83a866149c60e5419e27b"
+  },
+  {
+    "path": "final-fast-coverage-source/src/trigger-editor/src/native_x11.rs",
+    "bytes": 6817,
+    "mode": "0o664",
+    "sha256": "7c7a558c9a04f6cde23c8133ae2d8da135398394bfb12c2780e5065aaeb32038"
+  },
+  {
+    "path": "final-fast-coverage-source/src/trigger-editor/tests/common/mod.rs",
+    "bytes": 1506,
+    "mode": "0o664",
+    "sha256": "46746923660a618e87bdb1f65f4ca63ef3a1f5defc250ef251f7fa2e096ef5aa"
+  },
+  {
+    "path": "final-fast-coverage-source/src/trigger-editor/tests/fixtures/local-policy.mjs",
+    "bytes": 970,
+    "mode": "0o664",
+    "sha256": "136578e291e562367d8e3f220218d5e99c149e905bb61c48b5e32c5fda9d2033"
+  },
+  {
+    "path": "final-fast-coverage-source/src/trigger-editor/tests/internal/assets.rs",
+    "bytes": 6355,
+    "mode": "0o664",
+    "sha256": "dace7c0861a8eebb2b4ca36891809bb7f9d63367122ecb44faed21aa41db4c4e"
+  },
+  {
+    "path": "final-fast-coverage-source/src/trigger-editor/tests/internal/local_policy.rs",
+    "bytes": 6826,
+    "mode": "0o664",
+    "sha256": "574f789a7f31293dee7033d4ccb24354b0f25998ee4915b8eaa3a88570cd0841"
+  },
+  {
+    "path": "final-fast-coverage-source/src/trigger-editor/tests/internal/native_x11.rs",
+    "bytes": 10606,
+    "mode": "0o664",
+    "sha256": "2dce05faee91533eba1aa9b8495875abdbf0f7e4ff22cbdb3c2cefe95353d562"
+  },
+  {
+    "path": "final-fast-coverage-source/src/trigger-editor/tests/packaged_assets.rs",
+    "bytes": 3069,
+    "mode": "0o664",
+    "sha256": "2520e026f6921fa697220bc40bcc4eda58711dde76529f1ac6957add63d5411c"
+  },
+  {
+    "path": "final-fast-coverage.json",
+    "bytes": 126218,
+    "mode": "0o664",
+    "sha256": "efd616dbbf86e94a07448b326341d0e1e950cc5985283986b5bb30881258c147"
+  },
+  {
+    "path": "final-fast-coverage.log",
+    "bytes": 728,
+    "mode": "0o664",
+    "sha256": "097b3f1f22491d8842393ae566d6b7ad279435efa71b2e3b511a13128bc20acb"
+  },
+  {
+    "path": "final-fast-coverage.txt",
+    "bytes": 9478,
+    "mode": "0o664",
+    "sha256": "98b02dcebe800f0d9fc576e204993e8e2ecedf6eb5e79d980bf8693c76b132f8"
+  },
+  {
+    "path": "final-fast-merge.log",
+    "bytes": 0,
+    "mode": "0o664",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "final-fast.profdata",
+    "bytes": 4328,
+    "mode": "0o664",
+    "sha256": "99d5ae867749c018b63a1a18b4ed813190b5c94843525762085de7ac5eb46658"
+  },
+  {
+    "path": "final-fmt-hashes.json",
+    "bytes": 1330,
+    "mode": "0o664",
+    "sha256": "cc75f8dc40d41bfe26ae983413a79b2e62b19e4c085e50c6a46d6ede315a86f1"
+  },
+  {
+    "path": "final-fmt-run.json",
+    "bytes": 446,
+    "mode": "0o664",
+    "sha256": "97c792676fcd3f54d2d17efb6acfdf12228860c6344350c2c4e5e3bbe0f10ffe"
+  },
+  {
+    "path": "final-fmt-source/CMakeLists.txt",
+    "bytes": 65237,
+    "mode": "0o664",
+    "sha256": "cbd35159ea1082c263a1484a0829ac8b81e114891c2b7d16d1999f1e82e61d4b"
+  },
+  {
+    "path": "final-fmt-source/src/trigger-editor/Cargo.lock",
+    "bytes": 59582,
+    "mode": "0o664",
+    "sha256": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814"
+  },
+  {
+    "path": "final-fmt-source/src/trigger-editor/Cargo.toml",
+    "bytes": 620,
+    "mode": "0o664",
+    "sha256": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c"
+  },
+  {
+    "path": "final-fmt-source/src/trigger-editor/src/assets.rs",
+    "bytes": 3961,
+    "mode": "0o664",
+    "sha256": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584"
+  },
+  {
+    "path": "final-fmt-source/src/trigger-editor/src/lib.rs",
+    "bytes": 429,
+    "mode": "0o664",
+    "sha256": "ce55f6e5ad9617dcac9d3aa017145612f0bfcbd9ccb83a866149c60e5419e27b"
+  },
+  {
+    "path": "final-fmt-source/src/trigger-editor/src/native_x11.rs",
+    "bytes": 6817,
+    "mode": "0o664",
+    "sha256": "7c7a558c9a04f6cde23c8133ae2d8da135398394bfb12c2780e5065aaeb32038"
+  },
+  {
+    "path": "final-fmt-source/src/trigger-editor/tests/common/mod.rs",
+    "bytes": 1506,
+    "mode": "0o664",
+    "sha256": "46746923660a618e87bdb1f65f4ca63ef3a1f5defc250ef251f7fa2e096ef5aa"
+  },
+  {
+    "path": "final-fmt-source/src/trigger-editor/tests/fixtures/local-policy.mjs",
+    "bytes": 970,
+    "mode": "0o664",
+    "sha256": "136578e291e562367d8e3f220218d5e99c149e905bb61c48b5e32c5fda9d2033"
+  },
+  {
+    "path": "final-fmt-source/src/trigger-editor/tests/internal/assets.rs",
+    "bytes": 6355,
+    "mode": "0o664",
+    "sha256": "dace7c0861a8eebb2b4ca36891809bb7f9d63367122ecb44faed21aa41db4c4e"
+  },
+  {
+    "path": "final-fmt-source/src/trigger-editor/tests/internal/local_policy.rs",
+    "bytes": 6826,
+    "mode": "0o664",
+    "sha256": "574f789a7f31293dee7033d4ccb24354b0f25998ee4915b8eaa3a88570cd0841"
+  },
+  {
+    "path": "final-fmt-source/src/trigger-editor/tests/internal/native_x11.rs",
+    "bytes": 10606,
+    "mode": "0o664",
+    "sha256": "2dce05faee91533eba1aa9b8495875abdbf0f7e4ff22cbdb3c2cefe95353d562"
+  },
+  {
+    "path": "final-fmt-source/src/trigger-editor/tests/packaged_assets.rs",
+    "bytes": 3069,
+    "mode": "0o664",
+    "sha256": "2520e026f6921fa697220bc40bcc4eda58711dde76529f1ac6957add63d5411c"
+  },
+  {
+    "path": "final-fmt.log",
+    "bytes": 0,
+    "mode": "0o664",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "final-native-2565061-2047025960250303926_0.profraw",
+    "bytes": 8712,
+    "mode": "0o664",
+    "sha256": "a7d0578399e232cdae1dcee8b42e6cc07a1a2b256785d80a769fb31f99b0a4b6"
+  },
+  {
+    "path": "final-native-coverage-hashes.json",
+    "bytes": 1330,
+    "mode": "0o664",
+    "sha256": "cc75f8dc40d41bfe26ae983413a79b2e62b19e4c085e50c6a46d6ede315a86f1"
+  },
+  {
+    "path": "final-native-coverage-run.json",
+    "bytes": 910,
+    "mode": "0o664",
+    "sha256": "2f241a534e89642fc9e89ef9c3d299d63b39d763aae9a796129b5693f1670068"
+  },
+  {
+    "path": "final-native-coverage-source/CMakeLists.txt",
+    "bytes": 65237,
+    "mode": "0o664",
+    "sha256": "cbd35159ea1082c263a1484a0829ac8b81e114891c2b7d16d1999f1e82e61d4b"
+  },
+  {
+    "path": "final-native-coverage-source/src/trigger-editor/Cargo.lock",
+    "bytes": 59582,
+    "mode": "0o664",
+    "sha256": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814"
+  },
+  {
+    "path": "final-native-coverage-source/src/trigger-editor/Cargo.toml",
+    "bytes": 620,
+    "mode": "0o664",
+    "sha256": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c"
+  },
+  {
+    "path": "final-native-coverage-source/src/trigger-editor/src/assets.rs",
+    "bytes": 3961,
+    "mode": "0o664",
+    "sha256": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584"
+  },
+  {
+    "path": "final-native-coverage-source/src/trigger-editor/src/lib.rs",
+    "bytes": 429,
+    "mode": "0o664",
+    "sha256": "ce55f6e5ad9617dcac9d3aa017145612f0bfcbd9ccb83a866149c60e5419e27b"
+  },
+  {
+    "path": "final-native-coverage-source/src/trigger-editor/src/native_x11.rs",
+    "bytes": 6817,
+    "mode": "0o664",
+    "sha256": "7c7a558c9a04f6cde23c8133ae2d8da135398394bfb12c2780e5065aaeb32038"
+  },
+  {
+    "path": "final-native-coverage-source/src/trigger-editor/tests/common/mod.rs",
+    "bytes": 1506,
+    "mode": "0o664",
+    "sha256": "46746923660a618e87bdb1f65f4ca63ef3a1f5defc250ef251f7fa2e096ef5aa"
+  },
+  {
+    "path": "final-native-coverage-source/src/trigger-editor/tests/fixtures/local-policy.mjs",
+    "bytes": 970,
+    "mode": "0o664",
+    "sha256": "136578e291e562367d8e3f220218d5e99c149e905bb61c48b5e32c5fda9d2033"
+  },
+  {
+    "path": "final-native-coverage-source/src/trigger-editor/tests/internal/assets.rs",
+    "bytes": 6355,
+    "mode": "0o664",
+    "sha256": "dace7c0861a8eebb2b4ca36891809bb7f9d63367122ecb44faed21aa41db4c4e"
+  },
+  {
+    "path": "final-native-coverage-source/src/trigger-editor/tests/internal/local_policy.rs",
+    "bytes": 6826,
+    "mode": "0o664",
+    "sha256": "574f789a7f31293dee7033d4ccb24354b0f25998ee4915b8eaa3a88570cd0841"
+  },
+  {
+    "path": "final-native-coverage-source/src/trigger-editor/tests/internal/native_x11.rs",
+    "bytes": 10606,
+    "mode": "0o664",
+    "sha256": "2dce05faee91533eba1aa9b8495875abdbf0f7e4ff22cbdb3c2cefe95353d562"
+  },
+  {
+    "path": "final-native-coverage-source/src/trigger-editor/tests/packaged_assets.rs",
+    "bytes": 3069,
+    "mode": "0o664",
+    "sha256": "2520e026f6921fa697220bc40bcc4eda58711dde76529f1ac6957add63d5411c"
+  },
+  {
+    "path": "final-native-coverage.json",
+    "bytes": 126366,
+    "mode": "0o664",
+    "sha256": "e8c1a5d83ee27b0bc6dc730a2b895d0490fb8e116f8ec6e90dbcaf3a731e58ed"
+  },
+  {
+    "path": "final-native-coverage.log",
+    "bytes": 784,
+    "mode": "0o664",
+    "sha256": "0e0dae98cbb1a02e50bdfbba9b03683423ad0472e96a97bfd9f4ddfe66446842"
+  },
+  {
+    "path": "final-native-coverage.txt",
+    "bytes": 9478,
+    "mode": "0o664",
+    "sha256": "a34e0bfec5a827ddaab14e6cc030dc45857dc62cad96b5fc865b0348dd98f6cb"
+  },
+  {
+    "path": "final-native-merge.log",
+    "bytes": 0,
+    "mode": "0o664",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "final-native.profdata",
+    "bytes": 9968,
+    "mode": "0o664",
+    "sha256": "1f5cec3c94c171b176d38c8f16132c4e8ff16e5aa5c607c89b373d1737ac1ab6"
+  },
+  {
+    "path": "final-resource-headroom.txt",
+    "bytes": 136,
+    "mode": "0o664",
+    "sha256": "abc5612dfc185c344e834d074bd1cf785dc25806e89841b81b8acdc56aa7ae2d"
+  },
+  {
+    "path": "final-target-size.txt",
+    "bytes": 50,
+    "mode": "0o664",
+    "sha256": "44b2a3211fd791d93e65db5408020e4c7f0c44721dd3bc81a8f1a8c1d9e4f869"
+  },
+  {
+    "path": "green-enforcing-connect-policy-hashes.json",
+    "bytes": 1330,
+    "mode": "0o664",
+    "sha256": "2e5ce94024fe9e5367d1d5122998c3759e8ca4dbc59e98649e2740526694d6e8"
+  },
+  {
+    "path": "green-enforcing-connect-policy-run.json",
+    "bytes": 709,
+    "mode": "0o664",
+    "sha256": "2745e223de32bcfb879b1dc6b322a02bc065910d480ed735aa79ef224c1c8dea"
+  },
+  {
+    "path": "green-enforcing-connect-policy-source/CMakeLists.txt",
+    "bytes": 65237,
+    "mode": "0o664",
+    "sha256": "cbd35159ea1082c263a1484a0829ac8b81e114891c2b7d16d1999f1e82e61d4b"
+  },
+  {
+    "path": "green-enforcing-connect-policy-source/src/trigger-editor/Cargo.lock",
+    "bytes": 59582,
+    "mode": "0o664",
+    "sha256": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814"
+  },
+  {
+    "path": "green-enforcing-connect-policy-source/src/trigger-editor/Cargo.toml",
+    "bytes": 620,
+    "mode": "0o664",
+    "sha256": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c"
+  },
+  {
+    "path": "green-enforcing-connect-policy-source/src/trigger-editor/src/assets.rs",
+    "bytes": 3961,
+    "mode": "0o664",
+    "sha256": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584"
+  },
+  {
+    "path": "green-enforcing-connect-policy-source/src/trigger-editor/src/lib.rs",
+    "bytes": 429,
+    "mode": "0o664",
+    "sha256": "ce55f6e5ad9617dcac9d3aa017145612f0bfcbd9ccb83a866149c60e5419e27b"
+  },
+  {
+    "path": "green-enforcing-connect-policy-source/src/trigger-editor/src/native_x11.rs",
+    "bytes": 6817,
+    "mode": "0o664",
+    "sha256": "7c7a558c9a04f6cde23c8133ae2d8da135398394bfb12c2780e5065aaeb32038"
+  },
+  {
+    "path": "green-enforcing-connect-policy-source/src/trigger-editor/tests/common/mod.rs",
+    "bytes": 1506,
+    "mode": "0o664",
+    "sha256": "46746923660a618e87bdb1f65f4ca63ef3a1f5defc250ef251f7fa2e096ef5aa"
+  },
+  {
+    "path": "green-enforcing-connect-policy-source/src/trigger-editor/tests/fixtures/local-policy.mjs",
+    "bytes": 970,
+    "mode": "0o664",
+    "sha256": "136578e291e562367d8e3f220218d5e99c149e905bb61c48b5e32c5fda9d2033"
+  },
+  {
+    "path": "green-enforcing-connect-policy-source/src/trigger-editor/tests/internal/assets.rs",
+    "bytes": 6355,
+    "mode": "0o664",
+    "sha256": "dace7c0861a8eebb2b4ca36891809bb7f9d63367122ecb44faed21aa41db4c4e"
+  },
+  {
+    "path": "green-enforcing-connect-policy-source/src/trigger-editor/tests/internal/local_policy.rs",
+    "bytes": 6807,
+    "mode": "0o664",
+    "sha256": "6de119bb40ea941d0db08cbe82c969dd5d61cd6c2c889bde81276190c47dbf38"
+  },
+  {
+    "path": "green-enforcing-connect-policy-source/src/trigger-editor/tests/internal/native_x11.rs",
+    "bytes": 10587,
+    "mode": "0o664",
+    "sha256": "fa9ff97dcb493447f9ba8ad667f08a014f362e5476927aea5aa62c6f728b1799"
+  },
+  {
+    "path": "green-enforcing-connect-policy-source/src/trigger-editor/tests/packaged_assets.rs",
+    "bytes": 3069,
+    "mode": "0o664",
+    "sha256": "2520e026f6921fa697220bc40bcc4eda58711dde76529f1ac6957add63d5411c"
+  },
+  {
+    "path": "green-enforcing-connect-policy.log",
+    "bytes": 784,
+    "mode": "0o664",
+    "sha256": "220ec43f37ce389b6f96fd9d7b9a43baf7f8b40a00ef4a923dfc5ab533b84bb3"
+  },
+  {
+    "path": "handoff.json",
+    "bytes": 17433,
+    "mode": "0o664",
+    "sha256": "2f1357a5deaf6180c35204e7ed4e4b19200b92863659ca5f21380b740b4eb89f"
+  },
+  {
+    "path": "initial-coverage-export-runs.json",
+    "bytes": 1587,
+    "mode": "0o664",
+    "sha256": "d0b903a4f4957b28aa91820ee3fc20360aa76deec6fcfb57d1c6d9e6db9b9765"
+  },
+  {
+    "path": "initial-native-2555795-2046977581738681782_0.profraw",
+    "bytes": 8672,
+    "mode": "0o664",
+    "sha256": "5d640c828e50e9d48d84f865537d4a307b6f3ea867d5c63a88acdb0bd060af5e"
+  },
+  {
+    "path": "initial-native-coverage-hashes.json",
+    "bytes": 1330,
+    "mode": "0o664",
+    "sha256": "2e5ce94024fe9e5367d1d5122998c3759e8ca4dbc59e98649e2740526694d6e8"
+  },
+  {
+    "path": "initial-native-coverage-run.json",
+    "bytes": 912,
+    "mode": "0o664",
+    "sha256": "9d1f01bd052283cd058ef29d8d2f58481246886ff655a555fffe68661e2fb045"
+  },
+  {
+    "path": "initial-native-coverage-source/CMakeLists.txt",
+    "bytes": 65237,
+    "mode": "0o664",
+    "sha256": "cbd35159ea1082c263a1484a0829ac8b81e114891c2b7d16d1999f1e82e61d4b"
+  },
+  {
+    "path": "initial-native-coverage-source/src/trigger-editor/Cargo.lock",
+    "bytes": 59582,
+    "mode": "0o664",
+    "sha256": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814"
+  },
+  {
+    "path": "initial-native-coverage-source/src/trigger-editor/Cargo.toml",
+    "bytes": 620,
+    "mode": "0o664",
+    "sha256": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c"
+  },
+  {
+    "path": "initial-native-coverage-source/src/trigger-editor/src/assets.rs",
+    "bytes": 3961,
+    "mode": "0o664",
+    "sha256": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584"
+  },
+  {
+    "path": "initial-native-coverage-source/src/trigger-editor/src/lib.rs",
+    "bytes": 429,
+    "mode": "0o664",
+    "sha256": "ce55f6e5ad9617dcac9d3aa017145612f0bfcbd9ccb83a866149c60e5419e27b"
+  },
+  {
+    "path": "initial-native-coverage-source/src/trigger-editor/src/native_x11.rs",
+    "bytes": 6817,
+    "mode": "0o664",
+    "sha256": "7c7a558c9a04f6cde23c8133ae2d8da135398394bfb12c2780e5065aaeb32038"
+  },
+  {
+    "path": "initial-native-coverage-source/src/trigger-editor/tests/common/mod.rs",
+    "bytes": 1506,
+    "mode": "0o664",
+    "sha256": "46746923660a618e87bdb1f65f4ca63ef3a1f5defc250ef251f7fa2e096ef5aa"
+  },
+  {
+    "path": "initial-native-coverage-source/src/trigger-editor/tests/fixtures/local-policy.mjs",
+    "bytes": 970,
+    "mode": "0o664",
+    "sha256": "136578e291e562367d8e3f220218d5e99c149e905bb61c48b5e32c5fda9d2033"
+  },
+  {
+    "path": "initial-native-coverage-source/src/trigger-editor/tests/internal/assets.rs",
+    "bytes": 6355,
+    "mode": "0o664",
+    "sha256": "dace7c0861a8eebb2b4ca36891809bb7f9d63367122ecb44faed21aa41db4c4e"
+  },
+  {
+    "path": "initial-native-coverage-source/src/trigger-editor/tests/internal/local_policy.rs",
+    "bytes": 6807,
+    "mode": "0o664",
+    "sha256": "6de119bb40ea941d0db08cbe82c969dd5d61cd6c2c889bde81276190c47dbf38"
+  },
+  {
+    "path": "initial-native-coverage-source/src/trigger-editor/tests/internal/native_x11.rs",
+    "bytes": 10587,
+    "mode": "0o664",
+    "sha256": "fa9ff97dcb493447f9ba8ad667f08a014f362e5476927aea5aa62c6f728b1799"
+  },
+  {
+    "path": "initial-native-coverage-source/src/trigger-editor/tests/packaged_assets.rs",
+    "bytes": 3069,
+    "mode": "0o664",
+    "sha256": "2520e026f6921fa697220bc40bcc4eda58711dde76529f1ac6957add63d5411c"
+  },
+  {
+    "path": "initial-native-coverage.json",
+    "bytes": 126176,
+    "mode": "0o664",
+    "sha256": "cb9f4491f64a7bf16e3f90c6936db3389430395d7a771ce7ba7630c1905e499e"
+  },
+  {
+    "path": "initial-native-coverage.log",
+    "bytes": 784,
+    "mode": "0o664",
+    "sha256": "1deed63438a757591675d798909bf41932437d18932303da8cf765dbc956848a"
+  },
+  {
+    "path": "initial-native-coverage.txt",
+    "bytes": 9478,
+    "mode": "0o664",
+    "sha256": "a4df78c0c89316ad8c549e9e941a7090078fe3e2f2d05c1aa02fffbe7e7e3f54"
+  },
+  {
+    "path": "initial-native-merge.log",
+    "bytes": 0,
+    "mode": "0o664",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "initial-native.profdata",
+    "bytes": 9776,
+    "mode": "0o664",
+    "sha256": "6d4c54f845d3b84b537c5ee8f650a5d7f99354c9c32b590ffa43563342d2a902"
+  },
+  {
+    "path": "llvm-version.txt",
+    "bytes": 85,
+    "mode": "0o664",
+    "sha256": "7cec3ed325280fcbbb3647b7dd82af7d9c915bfa6878d3caff6b4574a53201fb"
+  },
+  {
+    "path": "main-git-head.txt",
+    "bytes": 41,
+    "mode": "0o664",
+    "sha256": "2c6ee217f96471d42c7fd075949433ce21e55bbeba9a7eebffe182be72e6bc52"
+  },
+  {
+    "path": "main-git-status.txt",
+    "bytes": 0,
+    "mode": "0o664",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "missing-policy-baseline-hashes.json",
+    "bytes": 1330,
+    "mode": "0o664",
+    "sha256": "75a7c098a8ad8abba7ef830c3fe768e2ee67fbb8be2027620112060c6c34dbdd"
+  },
+  {
+    "path": "missing-policy-baseline-run.json",
+    "bytes": 709,
+    "mode": "0o664",
+    "sha256": "b109705386bef7b504e97497c824f8b5798752ae9e00c29fb699d6ca3f8acccb"
+  },
+  {
+    "path": "missing-policy-baseline-source/CMakeLists.txt",
+    "bytes": 65237,
+    "mode": "0o664",
+    "sha256": "cbd35159ea1082c263a1484a0829ac8b81e114891c2b7d16d1999f1e82e61d4b"
+  },
+  {
+    "path": "missing-policy-baseline-source/src/trigger-editor/Cargo.lock",
+    "bytes": 59582,
+    "mode": "0o664",
+    "sha256": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814"
+  },
+  {
+    "path": "missing-policy-baseline-source/src/trigger-editor/Cargo.toml",
+    "bytes": 620,
+    "mode": "0o664",
+    "sha256": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c"
+  },
+  {
+    "path": "missing-policy-baseline-source/src/trigger-editor/src/assets.rs",
+    "bytes": 3961,
+    "mode": "0o664",
+    "sha256": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584"
+  },
+  {
+    "path": "missing-policy-baseline-source/src/trigger-editor/src/lib.rs",
+    "bytes": 429,
+    "mode": "0o664",
+    "sha256": "ce55f6e5ad9617dcac9d3aa017145612f0bfcbd9ccb83a866149c60e5419e27b"
+  },
+  {
+    "path": "missing-policy-baseline-source/src/trigger-editor/src/native_x11.rs",
+    "bytes": 6740,
+    "mode": "0o664",
+    "sha256": "a407d045b0a413c4c9a53a854cf9191976cac692f5c9df82ca1339e0144a0dd5"
+  },
+  {
+    "path": "missing-policy-baseline-source/src/trigger-editor/tests/common/mod.rs",
+    "bytes": 1506,
+    "mode": "0o664",
+    "sha256": "46746923660a618e87bdb1f65f4ca63ef3a1f5defc250ef251f7fa2e096ef5aa"
+  },
+  {
+    "path": "missing-policy-baseline-source/src/trigger-editor/tests/fixtures/local-policy.mjs",
+    "bytes": 970,
+    "mode": "0o664",
+    "sha256": "136578e291e562367d8e3f220218d5e99c149e905bb61c48b5e32c5fda9d2033"
+  },
+  {
+    "path": "missing-policy-baseline-source/src/trigger-editor/tests/internal/assets.rs",
+    "bytes": 6355,
+    "mode": "0o664",
+    "sha256": "dace7c0861a8eebb2b4ca36891809bb7f9d63367122ecb44faed21aa41db4c4e"
+  },
+  {
+    "path": "missing-policy-baseline-source/src/trigger-editor/tests/internal/local_policy.rs",
+    "bytes": 6650,
+    "mode": "0o664",
+    "sha256": "0fea72b72216eacd0c7fde6777678178b9ee078d3c2c4dda47942378bf70eacf"
+  },
+  {
+    "path": "missing-policy-baseline-source/src/trigger-editor/tests/internal/native_x11.rs",
+    "bytes": 10587,
+    "mode": "0o664",
+    "sha256": "fa9ff97dcb493447f9ba8ad667f08a014f362e5476927aea5aa62c6f728b1799"
+  },
+  {
+    "path": "missing-policy-baseline-source/src/trigger-editor/tests/packaged_assets.rs",
+    "bytes": 3069,
+    "mode": "0o664",
+    "sha256": "2520e026f6921fa697220bc40bcc4eda58711dde76529f1ac6957add63d5411c"
+  },
+  {
+    "path": "missing-policy-baseline.log",
+    "bytes": 734,
+    "mode": "0o664",
+    "sha256": "ce5e60cc6ae975f5aff6f3761d36a02b14ed7c995d54c0b8b3bf2087f96cf429"
+  },
+  {
+    "path": "owned-process-check.json",
+    "bytes": 3,
+    "mode": "0o664",
+    "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+  },
+  {
+    "path": "red-missing-enforcing-connect-policy-hashes.json",
+    "bytes": 1330,
+    "mode": "0o664",
+    "sha256": "71b72a4f51f2257fdb840f70b58160cb4ccadbd1c6a27255c702431b2d97b4f4"
+  },
+  {
+    "path": "red-missing-enforcing-connect-policy-run.json",
+    "bytes": 711,
+    "mode": "0o664",
+    "sha256": "0323d2797e4c35ae179062a2ff262e2768f105114ce4cca357ea0374886decfd"
+  },
+  {
+    "path": "red-missing-enforcing-connect-policy-source/CMakeLists.txt",
+    "bytes": 65237,
+    "mode": "0o664",
+    "sha256": "cbd35159ea1082c263a1484a0829ac8b81e114891c2b7d16d1999f1e82e61d4b"
+  },
+  {
+    "path": "red-missing-enforcing-connect-policy-source/src/trigger-editor/Cargo.lock",
+    "bytes": 59582,
+    "mode": "0o664",
+    "sha256": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814"
+  },
+  {
+    "path": "red-missing-enforcing-connect-policy-source/src/trigger-editor/Cargo.toml",
+    "bytes": 620,
+    "mode": "0o664",
+    "sha256": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c"
+  },
+  {
+    "path": "red-missing-enforcing-connect-policy-source/src/trigger-editor/src/assets.rs",
+    "bytes": 3961,
+    "mode": "0o664",
+    "sha256": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584"
+  },
+  {
+    "path": "red-missing-enforcing-connect-policy-source/src/trigger-editor/src/lib.rs",
+    "bytes": 429,
+    "mode": "0o664",
+    "sha256": "ce55f6e5ad9617dcac9d3aa017145612f0bfcbd9ccb83a866149c60e5419e27b"
+  },
+  {
+    "path": "red-missing-enforcing-connect-policy-source/src/trigger-editor/src/native_x11.rs",
+    "bytes": 6740,
+    "mode": "0o664",
+    "sha256": "a407d045b0a413c4c9a53a854cf9191976cac692f5c9df82ca1339e0144a0dd5"
+  },
+  {
+    "path": "red-missing-enforcing-connect-policy-source/src/trigger-editor/tests/common/mod.rs",
+    "bytes": 1506,
+    "mode": "0o664",
+    "sha256": "46746923660a618e87bdb1f65f4ca63ef3a1f5defc250ef251f7fa2e096ef5aa"
+  },
+  {
+    "path": "red-missing-enforcing-connect-policy-source/src/trigger-editor/tests/fixtures/local-policy.mjs",
+    "bytes": 970,
+    "mode": "0o664",
+    "sha256": "136578e291e562367d8e3f220218d5e99c149e905bb61c48b5e32c5fda9d2033"
+  },
+  {
+    "path": "red-missing-enforcing-connect-policy-source/src/trigger-editor/tests/internal/assets.rs",
+    "bytes": 6355,
+    "mode": "0o664",
+    "sha256": "dace7c0861a8eebb2b4ca36891809bb7f9d63367122ecb44faed21aa41db4c4e"
+  },
+  {
+    "path": "red-missing-enforcing-connect-policy-source/src/trigger-editor/tests/internal/local_policy.rs",
+    "bytes": 6807,
+    "mode": "0o664",
+    "sha256": "6de119bb40ea941d0db08cbe82c969dd5d61cd6c2c889bde81276190c47dbf38"
+  },
+  {
+    "path": "red-missing-enforcing-connect-policy-source/src/trigger-editor/tests/internal/native_x11.rs",
+    "bytes": 10587,
+    "mode": "0o664",
+    "sha256": "fa9ff97dcb493447f9ba8ad667f08a014f362e5476927aea5aa62c6f728b1799"
+  },
+  {
+    "path": "red-missing-enforcing-connect-policy-source/src/trigger-editor/tests/packaged_assets.rs",
+    "bytes": 3069,
+    "mode": "0o664",
+    "sha256": "2520e026f6921fa697220bc40bcc4eda58711dde76529f1ac6957add63d5411c"
+  },
+  {
+    "path": "red-missing-enforcing-connect-policy.log",
+    "bytes": 1239,
+    "mode": "0o664",
+    "sha256": "74fc9080139914135906acdec0077fdde93b3190806670b2dac393442f0d948d"
+  },
+  {
+    "path": "run.py",
+    "bytes": 1332,
+    "mode": "0o664",
+    "sha256": "e1781e50693b0b3ee2738e52a06256118299c91b33bdb0093961c04495bc7443"
+  },
+  {
+    "path": "runtime-git-head.txt",
+    "bytes": 41,
+    "mode": "0o664",
+    "sha256": "9342600e650f40d20a1430c25818d0a4d228ecf19366801be62fff6e0171e21d"
+  },
+  {
+    "path": "runtime-git-status.txt",
+    "bytes": 182,
+    "mode": "0o664",
+    "sha256": "104303d28a1dd6afa016c2036f8deb34833cf4ccd1138a9d725078998220e78e"
+  },
+  {
+    "path": "rustc-version.txt",
+    "bytes": 196,
+    "mode": "0o664",
+    "sha256": "f64c55ed9f210d80a9b248206104a47175faf5ec94a093e4ad132549209089fc"
+  },
+  {
+    "path": "system-native-versions.txt",
+    "bytes": 15,
+    "mode": "0o664",
+    "sha256": "259d6e6f69683fd562193c5dce1b27fd39c8e11272e525d46db64537f3e8a279"
+  },
+  {
+    "path": "unchanged-boundary-hashes.json",
+    "bytes": 297,
+    "mode": "0o664",
+    "sha256": "34d4e53209b1e4bf35baf304c1b93927bd1463c1fa68d2e7b36b814ea852632d"
+  }
+]

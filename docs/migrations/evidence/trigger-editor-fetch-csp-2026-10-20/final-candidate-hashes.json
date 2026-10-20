@@ -1,0 +1,6 @@
+{
+  "src/trigger-editor/src/native_x11.rs": "7c7a558c9a04f6cde23c8133ae2d8da135398394bfb12c2780e5065aaeb32038",
+  "src/trigger-editor/tests/internal/native_x11.rs": "2dce05faee91533eba1aa9b8495875abdbf0f7e4ff22cbdb3c2cefe95353d562",
+  "src/trigger-editor/tests/internal/local_policy.rs": "574f789a7f31293dee7033d4ccb24354b0f25998ee4915b8eaa3a88570cd0841",
+  "src/trigger-editor/tests/fixtures/local-policy.mjs": "136578e291e562367d8e3f220218d5e99c149e905bb61c48b5e32c5fda9d2033"
+}

@@ -59,6 +59,7 @@ impl NativeEditor {
                 wry::http::Response::builder()
                     .status(status)
                     .header("Content-Type", mime)
+                    .header("Content-Security-Policy", "connect-src 'self'")
                     .body(Cow::Owned(bytes))
                     .unwrap()
             });

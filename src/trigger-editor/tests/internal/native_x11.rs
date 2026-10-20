@@ -11,6 +11,9 @@ use x11rb::{
     protocol::xproto::{ConnectionExt, CreateWindowAux, MapState, WindowClass},
 };
 
+#[path = "local_policy.rs"]
+mod local_policy;
+
 #[test]
 #[ignore = "requires real Linux X11, GTK3 and WebKitGTK; native boundary lane"]
 fn real_child_loads_local_content_and_drops_without_owning_the_host_parent() {
@@ -122,6 +125,7 @@ fn real_child_loads_local_content_and_drops_without_owning_the_host_parent() {
         );
     }
     acquisition_errors_leave_no_owned_window(&x, parent, root, baseline);
+    local_policy::external_fetch_is_blocked_by_enforcing_csp(parent);
     x.destroy_window(parent).unwrap().check().unwrap();
 }
 

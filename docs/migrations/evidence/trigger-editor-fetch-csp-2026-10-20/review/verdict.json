@@ -1,0 +1,26 @@
+{
+  "verdict": "PASS",
+  "scope": "Task 3.2 external-fetch CSP foundation only",
+  "base": "4d85b25deabcd533521fb51e5d160b74f9041ae1",
+  "current": "4d85b25deabcd533521fb51e5d160b74f9041ae1",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "4d85b25deabcd533521fb51e5d160b74f9041ae1",
+  "integration_base": "4d85b25deabcd533521fb51e5d160b74f9041ae1",
+  "manifest_sha256": "b4b1aa8367b8029b8516ca50a0ecba79224d4edaebdcfbfeb3686d5caabe7de1",
+  "manifest_paths": 17,
+  "manifest_independently_reconstructed": true,
+  "actionable_findings": [],
+  "portable_sha256_entries_verified": 11,
+  "author_archive_members_verified": 200,
+  "author_archive_decoded_bytes": 2340123,
+  "task_3_2_complete": false,
+  "full_beta_complete": false,
+  "publication_envelope": "Exactly the five metadata paths and deterministic transformations in review-packet.md, followed by required exact metadata-only addendum before commit; then the named validations, normal-hook commit, fast-forward existing integration/feature updates, unchanged-upstream fetch and normal feature push. No source changes or cleanup.",
+  "limitations": [
+    "Only external-fetch connect-src enforcement is proved; broader browser resource/navigation/download policy remains open.",
+    "Native owner coverage is 130/135 lines and 185/204 regions, with inherited disclosed gaps, no exclusions and no branch coverage claim.",
+    "Current native/packaged/default checks supplement unchanged prior source-free/default-boundary evidence; no new full guard run is claimed.",
+    "Production React/backend/fonts, full GUI lifecycle, CLAP integration, session/audio continuity and installed/DAW acceptance remain open.",
+    "Mutation remains excluded by recorded user direction."
+  ]
+}

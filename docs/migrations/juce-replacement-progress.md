@@ -760,3 +760,36 @@ integration. No native audio/session continuity claim is made. The full beta
 remains active through CLAP and the later VST3, standalone, named-DAW and installed
 offline/native acceptance increments. Main remains clean at 68dd655, mutation
 is excluded, and reusable caches are preserved.
+
+
+## Trigger editor external-fetch CSP — 20 October 2026
+
+The native owner was normally published at 4d85b25. Its next covered task 3.2
+criterion adds one fixed enforcing `connect-src 'self'` response header.
+A live loopback endpoint is calibrated independently; unchanged WebKit proves
+the external request succeeds before the genuine missing-policy RED. GREEN
+requires the exact enforcing directive/origin/document event, a rejected fetch
+and no request at that endpoint, while packaged module/CSS/inline styling and
+local 404 fetch remain usable. The listener's Rust Drop implementation stops
+and joins its worker when the fixture leaves scope, including assertion failure.
+
+Final three registered CTests, all-target native Clippy with warnings denied,
+formatting and source-bound native/fast LLVM pass. The new production line is
+hit 10times; owner 130/135 lines, 11/13 functions and 185/204 regions retains its inherited
+five-line/19-region gaps with no exclusions or branch claim. Fast assets remain
+52/52 lines. CMake/manifest/lock/default dependency graph are unchanged; the
+published source-free/default-boundary evidence remains applicable without
+repeating that unaffected large guard.
+
+[Portable evidence](evidence/trigger-editor-fetch-csp-2026-10-20/receipt.json)
+retains exact source, raw logs and profiles, endpoint facts and command receipts.
+Independent completion review passed for the exact external-fetch CSP component;
+its review and verdict are retained with the receipt. Final metadata verification
+and normal-hook publication remain the next gates.
+Task 3.2 stays unchecked. Complete resource restrictions, navigation, new windows,
+downloads, production React/fonts and the remaining owner lifecycle are next;
+actual CLAP main-thread/API/order acceptance belongs to the later 4.2 boundary
+and remains unproved here. The full beta continues through all remaining CLAP
+tasks and the subsequent VST3, standalone, DAW and installed offline/native
+acceptance increments. Main stays at 68dd655, mutation is excluded and all caches
+apart from the explicitly approved 30 GiB debug deletion remain preserved.

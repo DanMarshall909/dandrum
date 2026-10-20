@@ -1,0 +1,382 @@
+{
+  "base_head": "4d85b25deabcd533521fb51e5d160b74f9041ae1",
+  "cwd": "/tmp/dandrum-lanes/runtime",
+  "criterion": "Task3.2 external-fetch CSP foundation only: ordinary packaged page script must retain local fetch while an attempted external-origin fetch is rejected by an enforcing connect-src policy.",
+  "production_delta": "One immutable Content-Security-Policy: connect-src self (quoted self in actual header) response header in the concrete native editor custom-protocol handler; no API/configuration/dependency/build-wiring changes.",
+  "frozen_source_manifest": "final-candidate-hashes.json",
+  "unchanged_boundary_manifest": "unchanged-boundary-hashes.json",
+  "source_binding": "Every final Clippy/native+fast LLVM coverage/registered CTest/fmt/diff/default-graph snapshot matches the four frozen source hashes. Baseline and RED retain contemporaneous exact source snapshots, hashes, full log and command/cwd/env/exit/duration. All prior native-owner evidence left immutable.",
+  "runs": {
+    "missing-policy-baseline": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 2.0691575260134414
+    },
+    "red-missing-enforcing-connect-policy": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 101,
+      "elapsed_seconds": 1.4701134520000778
+    },
+    "green-enforcing-connect-policy": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 1.4722507819824386
+    },
+    "initial-native-coverage": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "env",
+        "RUSTC_WORKSPACE_WRAPPER=/tmp/dandrum-lanes/evidence-native-editor/coverage-wrapper",
+        "LLVM_PROFILE_FILE=/tmp/dandrum-lanes/evidence-editor-local-policy/initial-native-%p-%m.profraw",
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 1.7751793920178898
+    },
+    "final-clippy": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--all-targets",
+        "--features",
+        "native-x11",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 0.3991916879895143
+    },
+    "final-native-coverage": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "env",
+        "RUSTC_WORKSPACE_WRAPPER=/tmp/dandrum-lanes/evidence-native-editor/coverage-wrapper",
+        "LLVM_PROFILE_FILE=/tmp/dandrum-lanes/evidence-editor-local-policy/final-native-%p-%m.profraw",
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 1.5546115519828163
+    },
+    "final-fast-coverage": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "env",
+        "RUSTC_WORKSPACE_WRAPPER=/tmp/dandrum-lanes/evidence-native-editor/coverage-wrapper",
+        "LLVM_PROFILE_FILE=/tmp/dandrum-lanes/evidence-editor-local-policy/final-fast-%p-%m.profraw",
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "--",
+        "--skip",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 0.14122372199199162
+    },
+    "final-ctest": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.local/bin/ctest",
+        "--test-dir",
+        "/dev/shm/dandrum-beta-20261020/editor-cmake",
+        "-R",
+        "^trigger-editor-(tests|packaged-assets|native-x11)$",
+        "--output-on-failure"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 2.1673685259884223
+    },
+    "final-fmt": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "fmt",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--",
+        "--check"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 0.04940805200021714
+    },
+    "final-diff": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 0.004944283020449802
+    },
+    "final-default-graph": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "tree",
+        "--locked",
+        "--offline",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--no-default-features",
+        "--target",
+        "x86_64-unknown-linux-gnu"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch"
+      },
+      "exit": 0,
+      "elapsed_seconds": 0.09874220500933006
+    }
+  },
+  "runtime_oracles": {
+    "independent_endpoint_calibration": "A Rust TCP client reads the known HTTP200/local-policy-sentinel response from a bound127.0.0.1 ephemeral listener; listener records GET /calibration HTTP/1.1.",
+    "missing_policy_baseline": "Unchanged published production owner: normal external module/app.css, inline width and local404 fetch pass; external no-cors fetch resolves; endpoint independently records GET /external-attempt HTTP/1.1; no CSP event. This calibrates actual network accessibility without relying on CORS failure.",
+    "red": "Same ordinary page/endpoint with intended policy assertions: fails specifically at missing enforcing connect-src violation. Local controls pass and external request still resolves/reaches endpoint. Native production source in RED remains a407d045b0a413c4c9a53a854cf9191976cac692f5c9df82ca1339e0144a0dd5.",
+    "green": "Normal packaged external module reports local|404|43px|37px, then policy|connect-src|enforce|http://127.0.0.1:<owned-port>|dandrum://localhost/index.html, external|rejected, done. Endpoint records only the independent calibration GET; external-attempt GET is absent.",
+    "script_boundary": "No native script evaluation is used by the policy test. Its event listener and fetch run from the ordinary packaged app.js module. Wry existing IPC initialization is unchanged.",
+    "negative_control": "External fetch uses mode:no-cors, so generic CORS failure cannot impersonate enforcing CSP proof. Policy event directive/disposition/blocked-origin/document URI and the actual request ledger are asserted independently.",
+    "positive_controls": "Required app.js module executes; real external app.css yields height43px, inline style yields width37px, and local fetch returns404. connect-src none or a browser that blocks everything fails these controls.",
+    "cleanup": "Listener binds loopback only, uses nonblocking accept plus finite read/write timeouts and an8192-byte header limit, and stops/joins its owned worker in Drop, including RED unwinding. No native request/download is aimed outside that owned endpoint and packaged files."
+  },
+  "coverage": {
+    "new_production_code": "The only new production line, native_x11.rs62, executed10 times in the final native run; unchanged fast lane correctly executes no native-owner code.",
+    "owner_native": {
+      "lines": "130/135 (96.29629629629629%)",
+      "functions": "11/13 (84.61538461538461%)",
+      "regions": "185/204 (90.68627450980392%)",
+      "instantiations": "17/25 (68%)"
+    },
+    "assets_fast": {
+      "lines": "52/52 (100%)",
+      "regions": "86/87 (98.85057471264368%)"
+    },
+    "native_owner_fast": "0/135 lines, explicit separate lane attribution",
+    "tooling": "Rust local crate only instrumented with retained workspace wrapper; exact commands/env and binary SHA256 in final-coverage-export-runs.json. Raw profiles, profdata, JSON and annotated owner text retained. Actual source header has positive counts, not merely dependency/test coverage.",
+    "limits": "No exclusions added and no branch-coverage claim; LLVM reports zero branch counters. The19 uncovered owner regions are inherited from published4d85b25.",
+    "inherited_gaps": [
+      {
+        "lines": [
+          80,
+          81
+        ],
+        "case": "IPC refusal cleanup: fresh manager/sole registration invariant prevents a public duplicate in fixed pinned construction."
+      },
+      {
+        "lines": [
+          114
+        ],
+        "case": "Non-X11 display guard: public on other backends, selected machine has no Wayland fixture."
+      },
+      {
+        "lines": [
+          117
+        ],
+        "case": "New checked X11 connection failure requires auth/server loss while existing GDK display is already usable; not disrupted on shared server."
+      },
+      {
+        "lines": [
+          171
+        ],
+        "case": "Reparent enqueue IO failure requires transport loss; actual checked BadWindow reply and post-WebKit resource/native cleanup remain covered."
+      },
+      {
+        "regions": "Other inherited direction gaps: default display missing/realization cast failure under fixed initialized X11 construction; wrong-screen/depth; validation transport/race errors; non-value JavascriptResult; generic callbacks skipped by rejected creates."
+      },
+      {
+        "dependency_limit": "No Wry-internal post-WebKit-allocation Err claim; prior shared-context duplicate calibration remains accurately classified as builder preflight."
+      }
+    ]
+  },
+  "refactor": {
+    "production": "Keep the single fixed header at the existing concrete response edge. No extraction or configurable policy is justified for one expression; no unproved broader CSP decisions were bundled.",
+    "tests": "After initial coverage, rename helper to external_fetch_is_blocked_by_enforcing_csp to state its exact scope. Retain one existing GTK runner rather than initialize GTK on another Rust test thread. Reuse the existing real parent and package fixture. The owned real HTTP endpoint supplies unique independent evidence; no fake engine/backend or production-only test seam exists.",
+    "timing": "Native criterion test approximately0.78s in ordinary RED/GREEN runs; normal CTest2.16s total includes native rebuild. Keep native boundary lane because it requires real X11/WebKit/loopback; default fast remains0.09s. No lane membership changed."
+  },
+  "maintained_checks": "Final3/3 registered CTests pass (fast, full production packaged-asset calibration, native-X11 which invokes the new assertions). Final all-target native Clippy -D warnings, fmt --check and diff --check pass. Default graph is still only the std editor crate. CMake/manifest/lock bytes match base; prior4d85b25 source-free guard remains unchanged boundary evidence per root instruction; no redundant large guard rerun.",
+  "dependencies": "No new dependency/version/feature/license changes. Existing pinned Wry/GTK/WebKit/x11rb graph and no-core-GUI boundary unchanged.",
+  "explicit_remaining": [
+    "Complete resource CSP/defaults-deny, script/style/font/image/worker restrictions require their own prior behavior assertions.",
+    "Top-level navigation, new-window and download denial remain subsequent criteria.",
+    "Real production React/all8fonts rendering acceptance remains a later material slice; current controls are a synthetic packaged page.",
+    "Show/hide, offered fixed-size acceptance/resize rejection, API/order lifecycle and real CLAP main-thread/timer integration remain later.",
+    "No native session/backend/notes/gestures/audio proof, no task3.2 checkbox/completion or overall release claim."
+  ],
+  "next_ready_criterion": "After independent review/publication, specify the next complete-resource or navigation/download boundary with its own real browser oracle before adding its policy.",
+  "git_scope": "No Git/index/commit/push/worktree/progress/task changes. Only the four assigned source/test paths differ; main remains clean at68dd6553a2f07e71e2fe09ee1d7094d518559937.",
+  "resource_scope": "Only existing editor-target and staging used. Shared llvm-cov-target untouched. No cache/dependency deletion. Actual final headroom and target size retained in final-resource-headroom.txt/final-target-size.txt. No owned Cargo/test command remains active.",
+  "research_limit": "editor-local-policy-investigation.md was source-only preparation; this run qualifies only the concrete external-fetch CSP criterion. Broader source-only recommendations are not runtime acceptance.",
+  "references": [
+    "https://www.w3.org/TR/CSP3/#directive-connect-src",
+    "https://www.w3.org/TR/CSP3/#securitypolicyviolationevent",
+    "https://webkitgtk.org/reference/webkit2gtk/stable/property.WebView.default-content-security-policy.html"
+  ]
+}
