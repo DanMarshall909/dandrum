@@ -825,3 +825,41 @@ show/hide/size and popup/download behavior remain; actual CLAP main-thread/API/o
 proof depends on 4.2 integration. Full beta continues through 3.3/4.x/5.x and the
 next VST3/standalone/DAW/offline/native increments. Main remains at 68dd655, mutation
 excluded, all remaining reusable caches preserved; no further deletion authorized.
+
+
+## Native production Trigger rendering — 20 October 2026
+
+Fixed-entry navigation was normally published at e9f7e09. The next task 3.2
+slice proves the actual unmodified production bundle in the existing Silent/mock
+empty preview through the native owner. Real Trigger structure/controls, external
+CSS and React inline frame/SVG are checked. All eight nonempty loaded font-face
+sets match family/weight. Original WebKit HTML/JS/CSS/TTF responses compare byte
+for byte with explicit copied input, with correct MIME/status and no failed
+resource: 11 consumed resources. Notices are hash-bound, not claimed rendered.
+The observer supplies no native backend and proves no negative CSP behavior.
+
+Only one production CMake argument changes: the native CTest receives its exact
+staged bundle path. The maintained native-ON inventory oracle first fails on that
+missing argument (1.024822 s), then the full source-free scaffold guard passes
+(88.456489 s), matching all 583 frozen inputs and selected runtime CTests 3/3.
+The tiny build/inventory fixture is not the production rendering input. Final
+normal editor CTests pass 3/3 in 1.971053 s with inherited bundle env removed;
+Clippy warnings denied, native build, fmt, native/fast LLVM and std-only graph pass.
+Rust production owner/dependencies/frontend remain unchanged. Native 129/134 lines,
+12/14 functions/190/209 regions retain inherited gaps; fast assets 52/52. No new
+production module/exclusion or branch claim. Fixture failures/corrections and
+covered refactoring are retained in the [portable evidence](evidence/trigger-editor-production-2026-10-20/receipt.json).
+
+One earlier characterization failed in pre-existing acquisition cleanup before
+React/font loading. Its remaining child was not recorded; repeats do not resolve
+it. Added diagnostic facts preserve identities/timing without weakening checks.
+Pinned GTK source and installed binary independently show queued close work, so
+current close()+pre-idle sync cannot guarantee immediate disposal. That ownership
+finding remains open for the next lifecycle correction, documented with primary
+sources in the evidence; this slice does not claim to repair it.
+
+Independent completion review passed for the frozen source/evidence candidate; normal-hook publication is the remaining gate.
+Task 3.2 remains unchecked, 7/14 overall; no native session/backend/audio or full
+lifecycle claim. Continue its concrete facets, then 3.3/4.x/5.x and the subsequent
+VST3/standalone/DAW/installed offline/native beta increments. Main remains clean
+68dd655, mutation excluded and all remaining reusable caches preserved.

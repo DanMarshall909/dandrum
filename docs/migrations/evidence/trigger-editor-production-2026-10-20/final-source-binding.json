@@ -1,0 +1,11 @@
+{
+  "covered-refactor-native": true,
+  "final-clippy": true,
+  "final-native-coverage": true,
+  "final-fast-coverage": true,
+  "final-ctest": true,
+  "final-build": true,
+  "final-fmt": true,
+  "final-diff": true,
+  "final-default-graph": true
+}

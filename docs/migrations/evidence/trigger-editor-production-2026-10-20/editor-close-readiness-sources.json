@@ -1,0 +1,207 @@
+{
+  "recorded_at_utc": "2026-10-20T08:10:35.928378+00:00",
+  "requested_base": "e9f7e09",
+  "git_revision_not_queried": true,
+  "inspection_only": true,
+  "no_native_probe_or_loop_operation": true,
+  "installed_packages": {
+    "libgtk-3-0:amd64": "3.24.33-1ubuntu2.2",
+    "libgtk-3-dev:amd64": "3.24.33-1ubuntu2.2",
+    "libglib2.0-0:amd64": "2.72.4-0ubuntu2.9"
+  },
+  "files": [
+    {
+      "path": "/tmp/dandrum-lanes/runtime/src/trigger-editor/src/lib.rs",
+      "bytes": 429,
+      "sha256": "ce55f6e5ad9617dcac9d3aa017145612f0bfcbd9ccb83a866149c60e5419e27b"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/runtime/src/trigger-editor/src/native_x11.rs",
+      "bytes": 6893,
+      "sha256": "881a9d0197d06afe41a1ead11bfbc84e3fb54f2247960fae57a66eff31741281"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/runtime/src/trigger-editor/tests/internal/native_x11.rs",
+      "bytes": 11005,
+      "sha256": "0fc258de26c0b16c25cdd57f27bd082d6ac5de2163e2e03fdf9fdcf97026f17f"
+    },
+    {
+      "path": "/home/dan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gtk-0.18.2/src/widget.rs",
+      "bytes": 8247,
+      "sha256": "ba3882c03325c01031a6cb46c52c191d799ad9b646a15d804792ef68e8f78c03"
+    },
+    {
+      "path": "/home/dan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gtk-0.18.2/src/auto/window.rs",
+      "bytes": 75879,
+      "sha256": "7feab490f4d59f06ab9d26d21d665ec45cb91c4bf7a654001d40d96965a2049d"
+    },
+    {
+      "path": "/home/dan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gtk-0.18.2/src/auto/widget.rs",
+      "bytes": 161421,
+      "sha256": "3e14eb813c45c10f6be8b8dff2c5750a58dfe195e40c05bc1461caf3974faedc"
+    },
+    {
+      "path": "/home/dan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gtk-0.18.2/src/auto/functions.rs",
+      "bytes": 30698,
+      "sha256": "a41bc545348df9d293781281d533f6a57bd96c54c47274de04b4a9171c5b9511"
+    },
+    {
+      "path": "/home/dan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gdk-0.18.2/src/auto/display.rs",
+      "bytes": 15085,
+      "sha256": "493a681c1abf285fa7d0b124e2933225f63ed394e507d14e542fafa5427ee4fa"
+    },
+    {
+      "path": "/home/dan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/glib-0.18.5/src/object.rs",
+      "bytes": 160705,
+      "sha256": "61304201fc2dd2ec7d0e8db7343bc62db6e9c81be07b2b16ad3f530a8972f017"
+    },
+    {
+      "path": "/home/dan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wry-0.57.0/src/webkitgtk/mod.rs",
+      "bytes": 40597,
+      "sha256": "20a4064b352747b46d7e15ae6962922dfa85017660e109e87e255219c6ee2017"
+    },
+    {
+      "path": "/usr/share/gir-1.0/Gtk-3.0.gir",
+      "bytes": 9665643,
+      "sha256": "42b2f23d89b14a781e660b5bff2b00ab717247fa3638cd85bc39ca0905d78875"
+    },
+    {
+      "path": "/usr/share/gir-1.0/Gdk-3.0.gir",
+      "bytes": 1735091,
+      "sha256": "766a85fa5d50f3fa55d5fd167f3d3165b80d52757a8f62b3982a31e4c40719cb"
+    },
+    {
+      "path": "/usr/lib/x86_64-linux-gnu/libgtk-3.so.0",
+      "bytes": 8533424,
+      "sha256": "7d48175fd1550f8b77119e77775073f10b5fd736e62efea25f6484fb97b15c57"
+    },
+    {
+      "path": "/usr/lib/x86_64-linux-gnu/libgdk-3.so.0",
+      "bytes": 1068344,
+      "sha256": "65444438dce4b145a61cdf9ccee7dd3feb2ae249c939056eff89c04d8766e5a7"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-editor-production/production-characterization-compiled.log",
+      "bytes": 1057,
+      "sha256": "7c43e92fa1707012f80dd3712b8c780a5a765ab8e7708a23aedd62779021f64f"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-editor-production/production-characterization-compiled-source/src/trigger-editor/src/native_x11.rs",
+      "bytes": 6893,
+      "sha256": "881a9d0197d06afe41a1ead11bfbc84e3fb54f2247960fae57a66eff31741281"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-editor-production/production-characterization-compiled-source/src/trigger-editor/tests/internal/native_x11.rs",
+      "bytes": 10802,
+      "sha256": "345b031a84b1fe24f03b8d60a67ac06bfb25c98f2f8f07cd7572224433744f88"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-editor-production/production-consumed-resource-characterization.log",
+      "bytes": 3027,
+      "sha256": "ed3adbeb7edd321822eb0786c2ade8c365aeac7ceb25c0a1d4535cbe168dc503"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-editor-production/covered-refactor-native.log",
+      "bytes": 3027,
+      "sha256": "b94208869b86ac38edeed30093597314b0f8db5359aeb220e07e787c73250e2b"
+    }
+  ],
+  "binary_inspections": [
+    {
+      "argv": [
+        "objdump",
+        "-d",
+        "--disassemble=gtk_window_close",
+        "/usr/lib/x86_64-linux-gnu/libgtk-3.so.0"
+      ],
+      "stdout_bytes": 1672,
+      "stdout_sha256": "af208620fe0934fc133d56df077e6195168c745f112114ae0e860f8ab68cef33",
+      "kind": "read-only ELF disassembly; no library loaded/executed"
+    },
+    {
+      "argv": [
+        "objdump",
+        "-d",
+        "--start-address=0x3aa0e0",
+        "--stop-address=0x3aa140",
+        "/usr/lib/x86_64-linux-gnu/libgtk-3.so.0"
+      ],
+      "stdout_bytes": 1591,
+      "stdout_sha256": "c34f1e4abcb6b1131675c166d33972bb320b3d3eeb261d9e4fa4a7d57fa88fc9",
+      "kind": "read-only ELF disassembly; no library loaded/executed"
+    },
+    {
+      "argv": [
+        "objdump",
+        "-d",
+        "--disassemble=gdk_display_sync",
+        "/usr/lib/x86_64-linux-gnu/libgdk-3.so.0"
+      ],
+      "stdout_bytes": 2313,
+      "stdout_sha256": "82051ec995b4a5066b4fd4ead9ed16b71e65c7587564280a65c1097a5f74524b",
+      "kind": "read-only ELF disassembly; no library loaded/executed"
+    }
+  ],
+  "upstream_primary_sources": [
+    {
+      "url": "https://raw.githubusercontent.com/GNOME/gtk/3.24.33/gtk/gtkwindow.c",
+      "tag": "3.24.33",
+      "access": "browser primary-source read",
+      "whole_file_sha256": null,
+      "hash_limit": "not saved/downloaded as a local source file; installed binary and binding/GIR snapshots are hashed separately"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/GNOME/gtk/3.24.33/gtk/gtkmain.c",
+      "tag": "3.24.33",
+      "access": "browser primary-source read",
+      "whole_file_sha256": null,
+      "hash_limit": "not saved/downloaded as a local source file; installed binary and binding/GIR snapshots are hashed separately"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/GNOME/gtk/3.24.33/gtk/gtkwidget.c",
+      "tag": "3.24.33",
+      "access": "browser primary-source read",
+      "whole_file_sha256": null,
+      "hash_limit": "not saved/downloaded as a local source file; installed binary and binding/GIR snapshots are hashed separately"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/GNOME/gtk/3.24.33/gdk/x11/gdkdisplay-x11.c",
+      "tag": "3.24.33",
+      "access": "browser primary-source read",
+      "whole_file_sha256": null,
+      "hash_limit": "not saved/downloaded as a local source file; installed binary and binding/GIR snapshots are hashed separately"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/GNOME/gtk/3.24.33/gdk/x11/gdkeventsource.c",
+      "tag": "3.24.33",
+      "access": "browser primary-source read",
+      "whole_file_sha256": null,
+      "hash_limit": "not saved/downloaded as a local source file; installed binary and binding/GIR snapshots are hashed separately"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/GNOME/gtk/3.24.33/gdk/x11/gdkwindow-x11.c",
+      "tag": "3.24.33",
+      "access": "browser primary-source read",
+      "whole_file_sha256": null,
+      "hash_limit": "not saved/downloaded as a local source file; installed binary and binding/GIR snapshots are hashed separately"
+    }
+  ],
+  "original_failure_cause": "unresolved; no original remaining child identity or per-phase timeline",
+  "observed_success_receipt": {
+    "log": "/tmp/dandrum-lanes/evidence-editor-production/production-consumed-resource-characterization.log",
+    "parent": 77594624,
+    "children": [],
+    "ticks": [
+      3,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "elapsed_us": 396.346
+  },
+  "report_sha256": "3a79768ea82a82e4fbb7f41b011404fbf41d8e8200d3c51cc032f587323e8173"
+}

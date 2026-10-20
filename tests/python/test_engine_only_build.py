@@ -206,6 +206,25 @@ class ClapProofBuildTest(EngineBuildFixture):
         self.assertIn("trigger-editor-tests", names)
         self.assertIn("trigger-editor-packaged-assets", names)
 
+        # This tiny bundle is inventory/build-only. Never execute the native
+        # production React/font calibration with its placeholder resources.
+        native_build, code, output = self.configure(
+            "trigger-native-inventory", "-DDANDRUM_ENGINE_ONLY=ON", "-DDANDRUM_CLAP_PROOF=ON",
+            "-DDANDRUM_TRIGGER_CLAP_EDITOR=ON", "-DDANDRUM_TRIGGER_EDITOR_NATIVE_X11=ON",
+            "-DDANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=" + str(editor_input))
+        self.assertEqual(code, 0, output)
+        code, output = self.command(
+            "trigger-native-test-inventory", [CTEST, "--test-dir", str(native_build),
+                                              "--show-only=json-v1"])
+        self.assertEqual(code, 0, output)
+        native_test = next(test for test in json.loads(output)["tests"]
+                           if test["name"] == "trigger-editor-native-x11")
+        self.assertIn(
+            "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR="
+            + str(native_build / "clap/DandrumTrigger.resources/editor"),
+            native_test["command"],
+            "native production calibration requires the exact staged bundle argument")
+
         code, output = self.command(
             "trigger-editor-build", [CMAKE, "--build", str(build), "--target",
                                      "dandrum-trigger-clap-editor", "--parallel", "2"])

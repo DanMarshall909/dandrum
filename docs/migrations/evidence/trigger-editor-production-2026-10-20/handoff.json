@@ -1,0 +1,931 @@
+{
+  "base_head": "e9f7e09bb7e81790009e5630af5fd45c6dd629b6",
+  "cwd": "/tmp/dandrum-lanes/runtime",
+  "criterion": "Task3.2 production React/eight-font positive calibration through unchanged native owner, explicitly existing silent-preview branch; normal native CTest must receive exact staged production bundle path. No new resource CSP directives.",
+  "production_delta": "One CMake native CTest environment assignment: DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=${DANDRUM_TRIGGER_RESOURCE_DIR}/editor. Rust production owner/assets/dependency manifests and lock remain byte-identical to base.",
+  "frozen_candidate_manifest": "final-candidate-hashes.json (five changed paths)",
+  "frozen_full_editor_boundary_manifest": "final-source-hashes.json (16paths)",
+  "source_binding": "Final source-bound checks match final-source-hashes.json and the 16-path green-guard-ready-hashes.json snapshot. Root RED instead matches all 16 paths in its own earlier wiring-red-ready-hashes.json snapshot; it does not match final. Root GREEN matches its own snapshot and final, including all 583 current guard inputs. The RED-to-GREEN input delta is exactly CMakeLists.txt (required environment argument) and tests/internal/production.rs (separately covered observation/receipt refactor). root-guard-receipt-bindings.json records archive members, snapshot/manifest SHA256 values and both expected path differences. No source changes followed GREEN freeze.",
+  "final_candidate_sha256": {
+    "CMakeLists.txt": "e3b627179eb529887b33f6cc9c3a39542c1252628134f15b2b638dd9125ecd08",
+    "tests/python/test_engine_only_build.py": "44c2074f4b2c440372a419a028fcff37b78b8bb1800d592cb6ef4a7fe51186da",
+    "src/trigger-editor/tests/internal/native_x11.rs": "0fc258de26c0b16c25cdd57f27bd082d6ac5de2163e2e03fdf9fdcf97026f17f",
+    "src/trigger-editor/tests/internal/production.rs": "8c3710ae967f1acdcbb76ab96416b67b0adbb5fe246b642a7d2cad1fe9a083e3",
+    "src/trigger-editor/tests/fixtures/production-observer.js": "c64d08f416a0231e879884dad97fd45ff4c235ed7063206cb28470c5b4157c53"
+  },
+  "runs": {
+    "covered-refactor-native": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+      },
+      "exit": 0,
+      "elapsed_seconds": 2.4720208549988456
+    },
+    "final-build": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "build",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+      },
+      "exit": 0,
+      "elapsed_seconds": 0.09659387500141747
+    },
+    "final-clippy": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--all-targets",
+        "--features",
+        "native-x11",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+      },
+      "exit": 0,
+      "elapsed_seconds": 0.3967248720000498
+    },
+    "final-ctest": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "env",
+        "-u",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR",
+        "/home/dan/.local/bin/ctest",
+        "--test-dir",
+        "/dev/shm/dandrum-beta-20261020/editor-cmake",
+        "-R",
+        "^trigger-editor-(tests|packaged-assets|native-x11)$",
+        "--output-on-failure"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+      },
+      "exit": 0,
+      "elapsed_seconds": 1.9710530599986669
+    },
+    "final-default-graph": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "tree",
+        "--locked",
+        "--offline",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--no-default-features",
+        "--target",
+        "x86_64-unknown-linux-gnu"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+      },
+      "exit": 0,
+      "elapsed_seconds": 0.06321198100340553
+    },
+    "final-diff": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+      },
+      "exit": 0,
+      "elapsed_seconds": 0.006377849000273272
+    },
+    "final-fast-coverage": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "env",
+        "RUSTC_WORKSPACE_WRAPPER=/tmp/dandrum-lanes/evidence-native-editor/coverage-wrapper",
+        "LLVM_PROFILE_FILE=/tmp/dandrum-lanes/evidence-editor-production/final-fast-%p-%m.profraw",
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "--",
+        "--skip",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+      },
+      "exit": 0,
+      "elapsed_seconds": 0.12350586900720373
+    },
+    "final-fmt": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "fmt",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--",
+        "--check"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+      },
+      "exit": 0,
+      "elapsed_seconds": 0.05283116898499429
+    },
+    "final-native-coverage": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "env",
+        "RUSTC_WORKSPACE_WRAPPER=/tmp/dandrum-lanes/evidence-native-editor/coverage-wrapper",
+        "LLVM_PROFILE_FILE=/tmp/dandrum-lanes/evidence-editor-production/final-native-%p-%m.profraw",
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+      },
+      "exit": 0,
+      "elapsed_seconds": 2.4571024459728505
+    },
+    "green-ctest": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.local/bin/ctest",
+        "--test-dir",
+        "/dev/shm/dandrum-beta-20261020/editor-cmake",
+        "-R",
+        "^trigger-editor-(tests|packaged-assets|native-x11)$",
+        "--output-on-failure"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+      },
+      "exit": 0,
+      "elapsed_seconds": 1.9177081950183492
+    },
+    "green-reconfigure": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-S",
+        ".",
+        "-B",
+        "/dev/shm/dandrum-beta-20261020/editor-cmake"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+      },
+      "exit": 0,
+      "elapsed_seconds": 0.025280041008954868
+    },
+    "initial-native-coverage": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "env",
+        "RUSTC_WORKSPACE_WRAPPER=/tmp/dandrum-lanes/evidence-native-editor/coverage-wrapper",
+        "LLVM_PROFILE_FILE=/tmp/dandrum-lanes/evidence-editor-production/initial-native-%p-%m.profraw",
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+      },
+      "exit": 0,
+      "elapsed_seconds": 2.679294340981869
+    },
+    "production-characterization-compiled": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+      },
+      "exit": 101,
+      "elapsed_seconds": 1.6193575320066884
+    },
+    "production-characterization-repeat": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+      },
+      "exit": 101,
+      "elapsed_seconds": 1.6975779999920633
+    },
+    "production-characterization": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+      },
+      "exit": 101,
+      "elapsed_seconds": 0.4015647760243155
+    },
+    "production-consumed-resource-characterization": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+      },
+      "exit": 0,
+      "elapsed_seconds": 2.541601356002502
+    },
+    "production-controls-diagnosis": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+      },
+      "exit": 101,
+      "elapsed_seconds": 2.119675112015102
+    },
+    "production-empty-preview-characterization": {
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "env": {
+        "CARGO_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/editor-target",
+        "DISPLAY": ":10.0",
+        "GDK_BACKEND": "x11",
+        "TMPDIR": "/dev/shm/dandrum-beta-20261020/editor-scratch",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor"
+      },
+      "exit": 101,
+      "elapsed_seconds": 2.383821210998576
+    }
+  },
+  "root_owned_guard": {
+    "red": {
+      "receipt_dir": "/tmp/dandrum-evidence/editor-production-review/guard-red",
+      "run": {
+        "argv": [
+          "python3",
+          "tests/python/test_engine_only_build.py",
+          "ClapProofBuildTest.test_trigger_editor_scaffold_stages_copied_resources_without_host_sources",
+          "-v"
+        ],
+        "cwd": "/dev/shm/dandrum-beta-20261020/editor-guard-source",
+        "environment": {
+          "PATH": "/home/dan/.local/bin:/home/dan/.cargo/bin:/usr/bin:/bin",
+          "CARGO_NET_OFFLINE": "true"
+        },
+        "exit_code": 1,
+        "elapsed_seconds": 1.024822,
+        "stop_reason": null,
+        "source_unchanged": true,
+        "original_source_unchanged": true,
+        "stage_logs": [
+          "trigger-editor-targets.log",
+          "trigger-editor.log",
+          "trigger-host-test-inventory.log",
+          "trigger-native-inventory.log",
+          "trigger-native-test-inventory.log"
+        ]
+      },
+      "hashes": {
+        "run.json": "28cdf04f73172151f9aee0e267db5d71d26782da4b317ab0e643c9f5dd6ab3d5",
+        "guard.log": "8c5914546967078e5ffee23583a61a89d1d99f06cc8d7b70693eb5357b7fdc36",
+        "source-manifest.json": "4bac9d4785d1ddfd566cfb659a9023599ba1bdb9d73586c58d881d427ba373f4"
+      },
+      "source_binding": {
+        "snapshot_member": "wiring-red-ready-hashes.json",
+        "snapshot_archive": "author-raw.tar.gz",
+        "snapshot_sha256": "15e155082fe252b347cb05070e0d0d5e5bdb39d6f684045336668204f4eddede",
+        "guard_manifest_member": "guard-red/source-manifest.json",
+        "guard_archive": "root-guard-raw.tar.gz",
+        "guard_manifest_sha256": "4bac9d4785d1ddfd566cfb659a9023599ba1bdb9d73586c58d881d427ba373f4",
+        "phase_source_paths_checked": 16,
+        "matches_own_phase_snapshot": true,
+        "matches_final_editor_snapshot": false,
+        "differences_from_final_editor_snapshot": {
+          "CMakeLists.txt": {
+            "phase_sha256": "cbd35159ea1082c263a1484a0829ac8b81e114891c2b7d16d1999f1e82e61d4b",
+            "final_sha256": "e3b627179eb529887b33f6cc9c3a39542c1252628134f15b2b638dd9125ecd08"
+          },
+          "src/trigger-editor/tests/internal/production.rs": {
+            "phase_sha256": "deaa80a366c6a48f2304323c656694d16fe58916943d822fa42bd6cec21d951c",
+            "final_sha256": "8c3710ae967f1acdcbb76ab96416b67b0adbb5fe246b642a7d2cad1fe9a083e3"
+          }
+        }
+      }
+    },
+    "green": {
+      "receipt_dir": "/tmp/dandrum-evidence/editor-production-review/guard-green",
+      "run": {
+        "argv": [
+          "python3",
+          "tests/python/test_engine_only_build.py",
+          "ClapProofBuildTest.test_trigger_editor_scaffold_stages_copied_resources_without_host_sources",
+          "-v"
+        ],
+        "cwd": "/dev/shm/dandrum-beta-20261020/editor-guard-source",
+        "environment": {
+          "PATH": "/home/dan/.local/bin:/home/dan/.cargo/bin:/usr/bin:/bin",
+          "CARGO_NET_OFFLINE": "true"
+        },
+        "exit_code": 0,
+        "elapsed_seconds": 88.456489,
+        "stop_reason": null,
+        "source_unchanged": true,
+        "original_source_unchanged": true,
+        "stage_logs": [
+          "trigger-editor-build.log",
+          "trigger-editor-fixture-runtime.log",
+          "trigger-editor-resource-rebuild.log",
+          "trigger-editor-targets.log",
+          "trigger-editor.log",
+          "trigger-host-dependencies.log",
+          "trigger-host-test-inventory.log",
+          "trigger-native-inventory.log",
+          "trigger-native-test-inventory.log"
+        ]
+      },
+      "hashes": {
+        "run.json": "395772bd630b748fd8d7783c9271e02c5cb8b367bb6b87180b165299519c607e",
+        "guard.log": "abb1e01edaaacc9722d8f78e661c97fb379867d9c124fe89573671fc9ceb4880",
+        "source-manifest.json": "ffef7093f4bc818fd924fdfd036600b0406b9161b10f5eb76dbabff34a8d2085"
+      },
+      "source_binding": {
+        "snapshot_member": "green-guard-ready-hashes.json",
+        "snapshot_archive": "author-raw.tar.gz",
+        "snapshot_sha256": "e58b60bd1bb7e00de29df287e0a4286af7ebcf6c148b15cc310187eb665f1d39",
+        "guard_manifest_member": "guard-green/source-manifest.json",
+        "guard_archive": "root-guard-raw.tar.gz",
+        "guard_manifest_sha256": "ffef7093f4bc818fd924fdfd036600b0406b9161b10f5eb76dbabff34a8d2085",
+        "phase_source_paths_checked": 16,
+        "matches_own_phase_snapshot": true,
+        "matches_final_editor_snapshot": true,
+        "differences_from_final_editor_snapshot": {}
+      }
+    },
+    "phase_comparison": {
+      "full_guard_input_paths": 583,
+      "full_guard_input_differences_red_to_green": [
+        "CMakeLists.txt",
+        "src/trigger-editor/tests/internal/production.rs"
+      ],
+      "red_is_final_snapshot": false,
+      "green_is_final_snapshot": true
+    }
+  },
+  "behavior_first": {
+    "characterization": "Actual unmodified production bytes were characterized with manually explicit staged bundle env before CMake change. Production owner unchanged. Working font/render behavior receives no manufactured behavior RED.",
+    "red": "New nativeON inventory-only configuration in existing source-free scaffold test precedes heavybuild. It inspects real CTestJSON command args and requires exact <native-build>/clap/DandrumTrigger.resources/editor input. Root actual maintained guard fails specifically at missing exact bundle argument/diagnostic, exit1 in1.024822s, body0.593s; no missingresource/font/CSP/setup failure used as RED.",
+    "green": "Only minimal nativeCTest envassignment added after retainedRED. Reconfigure+normal3CTests pass. Root full scaffold guard now exit0 in88.456489s, testbody87.949s, unchanged source/roots, no resource stop. NativeON fixture configuration is inventory-only; tiny4file bundle is never executed as production React/font proof.",
+    "final_normal_registration": "Final CTest command explicitly env-u DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR, ensuring inherited shell input cannot impersonate CMake wiring. Both packaged-assets/native tests supply staged path themselves; fast lane remains independent."
+  },
+  "production_runtime_oracles": {
+    "input": "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR explicitly required; read/copy each14declared files unchanged into owned outside-checkout package/editor. No fallback, conditional skip, devserver, rewritten app.js, fake transport/backend responses or source asset lookup. characterization-bundle-input-hashes.json and final-bundle-input-hashes.json bind exact current staged/configured SHA256 bytes and unchanged final inputs.15physical staging files include unserved fonts/.gitattributes; only14declared paths gain serving authority.",
+    "page": "Actual unmodified HTML normal module app.js and stylesheet app.css mount #root->[data-testid=trigger-editor]. No __DANDRUM__/__JUCE__ transport. Actual backend-status data-backend=mock,textSilent; .preview exists/.preview--native absent; no error alert or opening/connecting placeholder. Actual header/nav/main, Log button, defaultUntitled patch, Browse samples button and Import sample files input present.",
+    "initial_state_correction": "Initial Felt Kit expectation was wrong: MockEngine default preset absent=>emptyPatch, Store starts st=empty. Actual DOM headerUntitled/Empty confirms source. Original assertionfailure and diagnostic source/log retained separately; corrected to genuine empty-preview controls, without loading a preset or mutating frontend/backend.",
+    "style_and_svg": "Real external CSS gives preview displayflex/padding16px and color token yields frame RGB26,21,17. Actual React inline frame style yields literal1200pxx800px/displayflex. Inline SVG has real geometry and drawable child. This is browser DOM/layout/font rendering calibration in initiallyhidden native owner, not a screenshot/pixel-comparison or full show/hide lifecycle acceptance.",
+    "fonts": "document.fonts.load forces all8actual family/weight pairs with nonempty sample; every returned set nonempty and everyface matches family/weight/statusloaded; awaitdocument.fonts.ready. Pairs Barlow500/600/700,BarlowSemiCondensed500/600/700,JetBrainsMono500/600. Ordered expected receipts independently asserted in Rust.",
+    "consumed_bytes": "Native WebKit WebResource finished/data observer captures actual initial normal index/module/CSS and fontload responses:200/correct MIME for11render resources, returned complete bytes compared exactly to each copied explicit input. No failed resource signal. Actual fontdecodedloadedsets accompany exactbyte oracle; declared fontfamily/computedfamily alone not treated as success. All3notices are copied/hashbound, not falsely claimed rendered.",
+    "observer_limit": "Native evaluated test observer only inspects existing production DOM/style/transport and initiates FontFaceSet loads for unusedweights; it does not qualify script-src restrictions or ordinary inline-script permission and supplies no engine/backend. Negative policy remains separate. Original normal module actual React mounting establishes local script success. Observer handlers disconnected; WebKit weak reference releases afterdrop.",
+    "adjacent_controls": "Existing acquisition/local JS+CSS+inline+404fetch, enforcing external-fetch CSP, realHTTP/top-levelrootalias navigation denial remain active in same single GTK UI-thread runner."
+  },
+  "characterization_failures_and_limits": {
+    "compile_only": "production-characterization fails at ambiguous data trait method; resolved with explicit WebResourceExt::data. This is fixture syntax/setup failure, no behavior RED.",
+    "original_acquisition_failure": "production-characterization-compiled reaches pre-existing native_x11.rs330 final acquisition child-is-empty assertion failure before new production case. Exact contemporaneous source/full log/command/exit/timing retained. Original log lacks actual childIDs/dropelapsed; cannot reconstruct them or claim which child remained. Unchanged later runs pass, but retries do not establish resolution.",
+    "source_backed_lifecycle_finding": "Root separate read-only investigation confirms GTK3.24.33+installedbinary gtk_window_close schedules send_delete_event on idle. Existing owner close()+immediateGDKsync precedes queued close necessarily issuing destroy; its immediate-query comment promise is unsupported.8immediate nonblocking ticks have no elapsed async-arrival guarantee. Production owner deliberately remains frozen/unchanged here; root prioritizes separate bounded lifecycle correction after this material boundary, with genuine TDD/immediate-parent-destruction oracle. This slice makes no clean-immediate-teardown guarantee.",
+    "comparable_diagnostics": "Only logging added to existing final acquisition oracle: actualparent/children,8tickcounts,elapsed. Subsequent recorded successes show children[]/ticks[3,0,0,0,0,0,0,0] with396.346us,254.107us,253.057us,242.038us respectively. Assertion not widened/polled-away/dropped; these outcomes do not erase first failure.",
+    "fetch_observer_artifact": "production-empty-preview-characterization passesrealDOM+all8fontsets but extra nativeobserverfetches overwrite normal resource records with WebKit get_data onebyte[0] results. Removed redundant fetch instrumentation; retained raw failing/source snapshot. Current oracle compares original normal module/CSS/font resources, which return complete exact bytes. No production loading defect inferred from this observational API artifact."
+  },
+  "coverage": {
+    "owner_native": {
+      "/tmp/dandrum-lanes/runtime/src/trigger-editor/src/../tests/internal/production.rs": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 15,
+          "covered": 11,
+          "percent": 73.33333333333333
+        },
+        "instantiations": {
+          "count": 15,
+          "covered": 11,
+          "percent": 73.33333333333333
+        },
+        "lines": {
+          "count": 145,
+          "covered": 136,
+          "percent": 93.79310344827586
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 244,
+          "covered": 230,
+          "notcovered": 14,
+          "percent": 94.26229508196722
+        }
+      },
+      "/tmp/dandrum-lanes/runtime/src/trigger-editor/src/assets.rs": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 5,
+          "covered": 3,
+          "percent": 60
+        },
+        "instantiations": {
+          "count": 11,
+          "covered": 3,
+          "percent": 27.27272727272727
+        },
+        "lines": {
+          "count": 52,
+          "covered": 45,
+          "percent": 86.53846153846155
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 87,
+          "covered": 75,
+          "notcovered": 12,
+          "percent": 86.20689655172413
+        }
+      },
+      "/tmp/dandrum-lanes/runtime/src/trigger-editor/src/native_x11.rs": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 14,
+          "covered": 12,
+          "percent": 85.71428571428571
+        },
+        "instantiations": {
+          "count": 38,
+          "covered": 27,
+          "percent": 71.05263157894737
+        },
+        "lines": {
+          "count": 134,
+          "covered": 129,
+          "percent": 96.26865671641791
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 209,
+          "covered": 190,
+          "notcovered": 19,
+          "percent": 90.9090909090909
+        }
+      }
+    },
+    "fast": {
+      "/tmp/dandrum-lanes/runtime/src/trigger-editor/src/../tests/internal/production.rs": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 15,
+          "covered": 0,
+          "percent": 0
+        },
+        "instantiations": {
+          "count": 15,
+          "covered": 0,
+          "percent": 0
+        },
+        "lines": {
+          "count": 145,
+          "covered": 0,
+          "percent": 0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 244,
+          "covered": 0,
+          "notcovered": 244,
+          "percent": 0
+        }
+      },
+      "/tmp/dandrum-lanes/runtime/src/trigger-editor/src/assets.rs": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 5,
+          "covered": 5,
+          "percent": 100
+        },
+        "instantiations": {
+          "count": 11,
+          "covered": 7,
+          "percent": 63.63636363636363
+        },
+        "lines": {
+          "count": 52,
+          "covered": 52,
+          "percent": 100
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 87,
+          "covered": 86,
+          "notcovered": 1,
+          "percent": 98.85057471264368
+        }
+      },
+      "/tmp/dandrum-lanes/runtime/src/trigger-editor/src/native_x11.rs": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 14,
+          "covered": 0,
+          "percent": 0
+        },
+        "instantiations": {
+          "count": 38,
+          "covered": 0,
+          "percent": 0
+        },
+        "lines": {
+          "count": 134,
+          "covered": 0,
+          "percent": 0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 209,
+          "covered": 0,
+          "notcovered": 209,
+          "percent": 0
+        }
+      }
+    },
+    "limits": "No new/extracted productionRust module or dependency. Owner129/134lines,12/14functions,190/209regions retains19inherited gaps; nativeowner0/134fast. Assetsfast52/52lines and86/87regions. Testfixtureproduction.rs136/145lines,230/244regions,11/15functions; unhit diagnostic callbacks/missinginput/missingresource error closures and assertionfailure branches remain visible. No tests/seams added solely forscore; no exclusions or branch/MC/DC claim (LLVMcounterszero).",
+    "inherited_owner_gaps": [
+      {
+        "lines": [
+          83,
+          84
+        ],
+        "case": "IPC refusal cleanup: fresh manager/sole registration invariant prevents a public duplicate in fixed pinned construction."
+      },
+      {
+        "lines": [
+          114
+        ],
+        "case": "Non-X11 display guard: public on other backends, selected machine has no Wayland fixture."
+      },
+      {
+        "lines": [
+          117
+        ],
+        "case": "New checked X11 connection failure requires auth/server loss while existing GDK display is already usable; not disrupted on shared server."
+      },
+      {
+        "lines": [
+          171
+        ],
+        "case": "Reparent enqueue IO failure requires transport loss; actual checked BadWindow reply and post-WebKit resource/native cleanup remain covered."
+      },
+      {
+        "regions": "Other inherited direction gaps: default display missing/realization cast failure under fixed initialized X11 construction; wrong-screen/depth; validation transport/race errors; non-value JavascriptResult; generic callbacks skipped by rejected creates."
+      },
+      {
+        "dependency_limit": "No Wry-internal post-WebKit-allocation Err claim; prior shared-context duplicate calibration remains accurately classified as builder preflight."
+      }
+    ],
+    "instrumentation": "Retained localcrate workspacewrapper adds -Cinstrument-coverage, actual sourcepositives bound to final binary SHA and exact merge/export/show commands in final-coverage-export-runs.json. Raw profiles/profdata/JSON/annotated owner retained. Root sharedhookLLVMcache untouched."
+  },
+  "refactor": {
+    "production": "The smallest fixed CTestenvassignment needs no extraction/generalconfiguration. ProductionRust source unchanged and no public test seam. Larger cleanup defect correction deferred to its own genuine behavior boundary by root.",
+    "fixture": "After initialcoverage, consolidate independent expectedordered preview/fontready receipts rather than repeated genericassertions; retain separate JS checks and Rustexpectedliterals. Add explicit resourcefailed signal and weakWebKitrelease observation. No reusable generalbrowser/testing abstraction or broad endpoint needed. Originalrenderresource data replaces misleading duplicatefetch observation. Separate production.rs/observerfixture names keep silentpreview scope explicit.",
+    "lane_timing": "Actualproduction-only addition raises native whole-run from previous1.27s to characterizations1.69s/coveredrefactor1.65s; finalCTestnative1.82s,all3CTest1.97s; fast0.08s. Keep nativeboundarylane because only realWebKit can establish React/layout/fontdecode/customprotocol payload compatibility. No lane membership change or unrelatedstress sweep. Fullsourcefreeguard87.949s remains separate requiredbuildboundary evidence."
+  },
+  "maintained_checks": "All3normal editorCTests on fullactualinput pass with inheritedenvcleared. Final nativealltargetClippy-Dwarnings, native librarybuild, fmt--check,diff--check,std-onlydefaultgraph allpass. Exactsourcebindings retained. Rootfullsourcefreeguard passes and actual nativeON inventory command contains exactstagedbundleinput.",
+  "unchanged_boundaries": "unchanged-boundary-hashes.json proves nativeowner/assets/lib/Cargomanifest/lock byteidenticaltobase. No version/feature/license/dependency changes; headlesshost remainsGUI-free. No host/engine/frontend/audio/otherproduct behavior modified.",
+  "next_ready_criterion": "After independentreview/normalpublication, root-selected lifecyclequeuedclose correction before furtherresourceCSP. Four-row script/style/font/image negativepolicy remains separate, backedby this acceptedproductionpositive baseline; no nextRED begun.",
+  "explicit_remaining": [
+    "No production native session/backend/CLAP mainthreadtimer/gesture/audio/device/DAW acceptance; silentpreview isexplicit existingbranch.",
+    "No new resourceCSP directives or popup/download policy; characterize existingdefaults before adding handlers.",
+    "Ownerimmediateclose limitation is source-backed and unresolved inthisslice; lifecyclecorrection remains required.",
+    "Task3.2 staysunchecked; no overall completionclaim."
+  ],
+  "git_resource_scope": "No Git/index/commit/push/docs/task/cache/dependency deletion by author. Onlyfiveassignedpaths differ atbasee9f7e09. Mainclean68dd655. Rootcontrols sharedguard/hookLLVM; authorusedonlyeditor-target/editor-cmake. Allrawprior evidence retained immutable.",
+  "ownership_release": "Source is frozen at the exact 16-path green-guard-ready manifest. Zero owned editor Cargo/rustc/test processes remain. Explicitly release the five assigned source paths, editor-target, editor-cmake and all native build ownership to root for independent review/publication. No further source/index/build changes or next RED until reassigned.",
+  "root_guard_final_ack": {
+    "verified_summary": "/tmp/dandrum-evidence/editor-production-review/guard-green/verified-summary.json",
+    "source_inputs": 583,
+    "all_16_frozen_paths_match": true,
+    "all_5_candidate_paths_match": true,
+    "exit": 0,
+    "elapsed_seconds": 88.456489,
+    "test_body_seconds": 87.949,
+    "selected_runtime_ctests": "3/3 pass",
+    "raw_log_sha256": "abb1e01edaaacc9722d8f78e661c97fb379867d9c124fe89573671fc9ceb4880",
+    "minimum_free_bytes": {
+      "physical": 12969324544,
+      "real_tmpfs": 10855632896,
+      "per_user_tmpfs": 771112960,
+      "mem_available": 16698830848
+    },
+    "cache": "Root-owned shared guard cache preserved; no redundant run required."
+  }
+}

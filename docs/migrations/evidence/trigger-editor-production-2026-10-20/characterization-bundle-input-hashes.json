@@ -1,0 +1,111 @@
+{
+  "staged_root": "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor",
+  "configured_bundle_root": "/tmp/dandrum-lanes/frontend/web/trigger/dist-native",
+  "files": {
+    "app.css": {
+      "bytes": 11023,
+      "sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5",
+      "configured_input_sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5",
+      "matches_configured_bundle": true,
+      "declared_served": true
+    },
+    "app.js": {
+      "bytes": 805697,
+      "sha256": "4da80e4c3251c87c969c4fd3839c3b08de16401b9332c422ffe4e22e5fbb52d7",
+      "configured_input_sha256": "4da80e4c3251c87c969c4fd3839c3b08de16401b9332c422ffe4e22e5fbb52d7",
+      "matches_configured_bundle": true,
+      "declared_served": true
+    },
+    "fonts/.gitattributes": {
+      "bytes": 77,
+      "sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616",
+      "configured_input_sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616",
+      "matches_configured_bundle": true,
+      "declared_served": false
+    },
+    "fonts/3386a05f6ece969e.ttf": {
+      "bytes": 112204,
+      "sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160",
+      "configured_input_sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160",
+      "matches_configured_bundle": true,
+      "declared_served": true
+    },
+    "fonts/6098b66ce7d608dc.ttf": {
+      "bytes": 88644,
+      "sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef",
+      "configured_input_sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef",
+      "matches_configured_bundle": true,
+      "declared_served": true
+    },
+    "fonts/74103fd6d41bc32c.ttf": {
+      "bytes": 85776,
+      "sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154",
+      "configured_input_sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154",
+      "matches_configured_bundle": true,
+      "declared_served": true
+    },
+    "fonts/91c841fdfa8e7b94.ttf": {
+      "bytes": 81924,
+      "sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc",
+      "configured_input_sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc",
+      "matches_configured_bundle": true,
+      "declared_served": true
+    },
+    "fonts/barlow-OFL.txt": {
+      "bytes": 4377,
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "configured_input_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "matches_configured_bundle": true,
+      "declared_served": true
+    },
+    "fonts/barlowsemicondensed-OFL.txt": {
+      "bytes": 4377,
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "configured_input_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "matches_configured_bundle": true,
+      "declared_served": true
+    },
+    "fonts/c15439e7a03af571.ttf": {
+      "bytes": 85876,
+      "sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c",
+      "configured_input_sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c",
+      "matches_configured_bundle": true,
+      "declared_served": true
+    },
+    "fonts/c2b046235fb4c2f8.ttf": {
+      "bytes": 83412,
+      "sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9",
+      "configured_input_sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9",
+      "matches_configured_bundle": true,
+      "declared_served": true
+    },
+    "fonts/cb75439ae401f776.ttf": {
+      "bytes": 86708,
+      "sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da",
+      "configured_input_sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da",
+      "matches_configured_bundle": true,
+      "declared_served": true
+    },
+    "fonts/df54dbfafba61d49.ttf": {
+      "bytes": 112160,
+      "sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8",
+      "configured_input_sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8",
+      "matches_configured_bundle": true,
+      "declared_served": true
+    },
+    "fonts/jetbrainsmono-OFL.txt": {
+      "bytes": 4399,
+      "sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d",
+      "configured_input_sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d",
+      "matches_configured_bundle": true,
+      "declared_served": true
+    },
+    "index.html": {
+      "bytes": 326,
+      "sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26",
+      "configured_input_sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26",
+      "matches_configured_bundle": true,
+      "declared_served": true
+    }
+  }
+}

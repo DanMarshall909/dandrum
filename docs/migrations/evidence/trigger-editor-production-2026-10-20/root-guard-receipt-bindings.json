@@ -1,0 +1,114 @@
+{
+  "red": {
+    "receipt_dir": "/tmp/dandrum-evidence/editor-production-review/guard-red",
+    "run": {
+      "argv": [
+        "python3",
+        "tests/python/test_engine_only_build.py",
+        "ClapProofBuildTest.test_trigger_editor_scaffold_stages_copied_resources_without_host_sources",
+        "-v"
+      ],
+      "cwd": "/dev/shm/dandrum-beta-20261020/editor-guard-source",
+      "environment": {
+        "PATH": "/home/dan/.local/bin:/home/dan/.cargo/bin:/usr/bin:/bin",
+        "CARGO_NET_OFFLINE": "true"
+      },
+      "exit_code": 1,
+      "elapsed_seconds": 1.024822,
+      "stop_reason": null,
+      "source_unchanged": true,
+      "original_source_unchanged": true,
+      "stage_logs": [
+        "trigger-editor-targets.log",
+        "trigger-editor.log",
+        "trigger-host-test-inventory.log",
+        "trigger-native-inventory.log",
+        "trigger-native-test-inventory.log"
+      ]
+    },
+    "hashes": {
+      "run.json": "28cdf04f73172151f9aee0e267db5d71d26782da4b317ab0e643c9f5dd6ab3d5",
+      "guard.log": "8c5914546967078e5ffee23583a61a89d1d99f06cc8d7b70693eb5357b7fdc36",
+      "source-manifest.json": "4bac9d4785d1ddfd566cfb659a9023599ba1bdb9d73586c58d881d427ba373f4"
+    },
+    "source_binding": {
+      "snapshot_member": "wiring-red-ready-hashes.json",
+      "snapshot_archive": "author-raw.tar.gz",
+      "snapshot_sha256": "15e155082fe252b347cb05070e0d0d5e5bdb39d6f684045336668204f4eddede",
+      "guard_manifest_member": "guard-red/source-manifest.json",
+      "guard_archive": "root-guard-raw.tar.gz",
+      "guard_manifest_sha256": "4bac9d4785d1ddfd566cfb659a9023599ba1bdb9d73586c58d881d427ba373f4",
+      "phase_source_paths_checked": 16,
+      "matches_own_phase_snapshot": true,
+      "matches_final_editor_snapshot": false,
+      "differences_from_final_editor_snapshot": {
+        "CMakeLists.txt": {
+          "phase_sha256": "cbd35159ea1082c263a1484a0829ac8b81e114891c2b7d16d1999f1e82e61d4b",
+          "final_sha256": "e3b627179eb529887b33f6cc9c3a39542c1252628134f15b2b638dd9125ecd08"
+        },
+        "src/trigger-editor/tests/internal/production.rs": {
+          "phase_sha256": "deaa80a366c6a48f2304323c656694d16fe58916943d822fa42bd6cec21d951c",
+          "final_sha256": "8c3710ae967f1acdcbb76ab96416b67b0adbb5fe246b642a7d2cad1fe9a083e3"
+        }
+      }
+    }
+  },
+  "green": {
+    "receipt_dir": "/tmp/dandrum-evidence/editor-production-review/guard-green",
+    "run": {
+      "argv": [
+        "python3",
+        "tests/python/test_engine_only_build.py",
+        "ClapProofBuildTest.test_trigger_editor_scaffold_stages_copied_resources_without_host_sources",
+        "-v"
+      ],
+      "cwd": "/dev/shm/dandrum-beta-20261020/editor-guard-source",
+      "environment": {
+        "PATH": "/home/dan/.local/bin:/home/dan/.cargo/bin:/usr/bin:/bin",
+        "CARGO_NET_OFFLINE": "true"
+      },
+      "exit_code": 0,
+      "elapsed_seconds": 88.456489,
+      "stop_reason": null,
+      "source_unchanged": true,
+      "original_source_unchanged": true,
+      "stage_logs": [
+        "trigger-editor-build.log",
+        "trigger-editor-fixture-runtime.log",
+        "trigger-editor-resource-rebuild.log",
+        "trigger-editor-targets.log",
+        "trigger-editor.log",
+        "trigger-host-dependencies.log",
+        "trigger-host-test-inventory.log",
+        "trigger-native-inventory.log",
+        "trigger-native-test-inventory.log"
+      ]
+    },
+    "hashes": {
+      "run.json": "395772bd630b748fd8d7783c9271e02c5cb8b367bb6b87180b165299519c607e",
+      "guard.log": "abb1e01edaaacc9722d8f78e661c97fb379867d9c124fe89573671fc9ceb4880",
+      "source-manifest.json": "ffef7093f4bc818fd924fdfd036600b0406b9161b10f5eb76dbabff34a8d2085"
+    },
+    "source_binding": {
+      "snapshot_member": "green-guard-ready-hashes.json",
+      "snapshot_archive": "author-raw.tar.gz",
+      "snapshot_sha256": "e58b60bd1bb7e00de29df287e0a4286af7ebcf6c148b15cc310187eb665f1d39",
+      "guard_manifest_member": "guard-green/source-manifest.json",
+      "guard_archive": "root-guard-raw.tar.gz",
+      "guard_manifest_sha256": "ffef7093f4bc818fd924fdfd036600b0406b9161b10f5eb76dbabff34a8d2085",
+      "phase_source_paths_checked": 16,
+      "matches_own_phase_snapshot": true,
+      "matches_final_editor_snapshot": true,
+      "differences_from_final_editor_snapshot": {}
+    }
+  },
+  "phase_comparison": {
+    "full_guard_input_paths": 583,
+    "full_guard_input_differences_red_to_green": [
+      "CMakeLists.txt",
+      "src/trigger-editor/tests/internal/production.rs"
+    ],
+    "red_is_final_snapshot": false,
+    "green_is_final_snapshot": true
+  }
+}

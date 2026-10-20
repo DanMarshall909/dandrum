@@ -1,0 +1,140 @@
+[
+  {
+    "path": "guard-green-preflight.json",
+    "bytes": 1997,
+    "mode": "0o664",
+    "sha256": "497eb6ae29cb99713a356fa33c146843a30109a6c47e94ec93e61cee9767a7f8"
+  },
+  {
+    "path": "guard-green/guard.log",
+    "bytes": 209,
+    "mode": "0o664",
+    "sha256": "abb1e01edaaacc9722d8f78e661c97fb379867d9c124fe89573671fc9ceb4880"
+  },
+  {
+    "path": "guard-green/run.json",
+    "bytes": 18731,
+    "mode": "0o664",
+    "sha256": "395772bd630b748fd8d7783c9271e02c5cb8b367bb6b87180b165299519c607e"
+  },
+  {
+    "path": "guard-green/source-manifest.json",
+    "bytes": 67622,
+    "mode": "0o664",
+    "sha256": "ffef7093f4bc818fd924fdfd036600b0406b9161b10f5eb76dbabff34a8d2085"
+  },
+  {
+    "path": "guard-green/trigger-editor-build.log",
+    "bytes": 1388,
+    "mode": "0o664",
+    "sha256": "a724e3448cc7fd64cef7a297c225ff0d797885d96d74723085fae3003313f57a"
+  },
+  {
+    "path": "guard-green/trigger-editor-fixture-runtime.log",
+    "bytes": 815,
+    "mode": "0o664",
+    "sha256": "7c4fcf36de987c04a2c5c6bc11ad2a34713f0c703ce4bc81f4bffcae42e8a0b6"
+  },
+  {
+    "path": "guard-green/trigger-editor-resource-rebuild.log",
+    "bytes": 628,
+    "mode": "0o664",
+    "sha256": "1be0863215cc7b8851df317fd0cf798b2440e84d0d86371109114befd6306c6b"
+  },
+  {
+    "path": "guard-green/trigger-editor-targets.log",
+    "bytes": 2718,
+    "mode": "0o664",
+    "sha256": "a2814bde6d8fa46c8ac03ea916df5db2b263b452ed7c65fa6b929ac87044b372"
+  },
+  {
+    "path": "guard-green/trigger-editor.log",
+    "bytes": 720,
+    "mode": "0o664",
+    "sha256": "145508f395727c64bb679d072fe3a5a3c13ecc83a0a5f00cb884ba487641195a"
+  },
+  {
+    "path": "guard-green/trigger-host-dependencies.log",
+    "bytes": 4674,
+    "mode": "0o664",
+    "sha256": "59e441ceaaf236cffdfa82c5fe07a1c1f6436992cb0e54ca1de61ad3cc466903"
+  },
+  {
+    "path": "guard-green/trigger-host-test-inventory.log",
+    "bytes": 18231,
+    "mode": "0o664",
+    "sha256": "3812ecfc5ee8e70ddc234b67537de751257e6f66e503269edd66b5435cf50d7f"
+  },
+  {
+    "path": "guard-green/trigger-native-inventory.log",
+    "bytes": 730,
+    "mode": "0o664",
+    "sha256": "04cf069e1aafab2519e8e166343908a5bed959edac924deb5bcb01a54c2a4c8e"
+  },
+  {
+    "path": "guard-green/trigger-native-test-inventory.log",
+    "bytes": 20328,
+    "mode": "0o664",
+    "sha256": "fd9d4bed37bce86dbb2d3dd2c89b05874a8c610603705ce7c7f427f917af9983"
+  },
+  {
+    "path": "guard-green/verified-summary.json",
+    "bytes": 400,
+    "mode": "0o664",
+    "sha256": "ddafce27a6c874438a73bfca756a3c97ebb99d7be3be4a151b2d211386691a3e"
+  },
+  {
+    "path": "guard-red/guard.log",
+    "bytes": 1679,
+    "mode": "0o664",
+    "sha256": "8c5914546967078e5ffee23583a61a89d1d99f06cc8d7b70693eb5357b7fdc36"
+  },
+  {
+    "path": "guard-red/run.json",
+    "bytes": 943,
+    "mode": "0o664",
+    "sha256": "28cdf04f73172151f9aee0e267db5d71d26782da4b317ab0e643c9f5dd6ab3d5"
+  },
+  {
+    "path": "guard-red/source-manifest.json",
+    "bytes": 67622,
+    "mode": "0o664",
+    "sha256": "4bac9d4785d1ddfd566cfb659a9023599ba1bdb9d73586c58d881d427ba373f4"
+  },
+  {
+    "path": "guard-red/trigger-editor-targets.log",
+    "bytes": 2718,
+    "mode": "0o664",
+    "sha256": "a2814bde6d8fa46c8ac03ea916df5db2b263b452ed7c65fa6b929ac87044b372"
+  },
+  {
+    "path": "guard-red/trigger-editor.log",
+    "bytes": 720,
+    "mode": "0o664",
+    "sha256": "df8a0698399ecd75e0d213c8bf40aad19e38682360a7427ac98162fd10904aca"
+  },
+  {
+    "path": "guard-red/trigger-host-test-inventory.log",
+    "bytes": 18231,
+    "mode": "0o664",
+    "sha256": "9fd7172bceccb13a5624c1ad54ceec99672a5e74e5e6d92c4de7de9508855948"
+  },
+  {
+    "path": "guard-red/trigger-native-inventory.log",
+    "bytes": 730,
+    "mode": "0o664",
+    "sha256": "c002019d7a91c7dbb9caefe21b9965c10ad07378a39f9c682786f4ba98240056"
+  },
+  {
+    "path": "guard-red/trigger-native-test-inventory.log",
+    "bytes": 20111,
+    "mode": "0o664",
+    "sha256": "ad18ee5e529f00032ba4fa352f60993dd4c8c745968a0a51bbca9924c5e8f8a1"
+  },
+  {
+    "path": "run-guard.py",
+    "bytes": 4448,
+    "mode": "0o664",
+    "sha256": "308dd6a2646982f4651b45aa0785ebe907e610a1f272a7febbf9697221e42421"
+  }
+]

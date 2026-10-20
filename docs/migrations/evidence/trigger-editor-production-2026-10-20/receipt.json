@@ -1,0 +1,303 @@
+{
+  "schema_version": 1,
+  "base": "e9f7e09bb7e81790009e5630af5fd45c6dd629b6",
+  "scope": "Task3.2 actual production Silent-preview/eight-font calibration and explicit native CTest bundle input",
+  "task_3_2_complete": false,
+  "full_beta_complete": false,
+  "sources": {
+    "CMakeLists.txt": "e3b627179eb529887b33f6cc9c3a39542c1252628134f15b2b638dd9125ecd08",
+    "tests/python/test_engine_only_build.py": "44c2074f4b2c440372a419a028fcff37b78b8bb1800d592cb6ef4a7fe51186da",
+    "src/trigger-editor/tests/internal/native_x11.rs": "0fc258de26c0b16c25cdd57f27bd082d6ac5de2163e2e03fdf9fdcf97026f17f",
+    "src/trigger-editor/tests/internal/production.rs": "8c3710ae967f1acdcbb76ab96416b67b0adbb5fe246b642a7d2cad1fe9a083e3",
+    "src/trigger-editor/tests/fixtures/production-observer.js": "c64d08f416a0231e879884dad97fd45ff4c235ed7063206cb28470c5b4157c53"
+  },
+  "production_rust_unchanged": true,
+  "author_artifacts": 410,
+  "root_guard_artifacts": 23,
+  "coverage": {
+    "owner_native": {
+      "/tmp/dandrum-lanes/runtime/src/trigger-editor/src/../tests/internal/production.rs": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 15,
+          "covered": 11,
+          "percent": 73.33333333333333
+        },
+        "instantiations": {
+          "count": 15,
+          "covered": 11,
+          "percent": 73.33333333333333
+        },
+        "lines": {
+          "count": 145,
+          "covered": 136,
+          "percent": 93.79310344827586
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 244,
+          "covered": 230,
+          "notcovered": 14,
+          "percent": 94.26229508196722
+        }
+      },
+      "/tmp/dandrum-lanes/runtime/src/trigger-editor/src/assets.rs": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 5,
+          "covered": 3,
+          "percent": 60
+        },
+        "instantiations": {
+          "count": 11,
+          "covered": 3,
+          "percent": 27.27272727272727
+        },
+        "lines": {
+          "count": 52,
+          "covered": 45,
+          "percent": 86.53846153846155
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 87,
+          "covered": 75,
+          "notcovered": 12,
+          "percent": 86.20689655172413
+        }
+      },
+      "/tmp/dandrum-lanes/runtime/src/trigger-editor/src/native_x11.rs": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 14,
+          "covered": 12,
+          "percent": 85.71428571428571
+        },
+        "instantiations": {
+          "count": 38,
+          "covered": 27,
+          "percent": 71.05263157894737
+        },
+        "lines": {
+          "count": 134,
+          "covered": 129,
+          "percent": 96.26865671641791
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 209,
+          "covered": 190,
+          "notcovered": 19,
+          "percent": 90.9090909090909
+        }
+      }
+    },
+    "fast": {
+      "/tmp/dandrum-lanes/runtime/src/trigger-editor/src/../tests/internal/production.rs": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 15,
+          "covered": 0,
+          "percent": 0
+        },
+        "instantiations": {
+          "count": 15,
+          "covered": 0,
+          "percent": 0
+        },
+        "lines": {
+          "count": 145,
+          "covered": 0,
+          "percent": 0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 244,
+          "covered": 0,
+          "notcovered": 244,
+          "percent": 0
+        }
+      },
+      "/tmp/dandrum-lanes/runtime/src/trigger-editor/src/assets.rs": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 5,
+          "covered": 5,
+          "percent": 100
+        },
+        "instantiations": {
+          "count": 11,
+          "covered": 7,
+          "percent": 63.63636363636363
+        },
+        "lines": {
+          "count": 52,
+          "covered": 52,
+          "percent": 100
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 87,
+          "covered": 86,
+          "notcovered": 1,
+          "percent": 98.85057471264368
+        }
+      },
+      "/tmp/dandrum-lanes/runtime/src/trigger-editor/src/native_x11.rs": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 14,
+          "covered": 0,
+          "percent": 0
+        },
+        "instantiations": {
+          "count": 38,
+          "covered": 0,
+          "percent": 0
+        },
+        "lines": {
+          "count": 134,
+          "covered": 0,
+          "percent": 0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 209,
+          "covered": 0,
+          "notcovered": 209,
+          "percent": 0
+        }
+      }
+    },
+    "limits": "No new/extracted productionRust module or dependency. Owner129/134lines,12/14functions,190/209regions retains19inherited gaps; nativeowner0/134fast. Assetsfast52/52lines and86/87regions. Testfixtureproduction.rs136/145lines,230/244regions,11/15functions; unhit diagnostic callbacks/missinginput/missingresource error closures and assertionfailure branches remain visible. No tests/seams added solely forscore; no exclusions or branch/MC/DC claim (LLVMcounterszero).",
+    "inherited_owner_gaps": [
+      {
+        "lines": [
+          83,
+          84
+        ],
+        "case": "IPC refusal cleanup: fresh manager/sole registration invariant prevents a public duplicate in fixed pinned construction."
+      },
+      {
+        "lines": [
+          114
+        ],
+        "case": "Non-X11 display guard: public on other backends, selected machine has no Wayland fixture."
+      },
+      {
+        "lines": [
+          117
+        ],
+        "case": "New checked X11 connection failure requires auth/server loss while existing GDK display is already usable; not disrupted on shared server."
+      },
+      {
+        "lines": [
+          171
+        ],
+        "case": "Reparent enqueue IO failure requires transport loss; actual checked BadWindow reply and post-WebKit resource/native cleanup remain covered."
+      },
+      {
+        "regions": "Other inherited direction gaps: default display missing/realization cast failure under fixed initialized X11 construction; wrong-screen/depth; validation transport/race errors; non-value JavascriptResult; generic callbacks skipped by rejected creates."
+      },
+      {
+        "dependency_limit": "No Wry-internal post-WebKit-allocation Err claim; prior shared-context duplicate calibration remains accurately classified as builder preflight."
+      }
+    ],
+    "instrumentation": "Retained localcrate workspacewrapper adds -Cinstrument-coverage, actual sourcepositives bound to final binary SHA and exact merge/export/show commands in final-coverage-export-runs.json. Raw profiles/profdata/JSON/annotated owner retained. Root sharedhookLLVMcache untouched."
+  },
+  "checks": {
+    "registered_editor_ctests": "3/3",
+    "registered_editor_seconds": 1.9710530599986669,
+    "source_free_guard_red": {
+      "exit": 1,
+      "elapsed_seconds": 1.024822,
+      "identity": "missing exact staged bundle argument"
+    },
+    "source_free_guard_green": {
+      "exit": 0,
+      "elapsed_seconds": 88.456489,
+      "source_inputs": 583,
+      "selected_runtime_ctests": "3/3"
+    },
+    "clippy_warnings_denied": "pass",
+    "formatting": "pass",
+    "mutation": "excluded by user"
+  },
+  "known_lifecycle_finding": {
+    "status": "open; not repaired in this loading/wiring slice",
+    "source_report": "editor-close-readiness.md",
+    "original_failure": "production-characterization-compiled.log in author archive",
+    "cause": "original remaining child identity unknown; queued-close immediate completion promise independently unsupported",
+    "next": "behavior-first synchronous owned-container disposal proof"
+  },
+  "review": {
+    "status": "PASS",
+    "manifest_sha256": "d7eb6ed459af9ec2d59ed44bca1f3fb5d92df1e1f3159ebf569357a6f45d9296",
+    "review_sha256": "8d40e5f125924435cdeb344b59035e7b6d21988c5a55df90ec1eb23191f3646e",
+    "verdict_sha256": "c8cbc230b405c4fae9df1a5320ffc05f713c58bd7d997d0d774c26312bce7cd2"
+  },
+  "publication": {
+    "target": "origin/feat/juce-free-host-adapters",
+    "status": "pending normal hooks"
+  }
+}

@@ -13,6 +13,8 @@ use x11rb::{
 
 #[path = "local_policy.rs"]
 mod local_policy;
+#[path = "production.rs"]
+mod production;
 
 #[test]
 #[ignore = "requires real Linux X11, GTK3 and WebKitGTK; native boundary lane"]
@@ -127,6 +129,7 @@ fn real_child_loads_local_content_and_drops_without_owning_the_host_parent() {
     acquisition_errors_leave_no_owned_window(&x, parent, root, baseline);
     local_policy::external_fetch_is_blocked_by_enforcing_csp(parent);
     local_policy::top_level_document_stays_at_fixed_entry(parent);
+    production::unmodified_bundle_renders_silent_preview_with_all_eight_fonts(parent);
     x.destroy_window(parent).unwrap().check().unwrap();
 }
 
@@ -318,18 +321,18 @@ fn acquisition_errors_leave_no_owned_window(
         weak.upgrade().is_none(),
         "rejected builder releases its unregistered resource callback"
     );
+    let cleanup_started = Instant::now();
     drop(first);
     drop(context);
+    let mut ticks = Vec::new();
     for _ in 0..8 {
-        NativeEditor::service().unwrap();
+        ticks.push(NativeEditor::service().unwrap());
     }
-    assert_eq!(gtk::Window::list_toplevels().len(), baseline);
-    assert!(
-        x.query_tree(parent)
-            .unwrap()
-            .reply()
-            .unwrap()
-            .children
-            .is_empty()
+    let remaining = x.query_tree(parent).unwrap().reply().unwrap().children;
+    eprintln!(
+        "acquisition final cleanup: parent={parent}, children={remaining:?}, ticks={ticks:?}, elapsed={:?}",
+        cleanup_started.elapsed()
     );
+    assert_eq!(gtk::Window::list_toplevels().len(), baseline);
+    assert!(remaining.is_empty());
 }

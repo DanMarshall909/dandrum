@@ -356,6 +356,7 @@ if(DANDRUM_CLAP_PROOF)
             add_test(NAME trigger-editor-native-x11
                 COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
                     GDK_BACKEND=x11
+                    DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=${DANDRUM_TRIGGER_RESOURCE_DIR}/editor
                     ${CARGO_BIN} test --locked --jobs 2
                     --manifest-path ${RUST_TRIGGER_EDITOR_DIR}/Cargo.toml
                     --features native-x11 --lib
