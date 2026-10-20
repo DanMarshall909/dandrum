@@ -1,0 +1,29 @@
+{
+  "candidateManifestSha256": "b176d633ef2f0284e60cb834e8729361f2a507d43f5a58e3f99950c0ea73f13a",
+  "finalProductionChecks": {
+    "fastCoverage": "final-fast-coverage-refined.json",
+    "check": "final-check.json",
+    "nativeBuild": "final-build-native.json",
+    "browserBuild": "final-build.json",
+    "focusedBrowser": "c5-refined-browser.json",
+    "fullBrowser": "final-browser.json"
+  },
+  "redEvidence": {
+    "initialAbsentServices": "c1-red-direct.log",
+    "strictMetadata": "c2-red.log",
+    "typedUnsupportedAccess": "c3-red.log",
+    "unknownInitialNativeVoices": "c4-red.log",
+    "hostSizing": "c5-red-presenter.log",
+    "unavailableMeasurements": "c5-red-browser-host.log",
+    "immutableEngineMetadata": "c6-red.log"
+  },
+  "disclosure": [
+    "Per-phase source snapshots were not captured during the inner loops. Exact RED diagnostics/logs and final source/test snapshot are preserved; no claim of per-phase file hashes.",
+    "Initial sandbox full coverage had a component-guard subprocess diagnostic failure. Unchanged maintained guard passes elevated full fast/coverage commands; no guard code or test changed.",
+    "First c4 GREEN failed an incorrect heartbeat generation-argument oracle; existing heartbeat takes no args. Test corrected, production unchanged, failed log retained.",
+    "Browser JSX coverage uses transformed V8 ranges and source hashes, not a full original JSX source-map coverage percentage.",
+    "Exploratory coverage loading action failed because ordinary import did not select loading source; attempt2 artifacts retained. Corrected existing missing-file recovery action passes.",
+    "Native/CLAP protocol facade, actual Rust snapshot calibration, attachment destruction/gesture release and audio are outside this isolated frontend proof.",
+    "No module extraction, dependency or lock changes; no mutation testing."
+  ]
+}

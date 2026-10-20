@@ -1,0 +1,1568 @@
+[
+  {
+    "path": "artifact-hashes.json",
+    "bytes": 46959,
+    "mode": "0o664",
+    "sha256": "c2b45dc3939370c5823cb6749dc9095366bf97e67132209fd4ea2ad7780f51da"
+  },
+  {
+    "path": "candidate.patch",
+    "bytes": 45227,
+    "mode": "0o664",
+    "sha256": "f10e3b748f671a706f6c41561bd8a10fa14b01423a1c8548f5e850bb46e2f848"
+  },
+  {
+    "path": "changed-coverage.json",
+    "bytes": 1131,
+    "mode": "0o664",
+    "sha256": "ff00a8984d04708c353c3fb1545c061bdab233daaa0542d6c52f212ba7562b5c"
+  },
+  {
+    "path": "checks.json",
+    "bytes": 3469,
+    "mode": "0o664",
+    "sha256": "bc94ec16d1f8ca677bfb786b3f99cc9d2072ed7106d65e83758755fe9e6c1df5"
+  },
+  {
+    "path": "criterion-notes.md",
+    "bytes": 2382,
+    "mode": "0o664",
+    "sha256": "16a678a6ce4d676136485feb88b5ab6a97639e8e640141dfce4c8ec1c6315ab6"
+  },
+  {
+    "path": "final-browser-results/.last-run.json",
+    "bytes": 45,
+    "mode": "0o664",
+    "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+  },
+  {
+    "path": "final-browser-results/log-drawer-event-log-exclu-a96ad-etained-events-when-cleared/attachments/log-drawer-coverage-2d70fd81d9784bc17e99d51ce52c2656952981d2.json",
+    "bytes": 16215,
+    "mode": "0o664",
+    "sha256": "6b4a1282822edea14046e9fa778c80a2c3f9975e55e01038b6512f81c6b9e717"
+  },
+  {
+    "path": "final-browser-results/log-drawer-event-log-exclu-a96ad-etained-events-when-cleared/log-drawer-coverage.json",
+    "bytes": 16215,
+    "mode": "0o664",
+    "sha256": "6b4a1282822edea14046e9fa778c80a2c3f9975e55e01038b6512f81c6b9e717"
+  },
+  {
+    "path": "final-browser-results/log-drawer-event-log-filte-8a423-ar-removes-recorded-matches/attachments/log-drawer-coverage-0aa99c3d3dfa089205c15658612c7cf08353ec20.json",
+    "bytes": 16214,
+    "mode": "0o664",
+    "sha256": "f475d2549665bbf1de19ab4bd2dee9bcd5f8c54f764a0b60cadea44a696251fe"
+  },
+  {
+    "path": "final-browser-results/log-drawer-event-log-filte-8a423-ar-removes-recorded-matches/event-log-default.png",
+    "bytes": 181436,
+    "mode": "0o664",
+    "sha256": "407c28ebd6d853aa82664bdabdb2a9ccff38726159aec60f92f1c88723c8cf03"
+  },
+  {
+    "path": "final-browser-results/log-drawer-event-log-filte-8a423-ar-removes-recorded-matches/event-log-expanded.png",
+    "bytes": 232496,
+    "mode": "0o664",
+    "sha256": "4dea0a64ed53f7fe114e401bc9ecb5aa5fbef00c9a24b1ae0c2b0d2432ac80bc"
+  },
+  {
+    "path": "final-browser-results/log-drawer-event-log-filte-8a423-ar-removes-recorded-matches/event-log-min.png",
+    "bytes": 104850,
+    "mode": "0o664",
+    "sha256": "c2b2e28a6af0d99922b64063be456f11bce510e1f6a1761d6a0aa351e4de57a8"
+  },
+  {
+    "path": "final-browser-results/log-drawer-event-log-filte-8a423-ar-removes-recorded-matches/log-drawer-coverage.json",
+    "bytes": 16214,
+    "mode": "0o664",
+    "sha256": "f475d2549665bbf1de19ab4bd2dee9bcd5f8c54f764a0b60cadea44a696251fe"
+  },
+  {
+    "path": "final-browser-results/log-drawer-event-log-inclu-e0a3c-hout-changing-recorded-rows/attachments/log-drawer-coverage-ffac8b0a4f4601c0ea45c55d259aff5fb2cce724.json",
+    "bytes": 16204,
+    "mode": "0o664",
+    "sha256": "5213f371fac1b37f22830c3dc5626aa8d418a7373668d43b58c20454d75886ae"
+  },
+  {
+    "path": "final-browser-results/log-drawer-event-log-inclu-e0a3c-hout-changing-recorded-rows/log-drawer-coverage.json",
+    "bytes": 16204,
+    "mode": "0o664",
+    "sha256": "5213f371fac1b37f22830c3dc5626aa8d418a7373668d43b58c20454d75886ae"
+  },
+  {
+    "path": "final-browser-results/native-frame-native-backen-d0da0--fits-actual-host-viewports/native-1180.png",
+    "bytes": 132701,
+    "mode": "0o664",
+    "sha256": "a306474f38420b5977b2a40c01dfa4f94e70126d679698d591170d6e5516fb1e"
+  },
+  {
+    "path": "final-browser-results/native-frame-native-backen-d0da0--fits-actual-host-viewports/native-1500.png",
+    "bytes": 148705,
+    "mode": "0o664",
+    "sha256": "b77632530bb367707185940b3737908eda8c1b13e983fc21c82f28107aad51f5"
+  },
+  {
+    "path": "final-browser-results/native-frame-native-backen-d0da0--fits-actual-host-viewports/native-820.png",
+    "bytes": 67400,
+    "mode": "0o664",
+    "sha256": "b7a24ed6e214bfa912bdefa63a95fa4f02acd871df6070e39b85a060d2283b95"
+  },
+  {
+    "path": "final-browser-results/native-transport-explicit--a4fb5-ts-and-host-controlled-size/native-optional-unavailable.png",
+    "bytes": 123519,
+    "mode": "0o664",
+    "sha256": "255a6b060a3806368b0b26e54d6885ed74696e60578f671894c10d9bd6e20b77"
+  },
+  {
+    "path": "final-browser-source.json",
+    "bytes": 2625,
+    "mode": "0o664",
+    "sha256": "18c2c53ddf38c8e2a24383e7e635c25223b3027cb848fbb5cf6d35a941f2fb62"
+  },
+  {
+    "path": "final-browser-source/web/trigger/TriggerController.jsx",
+    "bytes": 6736,
+    "mode": "0o664",
+    "sha256": "ef9ee3bb8931427c952bd146aebcc7de14a49b336e948adde2cd617fdca66b66"
+  },
+  {
+    "path": "final-browser-source/web/trigger/components/AppHeader.jsx",
+    "bytes": 3450,
+    "mode": "0o664",
+    "sha256": "6944cc49a4a2a5c90b3ab46cb5336e60899d651d26ea04d2df6f36664e1c9339"
+  },
+  {
+    "path": "final-browser-source/web/trigger/components/OutputBusPanel.jsx",
+    "bytes": 509,
+    "mode": "0o664",
+    "sha256": "0fef4d3dd6e433b9f4e98f54637b4231e76e0cc885f918b0413e9e4d3fac36aa"
+  },
+  {
+    "path": "final-browser-source/web/trigger/components/WaveformPreview.jsx",
+    "bytes": 603,
+    "mode": "0o664",
+    "sha256": "618c72f9a502b452a834000b1f693e664aca85354f8c26385f577d0c70b51648"
+  },
+  {
+    "path": "final-browser-source/web/trigger/components/pages/SamplePage.jsx",
+    "bytes": 11885,
+    "mode": "0o664",
+    "sha256": "c70c0290cc079e151f1124737fcfafa2c2c2f0de54e110553d6ef5424aeab1c4"
+  },
+  {
+    "path": "final-browser-source/web/trigger/components/pages/SlicesPage.jsx",
+    "bytes": 5310,
+    "mode": "0o664",
+    "sha256": "e2dfaf095782bfcf79b04bbf3d75ef4011a1c66be5aaed0e84abda3eb3d51778"
+  },
+  {
+    "path": "final-browser-source/web/trigger/engine/contract.ts",
+    "bytes": 9340,
+    "mode": "0o664",
+    "sha256": "1608fea4e1d9c315b26e098734bd6b19648f19d15d3bc6d085b0c217b966a01d"
+  },
+  {
+    "path": "final-browser-source/web/trigger/engine/engine-contract.md",
+    "bytes": 7087,
+    "mode": "0o664",
+    "sha256": "154d8e568e6eaa488cd00e8ba1017195e658a36d2f52ba35197274df62814295"
+  },
+  {
+    "path": "final-browser-source/web/trigger/engine/native-engine.mjs",
+    "bytes": 20976,
+    "mode": "0o664",
+    "sha256": "fdb765ac93834b14922d1577475c8d5e2a1078f03fb0fa6fd8a4410f81efec16"
+  },
+  {
+    "path": "final-browser-source/web/trigger/engine/native-live.mjs",
+    "bytes": 4277,
+    "mode": "0o664",
+    "sha256": "eba8c4f63cc5ff5d3962cd076a5abf20791e03d882fea822fbbb3c82cba5ba84"
+  },
+  {
+    "path": "final-browser-source/web/trigger/engine/native-transport.mjs",
+    "bytes": 1360,
+    "mode": "0o664",
+    "sha256": "2a8ddba1fd958a949aaf33d916e2381fc610fd1ebbc3049692b13da674eb454a"
+  },
+  {
+    "path": "final-browser-source/web/trigger/engine/telemetry-reader.mjs",
+    "bytes": 723,
+    "mode": "0o664",
+    "sha256": "157085a355914567d392ab2af429ffebd7a18f05bd33faffc10a8f20f148c5f8"
+  },
+  {
+    "path": "final-browser-source/web/trigger/shell/ShellPresenter.mjs",
+    "bytes": 8944,
+    "mode": "0o664",
+    "sha256": "f87f997b458f8bae37cdf8e4b7cd47d53177543499b43ba5a9da29b0e50c174a"
+  },
+  {
+    "path": "final-browser-source/web/trigger/tests/browser/native-transport.spec.mjs",
+    "bytes": 6834,
+    "mode": "0o664",
+    "sha256": "2493e0ef40d76c6c4000d4c85aeb18020d59d6e0dc281a56a85eff5e93927dbd"
+  },
+  {
+    "path": "final-browser-source/web/trigger/tests/native-transport.test.mjs",
+    "bytes": 14146,
+    "mode": "0o664",
+    "sha256": "b28767b40bed00aa9b1f0b37b9f82cf2279c270a16632c94e86b681bf7afd7ca"
+  },
+  {
+    "path": "final-browser-source/web/trigger/tests/presentation.test.mjs",
+    "bytes": 4740,
+    "mode": "0o664",
+    "sha256": "6612cc0e1f102c86668d732339a5838015f60ca244d6ca3889603c2aa186ce41"
+  },
+  {
+    "path": "final-browser.json",
+    "bytes": 356,
+    "mode": "0o664",
+    "sha256": "55ce5473a07038a5ece4a3208cf25695a9622bfb750b19bf726b801d95bdebe3"
+  },
+  {
+    "path": "final-browser.log",
+    "bytes": 5768,
+    "mode": "0o664",
+    "sha256": "591e695611a722204b8e0e060d00f43e919e8a5356e6b0568b18f10f5a2376bd"
+  },
+  {
+    "path": "final-build-native-source.json",
+    "bytes": 2625,
+    "mode": "0o664",
+    "sha256": "18c2c53ddf38c8e2a24383e7e635c25223b3027cb848fbb5cf6d35a941f2fb62"
+  },
+  {
+    "path": "final-build-native-source/web/trigger/TriggerController.jsx",
+    "bytes": 6736,
+    "mode": "0o664",
+    "sha256": "ef9ee3bb8931427c952bd146aebcc7de14a49b336e948adde2cd617fdca66b66"
+  },
+  {
+    "path": "final-build-native-source/web/trigger/components/AppHeader.jsx",
+    "bytes": 3450,
+    "mode": "0o664",
+    "sha256": "6944cc49a4a2a5c90b3ab46cb5336e60899d651d26ea04d2df6f36664e1c9339"
+  },
+  {
+    "path": "final-build-native-source/web/trigger/components/OutputBusPanel.jsx",
+    "bytes": 509,
+    "mode": "0o664",
+    "sha256": "0fef4d3dd6e433b9f4e98f54637b4231e76e0cc885f918b0413e9e4d3fac36aa"
+  },
+  {
+    "path": "final-build-native-source/web/trigger/components/WaveformPreview.jsx",
+    "bytes": 603,
+    "mode": "0o664",
+    "sha256": "618c72f9a502b452a834000b1f693e664aca85354f8c26385f577d0c70b51648"
+  },
+  {
+    "path": "final-build-native-source/web/trigger/components/pages/SamplePage.jsx",
+    "bytes": 11885,
+    "mode": "0o664",
+    "sha256": "c70c0290cc079e151f1124737fcfafa2c2c2f0de54e110553d6ef5424aeab1c4"
+  },
+  {
+    "path": "final-build-native-source/web/trigger/components/pages/SlicesPage.jsx",
+    "bytes": 5310,
+    "mode": "0o664",
+    "sha256": "e2dfaf095782bfcf79b04bbf3d75ef4011a1c66be5aaed0e84abda3eb3d51778"
+  },
+  {
+    "path": "final-build-native-source/web/trigger/engine/contract.ts",
+    "bytes": 9340,
+    "mode": "0o664",
+    "sha256": "1608fea4e1d9c315b26e098734bd6b19648f19d15d3bc6d085b0c217b966a01d"
+  },
+  {
+    "path": "final-build-native-source/web/trigger/engine/engine-contract.md",
+    "bytes": 7087,
+    "mode": "0o664",
+    "sha256": "154d8e568e6eaa488cd00e8ba1017195e658a36d2f52ba35197274df62814295"
+  },
+  {
+    "path": "final-build-native-source/web/trigger/engine/native-engine.mjs",
+    "bytes": 20976,
+    "mode": "0o664",
+    "sha256": "fdb765ac93834b14922d1577475c8d5e2a1078f03fb0fa6fd8a4410f81efec16"
+  },
+  {
+    "path": "final-build-native-source/web/trigger/engine/native-live.mjs",
+    "bytes": 4277,
+    "mode": "0o664",
+    "sha256": "eba8c4f63cc5ff5d3962cd076a5abf20791e03d882fea822fbbb3c82cba5ba84"
+  },
+  {
+    "path": "final-build-native-source/web/trigger/engine/native-transport.mjs",
+    "bytes": 1360,
+    "mode": "0o664",
+    "sha256": "2a8ddba1fd958a949aaf33d916e2381fc610fd1ebbc3049692b13da674eb454a"
+  },
+  {
+    "path": "final-build-native-source/web/trigger/engine/telemetry-reader.mjs",
+    "bytes": 723,
+    "mode": "0o664",
+    "sha256": "157085a355914567d392ab2af429ffebd7a18f05bd33faffc10a8f20f148c5f8"
+  },
+  {
+    "path": "final-build-native-source/web/trigger/shell/ShellPresenter.mjs",
+    "bytes": 8944,
+    "mode": "0o664",
+    "sha256": "f87f997b458f8bae37cdf8e4b7cd47d53177543499b43ba5a9da29b0e50c174a"
+  },
+  {
+    "path": "final-build-native-source/web/trigger/tests/browser/native-transport.spec.mjs",
+    "bytes": 6834,
+    "mode": "0o664",
+    "sha256": "2493e0ef40d76c6c4000d4c85aeb18020d59d6e0dc281a56a85eff5e93927dbd"
+  },
+  {
+    "path": "final-build-native-source/web/trigger/tests/native-transport.test.mjs",
+    "bytes": 14146,
+    "mode": "0o664",
+    "sha256": "b28767b40bed00aa9b1f0b37b9f82cf2279c270a16632c94e86b681bf7afd7ca"
+  },
+  {
+    "path": "final-build-native-source/web/trigger/tests/presentation.test.mjs",
+    "bytes": 4740,
+    "mode": "0o664",
+    "sha256": "6612cc0e1f102c86668d732339a5838015f60ca244d6ca3889603c2aa186ce41"
+  },
+  {
+    "path": "final-build-native.json",
+    "bytes": 256,
+    "mode": "0o664",
+    "sha256": "cc3e2dccc90453cc08c9f45b425a14b278fb6089c6c654b601192f4f6aa0df2b"
+  },
+  {
+    "path": "final-build-native.log",
+    "bytes": 724,
+    "mode": "0o664",
+    "sha256": "76f746a5c0371c34c23bf7815e78b98d92162bb4a5e916dc4b8c8366b3547daa"
+  },
+  {
+    "path": "final-build-source.json",
+    "bytes": 2625,
+    "mode": "0o664",
+    "sha256": "18c2c53ddf38c8e2a24383e7e635c25223b3027cb848fbb5cf6d35a941f2fb62"
+  },
+  {
+    "path": "final-build-source/web/trigger/TriggerController.jsx",
+    "bytes": 6736,
+    "mode": "0o664",
+    "sha256": "ef9ee3bb8931427c952bd146aebcc7de14a49b336e948adde2cd617fdca66b66"
+  },
+  {
+    "path": "final-build-source/web/trigger/components/AppHeader.jsx",
+    "bytes": 3450,
+    "mode": "0o664",
+    "sha256": "6944cc49a4a2a5c90b3ab46cb5336e60899d651d26ea04d2df6f36664e1c9339"
+  },
+  {
+    "path": "final-build-source/web/trigger/components/OutputBusPanel.jsx",
+    "bytes": 509,
+    "mode": "0o664",
+    "sha256": "0fef4d3dd6e433b9f4e98f54637b4231e76e0cc885f918b0413e9e4d3fac36aa"
+  },
+  {
+    "path": "final-build-source/web/trigger/components/WaveformPreview.jsx",
+    "bytes": 603,
+    "mode": "0o664",
+    "sha256": "618c72f9a502b452a834000b1f693e664aca85354f8c26385f577d0c70b51648"
+  },
+  {
+    "path": "final-build-source/web/trigger/components/pages/SamplePage.jsx",
+    "bytes": 11885,
+    "mode": "0o664",
+    "sha256": "c70c0290cc079e151f1124737fcfafa2c2c2f0de54e110553d6ef5424aeab1c4"
+  },
+  {
+    "path": "final-build-source/web/trigger/components/pages/SlicesPage.jsx",
+    "bytes": 5310,
+    "mode": "0o664",
+    "sha256": "e2dfaf095782bfcf79b04bbf3d75ef4011a1c66be5aaed0e84abda3eb3d51778"
+  },
+  {
+    "path": "final-build-source/web/trigger/engine/contract.ts",
+    "bytes": 9340,
+    "mode": "0o664",
+    "sha256": "1608fea4e1d9c315b26e098734bd6b19648f19d15d3bc6d085b0c217b966a01d"
+  },
+  {
+    "path": "final-build-source/web/trigger/engine/engine-contract.md",
+    "bytes": 7087,
+    "mode": "0o664",
+    "sha256": "154d8e568e6eaa488cd00e8ba1017195e658a36d2f52ba35197274df62814295"
+  },
+  {
+    "path": "final-build-source/web/trigger/engine/native-engine.mjs",
+    "bytes": 20976,
+    "mode": "0o664",
+    "sha256": "fdb765ac93834b14922d1577475c8d5e2a1078f03fb0fa6fd8a4410f81efec16"
+  },
+  {
+    "path": "final-build-source/web/trigger/engine/native-live.mjs",
+    "bytes": 4277,
+    "mode": "0o664",
+    "sha256": "eba8c4f63cc5ff5d3962cd076a5abf20791e03d882fea822fbbb3c82cba5ba84"
+  },
+  {
+    "path": "final-build-source/web/trigger/engine/native-transport.mjs",
+    "bytes": 1360,
+    "mode": "0o664",
+    "sha256": "2a8ddba1fd958a949aaf33d916e2381fc610fd1ebbc3049692b13da674eb454a"
+  },
+  {
+    "path": "final-build-source/web/trigger/engine/telemetry-reader.mjs",
+    "bytes": 723,
+    "mode": "0o664",
+    "sha256": "157085a355914567d392ab2af429ffebd7a18f05bd33faffc10a8f20f148c5f8"
+  },
+  {
+    "path": "final-build-source/web/trigger/shell/ShellPresenter.mjs",
+    "bytes": 8944,
+    "mode": "0o664",
+    "sha256": "f87f997b458f8bae37cdf8e4b7cd47d53177543499b43ba5a9da29b0e50c174a"
+  },
+  {
+    "path": "final-build-source/web/trigger/tests/browser/native-transport.spec.mjs",
+    "bytes": 6834,
+    "mode": "0o664",
+    "sha256": "2493e0ef40d76c6c4000d4c85aeb18020d59d6e0dc281a56a85eff5e93927dbd"
+  },
+  {
+    "path": "final-build-source/web/trigger/tests/native-transport.test.mjs",
+    "bytes": 14146,
+    "mode": "0o664",
+    "sha256": "b28767b40bed00aa9b1f0b37b9f82cf2279c270a16632c94e86b681bf7afd7ca"
+  },
+  {
+    "path": "final-build-source/web/trigger/tests/presentation.test.mjs",
+    "bytes": 4740,
+    "mode": "0o664",
+    "sha256": "6612cc0e1f102c86668d732339a5838015f60ca244d6ca3889603c2aa186ce41"
+  },
+  {
+    "path": "final-build.json",
+    "bytes": 249,
+    "mode": "0o664",
+    "sha256": "e6ae5f62bfbe86cb47cac2e42c5f51f6a710d45e43a53ebdf6df2a747d8cd251"
+  },
+  {
+    "path": "final-build.log",
+    "bytes": 812,
+    "mode": "0o664",
+    "sha256": "9732c5d3157c117e27d7333e5fa710eb365c172d4c6a736f28cc9e47ebd164a4"
+  },
+  {
+    "path": "final-check-source.json",
+    "bytes": 2625,
+    "mode": "0o664",
+    "sha256": "18c2c53ddf38c8e2a24383e7e635c25223b3027cb848fbb5cf6d35a941f2fb62"
+  },
+  {
+    "path": "final-check-source/web/trigger/TriggerController.jsx",
+    "bytes": 6736,
+    "mode": "0o664",
+    "sha256": "ef9ee3bb8931427c952bd146aebcc7de14a49b336e948adde2cd617fdca66b66"
+  },
+  {
+    "path": "final-check-source/web/trigger/components/AppHeader.jsx",
+    "bytes": 3450,
+    "mode": "0o664",
+    "sha256": "6944cc49a4a2a5c90b3ab46cb5336e60899d651d26ea04d2df6f36664e1c9339"
+  },
+  {
+    "path": "final-check-source/web/trigger/components/OutputBusPanel.jsx",
+    "bytes": 509,
+    "mode": "0o664",
+    "sha256": "0fef4d3dd6e433b9f4e98f54637b4231e76e0cc885f918b0413e9e4d3fac36aa"
+  },
+  {
+    "path": "final-check-source/web/trigger/components/WaveformPreview.jsx",
+    "bytes": 603,
+    "mode": "0o664",
+    "sha256": "618c72f9a502b452a834000b1f693e664aca85354f8c26385f577d0c70b51648"
+  },
+  {
+    "path": "final-check-source/web/trigger/components/pages/SamplePage.jsx",
+    "bytes": 11885,
+    "mode": "0o664",
+    "sha256": "c70c0290cc079e151f1124737fcfafa2c2c2f0de54e110553d6ef5424aeab1c4"
+  },
+  {
+    "path": "final-check-source/web/trigger/components/pages/SlicesPage.jsx",
+    "bytes": 5310,
+    "mode": "0o664",
+    "sha256": "e2dfaf095782bfcf79b04bbf3d75ef4011a1c66be5aaed0e84abda3eb3d51778"
+  },
+  {
+    "path": "final-check-source/web/trigger/engine/contract.ts",
+    "bytes": 9340,
+    "mode": "0o664",
+    "sha256": "1608fea4e1d9c315b26e098734bd6b19648f19d15d3bc6d085b0c217b966a01d"
+  },
+  {
+    "path": "final-check-source/web/trigger/engine/engine-contract.md",
+    "bytes": 7087,
+    "mode": "0o664",
+    "sha256": "154d8e568e6eaa488cd00e8ba1017195e658a36d2f52ba35197274df62814295"
+  },
+  {
+    "path": "final-check-source/web/trigger/engine/native-engine.mjs",
+    "bytes": 20976,
+    "mode": "0o664",
+    "sha256": "fdb765ac93834b14922d1577475c8d5e2a1078f03fb0fa6fd8a4410f81efec16"
+  },
+  {
+    "path": "final-check-source/web/trigger/engine/native-live.mjs",
+    "bytes": 4277,
+    "mode": "0o664",
+    "sha256": "eba8c4f63cc5ff5d3962cd076a5abf20791e03d882fea822fbbb3c82cba5ba84"
+  },
+  {
+    "path": "final-check-source/web/trigger/engine/native-transport.mjs",
+    "bytes": 1360,
+    "mode": "0o664",
+    "sha256": "2a8ddba1fd958a949aaf33d916e2381fc610fd1ebbc3049692b13da674eb454a"
+  },
+  {
+    "path": "final-check-source/web/trigger/engine/telemetry-reader.mjs",
+    "bytes": 723,
+    "mode": "0o664",
+    "sha256": "157085a355914567d392ab2af429ffebd7a18f05bd33faffc10a8f20f148c5f8"
+  },
+  {
+    "path": "final-check-source/web/trigger/shell/ShellPresenter.mjs",
+    "bytes": 8944,
+    "mode": "0o664",
+    "sha256": "f87f997b458f8bae37cdf8e4b7cd47d53177543499b43ba5a9da29b0e50c174a"
+  },
+  {
+    "path": "final-check-source/web/trigger/tests/browser/native-transport.spec.mjs",
+    "bytes": 6834,
+    "mode": "0o664",
+    "sha256": "2493e0ef40d76c6c4000d4c85aeb18020d59d6e0dc281a56a85eff5e93927dbd"
+  },
+  {
+    "path": "final-check-source/web/trigger/tests/native-transport.test.mjs",
+    "bytes": 14146,
+    "mode": "0o664",
+    "sha256": "b28767b40bed00aa9b1f0b37b9f82cf2279c270a16632c94e86b681bf7afd7ca"
+  },
+  {
+    "path": "final-check-source/web/trigger/tests/presentation.test.mjs",
+    "bytes": 4740,
+    "mode": "0o664",
+    "sha256": "6612cc0e1f102c86668d732339a5838015f60ca244d6ca3889603c2aa186ce41"
+  },
+  {
+    "path": "final-check.json",
+    "bytes": 249,
+    "mode": "0o664",
+    "sha256": "1915e8df104cc4c16fe5c41bd6997de3a064af73b6ea835f584218b6cda976e4"
+  },
+  {
+    "path": "final-check.log",
+    "bytes": 168,
+    "mode": "0o664",
+    "sha256": "b0bab331c63867fa869f03aeff4aeef673d6ec90d098c5fd740844478ed683dc"
+  },
+  {
+    "path": "final-coverage-source.json",
+    "bytes": 2625,
+    "mode": "0o664",
+    "sha256": "18c2c53ddf38c8e2a24383e7e635c25223b3027cb848fbb5cf6d35a941f2fb62"
+  },
+  {
+    "path": "final-coverage-source/web/trigger/TriggerController.jsx",
+    "bytes": 6736,
+    "mode": "0o664",
+    "sha256": "ef9ee3bb8931427c952bd146aebcc7de14a49b336e948adde2cd617fdca66b66"
+  },
+  {
+    "path": "final-coverage-source/web/trigger/components/AppHeader.jsx",
+    "bytes": 3450,
+    "mode": "0o664",
+    "sha256": "6944cc49a4a2a5c90b3ab46cb5336e60899d651d26ea04d2df6f36664e1c9339"
+  },
+  {
+    "path": "final-coverage-source/web/trigger/components/OutputBusPanel.jsx",
+    "bytes": 509,
+    "mode": "0o664",
+    "sha256": "0fef4d3dd6e433b9f4e98f54637b4231e76e0cc885f918b0413e9e4d3fac36aa"
+  },
+  {
+    "path": "final-coverage-source/web/trigger/components/WaveformPreview.jsx",
+    "bytes": 603,
+    "mode": "0o664",
+    "sha256": "618c72f9a502b452a834000b1f693e664aca85354f8c26385f577d0c70b51648"
+  },
+  {
+    "path": "final-coverage-source/web/trigger/components/pages/SamplePage.jsx",
+    "bytes": 11885,
+    "mode": "0o664",
+    "sha256": "c70c0290cc079e151f1124737fcfafa2c2c2f0de54e110553d6ef5424aeab1c4"
+  },
+  {
+    "path": "final-coverage-source/web/trigger/components/pages/SlicesPage.jsx",
+    "bytes": 5310,
+    "mode": "0o664",
+    "sha256": "e2dfaf095782bfcf79b04bbf3d75ef4011a1c66be5aaed0e84abda3eb3d51778"
+  },
+  {
+    "path": "final-coverage-source/web/trigger/engine/contract.ts",
+    "bytes": 9340,
+    "mode": "0o664",
+    "sha256": "1608fea4e1d9c315b26e098734bd6b19648f19d15d3bc6d085b0c217b966a01d"
+  },
+  {
+    "path": "final-coverage-source/web/trigger/engine/engine-contract.md",
+    "bytes": 7087,
+    "mode": "0o664",
+    "sha256": "154d8e568e6eaa488cd00e8ba1017195e658a36d2f52ba35197274df62814295"
+  },
+  {
+    "path": "final-coverage-source/web/trigger/engine/native-engine.mjs",
+    "bytes": 20976,
+    "mode": "0o664",
+    "sha256": "fdb765ac93834b14922d1577475c8d5e2a1078f03fb0fa6fd8a4410f81efec16"
+  },
+  {
+    "path": "final-coverage-source/web/trigger/engine/native-live.mjs",
+    "bytes": 4277,
+    "mode": "0o664",
+    "sha256": "eba8c4f63cc5ff5d3962cd076a5abf20791e03d882fea822fbbb3c82cba5ba84"
+  },
+  {
+    "path": "final-coverage-source/web/trigger/engine/native-transport.mjs",
+    "bytes": 1360,
+    "mode": "0o664",
+    "sha256": "2a8ddba1fd958a949aaf33d916e2381fc610fd1ebbc3049692b13da674eb454a"
+  },
+  {
+    "path": "final-coverage-source/web/trigger/engine/telemetry-reader.mjs",
+    "bytes": 723,
+    "mode": "0o664",
+    "sha256": "157085a355914567d392ab2af429ffebd7a18f05bd33faffc10a8f20f148c5f8"
+  },
+  {
+    "path": "final-coverage-source/web/trigger/shell/ShellPresenter.mjs",
+    "bytes": 8944,
+    "mode": "0o664",
+    "sha256": "f87f997b458f8bae37cdf8e4b7cd47d53177543499b43ba5a9da29b0e50c174a"
+  },
+  {
+    "path": "final-coverage-source/web/trigger/tests/browser/native-transport.spec.mjs",
+    "bytes": 6834,
+    "mode": "0o664",
+    "sha256": "2493e0ef40d76c6c4000d4c85aeb18020d59d6e0dc281a56a85eff5e93927dbd"
+  },
+  {
+    "path": "final-coverage-source/web/trigger/tests/native-transport.test.mjs",
+    "bytes": 14146,
+    "mode": "0o664",
+    "sha256": "b28767b40bed00aa9b1f0b37b9f82cf2279c270a16632c94e86b681bf7afd7ca"
+  },
+  {
+    "path": "final-coverage-source/web/trigger/tests/presentation.test.mjs",
+    "bytes": 4740,
+    "mode": "0o664",
+    "sha256": "6612cc0e1f102c86668d732339a5838015f60ca244d6ca3889603c2aa186ce41"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3144934-1792493923635-0.json",
+    "bytes": 356085,
+    "mode": "0o600",
+    "sha256": "f6c8e8fa86f1afb61f3e5161152ac98436ec1c2976ac49f9d6cd19c2c3f57b38"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3144952-1792493922081-0.json",
+    "bytes": 340728,
+    "mode": "0o600",
+    "sha256": "68ffe617d16e52d32f12c789d31422bc1798dadf3a2f511738fab4c4ddd6f6a6"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3144953-1792493922951-0.json",
+    "bytes": 273837,
+    "mode": "0o600",
+    "sha256": "cf007d57bcd6ffc6021b31cecbd5d0ac4ff51e09839274d9b54f3b15376cc4a5"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3144959-1792493922698-0.json",
+    "bytes": 2074410,
+    "mode": "0o600",
+    "sha256": "44c6624dfb6a62ca7fda9cebc13c9d6fde16cf8a9b514301c567b4a331214645"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3144960-1792493922123-0.json",
+    "bytes": 511141,
+    "mode": "0o600",
+    "sha256": "1ef89632cddef4dda09380a86f17643376ad470c40aae091fc3cf95e51f62729"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3144971-1792493921871-0.json",
+    "bytes": 313370,
+    "mode": "0o600",
+    "sha256": "d8cabd5790e7b1772a81dd783d7167473ffd9f3e41795880d98b27af9f92b6aa"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3144972-1792493921968-0.json",
+    "bytes": 327871,
+    "mode": "0o600",
+    "sha256": "57e0815fd2ddca28316e0d30aa964cc433518ea2383ac5df0746b9b0da1b4279"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3144978-1792493921978-0.json",
+    "bytes": 384040,
+    "mode": "0o600",
+    "sha256": "46df3436cc88c6af6a0e8fae1be3802776f59809a7dea7f42b4b9c11a0896e0d"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3144983-1792493922194-0.json",
+    "bytes": 525881,
+    "mode": "0o600",
+    "sha256": "d5e1212171a168ac27e498ccff469e9669d0643b12e59e65f00340fc83bb26ef"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3144986-1792493922319-0.json",
+    "bytes": 614817,
+    "mode": "0o600",
+    "sha256": "13530719a4b9ccbcd5bec1a8b2c336695a0202043b1aa4a0590f1217bd92d563"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3144992-1792493922597-0.json",
+    "bytes": 425853,
+    "mode": "0o600",
+    "sha256": "98f0ea1423769cab836e8eed0782441cc3b511c0a68e25fda765ea7a1efe4424"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3145005-1792493923459-0.json",
+    "bytes": 515095,
+    "mode": "0o600",
+    "sha256": "2d51daf820feb7305851277104ee9a3ae5e7270608b932bccf2343b2c9bc7d65"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3145011-1792493922850-0.json",
+    "bytes": 483161,
+    "mode": "0o600",
+    "sha256": "563bb15bc311882a900bd49997b0aab4f548d147a39122b615ef49e68dd414c6"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3145040-1792493921919-0.json",
+    "bytes": 311789,
+    "mode": "0o600",
+    "sha256": "5971f949afd170f373f14cdce17e576a07a86755f36b0cbef55fe424b9d88ae2"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3145041-1792493922186-0.json",
+    "bytes": 624074,
+    "mode": "0o600",
+    "sha256": "284ca9c228a7afe49d08e32871e2a6dfdc328c6453a014af172452ac0b9b7226"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3145042-1792493922001-0.json",
+    "bytes": 396169,
+    "mode": "0o600",
+    "sha256": "106ce252f9ac4104f5dbda5199ef9629422a07834ff31811dc41f651e015e23a"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3145043-1792493922004-0.json",
+    "bytes": 802963,
+    "mode": "0o600",
+    "sha256": "c85183f86bf2d8e740efe2b0c179b8dd582de7d1319c518b1c1a8b9b7dd7b7c6"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3145047-1792493922746-0.json",
+    "bytes": 339762,
+    "mode": "0o600",
+    "sha256": "4fd58b3992c5deb76ba2bd00d10d5bc0a3cf1d01531554a080fd4684a9f7a32d"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3145061-1792493922093-0.json",
+    "bytes": 489553,
+    "mode": "0o600",
+    "sha256": "09a74d67c6415c79b5e009164a9dfc60a18b7431dde2135e47991273ad41a119"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3145071-1792493921923-0.json",
+    "bytes": 316766,
+    "mode": "0o600",
+    "sha256": "302e2030041132cba96deb3516bc8d5304f6508cef22bb3fd9f4975a2ae9878b"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3145099-1792493922189-0.json",
+    "bytes": 803337,
+    "mode": "0o600",
+    "sha256": "594331b2473dee86aaa54c7f0e3dcf844a7ab360cb6a61687c169b37329be304"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3145116-1792493922341-0.json",
+    "bytes": 802962,
+    "mode": "0o600",
+    "sha256": "1f7b5fd4db588d2f61968e5daf1087a8fd5473343e23e9be3edf94532aaca8c0"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3145133-1792493922491-0.json",
+    "bytes": 803383,
+    "mode": "0o600",
+    "sha256": "291edaade4ade1275284b523167731885b3a1c2e3409ea9bceb0465d8022e524"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3145150-1792493922641-0.json",
+    "bytes": 802963,
+    "mode": "0o600",
+    "sha256": "19d0c2a9068fd71956582396716112ef3a83ccdf533dee38c5a32901b17562fe"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3145167-1792493922789-0.json",
+    "bytes": 804981,
+    "mode": "0o600",
+    "sha256": "f31532eb1fd05990a6492b71253f00ea49024f173b234b936184b8d6124b6a96"
+  },
+  {
+    "path": "final-coverage-v8/coverage-3145184-1792493922933-0.json",
+    "bytes": 802963,
+    "mode": "0o600",
+    "sha256": "ff6753688b0ec804c4c1f653a8a1b3e1802babdfa31e01fd6aaa1f835ea95aa0"
+  },
+  {
+    "path": "final-coverage.json",
+    "bytes": 257,
+    "mode": "0o664",
+    "sha256": "248afce8491829a8a05049299b9f477f4bbcaa0cebab7933a55fd0a43174a012"
+  },
+  {
+    "path": "final-coverage.log",
+    "bytes": 35484,
+    "mode": "0o664",
+    "sha256": "dbd08ec5820eb316c9f670bc24a8e71b37ae011330f3c31b5360367e60943942"
+  },
+  {
+    "path": "final-fast-source.json",
+    "bytes": 2625,
+    "mode": "0o664",
+    "sha256": "18c2c53ddf38c8e2a24383e7e635c25223b3027cb848fbb5cf6d35a941f2fb62"
+  },
+  {
+    "path": "final-fast-source/web/trigger/TriggerController.jsx",
+    "bytes": 6736,
+    "mode": "0o664",
+    "sha256": "ef9ee3bb8931427c952bd146aebcc7de14a49b336e948adde2cd617fdca66b66"
+  },
+  {
+    "path": "final-fast-source/web/trigger/components/AppHeader.jsx",
+    "bytes": 3450,
+    "mode": "0o664",
+    "sha256": "6944cc49a4a2a5c90b3ab46cb5336e60899d651d26ea04d2df6f36664e1c9339"
+  },
+  {
+    "path": "final-fast-source/web/trigger/components/OutputBusPanel.jsx",
+    "bytes": 509,
+    "mode": "0o664",
+    "sha256": "0fef4d3dd6e433b9f4e98f54637b4231e76e0cc885f918b0413e9e4d3fac36aa"
+  },
+  {
+    "path": "final-fast-source/web/trigger/components/WaveformPreview.jsx",
+    "bytes": 603,
+    "mode": "0o664",
+    "sha256": "618c72f9a502b452a834000b1f693e664aca85354f8c26385f577d0c70b51648"
+  },
+  {
+    "path": "final-fast-source/web/trigger/components/pages/SamplePage.jsx",
+    "bytes": 11885,
+    "mode": "0o664",
+    "sha256": "c70c0290cc079e151f1124737fcfafa2c2c2f0de54e110553d6ef5424aeab1c4"
+  },
+  {
+    "path": "final-fast-source/web/trigger/components/pages/SlicesPage.jsx",
+    "bytes": 5310,
+    "mode": "0o664",
+    "sha256": "e2dfaf095782bfcf79b04bbf3d75ef4011a1c66be5aaed0e84abda3eb3d51778"
+  },
+  {
+    "path": "final-fast-source/web/trigger/engine/contract.ts",
+    "bytes": 9340,
+    "mode": "0o664",
+    "sha256": "1608fea4e1d9c315b26e098734bd6b19648f19d15d3bc6d085b0c217b966a01d"
+  },
+  {
+    "path": "final-fast-source/web/trigger/engine/engine-contract.md",
+    "bytes": 7087,
+    "mode": "0o664",
+    "sha256": "154d8e568e6eaa488cd00e8ba1017195e658a36d2f52ba35197274df62814295"
+  },
+  {
+    "path": "final-fast-source/web/trigger/engine/native-engine.mjs",
+    "bytes": 20976,
+    "mode": "0o664",
+    "sha256": "fdb765ac93834b14922d1577475c8d5e2a1078f03fb0fa6fd8a4410f81efec16"
+  },
+  {
+    "path": "final-fast-source/web/trigger/engine/native-live.mjs",
+    "bytes": 4277,
+    "mode": "0o664",
+    "sha256": "eba8c4f63cc5ff5d3962cd076a5abf20791e03d882fea822fbbb3c82cba5ba84"
+  },
+  {
+    "path": "final-fast-source/web/trigger/engine/native-transport.mjs",
+    "bytes": 1360,
+    "mode": "0o664",
+    "sha256": "2a8ddba1fd958a949aaf33d916e2381fc610fd1ebbc3049692b13da674eb454a"
+  },
+  {
+    "path": "final-fast-source/web/trigger/engine/telemetry-reader.mjs",
+    "bytes": 723,
+    "mode": "0o664",
+    "sha256": "157085a355914567d392ab2af429ffebd7a18f05bd33faffc10a8f20f148c5f8"
+  },
+  {
+    "path": "final-fast-source/web/trigger/shell/ShellPresenter.mjs",
+    "bytes": 8944,
+    "mode": "0o664",
+    "sha256": "f87f997b458f8bae37cdf8e4b7cd47d53177543499b43ba5a9da29b0e50c174a"
+  },
+  {
+    "path": "final-fast-source/web/trigger/tests/browser/native-transport.spec.mjs",
+    "bytes": 6834,
+    "mode": "0o664",
+    "sha256": "2493e0ef40d76c6c4000d4c85aeb18020d59d6e0dc281a56a85eff5e93927dbd"
+  },
+  {
+    "path": "final-fast-source/web/trigger/tests/native-transport.test.mjs",
+    "bytes": 14146,
+    "mode": "0o664",
+    "sha256": "b28767b40bed00aa9b1f0b37b9f82cf2279c270a16632c94e86b681bf7afd7ca"
+  },
+  {
+    "path": "final-fast-source/web/trigger/tests/presentation.test.mjs",
+    "bytes": 4740,
+    "mode": "0o664",
+    "sha256": "6612cc0e1f102c86668d732339a5838015f60ca244d6ca3889603c2aa186ce41"
+  },
+  {
+    "path": "final-fast.json",
+    "bytes": 236,
+    "mode": "0o664",
+    "sha256": "9f1f139a677c400249820611346f3b341bde4f1ae076bc1402ea2f15d0d066b7"
+  },
+  {
+    "path": "final-fast.log",
+    "bytes": 28156,
+    "mode": "0o664",
+    "sha256": "865305e8ce9cec0889c66d64f4d1efb9243ec501098ef440f79bcd05b36461c1"
+  },
+  {
+    "path": "final-source/web/trigger/TriggerController.jsx",
+    "bytes": 6736,
+    "mode": "0o664",
+    "sha256": "ef9ee3bb8931427c952bd146aebcc7de14a49b336e948adde2cd617fdca66b66"
+  },
+  {
+    "path": "final-source/web/trigger/components/AppHeader.jsx",
+    "bytes": 3450,
+    "mode": "0o664",
+    "sha256": "6944cc49a4a2a5c90b3ab46cb5336e60899d651d26ea04d2df6f36664e1c9339"
+  },
+  {
+    "path": "final-source/web/trigger/components/OutputBusPanel.jsx",
+    "bytes": 509,
+    "mode": "0o664",
+    "sha256": "0fef4d3dd6e433b9f4e98f54637b4231e76e0cc885f918b0413e9e4d3fac36aa"
+  },
+  {
+    "path": "final-source/web/trigger/components/WaveformPreview.jsx",
+    "bytes": 603,
+    "mode": "0o664",
+    "sha256": "618c72f9a502b452a834000b1f693e664aca85354f8c26385f577d0c70b51648"
+  },
+  {
+    "path": "final-source/web/trigger/components/pages/SamplePage.jsx",
+    "bytes": 11885,
+    "mode": "0o664",
+    "sha256": "c70c0290cc079e151f1124737fcfafa2c2c2f0de54e110553d6ef5424aeab1c4"
+  },
+  {
+    "path": "final-source/web/trigger/components/pages/SlicesPage.jsx",
+    "bytes": 5310,
+    "mode": "0o664",
+    "sha256": "e2dfaf095782bfcf79b04bbf3d75ef4011a1c66be5aaed0e84abda3eb3d51778"
+  },
+  {
+    "path": "final-source/web/trigger/engine/contract.ts",
+    "bytes": 9340,
+    "mode": "0o664",
+    "sha256": "1608fea4e1d9c315b26e098734bd6b19648f19d15d3bc6d085b0c217b966a01d"
+  },
+  {
+    "path": "final-source/web/trigger/engine/engine-contract.md",
+    "bytes": 7087,
+    "mode": "0o664",
+    "sha256": "154d8e568e6eaa488cd00e8ba1017195e658a36d2f52ba35197274df62814295"
+  },
+  {
+    "path": "final-source/web/trigger/engine/native-engine.mjs",
+    "bytes": 20976,
+    "mode": "0o664",
+    "sha256": "fdb765ac93834b14922d1577475c8d5e2a1078f03fb0fa6fd8a4410f81efec16"
+  },
+  {
+    "path": "final-source/web/trigger/engine/native-live.mjs",
+    "bytes": 4277,
+    "mode": "0o664",
+    "sha256": "eba8c4f63cc5ff5d3962cd076a5abf20791e03d882fea822fbbb3c82cba5ba84"
+  },
+  {
+    "path": "final-source/web/trigger/engine/native-transport.mjs",
+    "bytes": 1360,
+    "mode": "0o664",
+    "sha256": "2a8ddba1fd958a949aaf33d916e2381fc610fd1ebbc3049692b13da674eb454a"
+  },
+  {
+    "path": "final-source/web/trigger/engine/telemetry-reader.mjs",
+    "bytes": 723,
+    "mode": "0o664",
+    "sha256": "157085a355914567d392ab2af429ffebd7a18f05bd33faffc10a8f20f148c5f8"
+  },
+  {
+    "path": "final-source/web/trigger/shell/ShellPresenter.mjs",
+    "bytes": 8944,
+    "mode": "0o664",
+    "sha256": "f87f997b458f8bae37cdf8e4b7cd47d53177543499b43ba5a9da29b0e50c174a"
+  },
+  {
+    "path": "final-source/web/trigger/tests/browser/native-transport.spec.mjs",
+    "bytes": 6834,
+    "mode": "0o664",
+    "sha256": "2493e0ef40d76c6c4000d4c85aeb18020d59d6e0dc281a56a85eff5e93927dbd"
+  },
+  {
+    "path": "final-source/web/trigger/tests/native-transport.test.mjs",
+    "bytes": 14146,
+    "mode": "0o664",
+    "sha256": "b28767b40bed00aa9b1f0b37b9f82cf2279c270a16632c94e86b681bf7afd7ca"
+  },
+  {
+    "path": "final-source/web/trigger/tests/presentation.test.mjs",
+    "bytes": 4740,
+    "mode": "0o664",
+    "sha256": "6612cc0e1f102c86668d732339a5838015f60ca244d6ca3889603c2aa186ce41"
+  },
+  {
+    "path": "git-status.txt",
+    "bytes": 686,
+    "mode": "0o664",
+    "sha256": "527bda3f4c332da735927b4f1bae8de3dfb4a4253744f348605ff337a7150897"
+  },
+  {
+    "path": "green-browser-results/.last-run.json",
+    "bytes": 45,
+    "mode": "0o664",
+    "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+  },
+  {
+    "path": "green-browser-source.json",
+    "bytes": 2625,
+    "mode": "0o664",
+    "sha256": "18c2c53ddf38c8e2a24383e7e635c25223b3027cb848fbb5cf6d35a941f2fb62"
+  },
+  {
+    "path": "green-browser-source/web/trigger/TriggerController.jsx",
+    "bytes": 6736,
+    "mode": "0o664",
+    "sha256": "ef9ee3bb8931427c952bd146aebcc7de14a49b336e948adde2cd617fdca66b66"
+  },
+  {
+    "path": "green-browser-source/web/trigger/components/AppHeader.jsx",
+    "bytes": 3450,
+    "mode": "0o664",
+    "sha256": "6944cc49a4a2a5c90b3ab46cb5336e60899d651d26ea04d2df6f36664e1c9339"
+  },
+  {
+    "path": "green-browser-source/web/trigger/components/OutputBusPanel.jsx",
+    "bytes": 509,
+    "mode": "0o664",
+    "sha256": "0fef4d3dd6e433b9f4e98f54637b4231e76e0cc885f918b0413e9e4d3fac36aa"
+  },
+  {
+    "path": "green-browser-source/web/trigger/components/WaveformPreview.jsx",
+    "bytes": 603,
+    "mode": "0o664",
+    "sha256": "618c72f9a502b452a834000b1f693e664aca85354f8c26385f577d0c70b51648"
+  },
+  {
+    "path": "green-browser-source/web/trigger/components/pages/SamplePage.jsx",
+    "bytes": 11885,
+    "mode": "0o664",
+    "sha256": "c70c0290cc079e151f1124737fcfafa2c2c2f0de54e110553d6ef5424aeab1c4"
+  },
+  {
+    "path": "green-browser-source/web/trigger/components/pages/SlicesPage.jsx",
+    "bytes": 5310,
+    "mode": "0o664",
+    "sha256": "e2dfaf095782bfcf79b04bbf3d75ef4011a1c66be5aaed0e84abda3eb3d51778"
+  },
+  {
+    "path": "green-browser-source/web/trigger/engine/contract.ts",
+    "bytes": 9340,
+    "mode": "0o664",
+    "sha256": "1608fea4e1d9c315b26e098734bd6b19648f19d15d3bc6d085b0c217b966a01d"
+  },
+  {
+    "path": "green-browser-source/web/trigger/engine/engine-contract.md",
+    "bytes": 7087,
+    "mode": "0o664",
+    "sha256": "154d8e568e6eaa488cd00e8ba1017195e658a36d2f52ba35197274df62814295"
+  },
+  {
+    "path": "green-browser-source/web/trigger/engine/native-engine.mjs",
+    "bytes": 20976,
+    "mode": "0o664",
+    "sha256": "fdb765ac93834b14922d1577475c8d5e2a1078f03fb0fa6fd8a4410f81efec16"
+  },
+  {
+    "path": "green-browser-source/web/trigger/engine/native-live.mjs",
+    "bytes": 4277,
+    "mode": "0o664",
+    "sha256": "eba8c4f63cc5ff5d3962cd076a5abf20791e03d882fea822fbbb3c82cba5ba84"
+  },
+  {
+    "path": "green-browser-source/web/trigger/engine/native-transport.mjs",
+    "bytes": 1360,
+    "mode": "0o664",
+    "sha256": "2a8ddba1fd958a949aaf33d916e2381fc610fd1ebbc3049692b13da674eb454a"
+  },
+  {
+    "path": "green-browser-source/web/trigger/engine/telemetry-reader.mjs",
+    "bytes": 723,
+    "mode": "0o664",
+    "sha256": "157085a355914567d392ab2af429ffebd7a18f05bd33faffc10a8f20f148c5f8"
+  },
+  {
+    "path": "green-browser-source/web/trigger/shell/ShellPresenter.mjs",
+    "bytes": 8944,
+    "mode": "0o664",
+    "sha256": "f87f997b458f8bae37cdf8e4b7cd47d53177543499b43ba5a9da29b0e50c174a"
+  },
+  {
+    "path": "green-browser-source/web/trigger/tests/browser/native-transport.spec.mjs",
+    "bytes": 6834,
+    "mode": "0o664",
+    "sha256": "2493e0ef40d76c6c4000d4c85aeb18020d59d6e0dc281a56a85eff5e93927dbd"
+  },
+  {
+    "path": "green-browser-source/web/trigger/tests/native-transport.test.mjs",
+    "bytes": 14146,
+    "mode": "0o664",
+    "sha256": "b28767b40bed00aa9b1f0b37b9f82cf2279c270a16632c94e86b681bf7afd7ca"
+  },
+  {
+    "path": "green-browser-source/web/trigger/tests/presentation.test.mjs",
+    "bytes": 4740,
+    "mode": "0o664",
+    "sha256": "6612cc0e1f102c86668d732339a5838015f60ca244d6ca3889603c2aa186ce41"
+  },
+  {
+    "path": "green-browser.json",
+    "bytes": 440,
+    "mode": "0o664",
+    "sha256": "0f454087ad615290c71e60cd4acff0b4a1baa314860725abae14e177b0423b23"
+  },
+  {
+    "path": "green-browser.log",
+    "bytes": 765,
+    "mode": "0o664",
+    "sha256": "5afd2f5e868488935481616e3ae8de918a13e72110f80ab49679c6cfc9d6bfaa"
+  },
+  {
+    "path": "green-store-coverage-source.json",
+    "bytes": 2625,
+    "mode": "0o664",
+    "sha256": "18c2c53ddf38c8e2a24383e7e635c25223b3027cb848fbb5cf6d35a941f2fb62"
+  },
+  {
+    "path": "green-store-coverage-source/web/trigger/TriggerController.jsx",
+    "bytes": 6736,
+    "mode": "0o664",
+    "sha256": "ef9ee3bb8931427c952bd146aebcc7de14a49b336e948adde2cd617fdca66b66"
+  },
+  {
+    "path": "green-store-coverage-source/web/trigger/components/AppHeader.jsx",
+    "bytes": 3450,
+    "mode": "0o664",
+    "sha256": "6944cc49a4a2a5c90b3ab46cb5336e60899d651d26ea04d2df6f36664e1c9339"
+  },
+  {
+    "path": "green-store-coverage-source/web/trigger/components/OutputBusPanel.jsx",
+    "bytes": 509,
+    "mode": "0o664",
+    "sha256": "0fef4d3dd6e433b9f4e98f54637b4231e76e0cc885f918b0413e9e4d3fac36aa"
+  },
+  {
+    "path": "green-store-coverage-source/web/trigger/components/WaveformPreview.jsx",
+    "bytes": 603,
+    "mode": "0o664",
+    "sha256": "618c72f9a502b452a834000b1f693e664aca85354f8c26385f577d0c70b51648"
+  },
+  {
+    "path": "green-store-coverage-source/web/trigger/components/pages/SamplePage.jsx",
+    "bytes": 11885,
+    "mode": "0o664",
+    "sha256": "c70c0290cc079e151f1124737fcfafa2c2c2f0de54e110553d6ef5424aeab1c4"
+  },
+  {
+    "path": "green-store-coverage-source/web/trigger/components/pages/SlicesPage.jsx",
+    "bytes": 5310,
+    "mode": "0o664",
+    "sha256": "e2dfaf095782bfcf79b04bbf3d75ef4011a1c66be5aaed0e84abda3eb3d51778"
+  },
+  {
+    "path": "green-store-coverage-source/web/trigger/engine/contract.ts",
+    "bytes": 9340,
+    "mode": "0o664",
+    "sha256": "1608fea4e1d9c315b26e098734bd6b19648f19d15d3bc6d085b0c217b966a01d"
+  },
+  {
+    "path": "green-store-coverage-source/web/trigger/engine/engine-contract.md",
+    "bytes": 7087,
+    "mode": "0o664",
+    "sha256": "154d8e568e6eaa488cd00e8ba1017195e658a36d2f52ba35197274df62814295"
+  },
+  {
+    "path": "green-store-coverage-source/web/trigger/engine/native-engine.mjs",
+    "bytes": 20976,
+    "mode": "0o664",
+    "sha256": "fdb765ac93834b14922d1577475c8d5e2a1078f03fb0fa6fd8a4410f81efec16"
+  },
+  {
+    "path": "green-store-coverage-source/web/trigger/engine/native-live.mjs",
+    "bytes": 4277,
+    "mode": "0o664",
+    "sha256": "eba8c4f63cc5ff5d3962cd076a5abf20791e03d882fea822fbbb3c82cba5ba84"
+  },
+  {
+    "path": "green-store-coverage-source/web/trigger/engine/native-transport.mjs",
+    "bytes": 1360,
+    "mode": "0o664",
+    "sha256": "2a8ddba1fd958a949aaf33d916e2381fc610fd1ebbc3049692b13da674eb454a"
+  },
+  {
+    "path": "green-store-coverage-source/web/trigger/engine/telemetry-reader.mjs",
+    "bytes": 723,
+    "mode": "0o664",
+    "sha256": "157085a355914567d392ab2af429ffebd7a18f05bd33faffc10a8f20f148c5f8"
+  },
+  {
+    "path": "green-store-coverage-source/web/trigger/shell/ShellPresenter.mjs",
+    "bytes": 8944,
+    "mode": "0o664",
+    "sha256": "f87f997b458f8bae37cdf8e4b7cd47d53177543499b43ba5a9da29b0e50c174a"
+  },
+  {
+    "path": "green-store-coverage-source/web/trigger/tests/browser/native-transport.spec.mjs",
+    "bytes": 6834,
+    "mode": "0o664",
+    "sha256": "2493e0ef40d76c6c4000d4c85aeb18020d59d6e0dc281a56a85eff5e93927dbd"
+  },
+  {
+    "path": "green-store-coverage-source/web/trigger/tests/native-transport.test.mjs",
+    "bytes": 14146,
+    "mode": "0o664",
+    "sha256": "b28767b40bed00aa9b1f0b37b9f82cf2279c270a16632c94e86b681bf7afd7ca"
+  },
+  {
+    "path": "green-store-coverage-source/web/trigger/tests/presentation.test.mjs",
+    "bytes": 4740,
+    "mode": "0o664",
+    "sha256": "6612cc0e1f102c86668d732339a5838015f60ca244d6ca3889603c2aa186ce41"
+  },
+  {
+    "path": "green-store-coverage-v8/coverage-18-1792493880070-0.json",
+    "bytes": 483022,
+    "mode": "0o600",
+    "sha256": "638f88c1f5c83d1d310e74fd0199f94d011a2764c78062887c7f00ceb54342d3"
+  },
+  {
+    "path": "green-store-coverage-v8/coverage-18-1792493880086-0.json",
+    "bytes": 17654,
+    "mode": "0o600",
+    "sha256": "37fa1ed44c8d4c07aeb2b23476a0d55431214890682ed8297a7e2486144e2b0f"
+  },
+  {
+    "path": "green-store-coverage.json",
+    "bytes": 301,
+    "mode": "0o664",
+    "sha256": "24d82cb6bd48ac559a3ce610f0747c484b177a99ccbf2fde65572bc2625a1906"
+  },
+  {
+    "path": "green-store-coverage.log",
+    "bytes": 6548,
+    "mode": "0o664",
+    "sha256": "be73b9e11cc75a61d67599555d420de588ccd785d54950af5338e72b4eaf0e61"
+  },
+  {
+    "path": "handoff.md",
+    "bytes": 3318,
+    "mode": "0o664",
+    "sha256": "0d2f7d374bf91623933c3fdb000dd23cf0b9d111fc58254c2b74efb0cca6a298"
+  },
+  {
+    "path": "red-browser-results/.last-run.json",
+    "bytes": 96,
+    "mode": "0o664",
+    "sha256": "7073b01a21893283ad3eba3dd9c6662b35db8583b772f1fa72b9c9a98560efb6"
+  },
+  {
+    "path": "red-browser-results/native-transport-accepted--89ed6-e-meters-remain-unavailable/error-context.md",
+    "bytes": 8978,
+    "mode": "0o664",
+    "sha256": "c5952fa6ea5a61fd2b2900526310f830b79e46a6ce8ae6ffd1d901566daef74c"
+  },
+  {
+    "path": "red-browser-source.json",
+    "bytes": 2625,
+    "mode": "0o664",
+    "sha256": "cfb6d46b72fd9d45fe491e4487fe0d66e1f99f035a31e9f9c03465a4f04b40af"
+  },
+  {
+    "path": "red-browser-source/web/trigger/TriggerController.jsx",
+    "bytes": 6736,
+    "mode": "0o664",
+    "sha256": "ef9ee3bb8931427c952bd146aebcc7de14a49b336e948adde2cd617fdca66b66"
+  },
+  {
+    "path": "red-browser-source/web/trigger/components/AppHeader.jsx",
+    "bytes": 3450,
+    "mode": "0o664",
+    "sha256": "6944cc49a4a2a5c90b3ab46cb5336e60899d651d26ea04d2df6f36664e1c9339"
+  },
+  {
+    "path": "red-browser-source/web/trigger/components/OutputBusPanel.jsx",
+    "bytes": 509,
+    "mode": "0o664",
+    "sha256": "0fef4d3dd6e433b9f4e98f54637b4231e76e0cc885f918b0413e9e4d3fac36aa"
+  },
+  {
+    "path": "red-browser-source/web/trigger/components/WaveformPreview.jsx",
+    "bytes": 603,
+    "mode": "0o664",
+    "sha256": "618c72f9a502b452a834000b1f693e664aca85354f8c26385f577d0c70b51648"
+  },
+  {
+    "path": "red-browser-source/web/trigger/components/pages/SamplePage.jsx",
+    "bytes": 11885,
+    "mode": "0o664",
+    "sha256": "c70c0290cc079e151f1124737fcfafa2c2c2f0de54e110553d6ef5424aeab1c4"
+  },
+  {
+    "path": "red-browser-source/web/trigger/components/pages/SlicesPage.jsx",
+    "bytes": 5310,
+    "mode": "0o664",
+    "sha256": "e2dfaf095782bfcf79b04bbf3d75ef4011a1c66be5aaed0e84abda3eb3d51778"
+  },
+  {
+    "path": "red-browser-source/web/trigger/engine/contract.ts",
+    "bytes": 9340,
+    "mode": "0o664",
+    "sha256": "1608fea4e1d9c315b26e098734bd6b19648f19d15d3bc6d085b0c217b966a01d"
+  },
+  {
+    "path": "red-browser-source/web/trigger/engine/engine-contract.md",
+    "bytes": 7087,
+    "mode": "0o664",
+    "sha256": "154d8e568e6eaa488cd00e8ba1017195e658a36d2f52ba35197274df62814295"
+  },
+  {
+    "path": "red-browser-source/web/trigger/engine/native-engine.mjs",
+    "bytes": 20976,
+    "mode": "0o664",
+    "sha256": "fdb765ac93834b14922d1577475c8d5e2a1078f03fb0fa6fd8a4410f81efec16"
+  },
+  {
+    "path": "red-browser-source/web/trigger/engine/native-live.mjs",
+    "bytes": 4096,
+    "mode": "0o664",
+    "sha256": "b925ef31c04ad4ad66627eb7a74d4a5ae6aa494e762be305a6189d71be8e7d4e"
+  },
+  {
+    "path": "red-browser-source/web/trigger/engine/native-transport.mjs",
+    "bytes": 1360,
+    "mode": "0o664",
+    "sha256": "2a8ddba1fd958a949aaf33d916e2381fc610fd1ebbc3049692b13da674eb454a"
+  },
+  {
+    "path": "red-browser-source/web/trigger/engine/telemetry-reader.mjs",
+    "bytes": 723,
+    "mode": "0o664",
+    "sha256": "157085a355914567d392ab2af429ffebd7a18f05bd33faffc10a8f20f148c5f8"
+  },
+  {
+    "path": "red-browser-source/web/trigger/shell/ShellPresenter.mjs",
+    "bytes": 8944,
+    "mode": "0o664",
+    "sha256": "f87f997b458f8bae37cdf8e4b7cd47d53177543499b43ba5a9da29b0e50c174a"
+  },
+  {
+    "path": "red-browser-source/web/trigger/tests/browser/native-transport.spec.mjs",
+    "bytes": 6834,
+    "mode": "0o664",
+    "sha256": "2493e0ef40d76c6c4000d4c85aeb18020d59d6e0dc281a56a85eff5e93927dbd"
+  },
+  {
+    "path": "red-browser-source/web/trigger/tests/native-transport.test.mjs",
+    "bytes": 14146,
+    "mode": "0o664",
+    "sha256": "b28767b40bed00aa9b1f0b37b9f82cf2279c270a16632c94e86b681bf7afd7ca"
+  },
+  {
+    "path": "red-browser-source/web/trigger/tests/presentation.test.mjs",
+    "bytes": 4740,
+    "mode": "0o664",
+    "sha256": "6612cc0e1f102c86668d732339a5838015f60ca244d6ca3889603c2aa186ce41"
+  },
+  {
+    "path": "red-browser.json",
+    "bytes": 437,
+    "mode": "0o664",
+    "sha256": "0f4b682839f1e5916a8b53ecde6e84dfa324801d750bcecad82e8ce16eb1969c"
+  },
+  {
+    "path": "red-browser.log",
+    "bytes": 2633,
+    "mode": "0o664",
+    "sha256": "eaee7d4892aba48bf561f56be910c6cb06d83162646435eb836eae6d193557b9"
+  },
+  {
+    "path": "red-store-source.json",
+    "bytes": 2625,
+    "mode": "0o664",
+    "sha256": "cfb6d46b72fd9d45fe491e4487fe0d66e1f99f035a31e9f9c03465a4f04b40af"
+  },
+  {
+    "path": "red-store-source/web/trigger/TriggerController.jsx",
+    "bytes": 6736,
+    "mode": "0o664",
+    "sha256": "ef9ee3bb8931427c952bd146aebcc7de14a49b336e948adde2cd617fdca66b66"
+  },
+  {
+    "path": "red-store-source/web/trigger/components/AppHeader.jsx",
+    "bytes": 3450,
+    "mode": "0o664",
+    "sha256": "6944cc49a4a2a5c90b3ab46cb5336e60899d651d26ea04d2df6f36664e1c9339"
+  },
+  {
+    "path": "red-store-source/web/trigger/components/OutputBusPanel.jsx",
+    "bytes": 509,
+    "mode": "0o664",
+    "sha256": "0fef4d3dd6e433b9f4e98f54637b4231e76e0cc885f918b0413e9e4d3fac36aa"
+  },
+  {
+    "path": "red-store-source/web/trigger/components/WaveformPreview.jsx",
+    "bytes": 603,
+    "mode": "0o664",
+    "sha256": "618c72f9a502b452a834000b1f693e664aca85354f8c26385f577d0c70b51648"
+  },
+  {
+    "path": "red-store-source/web/trigger/components/pages/SamplePage.jsx",
+    "bytes": 11885,
+    "mode": "0o664",
+    "sha256": "c70c0290cc079e151f1124737fcfafa2c2c2f0de54e110553d6ef5424aeab1c4"
+  },
+  {
+    "path": "red-store-source/web/trigger/components/pages/SlicesPage.jsx",
+    "bytes": 5310,
+    "mode": "0o664",
+    "sha256": "e2dfaf095782bfcf79b04bbf3d75ef4011a1c66be5aaed0e84abda3eb3d51778"
+  },
+  {
+    "path": "red-store-source/web/trigger/engine/contract.ts",
+    "bytes": 9340,
+    "mode": "0o664",
+    "sha256": "1608fea4e1d9c315b26e098734bd6b19648f19d15d3bc6d085b0c217b966a01d"
+  },
+  {
+    "path": "red-store-source/web/trigger/engine/engine-contract.md",
+    "bytes": 7087,
+    "mode": "0o664",
+    "sha256": "154d8e568e6eaa488cd00e8ba1017195e658a36d2f52ba35197274df62814295"
+  },
+  {
+    "path": "red-store-source/web/trigger/engine/native-engine.mjs",
+    "bytes": 20976,
+    "mode": "0o664",
+    "sha256": "fdb765ac93834b14922d1577475c8d5e2a1078f03fb0fa6fd8a4410f81efec16"
+  },
+  {
+    "path": "red-store-source/web/trigger/engine/native-live.mjs",
+    "bytes": 4096,
+    "mode": "0o664",
+    "sha256": "b925ef31c04ad4ad66627eb7a74d4a5ae6aa494e762be305a6189d71be8e7d4e"
+  },
+  {
+    "path": "red-store-source/web/trigger/engine/native-transport.mjs",
+    "bytes": 1360,
+    "mode": "0o664",
+    "sha256": "2a8ddba1fd958a949aaf33d916e2381fc610fd1ebbc3049692b13da674eb454a"
+  },
+  {
+    "path": "red-store-source/web/trigger/engine/telemetry-reader.mjs",
+    "bytes": 723,
+    "mode": "0o664",
+    "sha256": "157085a355914567d392ab2af429ffebd7a18f05bd33faffc10a8f20f148c5f8"
+  },
+  {
+    "path": "red-store-source/web/trigger/shell/ShellPresenter.mjs",
+    "bytes": 8944,
+    "mode": "0o664",
+    "sha256": "f87f997b458f8bae37cdf8e4b7cd47d53177543499b43ba5a9da29b0e50c174a"
+  },
+  {
+    "path": "red-store-source/web/trigger/tests/browser/native-transport.spec.mjs",
+    "bytes": 6834,
+    "mode": "0o664",
+    "sha256": "2493e0ef40d76c6c4000d4c85aeb18020d59d6e0dc281a56a85eff5e93927dbd"
+  },
+  {
+    "path": "red-store-source/web/trigger/tests/native-transport.test.mjs",
+    "bytes": 14146,
+    "mode": "0o664",
+    "sha256": "b28767b40bed00aa9b1f0b37b9f82cf2279c270a16632c94e86b681bf7afd7ca"
+  },
+  {
+    "path": "red-store-source/web/trigger/tests/presentation.test.mjs",
+    "bytes": 4740,
+    "mode": "0o664",
+    "sha256": "6612cc0e1f102c86668d732339a5838015f60ca244d6ca3889603c2aa186ce41"
+  },
+  {
+    "path": "red-store.json",
+    "bytes": 265,
+    "mode": "0o664",
+    "sha256": "e9487a46bdb83d682ab8e5bf775e0f659d4aefc9c0a25581049aa57a95aa5a82"
+  },
+  {
+    "path": "red-store.log",
+    "bytes": 4040,
+    "mode": "0o664",
+    "sha256": "b87a38099727cfc43b2f5db818b0fb464255b67cfa0999fcf812d3e8660d1306"
+  },
+  {
+    "path": "repair.patch",
+    "bytes": 4811,
+    "mode": "0o664",
+    "sha256": "f7da86e46f25b3e09429feaf635fa6b3f1e8ac37a13ea02c511959913c627a13"
+  },
+  {
+    "path": "run.py",
+    "bytes": 1147,
+    "mode": "0o664",
+    "sha256": "068d6170f3354fa7122170af3abe5a9bea589868e4d9c265116d9f9936bb9954"
+  },
+  {
+    "path": "source-manifest.json",
+    "bytes": 4500,
+    "mode": "0o664",
+    "sha256": "32489684ae6f668daec22e5f3afc71c266651081c3cb64f5af469f751d6150bd"
+  }
+]

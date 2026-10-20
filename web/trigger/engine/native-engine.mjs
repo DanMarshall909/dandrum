@@ -27,7 +27,7 @@ export class NativeEngine {
     this.backend=backend;this.pollMs=pollMs;this.heartbeatMs=heartbeatMs;this.patch=emptyPatch();this.patch.macros=[];
     this.listeners=new Map();this.closed=false;this.sequence=0;this.pending=null;this.waits=new Set();this.eventTokens=[];
     this.pendingGeneration=0;this.preparing=false;this.reconciliation=null;
-    this.native=true;this.capabilities={analysis:false,zeroCrossings:false,fx:false,modulation:false,wholeSourceAudition:false};
+    this.native=true;this.capabilities=Object.freeze({analysis:false,zeroCrossings:false,fx:false,modulation:false,wholeSourceAudition:false,metering:true,sourceWaveforms:true,windowTitle:true,editorResize:true,...transport.capabilities});
   }
   async initialize(){
     this.session=await this.invoke('getSamplerSession');this.connection=parseSessionConnection(this.session.connection);this.patch=patchFromSession(this.session);this.generation=this.session.document.generation;
@@ -47,7 +47,7 @@ export class NativeEngine {
     }));
     if(this.heartbeatMs>0){
       this.heartbeatTimer=setInterval(()=>void this.live.notes.keepAlive(),this.heartbeatMs);
-      this.meterTimer=setInterval(()=>void this.pollTelemetry().catch(error=>this.report(error)),50);
+      if(this.capabilities.metering)this.meterTimer=setInterval(()=>void this.pollTelemetry().catch(error=>this.report(error)),50);
     }
     return this;
   }
@@ -95,9 +95,11 @@ export class NativeEngine {
   emit(event,value){if(!this.closed)for(const listener of this.listeners.get(event)??[])listener(value);}
   report(error){if(!this.closed)this.emit('patch',{phase:'failed',message:error instanceof Error?error.message:String(error)});}
   async publishWindowTitle(){
+    if(!this.capabilities.windowTitle)return;
     try{await this.invoke('setTriggerWindowTitle',this.patch.name);}
     catch(error){this.report(new Error(`Window title update failed: ${error instanceof Error?error.message:String(error)}`));}
   }
+  getTelemetrySnapshot(){return structuredClone(this.live.telemetry);}
   getPatch(){return structuredClone(this.patch);}
   id(prefix){let id;const used=new Set(Object.values(this.patch).flatMap(value=>Array.isArray(value)?value.map(item=>item.id):[]));do{id=`${prefix}-${++this.sequence}`;}while(used.has(id));return id;}
   wait(){return new Promise((resolve,reject)=>{const entry={timer:setTimeout(()=>{this.waits.delete(entry);resolve();},this.pollMs),reject};this.waits.add(entry);});}
@@ -216,6 +218,7 @@ export class NativeEngine {
   beginHostGesture(id){return this.serial(async()=>{await this.parameters.command('beginGesture',id,this.generation);});}
   endHostGesture(id){return this.serial(async()=>{await this.parameters.command('endGesture',id,this.generation);});}
   async resizeEditor(mode){
+    if(!this.capabilities.editorResize)throw Object.assign(new Error('Editor size is controlled by the host'),{code:'capabilityUnavailable',method:'resizeSamplerEditor'});
     try{const reply=await this.invoke('resizeSamplerEditor',mode);if(reply?.status!=='accepted')throw new Error('Native editor resize was not admitted');}
     catch(error){this.report(error);throw error;}
   }

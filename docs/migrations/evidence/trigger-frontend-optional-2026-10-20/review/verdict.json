@@ -1,0 +1,38 @@
+{
+  "verdict": "PASS",
+  "candidate_manifest_sha256": "195b04a6ec9cb94dedd86280fca24ad38faf41c616c3c2fb0eb95706d1c05e00",
+  "base": "0f02f575ff2419082370f4d35986d086c03b5d0b",
+  "current": "0f02f575ff2419082370f4d35986d086c03b5d0b",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "0f02f575ff2419082370f4d35986d086c03b5d0b",
+  "scope": "Task 3.3 optional frontend service slice; tasks 3.2 and 3.3 remain open",
+  "findings": [],
+  "resolved_findings": [
+    {
+      "id": "F1",
+      "status": "resolved",
+      "evidence": [
+        "repair RED/GREEN exact phase source snapshots",
+        "maintained public Store and rendered-header regressions",
+        "voice-limit-probe.json"
+      ]
+    }
+  ],
+  "manifest_paths_verified": 35,
+  "source_paths_verified": 16,
+  "original_archive_members_verified": 236,
+  "repair_archive_members_verified": 261,
+  "reviewer_full_suite_rerun": false,
+  "post_pass_envelope": {
+    "metadata_paths": 5,
+    "description": "Exact transformations specified in review.md",
+    "same_reviewer_final_manifest_addendum_required_before_commit": true,
+    "source_test_spec_task_archive_changes_allowed": false
+  },
+  "report": "review.md",
+  "limitations": [
+    "Original inner-loop RED source hashes absent and disclosed; repair phases have exact snapshots.",
+    "Browser fixtures do not prove Rust/Wry/CLAP/audio or complete native attachment destruction.",
+    "Mutation explicitly excluded."
+  ]
+}

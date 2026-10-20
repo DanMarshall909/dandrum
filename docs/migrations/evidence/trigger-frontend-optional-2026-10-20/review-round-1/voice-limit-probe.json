@@ -1,0 +1,20 @@
+{
+  "source": "/tmp/dandrum-lanes/frontend (16 frozen source hashes verified)",
+  "initialLimit": 8,
+  "acceptedReplacementLimit": 12,
+  "storeAcceptedLimit": 12,
+  "telemetryLimit": 8,
+  "activeVoiceCount": null,
+  "meters": {},
+  "headerExpression": "Voices — / 8",
+  "calls": [
+    [
+      "getSamplerSession"
+    ],
+    [
+      "getSamplerSession"
+    ]
+  ],
+  "expectedHeader": "Voices — / 12",
+  "matchesAcceptedLimit": false
+}

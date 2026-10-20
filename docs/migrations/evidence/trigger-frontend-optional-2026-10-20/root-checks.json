@@ -1,0 +1,37 @@
+[
+  {
+    "name": "scoped-openspec",
+    "argv": [
+      "openspec",
+      "validate",
+      "add-juce-free-trigger-clap-editor",
+      "--strict"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit_code": 0,
+    "elapsed_seconds": 0.42571922298520803,
+    "log_sha256": "5352a5e2d09f9c1ac8811fd82eba9aecca7aa1a6478e8aba7e4adc6601d35aaf"
+  },
+  {
+    "name": "spec-coverage",
+    "argv": [
+      "scripts/check-spec-coverage"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit_code": 0,
+    "elapsed_seconds": 0.1521005899994634,
+    "log_sha256": "7b987bed9e7c0af4a070e394a1138ec1a71f2179a37a058cb0c00c3288e3b084"
+  },
+  {
+    "name": "diff-check",
+    "argv": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit_code": 0,
+    "elapsed_seconds": 0.007400086004054174,
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+]

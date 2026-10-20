@@ -1,0 +1,28 @@
+{
+  "verdict": "FAIL",
+  "candidate_manifest_sha256": "0fcb69ff5c9f6a741b7b2e521191807605a253034998ee633eb280217c264c77",
+  "candidate_base": "0f02f575ff2419082370f4d35986d086c03b5d0b",
+  "scope": "task 3.3 optional frontend services only",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "medium",
+      "file": "web/trigger/engine/native-live.mjs",
+      "line": 17,
+      "title": "Accepted voice-limit refresh remains stale when metering is absent",
+      "required_outcome": "Publish accepted voice-limit metadata to Store telemetry on accepted refresh independently of metering; retain unknown active count and empty unmeasured meters, zero optional RPCs, and add regression asserting changed limit and subscriber notification.",
+      "evidence": "voice-limit-probe.json"
+    }
+  ],
+  "manifest_verified": true,
+  "archive_artifacts_verified": 236,
+  "source_copies_verified": 16,
+  "post_pass_envelope_approved": false,
+  "report": "review.md",
+  "limitations": [
+    "No complete suite rerun by reviewer; raw retained results inspected.",
+    "Per-phase RED source hashes absent and disclosed.",
+    "Browser fixtures do not calibrate Rust/Wry/CLAP/audio.",
+    "Mutation excluded."
+  ]
+}

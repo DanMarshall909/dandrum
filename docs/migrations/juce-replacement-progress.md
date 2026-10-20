@@ -963,3 +963,31 @@ actualCLAPmainthread/API/order/timer proof depends on4.2. No allunusedfacility-
 denial/nativebackend/session/audio acceptance claim. Fullbeta continues through
 3.3/4.x/5.x and nextVST3/standalone/DAW/installedoffline/native increments. Main
 stays clean68dd655; allcaches preserved, mutationexcluded.
+
+
+## Native optional frontend services — 20 October 2026
+
+The task 3.3 frontend now accepts explicit optional-service metadata while
+preserving full-contract behavior when metadata or fields are omitted, for every
+backend identity. Invalid present values fail before native calls. Unavailable
+meters, waveforms, active voice counts and host-controlled sizing are presented
+honestly. Required session, notes/heartbeat, public parameters, mapping and undo
+remain real adapter calls, including after refresh and repeated close.
+
+The repaired candidate passes 109 fast tests, 33 browser tests, type/component
+checks and both production builds. The changed service gates execute under V8;
+inherited branch/function gaps and the narrower transformed JSX range evidence
+are explicit. No dependencies, vendor code or extracted modules changed.
+[Portable evidence](evidence/trigger-frontend-optional-2026-10-20/receipt.json)
+retains exact final source copies, RED logs and disclosed missing per-phase
+source snapshots. Browser fixtures do not prove the Rust/Wry/CLAP/audio boundary.
+
+Independent review found stale voice-limit metadata after accepted refresh with
+metering absent. The repair publishes that metadata from the shared generation
+owner; Store subscribers and the rendered header now follow the accepted limit.
+Both public and rendered RED/GREEN checks bind exact source copies. The original
+FAIL and probe remain in portable evidence. Independent completion review passed for the frozen frontend source/evidence candidate; normal-hook publication remains.
+Tasks 3.2 and 3.3 remain open, 7/14 overall. The full beta continues through the
+remaining CLAP work and following VST3, standalone, DAW, installed/offline and
+native acceptance increments. Main stays at 68dd655; mutation is excluded and
+reusable caches are preserved.

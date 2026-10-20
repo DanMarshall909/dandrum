@@ -21,7 +21,7 @@ export function SlicesPage({model}) { return <>{model.isSlices && <>
             <DD.IconButton icon="chevron-right" label="Next slice (→)" size="sm" variant="ghost" onClick={()=>model.stepSlice(1)}></DD.IconButton>
           </div>
           <div style={{"padding": "8px 12px 12px","display": "flex","flexDirection": "column","gap": "6px"}}>
-            <div onClick={model.onSliceWaveClick} title="Click a slice to preview it" style={{"cursor": "pointer"}}><SliceWaveform peaks={model.slicePeaks} onMarkerChange={model.moveSliceMarker} assetId={model.sliceAssetId} getTelemetry={model.getTelemetry} subscribeTelemetry={model.subscribeTelemetry} kind="break" height={model.sliceWaveH} slices={model.slices} selectedSlice={model.selSlice} cursor={model.sliceCursor} label={model.sliceAssetName+' · '+model.sliceDuration.toFixed(3)+' s'}></SliceWaveform></div>
+            <div onClick={model.onSliceWaveClick} title="Click a slice to preview it" style={{"cursor": "pointer"}}><SliceWaveform available={model.waveformAvailable} peaks={model.slicePeaks} onMarkerChange={model.moveSliceMarker} assetId={model.sliceAssetId} getTelemetry={model.getTelemetry} subscribeTelemetry={model.subscribeTelemetry} kind="break" height={model.sliceWaveH} slices={model.slices} selectedSlice={model.selSlice} cursor={model.sliceCursor} label={model.sliceAssetName+' · '+model.sliceDuration.toFixed(3)+' s'}></SliceWaveform></div>
             <AnalysisLane model={model}/>
             {model.trDone && <>
               <div style={{"display": "flex","alignItems": "center","gap": "12px","flexWrap": "wrap","padding": "6px 8px","background": "var(--dd-ink-3)","borderRadius": "4px"}}>

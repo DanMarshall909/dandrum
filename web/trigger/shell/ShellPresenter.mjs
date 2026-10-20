@@ -95,13 +95,18 @@ export class ShellPresenter {
     model.scale=1; model.outW=model.W; model.outH=model.H;
     model.backend=this.props.store.engine.native?'native':'mock';
     const engine=this.props.store.engine;
-    if(engine.native&&engine.resizeEditor){
+    model.meteringAvailable=engine.capabilities?.metering!==false;
+    model.waveformAvailable=engine.capabilities?.sourceWaveforms!==false;
+    model.hostControlledSize=engine.native&&engine.capabilities?.editorResize===false;
+    if(model.hostControlledSize){model.setLayout=()=>{};model.togglePerf=()=>{};}
+    else if(engine.native&&engine.resizeEditor){
       const resize=mode=>Promise.resolve(engine.resizeEditor(mode)).catch(error=>this.setState({modNote:error.message}));
       model.setLayout=layout=>{this.setState({layout});return resize(this.state.perf?'perf':layout);};
       model.togglePerf=()=>{const perf=model.notPerf;this.setState({perf,kmenu:null,menu:null});return resize(perf?'perf':this.state.layout??'default');};
     }
     model.backendLabel=model.backend==='native'?'Connected':'Silent';
     model.backendDetail=model.backend==='native'?'Audio engine connected. Sample playback and editing are available. Effects, modulation and analysis are unavailable.':'Silent browser preview with a mock engine.';
+    if(engine.native&&(!model.meteringAvailable||!model.waveformAvailable))model.backendDetail='Audio engine connected. Key mapping, native undo and public controls are available. Other edits report native capability limits. '+[!model.meteringAvailable?'Meters':null,!model.waveformAvailable?'waveforms':null].filter(Boolean).join(' and ')+' unavailable.';
     model.headerCompact=model.backend==='native'&&typeof window!=='undefined'&&window.innerWidth<1000;
     if(model.headerCompact)model.patchW=120;
     const snapshot=this.props.store.getSnapshot();

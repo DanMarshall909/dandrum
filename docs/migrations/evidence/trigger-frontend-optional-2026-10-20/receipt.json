@@ -1,0 +1,192 @@
+{
+  "base": "0f02f575ff2419082370f4d35986d086c03b5d0b",
+  "scope": "Task3.3 transport-neutral optional frontend services only",
+  "task3_2Complete": false,
+  "task3_3Complete": false,
+  "betaComplete": false,
+  "candidateSourcePaths": 16,
+  "rawArtifacts": 236,
+  "fastTests": 109,
+  "browserTests": 33,
+  "checks": {
+    "candidateManifestSha256": "b176d633ef2f0284e60cb834e8729361f2a507d43f5a58e3f99950c0ea73f13a",
+    "finalProductionChecks": {
+      "fastCoverage": "final-fast-coverage-refined.json",
+      "check": "final-check.json",
+      "nativeBuild": "final-build-native.json",
+      "browserBuild": "final-build.json",
+      "focusedBrowser": "c5-refined-browser.json",
+      "fullBrowser": "final-browser.json"
+    },
+    "redEvidence": {
+      "initialAbsentServices": "c1-red-direct.log",
+      "strictMetadata": "c2-red.log",
+      "typedUnsupportedAccess": "c3-red.log",
+      "unknownInitialNativeVoices": "c4-red.log",
+      "hostSizing": "c5-red-presenter.log",
+      "unavailableMeasurements": "c5-red-browser-host.log",
+      "immutableEngineMetadata": "c6-red.log"
+    },
+    "disclosure": [
+      "Per-phase source snapshots were not captured during the inner loops. Exact RED diagnostics/logs and final source/test snapshot are preserved; no claim of per-phase file hashes.",
+      "Initial sandbox full coverage had a component-guard subprocess diagnostic failure. Unchanged maintained guard passes elevated full fast/coverage commands; no guard code or test changed.",
+      "First c4 GREEN failed an incorrect heartbeat generation-argument oracle; existing heartbeat takes no args. Test corrected, production unchanged, failed log retained.",
+      "Browser JSX coverage uses transformed V8 ranges and source hashes, not a full original JSX source-map coverage percentage.",
+      "Exploratory coverage loading action failed because ordinary import did not select loading source; attempt2 artifacts retained. Corrected existing missing-file recovery action passes.",
+      "Native/CLAP protocol facade, actual Rust snapshot calibration, attachment destruction/gesture release and audio are outside this isolated frontend proof.",
+      "No module extraction, dependency or lock changes; no mutation testing."
+    ]
+  },
+  "coverage": "NativeEngine/NativeLive/nativeTransport/telemetryReader100% lines; inherited branch/function gaps disclosed in handoff; JSX transformed-range evidence only; no extraction",
+  "sourceFreeBoundary": "Frontend web paths are excluded from maintained source-free fixture; no src/tests/Cargo/CMake/defaultfixture inputs changed. No fresh source-free native build claimed for frontend.",
+  "limits": [
+    "No Wry facade/realRust snapshot/CLAP/audio/nativeattachment proof",
+    "Per-phase inner-loop source snapshots absent; exact RED logs and final copies/hashes retained",
+    "Mutation explicitly excluded"
+  ],
+  "review": {
+    "status": "PASS",
+    "manifest_sha256": "195b04a6ec9cb94dedd86280fca24ad38faf41c616c3c2fb0eb95706d1c05e00",
+    "review_sha256": "eb411c0c4c66d076a0230faadf6307280803e8cbbecf564b61018b28e3823163",
+    "verdict_sha256": "514ad0768c83ffcd6ab9c266cfcc4d77d055eecf388ff4b176900e166f51fbcf"
+  },
+  "publication": {
+    "target": "origin/feat/juce-free-host-adapters",
+    "status": "pending normal hooks"
+  },
+  "originalAuthorSourceManifestSha256": "b176d633ef2f0284e60cb834e8729361f2a507d43f5a58e3f99950c0ea73f13a",
+  "finalSourceManifestSha256": "32489684ae6f668daec22e5f3afc71c266651081c3cb64f5af469f751d6150bd",
+  "repair": {
+    "finding": "F1 accepted voice-limit refresh stale without meter packets",
+    "changedPaths": [
+      "web/trigger/engine/native-live.mjs",
+      "web/trigger/tests/browser/native-transport.spec.mjs",
+      "web/trigger/tests/native-transport.test.mjs"
+    ],
+    "rawArtifacts": 261,
+    "checks": {
+      "red-store": {
+        "command": [
+          "node",
+          "tests/native-transport.test.mjs"
+        ],
+        "cwd": "/tmp/dandrum-lanes/frontend/web/trigger",
+        "elapsed": 0.6275605339906178,
+        "exit": 1,
+        "sourceManifestSha256": "cfb6d46b72fd9d45fe491e4487fe0d66e1f99f035a31e9f9c03465a4f04b40af"
+      },
+      "red-browser": {
+        "command": [
+          "npm",
+          "run",
+          "test:browser",
+          "--",
+          "tests/browser/native-transport.spec.mjs",
+          "-g",
+          "voice-limit refresh",
+          "--output=/tmp/dandrum-lanes/evidence-frontend-optional-repair/red-browser-results"
+        ],
+        "cwd": "/tmp/dandrum-lanes/frontend/web/trigger",
+        "elapsed": 7.99407450700528,
+        "exit": 1,
+        "sourceManifestSha256": "cfb6d46b72fd9d45fe491e4487fe0d66e1f99f035a31e9f9c03465a4f04b40af"
+      },
+      "green-store-coverage": {
+        "command": [
+          "node",
+          "--experimental-test-coverage",
+          "tests/native-transport.test.mjs"
+        ],
+        "cwd": "/tmp/dandrum-lanes/frontend/web/trigger",
+        "elapsed": 0.8277546019817237,
+        "exit": 0,
+        "sourceManifestSha256": "18c2c53ddf38c8e2a24383e7e635c25223b3027cb848fbb5cf6d35a941f2fb62"
+      },
+      "green-browser": {
+        "command": [
+          "npm",
+          "run",
+          "test:browser",
+          "--",
+          "tests/browser/native-transport.spec.mjs",
+          "-g",
+          "voice-limit refresh",
+          "--output=/tmp/dandrum-lanes/evidence-frontend-optional-repair/green-browser-results"
+        ],
+        "cwd": "/tmp/dandrum-lanes/frontend/web/trigger",
+        "elapsed": 4.132984945987118,
+        "exit": 0,
+        "sourceManifestSha256": "18c2c53ddf38c8e2a24383e7e635c25223b3027cb848fbb5cf6d35a941f2fb62"
+      },
+      "final-fast": {
+        "command": [
+          "npm",
+          "test"
+        ],
+        "cwd": "/tmp/dandrum-lanes/frontend/web/trigger",
+        "elapsed": 1.170006550004473,
+        "exit": 0,
+        "sourceManifestSha256": "18c2c53ddf38c8e2a24383e7e635c25223b3027cb848fbb5cf6d35a941f2fb62"
+      },
+      "final-coverage": {
+        "command": [
+          "npm",
+          "run",
+          "test:coverage"
+        ],
+        "cwd": "/tmp/dandrum-lanes/frontend/web/trigger",
+        "elapsed": 1.9575698940025177,
+        "exit": 0,
+        "sourceManifestSha256": "18c2c53ddf38c8e2a24383e7e635c25223b3027cb848fbb5cf6d35a941f2fb62"
+      },
+      "final-browser": {
+        "command": [
+          "npm",
+          "run",
+          "test:browser",
+          "--",
+          "--output=/tmp/dandrum-lanes/evidence-frontend-optional-repair/final-browser-results"
+        ],
+        "cwd": "/tmp/dandrum-lanes/frontend/web/trigger",
+        "elapsed": 84.14501959699555,
+        "exit": 0,
+        "sourceManifestSha256": "18c2c53ddf38c8e2a24383e7e635c25223b3027cb848fbb5cf6d35a941f2fb62"
+      },
+      "final-check": {
+        "command": [
+          "npm",
+          "run",
+          "check"
+        ],
+        "cwd": "/tmp/dandrum-lanes/frontend/web/trigger",
+        "elapsed": 1.3164155660197139,
+        "exit": 0,
+        "sourceManifestSha256": "18c2c53ddf38c8e2a24383e7e635c25223b3027cb848fbb5cf6d35a941f2fb62"
+      },
+      "final-build-native": {
+        "command": [
+          "npm",
+          "run",
+          "build:native"
+        ],
+        "cwd": "/tmp/dandrum-lanes/frontend/web/trigger",
+        "elapsed": 2.5387756009877194,
+        "exit": 0,
+        "sourceManifestSha256": "18c2c53ddf38c8e2a24383e7e635c25223b3027cb848fbb5cf6d35a941f2fb62"
+      },
+      "final-build": {
+        "command": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "cwd": "/tmp/dandrum-lanes/frontend/web/trigger",
+        "elapsed": 2.5084244240133557,
+        "exit": 0,
+        "sourceManifestSha256": "18c2c53ddf38c8e2a24383e7e635c25223b3027cb848fbb5cf6d35a941f2fb62"
+      }
+    },
+    "phaseSources": "Exact16pathsourcecopies/hashes for RED/GREEN/allfinalchecks retained; original missinginnerloopphasehashes remainhonestlyhistorical",
+    "priorVerdict": "review-round-1/verdict.json"
+  }
+}

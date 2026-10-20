@@ -14,6 +14,7 @@ export class NativeLive {
   }
   resetMeter(){
     const engine=this.engine;
+    if(!engine.capabilities.metering)return true;
     this.meter=createMeterTransport((name,...args)=>engine.invoke(name,...args),packet=>{
       if(engine.closed||packet.generation!==engine.generation||!packet.display_valid)return;
       this.telemetry={...this.telemetry,meters:{main:[...packet.display_peak]},voices:{active:null,max:engine.patch.voicePolicy.limit}};
@@ -21,15 +22,22 @@ export class NativeLive {
     });
     return this.meter.start(engine.generation);
   }
-  changed(){this.cache.clear();this.notes=this.createNotes();return this.resetMeter();}
-  poll(){return this.meter.tick();}
+  changed(){
+    this.cache.clear();this.notes=this.createNotes();
+    this.telemetry={...this.telemetry,voices:{active:null,max:this.engine.patch.voicePolicy.limit}};
+    this.engine.emit('telemetry',structuredClone(this.telemetry));
+    return this.resetMeter();
+  }
+  poll(){return this.meter?this.meter.tick():Promise.resolve();}
   getPeaks(id,bins){
+    if(!this.engine.capabilities.sourceWaveforms)return new Float32Array();
     const key=`${this.engine.generation}|${id}|${bins}`;
     const generation=this.engine.generation;
     if(!this.cache.has(key))void this.getPeaksAsync(id,bins).catch(error=>{if(generation===this.engine.generation)this.engine.report(error);});
     return this.cache.get(key)??new Float32Array();
   }
   getPeaksAsync(id,bins){
+    if(!this.engine.capabilities.sourceWaveforms)return Promise.reject(Object.assign(new Error('Source waveform unavailable'),{code:'capabilityUnavailable',method:'requestSourceWaveform'}));
     const engine=this.engine,generation=engine.generation,key=`${generation}|${id}|${bins}`;
     if(this.cache.has(key))return Promise.resolve(this.cache.get(key));
     if(this.pending.has(key))return this.pending.get(key);
@@ -54,7 +62,7 @@ export class NativeLive {
     this.pending.set(key,work);work.finally(()=>this.pending.delete(key)).catch(()=>{});return work;
   }
   close(){
-    void this.notes.releaseAll();void this.meter.setVisible(false).catch(()=>{});
+    void this.notes.releaseAll();if(this.meter)void this.meter.setVisible(false).catch(()=>{});
     for(const id of this.waveJobs)void this.engine.invoke('cancelWaveform',id).catch(()=>{});
     this.cache.clear();
   }

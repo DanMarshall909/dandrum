@@ -22,9 +22,9 @@ export function AppHeader({model}) {
       {model.ann && <><span style={{"font": "500 11px/16px var(--font-value)","color": "var(--dd-warn)","background": "var(--dd-warn-wash)","border": "1px dashed var(--dd-warn)","borderRadius": "2px","padding": "0 5px","whiteSpace": "nowrap"}}>Telemetry</span></>}
       <span style={{"font": "500 12px var(--font-value)","color": "var(--dd-paper-3)","whiteSpace": "nowrap"}}>{`Voices ${telemetry.voices.active??'—'} / ${telemetry.voices.max}`}</span>
     </div>}
-    {model.notPerf && <><DD.SegmentedControl compact={true} value={model.layout} onChange={model.setLayout} options={model.layoutOpts}></DD.SegmentedControl></>}
-    <DD.Button size="sm" variant="secondary" icon={model.perfIcon} onClick={model.togglePerf}>{model.perfLabel}</DD.Button>
+    {model.notPerf&&!model.hostControlledSize && <><DD.SegmentedControl compact={true} value={model.layout} onChange={model.setLayout} options={model.layoutOpts}></DD.SegmentedControl></>}
+    {model.hostControlledSize?<span>Size controlled by host</span>:<DD.Button size="sm" variant="secondary" icon={model.perfIcon} onClick={model.togglePerf}>{model.perfLabel}</DD.Button>}
     <DD.Button size="sm" variant="ghost" onClick={model.toggleLog}>Log</DD.Button>
-    {!model.headerCompact&&<DD.Meter levels={telemetry.meters.main??[-90,-90]} thickness={4} length={30}></DD.Meter>}
+    {model.meteringAvailable===false?<span>Meters unavailable</span>:!model.headerCompact&&<DD.Meter levels={telemetry.meters.main??[-90,-90]} thickness={4} length={30}></DD.Meter>}
   </header>);
 }

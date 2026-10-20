@@ -22,7 +22,7 @@ export interface VoicePolicy {mode:'poly'|'mono'|'legato';limit:number;steal:str
 export interface Patch {id:Id;name:string;nodes:Node[];assets:Asset[];regions:Region[];rules:Rule[];selectors:Record<Id,Selector>;modules:Module[];params:Record<Id,Parameter>;modulators:Modulator[];routes:Route[];macros:Macro[];buses:Bus[];chains:Chain[];history:HistoryOperation[];midiLearn:{target:Id;state:'waiting'}|null;voicePolicy:VoicePolicy}
 export type AnalysisKind = 'transients'|'pitch'|'loops'|'loudness';
 export interface Job {id:Id;assetId:Id;kind:AnalysisKind;state:'running'|'done'|'failed'|'cancelled';progress:number;result?:Json;message?:string}
-export interface Telemetry {voices:{active:number;max:number};notes:{note:number;vel:number;layer:Id}[];playheads:{asset:Id;pos:number}[];selectorPos:Record<Id,{last:Id;next:Id;index?:number}>;mod:Record<Id,number>;meters:Record<Id,[number,number]>;host:Record<Id,boolean>;hostValues?:Record<Id,number>}
+export interface Telemetry {voices:{active:number|null;max:number};voiceCountAvailable?:boolean;notes:{note:number;vel:number;layer:Id}[];playheads:{asset:Id;pos:number}[];selectorPos:Record<Id,{last:Id;next:Id;index?:number}>;mod:Record<Id,number>;meters:Record<Id,[number,number]>;host:Record<Id,boolean>;hostValues?:Record<Id,number>}
 export interface EventMap {patch:{phase:'preparing'|'ready'|'failed';patch?:Patch;message?:string;replacement?:boolean};asset:Asset;job:Job;param:{id:Id;value:number;gesture?:'begin'|'end'};telemetry:Telemetry;host:{id:Id;value:number;host:boolean}}
 export type EntityCollection = 'nodes'|'assets'|'regions'|'rules'|'modules'|'modulators'|'routes'|'macros'|'buses'|'chains'|'history';
 export type DictionaryCollection = 'params'|'selectors';
@@ -42,6 +42,7 @@ export interface MockDiagnostics {getLog():LogEntry[];clearLog():void;setMockSwi
  * Telemetry subscriptions own their periodic stream; clients never start an internal simulator. */
 export interface EngineAdapter {
   applyDelta(operands:UndoOperand[]):Promise<void>;
+  getTelemetrySnapshot?():Telemetry;
   getPatch():Patch;newPatch():Promise<void>;loadPreset(id:string):Promise<void>;reload():Promise<void>;
   addNode(parent:Id,kind:'group'|'sound'):Promise<Id>;removeNode(id:Id):Promise<void>;renameNode(id:Id,name:string):Promise<void>;
   duplicateNode(id:Id):Promise<Id>;moveNode(id:Id,parent:Id,index:number):Promise<void>;

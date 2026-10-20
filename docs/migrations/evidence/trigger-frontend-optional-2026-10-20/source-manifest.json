@@ -1,0 +1,117 @@
+{
+  "base": "0f02f575ff2419082370f4d35986d086c03b5d0b",
+  "paths": [
+    {
+      "path": "web/trigger/TriggerController.jsx",
+      "sha256": "ef9ee3bb8931427c952bd146aebcc7de14a49b336e948adde2cd617fdca66b66",
+      "gitBlob": "9a975548805528a43ba4326181cec5cc297c9b0a",
+      "mode": "0o664",
+      "bytes": 6736
+    },
+    {
+      "path": "web/trigger/components/AppHeader.jsx",
+      "sha256": "6944cc49a4a2a5c90b3ab46cb5336e60899d651d26ea04d2df6f36664e1c9339",
+      "gitBlob": "ade3528c594eb8f7a9db9f559899d941227af1fd",
+      "mode": "0o664",
+      "bytes": 3450
+    },
+    {
+      "path": "web/trigger/components/OutputBusPanel.jsx",
+      "sha256": "0fef4d3dd6e433b9f4e98f54637b4231e76e0cc885f918b0413e9e4d3fac36aa",
+      "gitBlob": "e14ebc3da1bb8306db14ff7bbcbb60edf6597941",
+      "mode": "0o664",
+      "bytes": 509
+    },
+    {
+      "path": "web/trigger/components/WaveformPreview.jsx",
+      "sha256": "618c72f9a502b452a834000b1f693e664aca85354f8c26385f577d0c70b51648",
+      "gitBlob": "78fe8351e46672999e580fbae662d75f6279dd19",
+      "mode": "0o664",
+      "bytes": 603
+    },
+    {
+      "path": "web/trigger/components/pages/SamplePage.jsx",
+      "sha256": "c70c0290cc079e151f1124737fcfafa2c2c2f0de54e110553d6ef5424aeab1c4",
+      "gitBlob": "19d12efee829f3fb07631dd1ca8cb4648745705b",
+      "mode": "0o664",
+      "bytes": 11885
+    },
+    {
+      "path": "web/trigger/components/pages/SlicesPage.jsx",
+      "sha256": "e2dfaf095782bfcf79b04bbf3d75ef4011a1c66be5aaed0e84abda3eb3d51778",
+      "gitBlob": "a89124450a68949a6210e4fa689f2be53b587bad",
+      "mode": "0o664",
+      "bytes": 5310
+    },
+    {
+      "path": "web/trigger/engine/contract.ts",
+      "sha256": "1608fea4e1d9c315b26e098734bd6b19648f19d15d3bc6d085b0c217b966a01d",
+      "gitBlob": "17363dd250ca7c30ed08113a9d4800c6a5c1520f",
+      "mode": "0o664",
+      "bytes": 9340
+    },
+    {
+      "path": "web/trigger/engine/engine-contract.md",
+      "sha256": "154d8e568e6eaa488cd00e8ba1017195e658a36d2f52ba35197274df62814295",
+      "gitBlob": "79d484107192239a83eb401c1b03b0be7dd5f0a8",
+      "mode": "0o664",
+      "bytes": 7087
+    },
+    {
+      "path": "web/trigger/engine/native-engine.mjs",
+      "sha256": "fdb765ac93834b14922d1577475c8d5e2a1078f03fb0fa6fd8a4410f81efec16",
+      "gitBlob": "fa14c038e2d4c20312297d56ae6a8a13638cc901",
+      "mode": "0o664",
+      "bytes": 20976
+    },
+    {
+      "path": "web/trigger/engine/native-live.mjs",
+      "sha256": "b925ef31c04ad4ad66627eb7a74d4a5ae6aa494e762be305a6189d71be8e7d4e",
+      "gitBlob": "454cb8be3bc0e1cbb3cf020290a2438b1c29082d",
+      "mode": "0o664",
+      "bytes": 4096
+    },
+    {
+      "path": "web/trigger/engine/native-transport.mjs",
+      "sha256": "2a8ddba1fd958a949aaf33d916e2381fc610fd1ebbc3049692b13da674eb454a",
+      "gitBlob": "363601639927d84e44924664b3e9b102270dcf61",
+      "mode": "0o664",
+      "bytes": 1360
+    },
+    {
+      "path": "web/trigger/engine/telemetry-reader.mjs",
+      "sha256": "157085a355914567d392ab2af429ffebd7a18f05bd33faffc10a8f20f148c5f8",
+      "gitBlob": "26391e8f0ed612a8823a11d38967079298b3cfe2",
+      "mode": "0o664",
+      "bytes": 723
+    },
+    {
+      "path": "web/trigger/shell/ShellPresenter.mjs",
+      "sha256": "f87f997b458f8bae37cdf8e4b7cd47d53177543499b43ba5a9da29b0e50c174a",
+      "gitBlob": "ebf75156668f48d96e1a02ba08e9ba06e092245e",
+      "mode": "0o664",
+      "bytes": 8944
+    },
+    {
+      "path": "web/trigger/tests/browser/native-transport.spec.mjs",
+      "sha256": "0e6b3f15e93ab875403ba78ba8cb18bd020bdd0a9b8f35b6e24ffea1ac573382",
+      "gitBlob": "35d31acf6c1af6b246e91f4e49a68b041a49dba7",
+      "mode": "0o664",
+      "bytes": 5400
+    },
+    {
+      "path": "web/trigger/tests/native-transport.test.mjs",
+      "sha256": "7fac9d69d233c29ef379d377baa5d93c194fa99be1e336243748bd7c2c94e912",
+      "gitBlob": "48c11ba2b71639fe84133b42175849595eeccf10",
+      "mode": "0o664",
+      "bytes": 12297
+    },
+    {
+      "path": "web/trigger/tests/presentation.test.mjs",
+      "sha256": "6612cc0e1f102c86668d732339a5838015f60ca244d6ca3889603c2aa186ce41",
+      "gitBlob": "02b0855f4bb9d36e3326359475898509dd8867f6",
+      "mode": "0o664",
+      "bytes": 4740
+    }
+  ]
+}

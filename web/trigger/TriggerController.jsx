@@ -23,7 +23,7 @@ export function TriggerController({store}) {
   const patch=store.getSnapshot().patch;
   const native=!!store.engine.native;
   const waveKey=model.assetId+'|'+model.sliceAssetId+'|'+JSON.stringify(patch.history)+'|'+JSON.stringify(patch.assets.map(a=>a.waveformRevision??0));
-  useEffect(()=>{const peaks={};for(const id of new Set([model.assetId,model.sliceAssetId].filter(Boolean))){try{peaks[id]=Array.from(store.engine.getPeaks(id,600));}catch(error){presenter.setState({modNote:error.message});}}
+  useEffect(()=>{const peaks={};for(const id of new Set((model.waveformAvailable?[model.assetId,model.sliceAssetId]:[]).filter(Boolean))){try{peaks[id]=Array.from(store.engine.getPeaks(id,600));}catch(error){presenter.setState({modNote:error.message});}}
     presenter.setState({wavePeaks:peaks});},[store,presenter,waveKey]);
   model.browseSamples=()=>{presenter.setState({replaceTarget:null,relinkTarget:null});native?selectNativeSamples(presenter):fileInput.current?.click();};
   model.replaceSample=()=>{presenter.setState({replaceTarget:model.regionId,relinkTarget:null});native?selectNativeSamples(presenter,{replace:model.regionId}):fileInput.current?.click();};

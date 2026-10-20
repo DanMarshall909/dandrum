@@ -91,3 +91,20 @@ Voice/FX policy fields are adapter DTO values. The mock simulates selection,
 voice count/decay and meters; it does not synthesize sound or fully emulate host
 transport, glide/stealing, convolution or dynamics. These remain native adapter
 responsibilities.
+
+The version-1 bootstrap descriptor may declare optional `capabilities` boolean
+fields `metering`, `sourceWaveforms`, `windowTitle` and `editorResize`. Omitted
+profiles or fields preserve the full existing contract for every backend ID;
+legacy JUCE and explicitly injected comparison backends keep those defaults.
+Present invalid metadata fails before native calls. The adapter normalizes an
+immutable profile; explicit absence skips optional requests through startup,
+refresh and disposal while keeping native notes/heartbeat, parameters, mapping
+and undo. Direct absent waveform/resize access rejects `capabilityUnavailable`
+with its method identity. The renderer shows unavailable measurements and
+host-controlled sizing without generated peaks, fake silence or optimistic
+layout changes. Required native methods remain required.
+
+`getTelemetrySnapshot?()` supplies an initial adapter-owned telemetry snapshot.
+Native voice counts start unknown (`active: null`, `voiceCountAvailable: false`)
+and carry the accepted voice limit; preview adapters retain their existing
+telemetry fallback. Neither absence nor a snapshot invents measured output.

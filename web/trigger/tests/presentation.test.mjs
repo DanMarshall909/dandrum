@@ -46,3 +46,17 @@ test('native size choices resize the host and reopening restores the selected fu
   bridge.functions.resizeSamplerEditor=()=> 'Host editor resize unavailable';
   await presenter.buildModel().setLayout('min');assert.equal(presenter.buildModel().status.kind,'error');assert.match(presenter.buildModel().status.text,/Host editor resize unavailable/);
 });
+
+
+test('host-controlled native sizing preserves editor layout without optimistic changes or resize requests',async t=>{
+  const previous=globalThis.window,bridge=backend();
+  globalThis.window={__DANDRUM__:{protocolVersion:1,backendId:'juce-free',capabilities:{metering:false,sourceWaveforms:false,windowTitle:false,editorResize:false},backend:bridge}};
+  t.after(()=>{globalThis.window=previous;});
+  const engine=new NativeEngine({heartbeatMs:0});await engine.initialize();const store=new Store(engine),presenter=new ShellPresenter(store);t.after(()=>{store.close();engine.close();});
+  const before=store.getSnapshot().editor,model=presenter.buildModel();
+  assert.equal(model.hostControlledSize,true);assert.equal(model.meteringAvailable,false);assert.equal(model.waveformAvailable,false);
+  await model.setLayout('exp');await model.togglePerf();
+  assert.equal(store.getSnapshot().editor.layout,before.layout);assert.equal(store.getSnapshot().editor.perf,before.perf);
+  assert.deepEqual(bridge.calls.map(call=>call[0]),['getSamplerSession']);
+  assert.match(model.backendDetail,/key mapping.*undo.*public controls/i);assert.match(model.backendDetail,/meters.*waveforms.*unavailable/i);
+});

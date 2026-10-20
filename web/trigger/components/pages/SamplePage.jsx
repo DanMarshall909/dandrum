@@ -17,12 +17,12 @@ export function SamplePage({model}) { return <>{model.isSample && <>
           </div>
           <div style={{"padding": "8px 12px 12px","display": "flex","flexDirection": "column","gap": "6px"}}>
             <div style={{"position": "relative"}}>
-              <WaveformPreview assetId={model.assetId} getTelemetry={model.getTelemetry} subscribeTelemetry={model.subscribeTelemetry} peaks={model.pianoPeaks} height={28} compact={true} showDisplayToggle={false} regionStart={0} regionEnd={1}></WaveformPreview>
+              <WaveformPreview available={model.waveformAvailable} assetId={model.assetId} getTelemetry={model.getTelemetry} subscribeTelemetry={model.subscribeTelemetry} peaks={model.pianoPeaks} height={28} compact={true} showDisplayToggle={false} regionStart={0} regionEnd={1}></WaveformPreview>
               <div style={{"position": "absolute","top": "0","bottom": "0","left": (model.viewport.offset*100)+"%","width": (100/model.viewport.zoom)+"%","border": "1px solid var(--dd-paper-2)","borderRadius": "2px","pointerEvents": "none"}}></div>
             </div>
             {model.isLoading && <>
               <div style={{"position": "relative"}}>
-                <WaveformPreview assetId={model.assetId} getTelemetry={model.getTelemetry} subscribeTelemetry={model.subscribeTelemetry} peaks={model.partialPeaks} height={model.waveH} showDisplayToggle={false} label={model.assetName+" · reading"}></WaveformPreview>
+                <WaveformPreview available={model.waveformAvailable} assetId={model.assetId} getTelemetry={model.getTelemetry} subscribeTelemetry={model.subscribeTelemetry} peaks={model.partialPeaks} height={model.waveH} showDisplayToggle={false} label={model.assetName+" · reading"}></WaveformPreview>
                 <div style={{"position": "absolute","left": "12px","bottom": "12px","display": "flex","flexDirection": "column","gap": "6px","width": "280px"}}>
                   <DD.StatusMessage kind="busy" inline={true} title={"Loading "+model.assetName}>{Math.round(model.loadingProgress*100)}% · {(model.loadingProgress*model.duration).toFixed(1)} of {model.duration.toFixed(1)} s</DD.StatusMessage>
                   <div style={{"height": "4px","background": "var(--dd-ink-4)","borderRadius": "2px"}}><div style={{"width": (model.loadingProgress*100)+"%","height": "4px","background": "var(--dd-paper-2)","borderRadius": "2px"}}></div></div>
@@ -31,7 +31,7 @@ export function SamplePage({model}) { return <>{model.isSample && <>
             </>}
             {model.waveReady && <>
               <div onDrop={model.onSampleDrop} onDragOver={model.onFileDrag} onClick={model.onWaveClick} title="Click to preview" style={{"position": "relative","cursor": "pointer"}}>
-                <WaveformEditor snapPosition={model.snapPosition} viewport={model.viewport} onViewport={model.setViewport} onRegionChange={model.setRegion} assetId={model.assetId} getTelemetry={model.getTelemetry} subscribeTelemetry={model.subscribeTelemetry} peaks={model.pianoPeaks} height={model.waveH} regionStart={model.hRs} regionEnd={model.hRe} fadeIn={model.hFi} fadeOut={model.hFo} loopStart={model.loopS} loopEnd={model.loopE} crossfade={model.xfade} cursor={model.cursor} missing={model.missing} label={model.waveLabel}></WaveformEditor>
+                <WaveformEditor available={model.waveformAvailable} snapPosition={model.snapPosition} viewport={model.viewport} onViewport={model.setViewport} onRegionChange={model.setRegion} assetId={model.assetId} getTelemetry={model.getTelemetry} subscribeTelemetry={model.subscribeTelemetry} peaks={model.pianoPeaks} height={model.waveH} regionStart={model.hRs} regionEnd={model.hRe} fadeIn={model.hFi} fadeOut={model.hFo} loopStart={model.loopS} loopEnd={model.loopE} crossfade={model.xfade} cursor={model.cursor} missing={model.missing} label={model.waveLabel}></WaveformEditor>
                 {model.unsup && <><div style={{"position": "absolute","inset": "0","border": "1px dashed var(--dd-warn)","borderRadius": "2px","pointerEvents": "none"}}></div></>}
                 {model.ann && <><span style={{"position": "absolute","top": "6px","right": "8px","font": "500 11px/16px var(--font-value)","color": "var(--dd-warn)","background": "var(--dd-warn-wash)","border": "1px dashed var(--dd-warn)","borderRadius": "2px","padding": "0 5px","whiteSpace": "nowrap"}}>WaveformEditor · layers: peaks (Analysis), region, loop, playhead (Telemetry)</span></>}
               </div>
@@ -67,8 +67,8 @@ export function SamplePage({model}) { return <>{model.isSample && <>
               <div style={{"display": "flex","flexDirection": "column","gap": "4px"}}>
                 <span style={{"font": "600 11px var(--font-ui)","letterSpacing": ".06em","textTransform": "uppercase","color": "var(--dd-paper-3)"}}>Loop seam · end → start, ±20 ms</span>
                 <div style={{"position": "relative","display": "grid","gridTemplateColumns": "1fr 1fr","gap": "0"}}>
-                  <WaveformPreview assetId={model.assetId} getTelemetry={model.getTelemetry} subscribeTelemetry={model.subscribeTelemetry} peaks={model.seamA} height={56} compact={true} showDisplayToggle={false}></WaveformPreview>
-                  <WaveformPreview assetId={model.assetId} getTelemetry={model.getTelemetry} subscribeTelemetry={model.subscribeTelemetry} peaks={model.seamB} height={56} compact={true} showDisplayToggle={false}></WaveformPreview>
+                  <WaveformPreview available={model.waveformAvailable} assetId={model.assetId} getTelemetry={model.getTelemetry} subscribeTelemetry={model.subscribeTelemetry} peaks={model.seamA} height={56} compact={true} showDisplayToggle={false}></WaveformPreview>
+                  <WaveformPreview available={model.waveformAvailable} assetId={model.assetId} getTelemetry={model.getTelemetry} subscribeTelemetry={model.subscribeTelemetry} peaks={model.seamB} height={56} compact={true} showDisplayToggle={false}></WaveformPreview>
                   <div style={{"position": "absolute","top": "0","bottom": "0","left": "50%","width": "1px","background": "var(--dd-vermilion)"}}></div>
                 </div>
               </div>
