@@ -1,0 +1,5 @@
+{
+  "src/trigger-editor/src/lib.rs": "79f49cb29ed9376f8119c06f687ad069d6a7f33114da686797d9962f034b2d2c",
+  "src/trigger-editor/src/native_x11.rs": "d5a716081621410e4adbf6578cf5c5dcd4a1487691b6497a196c3803da9a39c1",
+  "src/trigger-editor/tests/internal/native_x11.rs": "4547ef33b5113d2d7f2619f72cdd6bd6b5a7b6904c07eb0a5ca8957985fa9410"
+}

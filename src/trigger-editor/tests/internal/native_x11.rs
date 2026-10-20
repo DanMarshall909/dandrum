@@ -1,7 +1,7 @@
 use super::*;
 use crate::test_support as common;
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     rc::Rc,
     time::{Duration, Instant},
 };
@@ -93,8 +93,74 @@ fn real_child_loads_local_content_and_drops_without_owning_the_host_parent() {
             std::thread::sleep(Duration::from_millis(5));
         }
         assert_eq!(&*messages.borrow(), &["local-owner-ready"]);
+        let destroyed = Rc::new(Cell::new(0));
+        let unrealized = Rc::new(Cell::new(0));
+        let disposed = Rc::new(Cell::new(0));
+        let count = destroyed.clone();
+        owner
+            ._window
+            .0
+            .connect_destroy(move |_| count.set(count.get() + 1));
+        let count = unrealized.clone();
+        owner
+            ._window
+            .0
+            .connect_unrealize(move |_| count.set(count.get() + 1));
+        let count = disposed.clone();
+        let _weak_disposal_notification = owner
+            ._window
+            .0
+            .add_weak_ref_notify_local(move || count.set(count.get() + 1));
         let weak_view = owner.view.webview().downgrade();
+        let before = x.get_geometry(parent).unwrap().reply().unwrap();
+        assert_eq!((before.width, before.height), (1400, 900));
+        let drop_started = Instant::now();
         drop(owner);
+        assert!(
+            weak.upgrade().is_none(),
+            "IPC callback releases before any host tick"
+        );
+        assert!(
+            weak_view.upgrade().is_none(),
+            "browser disposes before any host tick"
+        );
+        // No GTK servicing, wait, or test-side display synchronization before
+        // the independent server observes this exact previously owned XID.
+        let child_reply = x.get_window_attributes(child).unwrap().reply();
+        let children = x.query_tree(parent).unwrap().reply().unwrap().children;
+        let parent_geometry = x.get_geometry(parent).unwrap().reply().unwrap();
+        let parent_state = x
+            .get_window_attributes(parent)
+            .unwrap()
+            .reply()
+            .unwrap()
+            .map_state;
+        eprintln!(
+            "immediate drop cycle={cycle}, child={child}, reply={child_reply:?}, children={children:?}, destroy={}, unrealize={}, weak-disposal={}, elapsed={:?}",
+            destroyed.get(),
+            unrealized.get(),
+            disposed.get(),
+            drop_started.elapsed()
+        );
+        assert!(
+            matches!(child_reply, Err(x11rb::errors::ReplyError::X11Error(ref error)) if error.error_kind == x11rb::protocol::ErrorKind::Window && error.error_code == 3 && error.bad_value == child),
+            "owned XID must already be BadWindow when drop returns"
+        );
+        assert!(children.is_empty());
+        assert_eq!(
+            (
+                parent_geometry.x,
+                parent_geometry.y,
+                parent_geometry.width,
+                parent_geometry.height
+            ),
+            (before.x, before.y, 1400, 900)
+        );
+        assert_eq!(parent_state, MapState::VIEWABLE);
+        assert_eq!(
+            (destroyed.get(), unrealized.get(), disposed.get()),
+            (1, 1, 1)
+        );
         for _ in 0..8 {
             NativeEditor::service().unwrap();
         }
@@ -130,7 +196,130 @@ fn real_child_loads_local_content_and_drops_without_owning_the_host_parent() {
     local_policy::external_fetch_is_blocked_by_enforcing_csp(parent);
     local_policy::top_level_document_stays_at_fixed_entry(parent);
     production::unmodified_bundle_renders_silent_preview_with_all_eight_fonts(parent);
+    parent_can_be_destroyed_immediately_after_editor(&x, root);
     x.destroy_window(parent).unwrap().check().unwrap();
+}
+
+fn parent_can_be_destroyed_immediately_after_editor(x: &RustConnection, root: u32) {
+    let parent = x.generate_id().unwrap();
+    x.create_window(
+        COPY_DEPTH_FROM_PARENT,
+        parent,
+        root,
+        30,
+        40,
+        1400,
+        900,
+        0,
+        WindowClass::INPUT_OUTPUT,
+        0,
+        &CreateWindowAux::new().override_redirect(1),
+    )
+    .unwrap()
+    .check()
+    .unwrap();
+    x.map_window(parent).unwrap().check().unwrap();
+    let roots = x.query_tree(root).unwrap().reply().unwrap().children;
+    let package = common::Package::new();
+    for file in common::FILES {
+        package.write(file, b"fixture");
+    }
+    package.write(
+        "index.html",
+        b"<!doctype html><script src='/app.js'></script>",
+    );
+    package.write("app.js", b"window.ipc.postMessage('parent-ready');setTimeout(()=>window.ipc.postMessage('late-parent-callback'),100)");
+    let messages = Rc::new(RefCell::new(Vec::new()));
+    let sink = messages.clone();
+    let callback = Rc::new(());
+    let weak_callback = Rc::downgrade(&callback);
+    let owner = NativeEditor::create(
+        parent,
+        EditorAssets::open(package.root()).unwrap(),
+        move |message| {
+            let _owned = &callback;
+            sink.borrow_mut().push(message);
+        },
+    )
+    .unwrap();
+    let deadline = Instant::now() + Duration::from_secs(15);
+    while messages.borrow().is_empty() && Instant::now() < deadline {
+        NativeEditor::service().unwrap();
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    assert_eq!(&*messages.borrow(), &["parent-ready"]);
+    let children = x.query_tree(parent).unwrap().reply().unwrap().children;
+    assert_eq!(children.len(), 1);
+    let child = children[0];
+    let weak_view = owner.view.webview().downgrade();
+    drop(owner);
+    assert!(
+        weak_callback.upgrade().is_none(),
+        "IPC callback releases before host parent destruction"
+    );
+    assert!(
+        weak_view.upgrade().is_none(),
+        "browser disposes before host parent destruction"
+    );
+    let reply = x.get_window_attributes(child).unwrap().reply();
+    eprintln!(
+        "immediate host-parent destruction: parent={parent}, child={child}, pre-parent-destroy reply={reply:?}"
+    );
+    assert!(
+        matches!(reply, Err(x11rb::errors::ReplyError::X11Error(ref error)) if error.error_code == 3 && error.bad_value == child)
+    );
+    assert!(
+        x.query_tree(parent)
+            .unwrap()
+            .reply()
+            .unwrap()
+            .children
+            .is_empty()
+    );
+    // The host destroys its own parent with no GTK service tick in between.
+    x.destroy_window(parent).unwrap().check().unwrap();
+    for _ in 0..32 {
+        NativeEditor::service().unwrap();
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    assert!(weak_view.upgrade().is_none());
+    assert!(weak_callback.upgrade().is_none());
+    assert_eq!(&*messages.borrow(), &["parent-ready"]);
+    assert!(
+        x.query_tree(root)
+            .unwrap()
+            .reply()
+            .unwrap()
+            .children
+            .iter()
+            .all(|child| *child != parent && roots.contains(child))
+    );
+}
+
+// Observe the real resource callback's release while its private container is
+// still owned. Store identities only; no widget alias survives this callback.
+struct CaptureWindowOnDrop {
+    before: Vec<u32>,
+    captured: std::sync::Arc<std::sync::Mutex<Vec<u32>>>,
+}
+fn gtk_window_ids() -> Vec<u32> {
+    gtk::Window::list_toplevels()
+        .iter()
+        .filter_map(|window| window.window())
+        .filter_map(|window| window.downcast::<gdkx11::X11Window>().ok())
+        .map(|window| window.xid() as u32)
+        .collect()
+}
+impl Drop for CaptureWindowOnDrop {
+    fn drop(&mut self) {
+        if gtk::is_initialized_main_thread() {
+            self.captured.lock().unwrap().extend(
+                gtk_window_ids()
+                    .into_iter()
+                    .filter(|id| !self.before.contains(id)),
+            );
+        }
+    }
 }
 
 fn acquisition_errors_leave_no_owned_window(
@@ -242,20 +431,37 @@ fn acquisition_errors_leave_no_owned_window(
     let root_children = x.query_tree(root).unwrap().reply().unwrap().children;
     let resource = std::sync::Arc::new(());
     let weak_resource = std::sync::Arc::downgrade(&resource);
+    let captured = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+    let capture = CaptureWindowOnDrop {
+        before: gtk_window_ids(),
+        captured: captured.clone(),
+    };
     assert!(matches!(
         NativeEditor::build_child(
             doomed,
             &checked,
             WebViewBuilder::new().with_custom_protocol("rollback".into(), move |_, _| {
                 let _owned = &resource;
+                let _identity = &capture;
                 wry::http::Response::new(Cow::Borrowed(b"rollback" as &[u8]))
             })
         ),
         Err(NativeError::X11(_))
     ));
-    for _ in 0..8 {
-        NativeEditor::service().unwrap();
-    }
+    let captured = captured.lock().unwrap();
+    assert_eq!(
+        captured.len(),
+        1,
+        "post-WebKit rollback container captured at resource release"
+    );
+    let reply = x.get_window_attributes(captured[0]).unwrap().reply();
+    eprintln!(
+        "immediate post-WebKit rollback: child={}, reply={reply:?}",
+        captured[0]
+    );
+    assert!(
+        matches!(reply, Err(x11rb::errors::ReplyError::X11Error(ref error)) if error.error_code == 3 && error.bad_value == captured[0])
+    );
     assert!(
         x.query_tree(root)
             .unwrap()
@@ -288,16 +494,23 @@ fn acquisition_errors_leave_no_owned_window(
     let children = x.query_tree(parent).unwrap().reply().unwrap().children;
     let probe = std::sync::Arc::new(());
     let weak = std::sync::Arc::downgrade(&probe);
+    let captured = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+    let capture = CaptureWindowOnDrop {
+        before: gtk_window_ids(),
+        captured: captured.clone(),
+    };
     let failed = NativeEditor::build_child(
         parent,
         &checked,
-        WebViewBuilder::new_with_web_context(&mut context).with_custom_protocol(
-            "calibration".into(),
-            move |_, _| {
+        WebViewBuilder::new_with_web_context(&mut context)
+            .with_custom_protocol("capture".into(), move |_, _| {
+                let _identity = &capture;
+                wry::http::Response::new(Cow::Borrowed(b"never served" as &[u8]))
+            })
+            .with_custom_protocol("calibration".into(), move |_, _| {
                 let _owned = &probe;
                 wry::http::Response::new(Cow::Borrowed(b"never served" as &[u8]))
-            },
-        ),
+            }),
     );
     assert!(
         matches!(failed, Err(NativeError::WebView(wry::Error::DuplicateCustomProtocol(ref scheme)))
@@ -305,9 +518,20 @@ fn acquisition_errors_leave_no_owned_window(
         "the calibration reaches Wry's actual builder duplicate error: {:?}",
         failed.as_ref().err()
     );
-    for _ in 0..8 {
-        NativeEditor::service().unwrap();
-    }
+    let captured = captured.lock().unwrap();
+    assert_eq!(
+        captured.len(),
+        1,
+        "builder-preflight rollback container captured at resource release"
+    );
+    let reply = x.get_window_attributes(captured[0]).unwrap().reply();
+    eprintln!(
+        "immediate builder-preflight rollback: child={}, reply={reply:?}",
+        captured[0]
+    );
+    assert!(
+        matches!(reply, Err(x11rb::errors::ReplyError::X11Error(ref error)) if error.error_code == 3 && error.bad_value == captured[0])
+    );
     assert_eq!(
         x.query_tree(parent).unwrap().reply().unwrap().children,
         children
@@ -323,6 +547,20 @@ fn acquisition_errors_leave_no_owned_window(
     );
     let cleanup_started = Instant::now();
     drop(first);
+    for child in &children {
+        let reply = x.get_window_attributes(*child).unwrap().reply();
+        assert!(
+            matches!(reply, Err(x11rb::errors::ReplyError::X11Error(ref error)) if error.error_code == 3 && error.bad_value == *child)
+        );
+    }
+    assert!(
+        x.query_tree(parent)
+            .unwrap()
+            .reply()
+            .unwrap()
+            .children
+            .is_empty()
+    );
     drop(context);
     let mut ticks = Vec::new();
     for _ in 0..8 {

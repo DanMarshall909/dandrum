@@ -863,3 +863,39 @@ Task 3.2 remains unchecked, 7/14 overall; no native session/backend/audio or ful
 lifecycle claim. Continue its concrete facets, then 3.3/4.x/5.x and the subsequent
 VST3/standalone/DAW/installed offline/native beta increments. Main remains clean
 68dd655, mutation excluded and all remaining reusable caches preserved.
+
+
+## Synchronous native editor disposal — 20 October 2026
+
+Production React/font loading and native CTest bundle wiring were normally
+published at a4cf062. The next bounded task3.2 slice replaces queued GTK close with
+explicit destruction of the privately owned container, followed by a barrier on
+the display captured before disposal. IPC disconnect and browser-first field drop
+order remain. One directly scoped unsafe block documents GTK's no-post-disposal-
+query contract; default/non-native builds, assets and native owner tests still forbid unsafe.
+No host/engine/frontend/dependency/public-API change, GTK pumping or parent/display
+ownership is introduced.
+
+Genuine immediate-XID RED runs first; exact final test source also fails against
+old production. Final RED differs from GREEN only by the two intended production/
+lint files, with every phase snapshot separately bound. GREEN proves captured
+normal and pre/post-WebKit rollback XIDs are BadWindow before ticks, preserves the
+mapped parent geometry, and releases browser/IPC weak references immediately. A
+separate host parent is then destroyed without intervening ticks; bounded service
+finds no late callback or new root child. Weak-disposal notification is not a
+GObject-finalization claim. The historical unidentified-child failure remains
+unidentified; these new oracles qualify the current ownership contract independently.
+
+All changed destructor lines execute10times. Owner131/136lines,189/208regions
+retains19inherited gaps. Three registered CTests, denied-warningClippy/build/fmt,
+native+fast LLVM/defaultgraph and scopedOpenSpec/specmap pass. Root full source-free
+guard passes88.445691s (583exactinputs/16editorpaths), with caches preserved. The
+[portable evidence](evidence/trigger-editor-disposal-2026-10-20/receipt.json) includes
+all failed fixture assumptions, phase identities, raw profiles and the verified
+cache relocation; no mutation or compiled executable is included.
+
+Independent completion review passed for the frozen source/evidence candidate; normal-hook publication is the remaining gate.
+Task3.2 stays unchecked,7/14overall. Continue show/hide/fixed-size and remaining
+resource-origin/popup/download facets, then3.3/4.x/5.x and nextVST3/standalone/DAW/
+installed-offline/native beta increments. Actual CLAPmainthread/API/order proof
+still depends on4.2. Full beta remains active; main stays clean68dd655.

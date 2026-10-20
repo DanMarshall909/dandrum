@@ -1,0 +1,25 @@
+{
+  "verdict": "PASS",
+  "candidate_manifest_sha256": "aa46e4baedddd41ae4fd57c8f94529530ff30458f31f408c9116e48a258e628c",
+  "base": "a4cf062895730457631a2aa0c82943d1bbd483ae",
+  "current": "a4cf062895730457631a2aa0c82943d1bbd483ae",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "a4cf062895730457631a2aa0c82943d1bbd483ae",
+  "candidate_paths": 22,
+  "scope": "Synchronous owned GTK/X11 editor disposal and exercised acquisition rollback only; task3.2 and full beta remain open.",
+  "required_corrections": [],
+  "report_sha256": "0156f5361e0e1d82610d54e555af307f58a7b45d22e3524333068d1fd4d6785c",
+  "approved_envelope": "Exact six-step finite envelope in review.md: two exact review copies, receipt.review replacement, sole progress sentence replacement, deterministic nonself SHA256SUMS; same-reviewer full24path metadata addendum PASS before normal-hook commit/ff-only named worktrees/unchanged-upstream normal push. No other mutations or deletion.",
+  "metadata_addendum_required_before_commit": true,
+  "review_checks": {
+    "manifest_reconstructed": true,
+    "archive_members_verified": 564,
+    "phase_snapshots_verified": 15,
+    "final_editor_inputs_verified": 16,
+    "root_guard_inputs_verified": 583,
+    "real_host_coverage_binary_hash_verified": true,
+    "reviewer_reran_tests": false,
+    "reviewer_network_used": false
+  },
+  "resource_release": "No delegated agents, builds, native probes, cache mutations or repository/index mutations. All bounded read/hash processes exited. Only review.md and verdict.json written; reviewer retained for addendum."
+}

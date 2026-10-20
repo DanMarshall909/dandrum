@@ -1,0 +1,249 @@
+{
+  "schema_version": 1,
+  "final_manifest_member": "author-raw.tar.gz:final-source-hashes.json",
+  "final_manifest_sha256": "1b5ad8416bfd639e57e7f648dee4f2df9579ae398c013f392b9b49232f1c821a",
+  "phases": {
+    "release-native-coverage": {
+      "archive": "author-raw.tar.gz",
+      "snapshot_member": "release-native-coverage-source",
+      "manifest_member": "release-native-coverage-hashes.json",
+      "manifest_sha256": "1b5ad8416bfd639e57e7f648dee4f2df9579ae398c013f392b9b49232f1c821a",
+      "source_paths": 16,
+      "matches_own_snapshot": true,
+      "matches_final_editor_snapshot": true,
+      "differences_from_final": {},
+      "log_member": "release-native-coverage.log",
+      "log_sha256": "6d829c5184710cba32b654b941eace717ba893ae5c0a9290427cb6ab3903f254"
+    },
+    "release-fast-coverage": {
+      "archive": "author-raw.tar.gz",
+      "snapshot_member": "release-fast-coverage-source",
+      "manifest_member": "release-fast-coverage-hashes.json",
+      "manifest_sha256": "1b5ad8416bfd639e57e7f648dee4f2df9579ae398c013f392b9b49232f1c821a",
+      "source_paths": 16,
+      "matches_own_snapshot": true,
+      "matches_final_editor_snapshot": true,
+      "differences_from_final": {}
+    },
+    "release-clippy": {
+      "archive": "author-raw.tar.gz",
+      "snapshot_member": "release-clippy-source",
+      "manifest_member": "release-clippy-hashes.json",
+      "manifest_sha256": "1b5ad8416bfd639e57e7f648dee4f2df9579ae398c013f392b9b49232f1c821a",
+      "source_paths": 16,
+      "matches_own_snapshot": true,
+      "matches_final_editor_snapshot": true,
+      "differences_from_final": {}
+    },
+    "release-ctest": {
+      "archive": "author-raw.tar.gz",
+      "snapshot_member": "release-ctest-source",
+      "manifest_member": "release-ctest-hashes.json",
+      "manifest_sha256": "1b5ad8416bfd639e57e7f648dee4f2df9579ae398c013f392b9b49232f1c821a",
+      "source_paths": 16,
+      "matches_own_snapshot": true,
+      "matches_final_editor_snapshot": true,
+      "differences_from_final": {}
+    },
+    "release-build": {
+      "archive": "author-raw.tar.gz",
+      "snapshot_member": "release-build-source",
+      "manifest_member": "release-build-hashes.json",
+      "manifest_sha256": "1b5ad8416bfd639e57e7f648dee4f2df9579ae398c013f392b9b49232f1c821a",
+      "source_paths": 16,
+      "matches_own_snapshot": true,
+      "matches_final_editor_snapshot": true,
+      "differences_from_final": {}
+    },
+    "release-fmt": {
+      "archive": "author-raw.tar.gz",
+      "snapshot_member": "release-fmt-source",
+      "manifest_member": "release-fmt-hashes.json",
+      "manifest_sha256": "1b5ad8416bfd639e57e7f648dee4f2df9579ae398c013f392b9b49232f1c821a",
+      "source_paths": 16,
+      "matches_own_snapshot": true,
+      "matches_final_editor_snapshot": true,
+      "differences_from_final": {}
+    },
+    "release-diff": {
+      "archive": "author-raw.tar.gz",
+      "snapshot_member": "release-diff-source",
+      "manifest_member": "release-diff-hashes.json",
+      "manifest_sha256": "1b5ad8416bfd639e57e7f648dee4f2df9579ae398c013f392b9b49232f1c821a",
+      "source_paths": 16,
+      "matches_own_snapshot": true,
+      "matches_final_editor_snapshot": true,
+      "differences_from_final": {}
+    },
+    "release-default-graph": {
+      "archive": "author-raw.tar.gz",
+      "snapshot_member": "release-default-graph-source",
+      "manifest_member": "release-default-graph-hashes.json",
+      "manifest_sha256": "1b5ad8416bfd639e57e7f648dee4f2df9579ae398c013f392b9b49232f1c821a",
+      "source_paths": 16,
+      "matches_own_snapshot": true,
+      "matches_final_editor_snapshot": true,
+      "differences_from_final": {}
+    },
+    "red-immediate-disposal": {
+      "archive": "author-raw.tar.gz",
+      "snapshot_member": "red-immediate-disposal-source",
+      "manifest_member": "red-immediate-disposal-hashes.json",
+      "manifest_sha256": "c80c5a5a78510c49bc615d5d76cac35cb3404313a703bc52a444dab45914ac46",
+      "source_paths": 16,
+      "matches_own_snapshot": true,
+      "matches_final_editor_snapshot": false,
+      "differences_from_final": {
+        "src/trigger-editor/src/lib.rs": {
+          "phase_sha256": "ce55f6e5ad9617dcac9d3aa017145612f0bfcbd9ccb83a866149c60e5419e27b",
+          "final_sha256": "79f49cb29ed9376f8119c06f687ad069d6a7f33114da686797d9962f034b2d2c"
+        },
+        "src/trigger-editor/src/native_x11.rs": {
+          "phase_sha256": "881a9d0197d06afe41a1ead11bfbc84e3fb54f2247960fae57a66eff31741281",
+          "final_sha256": "d5a716081621410e4adbf6578cf5c5dcd4a1487691b6497a196c3803da9a39c1"
+        },
+        "src/trigger-editor/tests/internal/native_x11.rs": {
+          "phase_sha256": "b161a2c5856c3320f17f9bcad171f79ca56617b32ee97370326aaa0a5533d27f",
+          "final_sha256": "4547ef33b5113d2d7f2619f72cdd6bd6b5a7b6904c07eb0a5ca8957985fa9410"
+        }
+      },
+      "log_member": "red-immediate-disposal.log",
+      "log_sha256": "7978ce44062c10e9ccf61d84652a2c60e4a9d358caf6de8b0953700e6da1c3f5"
+    },
+    "green-immediate-disposal": {
+      "archive": "author-raw.tar.gz",
+      "snapshot_member": "green-immediate-disposal-source",
+      "manifest_member": "green-immediate-disposal-hashes.json",
+      "manifest_sha256": "b7a3a10150d12b366ece9dbc7b2c16a582007765ab8ce1fe32f762827c03cad7",
+      "source_paths": 16,
+      "matches_own_snapshot": true,
+      "matches_final_editor_snapshot": false,
+      "differences_from_final": {
+        "src/trigger-editor/tests/internal/native_x11.rs": {
+          "phase_sha256": "b161a2c5856c3320f17f9bcad171f79ca56617b32ee97370326aaa0a5533d27f",
+          "final_sha256": "4547ef33b5113d2d7f2619f72cdd6bd6b5a7b6904c07eb0a5ca8957985fa9410"
+        }
+      },
+      "log_member": "green-immediate-disposal.log",
+      "log_sha256": "8f2b74d0b4f83348878bbeea315618b74b73094ab23809f6f33f09d86b56d12d"
+    },
+    "whole-suite-green-calibration": {
+      "archive": "author-raw.tar.gz",
+      "snapshot_member": "whole-suite-green-calibration-source",
+      "manifest_member": "whole-suite-green-calibration-hashes.json",
+      "manifest_sha256": "1fa0126043e453e108a06ae2af1d411631b514473d096e3602b689402540cf0e",
+      "source_paths": 16,
+      "matches_own_snapshot": true,
+      "matches_final_editor_snapshot": false,
+      "differences_from_final": {
+        "src/trigger-editor/tests/internal/native_x11.rs": {
+          "phase_sha256": "897f536433935825f18f981b256e3b2edf9bd94ddf66c0625bf9a8b88344b77f",
+          "final_sha256": "4547ef33b5113d2d7f2619f72cdd6bd6b5a7b6904c07eb0a5ca8957985fa9410"
+        }
+      },
+      "log_member": "whole-suite-green-calibration.log",
+      "log_sha256": "e115d32301e5171e1729b47efffd370e2451072b1c94815604727d8582b3c4da"
+    },
+    "whole-suite-green-observer-calibration": {
+      "archive": "author-raw.tar.gz",
+      "snapshot_member": "whole-suite-green-observer-calibration-source",
+      "manifest_member": "whole-suite-green-observer-calibration-hashes.json",
+      "manifest_sha256": "08d140539553e7171a41b2b350f7dd6fc868869746288a127eb0e7d902553ad1",
+      "source_paths": 16,
+      "matches_own_snapshot": true,
+      "matches_final_editor_snapshot": false,
+      "differences_from_final": {
+        "src/trigger-editor/tests/internal/native_x11.rs": {
+          "phase_sha256": "a8f7ad2024b02ed2b97a68e3d40dac687b6f685b9cb272eb11e946936a0564c8",
+          "final_sha256": "4547ef33b5113d2d7f2619f72cdd6bd6b5a7b6904c07eb0a5ca8957985fa9410"
+        }
+      },
+      "log_member": "whole-suite-green-observer-calibration.log",
+      "log_sha256": "5790f5920b7ad4fdb4b33040a4a30a93651a5fe0475cfb0a7cf1a017a57d791f"
+    },
+    "red-whole-suite-old-close": {
+      "archive": "author-raw.tar.gz",
+      "snapshot_member": "red-whole-suite-old-close-source",
+      "manifest_member": "red-whole-suite-old-close-hashes.json",
+      "manifest_sha256": "a1f1e174fbef072cbe42a92ad74129d1eb0b5f3a22795707c07d97349f89dc2e",
+      "source_paths": 16,
+      "matches_own_snapshot": true,
+      "matches_final_editor_snapshot": false,
+      "differences_from_final": {
+        "src/trigger-editor/src/lib.rs": {
+          "phase_sha256": "ce55f6e5ad9617dcac9d3aa017145612f0bfcbd9ccb83a866149c60e5419e27b",
+          "final_sha256": "79f49cb29ed9376f8119c06f687ad069d6a7f33114da686797d9962f034b2d2c"
+        },
+        "src/trigger-editor/src/native_x11.rs": {
+          "phase_sha256": "881a9d0197d06afe41a1ead11bfbc84e3fb54f2247960fae57a66eff31741281",
+          "final_sha256": "d5a716081621410e4adbf6578cf5c5dcd4a1487691b6497a196c3803da9a39c1"
+        },
+        "src/trigger-editor/tests/internal/native_x11.rs": {
+          "phase_sha256": "a8f7ad2024b02ed2b97a68e3d40dac687b6f685b9cb272eb11e946936a0564c8",
+          "final_sha256": "4547ef33b5113d2d7f2619f72cdd6bd6b5a7b6904c07eb0a5ca8957985fa9410"
+        }
+      },
+      "log_member": "red-whole-suite-old-close.log",
+      "log_sha256": "383ec68106116781977fa743a09e6f86176aabf71ad245a466694cc488cbb0bb"
+    },
+    "green-whole-suite-restored-fix": {
+      "archive": "author-raw.tar.gz",
+      "snapshot_member": "green-whole-suite-restored-fix-source",
+      "manifest_member": "green-whole-suite-restored-fix-hashes.json",
+      "manifest_sha256": "08d140539553e7171a41b2b350f7dd6fc868869746288a127eb0e7d902553ad1",
+      "source_paths": 16,
+      "matches_own_snapshot": true,
+      "matches_final_editor_snapshot": false,
+      "differences_from_final": {
+        "src/trigger-editor/tests/internal/native_x11.rs": {
+          "phase_sha256": "a8f7ad2024b02ed2b97a68e3d40dac687b6f685b9cb272eb11e946936a0564c8",
+          "final_sha256": "4547ef33b5113d2d7f2619f72cdd6bd6b5a7b6904c07eb0a5ca8957985fa9410"
+        }
+      },
+      "log_member": "green-whole-suite-restored-fix.log",
+      "log_sha256": "a3021a5ffc7b049f8ba054b17e29c50c13e9b419529086a2d9f72f4df585ed31"
+    },
+    "red-final-suite-old-close": {
+      "archive": "author-raw.tar.gz",
+      "snapshot_member": "red-final-suite-old-close-source",
+      "manifest_member": "red-final-suite-old-close-hashes.json",
+      "manifest_sha256": "1cb87a424fead14f6248990baa24a98af34cd97849cac97663733e655455aa39",
+      "source_paths": 16,
+      "matches_own_snapshot": true,
+      "matches_final_editor_snapshot": false,
+      "differences_from_final": {
+        "src/trigger-editor/src/lib.rs": {
+          "phase_sha256": "ce55f6e5ad9617dcac9d3aa017145612f0bfcbd9ccb83a866149c60e5419e27b",
+          "final_sha256": "79f49cb29ed9376f8119c06f687ad069d6a7f33114da686797d9962f034b2d2c"
+        },
+        "src/trigger-editor/src/native_x11.rs": {
+          "phase_sha256": "881a9d0197d06afe41a1ead11bfbc84e3fb54f2247960fae57a66eff31741281",
+          "final_sha256": "d5a716081621410e4adbf6578cf5c5dcd4a1487691b6497a196c3803da9a39c1"
+        }
+      },
+      "log_member": "red-final-suite-old-close.log",
+      "log_sha256": "9cdd923384a4631682e2ca42e3f3c71caa599556be4d623c1d17ac43477abf60"
+    }
+  },
+  "final_red_test_equals_final": true,
+  "earlier_final_prefixed_runs": "Superseded: see author pre-callback records; only release-* checks qualify final source.",
+  "root_guard": {
+    "archive": "root-guard-raw.tar.gz",
+    "manifest_member": "guard-green/source-manifest.json",
+    "manifest_sha256": "87c00e80f435b1c217438bf9ccaf9b2c4a446b2c0680f1dc38aa40579ba3af62",
+    "source_paths": 583,
+    "matches_all_current_inputs": true,
+    "matches_all_16_final_editor_paths": true,
+    "matches_all_3_candidate_paths": true,
+    "run_member": "guard-green/run.json",
+    "log_sha256": "5aafebd14721cefb6ac8b549b65a515da1bfecc19ecc05c54c318a333f885f1e",
+    "exit_code": 0,
+    "elapsed_seconds": 88.445691,
+    "minimum_free_bytes": {
+      "disk_free_bytes": 8886513664,
+      "ram_free_bytes": 7483162624,
+      "user_ram_free_bytes": 3356508160,
+      "mem_available_bytes": 16538279936
+    }
+  }
+}

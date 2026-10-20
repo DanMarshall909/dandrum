@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "base": "a4cf062895730457631a2aa0c82943d1bbd483ae",
+  "scope": "Task3.2 synchronous native disposal: successful Drop and exercised construction failures release the edge-owned GTK container/XID before returning, with no host tick; external parent remains intact and can be destroyed immediately afterward. No session/audio continuity claim.",
+  "task_3_2_complete": false,
+  "full_beta_complete": false,
+  "sources": {
+    "src/trigger-editor/src/lib.rs": "79f49cb29ed9376f8119c06f687ad069d6a7f33114da686797d9962f034b2d2c",
+    "src/trigger-editor/src/native_x11.rs": "d5a716081621410e4adbf6578cf5c5dcd4a1487691b6497a196c3803da9a39c1",
+    "src/trigger-editor/tests/internal/native_x11.rs": "4547ef33b5113d2d7f2619f72cdd6bd6b5a7b6904c07eb0a5ca8957985fa9410"
+  },
+  "unsafe_boundary": {
+    "policy": "Crate deny(unsafe_code); outside Linux+native-x11 cfg, forbid(unsafe_code). Assets module has explicit forbid, and native test module has explicit forbid. One expect(unsafe_code, reason=...) directly on the sole destruction block; no broad allow or extraction hiding unsafe. Fresh all-target native Clippy -D warnings passes with the expectation fulfilled.",
+    "safety": "NativeEditor privately owns disposal authority on initialized GTK UI thread; GTK handles do not move through safe Send APIs. NativeEditor::drop disconnects IPC before Rust declaration-order field dropping releases WebView then OwnedWindow. No GTK handle escapes for later live use. Acquisition-local Fixed/GdkWindow wrappers may still exist during error unwind but only unref afterward. Display is captured before destruction; afterward only that display is used, then inert GTK wrapper unrefs without a widget-state query.",
+    "alias_audit": "Existing navigation/production test strong WebView aliases explicitly drop before owner. Normal-drop weak temporary expires at its statement. New destroy/unrealize observers capture counters, never widget self. Resource callback observer collects only raw XIDs while its container is live; temporary GTK wrappers unref within the observation. No destroyed-widget state query or unsafe test hook.",
+    "weak_limit": "add_weak_ref_notify_local is labelled weak/disposal notification, as GLib0.18.5 documents; it is not independent GObject-finalization or memory-reclamation proof. Native XID release and disposal are distinct from finalization."
+  },
+  "author_artifacts": 543,
+  "root_guard_artifacts": 15,
+  "cache_relocation_artifacts": 6,
+  "coverage": {
+    "owner_native": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 14,
+        "covered": 12,
+        "percent": 85.71428571428571
+      },
+      "instantiations": {
+        "count": 42,
+        "covered": 31,
+        "percent": 73.80952380952381
+      },
+      "lines": {
+        "count": 136,
+        "covered": 131,
+        "percent": 96.32352941176471
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 208,
+        "covered": 189,
+        "notcovered": 19,
+        "percent": 90.86538461538461
+      }
+    },
+    "assets_fast": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 5,
+        "covered": 5,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 11,
+        "covered": 7,
+        "percent": 63.63636363636363
+      },
+      "lines": {
+        "count": 52,
+        "covered": 52,
+        "percent": 100
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 87,
+        "covered": 86,
+        "notcovered": 1,
+        "percent": 98.85057471264368
+      }
+    },
+    "changed_operation": "Every executable OwnedWindow::drop line, including unsafe destroy and captured-display sync, executes10times. No new extracted production module. Owner131/136lines,12/14functions,189/208regions;19inherited unhit regions. Fast owner0/136lines, distinct attribution.",
+    "limits": "No exclusions, branch/MC/DC score or artificial score-only API/test. LLVM branch counters are0. Raw profiles/profdata/export/annotation/binarySHA/exact instrument commands retained in release-coverage-export-runs.json. Local crate wrapper only; shared hook/guard LLVM target untouched.",
+    "inherited_gaps": [
+      {
+        "lines": [
+          94,
+          95
+        ],
+        "reason": "Fresh sole IPC registration refusal cannot be induced through the fixed public constructor."
+      },
+      {
+        "lines": [
+          125
+        ],
+        "reason": "Non-X11 backend guard is outside selected real X11 fixture."
+      },
+      {
+        "lines": [
+          128
+        ],
+        "reason": "Checked connection failure needs auth/server loss while GDK connection is live; shared server not disrupted."
+      },
+      {
+        "lines": [
+          182
+        ],
+        "reason": "Reparent enqueue transport loss not induced; actual checked BadWindow reply rollback covered."
+      },
+      {
+        "reason": "Other inherited directions: missing/default display or realization-cast failure, wrongscreen/depth, validation transport/races, nonvalue IPC result and closures skipped by rejected creates. Dependency-internal postallocation errors remain unproved."
+      }
+    ]
+  },
+  "checks": {
+    "registered_editor_ctests": "3/3",
+    "registered_editor_seconds": 3.676270588999614,
+    "source_free_guard": {
+      "archive": "root-guard-raw.tar.gz",
+      "manifest_member": "guard-green/source-manifest.json",
+      "manifest_sha256": "87c00e80f435b1c217438bf9ccaf9b2c4a446b2c0680f1dc38aa40579ba3af62",
+      "source_paths": 583,
+      "matches_all_current_inputs": true,
+      "matches_all_16_final_editor_paths": true,
+      "matches_all_3_candidate_paths": true,
+      "run_member": "guard-green/run.json",
+      "log_sha256": "5aafebd14721cefb6ac8b549b65a515da1bfecc19ecc05c54c318a333f885f1e",
+      "exit_code": 0,
+      "elapsed_seconds": 88.445691,
+      "minimum_free_bytes": {
+        "disk_free_bytes": 8886513664,
+        "ram_free_bytes": 7483162624,
+        "user_ram_free_bytes": 3356508160,
+        "mem_available_bytes": 16538279936
+      }
+    },
+    "clippy_warnings_denied": "pass",
+    "formatting": "pass",
+    "mutation": "excluded by user"
+  },
+  "historical_failure": "Original production-characterization-compiled acquisition child failure remains cause/identity unknown; source investigation and new exact-XID RED establish this immediate-disposal defect independently. Do not retrospectively relabel the original unidentified child or claim retries diagnosed it.",
+  "review": {
+    "status": "PASS",
+    "manifest_sha256": "aa46e4baedddd41ae4fd57c8f94529530ff30458f31f408c9116e48a258e628c",
+    "review_sha256": "0156f5361e0e1d82610d54e555af307f58a7b45d22e3524333068d1fd4d6785c",
+    "verdict_sha256": "467a5f2c84b9ad6da84c61ce2902d7e0dbba4ea97588e39a6615b69fe23e98f2"
+  },
+  "publication": {
+    "target": "origin/feat/juce-free-host-adapters",
+    "status": "pending normal hooks"
+  }
+}

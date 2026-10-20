@@ -1,0 +1,10 @@
+{
+  "release-native-coverage": true,
+  "release-fast-coverage": true,
+  "release-clippy": true,
+  "release-ctest": true,
+  "release-build": true,
+  "release-fmt": true,
+  "release-diff": true,
+  "release-default-graph": true
+}

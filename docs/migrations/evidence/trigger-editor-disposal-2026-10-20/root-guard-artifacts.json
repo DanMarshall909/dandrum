@@ -1,0 +1,92 @@
+[
+  {
+    "path": "guard-green/guard.log",
+    "bytes": 209,
+    "mode": "0o664",
+    "sha256": "5aafebd14721cefb6ac8b549b65a515da1bfecc19ecc05c54c318a333f885f1e"
+  },
+  {
+    "path": "guard-green/run.json",
+    "bytes": 18634,
+    "mode": "0o664",
+    "sha256": "a3282795d6235ebbca1953b28c3770e7c9529e8246d807295c6ef93997aabe21"
+  },
+  {
+    "path": "guard-green/source-manifest.json",
+    "bytes": 67622,
+    "mode": "0o664",
+    "sha256": "87c00e80f435b1c217438bf9ccaf9b2c4a446b2c0680f1dc38aa40579ba3af62"
+  },
+  {
+    "path": "guard-green/trigger-editor-build.log",
+    "bytes": 1610,
+    "mode": "0o664",
+    "sha256": "36bc389875abdce8f8766cf86c3f48aae0eefc85b4603124234c1b11b78714da"
+  },
+  {
+    "path": "guard-green/trigger-editor-fixture-runtime.log",
+    "bytes": 815,
+    "mode": "0o664",
+    "sha256": "68f4ab5eec0633e9564e3c151824600b65de9f7c2d125d09e17d836999c2d857"
+  },
+  {
+    "path": "guard-green/trigger-editor-resource-rebuild.log",
+    "bytes": 289,
+    "mode": "0o664",
+    "sha256": "5b637f4b5ec62cd08e4bda480747d861e19fafda8368153c74c83ee387fc94b1"
+  },
+  {
+    "path": "guard-green/trigger-editor-targets.log",
+    "bytes": 2718,
+    "mode": "0o664",
+    "sha256": "a2814bde6d8fa46c8ac03ea916df5db2b263b452ed7c65fa6b929ac87044b372"
+  },
+  {
+    "path": "guard-green/trigger-editor.log",
+    "bytes": 720,
+    "mode": "0o664",
+    "sha256": "287ff7b8c62178f9433ca1c120cc454929359d11b04c46a00ca6420396bdad0d"
+  },
+  {
+    "path": "guard-green/trigger-host-dependencies.log",
+    "bytes": 4674,
+    "mode": "0o664",
+    "sha256": "2eb7eefdf07419d331e091d37a90ab7c2b9af69ad5bb69c5eb0731710444ff6e"
+  },
+  {
+    "path": "guard-green/trigger-host-test-inventory.log",
+    "bytes": 18231,
+    "mode": "0o664",
+    "sha256": "9d70409b838184b3e6a36f30cd19380dbb5aceea07ed472068d9d9f9d6e6c471"
+  },
+  {
+    "path": "guard-green/trigger-native-inventory.log",
+    "bytes": 730,
+    "mode": "0o664",
+    "sha256": "03552ffde8059c89d82327a9d4b249dbc157faa5daf40f21c9098665f75e1ccd"
+  },
+  {
+    "path": "guard-green/trigger-native-test-inventory.log",
+    "bytes": 20328,
+    "mode": "0o664",
+    "sha256": "ceecb0d2f2279a7606e4ed3a5cd9f2a96f5ad9f2694eebf6dd0f4031c77360f8"
+  },
+  {
+    "path": "guard-green/verified-summary.json",
+    "bytes": 686,
+    "mode": "0o664",
+    "sha256": "88b78ded4b43199a2da626f44d28dea023c20e42c9c849384a8407034e7bbd88"
+  },
+  {
+    "path": "guard-preflight.json",
+    "bytes": 568,
+    "mode": "0o664",
+    "sha256": "63a74214100bd96f4d90a016c23e1a6c55ce984ac631c8e3ee8e545d37e6d2dc"
+  },
+  {
+    "path": "run-guard.py",
+    "bytes": 4446,
+    "mode": "0o664",
+    "sha256": "7d641076e13430d7f5ce918644296a48dbd1e0569986002e2e66d0668838df3e"
+  }
+]

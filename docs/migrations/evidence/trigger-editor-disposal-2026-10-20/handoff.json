@@ -1,0 +1,295 @@
+{
+  "base_head": "a4cf062895730457631a2aa0c82943d1bbd483ae",
+  "cwd": "/tmp/dandrum-lanes/runtime",
+  "criterion": "Task3.2 synchronous native disposal: successful Drop and exercised construction failures release the edge-owned GTK container/XID before returning, with no host tick; external parent remains intact and can be destroyed immediately afterward. No session/audio continuity claim.",
+  "production_change": "OwnedWindow::drop captures its display, explicitly destroys its exclusively owned GTK widget through the approved single unsafe block, then synchronizes only the captured display. It no longer queues Window::close. No GTK loop, polling, wait, raw XDestroyWindow, host-parent/display/server destruction or new public API.",
+  "unsafe_boundary": {
+    "policy": "Crate deny(unsafe_code); outside Linux+native-x11 cfg, forbid(unsafe_code). Assets module has explicit forbid, and native test module has explicit forbid. One expect(unsafe_code, reason=...) directly on the sole destruction block; no broad allow or extraction hiding unsafe. Fresh all-target native Clippy -D warnings passes with the expectation fulfilled.",
+    "safety": "NativeEditor privately owns disposal authority on initialized GTK UI thread; GTK handles do not move through safe Send APIs. NativeEditor::drop disconnects IPC before Rust declaration-order field dropping releases WebView then OwnedWindow. No GTK handle escapes for later live use. Acquisition-local Fixed/GdkWindow wrappers may still exist during error unwind but only unref afterward. Display is captured before destruction; afterward only that display is used, then inert GTK wrapper unrefs without a widget-state query.",
+    "alias_audit": "Existing navigation/production test strong WebView aliases explicitly drop before owner. Normal-drop weak temporary expires at its statement. New destroy/unrealize observers capture counters, never widget self. Resource callback observer collects only raw XIDs while its container is live; temporary GTK wrappers unref within the observation. No destroyed-widget state query or unsafe test hook.",
+    "weak_limit": "add_weak_ref_notify_local is labelled weak/disposal notification, as GLib0.18.5 documents; it is not independent GObject-finalization or memory-reclamation proof. Native XID release and disposal are distinct from finalization."
+  },
+  "final_candidate_manifest": "final-candidate-hashes.json (three assigned paths)",
+  "final_source_manifest": "final-source-hashes.json (full16path editor boundary)",
+  "final_source_snapshot": "release-candidate-source",
+  "candidate_sha256": {
+    "src/trigger-editor/src/lib.rs": "79f49cb29ed9376f8119c06f687ad069d6a7f33114da686797d9962f034b2d2c",
+    "src/trigger-editor/src/native_x11.rs": "d5a716081621410e4adbf6578cf5c5dcd4a1487691b6497a196c3803da9a39c1",
+    "src/trigger-editor/tests/internal/native_x11.rs": "4547ef33b5113d2d7f2619f72cdd6bd6b5a7b6904c07eb0a5ca8957985fa9410"
+  },
+  "phase_binding": "phase-source-binding.json names every initial RED, failed fixture assumption, intermediate GREEN/whole-suite RED, final RED and release GREEN snapshot/hash/log separately. final-source-binding.json confirms all release checks share the exact final16paths.",
+  "phase_summary": {
+    "initial_genuine_red": "red-immediate-disposal: production/lib exactly published old close+sync; initial normal Drop test captures owned child75497475. After Drop and before any service/wait/test sync, GetWindowAttributes succeeds, parent children contains same XID, destroy/unrealize/weak-disposal all0. Named immediate BadWindow assertion fails, exit101/test0.48s. Exact source/log/command/env/cwd/timing retained.",
+    "fixture_failures_not_red": "green-immediate-disposal proves immediate BadWindow/counters1 but fails wrong expected parent origin0; actual WM position is1,24 with1400x900. Corrected to unchanged observed origin across Drop with literal dimensions and mapped state. whole-suite-green-calibration later fails a preflight observer assumption: rejected duplicate handler drops at with_custom_protocol before acquisition, so it cannot capture the later container. Both exact failed sources/logs retained and never called behavior RED.",
+    "preflight_observer_correction": "An accepted distinct capture protocol handler is retained in the same errored builder before duplicate registration. Its real release during build_gtk error observes the already-realized private container. Duplicate error remains actual wry::Error::DuplicateCustomProtocol, pre-WebKit; no post-WebKit Wry Err claim. Post-WebKit rollback is the existing checked reparent failure.",
+    "whole_suite_old_close_red": "red-whole-suite-old-close binds the then-strengthened normal/rollback/immediate-parent suite to exact old two production files. It fails the same first live-XID contract, not WM/setup. Minimal two-file production/lint delta restored for green-whole-suite-restored-fix.",
+    "final_oracle_strengthening": "Before handback, added immediate browser/IPC weak-release assertions before ticks/parentdestroy. Earlier final-* receipts/manifests remain retained as pre-callback-* source evidence and are explicitly superseded. They are not attributed to the final release test source.",
+    "final_exact_red_to_green": "red-final-suite-old-close uses the exact final test hash4547ef33b5113d2d7f2619f72cdd6bd6b5a7b6904c07eb0a5ca8957985fa9410, with old production/lib. It passes existing immediate browser/IPC release but fails the live owned XID. Release GREEN restores ONLY lib.rs/native_x11.rs intended disposal/lint delta; every other snapshot file equals final RED. Final RED stops at first normal disposal assertion; rollback/parent assertions are independently observed in GREEN, not falsely reported as reached in RED.",
+    "release_green": "release-native-coverage runs identical final test source with G_DEBUG=fatal-warnings, successful real native operation and10 covered container disposals. All release native/fast LLVM, all-target Clippy,3normalCTests, native build, fmt/diff/default graph pass."
+  },
+  "runtime_oracles": {
+    "normal": "Two actual host-parented normal children. Before Drop cache exact XID and observe GTK destroy/unrealize/weak-disposal without self-capture. Immediately after Drop require callback/browser weak release; independent checked X11 GetWindowAttributes literal errorcode3/Window/bad_value exactXID, empty parent children, unchanged parent origin, literal1400x900 parent dimensions, Viewable parent, and signal counts1 each. No intervening tick/wait/test display sync.",
+    "rollback": "Actual post-WebKit checked reparent failure and actual builder-preflight duplicate error retain resource weak-release oracles. Observe failed container raw identity at real retained resource callback destruction; require its exact XID BadWindow before service. Root/parent no-added-window and GTK toplevel checks remain; deliberately retained successful shared-context owner also drops before any tick with exact child errors and empty parent.",
+    "immediate_parent": "Separate test-owned override-redirect mapped parent at30,40. Normal local page reports parent-ready and schedules a later ordinary IPC. Drop editor; callback/browser weak release and exact child BadWindow/empty parent asserted before destroying host parent with no GTK tick between. Then32finite external host ticks with5ms interval: no late callback, no retained view/callback, no new root child. Fatal GTK/GLib warnings in release native run and zero exit expose teardown diagnostics. External host parent alone is destroyed by the fixture, never production.",
+    "representative_release_ids": {
+      "normal_children": [
+        75497475,
+        75497479
+      ],
+      "post_webkit_rollback_child": 75497483,
+      "builder_preflight_rollback_child": 75497491,
+      "immediate_parent": 77594628,
+      "immediate_parent_child": 75497511,
+      "all_error_codes": 3,
+      "normal_signal_counts": [
+        1,
+        1,
+        1
+      ]
+    },
+    "adjacent_acceptance": "Existing real local module/CSS/inline/local404 fetch, enforcing external-fetch CSP, fixed-entry navigation, actual unmodified production Silent/mock preview, eight FontFace sets and11full resource byte/MIME/status comparisons remain passing. No fake native backend."
+  },
+  "coverage": {
+    "owner_native": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 14,
+        "covered": 12,
+        "percent": 85.71428571428571
+      },
+      "instantiations": {
+        "count": 42,
+        "covered": 31,
+        "percent": 73.80952380952381
+      },
+      "lines": {
+        "count": 136,
+        "covered": 131,
+        "percent": 96.32352941176471
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 208,
+        "covered": 189,
+        "notcovered": 19,
+        "percent": 90.86538461538461
+      }
+    },
+    "assets_fast": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 5,
+        "covered": 5,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 11,
+        "covered": 7,
+        "percent": 63.63636363636363
+      },
+      "lines": {
+        "count": 52,
+        "covered": 52,
+        "percent": 100
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 87,
+        "covered": 86,
+        "notcovered": 1,
+        "percent": 98.85057471264368
+      }
+    },
+    "changed_operation": "Every executable OwnedWindow::drop line, including unsafe destroy and captured-display sync, executes10times. No new extracted production module. Owner131/136lines,12/14functions,189/208regions;19inherited unhit regions. Fast owner0/136lines, distinct attribution.",
+    "limits": "No exclusions, branch/MC/DC score or artificial score-only API/test. LLVM branch counters are0. Raw profiles/profdata/export/annotation/binarySHA/exact instrument commands retained in release-coverage-export-runs.json. Local crate wrapper only; shared hook/guard LLVM target untouched.",
+    "inherited_gaps": [
+      {
+        "lines": [
+          94,
+          95
+        ],
+        "reason": "Fresh sole IPC registration refusal cannot be induced through the fixed public constructor."
+      },
+      {
+        "lines": [
+          125
+        ],
+        "reason": "Non-X11 backend guard is outside selected real X11 fixture."
+      },
+      {
+        "lines": [
+          128
+        ],
+        "reason": "Checked connection failure needs auth/server loss while GDK connection is live; shared server not disrupted."
+      },
+      {
+        "lines": [
+          182
+        ],
+        "reason": "Reparent enqueue transport loss not induced; actual checked BadWindow reply rollback covered."
+      },
+      {
+        "reason": "Other inherited directions: missing/default display or realization-cast failure, wrongscreen/depth, validation transport/races, nonvalue IPC result and closures skipped by rejected creates. Dependency-internal postallocation errors remain unproved."
+      }
+    ]
+  },
+  "refactor": {
+    "production": "Retain one tiny concrete disposal operation and adjacent safety explanation. No new abstraction, generic lifecycle broker, configuration or module is warranted. IPC/browser-first ordering stays explicit and source-covered.",
+    "fixtures": "Reuse the one GTK runner and independent checked X11 connection. Distinct immediate-host-parent fixture has its own real parent and no premature tick. Small callback-drop identity probe observes an existing resource lifetime boundary without production seam/unsafe test code. Repeated named errors remain near each scenario for clear raw evidence; no score-driven helper extraction.",
+    "feedback": "Release native body1.93s versus earlier production-only~1.65s; added32x5ms external ticks are bounded unique late-callback/parent-destruction evidence. Release CTest native3.34s includes normal test rebuild after LLVM instrumentation; exact setup/body in retained LastTest.log. Default fast0.16s; no lane membership change, broad stress sweep or redundant full guard."
+  },
+  "runs": {
+    "final-build": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/final-build-run.json",
+      "exit": 0,
+      "elapsed_seconds": 0.447177283000201
+    },
+    "final-clippy": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/final-clippy-run.json",
+      "exit": 0,
+      "elapsed_seconds": 0.48450031399261206
+    },
+    "final-ctest": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/final-ctest-run.json",
+      "exit": 0,
+      "elapsed_seconds": 2.5486888839805033
+    },
+    "final-default-graph": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/final-default-graph-run.json",
+      "exit": 0,
+      "elapsed_seconds": 0.06385266201687045
+    },
+    "final-diff": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/final-diff-run.json",
+      "exit": 0,
+      "elapsed_seconds": 0.00528213000507094
+    },
+    "final-fast-coverage": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/final-fast-coverage-run.json",
+      "exit": 0,
+      "elapsed_seconds": 0.11997590799001046
+    },
+    "final-fmt": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/final-fmt-run.json",
+      "exit": 0,
+      "elapsed_seconds": 0.05552553100278601
+    },
+    "final-native-coverage": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/final-native-coverage-run.json",
+      "exit": 0,
+      "elapsed_seconds": 2.071949812991079
+    },
+    "green-immediate-disposal": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/green-immediate-disposal-run.json",
+      "exit": 101,
+      "elapsed_seconds": 1.450115490006283
+    },
+    "green-whole-suite-restored-fix": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/green-whole-suite-restored-fix-run.json",
+      "exit": 0,
+      "elapsed_seconds": 2.805950452981051
+    },
+    "initial-native-coverage": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/initial-native-coverage-run.json",
+      "exit": 0,
+      "elapsed_seconds": 3.144854732003296
+    },
+    "red-final-suite-old-close": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/red-final-suite-old-close-run.json",
+      "exit": 101,
+      "elapsed_seconds": 1.3796109849936329
+    },
+    "red-immediate-disposal": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/red-immediate-disposal-run.json",
+      "exit": 101,
+      "elapsed_seconds": 1.4277570889971685
+    },
+    "red-whole-suite-old-close": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/red-whole-suite-old-close-run.json",
+      "exit": 101,
+      "elapsed_seconds": 1.3472196880029514
+    },
+    "release-build": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/release-build-run.json",
+      "exit": 0,
+      "elapsed_seconds": 0.19703782399301417
+    },
+    "release-clippy": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/release-clippy-run.json",
+      "exit": 0,
+      "elapsed_seconds": 0.388885537016904
+    },
+    "release-ctest": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/release-ctest-run.json",
+      "exit": 0,
+      "elapsed_seconds": 3.676270588999614
+    },
+    "release-default-graph": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/release-default-graph-run.json",
+      "exit": 0,
+      "elapsed_seconds": 0.06330283699207939
+    },
+    "release-diff": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/release-diff-run.json",
+      "exit": 0,
+      "elapsed_seconds": 0.00532503001159057
+    },
+    "release-fast-coverage": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/release-fast-coverage-run.json",
+      "exit": 0,
+      "elapsed_seconds": 0.12535354599822313
+    },
+    "release-fmt": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/release-fmt-run.json",
+      "exit": 0,
+      "elapsed_seconds": 0.053964636026648805
+    },
+    "release-native-coverage": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/release-native-coverage-run.json",
+      "exit": 0,
+      "elapsed_seconds": 2.7723470340133645
+    },
+    "whole-suite-green-calibration": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/whole-suite-green-calibration-run.json",
+      "exit": 101,
+      "elapsed_seconds": 1.529269535007188
+    },
+    "whole-suite-green-observer-calibration": {
+      "receipt": "/tmp/dandrum-lanes/evidence-editor-disposal/whole-suite-green-observer-calibration-run.json",
+      "exit": 0,
+      "elapsed_seconds": 2.77315248499508
+    }
+  },
+  "maintained_checks": "Release3/3registeredCTests pass with inherited bundle env cleared; normal staged input supplies real production bundle. Native alltargetClippy-Dwarnings/native library build/fmt--check/diff--check/std-onlydefault cargo tree allpass. Source hashes are identical across release receipts.",
+  "guard_status": "Root will run one source-free/default-boundary guard after explicit author handback because lib lint policy changed. Author has not run/claimed that shared guard; root owns its result/review/publication. No extra source/CMake/dependency change pending.",
+  "original_failure_limit": "Original production-characterization-compiled acquisition child failure remains cause/identity unknown; source investigation and new exact-XID RED establish this immediate-disposal defect independently. Do not retrospectively relabel the original unidentified child or claim retries diagnosed it.",
+  "unchanged_boundaries": "unchanged-boundary-hashes.json: CMake, Python build guard, Cargo manifest/lock, assets, production observer and localpolicy files unchanged. No host/engine/frontend/dependency/resource edits. Default assets remain forbid unsafe; no GUI types enter host/core.",
+  "explicit_remaining": [
+    "Task3.2 stays unchecked. No actual CLAP GUI main-thread/timer/API-order or session/audio continuity acceptance.",
+    "No show/hide/resize or following CSP/new-window/download criterion started.",
+    "No GObject finalization claim from weak-disposal notification.",
+    "Root independent review/default guard/normal publication pending; author does not self-approve or commit."
+  ],
+  "ownership_release": "Source is frozen at release-candidate-source/final-source-hashes.json. Zero owned editor Cargo/rustc/test processes in release-owned-process-check.json. Explicitly release three assigned paths and editor-target/editor-cmake/native build ownership to root now. No more source/index/build actions or next RED until reassigned.",
+  "git_resource_scope": "No author Git/index/commit/push/docs/task/cache/dependency deletion. Basea4cf0628; mainclean68dd655. All prior raw evidence immutable; superseded pre-callback manifests/snapshot kept. Root cache relocation operational receipts are separate; author used only existing editor target/staging."
+}

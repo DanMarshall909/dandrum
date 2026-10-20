@@ -1,0 +1,38 @@
+[
+  {
+    "path": "after.json",
+    "bytes": 1711486,
+    "mode": "0o664",
+    "sha256": "617277d80642007b624ed5da3dd3275cc5c2381946e9f39871526f8b2425809c"
+  },
+  {
+    "path": "before.json",
+    "bytes": 1711486,
+    "mode": "0o664",
+    "sha256": "617277d80642007b624ed5da3dd3275cc5c2381946e9f39871526f8b2425809c"
+  },
+  {
+    "path": "capacity-after.json",
+    "bytes": 290,
+    "mode": "0o664",
+    "sha256": "31bab0b0f919f5871d58ee84e770197e5489ecf46c0a06ebbd537411c147a3c6"
+  },
+  {
+    "path": "copy-comparison.json",
+    "bytes": 41,
+    "mode": "0o664",
+    "sha256": "bb966ef2d4f153e1dcc0acd988ae84eb9a53d4c706f93af5680dd221e7e241fa"
+  },
+  {
+    "path": "initial-stop.json",
+    "bytes": 344,
+    "mode": "0o664",
+    "sha256": "1462cd69e0c1d208cdc10ee65222b34f04721734498caa20c181940599ecc4ce"
+  },
+  {
+    "path": "relocation.json",
+    "bytes": 588,
+    "mode": "0o664",
+    "sha256": "a35306733a64b4acafa607bf5b684f07869c9494cf92be0aa7e99dcb075d2b15"
+  }
+]

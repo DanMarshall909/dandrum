@@ -33,9 +33,20 @@ struct OwnedWindow(gtk::Window);
 impl Drop for OwnedWindow {
     fn drop(&mut self) {
         let display = self.0.display();
-        self.0.close();
-        // The host can query its parent through another X11 connection as soon
-        // as drop returns, even when GTK has no pending events to flush for it.
+        // SAFETY: this private container has exclusive disposal authority on the
+        // GTK UI thread. The owner releases IPC and its browser first. No handle
+        // escapes for later live use; acquisition-local wrappers only unref on
+        // unwind. After destruction we only use the previously captured display,
+        // then let the inert window wrapper unref without querying widget state.
+        #[expect(
+            unsafe_code,
+            reason = "GTK exposes synchronous disposal of the exclusively owned container as unsafe"
+        )]
+        unsafe {
+            gtk::prelude::WidgetExtManual::destroy(&self.0);
+        }
+        // Order native destruction before the host queries or destroys its own
+        // parent through another connection, without dispatching GTK work here.
         display.sync();
     }
 }
@@ -181,10 +192,11 @@ impl Drop for NativeEditor {
             manager.unregister_script_message_handler("ipc");
             manager.disconnect(handler);
         }
-        // Fields then drop the WebView before OwnedWindow closes the container.
+        // Fields then drop the WebView before OwnedWindow disposes the container.
     }
 }
 
 #[cfg(test)]
 #[path = "../tests/internal/native_x11.rs"]
+#[forbid(unsafe_code)]
 mod tests;
