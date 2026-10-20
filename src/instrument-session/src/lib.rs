@@ -62,7 +62,9 @@ pub struct Publication<'a> {
     pub redo: Option<&'a JournalEntry>,
 }
 
-/// A host lease keeps audio/snapshot admission closed until publication.
+/// A host lease reserves safe publication while keeping unpublished runtime and
+/// metadata invisible. Adapters mutating shared active state must close reader
+/// admission; an immutable queued replacement may keep the old runtime live.
 pub trait ActivationLease {
     /// Infallible release: no allocation, notification, error or unwinding.
     fn publish(self, accepted: Publication<'_>);

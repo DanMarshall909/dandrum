@@ -1,0 +1,31 @@
+{
+  "verdict": "PASS",
+  "candidate_manifest_sha256": "5b19254623b287a2628362b5058c5c0808713ff9a70ef911cbe78f5893d947db",
+  "base": "1d7efe62cf1dd2e4a623fb9215fce84bf26f9e83",
+  "current": "1d7efe62cf1dd2e4a623fb9215fce84bf26f9e83",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "1d7efe62cf1dd2e4a623fb9215fce84bf26f9e83",
+  "integration_base": "1d7efe62cf1dd2e4a623fb9215fce84bf26f9e83",
+  "scope": "Task 3.3 ordinary immutable runtime reservation continuity component; full tasks 3.2/3.3 and beta remain open",
+  "findings": [],
+  "resolved_findings": [
+    "Coverage counts explicitly distinguish 735 emitted entries from 707 distinct covered source lines; embedded tests and absent branch coverage disclosed"
+  ],
+  "manifest_paths_verified": 14,
+  "raw_artifacts_verified": 65,
+  "sourcefree_inputs_verified": 586,
+  "reviewer_tests_executed": false,
+  "post_pass_envelope": {
+    "metadata_paths": 5,
+    "description": "Exact transformations in review.md and hashes in external approved-envelope.json",
+    "same_reviewer_final_manifest_addendum_required_before_commit": true,
+    "semantic_source_test_spec_task_changes_allowed": false
+  },
+  "limitations": [
+    "Explicit external restore may silence callbacks while its producer is paused",
+    "Actual structural swap retains existing voice reset behavior",
+    "Source-free result combines successful full-guard build stages with corrected nonincremental 3-CTest retry",
+    "No actual WebView/CLAP integration or full beta completion",
+    "No branch coverage or mutation pass claimed"
+  ]
+}

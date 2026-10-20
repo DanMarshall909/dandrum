@@ -512,6 +512,22 @@ fn unbound_control_roots_are_rejected_before_exposing_an_audio_runtime() {
 #[test]
 fn session_publication_uses_a_cancellable_lease_and_rolls_back_under_backpressure() {
     let mut session = session(36);
+    // Decode this fixed RIFF fixture independently of the production sampler.
+    // Its 12,000-frame kick outlasts the bounded paused-producer observation.
+    let wav = std::fs::read(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../examples/patches/assets/advanced-drums.wav"),
+    )
+    .unwrap();
+    assert_eq!(&wav[36..40], b"data");
+    let waveform: Vec<f32> = wav[44..]
+        .chunks_exact(2)
+        .map(|word| f32::from(i16::from_le_bytes([word[0], word[1]])) / 32768.0)
+        .collect();
+    assert_eq!(
+        &waveform[..4],
+        &[-0.5, -358.0 / 32768.0, 1554.0 / 32768.0, 4137.0 / 32768.0]
+    );
     let initial = PreparedRuntime::new(session.prepared(), configuration()).unwrap();
     let (mut control, mut audio) = runtime_handoff(initial, 4).unwrap();
     let (attachment, original) = session.attach().unwrap();
@@ -527,19 +543,54 @@ fn session_publication_uses_a_cancellable_lease_and_rolls_back_under_backpressur
             velocity: 100,
         })
         .unwrap();
+    let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
+    audio.process(&mut left, &mut right).unwrap();
+    for frame in 0..16 {
+        assert_eq!(
+            (left[frame], right[frame]),
+            (waveform[frame], waveform[frame])
+        );
+    }
     let lease = control.activate(candidate.prepared(), &original).unwrap();
-    let (mut left, mut right) = ([1.0; 16], [1.0; 16]);
-    let mut closed = None;
-    let waiting_callback = allocation_counter::measure(|| {
-        audio.reset();
-        closed = Some(audio.process(&mut left, &mut right).unwrap());
-    });
-    assert!(closed.unwrap().admission_closed);
-    assert_eq!(
-        (waiting_callback.count_total, waiting_callback.count_current),
-        (0, 0)
-    );
-    assert_eq!((left, right), ([0.0; 16], [0.0; 16]));
+    let producer = std::thread::current().id();
+    // The control owner retains the unpublished lease while another actual
+    // thread repeatedly completes callbacks. join() pauses the producer until
+    // the reader has independently proved continued signed playback.
+    let expected = waveform[16..528].to_vec();
+    let mut audio = std::thread::spawn(move || {
+        assert_ne!(std::thread::current().id(), producer);
+        let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
+        let callback = allocation_counter::measure(|| {
+            for block in 0..32 {
+                let report = audio.process(&mut left, &mut right).unwrap();
+                assert!(
+                    !report.admission_closed,
+                    "a reserved immutable mapping must not silence audio"
+                );
+                assert!(
+                    !report.swapped,
+                    "an unpublished candidate must stay invisible"
+                );
+                for frame in 0..16 {
+                    assert_eq!(
+                        (left[frame], right[frame]),
+                        (expected[block * 16 + frame], expected[block * 16 + frame])
+                    );
+                }
+            }
+        });
+        assert_eq!(
+            (
+                callback.count_total,
+                callback.count_current,
+                callback.bytes_current
+            ),
+            (0, 0, 0)
+        );
+        audio
+    })
+    .join()
+    .unwrap();
     let cancelled = allocation_counter::measure(|| drop(lease));
     assert_eq!(cancelled.count_total, 0);
     assert!(
@@ -548,7 +599,12 @@ fn session_publication_uses_a_cancellable_lease_and_rolls_back_under_backpressur
     );
     assert_eq!(session.snapshot(&attachment).unwrap(), original);
     audio.process(&mut left, &mut right).unwrap();
-    assert_eq!((left[0], right[0]), (-0.5, -0.5));
+    for frame in 0..16 {
+        assert_eq!(
+            (left[frame], right[frame]),
+            (waveform[528 + frame], waveform[528 + frame])
+        );
+    }
     audio.reset();
     let accepted = session.commit_mapping(candidate, &mut control).unwrap();
     assert_eq!((accepted.revision, accepted.undo_len), (1, 1));
@@ -575,6 +631,12 @@ fn session_publication_uses_a_cancellable_lease_and_rolls_back_under_backpressur
     assert!(report.swapped);
     assert_eq!(&left[..3], &[0.0; 3]);
     assert_eq!((left[3], right[3]), (-0.5, -0.5));
+    let blocked = session.prepare_mapping(&attachment, intent(72)).unwrap();
+    assert!(matches!(
+        session.commit_mapping(blocked, &mut control),
+        Err(CommitError::Activation(RuntimeError::Busy))
+    ));
+    assert_eq!(session.snapshot(&attachment).unwrap(), accepted);
     drop(
         control
             .reclaim()

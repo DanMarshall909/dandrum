@@ -1,0 +1,637 @@
+{
+  "testedSourceBase": "0f02f575ff2419082370f4d35986d086c03b5d0b",
+  "scope": "Task3.3 ordinary immutable mapping reservation preserves old callback playback; external scalar/epoch restore retains its gate",
+  "sourceManifestSha256": "4aa80df4ffb9199b50c5049799e6af3c1c2c54f235242d12d94bed0bec98b3fd",
+  "sourcePaths": {
+    "src/trigger-host/src/runtime.rs": "2e46c3b6d80aafec0af78dd6bed1feae1a0dc174cd903d0bbdab1c6d24c9bc2e",
+    "src/trigger-host/tests/runtime.rs": "49e3abd589ed590d5c223b41296c9951722ec20aa368858c3701ca40e3ccf461",
+    "src/instrument-session/src/lib.rs": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e"
+  },
+  "rawArtifacts": 65,
+  "red": {
+    "receipt": "raw.tar.gz:red.json",
+    "expected": "admission_closed on callback while ordinary lease held",
+    "fixtureCalibration": "Separate initial four-frame loop expectation failed before reservation; not behavior RED"
+  },
+  "checks": {
+    "final-format-check": {
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "src/trigger-host/Cargo.toml",
+        "--",
+        "--check"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "environment": {
+        "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+        "CARGO_BUILD_JOBS": "2",
+        "CARGO_LLVM_COV_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/llvm-cov-target",
+        "CARGO_LLVM_COV_BUILD_DIR": "/dev/shm/dandrum-beta-20261020/llvm-cov-target"
+      },
+      "elapsed_seconds": 0.09048398499726318,
+      "exit_code": 0,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "disk_free_before": 10608640000,
+      "ram_free_before": 1166192640,
+      "mem_available_before": 11918962688
+    },
+    "final-clippy": {
+      "command": [
+        "cargo",
+        "clippy",
+        "--manifest-path",
+        "src/trigger-host/Cargo.toml",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "environment": {
+        "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+        "CARGO_BUILD_JOBS": "2",
+        "CARGO_LLVM_COV_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/llvm-cov-target",
+        "CARGO_LLVM_COV_BUILD_DIR": "/dev/shm/dandrum-beta-20261020/llvm-cov-target"
+      },
+      "elapsed_seconds": 0.8529338999942411,
+      "exit_code": 0,
+      "log_sha256": "fcfe1ffe0bd0d2e42b9302e19a17058eb7c99aed528ec7824d0e201c33ac0dd2",
+      "disk_free_before": 10608631808,
+      "ram_free_before": 1166192640,
+      "mem_available_before": 11905028096
+    },
+    "final-coverage": {
+      "command": [
+        "cargo",
+        "llvm-cov",
+        "--manifest-path",
+        "src/trigger-host/Cargo.toml",
+        "--lcov",
+        "--output-path",
+        "/tmp/dandrum-lanes/evidence-runtime-continuity/final-host.lcov"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "environment": {
+        "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+        "CARGO_BUILD_JOBS": "2",
+        "CARGO_LLVM_COV_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/llvm-cov-target",
+        "CARGO_LLVM_COV_BUILD_DIR": "/dev/shm/dandrum-beta-20261020/llvm-cov-target"
+      },
+      "elapsed_seconds": 5.632339033996686,
+      "exit_code": 0,
+      "log_sha256": "56c9c33af51906bbabd5ef50996a23d74d81e4c4ad4686c97719b71eef06af83",
+      "disk_free_before": 10608177152,
+      "ram_free_before": 1166192640,
+      "mem_available_before": 11835633664
+    },
+    "session-regression": {
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "src/instrument-session/Cargo.toml"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "environment": {
+        "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+        "CARGO_BUILD_JOBS": "2",
+        "CARGO_LLVM_COV_TARGET_DIR": "/dev/shm/dandrum-beta-20261020/llvm-cov-target",
+        "CARGO_LLVM_COV_BUILD_DIR": "/dev/shm/dandrum-beta-20261020/llvm-cov-target"
+      },
+      "elapsed_seconds": 7.845521068986272,
+      "exit_code": 0,
+      "log_sha256": "ac0eea77ec4bf7b23aea9c2b2a4e611742acd3ff9b9c40a8db8daf356a99c242",
+      "disk_free_before": 10701619200,
+      "ram_free_before": 1162846208,
+      "mem_available_before": 11995652096
+    },
+    "sourcefree-disk-retry": {
+      "command": [
+        "/home/dan/.local/bin/ctest",
+        "--test-dir",
+        "/dev/shm/dandrum-beta-20261020/editor-guard-source/build/engine-only-regression/fixture-kwjt48yz/source/build/trigger-editor",
+        "--output-on-failure",
+        "-R",
+        "^(clap-dynamic-host|trigger-host-tests|trigger-editor-tests)$"
+      ],
+      "cwd": "/dev/shm/dandrum-beta-20261020/editor-guard-source/build/engine-only-regression/fixture-kwjt48yz/source",
+      "environment": {
+        "PATH": "/home/dan/.local/bin:/home/dan/.cargo/bin:/usr/bin:/bin",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_INCREMENTAL": "0",
+        "TMPDIR": "/tmp"
+      },
+      "owned_pid": 3142759,
+      "owned_pgid": 3142759,
+      "exit_code": 0,
+      "elapsed_seconds": 38.294465260987636,
+      "stop_reason": null,
+      "qualification": "Corrected test/API and formatting only since full source-free build/resource/inventory/dependency checks. Actual3CTestretry disables incremental compiler output; not a fresh complete default-profile guard.",
+      "compiler_target": "/tmp/dandrum-lanes/cache-editor-guard",
+      "all586FinalSourceInputsEqual": true,
+      "ram_floor_basis": "256MiB only for this disk-backed nonincremental retry; RAM cache output disabled; MemAvailable4GiB floor retained. Prior1GiBfloor attempt stopped honestly.",
+      "resource_samples": [
+        {
+          "elapsed": 0.0007089430000633001,
+          "disk": 5829816320,
+          "ram": 1064685568,
+          "mem": 13688242176
+        },
+        {
+          "elapsed": 0.5063499060051981,
+          "disk": 5829730304,
+          "ram": 1064685568,
+          "mem": 13503410176
+        },
+        {
+          "elapsed": 1.008357115992112,
+          "disk": 5829730304,
+          "ram": 1064685568,
+          "mem": 13389893632
+        },
+        {
+          "elapsed": 1.5103515159862582,
+          "disk": 5829726208,
+          "ram": 1064685568,
+          "mem": 13264941056
+        },
+        {
+          "elapsed": 2.0123698659881484,
+          "disk": 5829726208,
+          "ram": 1064685568,
+          "mem": 13198311424
+        },
+        {
+          "elapsed": 2.514356575004058,
+          "disk": 5829722112,
+          "ram": 1064685568,
+          "mem": 13102534656
+        },
+        {
+          "elapsed": 3.016339514986612,
+          "disk": 5829722112,
+          "ram": 1064685568,
+          "mem": 12956622848
+        },
+        {
+          "elapsed": 3.518358925008215,
+          "disk": 5825785856,
+          "ram": 1064685568,
+          "mem": 12839526400
+        },
+        {
+          "elapsed": 4.020370454993099,
+          "disk": 5825785856,
+          "ram": 1064685568,
+          "mem": 12816072704
+        },
+        {
+          "elapsed": 4.522360814997228,
+          "disk": 5825789952,
+          "ram": 1064685568,
+          "mem": 12777390080
+        },
+        {
+          "elapsed": 5.025096016994212,
+          "disk": 5825789952,
+          "ram": 1064685568,
+          "mem": 12625768448
+        },
+        {
+          "elapsed": 5.527867769007571,
+          "disk": 5825789952,
+          "ram": 1064685568,
+          "mem": 12542840832
+        },
+        {
+          "elapsed": 6.030572071991628,
+          "disk": 5824540672,
+          "ram": 1064685568,
+          "mem": 12452917248
+        },
+        {
+          "elapsed": 6.533332004008116,
+          "disk": 5824540672,
+          "ram": 1064685568,
+          "mem": 12304072704
+        },
+        {
+          "elapsed": 7.036052267008927,
+          "disk": 5803401216,
+          "ram": 1064685568,
+          "mem": 12276903936
+        },
+        {
+          "elapsed": 7.538777368987212,
+          "disk": 5803401216,
+          "ram": 1064685568,
+          "mem": 12155559936
+        },
+        {
+          "elapsed": 8.041452061996097,
+          "disk": 5795651584,
+          "ram": 1064685568,
+          "mem": 12184338432
+        },
+        {
+          "elapsed": 8.54417454500799,
+          "disk": 5795655680,
+          "ram": 1064685568,
+          "mem": 12184559616
+        },
+        {
+          "elapsed": 9.04732675300329,
+          "disk": 5783040000,
+          "ram": 1064689664,
+          "mem": 12494372864
+        },
+        {
+          "elapsed": 9.550084205984604,
+          "disk": 5783040000,
+          "ram": 1064689664,
+          "mem": 12472008704
+        },
+        {
+          "elapsed": 10.052831687993603,
+          "disk": 5774680064,
+          "ram": 1064689664,
+          "mem": 12619599872
+        },
+        {
+          "elapsed": 10.555569269985426,
+          "disk": 5774680064,
+          "ram": 1064689664,
+          "mem": 12439420928
+        },
+        {
+          "elapsed": 11.05824629298877,
+          "disk": 5774667776,
+          "ram": 1064689664,
+          "mem": 12201811968
+        },
+        {
+          "elapsed": 11.56097300600959,
+          "disk": 5757403136,
+          "ram": 1064689664,
+          "mem": 12419620864
+        },
+        {
+          "elapsed": 12.063623178983107,
+          "disk": 5757403136,
+          "ram": 1064689664,
+          "mem": 12414054400
+        },
+        {
+          "elapsed": 12.566261162981391,
+          "disk": 5748916224,
+          "ram": 1064689664,
+          "mem": 12549619712
+        },
+        {
+          "elapsed": 13.068961254990427,
+          "disk": 5741617152,
+          "ram": 1064689664,
+          "mem": 12572176384
+        },
+        {
+          "elapsed": 13.57166759800748,
+          "disk": 5741617152,
+          "ram": 1064689664,
+          "mem": 12518318080
+        },
+        {
+          "elapsed": 14.074347351008328,
+          "disk": 5741584384,
+          "ram": 1064689664,
+          "mem": 12533530624
+        },
+        {
+          "elapsed": 14.577062473981641,
+          "disk": 5728206848,
+          "ram": 1064710144,
+          "mem": 12658081792
+        },
+        {
+          "elapsed": 15.079760516004171,
+          "disk": 5721427968,
+          "ram": 1064710144,
+          "mem": 12685021184
+        },
+        {
+          "elapsed": 15.582476248993771,
+          "disk": 5697232896,
+          "ram": 1064714240,
+          "mem": 13230039040
+        },
+        {
+          "elapsed": 16.085199161985656,
+          "disk": 5683531776,
+          "ram": 1064714240,
+          "mem": 13302198272
+        },
+        {
+          "elapsed": 16.587920794991078,
+          "disk": 5676019712,
+          "ram": 1064714240,
+          "mem": 13412806656
+        },
+        {
+          "elapsed": 17.090662686998257,
+          "disk": 5148704768,
+          "ram": 1064714240,
+          "mem": 13637369856
+        },
+        {
+          "elapsed": 17.59336895000888,
+          "disk": 5216055296,
+          "ram": 1064714240,
+          "mem": 14038773760
+        },
+        {
+          "elapsed": 18.096076032001292,
+          "disk": 4848107520,
+          "ram": 1064714240,
+          "mem": 13924061184
+        },
+        {
+          "elapsed": 18.598771454999223,
+          "disk": 4835192832,
+          "ram": 1064714240,
+          "mem": 13828935680
+        },
+        {
+          "elapsed": 19.101822224998614,
+          "disk": 4769640448,
+          "ram": 1064714240,
+          "mem": 13568765952
+        },
+        {
+          "elapsed": 19.604275179997785,
+          "disk": 4460609536,
+          "ram": 1064714240,
+          "mem": 13678837760
+        },
+        {
+          "elapsed": 20.107016411988297,
+          "disk": 4448018432,
+          "ram": 1064714240,
+          "mem": 13509939200
+        },
+        {
+          "elapsed": 20.609725324989995,
+          "disk": 4078751744,
+          "ram": 1064714240,
+          "mem": 13858230272
+        },
+        {
+          "elapsed": 21.112480076990323,
+          "disk": 3889881088,
+          "ram": 1064714240,
+          "mem": 13828964352
+        },
+        {
+          "elapsed": 21.615190759999678,
+          "disk": 3702538240,
+          "ram": 1064714240,
+          "mem": 13959024640
+        },
+        {
+          "elapsed": 22.117251098999986,
+          "disk": 3702665216,
+          "ram": 1064701952,
+          "mem": 13956009984
+        },
+        {
+          "elapsed": 22.619955031987047,
+          "disk": 3695415296,
+          "ram": 1064701952,
+          "mem": 13887590400
+        },
+        {
+          "elapsed": 23.12224463900202,
+          "disk": 3695177728,
+          "ram": 1064701952,
+          "mem": 13777747968
+        },
+        {
+          "elapsed": 23.62424375899718,
+          "disk": 3695177728,
+          "ram": 1064701952,
+          "mem": 13625405440
+        },
+        {
+          "elapsed": 24.12630275799893,
+          "disk": 3695157248,
+          "ram": 1064701952,
+          "mem": 13568581632
+        },
+        {
+          "elapsed": 24.62900988999172,
+          "disk": 3695157248,
+          "ram": 1064701952,
+          "mem": 13415022592
+        },
+        {
+          "elapsed": 25.131259868008783,
+          "disk": 3687927808,
+          "ram": 1064701952,
+          "mem": 13308588032
+        },
+        {
+          "elapsed": 25.633282197988592,
+          "disk": 3606949888,
+          "ram": 1064701952,
+          "mem": 13108117504
+        },
+        {
+          "elapsed": 26.13624782700208,
+          "disk": 3596001280,
+          "ram": 1064701952,
+          "mem": 13091995648
+        },
+        {
+          "elapsed": 26.639006549987243,
+          "disk": 3596001280,
+          "ram": 1064701952,
+          "mem": 13054050304
+        },
+        {
+          "elapsed": 27.14173955199658,
+          "disk": 3593904128,
+          "ram": 1064701952,
+          "mem": 13022134272
+        },
+        {
+          "elapsed": 27.64390833998914,
+          "disk": 3571314688,
+          "ram": 1064701952,
+          "mem": 13175558144
+        },
+        {
+          "elapsed": 28.14451820400427,
+          "disk": 3571175424,
+          "ram": 1064701952,
+          "mem": 13005582336
+        },
+        {
+          "elapsed": 28.647245876985835,
+          "disk": 3571175424,
+          "ram": 1064701952,
+          "mem": 13002330112
+        },
+        {
+          "elapsed": 29.149956929002656,
+          "disk": 3569074176,
+          "ram": 1064701952,
+          "mem": 13032439808
+        },
+        {
+          "elapsed": 29.65226990598603,
+          "disk": 3546673152,
+          "ram": 1064701952,
+          "mem": 13268926464
+        },
+        {
+          "elapsed": 30.15427478600759,
+          "disk": 3546673152,
+          "ram": 1064701952,
+          "mem": 13402456064
+        },
+        {
+          "elapsed": 30.656264525983715,
+          "disk": 3538788352,
+          "ram": 1064701952,
+          "mem": 13411196928
+        },
+        {
+          "elapsed": 31.158273374981945,
+          "disk": 3626819584,
+          "ram": 1064701952,
+          "mem": 14012477440
+        },
+        {
+          "elapsed": 31.66099862800911,
+          "disk": 3626819584,
+          "ram": 1064701952,
+          "mem": 13842284544
+        },
+        {
+          "elapsed": 32.16325393499574,
+          "disk": 3618410496,
+          "ram": 1064701952,
+          "mem": 13850935296
+        },
+        {
+          "elapsed": 32.66622909498983,
+          "disk": 3611107328,
+          "ram": 1064701952,
+          "mem": 13818155008
+        },
+        {
+          "elapsed": 33.16921500500757,
+          "disk": 3604516864,
+          "ram": 1064701952,
+          "mem": 14034161664
+        },
+        {
+          "elapsed": 33.67192942800466,
+          "disk": 3604516864,
+          "ram": 1064701952,
+          "mem": 13957042176
+        },
+        {
+          "elapsed": 34.174268303991994,
+          "disk": 3591098368,
+          "ram": 1064701952,
+          "mem": 14023426048
+        },
+        {
+          "elapsed": 34.67659192098654,
+          "disk": 3585867776,
+          "ram": 1064701952,
+          "mem": 13904560128
+        },
+        {
+          "elapsed": 35.17932359300903,
+          "disk": 3554385920,
+          "ram": 1064701952,
+          "mem": 14027272192
+        },
+        {
+          "elapsed": 35.68206946598366,
+          "disk": 3546402816,
+          "ram": 1064701952,
+          "mem": 14358458368
+        },
+        {
+          "elapsed": 36.18481836799765,
+          "disk": 3214491648,
+          "ram": 1064701952,
+          "mem": 14526664704
+        },
+        {
+          "elapsed": 36.68754170098691,
+          "disk": 3130261504,
+          "ram": 1064701952,
+          "mem": 14877753344
+        },
+        {
+          "elapsed": 37.190260742994724,
+          "disk": 3136258048,
+          "ram": 1064701952,
+          "mem": 14781005824
+        },
+        {
+          "elapsed": 37.692269642982865,
+          "disk": 3073839104,
+          "ram": 1064701952,
+          "mem": 14662197248
+        }
+      ],
+      "log_sha256": "1a63e292f3a5137f5b263fe08cc22bc7fa1409aae05fbe7b3caddbe56f343758"
+    }
+  },
+  "hostTests": 62,
+  "sessionTests": 30,
+  "coverage": {
+    "emittedLcovLineEntries": "735/735",
+    "distinctSourceLines": "707/707",
+    "sourceFunctionSummary": "69/69",
+    "includesEmbeddedUnitTestCode": true,
+    "zeroHitSourceLines": [],
+    "branchCoverage": "not collected",
+    "baseline": {
+      "sourceSha256": "97d06354b35e5d264fef5f11e933f9e0127b9f71fb132e24aaac166e4954cec4",
+      "emittedLcovLineEntries": "703/703",
+      "distinctSourceLines": "678/678",
+      "sourceFunctionSummary": "66/66",
+      "publishedEvidence": "../trigger-state-2026-10-20/receipt.json"
+    },
+    "interpretation": "Rawarchive LF735 and previous summary runtime_lines735/735 are emitted LCOV entry counts, not distinct source line count. All707distinctDAline numbers hit. Coverage proves execution not assertion adequacy; includes embeddedtests; no branches claim."
+  },
+  "refactor": "One optional admission guard retains a single lease/publication implementation. Extend existing cancellable mapping and genuine restore characterization; no extraction/test seam.",
+  "limits": [
+    "Uninterrupted playback proven during reservation/cancellation; actual structural swap resets voices at its existing block boundary",
+    "External restore remains gated and can silence callbacks if its producer is paused",
+    "Not actual WebView/CLAP destroy/recreate/mapping or fullbeta proof",
+    "Source-free guard: original full build/resources/inventory/dependencies passed, runtime stage test-only compile failed; corrected actual3CTest retry passes with CARGO_INCREMENTAL=0, not a complete fresh default-profile pass",
+    "No mutation testing; no cache deletion"
+  ],
+  "task3_2Complete": false,
+  "task3_3Complete": false,
+  "betaComplete": false,
+  "review": {
+    "status": "PASS",
+    "manifest_sha256": "5b19254623b287a2628362b5058c5c0808713ff9a70ef911cbe78f5893d947db",
+    "review_sha256": "5bb91817b2c8f6622ef962d5cbe052a6d468d786df9cb7cb18146622bf1ae95a",
+    "verdict_sha256": "eab7cf32ec7d56cb646be181c8745b52695e071cf1a371cba4824254c88d93a8"
+  },
+  "publication": {
+    "target": "origin/feat/juce-free-host-adapters",
+    "status": "pending integration base and normal hooks"
+  },
+  "publicationExtensionBase": "1d7efe62cf1dd2e4a623fb9215fce84bf26f9e83",
+  "integrationQualification": "Frontend-only1d7efe6 integrated after testing; all586source-free source inputs and3changedownerbytes remain exact tested hashes. Native/formats/sessionintegration still open."
+}

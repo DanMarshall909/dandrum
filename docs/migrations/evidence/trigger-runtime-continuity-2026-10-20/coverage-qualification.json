@@ -1,0 +1,16 @@
+{
+  "emittedLcovLineEntries": "735/735",
+  "distinctSourceLines": "707/707",
+  "sourceFunctionSummary": "69/69",
+  "includesEmbeddedUnitTestCode": true,
+  "zeroHitSourceLines": [],
+  "branchCoverage": "not collected",
+  "baseline": {
+    "sourceSha256": "97d06354b35e5d264fef5f11e933f9e0127b9f71fb132e24aaac166e4954cec4",
+    "emittedLcovLineEntries": "703/703",
+    "distinctSourceLines": "678/678",
+    "sourceFunctionSummary": "66/66",
+    "publishedEvidence": "../trigger-state-2026-10-20/receipt.json"
+  },
+  "interpretation": "Rawarchive LF735 and previous summary runtime_lines735/735 are emitted LCOV entry counts, not distinct source line count. All707distinctDAline numbers hit. Coverage proves execution not assertion adequacy; includes embeddedtests; no branches claim."
+}

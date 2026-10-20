@@ -991,3 +991,42 @@ Tasks 3.2 and 3.3 remain open, 7/14 overall. The full beta continues through the
 remaining CLAP work and following VST3, standalone, DAW, installed/offline and
 native acceptance increments. Main stays at 68dd655; mutation is excluded and
 reusable caches are preserved.
+
+
+## Continuous immutable runtime reservation — 20 October 2026
+
+Ordinary mapping reservations now keep the old runtime rendering while the
+control thread holds an unpublished replacement. The capacity-one SPSC slot
+still publishes at a block boundary, and control-thread reclamation still
+prevents another replacement until the retired runtime returns. Explicit native
+state restore retains its gate because it also publishes shared scalar/epoch
+state. It can still silence callbacks while its producer is paused.
+
+The existing cancellable-lease test now checks 32 blocks of actual signed stereo
+WAV samples on a separate audio thread while the producer is paused, with zero
+callback allocations/deallocations. Cancellation preserves the next waveform
+position and session/history; subsequent mapping publication and backpressure
+before consumption and reclamation remain tested. A genuine restore lease
+characterization preserves the gated callback/reset and off-audio cancellation
+contract. The adapter-neutral session trait comment describes both policies.
+
+All 62 host and 30 session tests, formatting, denied-warning Clippy and focused
+LLVM pass. Runtime coverage is 707/707 distinct source lines, 735/735 emitted
+LCOV entries and 69/69 source-function entries, including embedded unit tests;
+no branch-coverage claim is made. Source-free release/resource/inventory/dependency
+checks passed, but the first runtime-test stage found a test-only API error.
+After correction, a resource-floor retry stopped honestly; all three selected
+source-free CTests then passed with disk-backed output and incremental compilation
+disabled. All 586 final source inputs match; this is qualified reuse of the full
+build with a corrected test retry, not a fresh complete default-profile pass.
+
+[Portable evidence](evidence/trigger-runtime-continuity-2026-10-20/receipt.json)
+retains every attempt, source hashes and prior-coverage qualification. Initial
+four-frame-loop fixture calibration failed before reservation and is not RED.
+Actual WebView/CLAP lifecycle, held notes and integrated mapping continuity
+remain later acceptance gates. Tasks 3.2 and 3.3 remain open, 7/14 overall.
+
+Independent completion review passed for the frozen runtime continuity source/evidence candidate; normal-hook publication remains.
+The full beta remains active through the remaining CLAP work and next VST3,
+standalone, DAW and installed/offline/native increments. Main stays clean at
+68dd655; reusable caches remain and mutation is excluded.

@@ -1,0 +1,31 @@
+{
+  "full_guard": {
+    "receipt": "guard-final/run.json",
+    "exit_code": 1,
+    "reason": "test-only nonexistent PreparedDocumentReplacement.prepared accessor",
+    "release_build_resource_inventory_dependencies": "passed before failing runtime-test stage"
+  },
+  "first_corrected_retry": {
+    "receipt": "sourcefree-retry.json",
+    "exit_code": -2,
+    "reason": "owned1GiB RAMfs floor stop",
+    "not_a_behavior_failure": true
+  },
+  "final_corrected_retry": {
+    "receipt": "sourcefree-disk-retry.json",
+    "exit_code": 0,
+    "selected_ctests": 3,
+    "source_inputs": 586,
+    "source_manifest_sha256": "a2564f46b050522ba92a912ae06246f4941d88c3adfdd01f71b591ad32f8450e",
+    "CARGO_INCREMENTAL": "0",
+    "no_default_profile_full_guard_claim": true
+  },
+  "host_tests": 62,
+  "coverage": {
+    "runtime_lines": "735/735",
+    "runtime_functions": "69/69",
+    "annotated_zero_hit_lines": []
+  },
+  "mutation": "excluded",
+  "cache_deletion": false
+}

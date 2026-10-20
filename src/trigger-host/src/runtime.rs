@@ -206,7 +206,9 @@ struct AudioState {
 /// Reserving this lease does not publish a processor. Dropping it cancels the
 /// candidate on the control thread without altering accepted or audio state.
 pub struct RuntimeLease<'a> {
-    _admission: ClosedAdmission<'a>,
+    // Only restore writes shared scalar/epoch state before audio consumes the
+    // candidate. Ordinary immutable mapping reservations keep old audio live.
+    _admission: Option<ClosedAdmission<'a>>,
     slot: rtrb::chunks::WriteChunkUninit<'a, PreparedRuntime>,
     in_flight: &'a mut bool,
     candidate: PreparedRuntime,
@@ -366,7 +368,9 @@ impl RuntimeControl {
             .pending
             .write_chunk_uninit(1)
             .expect("idle activation slot");
-        let admission = ClosedAdmission::close(&self.admission);
+        let admission = restored
+            .as_ref()
+            .map(|_| ClosedAdmission::close(&self.admission));
         Ok(RuntimeLease {
             _admission: admission,
             slot,
@@ -836,6 +840,39 @@ mod admission_tests {
             .unwrap();
         let mut values = control.snapshot_parameters().2;
         values[2] = 0.5;
+        // A paused external restore still gates callbacks: it must serialize
+        // its scalar/epoch writer, unlike an immutable mapping reservation.
+        let before = session.owner_snapshot();
+        let old_values = control.snapshot_parameters();
+        let mut restoration = control.restoring(values.clone());
+        let lease = restoration.activate(session.prepared(), &before).unwrap();
+        let (mut blocked_left, mut blocked_right) = ([1.0; 16], [1.0; 16]);
+        let callback = allocation_counter::measure(|| {
+            assert!(audio.reset().admission_closed);
+            let report = audio
+                .process(&mut blocked_left, &mut blocked_right)
+                .unwrap();
+            assert!(report.admission_closed);
+            assert!(!report.swapped);
+            assert_eq!((blocked_left, blocked_right), ([0.0; 16], [0.0; 16]));
+        });
+        assert_eq!(
+            (
+                callback.count_total,
+                callback.count_current,
+                callback.bytes_current
+            ),
+            (0, 0, 0)
+        );
+        let cancelled = allocation_counter::measure(|| drop(lease));
+        assert_eq!(cancelled.count_total, 0);
+        assert!(
+            cancelled.count_current < 0,
+            "cancelled restore candidate is destroyed off audio"
+        );
+        drop(restoration);
+        assert_eq!(session.owner_snapshot(), before);
+        assert_eq!(control.snapshot_parameters(), old_values);
         session
             .commit_document_replacement(candidate, &mut control.restoring(values))
             .unwrap();
