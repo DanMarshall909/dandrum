@@ -1,0 +1,548 @@
+[
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/01-fresh-coverage.lcov",
+    "artifact": "author/01-fresh-coverage.lcov.gz",
+    "uncompressed_sha256": "ca7232156135dfbe064b2e7773bd63cb866e420bace981c53d1f3390d5fedf63",
+    "artifact_sha256": "b9df9df7d33d95017a39fd7bdd7ea9a6fd061d1877a39ad01cb2dfcc9f3e9c5a"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/01-fresh-coverage.log",
+    "artifact": "author/01-fresh-coverage.log.gz",
+    "uncompressed_sha256": "5e108b5a026514ab08eb99d9b93b2593897455668a4ac77618fa6302290a867c",
+    "artifact_sha256": "29ff8783a953efce1be034f3cf142c940d627c18da14008895591a623e787277"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/01-fresh-green.log",
+    "artifact": "author/01-fresh-green.log.gz",
+    "uncompressed_sha256": "58c07205f5e1fab0f720eedb8bbef86b46644b367ea9321e42b1ade84e92ba90",
+    "artifact_sha256": "eae19cbe78bb0af45e45717a15d5136b64d1b48391482bc012e12f5fdec0fcad"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/01-fresh-red.log",
+    "artifact": "author/01-fresh-red.log.gz",
+    "uncompressed_sha256": "6aa5d49dc699e32fb49dd11a396dae2efd4de47d973587e32113185af8a37f49",
+    "artifact_sha256": "a1115d01be66c33a224ce0f8c9c0ef5c0d2631bff3e377336b582805606a5809"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/01-fresh-refactor.log",
+    "artifact": "author/01-fresh-refactor.log.gz",
+    "uncompressed_sha256": "9a27daea137bd935986f71f086a183b46b9726245cb395e0ab0135f2bd2b2326",
+    "artifact_sha256": "2e5b27247c95d634ce479d6b32ade3aed6764880a5a5e46a7a5a86cc05e0e350"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/02-epochs-coverage.lcov",
+    "artifact": "author/02-epochs-coverage.lcov.gz",
+    "uncompressed_sha256": "3a551daf23185657654e1a8edd07ef3589fe6d5635d9fd864b2cd54aeb45e5da",
+    "artifact_sha256": "27c6261904510886822378881c4957c973fe9ede9843812f470bb8d07e4a3541"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/02-epochs-coverage.log",
+    "artifact": "author/02-epochs-coverage.log.gz",
+    "uncompressed_sha256": "95eab325fd915108aaebc50e6fe398fe523d46ccfb70779335c92f81b7e97ad1",
+    "artifact_sha256": "dc0f9a857022b3105e0eb9193ab00b1d204cfa0f09cb5e0a75eb3414e70528a5"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/02-epochs-green.log",
+    "artifact": "author/02-epochs-green.log.gz",
+    "uncompressed_sha256": "e072d24852956c20e630700caa28272f0a21a5681c442e5857700f976c9f27b0",
+    "artifact_sha256": "b39e056eac195c34a0b5fe590b1a7442c02434f60a139de4e875e3b7010396cb"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/02-epochs-public-red.log",
+    "artifact": "author/02-epochs-public-red.log.gz",
+    "uncompressed_sha256": "95cfc3058a078ce110324f181b482be0d27471bdf892958315e36a6fe8976034",
+    "artifact_sha256": "5eef86cd29fd368f3d1365c790635367e92470655fffa9d7babea1f5f52f40e4"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/02-epochs-red.log",
+    "artifact": "author/02-epochs-red.log.gz",
+    "uncompressed_sha256": "3786c2fd21a55286a36281d95d9c11f87d48ee20d80ec53271a8a40f7795560d",
+    "artifact_sha256": "06322cd3e1acdc7bd39f926cf927a032733e724603542a0bd8da38fd4ea73151"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/02-refactor-notes.txt",
+    "artifact": "author/02-refactor-notes.txt",
+    "uncompressed_sha256": "ced38452eba59ac63134d28168ba08fcfc0f2d62aa0a62e3e62f1ada437a8ba0",
+    "artifact_sha256": "ced38452eba59ac63134d28168ba08fcfc0f2d62aa0a62e3e62f1ada437a8ba0"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/03-coherence-coverage.lcov",
+    "artifact": "author/03-coherence-coverage.lcov.gz",
+    "uncompressed_sha256": "cb55ccc19e6b02bcc2e8035fd540a46f3f7114bfb77b384c0c58bab10c451d90",
+    "artifact_sha256": "24579ec05dc3295ab118fba7daec43459c4001f0dfbabd960772e0466b334ca4"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/03-coherence-coverage.log",
+    "artifact": "author/03-coherence-coverage.log.gz",
+    "uncompressed_sha256": "19c5136f4e807d59c7e99a0e5cfbe3faa0ea18457241d69410b4b23c2d2c55e1",
+    "artifact_sha256": "dfb45a4be22bc1c2b1dafa128e670f9dce022c13cba6b2819fdf29c9b62cb695"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/03-coherence-green.log",
+    "artifact": "author/03-coherence-green.log.gz",
+    "uncompressed_sha256": "77fa47d15e0e984c1375254d524eb3e9a5c5f3debb2e6621a54f896949049216",
+    "artifact_sha256": "1fdfb93ca4873b7b74a9776386d5303a50eff09c375d94ba20b0c4fccb141108"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/03-coherence-red.log",
+    "artifact": "author/03-coherence-red.log.gz",
+    "uncompressed_sha256": "1d8a788f6c3232c4755357d1f5f5d0fa7d792c0ecc8cbb3060629efeb1150d0f",
+    "artifact_sha256": "b9a2dce7046e68d9504ce24a5305d92095e1d5a28712bf7c52a4ea2831e1850c"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/03-refactor-notes.txt",
+    "artifact": "author/03-refactor-notes.txt",
+    "uncompressed_sha256": "c7c736ed6032df6fd1d6cfbabc8ad3e1a839ac81cf17838e11ae79866a3f6069",
+    "artifact_sha256": "c7c736ed6032df6fd1d6cfbabc8ad3e1a839ac81cf17838e11ae79866a3f6069"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/03b-coherence-coverage.lcov",
+    "artifact": "author/03b-coherence-coverage.lcov.gz",
+    "uncompressed_sha256": "1d43233dbcdbb58ecd0a3c35c445a7305e8dbc528280e2a235d24628916c9b2e",
+    "artifact_sha256": "d4cfe4920fe653d2b7c15c0b6f752d0bf9d70502db60372f428aca6d7ea96817"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/03b-coherence-coverage.log",
+    "artifact": "author/03b-coherence-coverage.log.gz",
+    "uncompressed_sha256": "a63eb4c62ac8be3638e00dcf512016e4afe7734ee54ee33dce678e8bc064d6e3",
+    "artifact_sha256": "5bf16bfb6c9df6a44d950557be1de84c5457de97cc1a693758ce90335ff918fe"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/03b-coherence-green.log",
+    "artifact": "author/03b-coherence-green.log.gz",
+    "uncompressed_sha256": "53ce616b7cfc03588aeefafb261b598ee9de5bc7c4d84bfce75ccc92e4b53498",
+    "artifact_sha256": "3de8c17e45eff702cdd6f179daa10d0aeb0406ba467302e2bdbfd9961acdb4d7"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/04-refactor-notes.txt",
+    "artifact": "author/04-refactor-notes.txt",
+    "uncompressed_sha256": "786ca7b422c91c38bd4ae899f1d123442e0dbe953c660c97db3c6bdb7d65218c",
+    "artifact_sha256": "786ca7b422c91c38bd4ae899f1d123442e0dbe953c660c97db3c6bdb7d65218c"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/04-resource-coverage.lcov",
+    "artifact": "author/04-resource-coverage.lcov.gz",
+    "uncompressed_sha256": "b46f04bb3ba528e5853105336ce1d7010f91361ecbc7d85ffb86b6b617ccd362",
+    "artifact_sha256": "93f9e8078dfb6ad18e4da71c93e44ad56fc54d9143137f5c2f3f1686416350dc"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/04-resource-coverage.log",
+    "artifact": "author/04-resource-coverage.log.gz",
+    "uncompressed_sha256": "bfc4ac9dd12c468d6960e04801ccdbe8c13d9ac9976fa5e2ab54aac567994440",
+    "artifact_sha256": "e272f0d5ef4b01c3dcc777b0bb405a52759135e32781c764de154d0efd601dbc"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/04-resource-green.log",
+    "artifact": "author/04-resource-green.log.gz",
+    "uncompressed_sha256": "b81b4c1502433edcee42fa82c6610df613c76a51f3337761366149a12c66f89a",
+    "artifact_sha256": "90d87b25acefb5976422a065099d245042e21551dbb27c7fca02cb005ad708d6"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/04-resource-red.log",
+    "artifact": "author/04-resource-red.log.gz",
+    "uncompressed_sha256": "ae187aa4455d564549129e62bf7684b7550f97b5574e5a41081e441e442ca826",
+    "artifact_sha256": "d04eee64b240007e710698c0dc54a58453e17cfeca19481bf9656eeb00f6ef7f"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/05-refactor-notes.txt",
+    "artifact": "author/05-refactor-notes.txt",
+    "uncompressed_sha256": "ae0113a96141e3c6ac68e380fe983fe6b812e1837479e0d951adbca2d12f718e",
+    "artifact_sha256": "ae0113a96141e3c6ac68e380fe983fe6b812e1837479e0d951adbca2d12f718e"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/05-rollback-characterization.log",
+    "artifact": "author/05-rollback-characterization.log.gz",
+    "uncompressed_sha256": "59a85ec2553191b268790cbf8b558bf96e1231029ed16f12075383ef23c389c5",
+    "artifact_sha256": "14d3f20523e83a699a3beca9965464b56e97bdcee6712a3965ca20dffa98eb88"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/05-rollback-coverage.lcov",
+    "artifact": "author/05-rollback-coverage.lcov.gz",
+    "uncompressed_sha256": "38b16ce3c00075b23a02cd49716b7c9dfb59e0933eacc889a02176250a6addfc",
+    "artifact_sha256": "095cfb85c94f0bc86a1eb5e94e82b1c1eb417717f0c3446832bee0dd06d6b464"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/05-rollback-coverage.log",
+    "artifact": "author/05-rollback-coverage.log.gz",
+    "uncompressed_sha256": "e8eaedeb83e5679be706a0ef406ab6fc56ac7e989f29ab048e72e91dfb0eb669",
+    "artifact_sha256": "7b4baa857ceba8c4ad1d64d3087e3b396c50d20e8ac17ea052cf092034c6259d"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/05b-rollback-characterization.log",
+    "artifact": "author/05b-rollback-characterization.log.gz",
+    "uncompressed_sha256": "70dd6c6dcfae9c2909f6035b839fe3d7f4ac4ab331670c8fc8fe10636f536283",
+    "artifact_sha256": "f57abd02f675d9524ab6fd1acdff91ff5cbcbc0e3f8ffff93ed2c239b90a182d"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/06-refactor-notes.txt",
+    "artifact": "author/06-refactor-notes.txt",
+    "uncompressed_sha256": "4290bb83c7e4141d7077e9623d5cfa3e7e56b5d1542b2646bd77c07835979ff5",
+    "artifact_sha256": "4290bb83c7e4141d7077e9623d5cfa3e7e56b5d1542b2646bd77c07835979ff5"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/06-repeat-coverage.lcov",
+    "artifact": "author/06-repeat-coverage.lcov.gz",
+    "uncompressed_sha256": "7056bde08db3058bd3292d70764796262d6c33efe0fbf012f62091ed2ae22779",
+    "artifact_sha256": "37f4de6a69e07f81b0b802d84a5a3992470b481e70b21a216866f77e55758941"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/06-repeat-coverage.log",
+    "artifact": "author/06-repeat-coverage.log.gz",
+    "uncompressed_sha256": "dd6afd096438ffc4592c71c1f142efd8f61d0a0c620c67e4f8c85c9127e37a5f",
+    "artifact_sha256": "1fa00d4fa21a94161e7155f7d060d5f643dd7e0d929d4bfa0a42977f4a41ff6e"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/06-repeat-green.log",
+    "artifact": "author/06-repeat-green.log.gz",
+    "uncompressed_sha256": "028a850f65b976f890a9871579e3a5694deff98a7768dd9d56dae4ba7780f651",
+    "artifact_sha256": "9ac09bfbfd1a5349bdc542a7f9131be180285a688d4b351a3fedbad4ff01eae4"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/06-repeat-red.log",
+    "artifact": "author/06-repeat-red.log.gz",
+    "uncompressed_sha256": "72424e9ec65b4dbe00bdd7a8acde92a61e4dc88cf423594e3380c94056134266",
+    "artifact_sha256": "4f382ef75068eb5538fea4bd7de7396571f25fe3206733bc05274add64c919fa"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/07-tails-characterization.log",
+    "artifact": "author/07-tails-characterization.log.gz",
+    "uncompressed_sha256": "9a9bd2db57d7e5ccada7d4d1bf70338c624c7f3a7742e8e85fac918b6298279d",
+    "artifact_sha256": "353cf5964ab447062bc5a868a5cf371777ff8f80c1de24890026f62d0e427758"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/08-history-characterization.log",
+    "artifact": "author/08-history-characterization.log.gz",
+    "uncompressed_sha256": "9cb4b8a0f08793b537bce2f9d9e645b9f3ff7f51672824484bd1052c944b4ca3",
+    "artifact_sha256": "4c1671b5fd91fe83ab1a4ed8213cc7475277ec9488d013cad7df9dfb7468843f"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/08-history-coverage.lcov",
+    "artifact": "author/08-history-coverage.lcov.gz",
+    "uncompressed_sha256": "9c6ccb067d326be77e342f4200d63e771176484fbb9935e7241507b2d28fcf26",
+    "artifact_sha256": "c7df5ea4ed68685e1119c4cbac7c76b8ca9156dce9e61e58ec008903b6cd1d70"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/08-history-coverage.log",
+    "artifact": "author/08-history-coverage.log.gz",
+    "uncompressed_sha256": "c33576c5ebcdd060d868e9b3dac7690b8fbd0904e36be76b156905f9c25250d2",
+    "artifact_sha256": "0d6cad8c9bfa0a1f5354d6397df6914bb4cf46aea99e0046b827402fc2b6492d"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/08-native-owner-characterization.log",
+    "artifact": "author/08-native-owner-characterization.log.gz",
+    "uncompressed_sha256": "905c1d40472a7863754d5b2be6ddcbfd858cfdde42e16272a214cc4dc4c0db38",
+    "artifact_sha256": "55b658c5d384c073c61b36653e572d432c7e9c610740a6bcdd30d532221af584"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/08b-history-characterization.log",
+    "artifact": "author/08b-history-characterization.log.gz",
+    "uncompressed_sha256": "1ef38ca230451bc70a5c3be60a38aeefc8689071d22edeb0fa1fd205d9534121",
+    "artifact_sha256": "38d58d5f5c24b215de32944edbbf556669a67049aac3b58ed337b174d7338f0a"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/09-refactor.log",
+    "artifact": "author/09-refactor.log.gz",
+    "uncompressed_sha256": "bebbfb9d59131734551f574d2952141c17726d61edccd974d434070f7f20ac02",
+    "artifact_sha256": "1cd686562cade8654419cfd6370f39ddb242582967005fb5d60229afd794edad"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/09-refactored-coverage.lcov",
+    "artifact": "author/09-refactored-coverage.lcov.gz",
+    "uncompressed_sha256": "9c08f2ed2dbe04196451dba20554cd462a14b002fc47eb53ca5d0503bfb7f0b0",
+    "artifact_sha256": "1b276c1cb517c569050a42df4805d6094185328453ae2d35b73743eda5c6bf4a"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/09-refactored-coverage.log",
+    "artifact": "author/09-refactored-coverage.log.gz",
+    "uncompressed_sha256": "988440a24a7bc032ac8ad534655a962d65820bee40b2400cf375bf25410fda7e",
+    "artifact_sha256": "c13d06ba2c78bbbcb27d72420d726d2690a3d9747664df4d1781373a2035dc4a"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/09b-refactor.log",
+    "artifact": "author/09b-refactor.log.gz",
+    "uncompressed_sha256": "cd57441d1c7ece05d868f7c15a7c402fce8594939a03f873fe1b2d3bd98002d0",
+    "artifact_sha256": "4cd896d1e2d930edf2e075ac319f945fb94086a1df474e17744a5f7c3e2c2072"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/09c-refactor.log",
+    "artifact": "author/09c-refactor.log.gz",
+    "uncompressed_sha256": "74decc64e2ead9004fc96befec090b72649c0fe5f963e310f046fdcb0aa00f13",
+    "artifact_sha256": "b4bb211a810c32a4c875e585ad3f0165790f9ae3fa569123776df3af497d4756"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/10-final-host-tests.log",
+    "artifact": "author/10-final-host-tests.log.gz",
+    "uncompressed_sha256": "60a1e1d2a81e11b6d67aeab0c198eeed1badc17b4d79d3d86ab80a830d4134c8",
+    "artifact_sha256": "89f7c8fcbfa3268798cb1043a612dbac4a6d436c7c71e22d17ff547e2227605d"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/11-final-session-tests.log",
+    "artifact": "author/11-final-session-tests.log.gz",
+    "uncompressed_sha256": "e90153824f9e90b1034583fe1b6dc0c4d9359ce621d7e80c072141ff72159a8b",
+    "artifact_sha256": "76e7898e4dc3ce009f1fd4deab5de1f1f7cfb2d1b254019fc347bb34b444e411"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/12-final-format-host.log",
+    "artifact": "author/12-final-format-host.log.gz",
+    "uncompressed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "artifact_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/13-final-format-session.log",
+    "artifact": "author/13-final-format-session.log.gz",
+    "uncompressed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "artifact_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/14-final-clippy-host.log",
+    "artifact": "author/14-final-clippy-host.log.gz",
+    "uncompressed_sha256": "9e39db4dcf7a18a4d5b24b11b1a4e984bb0d614a1a3d57216e3cce5e77abc24a",
+    "artifact_sha256": "13344b32aa9e4af3e24c24ae21ea0568ca1c9c03551930fc6204fc2122c025d2"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/14b-final-clippy-host.log",
+    "artifact": "author/14b-final-clippy-host.log.gz",
+    "uncompressed_sha256": "ee3528a7b71db8afecf9aa36ff299ab61b88f27fb0499c5bebeb237225171dbd",
+    "artifact_sha256": "62c24a2261186323cd50843a348d68cc0bb858c2da7f52805beea011ece23427"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/15-final-clippy-session.log",
+    "artifact": "author/15-final-clippy-session.log.gz",
+    "uncompressed_sha256": "99d8adb9b3f7ff519ca12c98ceac42be210a7e65a36f276d53ceed5d6c923800",
+    "artifact_sha256": "e0db24d6c8b0491ad0effe63057f730552462e532e80ccf1f7b26bdf91290d98"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/16-final-diff-check.log",
+    "artifact": "author/16-final-diff-check.log.gz",
+    "uncompressed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "artifact_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/17-final-host-coverage.lcov",
+    "artifact": "author/17-final-host-coverage.lcov.gz",
+    "uncompressed_sha256": "002843b4349469cafecf1773f0ff217769ae05bc7937698f9bb161f2b147beeb",
+    "artifact_sha256": "392d44a8dbc40692190befa4f2e09d9673097e7dbb1008b93b7148476e50f40f"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/17-final-host-coverage.log",
+    "artifact": "author/17-final-host-coverage.log.gz",
+    "uncompressed_sha256": "f904a3c43c56fb3ef433ca28164d6ea8466c0cf9237e4c22e90d69d40f563026",
+    "artifact_sha256": "68b950da47910cc8b3e061e99a782f9cd47f8bcf905896348655e570746fac27"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/18-final-host-tests.log",
+    "artifact": "author/18-final-host-tests.log.gz",
+    "uncompressed_sha256": "d367ce098a9c0f7d005d6442a8c15cab006997e467cb5cc5e17858f73d61e8d7",
+    "artifact_sha256": "f18a3c79e83ecefbbc19b22e59e52767227ed2580cec9584d9dc3838f0805f8c"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/19-final-format.log",
+    "artifact": "author/19-final-format.log.gz",
+    "uncompressed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "artifact_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/20-frozen-host-coverage.lcov",
+    "artifact": "author/20-frozen-host-coverage.lcov.gz",
+    "uncompressed_sha256": "9987a569f109659ac365d92a21ca38f30eec6dfc160cca784caec4c43ac02099",
+    "artifact_sha256": "34c052fca778a6059cfa42ad3f6d7ddb4f8eb1596d2e28bee03c7cf91e344d82"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/20-frozen-host-coverage.log",
+    "artifact": "author/20-frozen-host-coverage.log.gz",
+    "uncompressed_sha256": "96cc26c7abd8a2e6d6c10383b9faad5fdfa1e5114d1e3df64161c55428580f75",
+    "artifact_sha256": "0a7e6ad043210ca21caf3a6bcd8a3de5ec3f00ff12551c1403de57944552a325"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/21-frozen-host-tests.log",
+    "artifact": "author/21-frozen-host-tests.log.gz",
+    "uncompressed_sha256": "46135fbf1ed96098c9b414aa38be0941bd3c5b87871e95dd0b0ca49fa3ae45b0",
+    "artifact_sha256": "3ff974f9baddb5030d43b002ad4102fa56349c508fb98628bbece05d69e04cd4"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/22-frozen-format.log",
+    "artifact": "author/22-frozen-format.log.gz",
+    "uncompressed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "artifact_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/23-frozen-clippy.log",
+    "artifact": "author/23-frozen-clippy.log.gz",
+    "uncompressed_sha256": "ee3528a7b71db8afecf9aa36ff299ab61b88f27fb0499c5bebeb237225171dbd",
+    "artifact_sha256": "62c24a2261186323cd50843a348d68cc0bb858c2da7f52805beea011ece23427"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/HANDOFF.md",
+    "artifact": "author/HANDOFF.md",
+    "uncompressed_sha256": "01d9e45e9db206eb35f1b6effe95f8e86544c41710c2a6b3174a2eb9d083a036",
+    "artifact_sha256": "01d9e45e9db206eb35f1b6effe95f8e86544c41710c2a6b3174a2eb9d083a036"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/baseline-source.json",
+    "artifact": "author/baseline-source.json",
+    "uncompressed_sha256": "fe5d427835852be18622ace200aa3d6b1f5ed3df31c2778da9abdd7790bee7a9",
+    "artifact_sha256": "fe5d427835852be18622ace200aa3d6b1f5ed3df31c2778da9abdd7790bee7a9"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/coverage-source-summary.py",
+    "artifact": "author/coverage-source-summary.py",
+    "uncompressed_sha256": "bdbcad106b9b29f72798840a87a45df76381c721b713830e40a88b71af03bbdd",
+    "artifact_sha256": "bdbcad106b9b29f72798840a87a45df76381c721b713830e40a88b71af03bbdd"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/coverage-summary.json",
+    "artifact": "author/coverage-summary.json",
+    "uncompressed_sha256": "8eb933a51fc7840e22e5afe005161dbc26268cc5ab07deeac01df4d7da97367b",
+    "artifact_sha256": "8eb933a51fc7840e22e5afe005161dbc26268cc5ab07deeac01df4d7da97367b"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/evidence-sha256.json",
+    "artifact": "author/evidence-sha256.json",
+    "uncompressed_sha256": "ceca2a3b457b54762634e1c315df44a5f9337f9c39f2bd8f463d7105ede309f3",
+    "artifact_sha256": "ceca2a3b457b54762634e1c315df44a5f9337f9c39f2bd8f463d7105ede309f3"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/final-run-receipts.json",
+    "artifact": "author/final-run-receipts.json",
+    "uncompressed_sha256": "31386e9c49cb6f654e824a17565c0f0a0f17ca6cc1d78a4ae535a5f6eb722631",
+    "artifact_sha256": "31386e9c49cb6f654e824a17565c0f0a0f17ca6cc1d78a4ae535a5f6eb722631"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/float-literal-refactor.json",
+    "artifact": "author/float-literal-refactor.json",
+    "uncompressed_sha256": "fd9d3284b92db1a005dad12d505a67200a5e1b25e7a71ee58b35b8870712ca14",
+    "artifact_sha256": "fd9d3284b92db1a005dad12d505a67200a5e1b25e7a71ee58b35b8870712ca14"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/frozen-source-manifest.json",
+    "artifact": "author/frozen-source-manifest.json",
+    "uncompressed_sha256": "3a56a9b08cbdd225b5a9920d4f79d56ba8b8ca94d69c835ea0d1de018a634619",
+    "artifact_sha256": "3a56a9b08cbdd225b5a9920d4f79d56ba8b8ca94d69c835ea0d1de018a634619"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/src__trigger-host__src__state.rs",
+    "artifact": "author/src__trigger-host__src__state.rs.gz",
+    "uncompressed_sha256": "9355b2c855998d2306c053d50485eea617103b932c7de7e04aa1929d7719afaf",
+    "artifact_sha256": "6259a7ed8e5374fc4672a96bcc212c82706fa9768f09f8241752ff0a03cd17e4"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/src__trigger-host__tests__internal__state.rs",
+    "artifact": "author/src__trigger-host__tests__internal__state.rs.gz",
+    "uncompressed_sha256": "cb51a4d5ea903b21ff954010e7e4c04d989a47b859c6d94ef6d44e4a79e98e35",
+    "artifact_sha256": "96b2d632969493f1e149a86084a7da55892f6d5c48cc62452d4a52214c0a16e6"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/src__trigger-host__tests__state.rs",
+    "artifact": "author/src__trigger-host__tests__state.rs.gz",
+    "uncompressed_sha256": "9e5fd3a116e507fdbf7a35b2edf30d77868bf0f261e9c52c82546e678debf2f6",
+    "artifact_sha256": "dc420e233aa532bf32ccce222c7e0529bfdd8951417517c41bf23bb442edcddd"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/evidence-state/tracked-changes.patch",
+    "artifact": "author/tracked-changes.patch.gz",
+    "uncompressed_sha256": "913385e6fb4a93be68e33879741bb4c777f3ad0eeefaf2925d78907f7446ab98",
+    "artifact_sha256": "fe356a77c3c376dfec02830a0734733b863cf1bf919cb0a58dcea8a3a5883909"
+  },
+  {
+    "original": "/tmp/dandrum-evidence/state-review/session-coverage.log",
+    "artifact": "registered/session-coverage.log.gz",
+    "uncompressed_sha256": "ac2b0548e373d487d7417fc8121d8c5ed31dc85f18ea33e875119465c23eeac2",
+    "artifact_sha256": "b31c89a9b22dbb281994861e49b475bd2e938f8eac8d33d34e09256af1a5f5b8"
+  },
+  {
+    "original": "/tmp/dandrum-evidence/state-review/session-coverage.lcov",
+    "artifact": "registered/session-coverage.lcov.gz",
+    "uncompressed_sha256": "3e7cace88e8eb44c38229ca04b05efc0d9c9b4914d95d59c8e14c451c5673231",
+    "artifact_sha256": "0bd84184377955e907b3c4744981fb1a2f3f07df9c01d35896ca2925ccf51908"
+  },
+  {
+    "original": "/tmp/dandrum-evidence/state-review/session-coverage-summary.json",
+    "artifact": "registered/session-coverage-summary.json",
+    "uncompressed_sha256": "98db1a5fbc61f392077529aede324c0885b20f8c7d1064f714703e2f12427774",
+    "artifact_sha256": "98db1a5fbc61f392077529aede324c0885b20f8c7d1064f714703e2f12427774"
+  },
+  {
+    "original": "/tmp/dandrum-evidence/state-review/registered-owners.log",
+    "artifact": "registered/registered-owners.log.gz",
+    "uncompressed_sha256": "6796c43d4d076b8ba5727372cf169869b501a3339ea4e73b34a8dd4e440cbd9b",
+    "artifact_sha256": "f92c120b9fb4a6d5c90b4b6d70081048fa974384d2a96ff291848e8c69da98e5"
+  },
+  {
+    "original": "/tmp/dandrum-evidence/state-review/registered-owners-last-test.log",
+    "artifact": "registered/registered-owners-last-test.log.gz",
+    "uncompressed_sha256": "151e27d106fbde55998a841e17edb559bb5cddef64830cf02d513769e2b2cbc9",
+    "artifact_sha256": "2f9829a10a5fee2f15c13631c25e8dc38a7d86f4e4f7658a4198e2d28576bba9"
+  },
+  {
+    "original": "/tmp/dandrum-evidence/state-review/source-free-trigger.log",
+    "artifact": "registered/source-free-trigger.log.gz",
+    "uncompressed_sha256": "09e0cd67320c22770d98f70993bb271508c42b67aa66a60c4cb2365a5536b097",
+    "artifact_sha256": "a444072a5565177f53e025c74eb0d83c33a614a2d8164e601fa164f949e1e74b"
+  },
+  {
+    "original": "/tmp/dandrum-evidence/state-review/source-free-trigger-corrected.log",
+    "artifact": "registered/source-free-trigger-corrected.log.gz",
+    "uncompressed_sha256": "614b6d2c4ee3ea345d591bfd9230c3b7793493d76f3eb393244705f7002ff87f",
+    "artifact_sha256": "a58e8c15ee07938930706931f69bb85555f54841a348b22059fd39e2717a5ec4"
+  },
+  {
+    "original": "/tmp/dandrum-evidence/state-review/run-session-coverage-registered-owners-source-free-trigger.json",
+    "artifact": "registered/run-session-coverage-registered-owners-source-free-trigger.json",
+    "uncompressed_sha256": "92a31ceaba48424965701f795bc5e2d57ff28e2e717303a4387b5bdc2f47e213",
+    "artifact_sha256": "92a31ceaba48424965701f795bc5e2d57ff28e2e717303a4387b5bdc2f47e213"
+  },
+  {
+    "original": "/tmp/dandrum-evidence/state-review/run-source-free-trigger-corrected.json",
+    "artifact": "registered/run-source-free-trigger-corrected.json",
+    "uncompressed_sha256": "993c803330b76e8e2f3e07e4394d98782f258ddb1bb08d4bd8329b5197757d1a",
+    "artifact_sha256": "993c803330b76e8e2f3e07e4394d98782f258ddb1bb08d4bd8329b5197757d1a"
+  },
+  {
+    "original": "/tmp/dandrum-evidence/state-review/run-checks.py",
+    "artifact": "registered/run-checks.py",
+    "uncompressed_sha256": "9cbaa14630a67fc6df431da27a60ed3a14d5f77ad3930f657750e0e04e6db97a",
+    "artifact_sha256": "9cbaa14630a67fc6df431da27a60ed3a14d5f77ad3930f657750e0e04e6db97a"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/runtime/build/engine-only-regression/trigger-editor.log",
+    "artifact": "source-free/trigger-editor.log.gz",
+    "uncompressed_sha256": "593b990d03bc0fc1a6a4e252d0b5033406d14d68c43a9e83942a12123ec47bcd",
+    "artifact_sha256": "558b05df1bb30a93fae7da90d0d539be9d25c107f8fa3593df27b22913c0b4f6"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/runtime/build/engine-only-regression/trigger-editor-targets.log",
+    "artifact": "source-free/trigger-editor-targets.log.gz",
+    "uncompressed_sha256": "49f291a019df69d7a201322273f84d8a37e4033f1aee1da910fec6a991414450",
+    "artifact_sha256": "f3a01fd592570af3496ea1a727228e1ed1f9da66bdbadd6e6855bb80cc2bb302"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/runtime/build/engine-only-regression/trigger-host-test-inventory.log",
+    "artifact": "source-free/trigger-host-test-inventory.log.gz",
+    "uncompressed_sha256": "91f3807c36f354e20351cdbd9878709a58bbad8bcee44a2cf0ba918edf2a9060",
+    "artifact_sha256": "f0e181faca5593249ecad13a1f73471f4cc2213305350b86f996cb83dbb7cfe7"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/runtime/build/engine-only-regression/trigger-editor-build.log",
+    "artifact": "source-free/trigger-editor-build.log.gz",
+    "uncompressed_sha256": "0cc8727a7220214bb870c6defa8b669c6eff624ad14407a91cf74815d1faae5b",
+    "artifact_sha256": "16326ff1527370ef635a7c6fd6fb32c085dac4e25610419a7d3ee63e5e7f0280"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/runtime/build/engine-only-regression/trigger-editor-resource-rebuild.log",
+    "artifact": "source-free/trigger-editor-resource-rebuild.log.gz",
+    "uncompressed_sha256": "e302e3e41328eb23dfc134aa2a9fc4436eb7b8b35980824526d79fdb5d935b37",
+    "artifact_sha256": "4dbc27fa14e3fea86876f9efc44b5171a12f9a881af5e4fd5dc17d912c1d2505"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/runtime/build/engine-only-regression/trigger-host-dependencies.log",
+    "artifact": "source-free/trigger-host-dependencies.log.gz",
+    "uncompressed_sha256": "976d491b527705c30f81dbdbb6e55aeaa55bf3c39993ed22fbc9e6ccedccb845",
+    "artifact_sha256": "75cfc1bf95b3dec0035789df80b529c1758e313d2b24f201bcdca476a7c880d3"
+  },
+  {
+    "original": "/tmp/dandrum-lanes/runtime/build/engine-only-regression/trigger-editor-fixture-runtime.log",
+    "artifact": "source-free/trigger-editor-fixture-runtime.log.gz",
+    "uncompressed_sha256": "79e1e3d2ad67541ed8afd8c0c038673961ddabc23b628a3be382eee15c430735",
+    "artifact_sha256": "377eec34cc63f5166c0fbc784b9705e53c620165590824d0d0c9d5c2f0e0fc34"
+  }
+]

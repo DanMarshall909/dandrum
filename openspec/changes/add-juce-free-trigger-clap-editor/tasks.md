@@ -8,7 +8,7 @@
 - [x] 2.1 Specify and implement deterministic packaged-resource resolution plus a session owner for the real Advanced Drum Kit; prove copied external resources, known signed MIDI-36 output and invalid/missing-resource preservation.
 - [x] 2.2 Specify and implement capacity-one runtime activation/reclamation and bounded parameter/event handoffs; prove off-audio construction/destruction, block-boundary swaps, backpressure, reset and allocation/lock-free callback safety.
 - [x] 2.3 Specify and implement the versioned bounded editor protocol with attachment/request identities, explicit capability errors and malformed/oversized/stale/conflicting input rejection that preserves accepted state.
-- [ ] 2.4 Specify and implement public parameter gesture/feedback and version-2 atomic Trigger state; prove balanced automation, nonzero-offset host feedback, fresh-instance document/resource/value restore and complete invalid-state rollback without structural journal pollution.
+- [x] 2.4 Specify and implement public parameter gesture/feedback and version-2 atomic Trigger state; prove balanced automation, nonzero-offset host feedback, fresh-instance document/resource/value restore and complete invalid-state rollback without structural journal pollution.
 
 ## 3. Production React And Wry Editor
 

@@ -1,0 +1,285 @@
+[
+  {
+    "name": "10-final-host-tests",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "test",
+      "--manifest-path",
+      "src/trigger-host/Cargo.toml"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 4.129,
+    "start_unix": 1792471882.8430326,
+    "environment": {
+      "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+      "CARGO_BUILD_JOBS": "2"
+    }
+  },
+  {
+    "name": "11-final-session-tests",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "test",
+      "--manifest-path",
+      "src/instrument-session/Cargo.toml"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 4.343,
+    "start_unix": 1792471886.972057,
+    "environment": {
+      "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+      "CARGO_BUILD_JOBS": "2"
+    }
+  },
+  {
+    "name": "12-final-format-host",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "fmt",
+      "--manifest-path",
+      "src/trigger-host/Cargo.toml",
+      "--",
+      "--check"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.082,
+    "start_unix": 1792471891.3150604,
+    "environment": {
+      "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+      "CARGO_BUILD_JOBS": "2"
+    }
+  },
+  {
+    "name": "13-final-format-session",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "fmt",
+      "--manifest-path",
+      "src/instrument-session/Cargo.toml",
+      "--",
+      "--check"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.062,
+    "start_unix": 1792471891.3974905,
+    "environment": {
+      "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+      "CARGO_BUILD_JOBS": "2"
+    }
+  },
+  {
+    "name": "14-final-clippy-host",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "clippy",
+      "--manifest-path",
+      "src/trigger-host/Cargo.toml",
+      "--all-targets",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 101,
+    "elapsed_seconds": 1.115,
+    "start_unix": 1792471891.4596446,
+    "environment": {
+      "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+      "CARGO_BUILD_JOBS": "2"
+    }
+  },
+  {
+    "name": "14b-final-clippy-host",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "clippy",
+      "--manifest-path",
+      "src/trigger-host/Cargo.toml",
+      "--all-targets",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.276,
+    "start_unix": 1792471940.742738,
+    "environment": {
+      "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+      "CARGO_BUILD_JOBS": "2"
+    }
+  },
+  {
+    "name": "15-final-clippy-session",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "clippy",
+      "--manifest-path",
+      "src/instrument-session/Cargo.toml",
+      "--all-targets",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 12.537,
+    "start_unix": 1792471941.0190089,
+    "environment": {
+      "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+      "CARGO_BUILD_JOBS": "2"
+    }
+  },
+  {
+    "name": "16-final-diff-check",
+    "argv": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.007,
+    "start_unix": 1792471953.5568585,
+    "environment": {
+      "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+      "CARGO_BUILD_JOBS": "2"
+    }
+  },
+  {
+    "name": "17-final-host-coverage",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "llvm-cov",
+      "--manifest-path",
+      "src/trigger-host/Cargo.toml",
+      "--lib",
+      "--test",
+      "state",
+      "--test",
+      "parameters",
+      "--test",
+      "runtime",
+      "--lcov",
+      "--output-path",
+      "/tmp/dandrum-lanes/evidence-state/17-final-host-coverage.lcov"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 4.498,
+    "start_unix": 1792471953.5644784,
+    "environment": {
+      "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+      "CARGO_BUILD_JOBS": "2"
+    }
+  },
+  {
+    "name": "18-final-host-tests",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "test",
+      "--manifest-path",
+      "src/trigger-host/Cargo.toml"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 1.518,
+    "start_unix": 1792471958.063019,
+    "environment": {
+      "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+      "CARGO_BUILD_JOBS": "2"
+    }
+  },
+  {
+    "name": "19-final-format",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "fmt",
+      "--manifest-path",
+      "src/trigger-host/Cargo.toml",
+      "--",
+      "--check"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.093,
+    "start_unix": 1792471959.5814548,
+    "environment": {
+      "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+      "CARGO_BUILD_JOBS": "2"
+    }
+  },
+  {
+    "name": "20-frozen-host-coverage",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "llvm-cov",
+      "--manifest-path",
+      "src/trigger-host/Cargo.toml",
+      "--lib",
+      "--test",
+      "state",
+      "--test",
+      "parameters",
+      "--test",
+      "runtime",
+      "--lcov",
+      "--output-path",
+      "/tmp/dandrum-lanes/evidence-state/20-frozen-host-coverage.lcov"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 4.602,
+    "start_unix": 1792472008.223445,
+    "environment": {
+      "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+      "CARGO_BUILD_JOBS": "2"
+    }
+  },
+  {
+    "name": "21-frozen-host-tests",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "test",
+      "--manifest-path",
+      "src/trigger-host/Cargo.toml"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 1.442,
+    "start_unix": 1792472012.8262267,
+    "environment": {
+      "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+      "CARGO_BUILD_JOBS": "2"
+    }
+  },
+  {
+    "name": "22-frozen-format",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "fmt",
+      "--manifest-path",
+      "src/trigger-host/Cargo.toml",
+      "--",
+      "--check"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.08,
+    "start_unix": 1792472014.268268,
+    "environment": {
+      "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+      "CARGO_BUILD_JOBS": "2"
+    }
+  },
+  {
+    "name": "23-frozen-clippy",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "clippy",
+      "--manifest-path",
+      "src/trigger-host/Cargo.toml",
+      "--all-targets",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.276,
+    "start_unix": 1792472014.3487613,
+    "environment": {
+      "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+      "CARGO_BUILD_JOBS": "2"
+    }
+  }
+]

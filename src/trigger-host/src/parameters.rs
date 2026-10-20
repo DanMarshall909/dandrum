@@ -116,6 +116,75 @@ pub struct ParameterController {
 }
 
 impl ParameterController {
+    /// Save accepted YAML and one coherent vector of applied physical values.
+    /// This off-audio read never closes callback admission; only the reader may
+    /// retry while audio writes. Queued editor values are not yet applied state.
+    pub fn save_state(
+        &self,
+        output: &mut impl std::io::Write,
+    ) -> Result<(), crate::state::StateError> {
+        use crate::state::{PRODUCT_ID, RESOURCE_ID, SavedParameter, SavedState};
+        let snapshot = self.host.session().owner_snapshot();
+        let values = self.runtime.snapshot_state_values();
+        crate::state::write(
+            &SavedState {
+                version: 2,
+                product: PRODUCT_ID.into(),
+                resource: RESOURCE_ID.into(),
+                document: snapshot.yaml,
+                parameters: self
+                    .parameters
+                    .iter()
+                    .map(|parameter| SavedParameter {
+                        id: parameter.id.clone(),
+                        value: values[parameter.root_index],
+                    })
+                    .collect(),
+            },
+            output,
+        )
+    }
+    /// Validate and prepare complete bounded native state before publication.
+    /// Held gestures/outbound automation return Busy so no promised End is lost.
+    /// Success retires old queued activity and resets structural history; failure
+    /// preserves accepted state. No disposable editor attachment is required.
+    pub fn load_state(
+        &mut self,
+        input: &mut impl std::io::Read,
+    ) -> Result<(), crate::state::StateError> {
+        use crate::state::StateError;
+        use dandrum_instrument_session::CommitError;
+        let state = crate::state::read(input)?;
+        if self.reserved_ends != 0 || !self.automation.is_empty() {
+            return Err(StateError::Busy);
+        }
+        let values = state.values_for(&self.parameters, &self.runtime)?;
+        let generation =
+            crate::state::restored_generation(self.host.session().owner_snapshot().revision)?;
+        crate::PackagedResources::regular_file(
+            self.host.resource_root(),
+            crate::ADVANCED_DRUM_KIT_SAMPLE,
+        )
+        .map_err(|_| StateError::Invalid)?;
+        let candidate = self
+            .host
+            .session()
+            .prepare_document_replacement_owned(&state.document)
+            .map_err(StateError::Session)?;
+        // A previous swap's retired runtime is destroyed only here, off audio.
+        // An unconsumed candidate still has no retirement and remains Busy.
+        drop(self.runtime.reclaim());
+        self.host
+            .session_mut()
+            .commit_document_replacement(candidate, &mut self.runtime.restoring(values))
+            .map_err(|error| match error {
+                CommitError::Session(error) => StateError::Session(error),
+                CommitError::Activation(error) => StateError::Runtime(error),
+            })?;
+        self.generation = generation;
+        self.admitted_sequence = 0;
+        Ok(())
+    }
     pub fn detach_editor(&mut self, attachment_id: &str) -> Result<(), ParameterError> {
         self.protocol
             .detach(self.host.session_mut(), attachment_id)
@@ -380,3 +449,7 @@ impl ParameterController {
         self.automation.pop_front().is_some()
     }
 }
+
+#[cfg(test)]
+#[path = "../tests/internal/state.rs"]
+mod state_tests;

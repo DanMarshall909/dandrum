@@ -504,6 +504,14 @@ impl InstrumentSession {
     ) -> Result<PreparedDocumentReplacement, SessionError> {
         self.attachment_index(attachment)
             .ok_or(SessionError::InvalidAttachment)?;
+        self.prepare_document_replacement_owned(yaml)
+    }
+
+    /// Prepare native host state without borrowing a disposable editor identity.
+    pub fn prepare_document_replacement_owned(
+        &self,
+        yaml: &str,
+    ) -> Result<PreparedDocumentReplacement, SessionError> {
         self.ensure_idle()?;
         let prepared = Self::prepare_document(
             yaml,
@@ -917,7 +925,8 @@ impl InstrumentSession {
         Ok(self.accepted_snapshot())
     }
 
-    pub(crate) fn owner_snapshot(&self) -> SessionSnapshot {
+    /// Native accepted state; does not create or consume an editor attachment.
+    pub fn owner_snapshot(&self) -> SessionSnapshot {
         self.accepted_snapshot()
     }
 

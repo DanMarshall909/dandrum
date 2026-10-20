@@ -1414,3 +1414,48 @@ fn document_replacement_rejects_invalid_foreign_stale_and_busy_work_before_activ
     assert_eq!(host.render(61)[0][0], -0.5);
     assert_eq!(other.snapshot(&foreign).unwrap(), other_initial);
 }
+
+#[test]
+fn native_owned_document_preparation_and_snapshot_require_no_disposable_editor_slot() {
+    let (yaml, context, settings) = fixture();
+    let mut session = InstrumentSession::new(&yaml, context.clone(), settings.clone()).unwrap();
+    let initial = session.owner_snapshot();
+    let mut host = RuntimeHost::new(&session, &initial);
+    let changed = yaml_with_kick_mapping(&yaml, 60);
+    let candidate = session
+        .prepare_document_replacement_owned(&changed)
+        .unwrap();
+    assert_eq!(session.owner_snapshot(), initial);
+    let accepted = session
+        .commit_document_replacement(candidate, &mut host)
+        .unwrap();
+    assert_eq!(session.owner_snapshot(), accepted);
+    assert_eq!(host.render(60)[0][0], -0.5);
+    let connections: Vec<_> = (0..ATTACHMENT_LIMIT)
+        .map(|_| session.attach().unwrap().0)
+        .collect();
+    assert!(matches!(
+        session.attach(),
+        Err(SessionError::AttachmentLimit)
+    ));
+    let candidate = session.prepare_document_replacement_owned(&yaml).unwrap();
+    session
+        .commit_document_replacement(candidate, &mut host)
+        .unwrap();
+    assert_eq!(host.render(36)[0][0], -0.5);
+    let mut other = InstrumentSession::new(&yaml, context, settings).unwrap();
+    let (foreign, _) = other.attach().unwrap();
+    assert!(matches!(
+        session.prepare_document_replacement(&foreign, &changed),
+        Err(SessionError::InvalidAttachment)
+    ));
+    session.detach(&connections[0]).unwrap();
+    assert!(matches!(
+        session.prepare_document_replacement(&connections[0], &changed),
+        Err(SessionError::InvalidAttachment)
+    ));
+    assert!(
+        session.attach().is_ok(),
+        "native state never consumed a hidden attachment"
+    );
+}

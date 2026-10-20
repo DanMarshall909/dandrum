@@ -1,0 +1,20 @@
+[
+  {
+    "name": "source-free-trigger-corrected",
+    "argv": [
+      "/usr/bin/python3",
+      "tests/python/test_engine_only_build.py",
+      "ClapProofBuildTest.test_trigger_editor_scaffold_stages_copied_resources_without_host_sources"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "exit_code": 0,
+    "start_unix": 1792472112.0368617,
+    "elapsed_seconds": 143.201484,
+    "environment": {
+      "PATH": "/home/dan/.local/bin:/home/dan/.cargo/bin:/usr/bin:/bin",
+      "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "log_sha256": "614b6d2c4ee3ea345d591bfd9230c3b7793493d76f3eb393244705f7002ff87f"
+  }
+]

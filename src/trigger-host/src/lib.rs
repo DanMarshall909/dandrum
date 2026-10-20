@@ -8,6 +8,7 @@
 pub mod parameters;
 pub mod protocol;
 pub mod runtime;
+pub mod state;
 
 use dandrum_engine::graph::PortDirection;
 use dandrum_engine::kernel::document::load_kernel_patch_str;

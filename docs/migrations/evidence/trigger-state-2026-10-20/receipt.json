@@ -1,0 +1,343 @@
+{
+  "schemaVersion": 1,
+  "scope": "OpenSpec task2.4 format-neutral native Trigger state; completes parameter foundation from749d9e0",
+  "base_commit": "749d9e028e42888a615649f7b3ff74b93b2fcad8",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "fetched_upstream": "749d9e028e42888a615649f7b3ff74b93b2fcad8",
+  "source_files": {
+    "src/instrument-session/src/lib.rs": "cbd5a7887e5e14b881940e80b8bc7d95f1d89c7f4d5223d993cf1f255187ff1b",
+    "src/instrument-session/tests/session.rs": "a385cda3bb5cbe8db5145f04733cd6a9a214ad64c7621e6b6ed24dac8ae8b28c",
+    "src/trigger-host/src/lib.rs": "d16daf1630f43184909847e03107d402a8d54f3bf2fe6085a8bfd966c1aa80f9",
+    "src/trigger-host/src/parameters.rs": "2258a171ca23c20bea26c0a638a083b4dd261e8b974f58508a347549e6929660",
+    "src/trigger-host/src/runtime.rs": "97d06354b35e5d264fef5f11e933f9e0127b9f71fb132e24aaac166e4954cec4",
+    "src/trigger-host/src/state.rs": "9355b2c855998d2306c053d50485eea617103b932c7de7e04aa1929d7719afaf",
+    "src/trigger-host/tests/state.rs": "9e5fd3a116e507fdbf7a35b2edf30d77868bf0f261e9c52c82546e678debf2f6",
+    "src/trigger-host/tests/internal/state.rs": "cb51a4d5ea903b21ff954010e7e4c04d989a47b859c6d94ef6d44e4a79e98e35"
+  },
+  "tests": {
+    "trigger_host": 62,
+    "instrument_session": 30,
+    "registered_ctests_passed": 2
+  },
+  "root_checks": [
+    {
+      "name": "session-coverage",
+      "argv": [
+        "/home/dan/.cargo/bin/cargo",
+        "llvm-cov",
+        "--manifest-path",
+        "src/instrument-session/Cargo.toml",
+        "--lcov",
+        "--output-path",
+        "/tmp/dandrum-evidence/state-review/session-coverage.lcov"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit_code": 0,
+      "start_unix": 1792472058.7322876,
+      "elapsed_seconds": 20.179219,
+      "environment": {
+        "PATH": "/home/dan/.local/bin:/home/dan/.cargo/bin:/usr/bin:/bin",
+        "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "log_sha256": "ac2b0548e373d487d7417fc8121d8c5ed31dc85f18ea33e875119465c23eeac2"
+    },
+    {
+      "name": "registered-owners",
+      "argv": [
+        "/home/dan/.local/bin/ctest",
+        "--test-dir",
+        "build/parallel-final",
+        "--output-on-failure",
+        "-R",
+        "^(trigger-host-tests|instrument-session-tests)$"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit_code": 0,
+      "start_unix": 1792472078.9118497,
+      "elapsed_seconds": 11.090744,
+      "environment": {
+        "PATH": "/home/dan/.local/bin:/home/dan/.cargo/bin:/usr/bin:/bin",
+        "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "log_sha256": "6796c43d4d076b8ba5727372cf169869b501a3339ea4e73b34a8dd4e440cbd9b"
+    },
+    {
+      "name": "source-free-trigger",
+      "argv": [
+        "/usr/bin/python3",
+        "tests/python/test_engine_only_build.py",
+        "EngineOnlyBuildTest.test_trigger_editor_scaffold_stages_copied_resources_without_host_sources"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit_code": 1,
+      "start_unix": 1792472090.0029042,
+      "elapsed_seconds": 0.104354,
+      "environment": {
+        "PATH": "/home/dan/.local/bin:/home/dan/.cargo/bin:/usr/bin:/bin",
+        "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "log_sha256": "09e0cd67320c22770d98f70993bb271508c42b67aa66a60c4cb2365a5536b097"
+    },
+    {
+      "name": "source-free-trigger-corrected",
+      "argv": [
+        "/usr/bin/python3",
+        "tests/python/test_engine_only_build.py",
+        "ClapProofBuildTest.test_trigger_editor_scaffold_stages_copied_resources_without_host_sources"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit_code": 0,
+      "start_unix": 1792472112.0368617,
+      "elapsed_seconds": 143.201484,
+      "environment": {
+        "PATH": "/home/dan/.local/bin:/home/dan/.cargo/bin:/usr/bin:/bin",
+        "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "log_sha256": "614b6d2c4ee3ea345d591bfd9230c3b7793493d76f3eb393244705f7002ff87f"
+    }
+  ],
+  "coverage": {
+    "trigger": [
+      {
+        "source": "/tmp/dandrum-lanes/runtime/src/trigger-host/src/parameters.rs",
+        "measured_lines": 284,
+        "covered_lines": 283,
+        "source_function_or_closure_starts": 28,
+        "covered_source_function_or_closure_starts": 28,
+        "raw_instantiations": 70,
+        "covered_raw_instantiations": 47,
+        "uncovered_lines": [
+          181
+        ],
+        "uncovered_source_starts": []
+      },
+      {
+        "source": "/tmp/dandrum-lanes/runtime/src/trigger-host/src/runtime.rs",
+        "measured_lines": 678,
+        "covered_lines": 678,
+        "source_function_or_closure_starts": 66,
+        "covered_source_function_or_closure_starts": 66,
+        "raw_instantiations": 123,
+        "covered_raw_instantiations": 119,
+        "uncovered_lines": [],
+        "uncovered_source_starts": []
+      },
+      {
+        "source": "/tmp/dandrum-lanes/runtime/src/trigger-host/src/state.rs",
+        "measured_lines": 101,
+        "covered_lines": 101,
+        "source_function_or_closure_starts": 10,
+        "covered_source_function_or_closure_starts": 10,
+        "raw_instantiations": 22,
+        "covered_raw_instantiations": 22,
+        "uncovered_lines": [],
+        "uncovered_source_starts": []
+      }
+    ],
+    "session": {
+      "frozen_source_files_verified": 8,
+      "coverage": [
+        {
+          "source": "/tmp/dandrum-lanes/runtime/src/instrument-session/src/lib.rs",
+          "source_sha256": "cbd5a7887e5e14b881940e80b8bc7d95f1d89c7f4d5223d993cf1f255187ff1b",
+          "measured_lines": 662,
+          "covered_lines": 662,
+          "source_function_or_closure_starts": 64,
+          "covered_source_function_or_closure_starts": 64,
+          "raw_instantiations": 147,
+          "covered_raw_instantiations": 109,
+          "uncovered_lines": [],
+          "uncovered_source_starts": []
+        },
+        {
+          "source": "/tmp/dandrum-lanes/runtime/src/instrument-session/src/native_ffi.rs",
+          "source_sha256": "cdada47286a2c2f94d45c652a9166b8d9a30870e56fca1111abdcdf5611934b8",
+          "measured_lines": 914,
+          "covered_lines": 780,
+          "source_function_or_closure_starts": 46,
+          "covered_source_function_or_closure_starts": 41,
+          "raw_instantiations": 69,
+          "covered_raw_instantiations": 41,
+          "uncovered_lines": [
+            131,
+            132,
+            133,
+            134,
+            135,
+            136,
+            141,
+            142,
+            223,
+            230,
+            233,
+            256,
+            259,
+            271,
+            286,
+            295,
+            334,
+            355,
+            358,
+            361,
+            364,
+            367,
+            375,
+            379,
+            383,
+            386,
+            414,
+            425,
+            428,
+            431,
+            442,
+            443,
+            444,
+            445,
+            446,
+            447,
+            458,
+            461,
+            468,
+            482,
+            500,
+            504,
+            527,
+            528,
+            532,
+            533,
+            553,
+            554,
+            560,
+            561,
+            562,
+            584,
+            585,
+            588,
+            589,
+            590,
+            591,
+            593,
+            597,
+            598,
+            602,
+            603,
+            604,
+            624,
+            625,
+            628,
+            629,
+            631,
+            632,
+            633,
+            649,
+            650,
+            653,
+            654,
+            655,
+            656,
+            658,
+            670,
+            671,
+            674,
+            675,
+            677,
+            678,
+            679,
+            689,
+            711,
+            714,
+            717,
+            721,
+            726,
+            747,
+            748,
+            751,
+            752,
+            755,
+            756,
+            760,
+            761,
+            780,
+            781,
+            782,
+            796,
+            816,
+            817,
+            820,
+            821,
+            832,
+            833,
+            836,
+            837,
+            838,
+            839,
+            841,
+            849,
+            850,
+            851,
+            852,
+            854,
+            861,
+            862,
+            863,
+            882,
+            883,
+            884,
+            890,
+            891,
+            892,
+            893,
+            894,
+            895,
+            896,
+            954,
+            955,
+            956
+          ],
+          "uncovered_source_starts": [
+            954,
+            131,
+            141,
+            890,
+            178
+          ]
+        }
+      ],
+      "branch_coverage": "unavailable",
+      "regions": "not collected"
+    }
+  },
+  "coverage_limits": [
+    "State/runtime totals include embedded unit-test code. Distinct source function starts differ from compiled generic instantiations.",
+    "parameters.rs has one unexecuted defensive CommitError::Session fallback, documented under exclusive immediate preparation/commit.",
+    "Unchanged native_ffi.rs inherits Rust-only coverage gaps; no full FFI coverage claim.",
+    "Branch coverage unavailable; regions not collected."
+  ],
+  "reproduction_sources": {
+    "CMakeLists.txt": "e83cf08fea4c5d68ef263a41f22c248017b239d744456a47f3ea0dc85cbd269a",
+    "tests/python/test_engine_only_build.py": "029afa4ed913c1a306602f7dcaa4480c2dc76d52e0b923d9e2dc0f88a898e995",
+    "scripts/check-rust-coverage.py": "8adb4563c65d684fab90e81de8c6f0814a1222b5e650114102cc520a523f1e4f"
+  },
+  "limits": [
+    "Only format-neutral core acceptance; actual CLAP streams, production WebView, uninterrupted native audio, VST3, standalone, DAW and installed beta remain open.",
+    "Structural publication retains existing callback-admission gate which returns zero buffers while held.",
+    "Whole-state main reader can retry under continuous writers; callback never retries for this snapshot.",
+    "Negative guard matrices already implemented with the fresh tracer are reported honestly as GREEN characterization, not manufactured historical RED.",
+    "Initial source-free selector AttributeError is retained as setup failure; corrected guard passes."
+  ],
+  "mutation": "Excluded by explicit user direction.",
+  "cache_policy": "All existing build/Cargo caches preserved. Disk after guard435MiB; actual host executable /dev/shm has16GiB available for bounded future task-owned temporary builds.",
+  "independent_review": {
+    "verdict": "PASS",
+    "candidate_manifest_sha256": "082ea187aae5f4a7aec995a9a39d54a8276c2e4ca65d248ee01c7eb243e5b654",
+    "artifacts_sha256": {
+      "review.md": "54df35e5748f0587d45587301c85c41dabe12c90ed6b9121042aa1d921aea088",
+      "verdict.json": "3a356e24eebf6e35bdda3f7ebda707a6bcfdae583fe5485914a21d8909d7e751"
+    },
+    "scope": "Exact105-path core candidate; final metadata addendum required before normal-hook publication"
+  }
+}

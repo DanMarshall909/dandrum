@@ -638,3 +638,47 @@ The format-neutral parameter portion of task 2.4 now has an owned controller ove
 All 48 host tests pass, including literal signed audio, independent controllers, queue limits, stale/foreign owners, reset cancellation and a calibrated cross-thread allocation/destruction sentinel. The registered trigger-host-tests CTest enumerates and passes all 48 in 8.10 seconds. Formatting and Clippy with warnings denied pass. Exact-source focused LLVM coverage measures parameters 233/233 lines and 24/24 source function/closure starts; runtime 492/492 lines and 54/54 source starts, including embedded unit tests. Raw duplicate instantiations and unavailable branch/region evidence are disclosed in the [portable receipt](evidence/trigger-parameters-2026-10-20/receipt.json). Exact raw logs are preserved as deterministic gzip artifacts.
 
 This independently reviewed parameter boundary does not complete task 2.4 or prove actual CLAP automation acceptance. Version-2 atomic document/resource/value restore, queue epochs and native/DAW continuity remain open. The inherited structural publication gate returns zero buffers while held; its unit coverage does not prove uninterrupted native lifecycle audio. The foundations and full-beta plan were normally published at 811ff37; main remains clean at 68dd655. The full beta stopping condition remains unchanged.
+
+## Atomic native Trigger state — 20 October 2026
+
+Task 2.4 now has native version-2 state over the published parameter boundary at
+749d9e0. A bounded 64 KiB JSON envelope stores the accepted YAML, fixed packaged
+resource identity and all 23 physical named values. Restore validates and
+prepares the complete candidate before publication. Unknown or incompatible
+resources, documents, fields, names, values and stream failures preserve accepted
+state, feedback, queued commands and nonempty native history. Valid external
+restore clears incompatible structural history. Native save/load needs no editor
+attachment and succeeds with all 16 attachment slots occupied.
+
+Successful restore advances the queue epoch, discarding old notes, parameter
+commands and feedback while preserving later activity. Repeated restoration
+reclaims retired processors on the control thread. Coherent saves read a complete
+scalar vector using an atomic writer stamp; only the main reader retries. Audio
+performs bounded atomic work, and ordinary saves never close callback admission.
+The inherited structural publication gate still returns zero buffers while held;
+uninterrupted native lifecycle audio remains a later acceptance obligation.
+
+All 62 host and 30 session tests pass, including independent literal PCM-derived
+stereo frames, semantic name permutations, invalid-state rollback, balanced
+automation, independent instances and calibrated callback allocation checks.
+Formatting and Clippy with warnings denied pass for both crates. Registered
+CMake owner tests pass 2/2 in 11.09 seconds; the affected absent-JUCE/browser-source
+build/resource guard passes in 143.20 seconds. Its initial wrong Python-class
+selection was a retained setup error, not a behavior RED.
+
+Exact-source LLVM coverage measures the new state module at 101/101 lines and
+10/10 source function starts, runtime at 678/678 and 66/66, and parameters at
+283/284 and 28/28. The one unexecuted defensive session-error fallback is explained
+by exclusive immediate preparation/commit. Changed session ownership measures
+662/662 lines and 64/64 source starts; unchanged FFI coverage gaps and raw generic
+instantiation counts remain explicit. Embedded unit tests are included in owner
+totals; branch and region evidence is unavailable in these runs.
+
+[Portable source-bound evidence](evidence/trigger-state-2026-10-20/receipt.json)
+retains raw logs, hashes, exact commands, genuine REDs and honest GREEN
+characterization. Independent completion review passed for the exact core candidate with no
+required corrections; its exact review and verdict are retained beside the receipt.
+Final metadata verification and normal-hook publication remain the next gates. No canonical scenario is prematurely mapped to core
+tests in place of the required dynamic CLAP/native acceptance. Task 3.2 is next;
+the full beta, later formats, devices, DAW and installed offline products remain
+active. Main is unchanged and all reusable caches are preserved.

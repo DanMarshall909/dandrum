@@ -160,12 +160,14 @@ pub struct ResetReport {
 struct QueuedEvent {
     event: ControlEvent,
     command_sequence: u64,
+    epoch: u64,
 }
 
 #[derive(Clone, Copy)]
 struct QueuedFeedback {
     parameter: ParameterFeedback,
     settlement: u64,
+    epoch: u64,
 }
 
 pub struct RuntimeControl {
@@ -175,7 +177,9 @@ pub struct RuntimeControl {
     feedback: Consumer<QueuedFeedback>,
     values: Arc<[AtomicU64]>,
     settlement: Arc<AtomicU64>,
+    epoch: Arc<AtomicU64>,
     admission: Arc<AtomicU64>,
+    scalar_stamp: Arc<AtomicU64>,
     in_flight: bool,
     configuration: TriggerHostConfiguration,
     layout: Vec<PortMetadata>,
@@ -184,6 +188,7 @@ pub struct RuntimeControl {
 pub struct RuntimeAudio {
     state: AudioState,
     admission: Arc<AtomicU64>,
+    scalar_stamp: Arc<AtomicU64>,
 }
 
 struct AudioState {
@@ -194,6 +199,7 @@ struct AudioState {
     feedback: Producer<QueuedFeedback>,
     values: Arc<[AtomicU64]>,
     settlement: Arc<AtomicU64>,
+    epoch: Arc<AtomicU64>,
     event_capacity: usize,
 }
 
@@ -204,12 +210,58 @@ pub struct RuntimeLease<'a> {
     slot: rtrb::chunks::WriteChunkUninit<'a, PreparedRuntime>,
     in_flight: &'a mut bool,
     candidate: PreparedRuntime,
+    values: &'a [AtomicU64],
+    settlement: &'a AtomicU64,
+    restored: Option<RestoredScalars>,
+    epoch: &'a AtomicU64,
+    scalar_stamp: &'a AtomicU64,
+}
+
+struct RestoredScalars {
+    values: Vec<f64>,
+    epoch: u64,
+}
+
+pub(crate) struct RestoringControl<'a> {
+    control: &'a mut RuntimeControl,
+    values: Option<Vec<f64>>,
+}
+
+impl ActivationHost for RestoringControl<'_> {
+    type Error = RuntimeError;
+    type Lease<'a>
+        = RuntimeLease<'a>
+    where
+        Self: 'a;
+    fn activate<'a>(
+        &'a mut self,
+        prepared: &PreparedKernelInstrument,
+        next: &SessionSnapshot,
+    ) -> Result<Self::Lease<'a>, Self::Error> {
+        // Native session revisions are checked, monotonic publication identities.
+        let restored = RestoredScalars {
+            values: self
+                .values
+                .take()
+                .expect("one activation per restore transaction"),
+            epoch: next.revision,
+        };
+        self.control.activation(prepared, Some(restored))
+    }
 }
 
 impl ActivationLease for RuntimeLease<'_> {
     fn publish(self, _: Publication<'_>) {
         *self.in_flight = true;
         self.slot.fill_from_iter(std::iter::once(self.candidate));
+        if let Some(restored) = self.restored {
+            let _write = ScalarWrite::begin(self.scalar_stamp);
+            for (destination, value) in self.values.iter().zip(restored.values) {
+                destination.store(value.to_bits(), Ordering::SeqCst);
+            }
+            self.settlement.store(0, Ordering::Release);
+            self.epoch.store(restored.epoch, Ordering::Relaxed);
+        }
     }
 }
 
@@ -222,24 +274,7 @@ impl ActivationHost for RuntimeControl {
         prepared: &PreparedKernelInstrument,
         _: &SessionSnapshot,
     ) -> Result<Self::Lease<'a>, Self::Error> {
-        if self.in_flight {
-            return Err(RuntimeError::Busy);
-        }
-        let candidate = PreparedRuntime::new(prepared, self.configuration)?;
-        if !self.compatible(&candidate) {
-            return Err(RuntimeError::IncompatibleRuntime);
-        }
-        let slot = self
-            .pending
-            .write_chunk_uninit(1)
-            .expect("idle activation slot");
-        let admission = ClosedAdmission::close(&self.admission);
-        Ok(RuntimeLease {
-            _admission: admission,
-            slot,
-            in_flight: &mut self.in_flight,
-            candidate,
-        })
+        self.activation(prepared, None)
     }
 }
 
@@ -257,6 +292,8 @@ pub fn runtime_handoff(
     }
     let admission = Arc::new(AtomicU64::new(0));
     let settlement = Arc::new(AtomicU64::new(0));
+    let epoch = Arc::new(AtomicU64::new(0));
+    let scalar_stamp = Arc::new(AtomicU64::new(0));
     let (event_tx, event_rx) = RingBuffer::new(event_capacity);
     let (feedback_tx, feedback_rx) = RingBuffer::new(event_capacity);
     let values: Arc<[AtomicU64]> = initial
@@ -281,7 +318,9 @@ pub fn runtime_handoff(
         feedback: feedback_rx,
         values: values.clone(),
         settlement: settlement.clone(),
+        epoch: epoch.clone(),
         admission: admission.clone(),
+        scalar_stamp: scalar_stamp.clone(),
         in_flight: false,
         configuration: initial.0.configuration,
         layout: initial.0.layout.clone(),
@@ -295,14 +334,51 @@ pub fn runtime_handoff(
             feedback: feedback_tx,
             values,
             settlement,
+            epoch,
             event_capacity,
         },
         admission,
+        scalar_stamp,
     };
     Ok((control, audio))
 }
 
 impl RuntimeControl {
+    pub(crate) fn restoring(&mut self, values: Vec<f64>) -> RestoringControl<'_> {
+        RestoringControl {
+            control: self,
+            values: Some(values),
+        }
+    }
+    fn activation(
+        &mut self,
+        prepared: &PreparedKernelInstrument,
+        restored: Option<RestoredScalars>,
+    ) -> Result<RuntimeLease<'_>, RuntimeError> {
+        if self.in_flight {
+            return Err(RuntimeError::Busy);
+        }
+        let candidate = PreparedRuntime::new(prepared, self.configuration)?;
+        if !self.compatible(&candidate) {
+            return Err(RuntimeError::IncompatibleRuntime);
+        }
+        let slot = self
+            .pending
+            .write_chunk_uninit(1)
+            .expect("idle activation slot");
+        let admission = ClosedAdmission::close(&self.admission);
+        Ok(RuntimeLease {
+            _admission: admission,
+            slot,
+            in_flight: &mut self.in_flight,
+            candidate,
+            values: &self.values,
+            settlement: &self.settlement,
+            restored,
+            epoch: &self.epoch,
+            scalar_stamp: &self.scalar_stamp,
+        })
+    }
     /// Parameter indices are the prepared root control-input order. Format
     /// adapters map their public parameter identities to these stable names.
     pub fn parameter_index(&self, root_name: &str) -> Option<usize> {
@@ -317,16 +393,26 @@ impl RuntimeControl {
             .map(|value| f64::from_bits(value.load(Ordering::Relaxed)))
     }
     pub fn take_feedback(&mut self) -> Option<ParameterFeedback> {
-        self.feedback.pop().ok().map(|feedback| feedback.parameter)
+        self.current_feedback().map(|feedback| feedback.parameter)
     }
     pub(crate) fn take_sequenced_feedback(&mut self) -> Option<(ParameterFeedback, u64, bool)> {
-        self.feedback.pop().ok().map(|feedback| {
+        self.current_feedback().map(|feedback| {
             (
                 feedback.parameter,
                 feedback.settlement >> 1,
                 feedback.settlement & 1 != 0,
             )
         })
+    }
+    fn current_feedback(&mut self) -> Option<QueuedFeedback> {
+        let epoch = self.epoch.load(Ordering::Relaxed);
+        for _ in 0..self.feedback.buffer().capacity() {
+            let feedback = self.feedback.pop().ok()?;
+            if feedback.epoch == epoch {
+                return Some(feedback);
+            }
+        }
+        None
     }
     pub fn try_send(&mut self, event: ControlEvent) -> Result<(), RuntimeError> {
         self.send_sequenced(event, 0)
@@ -346,6 +432,27 @@ impl RuntimeControl {
             return Err(RuntimeError::InvalidEvent);
         }
         self.send_sequenced(ControlEvent::Parameter { index, value }, command_sequence)
+    }
+
+    /// Read a vector from a completed scalar-write interval. Writers are
+    /// serialized by callback admission; only this off-audio reader retries.
+    /// Every stamp/data access is SeqCst, so equal even stamps exclude an
+    /// intervening writer in their single global atomic order.
+    pub(crate) fn snapshot_state_values(&self) -> Vec<f64> {
+        let mut values = vec![0.0; self.values.len()];
+        loop {
+            let before = self.scalar_stamp.load(Ordering::SeqCst);
+            if before & 1 != 0 {
+                std::thread::yield_now();
+                continue;
+            }
+            for (destination, source) in values.iter_mut().zip(self.values.iter()) {
+                *destination = f64::from_bits(source.load(Ordering::SeqCst));
+            }
+            if before == self.scalar_stamp.load(Ordering::SeqCst) {
+                return values;
+            }
+        }
     }
 
     pub(crate) fn snapshot_parameters(&self) -> (u64, bool, Vec<f64>) {
@@ -374,6 +481,7 @@ impl RuntimeControl {
             .push(QueuedEvent {
                 event,
                 command_sequence,
+                epoch: self.epoch.load(Ordering::Relaxed),
             })
             .map_err(|_| RuntimeError::QueueFull)
     }
@@ -425,6 +533,21 @@ impl ControlEvent {
                 })
             }
         }
+    }
+}
+
+// At two increments per callback, the u64 stamp cannot wrap during a
+// practical snapshot read; a reader must not span 2^63 complete write intervals.
+struct ScalarWrite<'a>(&'a AtomicU64);
+impl<'a> ScalarWrite<'a> {
+    fn begin(stamp: &'a AtomicU64) -> Self {
+        stamp.fetch_add(1, Ordering::SeqCst);
+        Self(stamp)
+    }
+}
+impl Drop for ScalarWrite<'_> {
+    fn drop(&mut self) {
+        self.0.fetch_add(1, Ordering::SeqCst);
     }
 }
 
@@ -500,6 +623,7 @@ impl RuntimeAudio {
                 ..ProcessReport::default()
             });
         };
+        let _write = ScalarWrite::begin(&self.scalar_stamp);
         self.state.process_events(left, right, events)
     }
 }
@@ -515,7 +639,7 @@ impl AudioState {
                 break;
             };
             report.discarded_events += 1;
-            if event.command_sequence != 0 {
+            if event.epoch == self.epoch.load(Ordering::Relaxed) && event.command_sequence != 0 {
                 report.cancelled_parameter_commands += 1;
                 cancelled = event.command_sequence;
             }
@@ -577,7 +701,9 @@ impl AudioState {
             let Ok(event) = self.events.pop() else {
                 break;
             };
-            self.apply_event(event.event, 0, event.command_sequence, &mut report);
+            if event.epoch == self.epoch.load(Ordering::Relaxed) {
+                self.apply_event(event.event, 0, event.command_sequence, &mut report);
+            }
         }
         let mut start = 0;
         for event in events {
@@ -609,7 +735,7 @@ impl AudioState {
             }
             ControlEvent::NoteOff { note } => self.current.0.graph.note_off_at(note, 0),
             ControlEvent::Parameter { index, value } => {
-                self.values[index].store(value.to_bits(), Ordering::Relaxed);
+                self.values[index].store(value.to_bits(), Ordering::SeqCst);
                 if command_sequence != 0 {
                     self.settlement
                         .store(command_sequence << 1, Ordering::Release);
@@ -624,6 +750,7 @@ impl AudioState {
                             frame_offset,
                         },
                         settlement: self.settlement.load(Ordering::Relaxed),
+                        epoch: self.epoch.load(Ordering::Relaxed),
                     })
                     .is_err()
                 {
@@ -666,7 +793,92 @@ mod admission_tests {
     use std::time::{Duration, Instant};
 
     #[test]
-    fn parameter_snapshot_does_not_close_or_wait_for_callback_admission() {
+    fn successful_state_publication_retires_queued_notes_and_reset_cannot_settle_old_generation_commands()
+     {
+        let repository = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let source = repository.join("examples/patches/advanced-drum-kit.yaml");
+        let yaml = std::fs::read_to_string(&source).unwrap();
+        let patch = dandrum_engine::kernel::document::load_kernel_patch_str(&yaml).unwrap();
+        let buses = patch.root().ports().iter().fold(
+            dandrum_engine::preparation::HostBuses::new(),
+            |buses, port| match port.direction() {
+                PortDirection::Input => buses.with_input(port.name(), 1),
+                PortDirection::Output => buses.with_output(port.name(), 2),
+            },
+        );
+        let config = TriggerHostConfiguration {
+            sample_rate_hz: 48_000,
+            max_block_frames: 16,
+        };
+        let mut session = dandrum_instrument_session::InstrumentSession::new_for_planar_host(
+            &yaml,
+            dandrum_engine::preparation::PreparationContext::new(source.parent().unwrap(), 48_000),
+            dandrum_engine::patch::RenderSettings {
+                sample_rate_hz: 48_000,
+                block_size_frames: 16,
+                duration_frames: 16,
+            },
+            buses,
+        )
+        .unwrap();
+        let (mut control, mut audio) =
+            runtime_handoff(PreparedRuntime::new(session.prepared(), config).unwrap(), 8).unwrap();
+        control
+            .try_send(ControlEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            })
+            .unwrap();
+        control.send_parameter(2, 3.0, 9).unwrap();
+        let changed = yaml.replacen("key_range: [36, 36]", "key_range: [60, 60]", 1);
+        let candidate = session
+            .prepare_document_replacement_owned(&changed)
+            .unwrap();
+        let mut values = control.snapshot_parameters().2;
+        values[2] = 0.5;
+        session
+            .commit_document_replacement(candidate, &mut control.restoring(values))
+            .unwrap();
+        let (mut left, mut right) = ([1.0; 16], [1.0; 16]);
+        audio.process(&mut left, &mut right).unwrap();
+        assert_eq!(
+            (left, right),
+            ([0.0; 16], [0.0; 16]),
+            "old queued note60 must not start a restored voice"
+        );
+        assert_eq!(control.parameter_value(2), Some(0.5));
+        assert!(control.take_feedback().is_none());
+        drop(control.reclaim());
+        control.send_parameter(2, 3.0, 10).unwrap();
+        let candidate = session.prepare_document_replacement_owned(&yaml).unwrap();
+        let mut values = control.snapshot_parameters().2;
+        values[2] = 0.25;
+        session
+            .commit_document_replacement(candidate, &mut control.restoring(values))
+            .unwrap();
+        audio.reset();
+        assert_eq!(
+            control.snapshot_parameters(),
+            (0, false, control.snapshot_parameters().2),
+            "reset cannot acknowledge an old epoch's UI command"
+        );
+        audio
+            .process_events(
+                &mut left,
+                &mut right,
+                &[TimedEvent {
+                    frame_offset: 0,
+                    event: ControlEvent::NoteOn {
+                        note: 36,
+                        velocity: 100,
+                    },
+                }],
+            )
+            .unwrap();
+        assert_eq!((left[0], right[0]), (-0.125, -0.125));
+    }
+
+    fn gain_runtime() -> (RuntimeControl, RuntimeAudio) {
         let yaml = "ports:\n  - { name: level, direction: input, signal: control, channels: 1, default: 1, min: 0, max: 4, maps_to: amp.gain }\n  - { name: master, direction: output, signal: audio, channels: 2, maps_from: amp.audio_out }\nmodules:\n  - { id: amp, type: gain, static: { channels: 2 } }\nconnections: []\n";
         let session = dandrum_instrument_session::InstrumentSession::new_for_planar_host(
             yaml,
@@ -689,7 +901,43 @@ mod admission_tests {
             },
         )
         .unwrap();
-        let (mut control, mut audio) = runtime_handoff(prepared, 4).unwrap();
+        runtime_handoff(prepared, 4).unwrap()
+    }
+
+    #[test]
+    fn whole_state_reader_waits_only_for_the_scalar_interval_and_never_closes_callback_admission() {
+        let (control, audio) = gain_runtime();
+        let stamp = control.scalar_stamp.clone();
+        let gate = audio.admission.clone();
+        let callback = CallbackAdmission::enter(&gate).unwrap();
+        let write = ScalarWrite::begin(&stamp);
+        control.values[0].store(0.5f64.to_bits(), Ordering::SeqCst);
+        let (ready_tx, ready_rx) = mpsc::sync_channel(0);
+        let (value_tx, value_rx) = mpsc::channel();
+        let reader = std::thread::spawn(move || {
+            ready_tx.send(()).unwrap();
+            value_tx.send(control.snapshot_state_values()).unwrap();
+        });
+        ready_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+        let early = value_rx.recv_timeout(Duration::from_millis(10));
+        drop(write);
+        assert!(
+            matches!(early, Err(mpsc::RecvTimeoutError::Timeout)),
+            "save cannot return an unfinished scalar write"
+        );
+        let finished = value_rx
+            .recv_timeout(Duration::from_secs(5))
+            .expect("completed scalar interval releases the main reader");
+        reader.join().unwrap();
+        let admission_during_read = gate.load(Ordering::Acquire);
+        drop(callback);
+        assert_eq!(finished, vec![0.5]);
+        assert_eq!(admission_during_read, CALLBACK_ACTIVE);
+    }
+
+    #[test]
+    fn parameter_snapshot_does_not_close_or_wait_for_callback_admission() {
+        let (mut control, mut audio) = gain_runtime();
         assert_eq!(
             control.send_parameter(0, 0.5, 0),
             Err(RuntimeError::InvalidEvent)

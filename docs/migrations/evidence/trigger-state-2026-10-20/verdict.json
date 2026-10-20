@@ -1,0 +1,60 @@
+{
+  "verdict": "PASS",
+  "scope": "OpenSpec task2.4 format-neutral parameter/gesture/feedback and native version-2 state only",
+  "candidate_manifest_sha256": "082ea187aae5f4a7aec995a9a39d54a8276c2e4ca65d248ee01c7eb243e5b654",
+  "candidate_paths": 105,
+  "base": "749d9e028e42888a615649f7b3ff74b93b2fcad8",
+  "current": "749d9e028e42888a615649f7b3ff74b93b2fcad8",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "749d9e028e42888a615649f7b3ff74b93b2fcad8",
+  "integration_base": "749d9e028e42888a615649f7b3ff74b93b2fcad8",
+  "main_must_remain": "68dd6553a2f07e71e2fe09ee1d7094d518559937",
+  "source_hashes": {
+    "src/instrument-session/src/lib.rs": "cbd5a7887e5e14b881940e80b8bc7d95f1d89c7f4d5223d993cf1f255187ff1b",
+    "src/instrument-session/tests/session.rs": "a385cda3bb5cbe8db5145f04733cd6a9a214ad64c7621e6b6ed24dac8ae8b28c",
+    "src/trigger-host/src/lib.rs": "d16daf1630f43184909847e03107d402a8d54f3bf2fe6085a8bfd966c1aa80f9",
+    "src/trigger-host/src/parameters.rs": "2258a171ca23c20bea26c0a638a083b4dd261e8b974f58508a347549e6929660",
+    "src/trigger-host/src/runtime.rs": "97d06354b35e5d264fef5f11e933f9e0127b9f71fb132e24aaac166e4954cec4",
+    "src/trigger-host/src/state.rs": "9355b2c855998d2306c053d50485eea617103b932c7de7e04aa1929d7719afaf",
+    "src/trigger-host/tests/state.rs": "9e5fd3a116e507fdbf7a35b2edf30d77868bf0f261e9c52c82546e678debf2f6",
+    "src/trigger-host/tests/internal/state.rs": "cb51a4d5ea903b21ff954010e7e4c04d989a47b859c6d94ef6d44e4a79e98e35"
+  },
+  "blocking_findings": [],
+  "independent_state_rerun": {
+    "mode": "existing final test binary; no rebuild/cache modification",
+    "argv": [
+      "/tmp/dandrum-lanes/cache-runtime/debug/deps/state-dd36f706834f1b41"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "passed": 9,
+    "failed": 0,
+    "ignored": 0,
+    "exit_code": 0,
+    "elapsed_seconds": 0.255203806,
+    "binary_sha256": "37523722b7db0e658b66e5e50ea89983bcfe2935e4b0d28758041467698fb774",
+    "log_sha256": "cc082ce60bbc46c34030c2feb1e891364eec13f8af438e02f09a38fcccbb7085",
+    "log": "reviewer-state-test.log"
+  },
+  "independent_checks": [
+    "105-path index/worktree/mode/object/content manifest reconstruction",
+    "all94 portable checksum entries and91 artifact-map compressed/uncompressed pairs",
+    "frozen8-source hashes and3new-source snapshots",
+    "LCOV source-line aggregation",
+    "git diff --cached --check",
+    "openspec validate add-juce-free-trigger-clap-editor --strict",
+    "scripts/check-spec-coverage:618/379/239"
+  ],
+  "post_pass_addendum_required": true,
+  "post_pass_envelope": "Exact review/verdict copies, receipt review identity, progress review/publication status and SHA256SUMS only; final metadata hashes must be independently bound before normal-hook commit and unchanged-upstream normal feature push. See review.md.",
+  "remaining_limits": [
+    "Actual CLAP/native/WebView acceptance remains tasks3.2-4.3",
+    "Inherited admission gate silences callbacks while held; native continuity unproved",
+    "Whole-state off-audio reader progress under continuous writers is unbounded",
+    "One justified defensive controller fallback unexecuted; unchanged FFI gaps; branch/region evidence unavailable",
+    "Mutation excluded by explicit direction",
+    "Full beta, other formats/devices, DAW and installed release remain open"
+  ],
+  "repository_modified_by_reviewer": false,
+  "verdict_delegated": false,
+  "report": "review.md"
+}

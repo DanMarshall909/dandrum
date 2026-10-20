@@ -1,0 +1,63 @@
+[
+  {
+    "name": "session-coverage",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "llvm-cov",
+      "--manifest-path",
+      "src/instrument-session/Cargo.toml",
+      "--lcov",
+      "--output-path",
+      "/tmp/dandrum-evidence/state-review/session-coverage.lcov"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "exit_code": 0,
+    "start_unix": 1792472058.7322876,
+    "elapsed_seconds": 20.179219,
+    "environment": {
+      "PATH": "/home/dan/.local/bin:/home/dan/.cargo/bin:/usr/bin:/bin",
+      "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "log_sha256": "ac2b0548e373d487d7417fc8121d8c5ed31dc85f18ea33e875119465c23eeac2"
+  },
+  {
+    "name": "registered-owners",
+    "argv": [
+      "/home/dan/.local/bin/ctest",
+      "--test-dir",
+      "build/parallel-final",
+      "--output-on-failure",
+      "-R",
+      "^(trigger-host-tests|instrument-session-tests)$"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "exit_code": 0,
+    "start_unix": 1792472078.9118497,
+    "elapsed_seconds": 11.090744,
+    "environment": {
+      "PATH": "/home/dan/.local/bin:/home/dan/.cargo/bin:/usr/bin:/bin",
+      "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "log_sha256": "6796c43d4d076b8ba5727372cf169869b501a3339ea4e73b34a8dd4e440cbd9b"
+  },
+  {
+    "name": "source-free-trigger",
+    "argv": [
+      "/usr/bin/python3",
+      "tests/python/test_engine_only_build.py",
+      "EngineOnlyBuildTest.test_trigger_editor_scaffold_stages_copied_resources_without_host_sources"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "exit_code": 1,
+    "start_unix": 1792472090.0029042,
+    "elapsed_seconds": 0.104354,
+    "environment": {
+      "PATH": "/home/dan/.local/bin:/home/dan/.cargo/bin:/usr/bin:/bin",
+      "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-runtime",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "log_sha256": "09e0cd67320c22770d98f70993bb271508c42b67aa66a60c4cb2365a5536b097"
+  }
+]
