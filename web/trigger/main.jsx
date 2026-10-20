@@ -3,6 +3,7 @@ import {createRoot} from 'react-dom/client';
 import {TriggerController} from './TriggerController.jsx';
 import {MockEngine} from './engine/mock-engine.mjs';
 import {NativeEngine} from './engine/native-engine.mjs';
+import {selectNativeTransport} from './engine/native-transport.mjs';
 import {Store} from './engine/store.mjs';
 import './components/design-system/styles.css';
 import './components/source-hover.css';
@@ -10,9 +11,9 @@ import './styles.css';
 const root=createRoot(document.getElementById('root'));
 let engine,store,disposed=false;
 async function launch(){
-  const native=!!window.__JUCE__?.backend?.getNativeFunction;
-  root.render(<div role="status">{native?'Connecting to native sampler…':'Opening silent sampler preview…'}</div>);
   try{
+    const native=!!selectNativeTransport();
+    root.render(<div role="status">{native?'Connecting to native sampler…':'Opening silent sampler preview…'}</div>);
     engine=native?new NativeEngine():new MockEngine();
     if(native)await engine.initialize();
     if(disposed){engine.close();return;}

@@ -13,13 +13,17 @@ import {applyEntityDelta} from './entity-delta.mjs';
 import {synchroniseModuleParameters} from './voice-defaults.mjs';
 import {parse} from 'yaml';
 import {parseSessionConnection,nextDecimalId} from './session-connection.mjs';
+import {selectNativeTransport} from './native-transport.mjs';
 
 const operations={...structureOperations,...instrumentOperations,...historyOperations,...sliceOperations,...candidateOperations,...routingOperations};
 const unsupported=new Set(['collapseHistory','addModulator','setModulator','removeModulator','addRoute','updateRoute','removeRoute','setMacro','bindMacro','learnMidi','receiveMidi','addProcessor','moveProcessor','setProcessorParam','removeProcessor']);
 /** Native preparation is the only publication boundary. Domain edits remain plain data. */
 export class NativeEngine {
-  constructor({backend=globalThis.window?.__JUCE__?.backend,pollMs=30,heartbeatMs=1000}={}){
-    if(!backend?.getNativeFunction)throw new Error('JUCE native sampler backend unavailable');
+  constructor({backend,pollMs=30,heartbeatMs=1000}={}){
+    const transport=backend===undefined?selectNativeTransport():{backendId:'juce',backend};
+    backend=transport?.backend;
+    if(typeof backend?.getNativeFunction!=='function')throw new Error('Native sampler backend unavailable');
+    this.backendId=transport.backendId;
     this.backend=backend;this.pollMs=pollMs;this.heartbeatMs=heartbeatMs;this.patch=emptyPatch();this.patch.macros=[];
     this.listeners=new Map();this.closed=false;this.sequence=0;this.pending=null;this.waits=new Set();this.eventTokens=[];
     this.pendingGeneration=0;this.preparing=false;this.reconciliation=null;
