@@ -1,0 +1,78 @@
+{
+  "final_manifest": "final-source-hashes.json",
+  "all_16_paths_equal": true,
+  "checks": {
+    "release-clippy": {
+      "source_manifest": "release-clippy-hashes.json",
+      "source_snapshot": "release-clippy-source",
+      "log": "release-clippy.log",
+      "log_sha256": "01243941cd652ff7f41528cf724a2e5db8d9fae1c8f884529acf0cff184d9ee8",
+      "run": "release-clippy-run.json",
+      "elapsed_seconds": 0.40916433502570726,
+      "exit": 0
+    },
+    "release-native-coverage": {
+      "source_manifest": "release-native-coverage-hashes.json",
+      "source_snapshot": "release-native-coverage-source",
+      "log": "release-native-coverage.log",
+      "log_sha256": "c85b9c61e7d76e53c15e60c76f0dd647c993c734510ed7711ac56d251ee90dda",
+      "run": "release-native-coverage-run.json",
+      "elapsed_seconds": 4.351430021983106,
+      "exit": 0
+    },
+    "release-fast-coverage": {
+      "source_manifest": "release-fast-coverage-hashes.json",
+      "source_snapshot": "release-fast-coverage-source",
+      "log": "release-fast-coverage.log",
+      "log_sha256": "dbf41e50023116cf6aadb11bf9ae92657d375e848e92c8ae9604c692892777e2",
+      "run": "release-fast-coverage-run.json",
+      "elapsed_seconds": 0.11522569300723262,
+      "exit": 0
+    },
+    "release-ctest": {
+      "source_manifest": "release-ctest-hashes.json",
+      "source_snapshot": "release-ctest-source",
+      "log": "release-ctest.log",
+      "log_sha256": "ddffc76dee168947e94a8a2bfbeaceebaac2bdb66b0ac88321737f19b68d4ca9",
+      "run": "release-ctest-run.json",
+      "elapsed_seconds": 5.011940618976951,
+      "exit": 0
+    },
+    "release-build": {
+      "source_manifest": "release-build-hashes.json",
+      "source_snapshot": "release-build-source",
+      "log": "release-build.log",
+      "log_sha256": "9e757dc06b8fffcef78face64c13a678b3eb6d44779ef9c55a260a46bee61d8d",
+      "run": "release-build-run.json",
+      "elapsed_seconds": 0.3045105609926395,
+      "exit": 0
+    },
+    "release-fmt": {
+      "source_manifest": "release-fmt-hashes.json",
+      "source_snapshot": "release-fmt-source",
+      "log": "release-fmt.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run": "release-fmt-run.json",
+      "elapsed_seconds": 0.05541256201104261,
+      "exit": 0
+    },
+    "release-diff": {
+      "source_manifest": "release-diff-hashes.json",
+      "source_snapshot": "release-diff-source",
+      "log": "release-diff.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run": "release-diff-run.json",
+      "elapsed_seconds": 0.0052768099994864315,
+      "exit": 0
+    },
+    "release-default-graph": {
+      "source_manifest": "release-default-graph-hashes.json",
+      "source_snapshot": "release-default-graph-source",
+      "log": "release-default-graph.log",
+      "log_sha256": "2fc97f45a6da36216e4901bc271843d05372f7b2fda3a20a3d01963a5e6b6c26",
+      "run": "release-default-graph-run.json",
+      "elapsed_seconds": 0.06411591000505723,
+      "exit": 0
+    }
+  }
+}

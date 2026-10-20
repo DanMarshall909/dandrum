@@ -1,0 +1,251 @@
+{
+  "state": "FROZEN; explicit source/build/resource handback to root; no further edits/builds/next RED until reassigned",
+  "base": "9f9252cfee895f30e659e2f87a42bc833eef0e5a",
+  "scope": "One bounded task3.2 visibility/fixed-size owner criterion. Task3.2 remains unchecked; root alone integrates/reviews/commits/publishes.",
+  "candidate": {
+    "src/trigger-editor/src/native_x11.rs": "a5c2348b4936786b4bee81b4443094c56cfc1c7a12287559ac08bee456957523",
+    "src/trigger-editor/tests/internal/native_x11.rs": "8f81634d60a7eb45a10674d1889992baca3b873bbd8b94ced4e0da69a8e4bd5f"
+  },
+  "full_manifest": "final-source-hashes.json",
+  "snapshot": "release-candidate-source",
+  "source_binding": "final-source-binding.json",
+  "phase_binding": "phase-source-binding.json",
+  "production_change": [
+    "set_visible(&self,bool)->Result<(),NativeError>: check captured GTK UI-thread contract, outer show_all/hide, captured display.sync; no loop/reparent/rebuild/state mirror.",
+    "set_size(&self,u32,u32)->Result<(),NativeError>: check UI-thread then widen existing constants; accept only1200x800; UnsupportedSize otherwise, no GTK/Wry mutation or narrowing.",
+    "Exact root-selected seven-line disposal SAFETY comment clarification only, as bound in safety-clarification-binding.json. No destruction API/unsafe/guard/behavior delta."
+  ],
+  "TDD": {
+    "before_change": "Read parent visibility next task/status/apply/all accepted context, retained base prior owner coverage131/136lines/19regions inherited; explained observable criterion.",
+    "RED": "red-absent-presentation-api then red-final-test-absent-api: exit101 exact missing inherent methods/error variant E0599 (GTK prelude trait-bound suggestions do not implement methods). Honest API-absence compile RED, never native runtime failure or setup failure.",
+    "GREEN": "green-minimal-presentation passed real WebKit/X11 first show with no workaround; initial native coverage informed covered refactor review.",
+    "final_test_RED": "Final test with raw diagnostics was re-established against base owner: red-final-test-absent-api snapshot; final test hash exactly equals release.",
+    "phase_difference": "release owner differs from final-test RED by methods+variant and later approved comment. Pre-comment final-* receipts remain immutable and explicitly preclarification; release-* are exact final source."
+  },
+  "actual_oracles": {
+    "presentation": "Two existing create/drop cycles; same captured childXID,parent, literal0,0,1200,800; independent X11 MapState UNMAPPED->VIEWABLE->UNMAPPED->VIEWABLE; repeated show/hide; host mapped and rectangle unchanged; one parent child/one addedGTKtoplevel. GTK scale1 observed.",
+    "content": "Normal external app.js button listener counter; exactly one startup then content1,20state1,content2 percycle; same WebView object and exact fixed entryURI. Temporary WebView wrapper local to helper is released before disposal. Native eval only drives positive UI event; no script-policy negative claim.",
+    "size": "4 accepted1200x800 calls and40 rejected full-u32 calls across shown+hidden/cycles.10cases eachstate: \u00b11width/height,zero,width/heightu32MAX,66736x800,1200x66336. Each failure exactUnsupportedSize plus physicalsamegeometry,parent,mapstate,host,URI/view and pagecounter.",
+    "disposal": "One shown and one hidden Drop; before any host tick/test-side sync, exact oldXID BadWindow3, emptyparent, host intactmapped1400x900,1destroy+1unrealize+1GTKweak-disposalnotification; IPCcallback/browser weakrelease. Weak-disposal notification is not GObject finalization proof. Existing preflight/post-WebKit/immediate-parent oracles retained.",
+    "adjacent": "Unchanged local JS/module/CSS/inline/localfetch404, enforcingconnectCSP, navigation and actual unmodified Reactsilent-preview11exactresources/eightfontsets remain passing; no fake native backend.",
+    "representative_exact_raw_lines": [
+      "visibility cycle=0, parent=77594624, child=75497475, GTK scale=1",
+      "immediate drop cycle=0, child=75497475, reply=Err(X11Error(X11Error { error_kind: Window, error_code: 3, sequence: 178, bad_value: 75497475, minor_opcode: 0, major_opcode: 3, extension_name: None, request_name: Some(\"GetWindowAttributes\") })), children=[], destroy=1, unrealize=1, weak-disposal=1, elapsed=576.064\u00b5s",
+      "visibility cycle=1, parent=77594624, child=75497499, GTK scale=1",
+      "immediate drop cycle=1, child=75497499, reply=Err(X11Error(X11Error { error_kind: Window, error_code: 3, sequence: 362, bad_value: 75497499, minor_opcode: 0, major_opcode: 3, extension_name: None, request_name: Some(\"GetWindowAttributes\") })), children=[], destroy=1, unrealize=1, weak-disposal=1, elapsed=646.444\u00b5s",
+      "immediate post-WebKit rollback: child=75497518, reply=Err(X11Error(X11Error { error_kind: Window, error_code: 3, sequence: 378, bad_value: 75497518, minor_opcode: 0, major_opcode: 3, extension_name: None, request_name: Some(\"GetWindowAttributes\") }))",
+      "immediate builder-preflight rollback: child=75497526, reply=Err(X11Error(X11Error { error_kind: Window, error_code: 3, sequence: 381, bad_value: 75497526, minor_opcode: 0, major_opcode: 3, extension_name: None, request_name: Some(\"GetWindowAttributes\") }))",
+      "immediate host-parent destruction: parent=77594628, child=75497546, pre-parent-destroy reply=Err(X11Error(X11Error { error_kind: Window, error_code: 3, sequence: 392, bad_value: 75497546, minor_opcode: 0, major_opcode: 3, extension_name: None, request_name: Some(\"GetWindowAttributes\") }))"
+    ]
+  },
+  "checks": {
+    "release-clippy": {
+      "source_manifest": "release-clippy-hashes.json",
+      "source_snapshot": "release-clippy-source",
+      "log": "release-clippy.log",
+      "log_sha256": "01243941cd652ff7f41528cf724a2e5db8d9fae1c8f884529acf0cff184d9ee8",
+      "run": "release-clippy-run.json",
+      "elapsed_seconds": 0.40916433502570726,
+      "exit": 0
+    },
+    "release-native-coverage": {
+      "source_manifest": "release-native-coverage-hashes.json",
+      "source_snapshot": "release-native-coverage-source",
+      "log": "release-native-coverage.log",
+      "log_sha256": "c85b9c61e7d76e53c15e60c76f0dd647c993c734510ed7711ac56d251ee90dda",
+      "run": "release-native-coverage-run.json",
+      "elapsed_seconds": 4.351430021983106,
+      "exit": 0
+    },
+    "release-fast-coverage": {
+      "source_manifest": "release-fast-coverage-hashes.json",
+      "source_snapshot": "release-fast-coverage-source",
+      "log": "release-fast-coverage.log",
+      "log_sha256": "dbf41e50023116cf6aadb11bf9ae92657d375e848e92c8ae9604c692892777e2",
+      "run": "release-fast-coverage-run.json",
+      "elapsed_seconds": 0.11522569300723262,
+      "exit": 0
+    },
+    "release-ctest": {
+      "source_manifest": "release-ctest-hashes.json",
+      "source_snapshot": "release-ctest-source",
+      "log": "release-ctest.log",
+      "log_sha256": "ddffc76dee168947e94a8a2bfbeaceebaac2bdb66b0ac88321737f19b68d4ca9",
+      "run": "release-ctest-run.json",
+      "elapsed_seconds": 5.011940618976951,
+      "exit": 0
+    },
+    "release-build": {
+      "source_manifest": "release-build-hashes.json",
+      "source_snapshot": "release-build-source",
+      "log": "release-build.log",
+      "log_sha256": "9e757dc06b8fffcef78face64c13a678b3eb6d44779ef9c55a260a46bee61d8d",
+      "run": "release-build-run.json",
+      "elapsed_seconds": 0.3045105609926395,
+      "exit": 0
+    },
+    "release-fmt": {
+      "source_manifest": "release-fmt-hashes.json",
+      "source_snapshot": "release-fmt-source",
+      "log": "release-fmt.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run": "release-fmt-run.json",
+      "elapsed_seconds": 0.05541256201104261,
+      "exit": 0
+    },
+    "release-diff": {
+      "source_manifest": "release-diff-hashes.json",
+      "source_snapshot": "release-diff-source",
+      "log": "release-diff.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run": "release-diff-run.json",
+      "elapsed_seconds": 0.0052768099994864315,
+      "exit": 0
+    },
+    "release-default-graph": {
+      "source_manifest": "release-default-graph-hashes.json",
+      "source_snapshot": "release-default-graph-source",
+      "log": "release-default-graph.log",
+      "log_sha256": "2fc97f45a6da36216e4901bc271843d05372f7b2fda3a20a3d01963a5e6b6c26",
+      "run": "release-default-graph-run.json",
+      "elapsed_seconds": 0.06411591000505723,
+      "exit": 0
+    }
+  },
+  "coverage": {
+    "owner_native": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 16,
+        "covered": 14,
+        "percent": 87.5
+      },
+      "instantiations": {
+        "count": 44,
+        "covered": 33,
+        "percent": 75
+      },
+      "lines": {
+        "count": 153,
+        "covered": 148,
+        "percent": 96.73202614379085
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 229,
+        "covered": 208,
+        "notcovered": 21,
+        "percent": 90.82969432314411
+      }
+    },
+    "assets_fast": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 5,
+        "covered": 5,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 11,
+        "covered": 7,
+        "percent": 63.63636363636363
+      },
+      "lines": {
+        "count": 52,
+        "covered": 52,
+        "percent": 100
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 87,
+        "covered": 86,
+        "notcovered": 1,
+        "percent": 98.85057471264368
+      }
+    },
+    "new_code": "All17 new executable owner lines covered. set_visible11 calls:6show/5hide; set_size44 calls:4accept/40reject. No newly extracted production source.",
+    "new_regions_uncovered": [
+      {
+        "line": 118,
+        "direction": "check_thread ? error propagation in set_visible"
+      },
+      {
+        "line": 131,
+        "direction": "check_thread ? error propagation in set_size"
+      }
+    ],
+    "new_gap_reason": "NativeEditor contains GTK/Wry thread-affine objects and cannot safely move to a non-UI thread; no public transfer/invalid-owner seam or unsafe tests added solely for score. Shared check_thread WrongThread itself covered by existing service/create tests.",
+    "inherited_gaps": [
+      {
+        "lines": [
+          97,
+          98
+        ],
+        "reason": "Fresh sole IPC registration refusal cannot be induced through fixed public constructor."
+      },
+      {
+        "lines": [
+          151
+        ],
+        "reason": "Non-X11 guard outside selected platform."
+      },
+      {
+        "lines": [
+          154
+        ],
+        "reason": "Connection failure would require GDK-live auth/server loss; shared real server not disrupted."
+      },
+      {
+        "lines": [
+          208
+        ],
+        "reason": "Transport loss enqueue direction not induced; checked BadWindow reply rollback is real and covered."
+      },
+      {
+        "reason": "Other19inherited-region directions include missing defaultdisplay/realization-cast, wrongroot/depth, validationtransport/races, nonvalueIPC and rejected-constructor closures; dependency-internal errors remain a limit."
+      }
+    ],
+    "instrumentation": "Local workspace rustc wrapper -Cinstrument-coverage, existing editor-target only; native/fast separate profiles, retainedprofraw/profdata/LLVMjson/annotation, commands/toolversions/binarySHA in release-coverage-export-runs.json; same local native owner linecounts observed.",
+    "limitations": "No exclusions, artificial score API/test, mutation or branch/MC/DC claim; LLVM branch counters0."
+  },
+  "refactor": {
+    "decision": "Reviewed after native initial coverage. Keep direct methods in existing module; no extraction/abstraction/state mirror. Reuse existing2cycles and focused test helper+literal-state assertions; final diagnostic-only logs expose requested dimensions/results/receipts.",
+    "cost": "release native body3.54s;40rejected physical/content cases use bounded external hostticks and positiveIPCpolling.3CTesttotal5.01s (fast.08/package.06/native4.87includingnormalbuild); named native boundary lane retains adjacent material checks. No repeated stress sweep or private main loop."
+  },
+  "safety_comment": "safety-clarification-binding.json refers /tmp/dandrum-evidence/editor-disposal-review/reviewer/global-alias-safety.md. GTK global enumeration can retain inertwrapperaliases; no postdestroywidgetqueries allowed. No new concrete memory-safety defect or universal Rustsoundness claim; root curates currentreport separately from immutable historical published evidence.",
+  "default_boundary": {
+    "evidence": "unchanged-boundary-hashes.json;14unchanged paths includinglib/assets/manifests/CMake/Python/adjacenttests; fresh std-only default tree and fastCTest.",
+    "reuse": "Root qualifies published disposal source-free guard for unchanged default boundary; no fresh583inputmanifest claim and no author sharedguard/hooks use."
+  },
+  "limits": [
+    "Real LinuxX11/GTK3.24.33/WebKitGTK2.50.4 scale1 only; highDPI/scale not established.",
+    "Result UIguard and GTKvoid calls do not independently prove host eventloop/CLAP APIorder/timer integration; actual physicalX11 oracle establishes selectedfixture.",
+    "No actual CLAP/session/audio/device/native backend initialization, GUIAPI/order facade, next resourceCSP or overallbeta completion claim."
+  ],
+  "operations": {
+    "resources": "release-resource-preflight.json and release-operational.json; all caches preserved, no deletions/relocations. Only owned editor-target/editor-cmake touched by tools.",
+    "changes": "Exactly2nativecfgsource/testpaths. No Git/index/commit/push/docs/task/lib/defaultbuild/CMake/Cargo/dependency/frontend/host/engine changes. Main clean68dd655; runtimeHEADbase with only2modifiedpaths.",
+    "processes": "release-operational.json confirms0ownedCargo/rustc/editor testprocesses.",
+    "release": "Root now owns both candidate source paths, editor-target, editor-cmake/staging and native build/execution resources. Author will do no further edits/builds/nextRED until reassigned."
+  }
+}

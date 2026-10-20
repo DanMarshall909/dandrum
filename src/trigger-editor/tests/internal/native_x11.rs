@@ -48,9 +48,9 @@ fn real_child_loads_local_content_and_drops_without_owning_the_host_parent() {
         }
         package.write(
             "index.html",
-            b"<!doctype html><script src='/app.js'></script>",
+            b"<!doctype html><button id='counter'>0</button><script src='/app.js'></script>",
         );
-        package.write("app.js", b"fetch('/absent').then(r => window.ipc.postMessage(r.status === 404 ? 'local-owner-ready' : 'bad-resource-status'))");
+        package.write("app.js", b"let counter=0;const button=document.getElementById('counter');button.addEventListener('click',()=>{button.textContent=String(++counter);window.ipc.postMessage('content|'+counter)});button.addEventListener('inspect-state',()=>window.ipc.postMessage('state|'+counter));fetch('/absent').then(r => window.ipc.postMessage(r.status === 404 ? 'local-owner-ready' : 'bad-resource-status'))");
         let messages = Rc::new(RefCell::new(Vec::new()));
         let callback_lifetime = Rc::new(());
         let weak = Rc::downgrade(&callback_lifetime);
@@ -93,6 +93,8 @@ fn real_child_loads_local_content_and_drops_without_owning_the_host_parent() {
             std::thread::sleep(Duration::from_millis(5));
         }
         assert_eq!(&*messages.borrow(), &["local-owner-ready"]);
+        exercise_visibility_and_fixed_size(&owner, &x, parent, child, baseline, cycle, &messages);
+        let accepted_messages = messages.borrow().clone();
         let destroyed = Rc::new(Cell::new(0));
         let unrealized = Rc::new(Cell::new(0));
         let disposed = Rc::new(Cell::new(0));
@@ -188,7 +190,7 @@ fn real_child_loads_local_content_and_drops_without_owning_the_host_parent() {
         );
         assert_eq!(
             &*messages.borrow(),
-            &["local-owner-ready"],
+            &accepted_messages,
             "no late callback after drop"
         );
     }
@@ -198,6 +200,163 @@ fn real_child_loads_local_content_and_drops_without_owning_the_host_parent() {
     production::unmodified_bundle_renders_silent_preview_with_all_eight_fonts(parent);
     parent_can_be_destroyed_immediately_after_editor(&x, root);
     x.destroy_window(parent).unwrap().check().unwrap();
+}
+
+fn exercise_visibility_and_fixed_size(
+    owner: &NativeEditor,
+    x: &RustConnection,
+    parent: u32,
+    child: u32,
+    baseline: usize,
+    cycle: usize,
+    messages: &Rc<RefCell<Vec<String>>>,
+) {
+    let view = owner.view.webview();
+    let host = x.get_geometry(parent).unwrap().reply().unwrap();
+    let host_rect = (host.x, host.y, host.width, host.height);
+    eprintln!(
+        "visibility cycle={cycle}, parent={parent}, child={child}, GTK scale={}",
+        owner._window.0.scale_factor()
+    );
+    let assert_state = |state| {
+        assert_eq!(
+            x.query_tree(parent).unwrap().reply().unwrap().children,
+            [child]
+        );
+        assert_eq!(x.query_tree(child).unwrap().reply().unwrap().parent, parent);
+        let geometry = x.get_geometry(child).unwrap().reply().unwrap();
+        let attributes = x.get_window_attributes(child).unwrap().reply().unwrap();
+        eprintln!(
+            "native presentation: child={child}, parent={parent}, geometry={:?}, map={:?}",
+            (geometry.x, geometry.y, geometry.width, geometry.height),
+            attributes.map_state
+        );
+        assert_eq!(
+            (geometry.x, geometry.y, geometry.width, geometry.height),
+            (0, 0, 1200, 800)
+        );
+        assert_eq!(attributes.map_state, state);
+        let host = x.get_geometry(parent).unwrap().reply().unwrap();
+        assert_eq!((host.x, host.y, host.width, host.height), host_rect);
+        assert_eq!(
+            x.get_window_attributes(parent)
+                .unwrap()
+                .reply()
+                .unwrap()
+                .map_state,
+            MapState::VIEWABLE
+        );
+        assert_eq!(gtk::Window::list_toplevels().len(), baseline + 1);
+        assert_eq!(owner.view.webview(), view, "same WebKit object throughout");
+        assert_eq!(
+            view.uri().as_deref(),
+            Some("dandrum://localhost/index.html")
+        );
+    };
+    let host_ticks = || {
+        for _ in 0..4 {
+            NativeEditor::service().unwrap();
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        owner._window.0.display().sync();
+    };
+    let mut expected = vec!["local-owner-ready".to_string()];
+    assert_state(MapState::UNMAPPED);
+    owner.set_visible(true).unwrap();
+    host_ticks();
+    assert_state(MapState::VIEWABLE);
+    expect_page_message(
+        owner,
+        messages,
+        &mut expected,
+        "document.getElementById('counter').click()",
+        "content|1",
+    );
+    for visible in [true, false] {
+        owner.set_visible(visible).unwrap();
+        host_ticks();
+        let state = if visible {
+            MapState::VIEWABLE
+        } else {
+            MapState::UNMAPPED
+        };
+        assert_state(state);
+        owner.set_size(1200, 800).unwrap();
+        host_ticks();
+        assert_state(state);
+        for (width, height) in [
+            (1199, 800),
+            (1201, 800),
+            (1200, 799),
+            (1200, 801),
+            (0, 800),
+            (1200, 0),
+            (u32::MAX, 800),
+            (1200, u32::MAX),
+            (65536 + 1200, 800),
+            (1200, 65536 + 800),
+        ] {
+            let result = owner.set_size(width, height);
+            eprintln!("fixed-size request {width}x{height}, shown={visible}, result={result:?}");
+            assert!(
+                matches!(result, Err(NativeError::UnsupportedSize)),
+                "unsupported full-width request {width}x{height}"
+            );
+            host_ticks();
+            assert_state(state);
+            expect_page_message(
+                owner,
+                messages,
+                &mut expected,
+                "document.getElementById('counter').dispatchEvent(new Event('inspect-state'))",
+                "state|1",
+            );
+        }
+    }
+    owner.set_visible(false).unwrap();
+    host_ticks();
+    assert_state(MapState::UNMAPPED);
+    owner.set_visible(true).unwrap();
+    host_ticks();
+    assert_state(MapState::VIEWABLE);
+    expect_page_message(
+        owner,
+        messages,
+        &mut expected,
+        "document.getElementById('counter').click()",
+        "content|2",
+    );
+    // Exercise immediate disposal once while shown and once while hidden.
+    if cycle == 1 {
+        owner.set_visible(false).unwrap();
+        host_ticks();
+        assert_state(MapState::UNMAPPED);
+    }
+    eprintln!(
+        "presentation page receipts cycle={cycle}: {:?}",
+        messages.borrow()
+    );
+}
+
+fn expect_page_message(
+    owner: &NativeEditor,
+    messages: &Rc<RefCell<Vec<String>>>,
+    expected: &mut Vec<String>,
+    script: &str,
+    receipt: &str,
+) {
+    owner.view.evaluate_script(script).unwrap();
+    expected.push(receipt.to_string());
+    let deadline = Instant::now() + Duration::from_secs(15);
+    while messages.borrow().len() < expected.len() && Instant::now() < deadline {
+        NativeEditor::service().unwrap();
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    assert_eq!(
+        &*messages.borrow(),
+        expected,
+        "ordinary page state survives presentation changes, with exactly one startup message"
+    );
 }
 
 fn parent_can_be_destroyed_immediately_after_editor(x: &RustConnection, root: u32) {

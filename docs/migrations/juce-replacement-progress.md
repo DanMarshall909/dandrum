@@ -899,3 +899,34 @@ Task3.2 stays unchecked,7/14overall. Continue show/hide/fixed-size and remaining
 resource-origin/popup/download facets, then3.3/4.x/5.x and nextVST3/standalone/DAW/
 installed-offline/native beta increments. Actual CLAPmainthread/API/order proof
 still depends on4.2. Full beta remains active; main stays clean68dd655.
+
+
+## Native visibility and fixed size — 20 October 2026
+
+Synchronous disposal was normally published at9f9252c. The next bounded task3.2
+slice adds UI-thread-checked show/hide and exact1200x800 acceptance. Two real X11
+cycles retain the same browser/document/XID, one child, unchanged mapped parent
+and literal physical geometry through hidden/shown/idempotent transitions. Forty
+unsupported full-width requests fail without physical/content change; four exact
+requests succeed. Ordinary page state persists from counter1 to counter2, with
+one startup receipt. Existing immediate disposal/rollback, fetch/navigation and
+production React/eightfonts/11resource positives continue passing.
+
+Exact final tests first fail with specific E0599 absent-API errors; these are
+compile RED, not runtime/setup failures. All17new executable owner lines are hit;
+LLVM148/153lines,14/16functions,208/229regions retains inherited gaps and two
+per-method thread-check propagation limits, with no unsafe score fixture or
+extraction. Three CTests pass5.011941s plus denied-warningClippy/nativebuild/fmt,
+native+fastLLVM/defaultgraph/scopedOpenSpec/specmap. The default source-free guard
+is explicitly qualified reuse: same583pathset,581identicalinputs, only2native-cfg
+files changed; no fresh-run or all-input-identical claim. All eight release checks
+bind16exact source paths. The [portable evidence](evidence/trigger-editor-visibility-2026-10-20/receipt.json)
+retains14phase bindings/raw profiles and the GTK global-alias safety clarification.
+That comment correction changes no executable disposal behavior and makes no
+universal Rustsoundness claim.
+
+Independent completion review passed for the frozen source/evidence candidate; normal-hook publication is the remaining gate.
+Task3.2 remains unchecked,7/14overall. Resource policy and popup/download behavior
+remain; actual CLAPmainthread/API/order/timer proof depends on4.2. Full beta stays
+active through3.3/4.x/5.x and nextVST3/standalone/DAW/installed-offline/native
+increments. Main remains clean68dd655; mutation excluded; caches preserved.

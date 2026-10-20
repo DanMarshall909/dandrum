@@ -1,0 +1,231 @@
+{
+  "final_manifest": "final-source-hashes.json",
+  "final_manifest_sha256": "32083444049ce3834b99710d600605aa59bcf1c857961735521bc6ffc6c54b06",
+  "phases": {
+    "covered-refactor-green": {
+      "own_manifest": "covered-refactor-green-hashes.json",
+      "own_manifest_sha256": "0254423b529a480ad78c4ef1b2d5fb2936cea34361b8aa55569d679d6b3dbf9c",
+      "snapshot": "covered-refactor-green-source",
+      "all_16_snapshot_paths_match_own_manifest": true,
+      "matches_all_final_source_paths": false,
+      "differs_from_final": {
+        "src/trigger-editor/src/native_x11.rs": {
+          "phase_sha256": "28d79febae452358eae8a7d1e76ea06e737c397f20584ebe0f63867d3fd9be1f",
+          "final_sha256": "a5c2348b4936786b4bee81b4443094c56cfc1c7a12287559ac08bee456957523"
+        }
+      },
+      "run": "covered-refactor-green-run.json",
+      "log": "covered-refactor-green.log",
+      "log_sha256": "e74e7a8a920af5c8cf6bc42384c9bb3b82ff1e297a7fd8d91986a979df44f3e1",
+      "exit_code": 0,
+      "elapsed_seconds": 4.391909083991777
+    },
+    "final-native-coverage": {
+      "own_manifest": "final-native-coverage-hashes.json",
+      "own_manifest_sha256": "0254423b529a480ad78c4ef1b2d5fb2936cea34361b8aa55569d679d6b3dbf9c",
+      "snapshot": "final-native-coverage-source",
+      "all_16_snapshot_paths_match_own_manifest": true,
+      "matches_all_final_source_paths": false,
+      "differs_from_final": {
+        "src/trigger-editor/src/native_x11.rs": {
+          "phase_sha256": "28d79febae452358eae8a7d1e76ea06e737c397f20584ebe0f63867d3fd9be1f",
+          "final_sha256": "a5c2348b4936786b4bee81b4443094c56cfc1c7a12287559ac08bee456957523"
+        }
+      },
+      "run": "final-native-coverage-run.json",
+      "log": "final-native-coverage.log",
+      "log_sha256": "e94730eed9b29dff3440d4ba4888f66381547fc797cc548979f8d9d5b652a688",
+      "exit_code": 0,
+      "elapsed_seconds": 4.440099266998004
+    },
+    "green-minimal-presentation": {
+      "own_manifest": "green-minimal-presentation-hashes.json",
+      "own_manifest_sha256": "a5d197d3e706163044e2e4f50a501aea46ef41a6ec30c16fca70502e97dfc932",
+      "snapshot": "green-minimal-presentation-source",
+      "all_16_snapshot_paths_match_own_manifest": true,
+      "matches_all_final_source_paths": false,
+      "differs_from_final": {
+        "src/trigger-editor/src/native_x11.rs": {
+          "phase_sha256": "28d79febae452358eae8a7d1e76ea06e737c397f20584ebe0f63867d3fd9be1f",
+          "final_sha256": "a5c2348b4936786b4bee81b4443094c56cfc1c7a12287559ac08bee456957523"
+        },
+        "src/trigger-editor/tests/internal/native_x11.rs": {
+          "phase_sha256": "889e9a565fd8862ad079eb15be940ee4c85d66b8a58632464d1f9f5efee9cf1b",
+          "final_sha256": "8f81634d60a7eb45a10674d1889992baca3b873bbd8b94ced4e0da69a8e4bd5f"
+        }
+      },
+      "run": "green-minimal-presentation-run.json",
+      "log": "green-minimal-presentation.log",
+      "log_sha256": "d19743851f4de0b5827015b1ef3f2982ec1c3b4e7ab3400e5296ccea2f7c37bb",
+      "exit_code": 0,
+      "elapsed_seconds": 5.001975124992896
+    },
+    "initial-native-coverage": {
+      "own_manifest": "initial-native-coverage-hashes.json",
+      "own_manifest_sha256": "a5d197d3e706163044e2e4f50a501aea46ef41a6ec30c16fca70502e97dfc932",
+      "snapshot": "initial-native-coverage-source",
+      "all_16_snapshot_paths_match_own_manifest": true,
+      "matches_all_final_source_paths": false,
+      "differs_from_final": {
+        "src/trigger-editor/src/native_x11.rs": {
+          "phase_sha256": "28d79febae452358eae8a7d1e76ea06e737c397f20584ebe0f63867d3fd9be1f",
+          "final_sha256": "a5c2348b4936786b4bee81b4443094c56cfc1c7a12287559ac08bee456957523"
+        },
+        "src/trigger-editor/tests/internal/native_x11.rs": {
+          "phase_sha256": "889e9a565fd8862ad079eb15be940ee4c85d66b8a58632464d1f9f5efee9cf1b",
+          "final_sha256": "8f81634d60a7eb45a10674d1889992baca3b873bbd8b94ced4e0da69a8e4bd5f"
+        }
+      },
+      "run": "initial-native-coverage-run.json",
+      "log": "initial-native-coverage.log",
+      "log_sha256": "6f4894b9d8dd09a596fe59e50220f44dcd98bf6c7a72f7144c64cb7398af93c0",
+      "exit_code": 0,
+      "elapsed_seconds": 4.594248717010487
+    },
+    "red-absent-presentation-api": {
+      "own_manifest": "red-absent-presentation-api-hashes.json",
+      "own_manifest_sha256": "7b8f4f3d6969c5489cb1d79c3cfa74b62d8bc44e8019a3f8d654d0402ac8ed36",
+      "snapshot": "red-absent-presentation-api-source",
+      "all_16_snapshot_paths_match_own_manifest": true,
+      "matches_all_final_source_paths": false,
+      "differs_from_final": {
+        "src/trigger-editor/src/native_x11.rs": {
+          "phase_sha256": "d5a716081621410e4adbf6578cf5c5dcd4a1487691b6497a196c3803da9a39c1",
+          "final_sha256": "a5c2348b4936786b4bee81b4443094c56cfc1c7a12287559ac08bee456957523"
+        },
+        "src/trigger-editor/tests/internal/native_x11.rs": {
+          "phase_sha256": "889e9a565fd8862ad079eb15be940ee4c85d66b8a58632464d1f9f5efee9cf1b",
+          "final_sha256": "8f81634d60a7eb45a10674d1889992baca3b873bbd8b94ced4e0da69a8e4bd5f"
+        }
+      },
+      "run": "red-absent-presentation-api-run.json",
+      "log": "red-absent-presentation-api.log",
+      "log_sha256": "1884df154d3bd3a485cf1ae6d4f2db50073c3a38180b91d17878db56ccf35536",
+      "exit_code": 101,
+      "elapsed_seconds": 0.5682134689996019
+    },
+    "red-final-test-absent-api": {
+      "own_manifest": "red-final-test-absent-api-hashes.json",
+      "own_manifest_sha256": "2c6d2eac24151cadca7e1630819d64d2b443b9104fbc82ad7e80669c2d4919d7",
+      "snapshot": "red-final-test-absent-api-source",
+      "all_16_snapshot_paths_match_own_manifest": true,
+      "matches_all_final_source_paths": false,
+      "differs_from_final": {
+        "src/trigger-editor/src/native_x11.rs": {
+          "phase_sha256": "d5a716081621410e4adbf6578cf5c5dcd4a1487691b6497a196c3803da9a39c1",
+          "final_sha256": "a5c2348b4936786b4bee81b4443094c56cfc1c7a12287559ac08bee456957523"
+        }
+      },
+      "run": "red-final-test-absent-api-run.json",
+      "log": "red-final-test-absent-api.log",
+      "log_sha256": "572371f2401ae2555e8ee82679382618bcfe5ae6aa04fcb2486c004dc2866161",
+      "exit_code": 101,
+      "elapsed_seconds": 0.601123346015811
+    },
+    "release-build": {
+      "own_manifest": "release-build-hashes.json",
+      "own_manifest_sha256": "32083444049ce3834b99710d600605aa59bcf1c857961735521bc6ffc6c54b06",
+      "snapshot": "release-build-source",
+      "all_16_snapshot_paths_match_own_manifest": true,
+      "matches_all_final_source_paths": true,
+      "differs_from_final": {},
+      "run": "release-build-run.json",
+      "log": "release-build.log",
+      "log_sha256": "9e757dc06b8fffcef78face64c13a678b3eb6d44779ef9c55a260a46bee61d8d",
+      "exit_code": 0,
+      "elapsed_seconds": 0.3045105609926395
+    },
+    "release-clippy": {
+      "own_manifest": "release-clippy-hashes.json",
+      "own_manifest_sha256": "32083444049ce3834b99710d600605aa59bcf1c857961735521bc6ffc6c54b06",
+      "snapshot": "release-clippy-source",
+      "all_16_snapshot_paths_match_own_manifest": true,
+      "matches_all_final_source_paths": true,
+      "differs_from_final": {},
+      "run": "release-clippy-run.json",
+      "log": "release-clippy.log",
+      "log_sha256": "01243941cd652ff7f41528cf724a2e5db8d9fae1c8f884529acf0cff184d9ee8",
+      "exit_code": 0,
+      "elapsed_seconds": 0.40916433502570726
+    },
+    "release-ctest": {
+      "own_manifest": "release-ctest-hashes.json",
+      "own_manifest_sha256": "32083444049ce3834b99710d600605aa59bcf1c857961735521bc6ffc6c54b06",
+      "snapshot": "release-ctest-source",
+      "all_16_snapshot_paths_match_own_manifest": true,
+      "matches_all_final_source_paths": true,
+      "differs_from_final": {},
+      "run": "release-ctest-run.json",
+      "log": "release-ctest.log",
+      "log_sha256": "ddffc76dee168947e94a8a2bfbeaceebaac2bdb66b0ac88321737f19b68d4ca9",
+      "exit_code": 0,
+      "elapsed_seconds": 5.011940618976951
+    },
+    "release-default-graph": {
+      "own_manifest": "release-default-graph-hashes.json",
+      "own_manifest_sha256": "32083444049ce3834b99710d600605aa59bcf1c857961735521bc6ffc6c54b06",
+      "snapshot": "release-default-graph-source",
+      "all_16_snapshot_paths_match_own_manifest": true,
+      "matches_all_final_source_paths": true,
+      "differs_from_final": {},
+      "run": "release-default-graph-run.json",
+      "log": "release-default-graph.log",
+      "log_sha256": "2fc97f45a6da36216e4901bc271843d05372f7b2fda3a20a3d01963a5e6b6c26",
+      "exit_code": 0,
+      "elapsed_seconds": 0.06411591000505723
+    },
+    "release-diff": {
+      "own_manifest": "release-diff-hashes.json",
+      "own_manifest_sha256": "32083444049ce3834b99710d600605aa59bcf1c857961735521bc6ffc6c54b06",
+      "snapshot": "release-diff-source",
+      "all_16_snapshot_paths_match_own_manifest": true,
+      "matches_all_final_source_paths": true,
+      "differs_from_final": {},
+      "run": "release-diff-run.json",
+      "log": "release-diff.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exit_code": 0,
+      "elapsed_seconds": 0.0052768099994864315
+    },
+    "release-fast-coverage": {
+      "own_manifest": "release-fast-coverage-hashes.json",
+      "own_manifest_sha256": "32083444049ce3834b99710d600605aa59bcf1c857961735521bc6ffc6c54b06",
+      "snapshot": "release-fast-coverage-source",
+      "all_16_snapshot_paths_match_own_manifest": true,
+      "matches_all_final_source_paths": true,
+      "differs_from_final": {},
+      "run": "release-fast-coverage-run.json",
+      "log": "release-fast-coverage.log",
+      "log_sha256": "dbf41e50023116cf6aadb11bf9ae92657d375e848e92c8ae9604c692892777e2",
+      "exit_code": 0,
+      "elapsed_seconds": 0.11522569300723262
+    },
+    "release-fmt": {
+      "own_manifest": "release-fmt-hashes.json",
+      "own_manifest_sha256": "32083444049ce3834b99710d600605aa59bcf1c857961735521bc6ffc6c54b06",
+      "snapshot": "release-fmt-source",
+      "all_16_snapshot_paths_match_own_manifest": true,
+      "matches_all_final_source_paths": true,
+      "differs_from_final": {},
+      "run": "release-fmt-run.json",
+      "log": "release-fmt.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exit_code": 0,
+      "elapsed_seconds": 0.05541256201104261
+    },
+    "release-native-coverage": {
+      "own_manifest": "release-native-coverage-hashes.json",
+      "own_manifest_sha256": "32083444049ce3834b99710d600605aa59bcf1c857961735521bc6ffc6c54b06",
+      "snapshot": "release-native-coverage-source",
+      "all_16_snapshot_paths_match_own_manifest": true,
+      "matches_all_final_source_paths": true,
+      "differs_from_final": {},
+      "run": "release-native-coverage-run.json",
+      "log": "release-native-coverage.log",
+      "log_sha256": "c85b9c61e7d76e53c15e60c76f0dd647c993c734510ed7711ac56d251ee90dda",
+      "exit_code": 0,
+      "elapsed_seconds": 4.351430021983106
+    }
+  },
+  "interpretation": "Each phase binds its own immutable 16-path snapshot. Both E0599 compile REDs are API-absence evidence, not runtime/setup/native RED. The final-test RED has exact final test bytes; only owner methods/variant and later safety-comment clarification differ from release. Earlier final-prefixed receipts are pre-comment source, superseded by eight release checks for exact final bytes."
+}

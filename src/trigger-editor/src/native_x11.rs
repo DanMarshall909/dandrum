@@ -15,6 +15,7 @@ const ENTRY_URI: &str = "dandrum://localhost/index.html";
 pub enum NativeError {
     WrongThread,
     UnsupportedDisplay,
+    UnsupportedSize,
     InvalidParent,
     X11(String),
     WebView(wry::Error),
@@ -33,11 +34,13 @@ struct OwnedWindow(gtk::Window);
 impl Drop for OwnedWindow {
     fn drop(&mut self) {
         let display = self.0.display();
-        // SAFETY: this private container has exclusive disposal authority on the
-        // GTK UI thread. The owner releases IPC and its browser first. No handle
-        // escapes for later live use; acquisition-local wrappers only unref on
-        // unwind. After destruction we only use the previously captured display,
-        // then let the inert window wrapper unref without querying widget state.
+        // SAFETY: disposal runs on the GTK UI thread after IPC and the browser
+        // are released. This owner exports no native handles, but GTK can enumerate
+        // the container globally; retained references do not extend its live-widget
+        // lifetime and must not query it after destruction. This follows GTK's
+        // destruction lifecycle, not a guarantee that no aliases exist. Our local
+        // wrappers only unref afterward; only the display captured above is used
+        // after this call.
         #[expect(
             unsafe_code,
             reason = "GTK exposes synchronous disposal of the exclusively owned container as unsafe"
@@ -108,6 +111,29 @@ impl NativeEditor {
             iterations += 1;
         }
         Ok(iterations)
+    }
+
+    /// Map or unmap the owned child, retaining its browser and document.
+    pub fn set_visible(&self, visible: bool) -> Result<(), NativeError> {
+        Self::check_thread()?;
+        let display = self._window.0.display();
+        if visible {
+            self._window.0.show_all();
+        } else {
+            self._window.0.hide();
+        }
+        display.sync();
+        Ok(())
+    }
+
+    /// Accept the declared fixed size without changing the native child.
+    pub fn set_size(&self, width: u32, height: u32) -> Result<(), NativeError> {
+        Self::check_thread()?;
+        if width == u32::from(Self::WIDTH) && height == u32::from(Self::HEIGHT) {
+            Ok(())
+        } else {
+            Err(NativeError::UnsupportedSize)
+        }
     }
 
     fn check_thread() -> Result<(), NativeError> {

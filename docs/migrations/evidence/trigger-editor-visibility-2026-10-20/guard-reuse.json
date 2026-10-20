@@ -1,0 +1,29 @@
+{
+  "status": "qualified reuse of published execution for unchanged default build/inventory boundary; no new guard run",
+  "published_commit": "9f9252cfee895f30e659e2f87a42bc833eef0e5a",
+  "old_manifest": "../trigger-editor-disposal-2026-10-20/root-guard-raw.tar.gz:guard-green/source-manifest.json",
+  "old_manifest_sha256": "87c00e80f435b1c217438bf9ccaf9b2c4a446b2c0680f1dc38aa40579ba3af62",
+  "current_manifest": "guard-reuse-current-inputs.json",
+  "current_manifest_sha256": "1e0485afe5439ac1ddc7b771c149b056f8210bc46a95f7b865f36b8e41f4d4b2",
+  "input_paths": 583,
+  "unchanged_input_paths": 581,
+  "changed_input_paths": {
+    "src/trigger-editor/src/native_x11.rs": {
+      "published_sha256": "d5a716081621410e4adbf6578cf5c5dcd4a1487691b6497a196c3803da9a39c1",
+      "current_sha256": "a5c2348b4936786b4bee81b4443094c56cfc1c7a12287559ac08bee456957523"
+    },
+    "src/trigger-editor/tests/internal/native_x11.rs": {
+      "published_sha256": "4547ef33b5113d2d7f2619f72cdd6bd6b5a7b6904c07eb0a5ca8957985fa9410",
+      "current_sha256": "8f81634d60a7eb45a10674d1889992baca3b873bbd8b94ced4e0da69a8e4bd5f"
+    }
+  },
+  "all_583_inputs_unchanged": false,
+  "default_compiled_boundary_unchanged": true,
+  "reason": "Only native_x11 module and its nested test file changed; lib.rs cfg(all(target_os=linux,feature=native-x11)) excludes entire module in default compilation. Cargo default features empty. All581other input paths, including assets/lib/manifests/lock/CMake/Python, are byte-identical. Native-ON guard step is inventory-only; its command/wiring unchanged. New native behavior separately compiled/exercised with exact-source actual GTK tests.",
+  "prior_exit_code": 0,
+  "prior_elapsed_seconds": 88.445691,
+  "prior_body_seconds": 87.483,
+  "prior_selected_runtime_ctests": "3/3",
+  "limits": "No claim old583inputmanifest equals current native sources or that reused default execution proves new native behavior.",
+  "complete_current_input_pathset_matches_published": true
+}

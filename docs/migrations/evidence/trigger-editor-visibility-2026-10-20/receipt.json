@@ -1,0 +1,257 @@
+{
+  "schema_version": 1,
+  "base": "9f9252cfee895f30e659e2f87a42bc833eef0e5a",
+  "scope": "Task3.2 owned native visibility/fixed-size: show/hide retains one browser/document/XID and mapped host parent; only 1200x800 is accepted, all other full-width dimensions rejected without physical/content effects.",
+  "task_3_2_complete": false,
+  "full_beta_complete": false,
+  "sources": {
+    "src/trigger-editor/src/native_x11.rs": "a5c2348b4936786b4bee81b4443094c56cfc1c7a12287559ac08bee456957523",
+    "src/trigger-editor/tests/internal/native_x11.rs": "8f81634d60a7eb45a10674d1889992baca3b873bbd8b94ced4e0da69a8e4bd5f"
+  },
+  "author_artifacts": 471,
+  "source_phases": 14,
+  "red": "Exact final test first fails with eight E0599 errors for absent inherent methods/variant; API-absence compile RED, not runtime/setup/native failure.",
+  "checks": {
+    "release-clippy": {
+      "source_manifest": "release-clippy-hashes.json",
+      "source_snapshot": "release-clippy-source",
+      "log": "release-clippy.log",
+      "log_sha256": "01243941cd652ff7f41528cf724a2e5db8d9fae1c8f884529acf0cff184d9ee8",
+      "run": "release-clippy-run.json",
+      "elapsed_seconds": 0.40916433502570726,
+      "exit": 0
+    },
+    "release-native-coverage": {
+      "source_manifest": "release-native-coverage-hashes.json",
+      "source_snapshot": "release-native-coverage-source",
+      "log": "release-native-coverage.log",
+      "log_sha256": "c85b9c61e7d76e53c15e60c76f0dd647c993c734510ed7711ac56d251ee90dda",
+      "run": "release-native-coverage-run.json",
+      "elapsed_seconds": 4.351430021983106,
+      "exit": 0
+    },
+    "release-fast-coverage": {
+      "source_manifest": "release-fast-coverage-hashes.json",
+      "source_snapshot": "release-fast-coverage-source",
+      "log": "release-fast-coverage.log",
+      "log_sha256": "dbf41e50023116cf6aadb11bf9ae92657d375e848e92c8ae9604c692892777e2",
+      "run": "release-fast-coverage-run.json",
+      "elapsed_seconds": 0.11522569300723262,
+      "exit": 0
+    },
+    "release-ctest": {
+      "source_manifest": "release-ctest-hashes.json",
+      "source_snapshot": "release-ctest-source",
+      "log": "release-ctest.log",
+      "log_sha256": "ddffc76dee168947e94a8a2bfbeaceebaac2bdb66b0ac88321737f19b68d4ca9",
+      "run": "release-ctest-run.json",
+      "elapsed_seconds": 5.011940618976951,
+      "exit": 0
+    },
+    "release-build": {
+      "source_manifest": "release-build-hashes.json",
+      "source_snapshot": "release-build-source",
+      "log": "release-build.log",
+      "log_sha256": "9e757dc06b8fffcef78face64c13a678b3eb6d44779ef9c55a260a46bee61d8d",
+      "run": "release-build-run.json",
+      "elapsed_seconds": 0.3045105609926395,
+      "exit": 0
+    },
+    "release-fmt": {
+      "source_manifest": "release-fmt-hashes.json",
+      "source_snapshot": "release-fmt-source",
+      "log": "release-fmt.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run": "release-fmt-run.json",
+      "elapsed_seconds": 0.05541256201104261,
+      "exit": 0
+    },
+    "release-diff": {
+      "source_manifest": "release-diff-hashes.json",
+      "source_snapshot": "release-diff-source",
+      "log": "release-diff.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run": "release-diff-run.json",
+      "elapsed_seconds": 0.0052768099994864315,
+      "exit": 0
+    },
+    "release-default-graph": {
+      "source_manifest": "release-default-graph-hashes.json",
+      "source_snapshot": "release-default-graph-source",
+      "log": "release-default-graph.log",
+      "log_sha256": "2fc97f45a6da36216e4901bc271843d05372f7b2fda3a20a3d01963a5e6b6c26",
+      "run": "release-default-graph-run.json",
+      "elapsed_seconds": 0.06411591000505723,
+      "exit": 0
+    }
+  },
+  "coverage": {
+    "owner_native": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 16,
+        "covered": 14,
+        "percent": 87.5
+      },
+      "instantiations": {
+        "count": 44,
+        "covered": 33,
+        "percent": 75
+      },
+      "lines": {
+        "count": 153,
+        "covered": 148,
+        "percent": 96.73202614379085
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 229,
+        "covered": 208,
+        "notcovered": 21,
+        "percent": 90.82969432314411
+      }
+    },
+    "assets_fast": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 5,
+        "covered": 5,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 11,
+        "covered": 7,
+        "percent": 63.63636363636363
+      },
+      "lines": {
+        "count": 52,
+        "covered": 52,
+        "percent": 100
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 87,
+        "covered": 86,
+        "notcovered": 1,
+        "percent": 98.85057471264368
+      }
+    },
+    "new_code": "All17 new executable owner lines covered. set_visible11 calls:6show/5hide; set_size44 calls:4accept/40reject. No newly extracted production source.",
+    "new_regions_uncovered": [
+      {
+        "line": 118,
+        "direction": "check_thread ? error propagation in set_visible"
+      },
+      {
+        "line": 131,
+        "direction": "check_thread ? error propagation in set_size"
+      }
+    ],
+    "new_gap_reason": "NativeEditor contains GTK/Wry thread-affine objects and cannot safely move to a non-UI thread; no public transfer/invalid-owner seam or unsafe tests added solely for score. Shared check_thread WrongThread itself covered by existing service/create tests.",
+    "inherited_gaps": [
+      {
+        "lines": [
+          97,
+          98
+        ],
+        "reason": "Fresh sole IPC registration refusal cannot be induced through fixed public constructor."
+      },
+      {
+        "lines": [
+          151
+        ],
+        "reason": "Non-X11 guard outside selected platform."
+      },
+      {
+        "lines": [
+          154
+        ],
+        "reason": "Connection failure would require GDK-live auth/server loss; shared real server not disrupted."
+      },
+      {
+        "lines": [
+          208
+        ],
+        "reason": "Transport loss enqueue direction not induced; checked BadWindow reply rollback is real and covered."
+      },
+      {
+        "reason": "Other19inherited-region directions include missing defaultdisplay/realization-cast, wrongroot/depth, validationtransport/races, nonvalueIPC and rejected-constructor closures; dependency-internal errors remain a limit."
+      }
+    ],
+    "instrumentation": "Local workspace rustc wrapper -Cinstrument-coverage, existing editor-target only; native/fast separate profiles, retainedprofraw/profdata/LLVMjson/annotation, commands/toolversions/binarySHA in release-coverage-export-runs.json; same local native owner linecounts observed.",
+    "limitations": "No exclusions, artificial score API/test, mutation or branch/MC/DC claim; LLVM branch counters0."
+  },
+  "refactor": {
+    "decision": "Reviewed after native initial coverage. Keep direct methods in existing module; no extraction/abstraction/state mirror. Reuse existing2cycles and focused test helper+literal-state assertions; final diagnostic-only logs expose requested dimensions/results/receipts.",
+    "cost": "release native body3.54s;40rejected physical/content cases use bounded external hostticks and positiveIPCpolling.3CTesttotal5.01s (fast.08/package.06/native4.87includingnormalbuild); named native boundary lane retains adjacent material checks. No repeated stress sweep or private main loop."
+  },
+  "default_build_boundary": {
+    "status": "qualified reuse of published execution for unchanged default build/inventory boundary; no new guard run",
+    "published_commit": "9f9252cfee895f30e659e2f87a42bc833eef0e5a",
+    "old_manifest": "../trigger-editor-disposal-2026-10-20/root-guard-raw.tar.gz:guard-green/source-manifest.json",
+    "old_manifest_sha256": "87c00e80f435b1c217438bf9ccaf9b2c4a446b2c0680f1dc38aa40579ba3af62",
+    "current_manifest": "guard-reuse-current-inputs.json",
+    "current_manifest_sha256": "1e0485afe5439ac1ddc7b771c149b056f8210bc46a95f7b865f36b8e41f4d4b2",
+    "input_paths": 583,
+    "unchanged_input_paths": 581,
+    "changed_input_paths": {
+      "src/trigger-editor/src/native_x11.rs": {
+        "published_sha256": "d5a716081621410e4adbf6578cf5c5dcd4a1487691b6497a196c3803da9a39c1",
+        "current_sha256": "a5c2348b4936786b4bee81b4443094c56cfc1c7a12287559ac08bee456957523"
+      },
+      "src/trigger-editor/tests/internal/native_x11.rs": {
+        "published_sha256": "4547ef33b5113d2d7f2619f72cdd6bd6b5a7b6904c07eb0a5ca8957985fa9410",
+        "current_sha256": "8f81634d60a7eb45a10674d1889992baca3b873bbd8b94ced4e0da69a8e4bd5f"
+      }
+    },
+    "all_583_inputs_unchanged": false,
+    "default_compiled_boundary_unchanged": true,
+    "reason": "Only native_x11 module and its nested test file changed; lib.rs cfg(all(target_os=linux,feature=native-x11)) excludes entire module in default compilation. Cargo default features empty. All581other input paths, including assets/lib/manifests/lock/CMake/Python, are byte-identical. Native-ON guard step is inventory-only; its command/wiring unchanged. New native behavior separately compiled/exercised with exact-source actual GTK tests.",
+    "prior_exit_code": 0,
+    "prior_elapsed_seconds": 88.445691,
+    "prior_body_seconds": 87.483,
+    "prior_selected_runtime_ctests": "3/3",
+    "limits": "No claim old583inputmanifest equals current native sources or that reused default execution proves new native behavior.",
+    "complete_current_input_pathset_matches_published": true
+  },
+  "safety_clarification": {
+    "report": "global-alias-safety.md",
+    "sha256": "075b71e4269a00bd115820686181ddda81f3b224f9974c53d00cf1885c238ca7",
+    "meaning": "GTK global enumeration can retain references. No exported handle is not a universal no-alias guarantee. Retained references do not extend the live-widget lifetime; no post-destroy widget queries. Precise seven-line comment only, no executable disposal change or newly established concrete memory-safety defect."
+  },
+  "limits": [
+    "Real LinuxX11/GTK3.24.33/WebKitGTK2.50.4 scale1 only; highDPI/scale not established.",
+    "Result UIguard and GTKvoid calls do not independently prove host eventloop/CLAP APIorder/timer integration; actual physicalX11 oracle establishes selectedfixture.",
+    "No actual CLAP/session/audio/device/native backend initialization, GUIAPI/order facade, next resourceCSP or overallbeta completion claim."
+  ],
+  "review": {
+    "status": "PASS",
+    "manifest_sha256": "452cfd1404be3f69f5024517416d73b46fd5c17c41610cea1239ade6031463b4",
+    "review_sha256": "c9ae1b5ba9eb15203c82363be0e9e7f3afc6c1702b2df3a5aa24f8e4344d84e2",
+    "verdict_sha256": "b7a1ee64d94160dba3b0e2f05cbb8b21b8dcfafae938a46a2afc3914fe83c350"
+  },
+  "publication": {
+    "target": "origin/feat/juce-free-host-adapters",
+    "status": "pending normal hooks"
+  }
+}

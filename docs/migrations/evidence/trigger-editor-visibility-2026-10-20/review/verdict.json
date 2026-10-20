@@ -1,0 +1,15 @@
+{
+  "verdict": "PASS",
+  "candidate_manifest_sha256": "452cfd1404be3f69f5024517416d73b46fd5c17c41610cea1239ade6031463b4",
+  "candidate_path_count": 20,
+  "base": "9f9252cfee895f30e659e2f87a42bc833eef0e5a",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "9f9252cfee895f30e659e2f87a42bc833eef0e5a",
+  "report_sha256": "c9ae1b5ba9eb15203c82363be0e9e7f3afc6c1702b2df3a5aa24f8e4344d84e2",
+  "scope": "Native owner show/hide and exact fixed-size acceptance/rejection only; task 3.2 and full beta remain open.",
+  "task_3_2_complete": false,
+  "full_beta_complete": false,
+  "required_corrections": [],
+  "post_pass_envelope": "Exactly five metadata paths described in review.md; same-reviewer final 22-path manifest addendum before normal-hook publication.",
+  "resource_release": "No native/build/cache/process ownership acquired; root retains exclusive mutable ownership."
+}
