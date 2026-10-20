@@ -1,0 +1,2409 @@
+{
+  "source": "/tmp/dandrum-lanes/evidence-session-jobs",
+  "archive": "author-raw.tar.gz",
+  "archive_sha256": "85fdf833874495a1d0990efa631208a65f813840cb71314506a950ae0889adc5",
+  "members": 480,
+  "artifacts": [
+    {
+      "path": "01-clippy-box/output.log",
+      "sha256": "dc004d7a5ebd8c396af379749b271ba9ef9f975b198bfa563b7f7d2d86179e50",
+      "size": 160
+    },
+    {
+      "path": "01-clippy-box/receipt.json",
+      "sha256": "147cba6ccadc61472e2305e492adf4a52ec209c93779b53c6b900dd9f9f9b9df",
+      "size": 1632
+    },
+    {
+      "path": "01-clippy-box/source/src/instrument-session/src/lib.rs",
+      "sha256": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e",
+      "size": 32833
+    },
+    {
+      "path": "01-clippy-box/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "01-clippy-box/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "01-clippy-box/source/src/trigger-host/src/parameters.rs",
+      "sha256": "dd60bba24b4f0dbdb4b796c17f42cc194ed9b73014cdf9b8dc1de7f8088d4b34",
+      "size": 32709
+    },
+    {
+      "path": "01-clippy-box/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "01-clippy-box/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "01-clippy-box/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "c26751aa2e4fa82e1300b7a59d011c6ed113ba156961f8a247ea5ca308c588a9",
+      "size": 7159
+    },
+    {
+      "path": "01-clippy/output.log",
+      "sha256": "9adbae69bd5707374307e335a75ea398b1737f3d421e1c67312e4f2b452b2106",
+      "size": 5307
+    },
+    {
+      "path": "01-clippy/receipt.json",
+      "sha256": "781f3dc3231dd06e74e487acc6641ba3c8ddb478424677d5b465277587693253",
+      "size": 1634
+    },
+    {
+      "path": "01-clippy/source/src/instrument-session/src/lib.rs",
+      "sha256": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e",
+      "size": 32833
+    },
+    {
+      "path": "01-clippy/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "01-clippy/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "01-clippy/source/src/trigger-host/src/parameters.rs",
+      "sha256": "f2e811d5b05200e6bbb433d2405f5e8b2853ad8a27deb725ef6ef19d1cb66fa1",
+      "size": 32678
+    },
+    {
+      "path": "01-clippy/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "01-clippy/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "01-clippy/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "c26751aa2e4fa82e1300b7a59d011c6ed113ba156961f8a247ea5ca308c588a9",
+      "size": 7159
+    },
+    {
+      "path": "01-coverage-report.json",
+      "sha256": "9c0d11da7805a1e540168620fab20c00813b628d0f0b125b1d65d4eef823d6c5",
+      "size": 390920
+    },
+    {
+      "path": "01-coverage-summary.json",
+      "sha256": "d4c4b56f77c42ee790e022b2625ec69c47ac583e9e6201a4c744a4c40b88f240",
+      "size": 4046
+    },
+    {
+      "path": "01-coverage/output.log",
+      "sha256": "98d40a9ffac0e25adb5d56933dde12dffe8bb91c1d5fd36a08b4605a3174e9d9",
+      "size": 1960
+    },
+    {
+      "path": "01-coverage/receipt.json",
+      "sha256": "602623e2b53980ccddb27f4cc446a1ad7e0c6e3b16a8fd848c917fae177d1ecd",
+      "size": 1730
+    },
+    {
+      "path": "01-coverage/source/src/instrument-session/src/lib.rs",
+      "sha256": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e",
+      "size": 32833
+    },
+    {
+      "path": "01-coverage/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "01-coverage/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "01-coverage/source/src/trigger-host/src/parameters.rs",
+      "sha256": "dd60bba24b4f0dbdb4b796c17f42cc194ed9b73014cdf9b8dc1de7f8088d4b34",
+      "size": 32709
+    },
+    {
+      "path": "01-coverage/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "01-coverage/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "01-coverage/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "c26751aa2e4fa82e1300b7a59d011c6ed113ba156961f8a247ea5ca308c588a9",
+      "size": 7159
+    },
+    {
+      "path": "01-format-box/output.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "01-format-box/receipt.json",
+      "sha256": "5fc556f1fdd9ed1a7b669928fb9815e73d23e4b7986340333ab146bb15100b1e",
+      "size": 1538
+    },
+    {
+      "path": "01-format-box/source/src/instrument-session/src/lib.rs",
+      "sha256": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e",
+      "size": 32833
+    },
+    {
+      "path": "01-format-box/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "01-format-box/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "01-format-box/source/src/trigger-host/src/parameters.rs",
+      "sha256": "dd60bba24b4f0dbdb4b796c17f42cc194ed9b73014cdf9b8dc1de7f8088d4b34",
+      "size": 32709
+    },
+    {
+      "path": "01-format-box/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "01-format-box/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "01-format-box/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "c26751aa2e4fa82e1300b7a59d011c6ed113ba156961f8a247ea5ca308c588a9",
+      "size": 7159
+    },
+    {
+      "path": "01-format/output.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "01-format/receipt.json",
+      "sha256": "26382d13e823b25d40ad0ca5e2615147fe52d587a3e6d636e946eebd4ad53c6b",
+      "size": 1539
+    },
+    {
+      "path": "01-format/source/src/instrument-session/src/lib.rs",
+      "sha256": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e",
+      "size": 32833
+    },
+    {
+      "path": "01-format/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "01-format/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "01-format/source/src/trigger-host/src/parameters.rs",
+      "sha256": "7d744c4f023ecf200fc82f79a7e35593d46fb0690592d6ee11ec77aa5809773d",
+      "size": 31489
+    },
+    {
+      "path": "01-format/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "01-format/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "01-format/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "3d873ebe72a1f8f1f6af01803d3a0e4971dcc0dc55d3d9e1897cf89ae7447357",
+      "size": 5865
+    },
+    {
+      "path": "01-green-box/output.log",
+      "sha256": "cd6c6fa9a64adb1bd2b5ef8d20e51ebff36a40cea1c7d3e42c4f8c88a06a4016",
+      "size": 471
+    },
+    {
+      "path": "01-green-box/receipt.json",
+      "sha256": "a53246e3dde97ca2061496ec9633bc805700300ab2eab94f7ff66e7d97b54181",
+      "size": 1607
+    },
+    {
+      "path": "01-green-box/source/src/instrument-session/src/lib.rs",
+      "sha256": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e",
+      "size": 32833
+    },
+    {
+      "path": "01-green-box/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "01-green-box/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "01-green-box/source/src/trigger-host/src/parameters.rs",
+      "sha256": "dd60bba24b4f0dbdb4b796c17f42cc194ed9b73014cdf9b8dc1de7f8088d4b34",
+      "size": 32709
+    },
+    {
+      "path": "01-green-box/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "01-green-box/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "01-green-box/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "c26751aa2e4fa82e1300b7a59d011c6ed113ba156961f8a247ea5ca308c588a9",
+      "size": 7159
+    },
+    {
+      "path": "01-green-with-display/output.log",
+      "sha256": "7bfca13d5956ee529b569a34ee8238caa8c488ebb15141aab1edb92663aa603f",
+      "size": 471
+    },
+    {
+      "path": "01-green-with-display/receipt.json",
+      "sha256": "15ddade30e92eb8657bdd3591a4d52e07513fc5b6a67aeac23d03831835d0000",
+      "size": 1607
+    },
+    {
+      "path": "01-green-with-display/source/src/instrument-session/src/lib.rs",
+      "sha256": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e",
+      "size": 32833
+    },
+    {
+      "path": "01-green-with-display/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "01-green-with-display/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "01-green-with-display/source/src/trigger-host/src/parameters.rs",
+      "sha256": "7d744c4f023ecf200fc82f79a7e35593d46fb0690592d6ee11ec77aa5809773d",
+      "size": 31489
+    },
+    {
+      "path": "01-green-with-display/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "01-green-with-display/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "01-green-with-display/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "3d873ebe72a1f8f1f6af01803d3a0e4971dcc0dc55d3d9e1897cf89ae7447357",
+      "size": 5865
+    },
+    {
+      "path": "01-green/output.log",
+      "sha256": "d1eee3b0e6c2e5931d5dea293d2543ee394043e9554a21262b0da915a599c0f4",
+      "size": 1399
+    },
+    {
+      "path": "01-green/receipt.json",
+      "sha256": "63fe4215c6db2761561ec92bfc5e5a6fd0cc1e420dbb44d3f6dc9d4389279aec",
+      "size": 1609
+    },
+    {
+      "path": "01-green/source/src/instrument-session/src/lib.rs",
+      "sha256": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e",
+      "size": 32833
+    },
+    {
+      "path": "01-green/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "01-green/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "01-green/source/src/trigger-host/src/parameters.rs",
+      "sha256": "7d744c4f023ecf200fc82f79a7e35593d46fb0690592d6ee11ec77aa5809773d",
+      "size": 31489
+    },
+    {
+      "path": "01-green/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "01-green/source/src/trigger-host/src/runtime.rs",
+      "sha256": "08492f59c6c79d8187375e3b3573ed678cdadc1f69a4960f9452a3b828049df1",
+      "size": 38749
+    },
+    {
+      "path": "01-green/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "1f64240e12df84e23b54b7893cded4047feba84bf8a91dd063b06f8fc3982b31",
+      "size": 5645
+    },
+    {
+      "path": "01-readiness-green/output.log",
+      "sha256": "ba5c187ef71e088cf8e34d9214a0254726383a65c51229fa07c03539589a3287",
+      "size": 1431
+    },
+    {
+      "path": "01-readiness-green/receipt.json",
+      "sha256": "8c1c8423dca0b053c77faf657da6cd219b365ede620c77d354ec71bdacc4fcbd",
+      "size": 1616
+    },
+    {
+      "path": "01-readiness-green/source/src/instrument-session/src/lib.rs",
+      "sha256": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e",
+      "size": 32833
+    },
+    {
+      "path": "01-readiness-green/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "01-readiness-green/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "01-readiness-green/source/src/trigger-host/src/parameters.rs",
+      "sha256": "7d744c4f023ecf200fc82f79a7e35593d46fb0690592d6ee11ec77aa5809773d",
+      "size": 31489
+    },
+    {
+      "path": "01-readiness-green/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "01-readiness-green/source/src/trigger-host/src/runtime.rs",
+      "sha256": "08492f59c6c79d8187375e3b3573ed678cdadc1f69a4960f9452a3b828049df1",
+      "size": 38749
+    },
+    {
+      "path": "01-readiness-green/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "1f64240e12df84e23b54b7893cded4047feba84bf8a91dd063b06f8fc3982b31",
+      "size": 5645
+    },
+    {
+      "path": "01-readiness-with-display/output.log",
+      "sha256": "93c1c657ae85fdc7c58b5146031e3c7c217f85de35c7cd08f23201f5294883bb",
+      "size": 507
+    },
+    {
+      "path": "01-readiness-with-display/receipt.json",
+      "sha256": "cef058e2cd56cc304533a97fa6317ea4b39eeb16b197511c4d65831a4d1e6ada",
+      "size": 1614
+    },
+    {
+      "path": "01-readiness-with-display/source/src/instrument-session/src/lib.rs",
+      "sha256": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e",
+      "size": 32833
+    },
+    {
+      "path": "01-readiness-with-display/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "01-readiness-with-display/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "01-readiness-with-display/source/src/trigger-host/src/parameters.rs",
+      "sha256": "7d744c4f023ecf200fc82f79a7e35593d46fb0690592d6ee11ec77aa5809773d",
+      "size": 31489
+    },
+    {
+      "path": "01-readiness-with-display/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "01-readiness-with-display/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "01-readiness-with-display/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "3d873ebe72a1f8f1f6af01803d3a0e4971dcc0dc55d3d9e1897cf89ae7447357",
+      "size": 5865
+    },
+    {
+      "path": "01-red-api/output.log",
+      "sha256": "85d914a5d8482f3b4aedd0ab70db9861f5ebbd29926373095ee3368ba720fff3",
+      "size": 3640
+    },
+    {
+      "path": "01-red-api/receipt.json",
+      "sha256": "9312a16166e7920134fb0761fb1f71fb8bc4111b6ca81b7bedd43cc00e32e337",
+      "size": 1609
+    },
+    {
+      "path": "01-red-api/source/src/instrument-session/src/lib.rs",
+      "sha256": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e",
+      "size": 32833
+    },
+    {
+      "path": "01-red-api/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "01-red-api/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "01-red-api/source/src/trigger-host/src/parameters.rs",
+      "sha256": "cfcfed9254885573cd4bf7253865df9d5ab9e5f88c3068492f39d0dc5aabb4b2",
+      "size": 24297
+    },
+    {
+      "path": "01-red-api/source/src/trigger-host/src/protocol.rs",
+      "sha256": "1e12b7c163de522478ffe081cff47385209edc7427d8cf8366bc4271c1483a21",
+      "size": 20087
+    },
+    {
+      "path": "01-red-api/source/src/trigger-host/src/runtime.rs",
+      "sha256": "82a8880412508d145b2280dcaceeacdffd92f54be27bf4aa87b08c95e47241dc",
+      "size": 38634
+    },
+    {
+      "path": "01-red-api/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "1f64240e12df84e23b54b7893cded4047feba84bf8a91dd063b06f8fc3982b31",
+      "size": 5645
+    },
+    {
+      "path": "01-red-readiness/output.log",
+      "sha256": "0963b993be7d796a3a517a307e233988f9b5930044cf9b60144afdb511a15556",
+      "size": 3362
+    },
+    {
+      "path": "01-red-readiness/receipt.json",
+      "sha256": "75e6827179684a6a665bd77a665557528ed1cea40d9968d1174693560ba37913",
+      "size": 1616
+    },
+    {
+      "path": "01-red-readiness/source/src/instrument-session/src/lib.rs",
+      "sha256": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e",
+      "size": 32833
+    },
+    {
+      "path": "01-red-readiness/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "01-red-readiness/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "01-red-readiness/source/src/trigger-host/src/parameters.rs",
+      "sha256": "cfcfed9254885573cd4bf7253865df9d5ab9e5f88c3068492f39d0dc5aabb4b2",
+      "size": 24297
+    },
+    {
+      "path": "01-red-readiness/source/src/trigger-host/src/protocol.rs",
+      "sha256": "1e12b7c163de522478ffe081cff47385209edc7427d8cf8366bc4271c1483a21",
+      "size": 20087
+    },
+    {
+      "path": "01-red-readiness/source/src/trigger-host/src/runtime.rs",
+      "sha256": "82a8880412508d145b2280dcaceeacdffd92f54be27bf4aa87b08c95e47241dc",
+      "size": 38634
+    },
+    {
+      "path": "01-red-readiness/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "1f64240e12df84e23b54b7893cded4047feba84bf8a91dd063b06f8fc3982b31",
+      "size": 5645
+    },
+    {
+      "path": "01-red/output.log",
+      "sha256": "ec1a2c49c299642072a825d08b670d15dad53b7565025b49b6eab09a3cd5d0ce",
+      "size": 4941
+    },
+    {
+      "path": "01-red/receipt.json",
+      "sha256": "5dc34a482ab0b3f748e7081fafa47a53774085ce32c00946e5152d2ad99f7630",
+      "size": 1608
+    },
+    {
+      "path": "01-red/source/src/instrument-session/src/lib.rs",
+      "sha256": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e",
+      "size": 32833
+    },
+    {
+      "path": "01-red/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "01-red/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "01-red/source/src/trigger-host/src/parameters.rs",
+      "sha256": "cfcfed9254885573cd4bf7253865df9d5ab9e5f88c3068492f39d0dc5aabb4b2",
+      "size": 24297
+    },
+    {
+      "path": "01-red/source/src/trigger-host/src/protocol.rs",
+      "sha256": "1e12b7c163de522478ffe081cff47385209edc7427d8cf8366bc4271c1483a21",
+      "size": 20087
+    },
+    {
+      "path": "01-red/source/src/trigger-host/src/runtime.rs",
+      "sha256": "82a8880412508d145b2280dcaceeacdffd92f54be27bf4aa87b08c95e47241dc",
+      "size": 38634
+    },
+    {
+      "path": "01-red/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "49bed15371f731391126af96b3ce398e03b17d1e2061da3f72cf65585a3d835e",
+      "size": 5568
+    },
+    {
+      "path": "01-refactor.md",
+      "sha256": "0f236c4c4d350879ca4e03240aad2c50e9466155820743035ebc6ee7008ff926",
+      "size": 2192
+    },
+    {
+      "path": "02-clippy/output.log",
+      "sha256": "f05a78493a9446b00373d8c4142d920217ef593c58d03684bff05b1ede24652b",
+      "size": 160
+    },
+    {
+      "path": "02-clippy/receipt.json",
+      "sha256": "4cb00e3ca85c4acc1f1eec425de09cb958f9c2e06a6a1166f849ce1fc36c2f62",
+      "size": 1632
+    },
+    {
+      "path": "02-clippy/source/src/instrument-session/src/lib.rs",
+      "sha256": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e",
+      "size": 32833
+    },
+    {
+      "path": "02-clippy/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "02-clippy/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "02-clippy/source/src/trigger-host/src/parameters.rs",
+      "sha256": "06f80e57173db504bba637bdbde75d632a1e1fe38592a4c4cd3663ef79116a54",
+      "size": 32749
+    },
+    {
+      "path": "02-clippy/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "02-clippy/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "02-clippy/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "b3c1b52df1211b1640a008a648164f22dae571195c1aeaab9c11b16518546590",
+      "size": 9862
+    },
+    {
+      "path": "02-coverage-report.json",
+      "sha256": "3c826801c0273badba87e518eb2f4633b62b97cebf20eb6e52e35e08ec9be0c5",
+      "size": 395123
+    },
+    {
+      "path": "02-coverage/output.log",
+      "sha256": "747e9f0d711efadb8e0f3cfafafc0af1a9b714909b09737651f3da881bc8bae0",
+      "size": 1944
+    },
+    {
+      "path": "02-coverage/receipt.json",
+      "sha256": "9af9b6ff62383386afa037330fd360453cd6484ccc627748c8d646ba523576f7",
+      "size": 1733
+    },
+    {
+      "path": "02-coverage/source/src/instrument-session/src/lib.rs",
+      "sha256": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e",
+      "size": 32833
+    },
+    {
+      "path": "02-coverage/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "02-coverage/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "02-coverage/source/src/trigger-host/src/parameters.rs",
+      "sha256": "06f80e57173db504bba637bdbde75d632a1e1fe38592a4c4cd3663ef79116a54",
+      "size": 32749
+    },
+    {
+      "path": "02-coverage/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "02-coverage/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "02-coverage/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "b3c1b52df1211b1640a008a648164f22dae571195c1aeaab9c11b16518546590",
+      "size": 9862
+    },
+    {
+      "path": "02-format/output.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "02-format/receipt.json",
+      "sha256": "fa4a3f875de2b2d95dc669124995bdac7e157e52adc5a399bf041abfb39d40d6",
+      "size": 1541
+    },
+    {
+      "path": "02-format/source/src/instrument-session/src/lib.rs",
+      "sha256": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e",
+      "size": 32833
+    },
+    {
+      "path": "02-format/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "02-format/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "02-format/source/src/trigger-host/src/parameters.rs",
+      "sha256": "06f80e57173db504bba637bdbde75d632a1e1fe38592a4c4cd3663ef79116a54",
+      "size": 32749
+    },
+    {
+      "path": "02-format/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "02-format/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "02-format/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "6d88dfa3ff621de3be36608588d53b0f7fc372844f3c3e50bc5aa6b4776928c2",
+      "size": 9519
+    },
+    {
+      "path": "02-green/output.log",
+      "sha256": "744ca2ede73cddcef0b9dce8cda171664a192fa4ee324f9528806800a6dd7c5a",
+      "size": 555
+    },
+    {
+      "path": "02-green/receipt.json",
+      "sha256": "0c395481e0ff8028fb1f583782670652622a45a937bcea5082734243b564e364",
+      "size": 1608
+    },
+    {
+      "path": "02-green/source/src/instrument-session/src/lib.rs",
+      "sha256": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e",
+      "size": 32833
+    },
+    {
+      "path": "02-green/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "02-green/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "02-green/source/src/trigger-host/src/parameters.rs",
+      "sha256": "06f80e57173db504bba637bdbde75d632a1e1fe38592a4c4cd3663ef79116a54",
+      "size": 32749
+    },
+    {
+      "path": "02-green/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "02-green/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "02-green/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "6d88dfa3ff621de3be36608588d53b0f7fc372844f3c3e50bc5aa6b4776928c2",
+      "size": 9519
+    },
+    {
+      "path": "02-red-diagnostic/output.log",
+      "sha256": "c270aca7d8bdfc73b39d652f6531d016dce0b01da4172ebfe3622648d89f44e7",
+      "size": 1170
+    },
+    {
+      "path": "02-red-diagnostic/receipt.json",
+      "sha256": "3c0df81be6ba8772a6f4f3655622c50f48d2e2d3e2e5356dce434df09d2cca41",
+      "size": 1640
+    },
+    {
+      "path": "02-red-diagnostic/source/src/instrument-session/src/lib.rs",
+      "sha256": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e",
+      "size": 32833
+    },
+    {
+      "path": "02-red-diagnostic/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "02-red-diagnostic/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "02-red-diagnostic/source/src/trigger-host/src/parameters.rs",
+      "sha256": "dd60bba24b4f0dbdb4b796c17f42cc194ed9b73014cdf9b8dc1de7f8088d4b34",
+      "size": 32709
+    },
+    {
+      "path": "02-red-diagnostic/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "02-red-diagnostic/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "02-red-diagnostic/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "6d88dfa3ff621de3be36608588d53b0f7fc372844f3c3e50bc5aa6b4776928c2",
+      "size": 9519
+    },
+    {
+      "path": "02-red/output.log",
+      "sha256": "f06ba3d067cc6d3c198b60455a0ecac8f6f5dbc8e82035e7e1b02b58650ee16c",
+      "size": 1000
+    },
+    {
+      "path": "02-red/receipt.json",
+      "sha256": "15df825ff637b9f362f0bd8c85446d27723f47a593f0bc0eaac43b97235a43fa",
+      "size": 1641
+    },
+    {
+      "path": "02-red/source/src/instrument-session/src/lib.rs",
+      "sha256": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e",
+      "size": 32833
+    },
+    {
+      "path": "02-red/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "02-red/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "02-red/source/src/trigger-host/src/parameters.rs",
+      "sha256": "dd60bba24b4f0dbdb4b796c17f42cc194ed9b73014cdf9b8dc1de7f8088d4b34",
+      "size": 32709
+    },
+    {
+      "path": "02-red/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "02-red/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "02-red/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "a4411fd4577be4d839316b9889923f9bb1fc90478e02d4a54923ecc849c3ac19",
+      "size": 9488
+    },
+    {
+      "path": "02-refactor.md",
+      "sha256": "1d99610dfa4748f4c0c71ab3e6b6963f36756a507d6176edebda87c21022881c",
+      "size": 1102
+    },
+    {
+      "path": "03-clippy/output.log",
+      "sha256": "4e9a623cdcd48c3f00670c50dedba0eb662990de4bb9e043eb872663f19dd3fa",
+      "size": 260
+    },
+    {
+      "path": "03-clippy/receipt.json",
+      "sha256": "d7718a3aba73d372ac80be15c2a6b9a810dee478dc08f9f836db6186aabed2cf",
+      "size": 1633
+    },
+    {
+      "path": "03-clippy/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "03-clippy/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "03-clippy/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "03-clippy/source/src/trigger-host/src/parameters.rs",
+      "sha256": "0cb9592886a64f4a44602bcb1aa440a7ce0957b1bdc1d239c491eee7e4a81862",
+      "size": 33069
+    },
+    {
+      "path": "03-clippy/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "03-clippy/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "03-clippy/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "f111a2e4581be5601144a450b010c49122064ed828a6250172790cd9ff222715",
+      "size": 12375
+    },
+    {
+      "path": "03-coverage-report.json",
+      "sha256": "6d9b9105eb3835ad08bd2f794200e2a829f20576e842b5b91fe6729c2e120ece",
+      "size": 399959
+    },
+    {
+      "path": "03-coverage/output.log",
+      "sha256": "c045559562454631818e30e79de210ad2112ce127251fd2f1e441b76c111873b",
+      "size": 2141
+    },
+    {
+      "path": "03-coverage/receipt.json",
+      "sha256": "6402bdea56b2cff2ceaef39e42ddc3e2a5d69299e670d566a6ff1d8c585ca32e",
+      "size": 1733
+    },
+    {
+      "path": "03-coverage/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "03-coverage/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "03-coverage/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "03-coverage/source/src/trigger-host/src/parameters.rs",
+      "sha256": "0cb9592886a64f4a44602bcb1aa440a7ce0957b1bdc1d239c491eee7e4a81862",
+      "size": 33069
+    },
+    {
+      "path": "03-coverage/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "03-coverage/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "03-coverage/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "f111a2e4581be5601144a450b010c49122064ed828a6250172790cd9ff222715",
+      "size": 12375
+    },
+    {
+      "path": "03-format/output.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "03-format/receipt.json",
+      "sha256": "da13b43ab8d330034d57374294318d503c86b1642543b42bbee6706b318637c5",
+      "size": 1542
+    },
+    {
+      "path": "03-format/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "03-format/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "03-format/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "03-format/source/src/trigger-host/src/parameters.rs",
+      "sha256": "d59b8807a311cdfe1463fb6a8197dfa2787e5d5593ad80206c3ad106cae86e46",
+      "size": 32990
+    },
+    {
+      "path": "03-format/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "03-format/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "03-format/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "e64e8879fddeeade8e6e50354905f4469141ca991816feba240c62ce9ca0ed04",
+      "size": 12021
+    },
+    {
+      "path": "03-green/output.log",
+      "sha256": "a7af7bdee7eca02ea841f980b49100ea219919efc847507018952bc649846377",
+      "size": 752
+    },
+    {
+      "path": "03-green/receipt.json",
+      "sha256": "ab040ed04ce8a2afae89a918ad787190824645b3ec754d311053b7da64891874",
+      "size": 1609
+    },
+    {
+      "path": "03-green/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "03-green/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "03-green/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "03-green/source/src/trigger-host/src/parameters.rs",
+      "sha256": "d59b8807a311cdfe1463fb6a8197dfa2787e5d5593ad80206c3ad106cae86e46",
+      "size": 32990
+    },
+    {
+      "path": "03-green/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "03-green/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "03-green/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "e64e8879fddeeade8e6e50354905f4469141ca991816feba240c62ce9ca0ed04",
+      "size": 12021
+    },
+    {
+      "path": "03-red/output.log",
+      "sha256": "2bacc56e0898471feb26be6480127a5bca4564bfa719bc997cbba5ec699117d9",
+      "size": 1054
+    },
+    {
+      "path": "03-red/receipt.json",
+      "sha256": "aa4ad241f26a86050edd702ea84d9dc1b6d795f332e35154bd8c086caabad02b",
+      "size": 1630
+    },
+    {
+      "path": "03-red/source/src/instrument-session/src/lib.rs",
+      "sha256": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e",
+      "size": 32833
+    },
+    {
+      "path": "03-red/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "03-red/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "03-red/source/src/trigger-host/src/parameters.rs",
+      "sha256": "06f80e57173db504bba637bdbde75d632a1e1fe38592a4c4cd3663ef79116a54",
+      "size": 32749
+    },
+    {
+      "path": "03-red/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "03-red/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "03-red/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "e64e8879fddeeade8e6e50354905f4469141ca991816feba240c62ce9ca0ed04",
+      "size": 12021
+    },
+    {
+      "path": "03-refactor.md",
+      "sha256": "ad3f248bc173839b24a8c241758c23de56c3039aed773949e84f3d0880118d49",
+      "size": 947
+    },
+    {
+      "path": "04-clippy/output.log",
+      "sha256": "19054a08fc148437bfa370b67b1d1080add1a39f3f97b78ad9726124b6dc18ab",
+      "size": 160
+    },
+    {
+      "path": "04-clippy/receipt.json",
+      "sha256": "d6d34e7ea160d740e4776029d33a900f611810ddd6a49722d1c63ce74381088d",
+      "size": 1634
+    },
+    {
+      "path": "04-clippy/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "04-clippy/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "04-clippy/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "04-clippy/source/src/trigger-host/src/parameters.rs",
+      "sha256": "0293a90a314d8982818355834cd253124c8780ff2e3ee690df01d5e7a88ce1f8",
+      "size": 33019
+    },
+    {
+      "path": "04-clippy/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "04-clippy/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "04-clippy/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "d84c5b770c92a48458ec3a7edd218a748ecaad117c167d775630bf8c0d112f18",
+      "size": 14537
+    },
+    {
+      "path": "04-coverage-report.json",
+      "sha256": "b32d2e9315090d627875e896170d55899f3a54bfcaff4c215711da863765bb78",
+      "size": 484792
+    },
+    {
+      "path": "04-coverage/output.log",
+      "sha256": "79c197dd756842cec28ff3ce8803b52dfb0d78091e007884b4a312e01d70b498",
+      "size": 4327
+    },
+    {
+      "path": "04-coverage/receipt.json",
+      "sha256": "f05840a0b8319917e80c1f33f34c274df5eca7ce1476123559c2d0e1b4e93735",
+      "size": 1794
+    },
+    {
+      "path": "04-coverage/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "04-coverage/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "04-coverage/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "04-coverage/source/src/trigger-host/src/parameters.rs",
+      "sha256": "0293a90a314d8982818355834cd253124c8780ff2e3ee690df01d5e7a88ce1f8",
+      "size": 33019
+    },
+    {
+      "path": "04-coverage/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "04-coverage/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "04-coverage/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "d84c5b770c92a48458ec3a7edd218a748ecaad117c167d775630bf8c0d112f18",
+      "size": 14537
+    },
+    {
+      "path": "04-format/output.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "04-format/receipt.json",
+      "sha256": "dee396e9ac9761cf0f6ed783f3c2bac680c409735297fdeb9b9e29842a100a4b",
+      "size": 1541
+    },
+    {
+      "path": "04-format/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "04-format/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "04-format/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "04-format/source/src/trigger-host/src/parameters.rs",
+      "sha256": "6718eade6ece8b941e8aacfbc663f13875c9292823c057d5c05f54d1cc443069",
+      "size": 32993
+    },
+    {
+      "path": "04-format/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "04-format/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "04-format/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "02e74b5aca7d0b96414ac38ba8881997fc3c98ce6be28f7d75e80820f37f30e7",
+      "size": 14141
+    },
+    {
+      "path": "04-green/output.log",
+      "sha256": "788641228f1e3668b01c59cab14f7280978e14929258a852423c2bdb0916d3aa",
+      "size": 2916
+    },
+    {
+      "path": "04-green/receipt.json",
+      "sha256": "6a1ae8519ad5064c471a3f19b4d587f13f0c46b7b50b35ef73bc04cdccb22a37",
+      "size": 1671
+    },
+    {
+      "path": "04-green/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "04-green/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "04-green/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "04-green/source/src/trigger-host/src/parameters.rs",
+      "sha256": "6718eade6ece8b941e8aacfbc663f13875c9292823c057d5c05f54d1cc443069",
+      "size": 32993
+    },
+    {
+      "path": "04-green/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "04-green/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "04-green/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "02e74b5aca7d0b96414ac38ba8881997fc3c98ce6be28f7d75e80820f37f30e7",
+      "size": 14141
+    },
+    {
+      "path": "04-red-mutated-command-exact/output.log",
+      "sha256": "30d43f997aaa0858744b91f2faa539e50a1ee7542e4efb2f2afbc21f7263dd97",
+      "size": 925
+    },
+    {
+      "path": "04-red-mutated-command-exact/receipt.json",
+      "sha256": "e8b7b3254aa15191002d424fc19f476fa1a2ea4f9bba36f4299947c73df2ad8f",
+      "size": 1685
+    },
+    {
+      "path": "04-red-mutated-command-exact/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "04-red-mutated-command-exact/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "04-red-mutated-command-exact/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "04-red-mutated-command-exact/source/src/trigger-host/src/parameters.rs",
+      "sha256": "0cb9592886a64f4a44602bcb1aa440a7ce0957b1bdc1d239c491eee7e4a81862",
+      "size": 33069
+    },
+    {
+      "path": "04-red-mutated-command-exact/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "04-red-mutated-command-exact/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "04-red-mutated-command-exact/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "02e74b5aca7d0b96414ac38ba8881997fc3c98ce6be28f7d75e80820f37f30e7",
+      "size": 14141
+    },
+    {
+      "path": "04-red-mutated-command/output.log",
+      "sha256": "4fb63d39098d73feabb5842f220db7da490a2e5554df7c8302bfe5bf02af185d",
+      "size": 387
+    },
+    {
+      "path": "04-red-mutated-command/receipt.json",
+      "sha256": "629b02b452290c81898c4ceb670ce81316c1041034c3ba5df7963c7d9fff6ecb",
+      "size": 1625
+    },
+    {
+      "path": "04-red-mutated-command/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "04-red-mutated-command/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "04-red-mutated-command/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "04-red-mutated-command/source/src/trigger-host/src/parameters.rs",
+      "sha256": "0cb9592886a64f4a44602bcb1aa440a7ce0957b1bdc1d239c491eee7e4a81862",
+      "size": 33069
+    },
+    {
+      "path": "04-red-mutated-command/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "04-red-mutated-command/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "04-red-mutated-command/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "02e74b5aca7d0b96414ac38ba8881997fc3c98ce6be28f7d75e80820f37f30e7",
+      "size": 14141
+    },
+    {
+      "path": "04-red/output.log",
+      "sha256": "297c8f9f9996fd755f792e0557582a0b357eae79a22dd982acd420efe12eefd5",
+      "size": 1109
+    },
+    {
+      "path": "04-red/receipt.json",
+      "sha256": "b361bfc2a9e75973d825f9351e2fc44a2707cca516ef27bc11d5607d9b02ba3c",
+      "size": 1640
+    },
+    {
+      "path": "04-red/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "04-red/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "04-red/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "04-red/source/src/trigger-host/src/parameters.rs",
+      "sha256": "0cb9592886a64f4a44602bcb1aa440a7ce0957b1bdc1d239c491eee7e4a81862",
+      "size": 33069
+    },
+    {
+      "path": "04-red/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "04-red/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "04-red/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "02e74b5aca7d0b96414ac38ba8881997fc3c98ce6be28f7d75e80820f37f30e7",
+      "size": 14141
+    },
+    {
+      "path": "04-refactor.md",
+      "sha256": "cf00320a0e2d5316636f39a37d49d01ead3111ec26099901ae0c990465e252aa",
+      "size": 1314
+    },
+    {
+      "path": "05-clippy/output.log",
+      "sha256": "1995e7786ff888d4d2d2f028fe159e342e5fd43ed37c28fd7fea23e481db5ff2",
+      "size": 160
+    },
+    {
+      "path": "05-clippy/receipt.json",
+      "sha256": "f77f2a5aaa9271adb2f4951ac25fcecbf2b1d83f0b3181816ff1bfd2e30b9983",
+      "size": 1634
+    },
+    {
+      "path": "05-clippy/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "05-clippy/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "05-clippy/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "05-clippy/source/src/trigger-host/src/parameters.rs",
+      "sha256": "a77f6c5d515ed0a82c0132e1939bd51b4949aed380c164a664adf39c23aa2c0d",
+      "size": 32894
+    },
+    {
+      "path": "05-clippy/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "05-clippy/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "05-clippy/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "d1f946c1a82a7366e24311dac4ca60ee195c59b5c993e3ccd93f6ae3af20464d",
+      "size": 16466
+    },
+    {
+      "path": "05-coverage-report.json",
+      "sha256": "67313066afc87fe81414c3fd002c094d1efa9e2f7b003868cdb23cb01150e28c",
+      "size": 486587
+    },
+    {
+      "path": "05-coverage/output.log",
+      "sha256": "8dced0cf09dedc53ce2df783ababf16bd73c45c3dbfdab54da30c5e0dcf5eaf7",
+      "size": 4415
+    },
+    {
+      "path": "05-coverage/receipt.json",
+      "sha256": "504c298e19b07c881baa216db611985b2f4612d49d30931a4664575421dd969a",
+      "size": 1794
+    },
+    {
+      "path": "05-coverage/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "05-coverage/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "05-coverage/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "05-coverage/source/src/trigger-host/src/parameters.rs",
+      "sha256": "a77f6c5d515ed0a82c0132e1939bd51b4949aed380c164a664adf39c23aa2c0d",
+      "size": 32894
+    },
+    {
+      "path": "05-coverage/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "05-coverage/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "05-coverage/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "d1f946c1a82a7366e24311dac4ca60ee195c59b5c993e3ccd93f6ae3af20464d",
+      "size": 16466
+    },
+    {
+      "path": "05-format/output.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "05-format/receipt.json",
+      "sha256": "a776b8255b501dbb49458a3a7d7c458a8c7da79e9fbaa6f84b7e7c8d19c8eaa3",
+      "size": 1541
+    },
+    {
+      "path": "05-format/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "05-format/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "05-format/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "05-format/source/src/trigger-host/src/parameters.rs",
+      "sha256": "a77f6c5d515ed0a82c0132e1939bd51b4949aed380c164a664adf39c23aa2c0d",
+      "size": 32894
+    },
+    {
+      "path": "05-format/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "05-format/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "05-format/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "23c016999a1820d767da730fa3b11922c247530d614d7f047676212e7f055096",
+      "size": 16075
+    },
+    {
+      "path": "05-green/output.log",
+      "sha256": "b7b4185aec1307888ab835af6f4f389ea6cb05d977739f0bc97d2c2a729604a0",
+      "size": 836
+    },
+    {
+      "path": "05-green/receipt.json",
+      "sha256": "dcb250b34ef265e10110945f5ff4a6b244db45e44ee6310e7271509e22f7e0d1",
+      "size": 1609
+    },
+    {
+      "path": "05-green/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "05-green/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "05-green/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "05-green/source/src/trigger-host/src/parameters.rs",
+      "sha256": "a77f6c5d515ed0a82c0132e1939bd51b4949aed380c164a664adf39c23aa2c0d",
+      "size": 32894
+    },
+    {
+      "path": "05-green/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "05-green/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "05-green/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "23c016999a1820d767da730fa3b11922c247530d614d7f047676212e7f055096",
+      "size": 16075
+    },
+    {
+      "path": "05-red/output.log",
+      "sha256": "931518b7506cdf9cad1101625a5a8d946debbf2b8b4f8e3a64a6695422236d6c",
+      "size": 1355
+    },
+    {
+      "path": "05-red/receipt.json",
+      "sha256": "f7f0f7a722193f49b555f91c93cf1329f990e5e5b91448b948bc6cb5a558be01",
+      "size": 1637
+    },
+    {
+      "path": "05-red/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "05-red/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "05-red/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "05-red/source/src/trigger-host/src/parameters.rs",
+      "sha256": "0293a90a314d8982818355834cd253124c8780ff2e3ee690df01d5e7a88ce1f8",
+      "size": 33019
+    },
+    {
+      "path": "05-red/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "05-red/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "05-red/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "23c016999a1820d767da730fa3b11922c247530d614d7f047676212e7f055096",
+      "size": 16075
+    },
+    {
+      "path": "05-refactor.md",
+      "sha256": "1af52aeeba5402c58cdb565b422b1bbca828e8fe205e63e2a1c495908a07344d",
+      "size": 955
+    },
+    {
+      "path": "06-characterization/output.log",
+      "sha256": "38cf076914b596b4b61f9fd021fb83a8a95ba31473832f424158173d535ddae8",
+      "size": 1017
+    },
+    {
+      "path": "06-characterization/receipt.json",
+      "sha256": "ed11a6e73693b47901d37ad8c4ca7fbc0bf143ffbfa59906dac4630cbb3001b1",
+      "size": 1609
+    },
+    {
+      "path": "06-characterization/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "06-characterization/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "06-characterization/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "06-characterization/source/src/trigger-host/src/parameters.rs",
+      "sha256": "a77f6c5d515ed0a82c0132e1939bd51b4949aed380c164a664adf39c23aa2c0d",
+      "size": 32894
+    },
+    {
+      "path": "06-characterization/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "06-characterization/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "06-characterization/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "73f377826a19c2fa9aa122abcafd6d532e0eff07dc0aa7dbdcc95dd5cc4baa2f",
+      "size": 20278
+    },
+    {
+      "path": "06-clippy/output.log",
+      "sha256": "cdd22544c5edfebbd1190b32d4dc40cc0fe269bd4f940054fb84f1a295df192b",
+      "size": 160
+    },
+    {
+      "path": "06-clippy/receipt.json",
+      "sha256": "4a226af39ed73f614231370108249593ead1a69929eae7b2b4fcd0eccef207b1",
+      "size": 1634
+    },
+    {
+      "path": "06-clippy/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "06-clippy/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "06-clippy/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "06-clippy/source/src/trigger-host/src/parameters.rs",
+      "sha256": "4b74cc89650e5f680cc0ca84320a855eddf5565ed4af4cf5edd7ff8dfced4c42",
+      "size": 33362
+    },
+    {
+      "path": "06-clippy/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "06-clippy/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "06-clippy/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "4d4ed7a6b69dbe57ea14fbddc94eca23c178fdd15cd0d22abc6a9d3fec55db28",
+      "size": 21220
+    },
+    {
+      "path": "06-coverage-report.json",
+      "sha256": "a6a933503cb8d0a078c541a40254190bb4f485c91b3ddc4a9a236b7c140dee5e",
+      "size": 493738
+    },
+    {
+      "path": "06-coverage/output.log",
+      "sha256": "eff5924a460a540fff3ae3909755a52bd8d301e3b56f76442a97f18efa6d87ed",
+      "size": 4596
+    },
+    {
+      "path": "06-coverage/receipt.json",
+      "sha256": "cf337579de68572014044607e06a7482aa8978ee2c134f2693d8247f3f00d492",
+      "size": 1794
+    },
+    {
+      "path": "06-coverage/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "06-coverage/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "06-coverage/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "06-coverage/source/src/trigger-host/src/parameters.rs",
+      "sha256": "4b74cc89650e5f680cc0ca84320a855eddf5565ed4af4cf5edd7ff8dfced4c42",
+      "size": 33362
+    },
+    {
+      "path": "06-coverage/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "06-coverage/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "06-coverage/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "4d4ed7a6b69dbe57ea14fbddc94eca23c178fdd15cd0d22abc6a9d3fec55db28",
+      "size": 21220
+    },
+    {
+      "path": "06-format/output.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "06-format/receipt.json",
+      "sha256": "dd6714b1ff3f3d3b51bc8811177e660b9cfec1daf6844275c1b2bf1da03b11b3",
+      "size": 1541
+    },
+    {
+      "path": "06-format/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "06-format/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "06-format/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "06-format/source/src/trigger-host/src/parameters.rs",
+      "sha256": "4b74cc89650e5f680cc0ca84320a855eddf5565ed4af4cf5edd7ff8dfced4c42",
+      "size": 33362
+    },
+    {
+      "path": "06-format/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "06-format/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "06-format/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "73f377826a19c2fa9aa122abcafd6d532e0eff07dc0aa7dbdcc95dd5cc4baa2f",
+      "size": 20278
+    },
+    {
+      "path": "06-ownership-doctest-exact/output.log",
+      "sha256": "fffb9d9308a31bd5d8989a4dba1cc9a7ab9b221d60b915a3c28945b4215e489c",
+      "size": 1135
+    },
+    {
+      "path": "06-ownership-doctest-exact/receipt.json",
+      "sha256": "947743a04a29724677a4542fb47c943a47abd1a4030a2aa580aad6d563ffadac",
+      "size": 1615
+    },
+    {
+      "path": "06-ownership-doctest-exact/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "06-ownership-doctest-exact/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "06-ownership-doctest-exact/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "06-ownership-doctest-exact/source/src/trigger-host/src/parameters.rs",
+      "sha256": "4b74cc89650e5f680cc0ca84320a855eddf5565ed4af4cf5edd7ff8dfced4c42",
+      "size": 33362
+    },
+    {
+      "path": "06-ownership-doctest-exact/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "06-ownership-doctest-exact/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "06-ownership-doctest-exact/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "73f377826a19c2fa9aa122abcafd6d532e0eff07dc0aa7dbdcc95dd5cc4baa2f",
+      "size": 20278
+    },
+    {
+      "path": "06-ownership-doctest/output.log",
+      "sha256": "8f1a9eead7e08a014a98476f96d63465965e6b0751c98ba9cf3a86cee9d0ba54",
+      "size": 220
+    },
+    {
+      "path": "06-ownership-doctest/receipt.json",
+      "sha256": "7a1ff9ba394b6bb08ca2f341fddd47d3b283ff1d2bfb4fd7e5531880dea9d08d",
+      "size": 1618
+    },
+    {
+      "path": "06-ownership-doctest/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "06-ownership-doctest/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "06-ownership-doctest/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "06-ownership-doctest/source/src/trigger-host/src/parameters.rs",
+      "sha256": "a77f6c5d515ed0a82c0132e1939bd51b4949aed380c164a664adf39c23aa2c0d",
+      "size": 32894
+    },
+    {
+      "path": "06-ownership-doctest/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "06-ownership-doctest/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "06-ownership-doctest/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "73f377826a19c2fa9aa122abcafd6d532e0eff07dc0aa7dbdcc95dd5cc4baa2f",
+      "size": 20278
+    },
+    {
+      "path": "06-pause-checkpoint.json",
+      "sha256": "3d66990dfcf8db13fcd431c59a9b8227451abb3dab9e978c58ea8777976cbb3b",
+      "size": 1672
+    },
+    {
+      "path": "06-refactor.md",
+      "sha256": "0251c839ddb4984ab8e000ce0f245729fd9b97c5700919121fa8ea4cbe0c055b",
+      "size": 2031
+    },
+    {
+      "path": "07-clippy/output.log",
+      "sha256": "43891d0523029ef033b9e9087a586f136dccc5bd232abc280354a07f867a3bdd",
+      "size": 160
+    },
+    {
+      "path": "07-clippy/receipt.json",
+      "sha256": "9cbf76cfeb40ad7c94b12497b7de9f37cca76fb0a9c3bbbddc9f6790677f3f41",
+      "size": 1713
+    },
+    {
+      "path": "07-clippy/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "07-clippy/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "07-clippy/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "07-clippy/source/src/trigger-host/src/parameters.rs",
+      "sha256": "de43207bc1d90a2faca948a3dd701c99aa4cefd662f43d464071e9d1db1e211d",
+      "size": 33706
+    },
+    {
+      "path": "07-clippy/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "07-clippy/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "07-clippy/source/src/trigger-host/tests/parameters.rs",
+      "sha256": "7c9d9f52c676a4ab94921f7deee9ef4f5f37a51710e2b5c7f95b1ed076553578",
+      "size": 33783
+    },
+    {
+      "path": "07-clippy/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "e61114b2f11316fec1be165dab890db011544980b2c09c6fb7e1fa1ddd8c2323",
+      "size": 28564
+    },
+    {
+      "path": "07-coverage-report.json",
+      "sha256": "d22a207ef280ad8110910e950da44d523b1595fa20b77a6f361efec188d2472f",
+      "size": 505545
+    },
+    {
+      "path": "07-coverage/output.log",
+      "sha256": "5bd883f7d16e031def1c0c264c9abc088ef53d14de2454577743e125fc7ebfae",
+      "size": 4761
+    },
+    {
+      "path": "07-coverage/receipt.json",
+      "sha256": "4368fe3eca83dc30b2769840d2d08f1591c46a004022b3b9be68673c20c6d198",
+      "size": 1906
+    },
+    {
+      "path": "07-coverage/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "07-coverage/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "07-coverage/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "07-coverage/source/src/trigger-host/src/parameters.rs",
+      "sha256": "de43207bc1d90a2faca948a3dd701c99aa4cefd662f43d464071e9d1db1e211d",
+      "size": 33706
+    },
+    {
+      "path": "07-coverage/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "07-coverage/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "07-coverage/source/src/trigger-host/tests/parameters.rs",
+      "sha256": "7c9d9f52c676a4ab94921f7deee9ef4f5f37a51710e2b5c7f95b1ed076553578",
+      "size": 33783
+    },
+    {
+      "path": "07-coverage/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "e61114b2f11316fec1be165dab890db011544980b2c09c6fb7e1fa1ddd8c2323",
+      "size": 28564
+    },
+    {
+      "path": "07-fmt/output.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "07-fmt/receipt.json",
+      "sha256": "a18cfd29c7689c12af4f6b0082da675b36e1735549cd54ab1692be2060c8690f",
+      "size": 1654
+    },
+    {
+      "path": "07-fmt/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "07-fmt/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "07-fmt/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "07-fmt/source/src/trigger-host/src/parameters.rs",
+      "sha256": "de43207bc1d90a2faca948a3dd701c99aa4cefd662f43d464071e9d1db1e211d",
+      "size": 33706
+    },
+    {
+      "path": "07-fmt/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "07-fmt/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "07-fmt/source/src/trigger-host/tests/parameters.rs",
+      "sha256": "7c9d9f52c676a4ab94921f7deee9ef4f5f37a51710e2b5c7f95b1ed076553578",
+      "size": 33783
+    },
+    {
+      "path": "07-fmt/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "d3558fb55ca9662212b46ac13be85be42ee87b662474dfbf2da6e2f498f55283",
+      "size": 26953
+    },
+    {
+      "path": "07-green/output.log",
+      "sha256": "7661d96560878f558d687c7bc87bb973e857a4b9deb7d32fc5c71b8ccaa3e25e",
+      "size": 1182
+    },
+    {
+      "path": "07-green/receipt.json",
+      "sha256": "890478b9b5a88f4932533b4bada57626eec080ee81166651da9eb501600b975a",
+      "size": 1687
+    },
+    {
+      "path": "07-green/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "07-green/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "07-green/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "07-green/source/src/trigger-host/src/parameters.rs",
+      "sha256": "de43207bc1d90a2faca948a3dd701c99aa4cefd662f43d464071e9d1db1e211d",
+      "size": 33706
+    },
+    {
+      "path": "07-green/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "07-green/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "07-green/source/src/trigger-host/tests/parameters.rs",
+      "sha256": "7c9d9f52c676a4ab94921f7deee9ef4f5f37a51710e2b5c7f95b1ed076553578",
+      "size": 33783
+    },
+    {
+      "path": "07-green/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "d3558fb55ca9662212b46ac13be85be42ee87b662474dfbf2da6e2f498f55283",
+      "size": 26953
+    },
+    {
+      "path": "07-red-exact/output.log",
+      "sha256": "7d8e6d60f8d3e52f0f2d61529596f90e882e49b8760942ec941276b32bab4339",
+      "size": 1081
+    },
+    {
+      "path": "07-red-exact/receipt.json",
+      "sha256": "41719b9cf0b357d2f0bb87561e9c25f6a3dd07945db7230d7dee0ad2f10b3d14",
+      "size": 1817
+    },
+    {
+      "path": "07-red-exact/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "07-red-exact/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "07-red-exact/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "07-red-exact/source/src/trigger-host/src/parameters.rs",
+      "sha256": "4b74cc89650e5f680cc0ca84320a855eddf5565ed4af4cf5edd7ff8dfced4c42",
+      "size": 33362
+    },
+    {
+      "path": "07-red-exact/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "07-red-exact/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "07-red-exact/source/src/trigger-host/tests/parameters.rs",
+      "sha256": "7c9d9f52c676a4ab94921f7deee9ef4f5f37a51710e2b5c7f95b1ed076553578",
+      "size": 33783
+    },
+    {
+      "path": "07-red-exact/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "d3558fb55ca9662212b46ac13be85be42ee87b662474dfbf2da6e2f498f55283",
+      "size": 26953
+    },
+    {
+      "path": "07-red/output.log",
+      "sha256": "0c33f8c284725d1639a7ac0149db3c2861b1e19930f326ec200506256112d4bc",
+      "size": 390
+    },
+    {
+      "path": "07-red/receipt.json",
+      "sha256": "6eaa3fe8044a2361de2cec7d0274791e604c53a733d9d6ad17f08a3f9db8c0da",
+      "size": 1758
+    },
+    {
+      "path": "07-red/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "07-red/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "07-red/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "07-red/source/src/trigger-host/src/parameters.rs",
+      "sha256": "4b74cc89650e5f680cc0ca84320a855eddf5565ed4af4cf5edd7ff8dfced4c42",
+      "size": 33362
+    },
+    {
+      "path": "07-red/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "07-red/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "07-red/source/src/trigger-host/tests/parameters.rs",
+      "sha256": "7c9d9f52c676a4ab94921f7deee9ef4f5f37a51710e2b5c7f95b1ed076553578",
+      "size": 33783
+    },
+    {
+      "path": "07-red/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "d3558fb55ca9662212b46ac13be85be42ee87b662474dfbf2da6e2f498f55283",
+      "size": 26953
+    },
+    {
+      "path": "07-refactor.md",
+      "sha256": "5f2cdfe2d7f8c16c77254667f9a8ec19b0cda440eafbb3dc29df30308f09cd4e",
+      "size": 1301
+    },
+    {
+      "path": "08-all-host/output.log",
+      "sha256": "c0ab1e05ae77318b0ac99bcedad8d96f6e4b069cb1eaca02041df6288fdfed80",
+      "size": 9279
+    },
+    {
+      "path": "08-all-host/receipt.json",
+      "sha256": "d55aa3a7cda9a01cbe0b6e9594dd7377d19e2324840a7c0ff129d6f8ad39d8cc",
+      "size": 1686
+    },
+    {
+      "path": "08-all-host/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "08-all-host/source/src/trigger-host/Cargo.lock",
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "size": 34439
+    },
+    {
+      "path": "08-all-host/source/src/trigger-host/Cargo.toml",
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "size": 449
+    },
+    {
+      "path": "08-all-host/source/src/trigger-host/src/parameters.rs",
+      "sha256": "de43207bc1d90a2faca948a3dd701c99aa4cefd662f43d464071e9d1db1e211d",
+      "size": 33706
+    },
+    {
+      "path": "08-all-host/source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "08-all-host/source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "08-all-host/source/src/trigger-host/tests/parameters.rs",
+      "sha256": "7c9d9f52c676a4ab94921f7deee9ef4f5f37a51710e2b5c7f95b1ed076553578",
+      "size": 33783
+    },
+    {
+      "path": "08-all-host/source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "e61114b2f11316fec1be165dab890db011544980b2c09c6fb7e1fa1ddd8c2323",
+      "size": 28564
+    },
+    {
+      "path": "FINAL-ADDENDUM.md",
+      "sha256": "bc12c7f72295024be34fbd4e566230f1bc745a86052ab5199c198e4692a21eae",
+      "size": 1277
+    },
+    {
+      "path": "FINAL-MANIFEST.json",
+      "sha256": "338e78d0aa88b8da2d27a967948f3ad020be71cdf5753648049a68de74f72e8c",
+      "size": 75370
+    },
+    {
+      "path": "HANDOFF.md",
+      "sha256": "57cfaa5773e94896d09011a1ab8f63f41331b08a4bf8eb2b177469c6304cb8ef",
+      "size": 5138
+    },
+    {
+      "path": "final-source-hashes.json",
+      "sha256": "52b1935d5e258074d97fddf3941c4538e7b233b7ecc2a12f89587a219fa1c87e",
+      "size": 651
+    },
+    {
+      "path": "final-source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "final-source/src/trigger-host/src/parameters.rs",
+      "sha256": "de43207bc1d90a2faca948a3dd701c99aa4cefd662f43d464071e9d1db1e211d",
+      "size": 33706
+    },
+    {
+      "path": "final-source/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "final-source/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "final-source/src/trigger-host/tests/parameters.rs",
+      "sha256": "7c9d9f52c676a4ab94921f7deee9ef4f5f37a51710e2b5c7f95b1ed076553578",
+      "size": 33783
+    },
+    {
+      "path": "final-source/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "e61114b2f11316fec1be165dab890db011544980b2c09c6fb7e1fa1ddd8c2323",
+      "size": 28564
+    },
+    {
+      "path": "focused-coverage-qualified.json",
+      "sha256": "346619adc3cfcfffc6739585a8ff3d09f1c0cc2570bc9ed08e76d7fa67ce602e",
+      "size": 2829
+    },
+    {
+      "path": "implement-01.py",
+      "sha256": "ccf4220fdb2357bac707ba38d8f49797a0def395858c8687959d29e0bfc9a340",
+      "size": 9257
+    },
+    {
+      "path": "release.json",
+      "sha256": "5fc8a72d034685afb25b38caaf4d22a951a52f93b735514afbb928e210a159c5",
+      "size": 492
+    },
+    {
+      "path": "run.py",
+      "sha256": "e586b74d58fcfd2bc3215f4c83c35dfc30c077b8f6e9a1aadbf447c05b82ad41",
+      "size": 2537
+    },
+    {
+      "path": "runtime-coordination.patch",
+      "sha256": "0e863818da9895b74ba97f79dc06129a01c60126410e778b01aeea015312a241",
+      "size": 1414
+    },
+    {
+      "path": "runtime-readiness-test-input.rs",
+      "sha256": "7e2ac560b2536f73c8c859527fada1ba9caf86172595508f778797cd39a68847",
+      "size": 719
+    }
+  ],
+  "qualification": "Original raw evidence preserved verbatim; original author count claims are corrected separately from raw logs."
+}

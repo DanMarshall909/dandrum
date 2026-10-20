@@ -337,7 +337,7 @@ impl InstrumentSession {
         self.admit_mapping_request(request, HistoryAction::Append)
     }
 
-    pub(crate) fn admit_undo(
+    pub fn admit_undo(
         &mut self,
         attachment: &Attachment,
         request_id: RequestId,

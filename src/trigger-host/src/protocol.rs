@@ -456,15 +456,22 @@ impl EditorProtocol {
     }
 }
 
+pub(crate) struct AdmittedContext {
+    pub instance_id: u64,
+    pub attachment_id: u64,
+    pub attachment: Attachment,
+    pub snapshot: SessionSnapshot,
+}
+
 pub const OUTBOUND_BYTES_LIMIT: usize = 64 * 1024;
 impl EditorProtocol {
     /// Recover native authority from this protocol's retained admission. Public
     /// request fields carry correlation, not permission to read another owner.
-    pub(crate) fn admitted_snapshot(
+    pub(crate) fn admitted_context(
         &self,
         session: &InstrumentSession,
         request: &AdmittedRequest,
-    ) -> Result<(String, SessionSnapshot), ProtocolError> {
+    ) -> Result<AdmittedContext, ProtocolError> {
         let connection = self
             .connections
             .iter()
@@ -483,7 +490,12 @@ impl EditorProtocol {
         let snapshot = session
             .snapshot(&connection.attachment)
             .map_err(|_| ProtocolError::StaleAttachment)?;
-        Ok((self.instance_id.to_string(), snapshot))
+        Ok(AdmittedContext {
+            instance_id: self.instance_id.get(),
+            attachment_id: connection.id,
+            attachment: connection.attachment.clone(),
+            snapshot,
+        })
     }
     pub fn encode_reply(
         &self,

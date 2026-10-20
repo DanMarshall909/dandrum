@@ -1,0 +1,82 @@
+[
+  {
+    "file": "/tmp/dandrum-lanes/runtime/src/instrument-session/src/lib.rs",
+    "summary": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "functions": {
+        "count": 64,
+        "covered": 45,
+        "percent": 70.3125
+      },
+      "instantiations": {
+        "count": 73,
+        "covered": 49,
+        "percent": 67.12328767123287
+      },
+      "lines": {
+        "count": 676,
+        "covered": 496,
+        "percent": 73.37278106508876
+      },
+      "regions": {
+        "count": 826,
+        "covered": 576,
+        "notcovered": 250,
+        "percent": 69.73365617433413
+      }
+    },
+    "emitted_records": 73,
+    "distinct_mangled_names": 73
+  },
+  {
+    "file": "/tmp/dandrum-lanes/runtime/src/instrument-session/src/native_ffi.rs",
+    "summary": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "functions": {
+        "count": 46,
+        "covered": 41,
+        "percent": 89.13043478260869
+      },
+      "instantiations": {
+        "count": 46,
+        "covered": 41,
+        "percent": 89.13043478260869
+      },
+      "lines": {
+        "count": 924,
+        "covered": 790,
+        "percent": 85.49783549783548
+      },
+      "regions": {
+        "count": 1159,
+        "covered": 938,
+        "notcovered": 221,
+        "percent": 80.93183779119931
+      }
+    },
+    "emitted_records": 46,
+    "distinct_mangled_names": 46
+  }
+]

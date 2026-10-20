@@ -1,0 +1,73 @@
+{
+  "head": "24a4afe7e266f5458a7cc1ddac9f9e7c99947929",
+  "source_inputs_verified_before_after": 590,
+  "selected_evidence_preserved": true,
+  "fixture_bytes_and_mtimes_unchanged": true,
+  "normal_test_binary_counts": [
+    15,
+    17,
+    8,
+    14,
+    7,
+    18,
+    9,
+    5,
+    9
+  ],
+  "normal_passed": 102,
+  "doc_passed": 1,
+  "binaries": [
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/dandrum_trigger_host-7f362fce781ef7bf",
+      "sha256": "f83c32c8118e975b07c5e7493c9ef65706a66a6b06d64d6460e6cb75a0d3c922",
+      "size": 12243560
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/editor_notes-cebfd14604effdb4",
+      "sha256": "5cc31449197a7f0072dbce8b41c0b12ada6fde16f11b25f980038ca8b85cf27b",
+      "size": 12026704
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/packaged_resources-9a15f26d47438dea",
+      "sha256": "1303917545aea72766168146c053404f30b103e59e42b9896365c911d5a5282b",
+      "size": 11836336
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/parameters-24211fdc7856d7dc",
+      "sha256": "b937846cbf6b9208d290735db04c1ee478b90d477f8b108a51e8b4d9c1bcf841",
+      "size": 12122848
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/protocol-0bdaf7ad08adc8f3",
+      "sha256": "de4d4581bf317d95a313a786ac5fddf7a24e3eb844560203ed3caa9280489da9",
+      "size": 11921384
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/runtime-414a8b417fb50eb7",
+      "sha256": "00e109dfba5d0329c64ef4d6d8f0e4a7864624356be10fe9c54a580f90f89998",
+      "size": 12108024
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/session_jobs-12083c82a98f6a9a",
+      "sha256": "47b4a13fa967fe5e19e140de71e35586cdf21267105147c93a40abbf7bf3e186",
+      "size": 12407304
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/snapshot-299d0fd4c3bd05a2",
+      "sha256": "60048dfd93590ba55c71e79ec105222a2f04c2ceed3bd2fe4743f32fbe93cf73",
+      "size": 12124400
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/state-9de2084105b1e7a8",
+      "sha256": "f4263fbe1cd0e0324bf34df4f6c1a12213efd2957728edbd4e49b8980edc2637",
+      "size": 12260832
+    }
+  ],
+  "elapsed_seconds": 293.29424178702175,
+  "profile": "Default optimized RELEASE normal/uninstrumented full host Cargo test including doc test; offline/locked/jobs1/incremental0; exact verbose compiler flags retained",
+  "scope_limit": "Not default-symbol debug full-host proof; not complete source-free guard/CMake artifact restaging/native/browser/CLAP/beta acceptance",
+  "exit_code": 0,
+  "cache_preserved": true,
+  "namespace": "Elevated actual host namespace throughout",
+  "remaining_owned_workers": []
+}

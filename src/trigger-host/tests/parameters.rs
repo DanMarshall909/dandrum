@@ -839,7 +839,10 @@ fn invalid_commands_and_stale_or_foreign_owners_preserve_both_instances() {
             value,
             generation: 1,
         };
-        assert_eq!(a.apply(&invalid), Err(ParameterError::InvalidValue));
+        assert_eq!(
+            a.apply(&invalid),
+            Err(ParameterError::Protocol(ProtocolError::StaleRequest))
+        );
     }
     let write_a = request(
         &mut a,

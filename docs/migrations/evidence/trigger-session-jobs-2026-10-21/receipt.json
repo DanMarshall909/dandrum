@@ -1,0 +1,149 @@
+{
+  "component": "Bounded native structural-job admission, preparation and recovery",
+  "scope": "Task3.3 manual shared-owner prerequisite; installed persistent worker, wake, native facade and final editor/CLAP/beta remain open",
+  "base": "24a4afe7e266f5458a7cc1ddac9f9e7c99947929",
+  "source_hashes": {
+    "src/instrument-session/src/lib.rs": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+    "src/trigger-host/src/parameters.rs": "de43207bc1d90a2faca948a3dd701c99aa4cefd662f43d464071e9d1db1e211d",
+    "src/trigger-host/src/protocol.rs": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+    "src/trigger-host/src/runtime.rs": "ff391f08e30ea5425c22e9385802788349cb56b5c9dacbb2027d6bf068c27a69",
+    "src/trigger-host/tests/parameters.rs": "7c9d9f52c676a4ab94921f7deee9ef4f5f37a51710e2b5c7f95b1ed076553578",
+    "src/trigger-host/tests/runtime.rs": "4405fa17093a49776569a817a4891cf6bb68978fdfe4c61c23ed8b376203690a",
+    "src/trigger-host/tests/session_jobs.rs": "e61114b2f11316fec1be165dab890db011544980b2c09c6fb7e1fa1ddd8c2323"
+  },
+  "behavior": [
+    "Shared sealed admitted context authenticates actual native attachment and exact retained command for parameters/snapshot/jobs/status",
+    "One queued/preparing/ready native job, owned thread-transfer wrappers and ownership-returning foreign completion rejection",
+    "Busy retains ready work until pending consumption and offaudio retirement reclamation; successful publication balances reserved gesture Ends and advances document generation",
+    "Mapping/native undo and historical outcome recovery survive editor loss; one native active request and128 terminal outcomes",
+    "Failed/deferred work preserves accepted history/gestures/scalar settlement; failed status invents no accepted revision/history",
+    "Real public Busy activation failure retains terminal failure, accepted snapshot, existing pending runtime ownership and literal signed stereo PCM"
+  ],
+  "tests": {
+    "new_job_tests": 9,
+    "final_host_llvm_tests": 102,
+    "final_sourcefree_release_ordinary_tests": 102,
+    "final_compilefail_doctests": 1,
+    "default_symbol_session_tests": 30,
+    "default_symbol_runtime_tests": 18,
+    "sourcefree_selected_release_tests": 41,
+    "host_and_session_fmt": "PASS",
+    "host_and_session_clippy_all_targets_Dwarnings": "PASS"
+  },
+  "profiles": {
+    "host_llvm": "opt0, dev/test debuginfo0, debug assertions and overflow unchanged; no dependency instrumentation/branch/MCDC claim",
+    "ordinary_host": "Actual unfiltered default optimized release in source-free fixture, no coverage flags; not full default-symbol-debug host proof",
+    "ordinary_session_and_runtime": "Actual opt0/default debuginfo2; source-bound30Session and18runtime tests",
+    "session_llvm": "Actual opt0/default debuginfo2 --lib3units only; integration27 ran separately without coverage"
+  },
+  "coverage": {
+    "host_summary_functions": "209/209",
+    "host_summary_lines": "2296/2312",
+    "host_summary_regions": "3602/3657",
+    "runtime_summary_functions": "94/94",
+    "runtime_summary_lines": "1151/1157",
+    "runtime_summary_regions": "1847/1859",
+    "parameters_summary_lines": "559/568",
+    "parameters_summary_regions": "908/932",
+    "public_undo": "Session340-364 each executioncount1; native FFI composed caller executed",
+    "display": "Runtime38-40 each executioncount1 through real public activation failure",
+    "qualifications": [
+      "Summaryfunctions differ from emitted instantiations and assertion strength",
+      "Nine distinct uncovered source lines parameters247,584,592-598; producer summary aggregates16missedlines; residual branches/instantiations remain visible",
+      "No new module extracted; private-sealed completion routing and checked discriminant residual paths are reviewed, not covered using fake state",
+      "Separate Session --lib scope covers496/676lib lines576/826regions45/64summaryfunctions; nativeFFI790/924lines938/1159regions41/46functions; not full Session coverage"
+    ]
+  },
+  "tdd": "Original clean API-absence and behavioral RED/GREEN loops retained; setup-contaminated/zero-selection attempts explicitly excluded. Public Busy added as passing characterization of existing correct behavior, no fabricated RED. Mutated public request fields are invalid-input tests, not production mutation testing.",
+  "count_correction": {
+    "original_raw_ordinary": 77,
+    "original_raw_compilefail_doc": 1,
+    "original_author_summary_claim": 87,
+    "corrected_total": 78,
+    "original_focused_count": 36,
+    "qualification": "Original raw and erroneous summaries preserved verbatim; new102 test count derives from actual final output, not arithmetic on erroneous claim"
+  },
+  "sourcefree": {
+    "inputs": 590,
+    "all_before_after_match": true,
+    "exact_changed_or_added_inputs": 7,
+    "previous_inputs": 589,
+    "unchanged_previous_inputs": 583,
+    "absent": [
+      "web",
+      "ui",
+      "third_party"
+    ],
+    "dependency_audit": "No Clack/Wry/GTK/WebKit/JUCE",
+    "qualification": "Actual affected and full host Cargo release tests; not fresh complete engine-only guard, CMake artifact restaging, installed offline/native/browser/dynamic CLAP proof"
+  },
+  "operations": [
+    "Published note runtime integrated with exact job Display change; all preimages and byte checks retained",
+    "Sourcefree fixture updated only exact7inputs and timestamps; all590inputs match, old selected41 evidence immutable",
+    "Exact Session-only public visibility candidate copied to existing runtime source path for warm verification with preimage/hash receipt; root restores only known preimage after verifier handback",
+    "First combined normal attempt stopped at512MiB RAM floor before tests; later authorized256MiB warm coverage floor explicitly recorded",
+    "SessionLLVM first missing-engine attempt stopped0.505s per guard before tests; retry explicitly allowed only normal uninstrumented dependency build and passed25.399s",
+    "Coverage tool standard package invalidation is retained; prior profiles saved before invalidation; no manual cache deletion or relocation"
+  ],
+  "archives": [
+    {
+      "source": "/tmp/dandrum-lanes/evidence-session-jobs",
+      "archive": "author-raw.tar.gz",
+      "archive_sha256": "85fdf833874495a1d0990efa631208a65f813840cb71314506a950ae0889adc5",
+      "members": 480,
+      "qualification": "Original raw evidence preserved verbatim; original author count claims are corrected separately from raw logs."
+    },
+    {
+      "source": "/tmp/dandrum-lanes/evidence-session-jobs-activation-failure",
+      "archive": "activation-failure-raw.tar.gz",
+      "archive_sha256": "ebf93dec63c07993b7ce34379155a944d857b3db79140cf26e025e81c46a23f8",
+      "members": 38,
+      "qualification": "Original raw evidence preserved verbatim; original author count claims are corrected separately from raw logs."
+    },
+    {
+      "source": "/run/user/1000/dandrum-beta-20261020/session-jobs-integrated-evidence",
+      "archive": "integrated-raw.tar.gz",
+      "archive_sha256": "d3dfeee7b41bf943637ee1e73b53ae8e6a7071bb5016d79d4314bbe0e00aaa48",
+      "members": 572
+    },
+    {
+      "source": "/run/user/1000/dandrum-beta-20261020/session-jobs-sourcefree",
+      "archive": "sourcefree-selected-raw.tar.gz",
+      "archive_sha256": "3bd89d19b61ec7666bf0d1a86a9ffca2f8b69121aab0101ef1f63bf11e769e8d",
+      "members": 13
+    },
+    {
+      "source": "/run/user/1000/dandrum-beta-20261020/session-jobs-sourcefree-full",
+      "archive": "sourcefree-full-raw.tar.gz",
+      "archive_sha256": "b4c5cfd3fc770e277291d4b3fa2423ae4669220f265704e6454073acfa8ca9ac",
+      "members": 9
+    },
+    {
+      "source": "/tmp/dandrum-evidence/session-jobs-session-owner-verification",
+      "archive": "session-owner-raw.tar.gz",
+      "archive_sha256": "75a86305a6cf39eb3673e455054776f2a2aee8caaece838db43e69ca46e9eb3a",
+      "members": 357
+    },
+    {
+      "source": "/tmp/dandrum-evidence/session-jobs-integration",
+      "archive": "root-integration-raw.tar.gz",
+      "archive_sha256": "483403ec71ad834ae9fb9efac3c6c471e9d152df0992a96f0b573713240f1134",
+      "members": 10
+    },
+    {
+      "source": "/tmp/dandrum-evidence/session-jobs-review/session-owner-integration",
+      "archive": "owner-path-copy-raw.tar.gz",
+      "archive_sha256": "236223e39f82c9f740d85ba6ec97835a8d80f58fa9333f2cf4938f3b78393486",
+      "members": 3
+    }
+  ],
+  "review": {
+    "status": "PASS",
+    "manifest_sha256": "6d6748efc02ac8666081cecbda1a46891d7eb0aedb51af6d0e01ebc3c3e832be",
+    "review_sha256": "9b5f523268abde6ccdbf0e181a670b7cf88a38615d96f0d73d6116415497d2b9",
+    "verdict_sha256": "97de41bb07dc54fdf267f05356736ba0f52339dc756789b2fc846afbc6780054"
+  },
+  "mutation": "Explicitly excluded by user",
+  "task3_3_complete": false,
+  "full_beta_complete": false
+}

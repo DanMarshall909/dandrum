@@ -1,0 +1,1793 @@
+{
+  "source": "/tmp/dandrum-evidence/session-jobs-session-owner-verification",
+  "archive": "session-owner-raw.tar.gz",
+  "archive_sha256": "75a86305a6cf39eb3673e455054776f2a2aee8caaece838db43e69ca46e9eb3a",
+  "members": 357,
+  "artifacts": [
+    {
+      "path": "01-session-default-all/actual-compiler-invocations.txt",
+      "sha256": "40c519e326ac4763e5548bf811e754531e2847728575f7dc49153d787401af65",
+      "size": 6816
+    },
+    {
+      "path": "01-session-default-all/binary-hashes.json",
+      "sha256": "756a1d2b7414ed9629987dd269b7ba8e4443ad12e6cfaed0515168d8625db70f",
+      "size": 415
+    },
+    {
+      "path": "01-session-default-all/command.json",
+      "sha256": "6b057872112f24d6a4f4359640e98391cb0fbdfaa90237b7e862d4171659337c",
+      "size": 873
+    },
+    {
+      "path": "01-session-default-all/hashes-after.json",
+      "sha256": "1d22b0c76d17ef03914a20d1ecc993266099a2a686fd3c2a9cd67fa20727de7a",
+      "size": 11659
+    },
+    {
+      "path": "01-session-default-all/hashes-before.json",
+      "sha256": "1d22b0c76d17ef03914a20d1ecc993266099a2a686fd3c2a9cd67fa20727de7a",
+      "size": 11659
+    },
+    {
+      "path": "01-session-default-all/process-audit.txt",
+      "sha256": "30c1d3a452fd395ee77b4d23a60ec9bd25f46c6053952010a9b367f4c5ac2328",
+      "size": 52958
+    },
+    {
+      "path": "01-session-default-all/raw.log",
+      "sha256": "36942b8ffa7acf06a1483983423a0a42880c75e0bc21cbc88d04a66bd8d77055",
+      "size": 15701
+    },
+    {
+      "path": "01-session-default-all/result.json",
+      "sha256": "466cb02dba27b4192fe11fc8172e37702e59c2b04cf02b2b0f8e3eff35203bc4",
+      "size": 4079
+    },
+    {
+      "path": "01-session-default-all/source/examples/patches/advanced-drum-kit.yaml",
+      "sha256": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008",
+      "size": 6699
+    },
+    {
+      "path": "01-session-default-all/source/examples/patches/assets/advanced-drums.wav",
+      "sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503",
+      "size": 102044
+    },
+    {
+      "path": "01-session-default-all/source/src/instrument-session/Cargo.lock",
+      "sha256": "1537a3dc07c17fb7fe79786d1863b7e9b7e3db328757845fdbe3ffdbb10201eb",
+      "size": 33866
+    },
+    {
+      "path": "01-session-default-all/source/src/instrument-session/Cargo.toml",
+      "sha256": "64121a3f75dde57b6a4cc0dcee2a96e4f8cab7ee1b72382f8da60998efba4c44",
+      "size": 302
+    },
+    {
+      "path": "01-session-default-all/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "01-session-default-all/source/src/instrument-session/src/native_ffi.rs",
+      "sha256": "cdada47286a2c2f94d45c652a9166b8d9a30870e56fca1111abdcdf5611934b8",
+      "size": 40569
+    },
+    {
+      "path": "01-session-default-all/source/src/instrument-session/tests/internal/revision_limit.rs",
+      "sha256": "62a48798e7cccdbe4ee86ed6ceb1571d9160e2c4350768a7e0dbd1b5ea3671d4",
+      "size": 3897
+    },
+    {
+      "path": "01-session-default-all/source/src/instrument-session/tests/session.rs",
+      "sha256": "a385cda3bb5cbe8db5145f04733cd6a9a214ad64c7621e6b6ed24dac8ae8b28c",
+      "size": 55018
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/Cargo.lock",
+      "sha256": "7b9868b097cc152c22ff3462ccfd60e822d8a1bb3724a89f43ba526e72ea20d7",
+      "size": 33733
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/Cargo.toml",
+      "sha256": "b854bee281b47373d018c881aa024a67349dd5ed0928b3d05597c12d7c4ce90b",
+      "size": 539
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/audio_loading.rs",
+      "sha256": "9e456cafe2eef0d62da62a4ad60c0c9859c27c74bf88727f4725fa8d8609c25b",
+      "size": 15278
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/bin/dandrum-cli.rs",
+      "sha256": "fe346d5a3ce9583d90389450b1e62b95584f28de6b1f791a4b57f7ee9f80ad46",
+      "size": 185
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/bin/dandrum-demo.rs",
+      "sha256": "1ae883f67e4f2b9042ac7671a10dc230daf65eebb253d2053f7426f8317999cc",
+      "size": 688
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/bin/dandrum-sound-workbench.rs",
+      "sha256": "b95c20bd95ea8d07013f6bad08afd065763c6a905314b67872ba800899ff10da",
+      "size": 253
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/bin/dandrum-stepseq.rs",
+      "sha256": "0687f2bbe2d8b2bf158d897da36a1a73308f260b02b24ac22702dcbeaaaefd34",
+      "size": 22861
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/bin/render-kick.rs",
+      "sha256": "110bc1b6355bba531492324bca20551cb71d00dde5eefa46ba185359f2695ffe",
+      "size": 2062
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/builtins.rs",
+      "sha256": "54527f81aa9a1fd310682abc606a68f4da618fb090c5d5c0ae214a59e3da1322",
+      "size": 32555
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/builtins/module_kind.rs",
+      "sha256": "1ca4a2ffb441183dbc8f97b5abc48f53200014dcef9ca58936337535714a2107",
+      "size": 4923
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/builtins/module_types.rs",
+      "sha256": "e7f80502cfc3185668d82ce8762a01180e51511a3f8f45d2d4a79ee0bb25e6d2",
+      "size": 2451
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/builtins/tests.rs",
+      "sha256": "522d226350256b0b4d258381bc567fcf73c171b880654907faf199dbe796e4f3",
+      "size": 19911
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/cli.rs",
+      "sha256": "5a7164e0934b62d4b955199166b616f826c6b87aca75dadc7b2ced8d4d7749f8",
+      "size": 46023
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/codex_cli_provider.rs",
+      "sha256": "d792ddbd82d2f9e5a0c3d03e968a07a1d257c53f0a6325d5969db5af53eb601b",
+      "size": 34978
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/compiled_patch.rs",
+      "sha256": "b833af2a1b1cac065eb7e465fd39412fd9d5ce96cda3cb61931f4f515ad75f2d",
+      "size": 67540
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/convolution.rs",
+      "sha256": "9b708658b10699e646cf332082b1af3ce78be0242f22e9438034064e82b401ae",
+      "size": 9537
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/core.rs",
+      "sha256": "75073bd96d63d55e4dcc45569c0dd0436fb41b470a1c20e8009370868b2dd91a",
+      "size": 9537
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/crossover.rs",
+      "sha256": "5e095c51db2f3cd49de3dab6c1b94f4d4c224734d4066f483dd037903fcc51a2",
+      "size": 3761
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/curve_mapper.rs",
+      "sha256": "318660b92acdecfd06dc68dd526e0cb3de471c6c95a23972a5bab3ee787ca303",
+      "size": 4936
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/decay.rs",
+      "sha256": "e28c471be6fe7d3dfcfcbec37f02d045487685f540541e8b80061da278ccf014",
+      "size": 329
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/delay_line.rs",
+      "sha256": "31a59fe2872c358f987f7764b0d83ee8605f1f420d4db74f9edbc6841fb08d6a",
+      "size": 5965
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/diagnostics.rs",
+      "sha256": "ed180887bd017e2153c3882277de0c18b5f4309d8e4572d97d43b843fc1fb5db",
+      "size": 17772
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/drum_voice_authoring_tests.rs",
+      "sha256": "2475946e7c076ff0d987cacdbc12a8f4635abc5d60453dce521801ab65823802",
+      "size": 11395
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/dynamics_processor.rs",
+      "sha256": "696e8e34e0afc9b24829eef807ccecee1b4ecd5b27a87f3c023159c09826678c",
+      "size": 18602
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/echo.rs",
+      "sha256": "46549d0d5c1f4f889f814ec191a910dd5c531786abdb8402296d805577f2b652",
+      "size": 12612
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/envelope_follower.rs",
+      "sha256": "a8c2a65fc73f2dab92f1e0e84749df3bed82333270bcceec7099631d741cc31f",
+      "size": 6430
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/ffi.rs",
+      "sha256": "ef1b15913cdadf9147d315ae0b4b310ada8e1f6ecbe208add2a180f5d0bebb1e",
+      "size": 102833
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/fft.rs",
+      "sha256": "8158e9c39779b291ac602ab5e0f4203e9e07411bfdc519c0327bd22aa7e99985",
+      "size": 2219
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/filter/biquad.rs",
+      "sha256": "3af69f79a3efc4823c106fe74910a6cc7629e8d24fc4d6cce6ca112e3369c061",
+      "size": 4627
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/filter/comb.rs",
+      "sha256": "a94590de8c95e366a38ef1080104ab871b7f2879ca89fd7326505b2e0c202b9a",
+      "size": 2279
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/filter/mod.rs",
+      "sha256": "7335be4e4fdaac662f1c1d0d49263d4dae7ffaf2176b01e16ef0aa738115bca9",
+      "size": 784
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/filter/moog.rs",
+      "sha256": "36017d5c663fdeaf78a012bcf03a51ed8333964507fa8fb945e7cb3f06c00bfe",
+      "size": 1697
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/filter/one_pole.rs",
+      "sha256": "a9b227127b5b081c58ddc5e33bf0eea81eb51458730992b21e184b0d1b8318de",
+      "size": 1622
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/filter/tests.rs",
+      "sha256": "b3a1fee225f4535dd6b1cde31654155ba8d2e0cf69ae814ef746116ccc4a3b78",
+      "size": 11417
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph.rs",
+      "sha256": "989d2017dadd7026a1f0d01323fe5243b2261ee56c25b8f095bb7fd87b8cf13f",
+      "size": 24208
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph/builtin_ports.rs",
+      "sha256": "95cc0ae020ee86b758a2ed79f67912a6902811878b9baf6c1fcf15e70880cfd7",
+      "size": 3015
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph/tests.rs",
+      "sha256": "dd815218ff47a42fcd364551a73c712149b398ae2a42ff0f7d197581a0deade9",
+      "size": 52385
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph_module.rs",
+      "sha256": "495fb45d06d354ffc4449b07d69f84205abfbdc5585a2a0350f515e6f5d3fba6",
+      "size": 9117
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph_processor/arena_processing.rs",
+      "sha256": "f0909e4a95f1f9b09ffc8ea4ad89a7897eaab6c66984072a517416bb7fe247f1",
+      "size": 59579
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph_processor/audio_arena.rs",
+      "sha256": "837db21b9d144a0399b89307289a029c8259e73c451680dfb4581e3fee3f4d36",
+      "size": 7842
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph_processor/block.rs",
+      "sha256": "970db7c8f16771173e047b369b0761d40214e936de2fc283d7f3505c4bfebcc8",
+      "size": 8898
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph_processor/dispatch.rs",
+      "sha256": "d3cc22b0a43afbe320735383d5f117e2260113d0cc547c61d6406b1215a2b90e",
+      "size": 9340
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph_processor/event_queue.rs",
+      "sha256": "d6b56cb3d769895ec85ad812a7c14bd0c3d7fc09ac9c7ea3d5c83d2985542bd3",
+      "size": 14726
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph_processor/helpers.rs",
+      "sha256": "d570262f86c841f4f3cf0a4b463b497b5c57851005b76037e9004bb4eb834b0e",
+      "size": 1708
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph_processor/input_provider.rs",
+      "sha256": "2846e0d1701e8739b4cd8caf0ddbe26dbadc07dd08a33a5b42ebd617a37351f9",
+      "size": 6013
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph_processor/mod.rs",
+      "sha256": "34c10b5bd9accc1d9c6c4e8ae2564921d14dabd26397cf9f4345c217735a0433",
+      "size": 1525
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph_processor/offline.rs",
+      "sha256": "aff78a9fd3e92ca34d2a06a8276d875c7c60fec952f14f46d3b8053f7812b416",
+      "size": 15793
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph_processor/outputs.rs",
+      "sha256": "65b0a3934727347602cd89f3f2a935951520ef1d5864c39d08c9def3dfa1ff12",
+      "size": 723
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph_processor/polyphony.rs",
+      "sha256": "38877cffcfcada58684f79632f953dfd3beab5cfc5e0677bbe7656962540aae3",
+      "size": 42716
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph_processor/process_context.rs",
+      "sha256": "deff137d8f638b29c045bfdf333f0a6626f742885422e314e7ff84b5e751f340",
+      "size": 5768
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph_processor/processing.rs",
+      "sha256": "9c3a981938df15c70e471008a04befd2d91128e16546711a614f8200f802ae11",
+      "size": 33267
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph_processor/realtime_allocation_tests.rs",
+      "sha256": "4f2dbca7d3a3bbd5371a5923ef2f1236e4623ff63281db83faf8965ceaed6795",
+      "size": 34331
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph_processor/realtime_graph_processor.rs",
+      "sha256": "0241d795f703468036164bc31015286d977d0f5598e73553fc340193015d2761",
+      "size": 103872
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph_processor/render_plan.rs",
+      "sha256": "63dee65fb86ff86a861d31ae8d872287aca397d9ac65c696323885d4ef098df4",
+      "size": 22529
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph_processor/state.rs",
+      "sha256": "a8150023e7298930b4a5e20131ea2dfb7e1081769d6931d68352f4a41f1a6301",
+      "size": 28451
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph_processor/tests.rs",
+      "sha256": "5a17506c44139398dc7845a0077fa7514df9f058acb0ef55a46c830db670be64",
+      "size": 289316
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/graph_proposal.rs",
+      "sha256": "ee6fd5071bdbdf04c1031b791257da0fbee5f578ff9ff5012c28b40cf99825e1",
+      "size": 39089
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/instrument_state.rs",
+      "sha256": "2ee7fe57aa02b0376aac3fef9a0f52eaef9cbb946ccd4eedf45ae8cdf0a89ee0",
+      "size": 4419
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/kernel.rs",
+      "sha256": "ed703f8b7a81c45d61f15f7f2fbae0d9fa9d4efe5e1ec323527672d6c05c76d0",
+      "size": 88924
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/kernel/builtins.rs",
+      "sha256": "7d7c418cd613d79ca84ca08022163af8a225101203a9280f8c8eebb06e2ebc4d",
+      "size": 27198
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/kernel/builtins/tests.rs",
+      "sha256": "e0543690a6c0ab7ece9df6c185a732e7d8b923ae77fa7a9c499f3eda417e0200",
+      "size": 35603
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/kernel/document.rs",
+      "sha256": "563c907e69936e87ce92ff844b9856d4407ddcb64a868d2faef9942235c2ef24",
+      "size": 48297
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/kernel/document/tests.rs",
+      "sha256": "e90ccfe09de548d7fe7796e45c6239af1c66b44d6552d1b7811abf341fde678f",
+      "size": 217569
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/kernel/flatten.rs",
+      "sha256": "eed495c18b63ba98bd87a9cd55dc94d7fb6866be9d90a13a23a6f6517f94eca5",
+      "size": 37409
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/kernel/flatten/tests.rs",
+      "sha256": "7acea6723404e1f70672e7a3b53c54a0c2a1806b56c4c6688a0c790f8f27ad4f",
+      "size": 42730
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/kernel/latency.rs",
+      "sha256": "b7ac9837e96b373729d37654348b37941d36c90347acfd4a432c2e96c7529721",
+      "size": 17078
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/kernel/latency/tests.rs",
+      "sha256": "9a8a74a9cda6326ba6d9dc912e1ebf8c13bbf5d1893b430ca821583e63b95732",
+      "size": 21745
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/kernel/tests.rs",
+      "sha256": "ba1fcc81406029d45199dde2586bb0a65f72aa0fc3f917ff6a30ced8956d13b8",
+      "size": 64431
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/legacy_tests/declarative_parameters_red_tests.rs",
+      "sha256": "925904fb829f2cf5c7343cf4358588af656bc2df6461dcfcb5df8d78e15cfcd8",
+      "size": 9424
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/legacy_tests/declarative_parameters_remaining_red_tests.rs",
+      "sha256": "d2d3cc34c75842e1340f397c5a123abddb5ac042a1170273d8469f471b63935f",
+      "size": 22856
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/legacy_tests/engine_patch_behaviour_tests.rs",
+      "sha256": "1c380b417b3340eccb408132891200342d0c3d6006c4dcbd463b4aa457bb9262",
+      "size": 18074
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/lib.rs",
+      "sha256": "f8039a7317632b9e7b3442f7746f1a9224c5308571cbf2043f25242a667984ac",
+      "size": 1634
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/module_library.rs",
+      "sha256": "72b43190bca73246cf22371f9b3ba6b32248320d2759bf3bc4e0e48a59442e32",
+      "size": 46169
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/module_package.rs",
+      "sha256": "a8a32309a55c8cc2d3ea2cba5a74549f5235f1d4bdf1b2791b8fde6f05b39d41",
+      "size": 51876
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/module_reference.rs",
+      "sha256": "0b9b27584f87cd436633580220ce53d403a4d0baef0a6a8b7c0612419da5b534",
+      "size": 19002
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/oscillator.rs",
+      "sha256": "b57ac211a13850a98ac6a17e9f831d7906edc0090086f6f13720057f3d2fea99",
+      "size": 3284
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/patch.rs",
+      "sha256": "177747327e15f9e8f52f7a1947a2d8d1a3b0d0aaed2212bd538c17523403f128",
+      "size": 74885
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/patch_module.rs",
+      "sha256": "d753466553510dccd6390bbfd1aa7d550d862575b344d76ba437a67be9510670",
+      "size": 21772
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/preparation.rs",
+      "sha256": "1179b659082e4751e8ef7833dc582900d6da95520c25b22ef1d8ac2079f2f8cf",
+      "size": 264191
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/realtime.rs",
+      "sha256": "1ffd49661612919577954c24a7ac41dd46ac24cfc1d8c7a2a34faa1996d25352",
+      "size": 2202
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/reverb.rs",
+      "sha256": "8425b768a45e6ee5879a525fd535b4c05740f9708feb0ab354b67d03c63667b5",
+      "size": 19298
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/sample.rs",
+      "sha256": "b1a76a9e0a4451df0b044c0183de0a3eb409112990e3a701cd606cdcd2598931",
+      "size": 12809
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/saturator.rs",
+      "sha256": "546f04fb2ab65be381f8a72e7d422ec6eff7539cd8f0c3cfb255678ae1ae5019",
+      "size": 9478
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/script.rs",
+      "sha256": "26b4d31fcf4c535412068d746c605e59020eb8c758251bfe9b7f60448236b038",
+      "size": 37729
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/sound_analysis.rs",
+      "sha256": "d6a30207b4a4995d3560df6cdc408ca61893b6b7b0cd78e964496c2ff29a38d4",
+      "size": 12194
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/sound_matching.rs",
+      "sha256": "1de6101d1d88f569ca704a77ccfecc9ad9fc453f3d0b74a07adec74b8e1397b2",
+      "size": 61464
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/sound_workbench.rs",
+      "sha256": "8d3f884f6029d53ea5660efb3269dcb90e4062680cc67d5ca2e2ac15feb9d16c",
+      "size": 63246
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/sound_workbench_ffi.rs",
+      "sha256": "4df6efc058701e396aa10663def42e87ce963104f798e1120ade392cf119344a",
+      "size": 52549
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/spectral.rs",
+      "sha256": "b085c9c9b95bfa854d9271ddb02f417048a14231d686eb60309cfb0e8eab1474",
+      "size": 6955
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/synth.rs",
+      "sha256": "5465d59e4f2e89eff4df50bc5dbced92963e19e458eb92e6396f4c2d7e35fafa",
+      "size": 23033
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/test_allocator.rs",
+      "sha256": "a608a8b8e995e8ac84ec381ed157e687d5900b9450c3a6ad19a3789e38e6996e",
+      "size": 1468
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/test_support.rs",
+      "sha256": "8e5a8646bf8c0ac369c709e5d54ff7b05ffe74b245789dacf978fe1bcfec1548",
+      "size": 2551
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/voice_allocator.rs",
+      "sha256": "6c10159344d6f4425d717d35d6bb864582d10fd55d5ee70e8e0f8a25b0463eb6",
+      "size": 5933
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/src/wav.rs",
+      "sha256": "6f64c1daf704f3ab3b00765e255d66d28e41dea976cd2d1a622ae479d3dddb00",
+      "size": 5096
+    },
+    {
+      "path": "01-session-default-all/source/src/rust-engine/tests/runtime_thread_ownership.rs",
+      "sha256": "363babd6c498b40ad94a5e58247305c8eed3f93e917004be3c0fa7f9b28728af",
+      "size": 4943
+    },
+    {
+      "path": "01-session-default-all/test-counts.json",
+      "sha256": "5d7ebaed7b8e20f1bb29dd398722bf8bdf0296cd1a26944790844f04aee387f2",
+      "size": 313
+    },
+    {
+      "path": "02-prior-root-llvm-profiles/instrument-session.profdata",
+      "sha256": "047015502b806c1f8847fb92297498661394cc7ab79087c2c2f083c080e3f3aa",
+      "size": 41952
+    },
+    {
+      "path": "02-prior-root-llvm-profiles/inventory.json",
+      "sha256": "8bfd75a7aace2f3fffbd32ef1e819cba53fa4106f487354af19ab87a7765cfb6",
+      "size": 1366
+    },
+    {
+      "path": "02-prior-root-llvm-profiles/rust-engine-3696233-6369189366557312646_0.profraw",
+      "sha256": "e5aed5d58f667485fb77770ad980f86e267d5d16d18a8015cd3156394b69b9f5",
+      "size": 515176
+    },
+    {
+      "path": "02-prior-root-llvm-profiles/rust-engine.profdata",
+      "sha256": "c229a2f47cc1e59f69a1ff063f352916693e734d4b6a9c3cadb4847744086f00",
+      "size": 898912
+    },
+    {
+      "path": "02-prior-root-llvm-profiles/trigger-host.profdata",
+      "sha256": "672cffcc21d3e2440325d6ae53c00af9346143466b67d7d6ea5144fa799acd53",
+      "size": 84536
+    },
+    {
+      "path": "03-session-lib-llvm/command.json",
+      "sha256": "71bfdfb29729317e02d67270f1291b74fbc978d413f18488fdf938eec5215cf7",
+      "size": 1068
+    },
+    {
+      "path": "03-session-lib-llvm/hashes-after.json",
+      "sha256": "1d22b0c76d17ef03914a20d1ecc993266099a2a686fd3c2a9cd67fa20727de7a",
+      "size": 11659
+    },
+    {
+      "path": "03-session-lib-llvm/hashes-before.json",
+      "sha256": "1d22b0c76d17ef03914a20d1ecc993266099a2a686fd3c2a9cd67fa20727de7a",
+      "size": 11659
+    },
+    {
+      "path": "03-session-lib-llvm/process-audit.txt",
+      "sha256": "4c20ad2cb8fd36c31b0174839640b12df35296abbdfc1729e9489ff637f0d290",
+      "size": 53593
+    },
+    {
+      "path": "03-session-lib-llvm/raw.log",
+      "sha256": "99ef5b63b69f5b25abb236d305527c2eddc75a835e10e2253e178b6a03f07e9a",
+      "size": 8695
+    },
+    {
+      "path": "03-session-lib-llvm/result.json",
+      "sha256": "1546198d98295b988088a638fa59a15e7a99a1e02628e0359329b31ad42970fb",
+      "size": 1478
+    },
+    {
+      "path": "03-session-lib-llvm/source/examples/patches/advanced-drum-kit.yaml",
+      "sha256": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008",
+      "size": 6699
+    },
+    {
+      "path": "03-session-lib-llvm/source/examples/patches/assets/advanced-drums.wav",
+      "sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503",
+      "size": 102044
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/instrument-session/Cargo.lock",
+      "sha256": "1537a3dc07c17fb7fe79786d1863b7e9b7e3db328757845fdbe3ffdbb10201eb",
+      "size": 33866
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/instrument-session/Cargo.toml",
+      "sha256": "64121a3f75dde57b6a4cc0dcee2a96e4f8cab7ee1b72382f8da60998efba4c44",
+      "size": 302
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/instrument-session/src/native_ffi.rs",
+      "sha256": "cdada47286a2c2f94d45c652a9166b8d9a30870e56fca1111abdcdf5611934b8",
+      "size": 40569
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/instrument-session/tests/internal/revision_limit.rs",
+      "sha256": "62a48798e7cccdbe4ee86ed6ceb1571d9160e2c4350768a7e0dbd1b5ea3671d4",
+      "size": 3897
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/instrument-session/tests/session.rs",
+      "sha256": "a385cda3bb5cbe8db5145f04733cd6a9a214ad64c7621e6b6ed24dac8ae8b28c",
+      "size": 55018
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/Cargo.lock",
+      "sha256": "7b9868b097cc152c22ff3462ccfd60e822d8a1bb3724a89f43ba526e72ea20d7",
+      "size": 33733
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/Cargo.toml",
+      "sha256": "b854bee281b47373d018c881aa024a67349dd5ed0928b3d05597c12d7c4ce90b",
+      "size": 539
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/audio_loading.rs",
+      "sha256": "9e456cafe2eef0d62da62a4ad60c0c9859c27c74bf88727f4725fa8d8609c25b",
+      "size": 15278
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/bin/dandrum-cli.rs",
+      "sha256": "fe346d5a3ce9583d90389450b1e62b95584f28de6b1f791a4b57f7ee9f80ad46",
+      "size": 185
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/bin/dandrum-demo.rs",
+      "sha256": "1ae883f67e4f2b9042ac7671a10dc230daf65eebb253d2053f7426f8317999cc",
+      "size": 688
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/bin/dandrum-sound-workbench.rs",
+      "sha256": "b95c20bd95ea8d07013f6bad08afd065763c6a905314b67872ba800899ff10da",
+      "size": 253
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/bin/dandrum-stepseq.rs",
+      "sha256": "0687f2bbe2d8b2bf158d897da36a1a73308f260b02b24ac22702dcbeaaaefd34",
+      "size": 22861
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/bin/render-kick.rs",
+      "sha256": "110bc1b6355bba531492324bca20551cb71d00dde5eefa46ba185359f2695ffe",
+      "size": 2062
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/builtins.rs",
+      "sha256": "54527f81aa9a1fd310682abc606a68f4da618fb090c5d5c0ae214a59e3da1322",
+      "size": 32555
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/builtins/module_kind.rs",
+      "sha256": "1ca4a2ffb441183dbc8f97b5abc48f53200014dcef9ca58936337535714a2107",
+      "size": 4923
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/builtins/module_types.rs",
+      "sha256": "e7f80502cfc3185668d82ce8762a01180e51511a3f8f45d2d4a79ee0bb25e6d2",
+      "size": 2451
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/builtins/tests.rs",
+      "sha256": "522d226350256b0b4d258381bc567fcf73c171b880654907faf199dbe796e4f3",
+      "size": 19911
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/cli.rs",
+      "sha256": "5a7164e0934b62d4b955199166b616f826c6b87aca75dadc7b2ced8d4d7749f8",
+      "size": 46023
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/codex_cli_provider.rs",
+      "sha256": "d792ddbd82d2f9e5a0c3d03e968a07a1d257c53f0a6325d5969db5af53eb601b",
+      "size": 34978
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/compiled_patch.rs",
+      "sha256": "b833af2a1b1cac065eb7e465fd39412fd9d5ce96cda3cb61931f4f515ad75f2d",
+      "size": 67540
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/convolution.rs",
+      "sha256": "9b708658b10699e646cf332082b1af3ce78be0242f22e9438034064e82b401ae",
+      "size": 9537
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/core.rs",
+      "sha256": "75073bd96d63d55e4dcc45569c0dd0436fb41b470a1c20e8009370868b2dd91a",
+      "size": 9537
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/crossover.rs",
+      "sha256": "5e095c51db2f3cd49de3dab6c1b94f4d4c224734d4066f483dd037903fcc51a2",
+      "size": 3761
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/curve_mapper.rs",
+      "sha256": "318660b92acdecfd06dc68dd526e0cb3de471c6c95a23972a5bab3ee787ca303",
+      "size": 4936
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/decay.rs",
+      "sha256": "e28c471be6fe7d3dfcfcbec37f02d045487685f540541e8b80061da278ccf014",
+      "size": 329
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/delay_line.rs",
+      "sha256": "31a59fe2872c358f987f7764b0d83ee8605f1f420d4db74f9edbc6841fb08d6a",
+      "size": 5965
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/diagnostics.rs",
+      "sha256": "ed180887bd017e2153c3882277de0c18b5f4309d8e4572d97d43b843fc1fb5db",
+      "size": 17772
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/drum_voice_authoring_tests.rs",
+      "sha256": "2475946e7c076ff0d987cacdbc12a8f4635abc5d60453dce521801ab65823802",
+      "size": 11395
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/dynamics_processor.rs",
+      "sha256": "696e8e34e0afc9b24829eef807ccecee1b4ecd5b27a87f3c023159c09826678c",
+      "size": 18602
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/echo.rs",
+      "sha256": "46549d0d5c1f4f889f814ec191a910dd5c531786abdb8402296d805577f2b652",
+      "size": 12612
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/envelope_follower.rs",
+      "sha256": "a8c2a65fc73f2dab92f1e0e84749df3bed82333270bcceec7099631d741cc31f",
+      "size": 6430
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/ffi.rs",
+      "sha256": "ef1b15913cdadf9147d315ae0b4b310ada8e1f6ecbe208add2a180f5d0bebb1e",
+      "size": 102833
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/fft.rs",
+      "sha256": "8158e9c39779b291ac602ab5e0f4203e9e07411bfdc519c0327bd22aa7e99985",
+      "size": 2219
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/filter/biquad.rs",
+      "sha256": "3af69f79a3efc4823c106fe74910a6cc7629e8d24fc4d6cce6ca112e3369c061",
+      "size": 4627
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/filter/comb.rs",
+      "sha256": "a94590de8c95e366a38ef1080104ab871b7f2879ca89fd7326505b2e0c202b9a",
+      "size": 2279
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/filter/mod.rs",
+      "sha256": "7335be4e4fdaac662f1c1d0d49263d4dae7ffaf2176b01e16ef0aa738115bca9",
+      "size": 784
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/filter/moog.rs",
+      "sha256": "36017d5c663fdeaf78a012bcf03a51ed8333964507fa8fb945e7cb3f06c00bfe",
+      "size": 1697
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/filter/one_pole.rs",
+      "sha256": "a9b227127b5b081c58ddc5e33bf0eea81eb51458730992b21e184b0d1b8318de",
+      "size": 1622
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/filter/tests.rs",
+      "sha256": "b3a1fee225f4535dd6b1cde31654155ba8d2e0cf69ae814ef746116ccc4a3b78",
+      "size": 11417
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph.rs",
+      "sha256": "989d2017dadd7026a1f0d01323fe5243b2261ee56c25b8f095bb7fd87b8cf13f",
+      "size": 24208
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph/builtin_ports.rs",
+      "sha256": "95cc0ae020ee86b758a2ed79f67912a6902811878b9baf6c1fcf15e70880cfd7",
+      "size": 3015
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph/tests.rs",
+      "sha256": "dd815218ff47a42fcd364551a73c712149b398ae2a42ff0f7d197581a0deade9",
+      "size": 52385
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph_module.rs",
+      "sha256": "495fb45d06d354ffc4449b07d69f84205abfbdc5585a2a0350f515e6f5d3fba6",
+      "size": 9117
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph_processor/arena_processing.rs",
+      "sha256": "f0909e4a95f1f9b09ffc8ea4ad89a7897eaab6c66984072a517416bb7fe247f1",
+      "size": 59579
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph_processor/audio_arena.rs",
+      "sha256": "837db21b9d144a0399b89307289a029c8259e73c451680dfb4581e3fee3f4d36",
+      "size": 7842
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph_processor/block.rs",
+      "sha256": "970db7c8f16771173e047b369b0761d40214e936de2fc283d7f3505c4bfebcc8",
+      "size": 8898
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph_processor/dispatch.rs",
+      "sha256": "d3cc22b0a43afbe320735383d5f117e2260113d0cc547c61d6406b1215a2b90e",
+      "size": 9340
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph_processor/event_queue.rs",
+      "sha256": "d6b56cb3d769895ec85ad812a7c14bd0c3d7fc09ac9c7ea3d5c83d2985542bd3",
+      "size": 14726
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph_processor/helpers.rs",
+      "sha256": "d570262f86c841f4f3cf0a4b463b497b5c57851005b76037e9004bb4eb834b0e",
+      "size": 1708
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph_processor/input_provider.rs",
+      "sha256": "2846e0d1701e8739b4cd8caf0ddbe26dbadc07dd08a33a5b42ebd617a37351f9",
+      "size": 6013
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph_processor/mod.rs",
+      "sha256": "34c10b5bd9accc1d9c6c4e8ae2564921d14dabd26397cf9f4345c217735a0433",
+      "size": 1525
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph_processor/offline.rs",
+      "sha256": "aff78a9fd3e92ca34d2a06a8276d875c7c60fec952f14f46d3b8053f7812b416",
+      "size": 15793
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph_processor/outputs.rs",
+      "sha256": "65b0a3934727347602cd89f3f2a935951520ef1d5864c39d08c9def3dfa1ff12",
+      "size": 723
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph_processor/polyphony.rs",
+      "sha256": "38877cffcfcada58684f79632f953dfd3beab5cfc5e0677bbe7656962540aae3",
+      "size": 42716
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph_processor/process_context.rs",
+      "sha256": "deff137d8f638b29c045bfdf333f0a6626f742885422e314e7ff84b5e751f340",
+      "size": 5768
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph_processor/processing.rs",
+      "sha256": "9c3a981938df15c70e471008a04befd2d91128e16546711a614f8200f802ae11",
+      "size": 33267
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph_processor/realtime_allocation_tests.rs",
+      "sha256": "4f2dbca7d3a3bbd5371a5923ef2f1236e4623ff63281db83faf8965ceaed6795",
+      "size": 34331
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph_processor/realtime_graph_processor.rs",
+      "sha256": "0241d795f703468036164bc31015286d977d0f5598e73553fc340193015d2761",
+      "size": 103872
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph_processor/render_plan.rs",
+      "sha256": "63dee65fb86ff86a861d31ae8d872287aca397d9ac65c696323885d4ef098df4",
+      "size": 22529
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph_processor/state.rs",
+      "sha256": "a8150023e7298930b4a5e20131ea2dfb7e1081769d6931d68352f4a41f1a6301",
+      "size": 28451
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph_processor/tests.rs",
+      "sha256": "5a17506c44139398dc7845a0077fa7514df9f058acb0ef55a46c830db670be64",
+      "size": 289316
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/graph_proposal.rs",
+      "sha256": "ee6fd5071bdbdf04c1031b791257da0fbee5f578ff9ff5012c28b40cf99825e1",
+      "size": 39089
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/instrument_state.rs",
+      "sha256": "2ee7fe57aa02b0376aac3fef9a0f52eaef9cbb946ccd4eedf45ae8cdf0a89ee0",
+      "size": 4419
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/kernel.rs",
+      "sha256": "ed703f8b7a81c45d61f15f7f2fbae0d9fa9d4efe5e1ec323527672d6c05c76d0",
+      "size": 88924
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/kernel/builtins.rs",
+      "sha256": "7d7c418cd613d79ca84ca08022163af8a225101203a9280f8c8eebb06e2ebc4d",
+      "size": 27198
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/kernel/builtins/tests.rs",
+      "sha256": "e0543690a6c0ab7ece9df6c185a732e7d8b923ae77fa7a9c499f3eda417e0200",
+      "size": 35603
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/kernel/document.rs",
+      "sha256": "563c907e69936e87ce92ff844b9856d4407ddcb64a868d2faef9942235c2ef24",
+      "size": 48297
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/kernel/document/tests.rs",
+      "sha256": "e90ccfe09de548d7fe7796e45c6239af1c66b44d6552d1b7811abf341fde678f",
+      "size": 217569
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/kernel/flatten.rs",
+      "sha256": "eed495c18b63ba98bd87a9cd55dc94d7fb6866be9d90a13a23a6f6517f94eca5",
+      "size": 37409
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/kernel/flatten/tests.rs",
+      "sha256": "7acea6723404e1f70672e7a3b53c54a0c2a1806b56c4c6688a0c790f8f27ad4f",
+      "size": 42730
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/kernel/latency.rs",
+      "sha256": "b7ac9837e96b373729d37654348b37941d36c90347acfd4a432c2e96c7529721",
+      "size": 17078
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/kernel/latency/tests.rs",
+      "sha256": "9a8a74a9cda6326ba6d9dc912e1ebf8c13bbf5d1893b430ca821583e63b95732",
+      "size": 21745
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/kernel/tests.rs",
+      "sha256": "ba1fcc81406029d45199dde2586bb0a65f72aa0fc3f917ff6a30ced8956d13b8",
+      "size": 64431
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/legacy_tests/declarative_parameters_red_tests.rs",
+      "sha256": "925904fb829f2cf5c7343cf4358588af656bc2df6461dcfcb5df8d78e15cfcd8",
+      "size": 9424
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/legacy_tests/declarative_parameters_remaining_red_tests.rs",
+      "sha256": "d2d3cc34c75842e1340f397c5a123abddb5ac042a1170273d8469f471b63935f",
+      "size": 22856
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/legacy_tests/engine_patch_behaviour_tests.rs",
+      "sha256": "1c380b417b3340eccb408132891200342d0c3d6006c4dcbd463b4aa457bb9262",
+      "size": 18074
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/lib.rs",
+      "sha256": "f8039a7317632b9e7b3442f7746f1a9224c5308571cbf2043f25242a667984ac",
+      "size": 1634
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/module_library.rs",
+      "sha256": "72b43190bca73246cf22371f9b3ba6b32248320d2759bf3bc4e0e48a59442e32",
+      "size": 46169
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/module_package.rs",
+      "sha256": "a8a32309a55c8cc2d3ea2cba5a74549f5235f1d4bdf1b2791b8fde6f05b39d41",
+      "size": 51876
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/module_reference.rs",
+      "sha256": "0b9b27584f87cd436633580220ce53d403a4d0baef0a6a8b7c0612419da5b534",
+      "size": 19002
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/oscillator.rs",
+      "sha256": "b57ac211a13850a98ac6a17e9f831d7906edc0090086f6f13720057f3d2fea99",
+      "size": 3284
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/patch.rs",
+      "sha256": "177747327e15f9e8f52f7a1947a2d8d1a3b0d0aaed2212bd538c17523403f128",
+      "size": 74885
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/patch_module.rs",
+      "sha256": "d753466553510dccd6390bbfd1aa7d550d862575b344d76ba437a67be9510670",
+      "size": 21772
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/preparation.rs",
+      "sha256": "1179b659082e4751e8ef7833dc582900d6da95520c25b22ef1d8ac2079f2f8cf",
+      "size": 264191
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/realtime.rs",
+      "sha256": "1ffd49661612919577954c24a7ac41dd46ac24cfc1d8c7a2a34faa1996d25352",
+      "size": 2202
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/reverb.rs",
+      "sha256": "8425b768a45e6ee5879a525fd535b4c05740f9708feb0ab354b67d03c63667b5",
+      "size": 19298
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/sample.rs",
+      "sha256": "b1a76a9e0a4451df0b044c0183de0a3eb409112990e3a701cd606cdcd2598931",
+      "size": 12809
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/saturator.rs",
+      "sha256": "546f04fb2ab65be381f8a72e7d422ec6eff7539cd8f0c3cfb255678ae1ae5019",
+      "size": 9478
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/script.rs",
+      "sha256": "26b4d31fcf4c535412068d746c605e59020eb8c758251bfe9b7f60448236b038",
+      "size": 37729
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/sound_analysis.rs",
+      "sha256": "d6a30207b4a4995d3560df6cdc408ca61893b6b7b0cd78e964496c2ff29a38d4",
+      "size": 12194
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/sound_matching.rs",
+      "sha256": "1de6101d1d88f569ca704a77ccfecc9ad9fc453f3d0b74a07adec74b8e1397b2",
+      "size": 61464
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/sound_workbench.rs",
+      "sha256": "8d3f884f6029d53ea5660efb3269dcb90e4062680cc67d5ca2e2ac15feb9d16c",
+      "size": 63246
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/sound_workbench_ffi.rs",
+      "sha256": "4df6efc058701e396aa10663def42e87ce963104f798e1120ade392cf119344a",
+      "size": 52549
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/spectral.rs",
+      "sha256": "b085c9c9b95bfa854d9271ddb02f417048a14231d686eb60309cfb0e8eab1474",
+      "size": 6955
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/synth.rs",
+      "sha256": "5465d59e4f2e89eff4df50bc5dbced92963e19e458eb92e6396f4c2d7e35fafa",
+      "size": 23033
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/test_allocator.rs",
+      "sha256": "a608a8b8e995e8ac84ec381ed157e687d5900b9450c3a6ad19a3789e38e6996e",
+      "size": 1468
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/test_support.rs",
+      "sha256": "8e5a8646bf8c0ac369c709e5d54ff7b05ffe74b245789dacf978fe1bcfec1548",
+      "size": 2551
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/voice_allocator.rs",
+      "sha256": "6c10159344d6f4425d717d35d6bb864582d10fd55d5ee70e8e0f8a25b0463eb6",
+      "size": 5933
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/src/wav.rs",
+      "sha256": "6f64c1daf704f3ab3b00765e255d66d28e41dea976cd2d1a622ae479d3dddb00",
+      "size": 5096
+    },
+    {
+      "path": "03-session-lib-llvm/source/src/rust-engine/tests/runtime_thread_ownership.rs",
+      "sha256": "363babd6c498b40ad94a5e58247305c8eed3f93e917004be3c0fa7f9b28728af",
+      "size": 4943
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/actual-compiler-wrapper-invocations.txt",
+      "sha256": "3803c8fa3914e95023f677e7b5ff7430917bf278076eb51368d69887385090a5",
+      "size": 3655
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/annotated-source-command.json",
+      "sha256": "2b9c87a6dfe3d43305da40fc1f57cfdaaaaccc4619af7d12f301a76f824886bf",
+      "size": 644
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/annotated-source.txt",
+      "sha256": "175209ef6b7c2715de9508ef0870275ea86422cdf4db2fdb51b32c7f22c3cb5a",
+      "size": 123642
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/binary-hashes.json",
+      "sha256": "ae3e9e1df8640cac10d830459b6666b4a293d4ad6c2521c23fe2be2835645d91",
+      "size": 233
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/command.json",
+      "sha256": "f5f18b2038a7ba434704e5b20b4f61cb7406fe0a4b2bd056706592f5b04c54e7",
+      "size": 1248
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/coverage.json",
+      "sha256": "caeeabfe2cf5ae517dd9350485ef72f5c3bc02de8c5c26ba8f314b025701d194",
+      "size": 198097
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/hashes-after.json",
+      "sha256": "1d22b0c76d17ef03914a20d1ecc993266099a2a686fd3c2a9cd67fa20727de7a",
+      "size": 11659
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/hashes-before.json",
+      "sha256": "1d22b0c76d17ef03914a20d1ecc993266099a2a686fd3c2a9cd67fa20727de7a",
+      "size": 11659
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/process-audit.txt",
+      "sha256": "5085937675798a9d5eaf919f28f860d69474318ca5b76bed63b1b798ada07335",
+      "size": 53364
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/profiles.json",
+      "sha256": "adfe08e624dc43e9db625e17a57be45ba4e752f674fba259206ae760a73bf18b",
+      "size": 631
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/profiles/instrument-session-3731684-1329679905692570705_0.profraw",
+      "sha256": "4558d808e6b33e0dbdecc547e13160db2ce2e2441af487339636d1cae68919a0",
+      "size": 12128
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/profiles/instrument-session.profdata",
+      "sha256": "d1408df0b26dd80a3e8f5f46eed3b14d5b7977fa88007968a7f78d1763b1ae10",
+      "size": 17544
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/profiles/rust-engine.profdata",
+      "sha256": "c229a2f47cc1e59f69a1ff063f352916693e734d4b6a9c3cadb4847744086f00",
+      "size": 898912
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/profiles/trigger-host.profdata",
+      "sha256": "672cffcc21d3e2440325d6ae53c00af9346143466b67d7d6ea5144fa799acd53",
+      "size": 84536
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/public-undo-annotated.txt",
+      "sha256": "b1e5350f2cfa2c3e489820c731173a6d745b5f59878f4f5ba9ddfe54a210b55b",
+      "size": 1298
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/public-undo-function-records.json",
+      "sha256": "3adbe7133ac585866080d0c6e804a4a0850d995ba1e5ad2f2960693c83876ce0",
+      "size": 8131
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/qualified-file-coverage.json",
+      "sha256": "21181ee0e354db691805b87e8e967514a19e33d1c4ea6091f87769515988b616",
+      "size": 1752
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/raw.log",
+      "sha256": "0769c7e0394d8f49aaa832be4e6080d7c55a17d1e2f25cbfe2f39ed32fbd4753",
+      "size": 9410
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/result.json",
+      "sha256": "5cf1fd17819d4ee88da9a13ec4f703e099a3984e856d053dcc2f96a3bdd66c29",
+      "size": 14489
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/examples/patches/advanced-drum-kit.yaml",
+      "sha256": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008",
+      "size": 6699
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/examples/patches/assets/advanced-drums.wav",
+      "sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503",
+      "size": 102044
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/instrument-session/Cargo.lock",
+      "sha256": "1537a3dc07c17fb7fe79786d1863b7e9b7e3db328757845fdbe3ffdbb10201eb",
+      "size": 33866
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/instrument-session/Cargo.toml",
+      "sha256": "64121a3f75dde57b6a4cc0dcee2a96e4f8cab7ee1b72382f8da60998efba4c44",
+      "size": 302
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/instrument-session/src/native_ffi.rs",
+      "sha256": "cdada47286a2c2f94d45c652a9166b8d9a30870e56fca1111abdcdf5611934b8",
+      "size": 40569
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/instrument-session/tests/internal/revision_limit.rs",
+      "sha256": "62a48798e7cccdbe4ee86ed6ceb1571d9160e2c4350768a7e0dbd1b5ea3671d4",
+      "size": 3897
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/instrument-session/tests/session.rs",
+      "sha256": "a385cda3bb5cbe8db5145f04733cd6a9a214ad64c7621e6b6ed24dac8ae8b28c",
+      "size": 55018
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/Cargo.lock",
+      "sha256": "7b9868b097cc152c22ff3462ccfd60e822d8a1bb3724a89f43ba526e72ea20d7",
+      "size": 33733
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/Cargo.toml",
+      "sha256": "b854bee281b47373d018c881aa024a67349dd5ed0928b3d05597c12d7c4ce90b",
+      "size": 539
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/audio_loading.rs",
+      "sha256": "9e456cafe2eef0d62da62a4ad60c0c9859c27c74bf88727f4725fa8d8609c25b",
+      "size": 15278
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/bin/dandrum-cli.rs",
+      "sha256": "fe346d5a3ce9583d90389450b1e62b95584f28de6b1f791a4b57f7ee9f80ad46",
+      "size": 185
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/bin/dandrum-demo.rs",
+      "sha256": "1ae883f67e4f2b9042ac7671a10dc230daf65eebb253d2053f7426f8317999cc",
+      "size": 688
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/bin/dandrum-sound-workbench.rs",
+      "sha256": "b95c20bd95ea8d07013f6bad08afd065763c6a905314b67872ba800899ff10da",
+      "size": 253
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/bin/dandrum-stepseq.rs",
+      "sha256": "0687f2bbe2d8b2bf158d897da36a1a73308f260b02b24ac22702dcbeaaaefd34",
+      "size": 22861
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/bin/render-kick.rs",
+      "sha256": "110bc1b6355bba531492324bca20551cb71d00dde5eefa46ba185359f2695ffe",
+      "size": 2062
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/builtins.rs",
+      "sha256": "54527f81aa9a1fd310682abc606a68f4da618fb090c5d5c0ae214a59e3da1322",
+      "size": 32555
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/builtins/module_kind.rs",
+      "sha256": "1ca4a2ffb441183dbc8f97b5abc48f53200014dcef9ca58936337535714a2107",
+      "size": 4923
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/builtins/module_types.rs",
+      "sha256": "e7f80502cfc3185668d82ce8762a01180e51511a3f8f45d2d4a79ee0bb25e6d2",
+      "size": 2451
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/builtins/tests.rs",
+      "sha256": "522d226350256b0b4d258381bc567fcf73c171b880654907faf199dbe796e4f3",
+      "size": 19911
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/cli.rs",
+      "sha256": "5a7164e0934b62d4b955199166b616f826c6b87aca75dadc7b2ced8d4d7749f8",
+      "size": 46023
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/codex_cli_provider.rs",
+      "sha256": "d792ddbd82d2f9e5a0c3d03e968a07a1d257c53f0a6325d5969db5af53eb601b",
+      "size": 34978
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/compiled_patch.rs",
+      "sha256": "b833af2a1b1cac065eb7e465fd39412fd9d5ce96cda3cb61931f4f515ad75f2d",
+      "size": 67540
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/convolution.rs",
+      "sha256": "9b708658b10699e646cf332082b1af3ce78be0242f22e9438034064e82b401ae",
+      "size": 9537
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/core.rs",
+      "sha256": "75073bd96d63d55e4dcc45569c0dd0436fb41b470a1c20e8009370868b2dd91a",
+      "size": 9537
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/crossover.rs",
+      "sha256": "5e095c51db2f3cd49de3dab6c1b94f4d4c224734d4066f483dd037903fcc51a2",
+      "size": 3761
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/curve_mapper.rs",
+      "sha256": "318660b92acdecfd06dc68dd526e0cb3de471c6c95a23972a5bab3ee787ca303",
+      "size": 4936
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/decay.rs",
+      "sha256": "e28c471be6fe7d3dfcfcbec37f02d045487685f540541e8b80061da278ccf014",
+      "size": 329
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/delay_line.rs",
+      "sha256": "31a59fe2872c358f987f7764b0d83ee8605f1f420d4db74f9edbc6841fb08d6a",
+      "size": 5965
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/diagnostics.rs",
+      "sha256": "ed180887bd017e2153c3882277de0c18b5f4309d8e4572d97d43b843fc1fb5db",
+      "size": 17772
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/drum_voice_authoring_tests.rs",
+      "sha256": "2475946e7c076ff0d987cacdbc12a8f4635abc5d60453dce521801ab65823802",
+      "size": 11395
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/dynamics_processor.rs",
+      "sha256": "696e8e34e0afc9b24829eef807ccecee1b4ecd5b27a87f3c023159c09826678c",
+      "size": 18602
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/echo.rs",
+      "sha256": "46549d0d5c1f4f889f814ec191a910dd5c531786abdb8402296d805577f2b652",
+      "size": 12612
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/envelope_follower.rs",
+      "sha256": "a8c2a65fc73f2dab92f1e0e84749df3bed82333270bcceec7099631d741cc31f",
+      "size": 6430
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/ffi.rs",
+      "sha256": "ef1b15913cdadf9147d315ae0b4b310ada8e1f6ecbe208add2a180f5d0bebb1e",
+      "size": 102833
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/fft.rs",
+      "sha256": "8158e9c39779b291ac602ab5e0f4203e9e07411bfdc519c0327bd22aa7e99985",
+      "size": 2219
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/filter/biquad.rs",
+      "sha256": "3af69f79a3efc4823c106fe74910a6cc7629e8d24fc4d6cce6ca112e3369c061",
+      "size": 4627
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/filter/comb.rs",
+      "sha256": "a94590de8c95e366a38ef1080104ab871b7f2879ca89fd7326505b2e0c202b9a",
+      "size": 2279
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/filter/mod.rs",
+      "sha256": "7335be4e4fdaac662f1c1d0d49263d4dae7ffaf2176b01e16ef0aa738115bca9",
+      "size": 784
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/filter/moog.rs",
+      "sha256": "36017d5c663fdeaf78a012bcf03a51ed8333964507fa8fb945e7cb3f06c00bfe",
+      "size": 1697
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/filter/one_pole.rs",
+      "sha256": "a9b227127b5b081c58ddc5e33bf0eea81eb51458730992b21e184b0d1b8318de",
+      "size": 1622
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/filter/tests.rs",
+      "sha256": "b3a1fee225f4535dd6b1cde31654155ba8d2e0cf69ae814ef746116ccc4a3b78",
+      "size": 11417
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph.rs",
+      "sha256": "989d2017dadd7026a1f0d01323fe5243b2261ee56c25b8f095bb7fd87b8cf13f",
+      "size": 24208
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph/builtin_ports.rs",
+      "sha256": "95cc0ae020ee86b758a2ed79f67912a6902811878b9baf6c1fcf15e70880cfd7",
+      "size": 3015
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph/tests.rs",
+      "sha256": "dd815218ff47a42fcd364551a73c712149b398ae2a42ff0f7d197581a0deade9",
+      "size": 52385
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph_module.rs",
+      "sha256": "495fb45d06d354ffc4449b07d69f84205abfbdc5585a2a0350f515e6f5d3fba6",
+      "size": 9117
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph_processor/arena_processing.rs",
+      "sha256": "f0909e4a95f1f9b09ffc8ea4ad89a7897eaab6c66984072a517416bb7fe247f1",
+      "size": 59579
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph_processor/audio_arena.rs",
+      "sha256": "837db21b9d144a0399b89307289a029c8259e73c451680dfb4581e3fee3f4d36",
+      "size": 7842
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph_processor/block.rs",
+      "sha256": "970db7c8f16771173e047b369b0761d40214e936de2fc283d7f3505c4bfebcc8",
+      "size": 8898
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph_processor/dispatch.rs",
+      "sha256": "d3cc22b0a43afbe320735383d5f117e2260113d0cc547c61d6406b1215a2b90e",
+      "size": 9340
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph_processor/event_queue.rs",
+      "sha256": "d6b56cb3d769895ec85ad812a7c14bd0c3d7fc09ac9c7ea3d5c83d2985542bd3",
+      "size": 14726
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph_processor/helpers.rs",
+      "sha256": "d570262f86c841f4f3cf0a4b463b497b5c57851005b76037e9004bb4eb834b0e",
+      "size": 1708
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph_processor/input_provider.rs",
+      "sha256": "2846e0d1701e8739b4cd8caf0ddbe26dbadc07dd08a33a5b42ebd617a37351f9",
+      "size": 6013
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph_processor/mod.rs",
+      "sha256": "34c10b5bd9accc1d9c6c4e8ae2564921d14dabd26397cf9f4345c217735a0433",
+      "size": 1525
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph_processor/offline.rs",
+      "sha256": "aff78a9fd3e92ca34d2a06a8276d875c7c60fec952f14f46d3b8053f7812b416",
+      "size": 15793
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph_processor/outputs.rs",
+      "sha256": "65b0a3934727347602cd89f3f2a935951520ef1d5864c39d08c9def3dfa1ff12",
+      "size": 723
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph_processor/polyphony.rs",
+      "sha256": "38877cffcfcada58684f79632f953dfd3beab5cfc5e0677bbe7656962540aae3",
+      "size": 42716
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph_processor/process_context.rs",
+      "sha256": "deff137d8f638b29c045bfdf333f0a6626f742885422e314e7ff84b5e751f340",
+      "size": 5768
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph_processor/processing.rs",
+      "sha256": "9c3a981938df15c70e471008a04befd2d91128e16546711a614f8200f802ae11",
+      "size": 33267
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph_processor/realtime_allocation_tests.rs",
+      "sha256": "4f2dbca7d3a3bbd5371a5923ef2f1236e4623ff63281db83faf8965ceaed6795",
+      "size": 34331
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph_processor/realtime_graph_processor.rs",
+      "sha256": "0241d795f703468036164bc31015286d977d0f5598e73553fc340193015d2761",
+      "size": 103872
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph_processor/render_plan.rs",
+      "sha256": "63dee65fb86ff86a861d31ae8d872287aca397d9ac65c696323885d4ef098df4",
+      "size": 22529
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph_processor/state.rs",
+      "sha256": "a8150023e7298930b4a5e20131ea2dfb7e1081769d6931d68352f4a41f1a6301",
+      "size": 28451
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph_processor/tests.rs",
+      "sha256": "5a17506c44139398dc7845a0077fa7514df9f058acb0ef55a46c830db670be64",
+      "size": 289316
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/graph_proposal.rs",
+      "sha256": "ee6fd5071bdbdf04c1031b791257da0fbee5f578ff9ff5012c28b40cf99825e1",
+      "size": 39089
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/instrument_state.rs",
+      "sha256": "2ee7fe57aa02b0376aac3fef9a0f52eaef9cbb946ccd4eedf45ae8cdf0a89ee0",
+      "size": 4419
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/kernel.rs",
+      "sha256": "ed703f8b7a81c45d61f15f7f2fbae0d9fa9d4efe5e1ec323527672d6c05c76d0",
+      "size": 88924
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/kernel/builtins.rs",
+      "sha256": "7d7c418cd613d79ca84ca08022163af8a225101203a9280f8c8eebb06e2ebc4d",
+      "size": 27198
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/kernel/builtins/tests.rs",
+      "sha256": "e0543690a6c0ab7ece9df6c185a732e7d8b923ae77fa7a9c499f3eda417e0200",
+      "size": 35603
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/kernel/document.rs",
+      "sha256": "563c907e69936e87ce92ff844b9856d4407ddcb64a868d2faef9942235c2ef24",
+      "size": 48297
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/kernel/document/tests.rs",
+      "sha256": "e90ccfe09de548d7fe7796e45c6239af1c66b44d6552d1b7811abf341fde678f",
+      "size": 217569
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/kernel/flatten.rs",
+      "sha256": "eed495c18b63ba98bd87a9cd55dc94d7fb6866be9d90a13a23a6f6517f94eca5",
+      "size": 37409
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/kernel/flatten/tests.rs",
+      "sha256": "7acea6723404e1f70672e7a3b53c54a0c2a1806b56c4c6688a0c790f8f27ad4f",
+      "size": 42730
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/kernel/latency.rs",
+      "sha256": "b7ac9837e96b373729d37654348b37941d36c90347acfd4a432c2e96c7529721",
+      "size": 17078
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/kernel/latency/tests.rs",
+      "sha256": "9a8a74a9cda6326ba6d9dc912e1ebf8c13bbf5d1893b430ca821583e63b95732",
+      "size": 21745
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/kernel/tests.rs",
+      "sha256": "ba1fcc81406029d45199dde2586bb0a65f72aa0fc3f917ff6a30ced8956d13b8",
+      "size": 64431
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/legacy_tests/declarative_parameters_red_tests.rs",
+      "sha256": "925904fb829f2cf5c7343cf4358588af656bc2df6461dcfcb5df8d78e15cfcd8",
+      "size": 9424
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/legacy_tests/declarative_parameters_remaining_red_tests.rs",
+      "sha256": "d2d3cc34c75842e1340f397c5a123abddb5ac042a1170273d8469f471b63935f",
+      "size": 22856
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/legacy_tests/engine_patch_behaviour_tests.rs",
+      "sha256": "1c380b417b3340eccb408132891200342d0c3d6006c4dcbd463b4aa457bb9262",
+      "size": 18074
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/lib.rs",
+      "sha256": "f8039a7317632b9e7b3442f7746f1a9224c5308571cbf2043f25242a667984ac",
+      "size": 1634
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/module_library.rs",
+      "sha256": "72b43190bca73246cf22371f9b3ba6b32248320d2759bf3bc4e0e48a59442e32",
+      "size": 46169
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/module_package.rs",
+      "sha256": "a8a32309a55c8cc2d3ea2cba5a74549f5235f1d4bdf1b2791b8fde6f05b39d41",
+      "size": 51876
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/module_reference.rs",
+      "sha256": "0b9b27584f87cd436633580220ce53d403a4d0baef0a6a8b7c0612419da5b534",
+      "size": 19002
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/oscillator.rs",
+      "sha256": "b57ac211a13850a98ac6a17e9f831d7906edc0090086f6f13720057f3d2fea99",
+      "size": 3284
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/patch.rs",
+      "sha256": "177747327e15f9e8f52f7a1947a2d8d1a3b0d0aaed2212bd538c17523403f128",
+      "size": 74885
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/patch_module.rs",
+      "sha256": "d753466553510dccd6390bbfd1aa7d550d862575b344d76ba437a67be9510670",
+      "size": 21772
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/preparation.rs",
+      "sha256": "1179b659082e4751e8ef7833dc582900d6da95520c25b22ef1d8ac2079f2f8cf",
+      "size": 264191
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/realtime.rs",
+      "sha256": "1ffd49661612919577954c24a7ac41dd46ac24cfc1d8c7a2a34faa1996d25352",
+      "size": 2202
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/reverb.rs",
+      "sha256": "8425b768a45e6ee5879a525fd535b4c05740f9708feb0ab354b67d03c63667b5",
+      "size": 19298
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/sample.rs",
+      "sha256": "b1a76a9e0a4451df0b044c0183de0a3eb409112990e3a701cd606cdcd2598931",
+      "size": 12809
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/saturator.rs",
+      "sha256": "546f04fb2ab65be381f8a72e7d422ec6eff7539cd8f0c3cfb255678ae1ae5019",
+      "size": 9478
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/script.rs",
+      "sha256": "26b4d31fcf4c535412068d746c605e59020eb8c758251bfe9b7f60448236b038",
+      "size": 37729
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/sound_analysis.rs",
+      "sha256": "d6a30207b4a4995d3560df6cdc408ca61893b6b7b0cd78e964496c2ff29a38d4",
+      "size": 12194
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/sound_matching.rs",
+      "sha256": "1de6101d1d88f569ca704a77ccfecc9ad9fc453f3d0b74a07adec74b8e1397b2",
+      "size": 61464
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/sound_workbench.rs",
+      "sha256": "8d3f884f6029d53ea5660efb3269dcb90e4062680cc67d5ca2e2ac15feb9d16c",
+      "size": 63246
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/sound_workbench_ffi.rs",
+      "sha256": "4df6efc058701e396aa10663def42e87ce963104f798e1120ade392cf119344a",
+      "size": 52549
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/spectral.rs",
+      "sha256": "b085c9c9b95bfa854d9271ddb02f417048a14231d686eb60309cfb0e8eab1474",
+      "size": 6955
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/synth.rs",
+      "sha256": "5465d59e4f2e89eff4df50bc5dbced92963e19e458eb92e6396f4c2d7e35fafa",
+      "size": 23033
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/test_allocator.rs",
+      "sha256": "a608a8b8e995e8ac84ec381ed157e687d5900b9450c3a6ad19a3789e38e6996e",
+      "size": 1468
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/test_support.rs",
+      "sha256": "8e5a8646bf8c0ac369c709e5d54ff7b05ffe74b245789dacf978fe1bcfec1548",
+      "size": 2551
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/voice_allocator.rs",
+      "sha256": "6c10159344d6f4425d717d35d6bb864582d10fd55d5ee70e8e0f8a25b0463eb6",
+      "size": 5933
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/src/wav.rs",
+      "sha256": "6f64c1daf704f3ab3b00765e255d66d28e41dea976cd2d1a622ae479d3dddb00",
+      "size": 5096
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/source/src/rust-engine/tests/runtime_thread_ownership.rs",
+      "sha256": "363babd6c498b40ad94a5e58247305c8eed3f93e917004be3c0fa7f9b28728af",
+      "size": 4943
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/test-counts.json",
+      "sha256": "0658d6eace93ac179d168ad9dcad2cdedd9f5f93d2dc67cb62e2d529709d9526",
+      "size": 183
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/unexecuted-source-lines-annotated.json",
+      "sha256": "5354a451a33a4351b07076caf7935e0929701984e7e663eb2f97aa6d4dc23b0f",
+      "size": 26878
+    },
+    {
+      "path": "04-session-lib-llvm-expected-engine/zero-entry-function-records.json",
+      "sha256": "e1737316fc41c0c2f1c93b0039e7ae40b3b3709119bc68d113fab5711517a942",
+      "size": 37338
+    },
+    {
+      "path": "HANDOFF.md",
+      "sha256": "7ef78ba2d81df61a75ca7f097d5e91ecda11e27fce6176ea16b6fba0b391ab1e",
+      "size": 5756
+    },
+    {
+      "path": "final-process-audit.txt",
+      "sha256": "09a10bb107dfe1ac0730be08c8ecb3160c65cbb736c5977546efa42601ff7291",
+      "size": 60207
+    },
+    {
+      "path": "final-source-freeze.json",
+      "sha256": "484f952984091acbf6b4d5679e00d1f2f961e6099c3d080d55a62615c076a0a7",
+      "size": 38128
+    },
+    {
+      "path": "inventory.json",
+      "sha256": "3483ffbf68971514345db6cd8b61c67188f27fd986f5dd15195aefc37fcc8847",
+      "size": 69192
+    },
+    {
+      "path": "receipt.json",
+      "sha256": "0b5b928f36e1e42df51775af0862aab79682b6b6e63c64f7dd3b4722a23a98df",
+      "size": 626
+    },
+    {
+      "path": "root-source-copy-receipt.json",
+      "sha256": "4e49d924b9f9257542511dcc4dec7d99ab76621557f396397241ac33979bc73e",
+      "size": 641
+    }
+  ]
+}

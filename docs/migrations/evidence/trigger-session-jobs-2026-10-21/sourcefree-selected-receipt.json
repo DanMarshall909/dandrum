@@ -1,0 +1,65 @@
+{
+  "head": "24a4afe7e266f5458a7cc1ddac9f9e7c99947929",
+  "source_inputs": 590,
+  "all_root_and_fixture_inputs_match_before_after": true,
+  "absent_trees": [
+    "web",
+    "ui",
+    "third_party"
+  ],
+  "selected_counts": {
+    "parameters": 14,
+    "runtime": 18,
+    "session_jobs": 9
+  },
+  "total_passed": 41,
+  "profile": "Default optimized release; CARGO_INCREMENTAL=0; jobs1; no profile/instrumentation overrides; exact verbose compiler commands retained",
+  "scope_limit": "Selected actual source-free optimized Cargo integration binaries only; not full host suite, complete guard, CMake artifact restaging, native/browser/CLAP or beta acceptance",
+  "results": [
+    {
+      "gate": "release-tests",
+      "exit_code": 0,
+      "elapsed_seconds": 152.01837374299066,
+      "pgid": 3710073
+    },
+    {
+      "gate": "dependencies",
+      "exit_code": 0,
+      "elapsed_seconds": 0.25106903800042346,
+      "pgid": 3715066
+    }
+  ],
+  "binaries": [
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/parameters-24211fdc7856d7dc",
+      "sha256": "b937846cbf6b9208d290735db04c1ee478b90d477f8b108a51e8b4d9c1bcf841",
+      "size": 12122848
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/runtime-414a8b417fb50eb7",
+      "sha256": "00e109dfba5d0329c64ef4d6d8f0e4a7864624356be10fe9c54a580f90f89998",
+      "size": 12108024
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/session_jobs-12083c82a98f6a9a",
+      "sha256": "47b4a13fa967fe5e19e140de71e35586cdf21267105147c93a40abbf7bf3e186",
+      "size": 12407304
+    }
+  ],
+  "forbidden_dependency_matches": [],
+  "resource_floors": {
+    "disk": 1073741824,
+    "shm": 268435456,
+    "evidence_ram": 268435456,
+    "memory": 4294967296
+  },
+  "final_resources": {
+    "disk": 1300324352,
+    "shm": 1037553664,
+    "evidence_ram": 281251840,
+    "memory": 11711508480
+  },
+  "cache_preserved": true,
+  "source_changes": "Only seven approved copied fixture inputs updated; repository untouched",
+  "namespace": "All fixture/cache/process/resource operations executed elevated in actual host namespace"
+}

@@ -1,0 +1,10 @@
+{
+  "verdict": "PASS",
+  "manifest_sha256": "6d6748efc02ac8666081cecbda1a46891d7eb0aedb51af6d0e01ebc3c3e832be",
+  "base": "24a4afe7e266f5458a7cc1ddac9f9e7c99947929",
+  "review_sha256": "9b5f523268abde6ccdbf0e181a670b7cf88a38615d96f0d73d6116415497d2b9",
+  "scope": "Task 3.3 manual shared structural-job prerequisite only; installed worker/wake/native facade/CLAP/beta remain open",
+  "findings": [],
+  "required_before_commit": "Apply only exact five-path metadata envelope, pass named validations, and obtain same-reviewer whole-final-candidate addendum PASS",
+  "mutation": "Explicitly excluded; no mutation result claimed"
+}

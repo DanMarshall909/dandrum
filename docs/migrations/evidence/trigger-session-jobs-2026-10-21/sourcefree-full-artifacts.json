@@ -1,0 +1,53 @@
+{
+  "source": "/run/user/1000/dandrum-beta-20261020/session-jobs-sourcefree-full",
+  "archive": "sourcefree-full-raw.tar.gz",
+  "archive_sha256": "b4c5cfd3fc770e277291d4b3fa2423ae4669220f265704e6454073acfa8ca9ac",
+  "members": 9,
+  "artifacts": [
+    {
+      "path": "HANDOFF.md",
+      "sha256": "867998d221fa101936b0808cc93c2d1fcb75b6dc8da59ec9ad06b0032c3e9e04",
+      "size": 1658
+    },
+    {
+      "path": "evidence-sha256.json",
+      "sha256": "ed46ae47a9db34bdb26876cb9b54fe0bc42164fa8582e18b26cbfe6c31cec7b3",
+      "size": 712
+    },
+    {
+      "path": "execution.json",
+      "sha256": "045c846ebfe44970d0525696d83b34b2785fc2fd199da267847de8a47f9454a3",
+      "size": 198980
+    },
+    {
+      "path": "full-host.log",
+      "sha256": "2331815b9bd0e1db2cbb2d150523b237936c6141b526bbc6379e2dd5fa1607c0",
+      "size": 41777
+    },
+    {
+      "path": "handback.json",
+      "sha256": "767d4e2e9b553b42db42ef70ae0006c7bd509374ca63f18635557818ef4d3100",
+      "size": 496
+    },
+    {
+      "path": "receipt.json",
+      "sha256": "dce36763521dc574336633b2d2473f4cbf89010040e3d0f9a80ad49401e28890",
+      "size": 2820
+    },
+    {
+      "path": "run.py",
+      "sha256": "418cc4970df8f552144b8eb4154f18bb6240c7d6f0ee2e91a92f93f93ff2e7e0",
+      "size": 5590
+    },
+    {
+      "path": "selected-evidence-before.json",
+      "sha256": "4b93179caac6786d3b86899db1977af946f763a31207aa04160fe8f1bd9c6b1e",
+      "size": 1186
+    },
+    {
+      "path": "source-manifest.json",
+      "sha256": "96a8169f32ecaa8d1a3909d4e3c2a05968de468e137a917cb9aad4e05eeea35e",
+      "size": 68454
+    }
+  ]
+}

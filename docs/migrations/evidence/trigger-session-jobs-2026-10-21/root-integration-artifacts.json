@@ -1,0 +1,58 @@
+{
+  "source": "/tmp/dandrum-evidence/session-jobs-integration",
+  "archive": "root-integration-raw.tar.gz",
+  "archive_sha256": "483403ec71ad834ae9fb9efac3c6c471e9d152df0992a96f0b573713240f1134",
+  "members": 10,
+  "artifacts": [
+    {
+      "path": "fast-forward.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "fast-forward.stdout",
+      "sha256": "8f66ba188c273b57b114a002ab5608f5ab43a1c3c8e1bc0ff5e1737a5caf4d1d",
+      "size": 3836
+    },
+    {
+      "path": "integration.json",
+      "sha256": "519fcc975a5d28c5dac4988a27fbe6dc8687ccad81c6d019d9a7fbb12ce2bd5b",
+      "size": 2243
+    },
+    {
+      "path": "preimage/openspec/changes/add-juce-free-trigger-clap-editor/design.md",
+      "sha256": "9b96d2882cca70fb0cb89c7076a77fbb5173b90b697bc839d8eeb6f795c211b9",
+      "size": 14731
+    },
+    {
+      "path": "preimage/src/instrument-session/src/lib.rs",
+      "sha256": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "size": 32826
+    },
+    {
+      "path": "preimage/src/trigger-host/src/parameters.rs",
+      "sha256": "de43207bc1d90a2faca948a3dd701c99aa4cefd662f43d464071e9d1db1e211d",
+      "size": 33706
+    },
+    {
+      "path": "preimage/src/trigger-host/src/protocol.rs",
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "size": 20391
+    },
+    {
+      "path": "preimage/src/trigger-host/src/runtime.rs",
+      "sha256": "7bb1cc246ef198c9b037939ff5530a5d4bbb818db096519a68e0edb4633190bd",
+      "size": 38903
+    },
+    {
+      "path": "preimage/src/trigger-host/tests/parameters.rs",
+      "sha256": "7c9d9f52c676a4ab94921f7deee9ef4f5f37a51710e2b5c7f95b1ed076553578",
+      "size": 33783
+    },
+    {
+      "path": "preimage/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "e61114b2f11316fec1be165dab890db011544980b2c09c6fb7e1fa1ddd8c2323",
+      "size": 28564
+    }
+  ]
+}

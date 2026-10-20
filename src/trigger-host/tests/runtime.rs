@@ -653,6 +653,109 @@ fn session_publication_uses_a_cancellable_lease_and_rolls_back_under_backpressur
 }
 
 #[test]
+fn busy_runtime_mapping_completion_retains_failure_without_stealing_pending_audio() {
+    use dandrum_instrument_session::{MappingAdmission, MappingRequest, RequestFailure, RequestId};
+
+    let mut session = session(36);
+    let (attachment, original) = session.attach().unwrap();
+    let (mut control, mut audio) = runtime_handoff(
+        PreparedRuntime::new(session.prepared(), configuration()).unwrap(),
+        4,
+    )
+    .unwrap();
+    let render = |audio: &mut dandrum_trigger_host::runtime::RuntimeAudio, note, swapped| {
+        let (mut left, mut right) = ([1.0; 16], [1.0; 16]);
+        let callback = allocation_counter::measure(|| {
+            assert!(!audio.reset().admission_closed);
+            let report = audio
+                .process_events(
+                    &mut left,
+                    &mut right,
+                    &[TimedEvent {
+                        frame_offset: 0,
+                        event: ControlEvent::NoteOn {
+                            note,
+                            velocity: 100,
+                        },
+                    }],
+                )
+                .unwrap();
+            assert_eq!(report.swapped, swapped);
+            assert!(!report.admission_closed);
+        });
+        assert_eq!(
+            (
+                callback.count_total,
+                callback.count_current,
+                callback.bytes_current
+            ),
+            (0, 0, 0)
+        );
+        (left, right)
+    };
+    let initial = render(&mut audio, 36, false);
+    assert_eq!((initial.0[0], initial.1[0]), (-0.5, -0.5));
+    assert_eq!(render(&mut audio, 60, false), ([0.0; 16], [0.0; 16]));
+
+    let request = MappingRequest {
+        instance: original.instance.clone(),
+        request_id: RequestId(1),
+        expected_revision: original.revision,
+        intent: SetZoneKeyRange {
+            map_id: "kit".into(),
+            zone_id: "kick".into(),
+            key_range: [60, 60],
+        },
+    };
+    let MappingAdmission::Admitted(job) =
+        session.admit_mapping(&attachment, request.clone()).unwrap()
+    else {
+        panic!("fresh mapping request must own preparation");
+    };
+    let completion = job.prepare();
+    assert!(control.offer(prepared(36)).is_ok());
+    let outcome = session.complete_mapping(completion, &mut control).unwrap();
+    assert_eq!(outcome.request_id, request.request_id);
+    assert_eq!(
+        outcome.result,
+        Err(RequestFailure::Activation("Busy".into()))
+    );
+    assert_eq!(session.snapshot(&attachment).unwrap(), original);
+    assert_eq!(
+        session
+            .request_outcome(&attachment, request.request_id)
+            .unwrap(),
+        Some(outcome.clone())
+    );
+    assert!(
+        control.reclaim().is_none(),
+        "pending replacement was not consumed"
+    );
+
+    // The pre-existing candidate, not the rejected mapping, owns this swap.
+    let swapped = render(&mut audio, 36, true);
+    assert_eq!((swapped.0[0], swapped.1[0]), (-0.5, -0.5));
+    assert_eq!(render(&mut audio, 60, false), ([0.0; 16], [0.0; 16]));
+    assert!(
+        control.offer(prepared(60)).is_err(),
+        "retirement still owns the slot"
+    );
+    drop(
+        control
+            .reclaim()
+            .expect("retired runtime returns off audio"),
+    );
+    assert!(control.reclaim().is_none());
+    assert_eq!(session.snapshot(&attachment).unwrap(), original);
+    let MappingAdmission::Completed(retained) =
+        session.admit_mapping(&attachment, request).unwrap()
+    else {
+        panic!("failed request must recover its terminal outcome, not retry activation");
+    };
+    assert_eq!(retained, outcome);
+}
+
+#[test]
 fn allocation_audit_independently_detects_allocation_and_preexisting_destruction() {
     let allocated = allocation_counter::measure(|| {
         std::hint::black_box(Box::new([0u8; 64]));

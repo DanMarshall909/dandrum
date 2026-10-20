@@ -1,0 +1,18 @@
+# Public Busy activation-failure characterization — frozen handoff
+
+One test added in src/trigger-host/tests/runtime.rs, increasing its integration test count17→18. Production and all six other frozen job source/test hashes match the root integration manifest. No Git/index/docs/spec/dependency/production edits.
+
+`busy_runtime_mapping_completion_retains_failure_without_stealing_pending_audio` uses the actual public InstrumentSession admit_mapping / MappingJob.prepare / complete_mapping / request_outcome / repeated admit_mapping APIs with a real AdvancedKit36 session and prepared36 runtime already pending. The reachable activation failure invokes RuntimeError Display through Session's real error.to_string path and retains RequestFailure::Activation("Busy"). It is not a formatter-only test or controller-service misuse: the controller correctly preflights Busy, while the public Session API permits this real call.
+
+Oracles: independently fixed signed note36 onset(-0.5,-0.5) and complete note60 silence before and after the eligible swap; complete accepted snapshot equality protects YAML/revision/history; returned and queried failed outcome agree; pending runtime cannot be reclaimed early and still swaps; consumed retirement blocks further offer until off-audio reclamation; repeated native request returns the terminal failure rather than attempting activation again. Callback/reset allocation and destruction counters remain zero. No mock, fake job, counter/seam, source-tagged voice, artificial mutant or production edit.
+
+This existing correct behavior passed as characterization: no RED is fabricated. Focused1 passed in2.47s; full runtime18 passed in0.45s; fmtcheck passed in0.25s. Actual Cargo test drivers used --offline --locked, jobs1, warm cache-editor-guard and private evidence scratch. CARGO_PROFILE_DEV_DEBUG and CARGO_PROFILE_TEST_DEBUG were explicitly removed. Verbose compiler log proves -C debuginfo=2 and [unoptimized + debuginfo]; engine and session dependencies were Fresh. Exact commands/env/cwd/status/timings, crate-relative source snapshots, runtime test binary hashes and resource guards are retained for every phase.
+
+Conditional broader verification was not attempted: current free disk~1.38GB leaves~300MB above the1GiB floor, while no editor_notes or directSession test executable exists in the assigned cache and comparable binaries are194–197MB. One new persistent binary plus an overlapping relink can exceed reserve. This is not a full-host/default-profile PASS claim. Root's later assigned RAM full-host/LLVM/Clippy and independent review remain outstanding combined-candidate gates. No directSession, coverage, Clippy, release, browser/native or mutation run was performed.
+
+Refactor assessment: reused existing session/prepared/configuration helpers; one local render closure isolates callback sentinels and independent audio assertions without duplicating package/sample fixtures or extracting production code. No further refactor is warranted for this single public composed law.
+
+Source is frozen and cache-editor-guard execution ownership returned to root. No owned workers remain. Every cache/evidence file is preserved; no cleanup/deletion/relocation. Pending root cache-deletion decision can proceed only under its explicit authorization now that this lane is idle. Task3.3, worker/wake/native/CLAP/beta remain incomplete.
+
+Exact hashes/checks/resources: final-freeze.json. Modified test hash: 4405fa17093a49776569a817a4891cf6bb68978fdfe4c61c23ed8b376203690a
+Production runtime hash: ff391f08e30ea5425c22e9385802788349cb56b5c9dacbb2027d6bf068c27a69

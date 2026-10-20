@@ -1,0 +1,73 @@
+{
+  "source": "/run/user/1000/dandrum-beta-20261020/session-jobs-sourcefree",
+  "archive": "sourcefree-selected-raw.tar.gz",
+  "archive_sha256": "3bd89d19b61ec7666bf0d1a86a9ffca2f8b69121aab0101ef1f63bf11e769e8d",
+  "members": 13,
+  "artifacts": [
+    {
+      "path": "HANDOFF.md",
+      "sha256": "4f2c048785386b902ba34c79a9320da29fcb605bab192b6d8ec87a08672f3069",
+      "size": 1781
+    },
+    {
+      "path": "dependencies.json",
+      "sha256": "9e9083a7458afb3ab20d5789883fb81226b40da0e1d41d2771b06f248ff50c7d",
+      "size": 1211
+    },
+    {
+      "path": "dependencies.log",
+      "sha256": "77d2b3c90c58395f0afa032c9d2ee6a8cfac70e47ada1681e89e3927f444f605",
+      "size": 4674
+    },
+    {
+      "path": "evidence-sha256.json",
+      "sha256": "6cbb7d51f5b6934479b96e89a427a989ed1d2187669537ce29dd6790089ad48a",
+      "size": 1092
+    },
+    {
+      "path": "fixture-update.json",
+      "sha256": "181a000cfc521d07ea67524ba98f976baa8e3d6aaea7a32581f9d7a4726a6874",
+      "size": 2953
+    },
+    {
+      "path": "handback.json",
+      "sha256": "3f278fd2599b1e331a22c3542df1de4d3813e736c859d5636664fe87e61bcc9a",
+      "size": 343
+    },
+    {
+      "path": "prior-fixture-verified.json",
+      "sha256": "3e583c661003ff010757c2c01d307817f38bf0bfdc19cb5d206feebf340d57ff",
+      "size": 112615
+    },
+    {
+      "path": "prior-source-manifest.json",
+      "sha256": "c20bf949a334aa9bfad4c477aaf7675b5ea0edca7830d45287a8fd81d596378d",
+      "size": 68342
+    },
+    {
+      "path": "receipt.json",
+      "sha256": "0eaee7962addf3dde1e3ae69ea82ff6b8c059e4e3c5a827f91a8e8927957fafd",
+      "size": 2140
+    },
+    {
+      "path": "release-tests.json",
+      "sha256": "b54a74cc5760ad0e700f61075b8dfa3edc1575f56613ed89b4eb1601e1e9699b",
+      "size": 103602
+    },
+    {
+      "path": "release-tests.log",
+      "sha256": "9377d39b4afd9a6e9a8d54e9938b14651c8c561e59275ab485d2ca05c45b3267",
+      "size": 23260
+    },
+    {
+      "path": "run.py",
+      "sha256": "2ddb35d2315407737c1bbb1925a93e874da76ce855c450010af6d8a1319ec906",
+      "size": 7169
+    },
+    {
+      "path": "source-manifest.json",
+      "sha256": "96a8169f32ecaa8d1a3909d4e3c2a05968de468e137a917cb9aad4e05eeea35e",
+      "size": 68454
+    }
+  ]
+}

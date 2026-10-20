@@ -1230,3 +1230,45 @@ semantics remain unclaimed. Task3.3 remains open7/14 with actual worker/wake,
 notes/heartbeat/facade/CLAP acceptance still required; full beta stays active
 through nextVST3/standalone/namedDAW/offline/native increments. Main remains
 clean68dd655, caches retained and mutation excluded.
+
+
+## Retain admitted native structural jobs — 21 October 2026
+
+The format-neutral controller now authenticates one sealed native context for
+parameters, snapshots, mapping, undo and outcome queries. Its single structural
+slot transfers owned preparation to a real worker and returns a rejected foreign
+completion to its caller. Ready work waits for runtime capacity and offaudio
+reclamation. Successful publication balances reserved gesture Ends and advances
+document generation; failure and deferral preserve accepted history and scalar
+settlement. Native outcomes remain recoverable across editor loss and later undo.
+
+This is the manual take/prepare/submit/service boundary. The installed persistent
+worker, host wake, notes/heartbeat/controller/native facade and joined CLAP editor
+remain open. No task3.3 completion follows from this component.
+
+Actual final verification passes102 unfiltered host tests under opt0 LLVM and102
+ordinary source-free default-release tests plus one compile-fail doctest. Separate
+default-symbol debug checks pass30 Session and18 runtime tests. Formatting and
+all-target Clippy with warnings denied pass for both owners. Public admit_undo's
+changed entry executes through a composed native caller in three unit-owner LLVM
+tests. That scoped Session coverage is distinct from its27 ordinary integration
+tests. Runtime Display executes through a real public Busy activation failure
+that preserves accepted state, pending ownership and signed36/60 audio behavior.
+
+Host LLVM reports209/209 summaryfunctions,2296/2312lines and3602/3657regions.
+Residual sealed routing/discriminant and inherited paths remain disclosed; these
+scores do not prove branch coverage or assertion strength. Original author count87
+is corrected from retained raw output to77 ordinary plus one doctest=78; original
+summaries remain unchanged. The final102 count is parsed from current raw output.
+
+[Portable evidence](evidence/trigger-session-jobs-2026-10-21/receipt.json) retains
+raw phase archives, sources, commands, profiles, binary hashes, ownership and
+resource receipts. All590 source-free inputs match before/after; web/ui/third_party
+are absent and the graph has no Clack/Wry/GTK/WebKit/JUCE. This is Cargo proof,
+not fresh whole-guard/CMake/native/installed-product acceptance. Stopped setup and
+resource attempts remain distinct from RED and successful retries. Reusable
+caches are preserved; mutation is excluded and main remains clean68dd655.
+
+Independent completion review passed for the frozen native structural-job source/evidence candidate; normal-hook publication remains.
+OpenSpec remains7/14 with3.2/3.3 open; full beta continues through joined CLAP and
+the next VST3, standalone, named-DAW, offline-install and native lifecycle gates.

@@ -1,0 +1,23 @@
+{
+  "source": "/tmp/dandrum-evidence/session-jobs-review/session-owner-integration",
+  "archive": "owner-path-copy-raw.tar.gz",
+  "archive_sha256": "236223e39f82c9f740d85ba6ec97835a8d80f58fa9333f2cf4938f3b78393486",
+  "members": 3,
+  "artifacts": [
+    {
+      "path": "lib.rs.preimage",
+      "sha256": "b5d319341ad0ebc8ab1fd472cbd821e000ed7c4723cdba22cb12d7cfe678607e",
+      "size": 32833
+    },
+    {
+      "path": "receipt.json",
+      "sha256": "4e49d924b9f9257542511dcc4dec7d99ab76621557f396397241ac33979bc73e",
+      "size": 641
+    },
+    {
+      "path": "restored.json",
+      "sha256": "52cc1fcf57f03ab69247354152bc3f1aef5bb1175872d7ed45020dd7074c74f8",
+      "size": 407
+    }
+  ]
+}

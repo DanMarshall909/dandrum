@@ -20,6 +20,9 @@ pub const MAX_AUTOMATION_EVENTS: usize = 1_024;
 #[derive(Debug, PartialEq, Eq)]
 pub enum ParameterError {
     Host(String),
+    Session(dandrum_instrument_session::SessionError),
+    UnknownJob,
+    InvalidJob,
     Runtime(RuntimeError),
     Protocol(ProtocolError),
     InvalidCapacity,
@@ -27,7 +30,6 @@ pub enum ParameterError {
     IdentityExhausted,
     StaleGeneration,
     UnknownParameter,
-    InvalidValue,
     QueueFull,
     UnsupportedCommand,
     GestureAlreadyActive,
@@ -102,7 +104,71 @@ pub enum AutomationEvent {
     End { parameter_index: usize },
 }
 
+/// A native job can leave the controller for preparation without an editor.
+/// Its private identity must return with the completion to the same active slot.
+pub struct SessionPreparation {
+    authority: std::sync::Arc<()>,
+    request_id: dandrum_instrument_session::RequestId,
+    job: dandrum_instrument_session::MappingJob,
+}
+/// An owned completion can be submitted only once. Rejection returns the same
+/// owned value so its actual controller can still accept it.
+///
+/// ```compile_fail
+/// use dandrum_trigger_host::parameters::{ParameterController, SessionCompletion};
+/// fn submit_twice(host: &mut ParameterController, completion: SessionCompletion) {
+///     let _ = host.submit_session_completion(completion);
+///     let _ = host.submit_session_completion(completion);
+/// }
+/// ```
+pub struct SessionCompletion {
+    authority: std::sync::Arc<()>,
+    request_id: dandrum_instrument_session::RequestId,
+    job: Box<dandrum_instrument_session::PreparedMappingJob>,
+}
+impl SessionPreparation {
+    pub fn prepare(self) -> SessionCompletion {
+        SessionCompletion {
+            authority: self.authority,
+            request_id: self.request_id,
+            job: Box::new(self.job.prepare()),
+        }
+    }
+}
+pub struct RejectedSessionCompletion {
+    completion: SessionCompletion,
+}
+impl RejectedSessionCompletion {
+    pub fn into_completion(self) -> SessionCompletion {
+        self.completion
+    }
+}
+impl std::fmt::Debug for RejectedSessionCompletion {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("RejectedSessionCompletion")
+            .finish_non_exhaustive()
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SessionJobProgress {
+    Idle,
+    Pending,
+    Completed,
+}
+struct ActiveSessionJob {
+    authority: std::sync::Arc<()>,
+    request_id: dandrum_instrument_session::RequestId,
+    work: SessionWork,
+}
+enum SessionWork {
+    Queued(dandrum_instrument_session::MappingJob),
+    Preparing,
+    Ready(Box<dandrum_instrument_session::PreparedMappingJob>),
+}
+
 pub struct ParameterController {
+    session_job: Option<ActiveSessionJob>,
     host: TriggerHost,
     runtime: RuntimeControl,
     protocol: EditorProtocol,
@@ -192,8 +258,12 @@ impl ParameterController {
         let owner = attachment_id
             .parse::<u64>()
             .expect("protocol validated the retired attachment identity");
+        self.end_gestures(Some(owner));
+        Ok(())
+    }
+    fn end_gestures(&mut self, owner: Option<u64>) {
         for (index, gesture) in self.gestures.iter_mut().enumerate() {
-            if *gesture == Some(owner) {
+            if gesture.is_some() && owner.is_none_or(|owner| *gesture == Some(owner)) {
                 self.automation.push_back(AutomationEvent::End {
                     parameter_index: index,
                 });
@@ -201,7 +271,6 @@ impl ParameterController {
                 self.reserved_ends -= 1;
             }
         }
-        Ok(())
     }
     pub fn take_feedback(&mut self) -> Option<ParameterFeedback> {
         let (feedback, sequence, reset_cancelled) = self.runtime.take_sequenced_feedback()?;
@@ -277,6 +346,7 @@ impl ParameterController {
         let gestures = vec![None; parameters.len()];
         Ok((
             Self {
+                session_job: None,
                 host,
                 runtime,
                 protocol: EditorProtocol::new(instance_id),
@@ -320,10 +390,12 @@ impl ParameterController {
             OUTCOME_LIMIT,
         };
         use serde_json::{Value, json};
-        let (instance_id, snapshot) = self
+        let context = self
             .protocol
-            .admitted_snapshot(self.host.session(), request)
+            .admitted_context(self.host.session(), request)
             .map_err(ParameterError::Protocol)?;
+        let snapshot = context.snapshot;
+        let instance_id = context.instance_id.to_string();
         if request.command != EditorCommand::GetSamplerSession {
             return Err(ParameterError::UnsupportedCommand);
         }
@@ -415,13 +487,171 @@ impl ParameterController {
             .map_err(ParameterError::Protocol)
     }
 
-    pub fn apply(&mut self, request: &AdmittedRequest) -> Result<ParameterReply, ParameterError> {
-        let snapshot = self
+    /// Admit structural work once. Transport correlation is separate from the
+    /// native request ID retained by the persistent session.
+    pub fn admit_session_command(
+        &mut self,
+        request: &AdmittedRequest,
+    ) -> Result<String, ParameterError> {
+        use dandrum_instrument_session::{MappingAdmission, MappingRequest};
+        let context = self
+            .protocol
+            .admitted_context(self.host.session(), request)
+            .map_err(ParameterError::Protocol)?;
+        let (id, admission) = match &request.command {
+            EditorCommand::SetZoneKeyRange { identity, intent } => (
+                identity.request_id,
+                self.host.session_mut().admit_mapping(
+                    &context.attachment,
+                    MappingRequest {
+                        instance: context.snapshot.instance,
+                        request_id: identity.request_id,
+                        expected_revision: identity.expected_revision,
+                        intent: intent.clone(),
+                    },
+                ),
+            ),
+            EditorCommand::UndoInstrumentSession { identity } => (
+                identity.request_id,
+                self.host.session_mut().admit_undo(
+                    &context.attachment,
+                    identity.request_id,
+                    identity.expected_revision,
+                ),
+            ),
+            _ => return Err(ParameterError::UnsupportedCommand),
+        };
+        match admission.map_err(ParameterError::Session)? {
+            MappingAdmission::Admitted(job) => {
+                self.session_job = Some(ActiveSessionJob {
+                    authority: std::sync::Arc::new(()),
+                    request_id: id,
+                    work: SessionWork::Queued(job),
+                });
+            }
+            MappingAdmission::Pending | MappingAdmission::Completed(_) => {}
+        }
+        self.protocol
+            .encode_reply(
+                self.host.session(),
+                &context.attachment_id.to_string(),
+                &request.request_id.to_string(),
+                Ok(serde_json::json!({"status":"accepted","job_id":id.0.to_string()})),
+            )
+            .map_err(ParameterError::Protocol)
+    }
+    pub fn take_session_preparation(&mut self) -> Option<SessionPreparation> {
+        let active = self.session_job.as_mut()?;
+        match std::mem::replace(&mut active.work, SessionWork::Preparing) {
+            SessionWork::Queued(job) => Some(SessionPreparation {
+                authority: active.authority.clone(),
+                request_id: active.request_id,
+                job,
+            }),
+            work => {
+                active.work = work;
+                None
+            }
+        }
+    }
+    pub fn submit_session_completion(
+        &mut self,
+        completion: SessionCompletion,
+    ) -> Result<(), RejectedSessionCompletion> {
+        let Some(active) = self.session_job.as_mut().filter(|active| {
+            active.request_id == completion.request_id
+                && std::sync::Arc::ptr_eq(&active.authority, &completion.authority)
+                && matches!(active.work, SessionWork::Preparing)
+        }) else {
+            return Err(RejectedSessionCompletion { completion });
+        };
+        active.work = SessionWork::Ready(completion.job);
+        Ok(())
+    }
+    /// A bounded main/control service step. Preparation is performed elsewhere;
+    /// returned retired processors are destroyed only here, away from audio.
+    pub fn service_session_jobs(&mut self) -> Result<SessionJobProgress, ParameterError> {
+        drop(self.runtime.reclaim());
+        let Some(active) = self.session_job.as_ref() else {
+            return Ok(SessionJobProgress::Idle);
+        };
+        if !matches!(active.work, SessionWork::Ready(_)) || !self.runtime.activation_available() {
+            return Ok(SessionJobProgress::Pending);
+        }
+        let next_generation = document_generation(self.generation)?;
+        let active = self.session_job.take().expect("ready session job exists");
+        let SessionWork::Ready(completion) = active.work else {
+            unreachable!("ready session job checked above")
+        };
+        let outcome = match self
             .host
-            .session()
-            .snapshot(&request.attachment)
-            .map_err(|_| ParameterError::Protocol(ProtocolError::StaleAttachment))?;
-        let generation = document_generation(snapshot.revision)?;
+            .session_mut()
+            .complete_mapping(*completion, &mut self.runtime)
+        {
+            Ok(outcome) => outcome,
+            Err(route) => {
+                self.session_job = Some(ActiveSessionJob {
+                    authority: active.authority,
+                    request_id: active.request_id,
+                    work: SessionWork::Ready(Box::new(route.into_completion())),
+                });
+                return Err(ParameterError::InvalidJob);
+            }
+        };
+        if outcome.result.is_ok() {
+            // Every active gesture already reserved its End slot. Publication
+            // retires this generation for all editors without dropping that End.
+            self.end_gestures(None);
+            self.generation = next_generation;
+        }
+        Ok(SessionJobProgress::Completed)
+    }
+    pub fn session_job_status(&self, request: &AdmittedRequest) -> Result<String, ParameterError> {
+        let context = self
+            .protocol
+            .admitted_context(self.host.session(), request)
+            .map_err(ParameterError::Protocol)?;
+        let EditorCommand::GetInstrumentSessionJobStatus { request_id } = request.command else {
+            return Err(ParameterError::UnsupportedCommand);
+        };
+        let result = if self
+            .session_job
+            .as_ref()
+            .is_some_and(|active| active.request_id == request_id)
+        {
+            serde_json::json!({"request_id":request_id.0.to_string(),"state":"running","revision":context.snapshot.revision.to_string(),"undoCount":context.snapshot.undo_len,"redoCount":context.snapshot.redo_len,"error":""})
+        } else {
+            let outcome = self
+                .host
+                .session()
+                .request_outcome(&context.attachment, request_id)
+                .map_err(ParameterError::Session)?
+                .ok_or(ParameterError::UnknownJob)?;
+            match &outcome.result {
+                Ok(snapshot) => {
+                    serde_json::json!({"request_id":request_id.0.to_string(),"state":"completed","revision":snapshot.revision.to_string(),"undoCount":snapshot.undo_len,"redoCount":snapshot.redo_len,"error":""})
+                }
+                Err(error) => {
+                    serde_json::json!({"request_id":request_id.0.to_string(),"state":"failed","error":format!("{error:?}")})
+                }
+            }
+        };
+        self.protocol
+            .encode_reply(
+                self.host.session(),
+                &context.attachment_id.to_string(),
+                &request.request_id.to_string(),
+                Ok(result),
+            )
+            .map_err(ParameterError::Protocol)
+    }
+
+    pub fn apply(&mut self, request: &AdmittedRequest) -> Result<ParameterReply, ParameterError> {
+        let context = self
+            .protocol
+            .admitted_context(self.host.session(), request)
+            .map_err(ParameterError::Protocol)?;
+        let generation = document_generation(context.snapshot.revision)?;
         match &request.command {
             EditorCommand::GetParameterState => {
                 return Ok(ParameterReply::State(self.parameter_state()));
@@ -431,7 +661,7 @@ impl ParameterController {
                 generation: expected,
             } => {
                 let index = self.resolve(parameter_id, *expected, generation)?;
-                if self.gesture_owned(index, request.attachment_id)? {
+                if self.gesture_owned(index, context.attachment_id)? {
                     return Err(ParameterError::GestureAlreadyActive);
                 }
                 // One slot publishes Begin; the other remains reserved until
@@ -442,7 +672,7 @@ impl ParameterController {
                 self.automation.push_back(AutomationEvent::Begin {
                     parameter_index: index,
                 });
-                self.gestures[index] = Some(request.attachment_id);
+                self.gestures[index] = Some(context.attachment_id);
                 self.reserved_ends += 1;
             }
             EditorCommand::EndGesture {
@@ -450,7 +680,7 @@ impl ParameterController {
                 generation: expected,
             } => {
                 let index = self.resolve(parameter_id, *expected, generation)?;
-                if !self.gesture_owned(index, request.attachment_id)? {
+                if !self.gesture_owned(index, context.attachment_id)? {
                     return Err(ParameterError::GestureNotActive);
                 }
                 self.automation.push_back(AutomationEvent::End {
@@ -465,10 +695,9 @@ impl ParameterController {
                 generation: expected,
             } => {
                 let index = self.resolve(parameter_id, *expected, generation)?;
-                if !value.is_finite() || !(0.0..=1.0).contains(value) {
-                    return Err(ParameterError::InvalidValue);
-                }
-                let active = self.gesture_owned(index, request.attachment_id)?;
+                // The sealed context recovered the exact retained command;
+                // normalization bounds were checked before its admission.
+                let active = self.gesture_owned(index, context.attachment_id)?;
                 let sequence = document_generation(self.admitted_sequence)?;
                 if self.automation_slots() < if active { 1 } else { 3 }
                     || self.runtime.event_slots() == 0
