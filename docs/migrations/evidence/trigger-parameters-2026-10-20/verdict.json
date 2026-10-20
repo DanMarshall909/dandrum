@@ -1,0 +1,25 @@
+{
+  "verdict": "PASS",
+  "scope": "Format-neutral public-parameter/gesture/feedback tracer only; task2.4 remains open",
+  "candidate_manifest_sha256": "d72b1b13575d10babf4d2bebc0d1bee23c2921952581899e37d015a4752cc035",
+  "candidate_paths": 40,
+  "base": "811ff37b24be67af9ed120c60edb197379cb6161",
+  "upstream": "811ff37b24be67af9ed120c60edb197379cb6161",
+  "source_hashes": {
+    "src/trigger-host/src/lib.rs": "2a108950f5a01ff08b8842f34f2a85045cf10f3265c535a0440f51629012c4a2",
+    "src/trigger-host/src/parameters.rs": "9d6473dc6102a6749faa6688a55b8f05e090e36da44b6cec469a95be9a1b74c3",
+    "src/trigger-host/src/runtime.rs": "2a4351d062a41a58cf2592f7113d4cb14badcbfc245ffc9513b1317e11986544",
+    "src/trigger-host/tests/parameters.rs": "c02d886c5ad02b52f336006c597523cf5940804baf36e8e5efc1d93e5671d113"
+  },
+  "blocking_findings": [],
+  "independent_tests": {
+    "passed": 48,
+    "exit_code": 0,
+    "elapsed_seconds": 0.504825,
+    "log": "independent-host-tests.log"
+  },
+  "post_pass_addendum_required": true,
+  "inherited_limit": "Structural publication gate silences callbacks while held; native continuity remains unproved",
+  "repository_modified_by_reviewer": false,
+  "report": "review.md"
+}

@@ -148,12 +148,33 @@ pub struct ProcessReport {
     pub dropped_feedback: usize,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct ResetReport {
+    /// True means the structural publication lease prevented any reset work.
+    pub admission_closed: bool,
+    pub discarded_events: usize,
+    pub cancelled_parameter_commands: usize,
+}
+
+#[derive(Clone, Copy)]
+struct QueuedEvent {
+    event: ControlEvent,
+    command_sequence: u64,
+}
+
+#[derive(Clone, Copy)]
+struct QueuedFeedback {
+    parameter: ParameterFeedback,
+    settlement: u64,
+}
+
 pub struct RuntimeControl {
     pending: Producer<PreparedRuntime>,
     retired: Consumer<PreparedRuntime>,
-    events: Producer<ControlEvent>,
-    feedback: Consumer<ParameterFeedback>,
+    events: Producer<QueuedEvent>,
+    feedback: Consumer<QueuedFeedback>,
     values: Arc<[AtomicU64]>,
+    settlement: Arc<AtomicU64>,
     admission: Arc<AtomicU64>,
     in_flight: bool,
     configuration: TriggerHostConfiguration,
@@ -169,9 +190,10 @@ struct AudioState {
     current: PreparedRuntime,
     pending: Consumer<PreparedRuntime>,
     retired: Producer<PreparedRuntime>,
-    events: Consumer<ControlEvent>,
-    feedback: Producer<ParameterFeedback>,
+    events: Consumer<QueuedEvent>,
+    feedback: Producer<QueuedFeedback>,
     values: Arc<[AtomicU64]>,
+    settlement: Arc<AtomicU64>,
     event_capacity: usize,
 }
 
@@ -234,6 +256,7 @@ pub fn runtime_handoff(
         return Err(RuntimeError::InvalidConfiguration);
     }
     let admission = Arc::new(AtomicU64::new(0));
+    let settlement = Arc::new(AtomicU64::new(0));
     let (event_tx, event_rx) = RingBuffer::new(event_capacity);
     let (feedback_tx, feedback_rx) = RingBuffer::new(event_capacity);
     let values: Arc<[AtomicU64]> = initial
@@ -257,6 +280,7 @@ pub fn runtime_handoff(
         events: event_tx,
         feedback: feedback_rx,
         values: values.clone(),
+        settlement: settlement.clone(),
         admission: admission.clone(),
         in_flight: false,
         configuration: initial.0.configuration,
@@ -270,6 +294,7 @@ pub fn runtime_handoff(
             events: event_rx,
             feedback: feedback_tx,
             values,
+            settlement,
             event_capacity,
         },
         admission,
@@ -292,13 +317,65 @@ impl RuntimeControl {
             .map(|value| f64::from_bits(value.load(Ordering::Relaxed)))
     }
     pub fn take_feedback(&mut self) -> Option<ParameterFeedback> {
-        self.feedback.pop().ok()
+        self.feedback.pop().ok().map(|feedback| feedback.parameter)
+    }
+    pub(crate) fn take_sequenced_feedback(&mut self) -> Option<(ParameterFeedback, u64, bool)> {
+        self.feedback.pop().ok().map(|feedback| {
+            (
+                feedback.parameter,
+                feedback.settlement >> 1,
+                feedback.settlement & 1 != 0,
+            )
+        })
     }
     pub fn try_send(&mut self, event: ControlEvent) -> Result<(), RuntimeError> {
+        self.send_sequenced(event, 0)
+    }
+
+    pub(crate) fn event_slots(&mut self) -> usize {
+        self.events.slots()
+    }
+
+    pub(crate) fn send_parameter(
+        &mut self,
+        index: usize,
+        value: f64,
+        command_sequence: u64,
+    ) -> Result<(), RuntimeError> {
+        if command_sequence == 0 || command_sequence > u64::MAX / 2 {
+            return Err(RuntimeError::InvalidEvent);
+        }
+        self.send_sequenced(ControlEvent::Parameter { index, value }, command_sequence)
+    }
+
+    pub(crate) fn snapshot_parameters(&self) -> (u64, bool, Vec<f64>) {
+        // Read the packed settlement first. Acquire observes preceding scalar
+        // stores or reset cancellation. A racing newer value can only carry an
+        // older acknowledgement; sequence/cause cannot tear. This read never
+        // closes callback admission or makes the audio thread wait.
+        let settlement = self.settlement.load(Ordering::Acquire);
+        let values = self
+            .values
+            .iter()
+            .map(|value| f64::from_bits(value.load(Ordering::Relaxed)))
+            .collect();
+        (settlement >> 1, settlement & 1 != 0, values)
+    }
+
+    fn send_sequenced(
+        &mut self,
+        event: ControlEvent,
+        command_sequence: u64,
+    ) -> Result<(), RuntimeError> {
         if !event.valid(&self.layout) {
             return Err(RuntimeError::InvalidEvent);
         }
-        self.events.push(event).map_err(|_| RuntimeError::QueueFull)
+        self.events
+            .push(QueuedEvent {
+                event,
+                command_sequence,
+            })
+            .map_err(|_| RuntimeError::QueueFull)
     }
     fn compatible(&self, next: &PreparedRuntime) -> bool {
         next.0.configuration == self.configuration && next.0.layout == self.layout
@@ -391,11 +468,14 @@ impl Drop for ClosedAdmission<'_> {
 }
 
 impl RuntimeAudio {
-    pub fn reset(&mut self) {
+    pub fn reset(&mut self) -> ResetReport {
         let Some(_admission) = CallbackAdmission::enter(&self.admission) else {
-            return;
+            return ResetReport {
+                admission_closed: true,
+                ..ResetReport::default()
+            };
         };
-        self.state.reset();
+        self.state.reset()
     }
 
     pub fn process(
@@ -427,13 +507,28 @@ impl RuntimeAudio {
 impl AudioState {
     /// Panic/reset discards pre-reset queued activity and resets voices/DSP,
     /// while retaining host-owned scalar values and admitted replacements.
-    pub fn reset(&mut self) {
+    pub fn reset(&mut self) -> ResetReport {
+        let mut report = ResetReport::default();
+        let mut cancelled = 0;
         for _ in 0..self.event_capacity {
-            if self.events.pop().is_err() {
+            let Ok(event) = self.events.pop() else {
                 break;
+            };
+            report.discarded_events += 1;
+            if event.command_sequence != 0 {
+                report.cancelled_parameter_commands += 1;
+                cancelled = event.command_sequence;
             }
         }
         self.current.0.graph.reset();
+        if cancelled != 0 {
+            // The low bit marks that the latest UI settlement was cancelled by
+            // reset. A single Release store pairs cause/sequence atomically;
+            // scalar values remain the values actually applied before reset.
+            self.settlement
+                .store((cancelled << 1) | 1, Ordering::Release);
+        }
+        report
     }
     /// Control-thread events are applied at the next block boundary; host events
     /// carry ordered offsets in this block. A rejected batch changes no state.
@@ -482,7 +577,7 @@ impl AudioState {
             let Ok(event) = self.events.pop() else {
                 break;
             };
-            self.apply_event(event, 0, &mut report);
+            self.apply_event(event.event, 0, event.command_sequence, &mut report);
         }
         let mut start = 0;
         for event in events {
@@ -492,7 +587,7 @@ impl AudioState {
                     .0
                     .render(&self.values, &mut left[start..end], &mut right[start..end]);
             }
-            self.apply_event(event.event, event.frame_offset, &mut report);
+            self.apply_event(event.event, event.frame_offset, 0, &mut report);
             start = end;
         }
         self.current
@@ -501,7 +596,13 @@ impl AudioState {
         Ok(report)
     }
 
-    fn apply_event(&mut self, event: ControlEvent, frame_offset: u32, report: &mut ProcessReport) {
+    fn apply_event(
+        &mut self,
+        event: ControlEvent,
+        frame_offset: u32,
+        command_sequence: u64,
+        report: &mut ProcessReport,
+    ) {
         match event {
             ControlEvent::NoteOn { note, velocity } => {
                 self.current.0.graph.note_on_at(note, velocity, 0)
@@ -509,13 +610,20 @@ impl AudioState {
             ControlEvent::NoteOff { note } => self.current.0.graph.note_off_at(note, 0),
             ControlEvent::Parameter { index, value } => {
                 self.values[index].store(value.to_bits(), Ordering::Relaxed);
+                if command_sequence != 0 {
+                    self.settlement
+                        .store(command_sequence << 1, Ordering::Release);
+                }
                 report.parameter_updates += 1;
                 if self
                     .feedback
-                    .push(ParameterFeedback {
-                        index,
-                        value,
-                        frame_offset,
+                    .push(QueuedFeedback {
+                        parameter: ParameterFeedback {
+                            index,
+                            value,
+                            frame_offset,
+                        },
+                        settlement: self.settlement.load(Ordering::Relaxed),
                     })
                     .is_err()
                 {
@@ -556,6 +664,62 @@ mod admission_tests {
     use super::*;
     use std::sync::mpsc;
     use std::time::{Duration, Instant};
+
+    #[test]
+    fn parameter_snapshot_does_not_close_or_wait_for_callback_admission() {
+        let yaml = "ports:\n  - { name: level, direction: input, signal: control, channels: 1, default: 1, min: 0, max: 4, maps_to: amp.gain }\n  - { name: master, direction: output, signal: audio, channels: 2, maps_from: amp.audio_out }\nmodules:\n  - { id: amp, type: gain, static: { channels: 2 } }\nconnections: []\n";
+        let session = dandrum_instrument_session::InstrumentSession::new_for_planar_host(
+            yaml,
+            dandrum_engine::preparation::PreparationContext::new(".", 48_000),
+            dandrum_engine::patch::RenderSettings {
+                sample_rate_hz: 48_000,
+                block_size_frames: 16,
+                duration_frames: 16,
+            },
+            dandrum_engine::preparation::HostBuses::new()
+                .with_input("level", 1)
+                .with_output("master", 2),
+        )
+        .unwrap();
+        let prepared = PreparedRuntime::new(
+            session.prepared(),
+            TriggerHostConfiguration {
+                sample_rate_hz: 48_000,
+                max_block_frames: 16,
+            },
+        )
+        .unwrap();
+        let (mut control, mut audio) = runtime_handoff(prepared, 4).unwrap();
+        assert_eq!(
+            control.send_parameter(0, 0.5, 0),
+            Err(RuntimeError::InvalidEvent)
+        );
+        assert_eq!(
+            control.send_parameter(0, 0.5, u64::MAX),
+            Err(RuntimeError::InvalidEvent)
+        );
+        control.send_parameter(0, 0.5, 1).unwrap();
+        audio.process(&mut [0.0; 16], &mut [0.0; 16]).unwrap();
+        let gate = audio.admission.clone();
+        let callback = CallbackAdmission::enter(&gate).unwrap();
+        let (tx, rx) = mpsc::channel();
+        let reader = std::thread::spawn(move || tx.send(control.snapshot_parameters()).unwrap());
+        let snapshot = rx.recv_timeout(Duration::from_secs(5));
+        let gate_during_read = gate.load(Ordering::Acquire);
+        drop(callback);
+        reader.join().unwrap();
+        assert_eq!(snapshot.unwrap(), (1, false, vec![0.5]));
+        assert_eq!(
+            gate_during_read, CALLBACK_ACTIVE,
+            "ordinary reads cannot silence a racing callback"
+        );
+        let closed = ClosedAdmission::close(&gate);
+        assert!(
+            audio.reset().admission_closed,
+            "denied reset must report that no work ran"
+        );
+        drop(closed);
+    }
 
     #[test]
     fn publication_waits_for_admitted_callback_then_cancel_reopens_admission() {

@@ -1,0 +1,229 @@
+{
+  "base_commit": "811ff37b24be67af9ed120c60edb197379cb6161",
+  "source_sha256": {
+    "src/trigger-host/src/lib.rs": "2a108950f5a01ff08b8842f34f2a85045cf10f3265c535a0440f51629012c4a2",
+    "src/trigger-host/src/parameters.rs": "9d6473dc6102a6749faa6688a55b8f05e090e36da44b6cec469a95be9a1b74c3",
+    "src/trigger-host/src/runtime.rs": "2a4351d062a41a58cf2592f7113d4cb14badcbfc245ffc9513b1317e11986544",
+    "src/trigger-host/tests/parameters.rs": "c02d886c5ad02b52f336006c597523cf5940804baf36e8e5efc1d93e5671d113"
+  },
+  "scope": "Format-neutral public parameter/gesture/feedback portion of task2.4 only. State, epochs and actual CLAP/React/native/DAW integration remain pending.",
+  "host_tests": {
+    "passed": 48,
+    "ignored": 0,
+    "breakdown": {
+      "unit": 2,
+      "resources": 8,
+      "parameters": 14,
+      "protocol": 7,
+      "runtime": 17
+    }
+  },
+  "registered_ctest": {
+    "command": [
+      "/home/dan/.local/bin/ctest",
+      "--test-dir",
+      "build/parallel-final",
+      "--output-on-failure",
+      "-R",
+      "^trigger-host-tests$"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "exit_code": 0,
+    "wall_seconds": 8.096934,
+    "scope": "Registered CTest trigger-host-tests automatic discovery of all host tests; not a repeated full CTest suite."
+  },
+  "coverage": [
+    {
+      "source": "/tmp/dandrum-lanes/runtime/src/trigger-host/src/parameters.rs",
+      "measured_lines": 233,
+      "covered_lines": 233,
+      "source_function_or_closure_starts": 24,
+      "covered_source_function_or_closure_starts": 24,
+      "raw_instantiations": 52,
+      "covered_raw_instantiations": 27,
+      "uncovered_lines": [],
+      "uncovered_source_starts": []
+    },
+    {
+      "source": "/tmp/dandrum-lanes/runtime/src/trigger-host/src/runtime.rs",
+      "measured_lines": 492,
+      "covered_lines": 492,
+      "source_function_or_closure_starts": 54,
+      "covered_source_function_or_closure_starts": 54,
+      "raw_instantiations": 104,
+      "covered_raw_instantiations": 86,
+      "uncovered_lines": [],
+      "uncovered_source_starts": []
+    }
+  ],
+  "coverage_limits": {
+    "functions": "Source function/closure start aggregation, not every raw duplicate/monomorphized instantiation. Runtime includes embedded unit tests.",
+    "branches": "Not instrumented; unavailable.",
+    "regions": "Not collected in this LCOV run.",
+    "reproduction": "Decompress 15-frozen-coverage.lcov.gz beside coverage-source-summary.py, then run python3 coverage-source-summary.py. Original SF paths are provenance; selection uses source suffixes."
+  },
+  "raw_artifacts": {
+    "01-coverage.log.gz": {
+      "original_name": "01-coverage.log",
+      "raw_sha256": "136bba71f012b02ccdf8b757744c4dfc6a4959dd09a89eda1011324256ad8066",
+      "gzip_sha256": "929dd1b6bf21f415206e40821722187ce7702c029c2c447ad96db21e4abc710e"
+    },
+    "01-green.log.gz": {
+      "original_name": "01-green.log",
+      "raw_sha256": "65156e142889df65e1a591af0402955306aa5834ebb3deb8f13a971c5198ae11",
+      "gzip_sha256": "bb693713660b857cca4e126efb50bc8aee3c3e049ad415356565a5920ab2fbcc"
+    },
+    "01-red.log.gz": {
+      "original_name": "01-red.log",
+      "raw_sha256": "d92ad378d67226c5ad7e192623effdee7ffc69b7bc6644bbec05802a0111bf41",
+      "gzip_sha256": "29ddf0af583cc072506020105dfc9802a119223957416947b1bac6ad78132371"
+    },
+    "01-refactor.log.gz": {
+      "original_name": "01-refactor.log",
+      "raw_sha256": "42a6036e4490333be44d0d141439d36c5e8c40a8b783eacc0c0a0d0f16061b78",
+      "gzip_sha256": "1b18a302acf9ae3f7cd0da718aee23c647e10b58c11611a14c666fbee53d1d2c"
+    },
+    "02-green-coverage.log.gz": {
+      "original_name": "02-green-coverage.log",
+      "raw_sha256": "a215e9a9980025941efd3e4a1128b3a17cd05447b9f565f72d5049ae6f011c16",
+      "gzip_sha256": "f4dc8d5f410f40577d65a83a289b624ef5645e453924b20522f99c2b38e85e55"
+    },
+    "02-red.log.gz": {
+      "original_name": "02-red.log",
+      "raw_sha256": "b8238264ad4a5a3ac922c246f4db1787bbd16f9fa38007ec6ac115f78c1979c5",
+      "gzip_sha256": "99a2a19678d0065de66ecea1b995b3232638348d176b86656c679fc35766b345"
+    },
+    "03-green-coverage.log.gz": {
+      "original_name": "03-green-coverage.log",
+      "raw_sha256": "36287b83304d90e9e34ce0a56fe927b08843cf8d3c684278d2f8737cd1963ce5",
+      "gzip_sha256": "ef44fe86a9120b186c6dde359fe1cb3ef93653514ef207b68eefab677c209e4a"
+    },
+    "03-red.log.gz": {
+      "original_name": "03-red.log",
+      "raw_sha256": "988498b7673797e45de77aad3f7e4876d3bf646629861b630eb896337df7e81d",
+      "gzip_sha256": "73d84828013b53c5750bef07ebf9eb7be54b933365c86c8ea92873c3f8fd09da"
+    },
+    "04-reset-green-coverage.log.gz": {
+      "original_name": "04-reset-green-coverage.log",
+      "raw_sha256": "d69df5061a6f05cf25b0079624aa7305428318094ed4c1cc179ddbfe802b45b1",
+      "gzip_sha256": "e2458d4ae9c190ed0b3c9940801fcf7e351e7254bd7453cdb9342616779b55eb"
+    },
+    "04-reset-red.log.gz": {
+      "original_name": "04-reset-red.log",
+      "raw_sha256": "15e444b5e9ac80fd84f07cc7db9f31ab1da481a14ee41f0083a1edd310ac7fd0",
+      "gzip_sha256": "7cbf119ace4445cb96ec77489bd148000bfaa38e1f3f5407d744b6657ec12e5d"
+    },
+    "05-validation-coverage.log.gz": {
+      "original_name": "05-validation-coverage.log",
+      "raw_sha256": "101fc4f3b79ba7761e0064325458a745624b8da769d0b1a5c8ec2ee7b66cbf33",
+      "gzip_sha256": "2c5e60d66e4471b07b8eaa2b89567c46bb4a102dd99baceaa4929fae22f0c0ca"
+    },
+    "06-refactor-coverage.log.gz": {
+      "original_name": "06-refactor-coverage.log",
+      "raw_sha256": "8014ad21d36a54e984512e3a6f330c7ccd62b7051368c7aaf8d0a1ad41e6f52d",
+      "gzip_sha256": "decb78bc009b012ea7a2d33ceea9fbcdff22789b625a59f53413e8da06bed7a2"
+    },
+    "07-clippy.log.gz": {
+      "original_name": "07-clippy.log",
+      "raw_sha256": "a131ca54ad4a865aa3195a2cdabc486881dc5a416f5d1f4996edd8f448a1d0f8",
+      "gzip_sha256": "cf3c1d70e2df24adeed3d759117ea0e05964762186d0586d42cb444603cefcce"
+    },
+    "08-endpoints-green.log.gz": {
+      "original_name": "08-endpoints-green.log",
+      "raw_sha256": "5b0be0bf9d84216f70c876639c29d785380fdcb0ca7d68a196690111b19caf11",
+      "gzip_sha256": "7252f2a08bb6ae48ab1521f5119f304b72dd951dea1817f1fe17146af494da68"
+    },
+    "08-endpoints-red.log.gz": {
+      "original_name": "08-endpoints-red.log",
+      "raw_sha256": "df60732c5c00c9343a5d1de9c67dc0ff859825f1d0c85f0ed72eea62aecad006",
+      "gzip_sha256": "1227f3e5c611dd9d3dd8fd049e9a04e81a55d8e47cfc256a9482d3146b353b0e"
+    },
+    "09-final-coverage.log.gz": {
+      "original_name": "09-final-coverage.log",
+      "raw_sha256": "76e2eda3fa5f2579c2f301cd5fc6452e16181d9343f4fb594089a56756c00cb7",
+      "gzip_sha256": "7c92ef8faaad89bfe31b7d6bd38e14380b76c999d85b5fe0d627c93a17ad69e9"
+    },
+    "10-final-host-tests.log.gz": {
+      "original_name": "10-final-host-tests.log",
+      "raw_sha256": "e2c17c96a0c4e40de9b0bc49bda56fcf7f5f5dd1f16a2324369aa25a417b76f0",
+      "gzip_sha256": "92746a1eaf8397efadc938732ffb053d3e0add8942d594b7cdcf2b2333eaf0ff"
+    },
+    "11-final-format.log.gz": {
+      "original_name": "11-final-format.log",
+      "raw_sha256": "a2dca623169fbcaca81bdf9a5fc09fbabde4076eabd36261d21c416b1ac667dc",
+      "gzip_sha256": "66ef29a01d2a6972e14922c2625a51f475e2964b295e60c2d9ab51c9d9641881"
+    },
+    "11b-final-format.log.gz": {
+      "original_name": "11b-final-format.log",
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "gzip_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "12-final-clippy.log.gz": {
+      "original_name": "12-final-clippy.log",
+      "raw_sha256": "5a4a11688d4394dcef9ff31fd912964f8c8c433d2e9eedfcc4f07155b5bcb65b",
+      "gzip_sha256": "1defc60fefa5c5426d79ada427850dda9a6b1af95acc9a1f8c15f17164656cfc"
+    },
+    "13-final-diff-check.log.gz": {
+      "original_name": "13-final-diff-check.log",
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "gzip_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "14-frozen-host-tests.log.gz": {
+      "original_name": "14-frozen-host-tests.log",
+      "raw_sha256": "d7befcf486bb9aa3331c29afe6984f637836893489edbe9d8a152b8cca96530b",
+      "gzip_sha256": "798da8ba7d32c7f8d16e1ff503889512c620d6c44f9b9ae4fe1518829cb5e374"
+    },
+    "15-frozen-coverage.log.gz": {
+      "original_name": "15-frozen-coverage.log",
+      "raw_sha256": "6f13b4cf8eb1ef2fad89ecd0805f6571940efd657e12ab284c3cb6bdfbb99f8e",
+      "gzip_sha256": "a53ac9f0d4a389f7bffee3900147b7e15500fc7a48d6a045d183297c08c528b6"
+    },
+    "registered-host-ctest.log.gz": {
+      "original_name": "registered-host-ctest.log",
+      "raw_sha256": "db994165bd82cb080c7ac9ed8862ac869cb1f069207ce3cac44af09238fbb5ac",
+      "gzip_sha256": "347bad71e787e70d1862fb645703ba7e7b8a49ff0367f258a7283ba3ebb2d35a"
+    },
+    "registered-host-lasttest.log.gz": {
+      "original_name": "registered-host-lasttest.log",
+      "raw_sha256": "bebac7e97e2760b4e0b1088b969c448628aea9b6c08fd6abb4f7f183ad480b51",
+      "gzip_sha256": "b09669df4386e0cb914623889a2771ce2a2ee1b0001bc76093114f0a468df607"
+    },
+    "upstream-fetch.log.gz": {
+      "original_name": "upstream-fetch.log",
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "gzip_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "15-frozen-coverage.lcov.gz": {
+      "original_name": "15-frozen-coverage.lcov",
+      "raw_sha256": "9b03ece3c28cf18f9b96ae9489dab09d19f3c14336a23cc20fc72efacf49b646",
+      "gzip_sha256": "6a1659384d8e9da404ab8bc8cbe0966d1ed24db784d44cded8eb4c059421103e"
+    }
+  },
+  "verification": {
+    "format": "PASS after module order correction",
+    "clippy": "all-targets -D warnings PASS",
+    "final_source_coverage": "15 exact frozen-source run PASS; no source changes afterward",
+    "diff_check": "PASS",
+    "registered_ctest": "PASS, automatic enumeration of all48 tests",
+    "mutation": "Excluded by user direction; not run."
+  },
+  "review": {
+    "verdict": "PASS",
+    "report": "review.md",
+    "verdict_file": "verdict.json",
+    "candidate_manifest_sha256": "d72b1b13575d10babf4d2bebc0d1bee23c2921952581899e37d015a4752cc035"
+  },
+  "acceptance_limits": [
+    "Typed automation queued/acknowledged by a test adapter; no actual CLAP host emission yet.",
+    "Atomic version2 state and queue epochs are not implemented; OpenSpec2.4 remains open.",
+    "Ordinary parameter reads keep callback admission open. Inherited structural publication gate still returns zero buffers while held; native continuity remains to be proved for the required lifecycle scope.",
+    "No Wry, browser, DAW, standalone, VST3, installed offline or full-beta completion claim."
+  ],
+  "main": "68dd6553a2f07e71e2fe09ee1d7094d518559937 clean at parent checkpoint",
+  "resources": {
+    "disk_free_gib_before_registered_ctest": 7.8,
+    "disk_free_gib_after_registered_ctest": 7.4,
+    "reusable_caches": "Preserved; existing targets reused, no deletion."
+  },
+  "publication": "Not yet; normal commit/push after independent PASS and fresh upstream verification."
+}

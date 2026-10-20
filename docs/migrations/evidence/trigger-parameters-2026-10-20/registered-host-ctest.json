@@ -1,0 +1,14 @@
+{
+  "command": [
+    "/home/dan/.local/bin/ctest",
+    "--test-dir",
+    "build/parallel-final",
+    "--output-on-failure",
+    "-R",
+    "^trigger-host-tests$"
+  ],
+  "cwd": "/tmp/dandrum-lanes/runtime",
+  "exit_code": 0,
+  "wall_seconds": 8.096934,
+  "scope": "Registered CTest trigger-host-tests automatic discovery of all host tests; not a repeated full CTest suite."
+}

@@ -1,0 +1,24 @@
+[
+  {
+    "source": "/tmp/dandrum-lanes/runtime/src/trigger-host/src/parameters.rs",
+    "measured_lines": 233,
+    "covered_lines": 233,
+    "source_function_or_closure_starts": 24,
+    "covered_source_function_or_closure_starts": 24,
+    "raw_instantiations": 52,
+    "covered_raw_instantiations": 27,
+    "uncovered_lines": [],
+    "uncovered_source_starts": []
+  },
+  {
+    "source": "/tmp/dandrum-lanes/runtime/src/trigger-host/src/runtime.rs",
+    "measured_lines": 492,
+    "covered_lines": 492,
+    "source_function_or_closure_starts": 54,
+    "covered_source_function_or_closure_starts": 54,
+    "raw_instantiations": 104,
+    "covered_raw_instantiations": 86,
+    "uncovered_lines": [],
+    "uncovered_source_starts": []
+  }
+]
