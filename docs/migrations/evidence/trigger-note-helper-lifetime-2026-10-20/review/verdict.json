@@ -1,0 +1,14 @@
+{
+  "verdict": "PASS",
+  "candidate_manifest_sha256": "ca1bfc626ea72dc53fce0a2198cf92db354c49465852a56a63b099625a4c9a96",
+  "base": "bb2c631efd63f19b93183f7e0b402bee94ab9e34",
+  "scope": "OpenSpec task 3.3 production frontend note-helper lifetime prerequisite only",
+  "findings": [],
+  "task_3_3_complete": false,
+  "editor_complete": false,
+  "clap_complete": false,
+  "beta_complete": false,
+  "required_precommit_gate": "Same reviewer verifies exact final envelope and four named validation receipts in an external addendum before commit.",
+  "mutation": "Excluded by recorded user direction",
+  "publication": "Only exact approved envelope with normal hooks and unchanged upstream; no cache deletion"
+}

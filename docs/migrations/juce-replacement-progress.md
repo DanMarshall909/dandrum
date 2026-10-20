@@ -1197,3 +1197,36 @@ servicing and actual browser/CLAP wiring remain required. The v1 wire has docume
 generation rather than a physical press nonce. Tasks3.2/3.3 stay open7/14, full beta
 active through CLAP and subsequent VST3/standalone/DAW/offline/native acceptance.
 Main remains clean68dd655; all reusable caches remain and mutation is excluded.
+
+
+## Preserve held frontend notes across mapping — 20 October 2026
+
+The production adapter now retains its note helper while instance and attachment
+identity remain unchanged. Mapping, undo and generation refresh keep the held
+pitch's original press generation, delayed-On/release ordering and heartbeat.
+A subsequent fresh press uses the current generation. Existing fresh-helper
+behavior for changed connections remains. Error reporting follows current helper
+identity, allowing errors after ordinary refresh while suppressing retired-helper
+and closed-engine late errors.
+
+Actual behavior REDs precede the small production fix: five failures and three
+retirement characterization passes. All48 focused tests,139 ordinary Node tests,
+type/component checks and six registered browser checks pass. Both production
+builds include the changed helper; the native singlebundle retains its standard
+chunk-size warning. Focused NativeLive coverage is100%lines87.18%branches85.71%
+functions, with11 inherited raw unexecuted snippets; no whole-owner or native
+assertion guarantee follows from the line score. Browser setup/cwd and socket
+launch failures are retained separately from product RED.
+
+[Portable evidence](evidence/trigger-note-helper-lifetime-2026-10-20/receipt.json)
+retains156 original and116 append-only build artifacts with sources/logs/hashes.
+Runtime notes bb2c631 is integrated with both authored web payloads unchanged.
+All589 headless source inputs match published affected source-free92-test proof;
+this is qualified reuse, not a new complete guard or packaged native execution.
+
+Independent completion review passed for the frozen frontend note-helper source/evidence candidate; normal-hook publication remains.
+Native controller/audio, sameattachment external restore and physical press nonce
+semantics remain unclaimed. Task3.3 remains open7/14 with actual worker/wake,
+notes/heartbeat/facade/CLAP acceptance still required; full beta stays active
+through nextVST3/standalone/namedDAW/offline/native increments. Main remains
+clean68dd655, caches retained and mutation excluded.

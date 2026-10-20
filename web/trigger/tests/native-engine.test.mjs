@@ -56,6 +56,78 @@ test('live writes and notes carry current generation and use normalized values w
   await assert.rejects(engine.setParam('drums.level',.9),/stale/i);assert.equal(engine.getPatch().params['drums.level'].value,.7);
 });
 
+for(const onset of ['held','in-flight'])for(const cleanup of ['release','close'])test(`same-attachment mapping undo and generation refresh preserve ${onset} note until ${cleanup}`,async t=>{
+  t.mock.timers.enable({apis:['setInterval']});
+  const bridge=backend(),engine=new NativeEngine({backend:bridge,pollMs:0,heartbeatMs:5});
+  await engine.initialize();t.after(()=>engine.close());
+  let undo=false,acceptOn;
+  bridge.functions.setInstrumentZoneKeyRange=(_instance,_attachment,request)=>({status:'accepted',job_id:request});
+  bridge.functions.undoInstrumentSession=(_instance,_attachment,request)=>{undo=true;return {status:'accepted',job_id:request};};
+  bridge.functions.getInstrumentSessionJobStatus=request=>{
+    const revision=undo?'2':'1';
+    bridge.setSession(session(undo?yaml:yaml.replace('key_range: [36, 36]','key_range: [60, 60]'),undo?9:8,
+      connection({revision,nextRequestId:undo?'3':'2',history:{undoCount:undo?0:1,redoCount:undo?1:0}})));
+    return {state:'completed',request_id:request,revision};
+  };
+  if(onset==='in-flight')bridge.functions.noteOn=()=>new Promise(resolve=>{acceptOn=resolve;});
+  const pressed=engine.noteOn(36,127);
+  if(onset==='held')await pressed;
+  await engine.updateRule('kit.kick',{noteLo:60,noteHi:60});
+  assert.equal(engine.getPatch().rules.find(rule=>rule.id==='kit.kick').noteLo,60);
+  assert.equal(engine.generation,8);t.mock.timers.tick(5);await Promise.resolve();await Promise.resolve();
+  await engine.undoSession();
+  assert.equal(engine.getPatch().rules.find(rule=>rule.id==='kit.kick').noteLo,36);
+  assert.equal(engine.generation,9);t.mock.timers.tick(5);await Promise.resolve();await Promise.resolve();
+  bridge.setSession(session(yaml,10,engine.session.connection));
+  await bridge.events.get('parameterStateChanged')({generation:10,sequence:0,parameters:[]});
+  assert.equal(engine.generation,10);t.mock.timers.tick(5);await Promise.resolve();await Promise.resolve();
+  assert.deepEqual(bridge.calls.filter(call=>call[0]==='noteOn'),[['noteOn',36,1,7]]);
+  assert.deepEqual(bridge.calls.filter(call=>call[0]==='noteOff'),[]);
+  const released=cleanup==='close'?engine.close():engine.noteOff(36);
+  if(onset==='in-flight'){
+    assert.deepEqual(bridge.calls.filter(call=>call[0]==='noteOff'),[],'release waits for On admission');
+    acceptOn({status:'accepted'});
+  }
+  await pressed;await released;
+  assert.deepEqual(bridge.calls.filter(call=>call[0]==='noteOff'),[['noteOff',36,7]],'matching release retains press generation');
+  assert.equal(bridge.calls.filter(call=>call[0]==='noteHeartbeat').length,3,'heartbeat survives every same-attachment refresh');
+  if(cleanup==='release'){
+    bridge.functions.noteOn=()=>({status:'accepted'});
+    await engine.noteOn(36,127);await engine.noteOff(36);
+    assert.deepEqual(bridge.calls.filter(call=>call[0]==='noteOn'),[['noteOn',36,1,7],['noteOn',36,1,10]]);
+    assert.deepEqual(bridge.calls.filter(call=>call[0]==='noteOff'),[['noteOff',36,7],['noteOff',36,10]]);
+  }
+  engine.close();engine.close();const calls=bridge.calls.length;
+  t.mock.timers.tick(100);await Promise.resolve();assert.equal(bridge.calls.length,calls);
+  assert.equal(bridge.events.size,0);
+});
+
+test('current note errors remain visible after same-attachment generation refresh',async t=>{
+  const {engine,bridge}=await setup(t),events=[];engine.on('patch',event=>events.push(event));
+  let finishOn;bridge.functions.noteOn=()=>new Promise(resolve=>{finishOn=resolve;});
+  const pressed=engine.noteOn(36,127);
+  bridge.setSession(session(yaml,8,engine.session.connection));
+  await engine.requestGeneration(8);
+  finishOn('Current note admission rejected');await pressed;
+  assert.deepEqual(events.filter(event=>event.phase==='failed').map(event=>event.message),['Current note admission rejected']);
+});
+
+for(const retirement of ['close','instance replacement','attachment replacement'])test(`late note errors after ${retirement} do not publish editor failures`,async t=>{
+  const {engine,bridge}=await setup(t),events=[];engine.on('patch',event=>events.push(event));
+  let finishOn;bridge.functions.noteOn=()=>new Promise(resolve=>{finishOn=resolve;});
+  const pressed=engine.noteOn(36,127);
+  if(retirement==='close')engine.close();
+  else{
+    const field=retirement==='instance replacement'?'instanceId':'attachmentId';
+    bridge.setSession(session(yaml,8,connection({...engine.session.connection,[field]:'42'})));
+    await engine.requestGeneration(8);
+    assert.equal(engine.connection[field],'42');
+    await engine.noteOff(36);assert.deepEqual(bridge.calls.filter(call=>call[0]==='noteOff'),[]);
+  }
+  finishOn('Retired note admission rejected');await pressed;
+  assert.deepEqual(events.filter(event=>event.phase==='failed'),[]);
+});
+
 test('real meter packets are acknowledged, stale data dropped and waveform comes only from native reduction',async t=>{
   const {engine,bridge}=await setup(t),telemetry=[];engine.on('telemetry',value=>telemetry.push(value));
   bridge.functions.getMeterPacket=()=>({generation:7,sequence:'11',display_valid:true,display_peak:[.3,.6]});

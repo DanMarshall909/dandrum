@@ -1,0 +1,586 @@
+{
+  "archive_sha256": "fecb6bf618b987a85a25d93911eaaa3497eb3d0ed0621f07e70497195c9ef1db",
+  "members": [
+    {
+      "path": "BUILD-ADDENDUM.json",
+      "bytes": 8855,
+      "sha256": "07cbcf2552716cfa14bd656fdb99655806d1e097eed3449263b7e130b63087b6"
+    },
+    {
+      "path": "build-addendum-manifest.json",
+      "bytes": 14515,
+      "sha256": "75efcbecb15d53d55f862c4e8e81e1de94101b3253729e89fe192e1c9a7d19f3"
+    },
+    {
+      "path": "build-native.config.mjs",
+      "bytes": 392,
+      "sha256": "2a0d3e0ccfe103348b7792078ee1823947f31de6feae6cd1dc19b4f76fc9d58f"
+    },
+    {
+      "path": "build-native.log",
+      "bytes": 892,
+      "sha256": "10f99fbf931509ecc267a8a5e53634b500ea2e70d6ec382dcc089ebcbc1c85f2"
+    },
+    {
+      "path": "build-native/app.css",
+      "bytes": 11023,
+      "sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5"
+    },
+    {
+      "path": "build-native/app.js",
+      "bytes": 808594,
+      "sha256": "146bff237d9b2e33cd3ae40a6e981e09382098360efac02c2bd080f900ea90f5"
+    },
+    {
+      "path": "build-native/fonts/.gitattributes",
+      "bytes": 77,
+      "sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616"
+    },
+    {
+      "path": "build-native/fonts/3386a05f6ece969e.ttf",
+      "bytes": 112204,
+      "sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160"
+    },
+    {
+      "path": "build-native/fonts/6098b66ce7d608dc.ttf",
+      "bytes": 88644,
+      "sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef"
+    },
+    {
+      "path": "build-native/fonts/74103fd6d41bc32c.ttf",
+      "bytes": 85776,
+      "sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154"
+    },
+    {
+      "path": "build-native/fonts/91c841fdfa8e7b94.ttf",
+      "bytes": 81924,
+      "sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc"
+    },
+    {
+      "path": "build-native/fonts/barlow-OFL.txt",
+      "bytes": 4377,
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+    },
+    {
+      "path": "build-native/fonts/barlowsemicondensed-OFL.txt",
+      "bytes": 4377,
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+    },
+    {
+      "path": "build-native/fonts/c15439e7a03af571.ttf",
+      "bytes": 85876,
+      "sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c"
+    },
+    {
+      "path": "build-native/fonts/c2b046235fb4c2f8.ttf",
+      "bytes": 83412,
+      "sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9"
+    },
+    {
+      "path": "build-native/fonts/cb75439ae401f776.ttf",
+      "bytes": 86708,
+      "sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da"
+    },
+    {
+      "path": "build-native/fonts/df54dbfafba61d49.ttf",
+      "bytes": 112160,
+      "sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8"
+    },
+    {
+      "path": "build-native/fonts/jetbrainsmono-OFL.txt",
+      "bytes": 4399,
+      "sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d"
+    },
+    {
+      "path": "build-native/index.html",
+      "bytes": 326,
+      "sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26"
+    },
+    {
+      "path": "build-preview.config.mjs",
+      "bytes": 387,
+      "sha256": "70ed01613a42d0dde6d9e08fab7df5d5e5f915524185a44c0376b6c716af2105"
+    },
+    {
+      "path": "build-preview.log",
+      "bytes": 1595,
+      "sha256": "eb331dfdb7fc94b7a91ad2a37737a5a0b32b5f60db0688c35d026bc0061fa21d"
+    },
+    {
+      "path": "build-preview/assets/catalog-D5WtGZ3f.css",
+      "bytes": 2026,
+      "sha256": "75419d57716ebc8eae5d0c93600b0d95552b4cfe09660ea6ca2aeca0b2614709"
+    },
+    {
+      "path": "build-preview/assets/catalog-DEB-rez9.js",
+      "bytes": 17810,
+      "sha256": "25caceff6d8f52dd9d7b19a2f686fef668b09e72dfb57ddab9b2abbccf9b3254"
+    },
+    {
+      "path": "build-preview/assets/design-system-IiESn_cW.js",
+      "bytes": 103650,
+      "sha256": "4279d33f00345e9e7b3f6c2c2d645b01cd15a23ead034a2e33f40f3efbca6b15"
+    },
+    {
+      "path": "build-preview/assets/react-runtime-BB0E8YcQ.js",
+      "bytes": 322567,
+      "sha256": "a54e5282221bc2821dbf5482427ccf46530e7bcc51b3de67082dc34fcce2e0aa"
+    },
+    {
+      "path": "build-preview/assets/shell-B19jovjk.js",
+      "bytes": 41780,
+      "sha256": "44711351a07238a5234c9e2573592c3a78d3f350c5e86e8aa57b50ac8eae0fb6"
+    },
+    {
+      "path": "build-preview/assets/styles-CZrjI6Cm.js",
+      "bytes": 348069,
+      "sha256": "6f0a87194520360b8aeddc0d9427ab71a5874080dbb3d9b637e794c3fe9815f3"
+    },
+    {
+      "path": "build-preview/assets/styles-VRZ06cQx.css",
+      "bytes": 11023,
+      "sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5"
+    },
+    {
+      "path": "build-preview/catalog.html",
+      "bytes": 681,
+      "sha256": "f16c1efa2f1d8bbe86e3e6f2eddf1ead648bf04e339787bf42b7dd9261279bfe"
+    },
+    {
+      "path": "build-preview/fonts/.gitattributes",
+      "bytes": 77,
+      "sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616"
+    },
+    {
+      "path": "build-preview/fonts/3386a05f6ece969e.ttf",
+      "bytes": 112204,
+      "sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160"
+    },
+    {
+      "path": "build-preview/fonts/6098b66ce7d608dc.ttf",
+      "bytes": 88644,
+      "sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef"
+    },
+    {
+      "path": "build-preview/fonts/74103fd6d41bc32c.ttf",
+      "bytes": 85776,
+      "sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154"
+    },
+    {
+      "path": "build-preview/fonts/91c841fdfa8e7b94.ttf",
+      "bytes": 81924,
+      "sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc"
+    },
+    {
+      "path": "build-preview/fonts/barlow-OFL.txt",
+      "bytes": 4377,
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+    },
+    {
+      "path": "build-preview/fonts/barlowsemicondensed-OFL.txt",
+      "bytes": 4377,
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+    },
+    {
+      "path": "build-preview/fonts/c15439e7a03af571.ttf",
+      "bytes": 85876,
+      "sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c"
+    },
+    {
+      "path": "build-preview/fonts/c2b046235fb4c2f8.ttf",
+      "bytes": 83412,
+      "sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9"
+    },
+    {
+      "path": "build-preview/fonts/cb75439ae401f776.ttf",
+      "bytes": 86708,
+      "sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da"
+    },
+    {
+      "path": "build-preview/fonts/df54dbfafba61d49.ttf",
+      "bytes": 112160,
+      "sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8"
+    },
+    {
+      "path": "build-preview/fonts/jetbrainsmono-OFL.txt",
+      "bytes": 4399,
+      "sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d"
+    },
+    {
+      "path": "build-preview/index.html",
+      "bytes": 602,
+      "sha256": "b704997dabb29f7654e4aab969d57eca37bef1ea050b38132c77ea171f64fe22"
+    },
+    {
+      "path": "build-prior-inventory.json",
+      "bytes": 20182,
+      "sha256": "1b513ddbba38a57a8476b477941a4ca16ad6c440b2890253b5ecec23ae5fae21"
+    },
+    {
+      "path": "build-resource-samples.json",
+      "bytes": 2444,
+      "sha256": "e78fc080e45d98d49843d64944396640a1f8e5653b0643afbcbff2e36c9c394c"
+    },
+    {
+      "path": "build-runs.json",
+      "bytes": 889,
+      "sha256": "64e487ade9ad7763872e233774e9edf8028a84d82c504efb072341046060a0c3"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/029913f7",
+      "bytes": 400084,
+      "sha256": "3e06906ff4e5f80cfa6895ba40452a5bb56bbc7e3bb876643f3c763ce6effa77"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/03010d18",
+      "bytes": 3436,
+      "sha256": "ae8c5a2b7783cfe2345f5c1fdef2915db649246dd71a943acf672f756831aeb4"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/06702472",
+      "bytes": 2764,
+      "sha256": "c31015a05b4c3b90ae108e9c5bfdce3845775e21ee592d2209dcbc63e682049f"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/080f221f",
+      "bytes": 17892,
+      "sha256": "fdb1870ded25f41981fb8694d5cf3ef9f04ec8b31fec44b4a3d0dbf72e26fb7a"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/0b73e634",
+      "bytes": 1148,
+      "sha256": "36b72a9976f53a6a7edd12cd8d196ca0faa52d03a9a7998fac82d49ef7e883a8"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/0d4e39a1",
+      "bytes": 4412,
+      "sha256": "09aeee98f3a60b5d93e70bdac3ca431cb1f3a884ba4551c4d7d685979b1f99cb"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/14547e50",
+      "bytes": 1228,
+      "sha256": "f7437caea67a005d2c5f7562790c5b9f2d3609f6befa84367c338ba7618a83ca"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/1a10696a",
+      "bytes": 8548,
+      "sha256": "324ff644fc9323752a6d6b99ab15d9c04d6cdec2ff1f5bfb999b647c33dadfd6"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/1cdfdac2",
+      "bytes": 1076,
+      "sha256": "bd8f0c2bbcce2fbd26cd58dc66f6966b6afa670655db2bc26e0e54403cba9c9e"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/20251325",
+      "bytes": 1060,
+      "sha256": "667894552fbc1d72433e77b34fd7a49b20dacc1b8100adf809dd94207f156928"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/21ec1671",
+      "bytes": 43036,
+      "sha256": "2fe1504ff7a93c1072e0ac29a71e34b586f6ab4388a2c8688b6b15a142d441c3"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/23801cb6",
+      "bytes": 8052,
+      "sha256": "b497dc83eae9ad35340db1205b0cdbb0eb410c2f4f13837ea7d94091980c297b"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/2381d8b7",
+      "bytes": 1540,
+      "sha256": "4abf6bf9350d4de8c486bfcb0d099494fc77c8f1123721d2602f33ad03e49855"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/2eb7cb17",
+      "bytes": 4484,
+      "sha256": "af398af3dd8eef0452e95342aabcdd60bcd9dcfd05534b85ab7c458ab1353e79"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/437b4759",
+      "bytes": 1628,
+      "sha256": "218143af05a3706e97bb83aced0523986f818a60076a741c174f0e5e3ba6a7de"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/45d06618",
+      "bytes": 3180,
+      "sha256": "7637b61d209c9205bba9f07101f4f9ff93373081e9782b9ab6baf19fd060a8ba"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/4b0c1f39",
+      "bytes": 13164,
+      "sha256": "abba73e9141a5383adeb452000569777a075c7717bd3affbedb18a64b6596b4c"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/4ce5e5be",
+      "bytes": 1404,
+      "sha256": "1341ba7717edccb4588f56ecb010fb2c039445aa4b88e649a90e667049a7b1df"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/4fb4ea3f",
+      "bytes": 3948,
+      "sha256": "90c4347f1668558c7c8aa3c72f703cfb76393333e6ca62f5e76c218c43a11c48"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/52b723eb",
+      "bytes": 3436,
+      "sha256": "e996524e6c33766c5f8819716276bdfdf3e8499620faf598acc45f76202ac225"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/578adfba",
+      "bytes": 2476,
+      "sha256": "5995184bcbb79b988298b11ac78e699e6cdb6717f4d713445d863639d6ebbd21"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/5800dd25",
+      "bytes": 844,
+      "sha256": "c95025c33aae80a48990b7e7748b11dae51816094fd73658f87fe2839b1007ef"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/5ae61894",
+      "bytes": 14380,
+      "sha256": "1ae8b7355ddfda4fb868e1217df8cf1753cc4a2d288bd45c2b67cc4eb70395c8"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/5af11e8d",
+      "bytes": 1164,
+      "sha256": "ba981dd09edf7e4937010c1bc17f5a2eb4c440e0c079d7cc26e0a041bdadff55"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/5bd94f77",
+      "bytes": 1612,
+      "sha256": "2906e167301a9e14633bde82e9aecfe6f68d741a124ac9174c4ffe834824fb4d"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/60df6d85",
+      "bytes": 5652,
+      "sha256": "d93aa8ebb7490332524543f682657ae45af33fd96858928b85b9f7880034735a"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/6a79a7f8",
+      "bytes": 2636,
+      "sha256": "26d636778b5cecfa2293b8fc5a676289521bec9b52c7625ea6cc6dcf581f3c6e"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/71fb5411",
+      "bytes": 2612,
+      "sha256": "e958fc627dd4375b5784a79fb0e5d5c7ef04c7a41873d3ebfbb21f7e84b4bf40"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/72dd0e6f",
+      "bytes": 3028,
+      "sha256": "d21cef9f7600428e5a68e8d2561e9a5938ce995f2797e563e105f3e4f263ee33"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/77a5a75f",
+      "bytes": 2196,
+      "sha256": "356846c29197aab99fe6052b4070757406f0ed87eb1945d76cd1bdaa108cf22b"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/78f2e397",
+      "bytes": 4660,
+      "sha256": "b957a196a30a7abd357a69c7cceca12cc566ea1cbe10246525487bc87a1f35db"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/7e8acf85",
+      "bytes": 908,
+      "sha256": "719c2d5dfc9fd35a395d39d8b901890746b5f6bf8acd10f31137b15f8d30534d"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/846d30ed",
+      "bytes": 1604,
+      "sha256": "98b58e1cbda24f2923d04f77c345f0351bca0801067466a790179e20de6b1b6f"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/865ad570",
+      "bytes": 1300,
+      "sha256": "a18d9ea6c340b0afbffdca8fcca30800d053b90b82555b0de6090f3eebcfd46a"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/8890fd60",
+      "bytes": 1812,
+      "sha256": "3302a2defd775b04936da2f94e55daabc739d517816f4638899a449148c04a46"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/8970ac25",
+      "bytes": 868,
+      "sha256": "5a8f63c7708c6a4d0337b4b6175098e8af5ef526583e093546c0467fa29626d5"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/8c9be356",
+      "bytes": 1308,
+      "sha256": "a87f04f8ab02ea7ac121ef76d67a1e5cdba5177854f254623fe09c41e7b0353d"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/8fc61a31",
+      "bytes": 1612,
+      "sha256": "68df0c5f8771f199506f5e823237491ac463d3249bd2fbe3a5cac16f35069614"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/932c1f41",
+      "bytes": 4108,
+      "sha256": "d33b16635bbf47b8f3520c00f23cdb7114cb30ecb30a0f97b040a732bc44eb95"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/9d9b2d3c",
+      "bytes": 1700,
+      "sha256": "d8dbe895de1a6380f62ad493bf39f1f6a4598d6ff3174311d8c6f008d3676191"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/a16f83c7",
+      "bytes": 1420,
+      "sha256": "2a39d4d667071666f49f7ea7afecd8754daae3494eab7f7d0d0dcaedf30bbae5"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/a2e8089e",
+      "bytes": 22620,
+      "sha256": "007594a1f93f31e958d68d20ac7707f79050f82929fcdecf34bb5cf2c82e8f0b"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/ac27e810",
+      "bytes": 1844,
+      "sha256": "0e1af88edd7caf6b10816145d628d0ce285f76a4750ea05cf2672a06223bee9f"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/afa5a2aa",
+      "bytes": 2988,
+      "sha256": "e5342714481ae90aa428fc1241fa69e655fdc2b1c91959909b886afce52f5496"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/b34fe322",
+      "bytes": 2012,
+      "sha256": "29ff5513175e752c052c66c32be625cf7d1e53214d2d5f7eaaf04f334fae82c4"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/b7220686",
+      "bytes": 7764,
+      "sha256": "6c474214a23f5207011fb8b27349093946d3a122d6a18ae3fb6164e1df436a36"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/b9e11aca",
+      "bytes": 1092,
+      "sha256": "44298998fe5248754e6a0b05c90249c4601184dedd36f1d2c4fff046d4ad8ba8"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/bba44c20",
+      "bytes": 4364,
+      "sha256": "663e9315b5b729b06901bacb67e9ba9bffaf502ae47e2c27b0e1802e5aef1f6e"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/bed44c36",
+      "bytes": 5532,
+      "sha256": "3240123d35b97a313844c8324d3136e3780e4ba1fbb8fd4675a75a8b9e17e991"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/c1c02e60",
+      "bytes": 1084,
+      "sha256": "87bf9d6ef7c89ed5abb6d65f12cc71392b819dfd2c98884372b4abf3a0807594"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/c2186d3a",
+      "bytes": 1396,
+      "sha256": "f2b18ee2a688c543611863ad90c8684040cd04d2a2e56baa7d22bed0ce08718c"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/c3fe839c",
+      "bytes": 1556,
+      "sha256": "d1a2ea0c672cafffc2f1fb6138a376f2938967fb1f3afb0dd59e601a4ed55d80"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/c764f6e9",
+      "bytes": 144572,
+      "sha256": "6cf8db72272a6180e1bbd4097f2444084e09e88d2cfdece362508c09a7e15522"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/c7bcc6fb",
+      "bytes": 6316,
+      "sha256": "b511b6f3462bf41821ab8d37838b7b21db124b8afc012aba3170dd00004a8a41"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/c9b0110f",
+      "bytes": 1092,
+      "sha256": "46105fe49b219715b087bdd13f0f0a5c1bd35d7c43b595663fb3bc90b5811e41"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/cffdf834",
+      "bytes": 6156,
+      "sha256": "1ac7405515c9f825d07619c2023dd49c508b39232c5df0e891acc6efd19da222"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/d03d1e1d",
+      "bytes": 2676,
+      "sha256": "c76f326023335c6f1b9911f23602f10991eac1182d860a7bf287923ebc7f0ec1"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/d675b3d7",
+      "bytes": 2748,
+      "sha256": "55400496cf95770824c07ccb4d05fdfe07004f705924b4bcff1451991d15b6e9"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/db40bce8",
+      "bytes": 321164,
+      "sha256": "efa15ba98d224cbaa9f733221fa91999f789559756108489b42114143fbdb4a6"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/e307596c",
+      "bytes": 1420,
+      "sha256": "08ab38b40535ce8e3eec8420f6ca6792b218a600b0871d5dc64ecdf9d0de98e6"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/e4c9b9fe",
+      "bytes": 1844,
+      "sha256": "924bb3b77eeb24aa3e21c233c5d2a5ee34e85915ef359b3e095497470f509ca6"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/e88f961d",
+      "bytes": 1108,
+      "sha256": "950e3817d4166286054b3103d1fdc8590b9a1701fa92545524ef02331a542927"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/e9ace0bd",
+      "bytes": 2524,
+      "sha256": "004e048840051700f5c26593781bc3eb0b244bebeeab72aabc8d1dacee30c908"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/ec10cd3f",
+      "bytes": 1180,
+      "sha256": "cb0eeb3afe6f45714f2e67fdd0391bd870767c11c94ded6c93f2291440e7d60a"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/f0d54ed0",
+      "bytes": 1300,
+      "sha256": "6f89ed8710ace2fa5151bc0fcc661b5c9cddb8678625598d3ae98e3fa6d4e095"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/f369d54f",
+      "bytes": 1652,
+      "sha256": "474f5626ff8d7f9ab3e69df55f1a876f56dc3111062921a09d365106d9207d48"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/fb473dba",
+      "bytes": 1572,
+      "sha256": "08f13ac60879aa2723e27d026e327429aa53216027030e5ba62659fa6ab5ae62"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/fcd7a015",
+      "bytes": 4148,
+      "sha256": "ae0939f1b5425a3fce75879b2d4e17ad572726025fd33d5539d56c3b10eb33b9"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/ff02dd27",
+      "bytes": 2692,
+      "sha256": "1e390fbb5bfaf472a500db206a1584be33c68592f30b94c82df15082dcd636f9"
+    },
+    {
+      "path": "build-tmp/node-compile-cache/v22.19.0-x64-9ac5647c-1000/ffa7cad9",
+      "bytes": 1492,
+      "sha256": "84ddb56ea796214bd2f53b6efea5bd14b8b67be90587ee67050ff361087d9d88"
+    },
+    {
+      "path": "run-builds.py",
+      "bytes": 2065,
+      "sha256": "c62d8629045154100cf78fcc4648183fc091477dc0a5fee7f7b38b10e3e5d079"
+    }
+  ],
+  "qualification": "Append-only build evidence inventory and itself; original156member evidence/archive unchanged."
+}

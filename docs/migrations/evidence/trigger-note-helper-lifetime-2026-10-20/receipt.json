@@ -1,0 +1,58 @@
+{
+  "scope": "Task3.3 production frontend note-helper lifetime prerequisite only",
+  "base": "bb2c631efd63f19b93183f7e0b402bee94ab9e34",
+  "source_hashes": {
+    "web/trigger/engine/native-live.mjs": "48a9c5c3e410e7e85bdc5bd66efd6d5f4602929a10c490d730f0fbcbb64c3eb9",
+    "web/trigger/tests/native-engine.test.mjs": "71fd785bce9da4ee62e98e27d809d97232000171249688f4abb78062d16e0be6"
+  },
+  "behavior": [
+    "Same instance/attachment mapping, undo and generation refresh retain held/pending notes, captured press generation and heartbeat",
+    "Matching release/close follows delayed onset; fresh press uses current document generation",
+    "Current helper errors remain visible across generations; existing replacement helper and closed-engine late-error filtering preserved"
+  ],
+  "tests": {
+    "focused": 48,
+    "ordinary": 139,
+    "type_component_check": "70 authored React files pass",
+    "registered_browser_selection": 6,
+    "preview_production_build": "pass",
+    "native_production_build": "pass"
+  },
+  "tdd": "Existing40baseline;8newselected cases produce5expectedassertionREDs and3retirementcharacterizationpasses; full48GREEN",
+  "coverage": {
+    "owner": "web/trigger/engine/native-live.mjs",
+    "line_percent": 100,
+    "branch_percent": 87.18,
+    "function_percent": 85.71,
+    "qualification": "All11final rawunexecuted snippets inherited; no new gap/new module, no wholefrontend/native or completeassertion claim"
+  },
+  "archives": {
+    "raw_members": 156,
+    "raw_sha256": "4977faaf0fc3ce7ef168b3f426fd366258657dccf9127813d4b17a21b96d1431",
+    "build_members": 116,
+    "build_sha256": "fecb6bf618b987a85a25d93911eaaa3497eb3d0ed0621f07e70497195c9ef1db"
+  },
+  "integration": "Root ff existinglane d166250\u2192bb2c631 with both authoredsource hashes preserved; publishednotes changes no web input. All156 earlier raw evidencefiles unchanged during appended builds.",
+  "sourcefree": "Qualified exact589input headless reuse only; browser tree deliberately absent",
+  "limitations": [
+    "Backend fixture proves frontend args/order/error-event lifetime only, not native controller/audio",
+    "Sameattachment externalrestore and perpressnonce semantics remain unclaimed",
+    "No new oldattachment retirement policy or physicalWry/native currentbundle execution",
+    "Two browser setup/launch failures retained; short RAMalias removed after ownedprocess check; no productRED claim",
+    "Native singlebundle emits standard >500kBchunk warning; noerror/splitting change"
+  ],
+  "refactor": {
+    "production": "Reused existing createNotes method; captured only immutable connection scalar IDs; no extraction justified.",
+    "tests": "One table of onset/cleanup variants shares the same lifecycle without duplicating test setup; retirement table distinguishes instance and attachment."
+  },
+  "review": {
+    "status": "PASS",
+    "manifest_sha256": "ca1bfc626ea72dc53fce0a2198cf92db354c49465852a56a63b099625a4c9a96",
+    "review_sha256": "4de0f7dbe59f71883a7ed3b490ced3acb1db080af7592db95e22bd9bcfb8a6d7",
+    "verdict_sha256": "dbcbae43b6cdc92a131c7ee3c110e4a765b7bcc45cefa0a66b173c064cb81675"
+  },
+  "mutation": "excluded by user",
+  "resources": "RAM-only new outputs; reusable caches preserved, disposable pathname alias removed, no ownedworkers",
+  "task3_3_complete": false,
+  "full_beta_complete": false
+}

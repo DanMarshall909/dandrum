@@ -1,0 +1,97 @@
+{
+  "baseHead": "d1662501a375710d9892371453c2614ad96518ed",
+  "ownedSources": {
+    "web/trigger/engine/native-live.mjs": "48a9c5c3e410e7e85bdc5bd66efd6d5f4602929a10c490d730f0fbcbb64c3eb9",
+    "web/trigger/tests/native-engine.test.mjs": "71fd785bce9da4ee62e98e27d809d97232000171249688f4abb78062d16e0be6"
+  },
+  "checks": {
+    "baseline": {
+      "command": "node --experimental-test-coverage --test tests/native-engine.test.mjs tests/native-transport.test.mjs",
+      "cwd": "/tmp/dandrum-lanes/frontend/web/trigger",
+      "exit": 0,
+      "elapsedSeconds": 1.6031214169925079,
+      "node": "v22.19.0"
+    },
+    "red": {
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=same-attachment|current note errors|late note errors",
+        "tests/native-engine.test.mjs"
+      ],
+      "exit": 1,
+      "elapsedSeconds": 0.409857971011661
+    },
+    "green": {
+      "command": [
+        "node",
+        "--experimental-test-coverage",
+        "--test",
+        "tests/native-engine.test.mjs",
+        "tests/native-transport.test.mjs"
+      ],
+      "exit": 0,
+      "elapsedSeconds": 1.9609731179953087
+    },
+    "ordinary": {
+      "command": [
+        "npm",
+        "test"
+      ],
+      "exit": 0,
+      "elapsedSeconds": 1.7275538960238919
+    },
+    "check": {
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "exit": 0,
+      "elapsedSeconds": 1.069470602000365
+    },
+    "browser": {
+      "command": [
+        "node",
+        "node_modules/@playwright/test/cli.js",
+        "test",
+        "--config",
+        "/run/user/1000/dandrum-beta-20261020/frontend-note-lifetime-evidence/playwright.config.mjs",
+        "native-transport.spec.mjs"
+      ],
+      "cwd": "/tmp/dandrum-lanes/frontend/web/trigger",
+      "pid": 3576246,
+      "exit": 0,
+      "resourceStopped": false,
+      "elapsedSeconds": 8.039217491983436,
+      "envOverrides": {
+        "TMPDIR": "/run/user/1000/fnl",
+        "XDG_CACHE_HOME": "/run/user/1000/dandrum-beta-20261020/frontend-note-lifetime-evidence/browser-cache",
+        "XDG_CONFIG_HOME": "/run/user/1000/dandrum-beta-20261020/frontend-note-lifetime-evidence/browser-config",
+        "npm_config_cache": "/run/user/1000/dandrum-beta-20261020/frontend-note-lifetime-evidence/npm-cache"
+      }
+    }
+  },
+  "resources": {
+    "minimumRamfsFreeMiB": 1298.76171875,
+    "minimumMemAvailableMiB": 11402.07421875,
+    "ramfsFloorMiB": 512,
+    "memAvailableFloorMiB": 4096
+  },
+  "ownedProcesses": [],
+  "sourceFrozen": true,
+  "publication": false,
+  "openSpecTasksChanged": false,
+  "mutation": "Excluded by recorded user direction; no mutation run",
+  "refactor": {
+    "production": "Reused existing createNotes method; captured only immutable connection scalar IDs; no extraction justified.",
+    "tests": "One table of onset/cleanup variants shares the same lifecycle without duplicating test setup; retirement table distinguishes instance and attachment."
+  },
+  "limitations": [
+    "Backend fixture checks frontend command args/order only, not actual native controller or signed audio.",
+    "Same-attachment external restore policy remains unspecified here; no per-press nonce or new attachment-retirement behavior claimed.",
+    "All final raw uncovered NativeLive range texts existed in baseline; focused Node aggregate line100/branch87.18/function85.71 does not prove entire-owner coverage.",
+    "No Rust, Wry/X11, native audio, builds, installs, cache deletion, Git/index mutation or spec/docs mutation.",
+    "Initial browser root/cwd and Chromium UNIX socket path failures retained separately; these are setup/launch failures, not product RED."
+  ]
+}

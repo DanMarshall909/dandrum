@@ -1,0 +1,132 @@
+{
+  "purpose": "Verify frozen changed production helper reaches both maintained Vite production bundles, with isolated RAM outputs only.",
+  "baseHead": "d1662501a375710d9892371453c2614ad96518ed",
+  "sourceHashes": {
+    "web/trigger/engine/native-live.mjs": "48a9c5c3e410e7e85bdc5bd66efd6d5f4602929a10c490d730f0fbcbb64c3eb9",
+    "web/trigger/tests/native-engine.test.mjs": "71fd785bce9da4ee62e98e27d809d97232000171249688f4abb78062d16e0be6",
+    "web/trigger/vite.config.mjs": "f2ebf768f1a65217b503aa87cc330c97d654040e5fb2c1110261b12c6dc0f738",
+    "web/trigger/vite.native.config.mjs": "9075274217dbcf39189035e37210a58630afcd1d94b104488c3f76e5373f1bf2",
+    "web/trigger/package.json": "eee84408e787dfbdc12e8acfa98b1818ca65766b54de769cec44d19501867ed8"
+  },
+  "priorEvidenceFileCount": 156,
+  "priorEvidenceUnchanged": true,
+  "priorInventorySha256": "1b513ddbba38a57a8476b477941a4ca16ad6c440b2890253b5ecec23ae5fae21",
+  "runs": [
+    {
+      "name": "preview",
+      "command": [
+        "node",
+        "node_modules/vite/bin/vite.js",
+        "build",
+        "--config",
+        "/run/user/1000/dandrum-beta-20261020/frontend-note-lifetime-evidence/build-preview.config.mjs",
+        "--configLoader",
+        "native"
+      ],
+      "cwd": "/tmp/dandrum-lanes/frontend/web/trigger",
+      "pid": 3597341,
+      "exit": 0,
+      "resourceStopped": false,
+      "elapsedSeconds": 2.5126810609945096
+    },
+    {
+      "name": "native",
+      "command": [
+        "node",
+        "node_modules/vite/bin/vite.js",
+        "build",
+        "--config",
+        "/run/user/1000/dandrum-beta-20261020/frontend-note-lifetime-evidence/build-native.config.mjs",
+        "--configLoader",
+        "native"
+      ],
+      "cwd": "/tmp/dandrum-lanes/frontend/web/trigger",
+      "pid": 3597436,
+      "exit": 0,
+      "resourceStopped": false,
+      "elapsedSeconds": 2.5134400929964613
+    }
+  ],
+  "artifactHashes": {
+    "preview": {
+      "build-preview/catalog.html": "f16c1efa2f1d8bbe86e3e6f2eddf1ead648bf04e339787bf42b7dd9261279bfe",
+      "build-preview/index.html": "b704997dabb29f7654e4aab969d57eca37bef1ea050b38132c77ea171f64fe22",
+      "build-preview/assets/catalog-DEB-rez9.js": "25caceff6d8f52dd9d7b19a2f686fef668b09e72dfb57ddab9b2abbccf9b3254",
+      "build-preview/assets/shell-B19jovjk.js": "44711351a07238a5234c9e2573592c3a78d3f350c5e86e8aa57b50ac8eae0fb6",
+      "build-preview/assets/styles-CZrjI6Cm.js": "6f0a87194520360b8aeddc0d9427ab71a5874080dbb3d9b637e794c3fe9815f3",
+      "build-preview/assets/react-runtime-BB0E8YcQ.js": "a54e5282221bc2821dbf5482427ccf46530e7bcc51b3de67082dc34fcce2e0aa",
+      "build-preview/assets/styles-VRZ06cQx.css": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5",
+      "build-preview/assets/design-system-IiESn_cW.js": "4279d33f00345e9e7b3f6c2c2d645b01cd15a23ead034a2e33f40f3efbca6b15",
+      "build-preview/assets/catalog-D5WtGZ3f.css": "75419d57716ebc8eae5d0c93600b0d95552b4cfe09660ea6ca2aeca0b2614709",
+      "build-preview/fonts/jetbrainsmono-OFL.txt": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d",
+      "build-preview/fonts/df54dbfafba61d49.ttf": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8",
+      "build-preview/fonts/cb75439ae401f776.ttf": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da",
+      "build-preview/fonts/c2b046235fb4c2f8.ttf": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9",
+      "build-preview/fonts/c15439e7a03af571.ttf": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c",
+      "build-preview/fonts/barlowsemicondensed-OFL.txt": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "build-preview/fonts/barlow-OFL.txt": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "build-preview/fonts/91c841fdfa8e7b94.ttf": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc",
+      "build-preview/fonts/74103fd6d41bc32c.ttf": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154",
+      "build-preview/fonts/6098b66ce7d608dc.ttf": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef",
+      "build-preview/fonts/3386a05f6ece969e.ttf": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160",
+      "build-preview/fonts/.gitattributes": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616"
+    },
+    "native": {
+      "build-native/index.html": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26",
+      "build-native/app.js": "146bff237d9b2e33cd3ae40a6e981e09382098360efac02c2bd080f900ea90f5",
+      "build-native/app.css": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5",
+      "build-native/fonts/jetbrainsmono-OFL.txt": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d",
+      "build-native/fonts/df54dbfafba61d49.ttf": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8",
+      "build-native/fonts/cb75439ae401f776.ttf": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da",
+      "build-native/fonts/c2b046235fb4c2f8.ttf": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9",
+      "build-native/fonts/c15439e7a03af571.ttf": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c",
+      "build-native/fonts/barlowsemicondensed-OFL.txt": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "build-native/fonts/barlow-OFL.txt": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "build-native/fonts/91c841fdfa8e7b94.ttf": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc",
+      "build-native/fonts/74103fd6d41bc32c.ttf": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154",
+      "build-native/fonts/6098b66ce7d608dc.ttf": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef",
+      "build-native/fonts/3386a05f6ece969e.ttf": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160",
+      "build-native/fonts/.gitattributes": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616"
+    }
+  },
+  "helperBundleWitnesses": {
+    "preview": [
+      {
+        "artifact": "build-preview/assets/shell-B19jovjk.js",
+        "excerpt": "[],selectorPos:{},mod:{},meters:{},host:{},hostValues:{},voiceCountAvailable:!1}}createNotes(){const e=this.engine;this.noteConnection={instanceId:e.connection.instanceId,attachmentId:e.connection.attachmentId};const t=Re((i,...n)=>e.invoke(i,...n),i=>{this.notes===t&&e.report(i)});return t}resetMeter(){const e=this.engine;return e.capabilities.metering?(this.meter=je((t,...i)=>e.invoke(t,...i),t=>{e.closed||t.generation!==e.generation||!t.display_valid||(this.telemetry={...t",
+        "helperErrorIdentityCheck": true
+      }
+    ],
+    "native": [
+      {
+        "artifact": "build-native/app.js",
+        "excerpt": "[],selectorPos:{},mod:{},meters:{},host:{},hostValues:{},voiceCountAvailable:!1}}createNotes(){const t=this.engine;this.noteConnection={instanceId:t.connection.instanceId,attachmentId:t.connection.attachmentId};const i=D2((l,...o)=>t.invoke(l,...o),l=>{this.notes===i&&t.report(l)});return i}resetMeter(){const t=this.engine;return t.capabilities.metering?(this.meter=C2((i,...l)=>t.invoke(i,...l),i=>{t.closed||i.generation!==t.generation||!i.display_valid||(this.telemetry={...t",
+        "helperErrorIdentityCheck": true
+      }
+    ]
+  },
+  "resourceMinimums": {
+    "ramfsFreeMiB": 1370.66796875,
+    "memAvailableMiB": 12257.78515625,
+    "ramfsFloorMiB": 512,
+    "memAvailableFloorMiB": 4096
+  },
+  "outputDirectories": [
+    "/run/user/1000/dandrum-beta-20261020/frontend-note-lifetime-evidence/build-preview",
+    "/run/user/1000/dandrum-beta-20261020/frontend-note-lifetime-evidence/build-native"
+  ],
+  "cacheDirectories": [
+    "/run/user/1000/dandrum-beta-20261020/frontend-note-lifetime-evidence/build-cache-preview",
+    "/run/user/1000/dandrum-beta-20261020/frontend-note-lifetime-evidence/build-cache-native"
+  ],
+  "tempDirectory": "/run/user/1000/dandrum-beta-20261020/frontend-note-lifetime-evidence/build-tmp",
+  "cacheDirectoryExists": {
+    "/run/user/1000/dandrum-beta-20261020/frontend-note-lifetime-evidence/build-cache-preview": false,
+    "/run/user/1000/dandrum-beta-20261020/frontend-note-lifetime-evidence/build-cache-native": false
+  },
+  "ownedProcessesAfter": [],
+  "nativeStagedBundleMutated": false,
+  "oldHandoffOrManifestRewritten": false,
+  "warning": "Native app.js808.59kB retains configured single-bundle output and Vite standard >500kB chunk warning. No build error; no bundle splitting change.",
+  "limitations": "Production bundling/source inclusion proof only; no new native Wry/controller/audio execution. Existing139Node/check/6browser results retained and not rerun. No installs, dependency/source/Git/docs/spec/cache deletion."
+}

@@ -9,8 +9,10 @@ export class NativeLive {
     this.telemetry={voices:{active:null,max:engine.patch.voicePolicy.limit},notes:[],playheads:[],selectorPos:{},mod:{},meters:{},host:{},hostValues:{},voiceCountAvailable:false};
   }
   createNotes(){
-    const engine=this.engine,generation=engine.generation;
-    return createNoteAudition((name,...args)=>engine.invoke(name,...args),error=>{if(generation===engine.generation)engine.report(error);});
+    const engine=this.engine;
+    this.noteConnection={instanceId:engine.connection.instanceId,attachmentId:engine.connection.attachmentId};
+    const notes=createNoteAudition((name,...args)=>engine.invoke(name,...args),error=>{if(this.notes===notes)engine.report(error);});
+    return notes;
   }
   resetMeter(){
     const engine=this.engine;
@@ -23,7 +25,10 @@ export class NativeLive {
     return this.meter.start(engine.generation);
   }
   changed(){
-    this.cache.clear();this.notes=this.createNotes();
+    this.cache.clear();
+    // A document refresh preserves each held pitch's original press generation.
+    const connection=this.engine.connection;
+    if(connection.instanceId!==this.noteConnection.instanceId||connection.attachmentId!==this.noteConnection.attachmentId)this.notes=this.createNotes();
     this.telemetry={...this.telemetry,voices:{active:null,max:this.engine.patch.voicePolicy.limit}};
     this.engine.emit('telemetry',structuredClone(this.telemetry));
     return this.resetMeter();
