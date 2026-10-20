@@ -1,0 +1,17 @@
+{
+  "verdict": "PASS",
+  "candidate_manifest_sha256": "d16f61190213a6742bbf252b51639ebe98c40bbc9102c4dd78a6598b7f9f2698",
+  "candidate_paths": 27,
+  "base": "c3f6ca8adf93089dd08630151d1a4e70b11408be",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "c3f6ca8adf93089dd08630151d1a4e70b11408be",
+  "report": "review.md",
+  "report_sha256": "ed65b18b333858aefa6d8bffa093e5d56f8835d98c26bcbf77d4141547b80c09",
+  "required_findings": [],
+  "task_3_2_complete": false,
+  "full_beta_complete": false,
+  "final_envelope_paths": 29,
+  "same_reviewer_final_envelope_check_required": true,
+  "independent_test_execution": false,
+  "release": "Frozen report/verdict released to root; no mutable resources owned."
+}

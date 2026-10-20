@@ -1,0 +1,8 @@
+{
+  "src/trigger-editor/src/native_x11.rs": "354f93734772eaaf41df4c8d0f524c0de2424da1f31752d9c404ea90023236bf",
+  "src/trigger-editor/tests/internal/native_x11.rs": "916ea71b2abac4d20ee76a8bf956aed285e08e633005c88688a96694ad9fb62d",
+  "src/trigger-editor/tests/internal/local_policy.rs": "cf75532edc8d9e37e637836ee717c1c3ff4cd484906a766bf45bfe60258b0158",
+  "src/trigger-editor/tests/internal/resource_policy.rs": "6402b8c32a038a8bc6c8b17b68450801d10594c36d684fca87f0f4dfba3af6ea",
+  "src/trigger-editor/tests/fixtures/resource-policy.mjs": "83757912582dac57c5be48fced7cc91ee2b4e066ab20e0d27eb30712e011173c",
+  "src/trigger-editor/tests/fixtures/resource-policy.png": "4ff6ab670a58c14270e034e2090d9a432caa263a14e0a25785386b0c12f880b5"
+}

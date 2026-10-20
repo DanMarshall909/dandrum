@@ -1,0 +1,12 @@
+{
+  "status": "Root selected next-criterion design; unimplemented/unproved, no execution authorized until visibility publication and explicit source handback",
+  "scope": "Open task3.2 local-only packaged production resource loading",
+  "header": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'",
+  "reason": "Fixed required-resource allowlist; five directives replace four-class proposal with default denial, retains existing connect and literal-inline positive behavior. Inline SVG is document content, no local raster resource permission needed.",
+  "inline_style_limit": "unsafe-inline preserves established literal-style fixture; React style-property updates alone do not prove production necessity. No unsafe-eval/data/blob/new routes.",
+  "workers": "worker-src falls through child-src/script-src/default-src; local scripts can still be workers. Do not claim all unused facilities denied.",
+  "native_proof": "Genuine unchanged realpage positive baselines for external script/style/font/image, then aggregate exact enforcing CSP events +noexternalGET/effect, header-onlyGREEN and continued local positive/unmodifiedproduction/eightfonts/11responsebytes. No nativeeval negative probes, setup/CORS/SOP errors or forcedRED for alreadydenied/unsupported facilities.",
+  "remaining": "Popup/download/base/form/nav have separate semantics; existing fixedentry remains, characterize defaults without weakening. No unqualified native frame/worker/media/object/manifest/hint coverage.",
+  "report_sha256": "a4026bae1adaf61e8a238ccc08f38bcecba6d3318444e28daebfa4ca947e6ac9",
+  "sources_manifest": "/tmp/dandrum-evidence/editor-policy-choice-sources.json"
+}

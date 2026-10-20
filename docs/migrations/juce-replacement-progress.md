@@ -930,3 +930,36 @@ Task3.2 remains unchecked,7/14overall. Resource policy and popup/download behavi
 remain; actual CLAPmainthread/API/order/timer proof depends on4.2. Full beta stays
 active through3.3/4.x/5.x and nextVST3/standalone/DAW/installed-offline/native
 increments. Main remains clean68dd655; mutation excluded; caches preserved.
+
+
+## Native packaged resource origins — 20 October 2026
+
+Visibility/fixed-size behavior was normally published atc3f6ca8. The next bounded
+task3.2 slice changes only the native CSP response header to defaultnone plus
+required script/style/font/connectself and the established literal-style allowance.
+Four ordinary-page external resource baselines genuinely execute script, apply
+CSS61px, load a valid font and load PNG1x1, each with browserGET. Aggregate denial
+assertions then fail under the old header; corrected exact-final tests pass with
+the header and zero browserGETs, exact enforcing effective/violated directive,
+disposition,fullblockedURL and localdocumentURI receipts. Initial fullURL-or-origin
+assumption failure is retained as oracle calibration, not a production defect.
+All local and unmodified production Silent-preview/eight-font/11responsebyte
+positives, physical presentation and immediate-disposal/rollback oracles remain.
+
+[Portable evidence](evidence/trigger-editor-resource-csp-2026-10-20/receipt.json)
+binds391rawmembers/15phase snapshots/19sources and all8checks. Owner148/153lines,
+14/16functions,208/229regions retains inherited5line/21region limits; changedheader
+covered, no extraction/exclusion/branch/mutation claim.3CTests4.034962s plus lint,
+fmt/build/native-fastLLVM/defaultgraph/scopedOpenSpec/specmap pass. Qualified old
+defaultguardreuse compares583published to586currentinputs:580identical,3changed/
+3new native-cfg-onlypaths, no equalpathset/allinputidentity/fresh-run claim. Staged
+extra unserved.gitattributes metadata is explicit:14declared vs15physicalfiles;
+no unrelated packaging change. Existing exactsource nativecoverage is reused,
+not rerun for a name; an alreadylaunched comparable RED/GREEN pair is retained.
+
+Independent completion review passed for the frozen source/evidence candidate; normal-hook publication is the remaining gate.
+Task3.2 remainsunchecked,7/14overall. Popup/download characterization remains;
+actualCLAPmainthread/API/order/timer proof depends on4.2. No allunusedfacility-
+denial/nativebackend/session/audio acceptance claim. Fullbeta continues through
+3.3/4.x/5.x and nextVST3/standalone/DAW/installedoffline/native increments. Main
+stays clean68dd655; allcaches preserved, mutationexcluded.

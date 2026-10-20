@@ -146,7 +146,7 @@ pub(super) fn top_level_document_stays_at_fixed_entry(parent: u32) {
     }
 }
 
-fn page_package(script: String) -> common::Package {
+pub(super) fn page_package(script: String) -> common::Package {
     let package = common::Package::new();
     for path in common::FILES {
         package.write(path, b"fixture");
@@ -159,14 +159,18 @@ fn page_package(script: String) -> common::Package {
 
 /// An owned loopback-only endpoint, independent of WebKit's load/error signals.
 /// Its nonblocking accept loop and finite read timeout also bound failure cleanup.
-struct Endpoint {
+pub(super) struct Endpoint {
     address: SocketAddr,
-    requests: Arc<Mutex<Vec<String>>>,
+    pub(super) requests: Arc<Mutex<Vec<String>>>,
     stop: Arc<AtomicBool>,
     worker: Option<JoinHandle<()>>,
 }
 impl Endpoint {
     fn start() -> Self {
+        Self::with_resources(Vec::new())
+    }
+
+    pub(super) fn with_resources(resources: Vec<(&'static str, &'static str, Vec<u8>)>) -> Self {
         let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
         let address = listener.local_addr().unwrap();
         listener.set_nonblocking(true).unwrap();
@@ -203,20 +207,27 @@ impl Endpoint {
                             if !complete {
                                 continue;
                             }
-                            let (mime, body) = if first_line == "GET /navigation HTTP/1.1" {
+                            let path = first_line.split_whitespace().nth(1).unwrap_or("");
+                            let (mime, body) = if let Some((_, mime, body)) =
+                                resources.iter().find(|(route, _, _)| *route == path)
+                            {
+                                (*mime, body.clone())
+                            } else if first_line == "GET /navigation HTTP/1.1" {
                                 (
                                     "text/html",
-                                    "<!doctype html><title>owned-navigation-sentinel</title>",
+                                    b"<!doctype html><title>owned-navigation-sentinel</title>"
+                                        .to_vec(),
                                 )
                             } else {
-                                ("text/plain", "local-policy-sentinel")
+                                ("text/plain", b"local-policy-sentinel".to_vec())
                             };
                             received.lock().unwrap().push(first_line);
                             let response = format!(
-                                "HTTP/1.1 200 OK\r\nContent-Type: {mime}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                                "HTTP/1.1 200 OK\r\nContent-Type: {mime}\r\nContent-Length: {}\r\nCache-Control: no-store\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n",
                                 body.len()
                             );
                             stream.write_all(response.as_bytes()).unwrap();
+                            stream.write_all(&body).unwrap();
                         }
                     }
                     Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
@@ -234,11 +245,11 @@ impl Endpoint {
         }
     }
 
-    fn origin(&self) -> String {
+    pub(super) fn origin(&self) -> String {
         format!("http://{}", self.address)
     }
 
-    fn calibrate(&self) {
+    pub(super) fn calibrate(&self) {
         let response = self.read_response("/calibration");
         assert!(response.starts_with("HTTP/1.1 200 OK\r\n"));
         assert!(response.ends_with("\r\n\r\nlocal-policy-sentinel"));
@@ -249,6 +260,10 @@ impl Endpoint {
     }
 
     fn read_response(&self, path: &str) -> String {
+        String::from_utf8(self.read_response_bytes(path)).unwrap()
+    }
+
+    pub(super) fn read_response_bytes(&self, path: &str) -> Vec<u8> {
         let mut client = TcpStream::connect_timeout(&self.address, Duration::from_secs(1)).unwrap();
         client
             .set_read_timeout(Some(Duration::from_secs(1)))
@@ -262,8 +277,8 @@ impl Endpoint {
                     .as_bytes(),
             )
             .unwrap();
-        let mut response = String::new();
-        client.read_to_string(&mut response).unwrap();
+        let mut response = Vec::new();
+        client.read_to_end(&mut response).unwrap();
         response
     }
 }

@@ -1,0 +1,249 @@
+{
+  "recorded_at_utc": "2026-10-20T09:13:45.722090+00:00",
+  "inspection_only": true,
+  "repository_root": "/tmp/dandrum-lanes/runtime",
+  "source_commit": "9f9252cfee895f30e659e2f87a42bc833eef0e5a",
+  "live_native_sources_read": false,
+  "drift_limit": "Native owner/tests actively edited by another agent; all such reads pinned to source_commit; reconcile final source before RED. Live snapshot drift not independently inspected.",
+  "commands": "openspec list/status/instructions apply discovery only; read-only source/text/hash operations; no tests/builds/native/cache/repository/index mutations",
+  "snapshot_files": [
+    {
+      "path": "AGENTS.md",
+      "read_mechanism": "git show 9f9252cfee895f30e659e2f87a42bc833eef0e5a:AGENTS.md",
+      "bytes": 11220,
+      "sha256": "6f35e70fd429bae7f51fdeb12036da408710fad677c9e27b6c2455b1f0a841e9"
+    },
+    {
+      "path": "src/trigger-editor/src/native_x11.rs",
+      "read_mechanism": "git show 9f9252cfee895f30e659e2f87a42bc833eef0e5a:src/trigger-editor/src/native_x11.rs",
+      "bytes": 7545,
+      "sha256": "d5a716081621410e4adbf6578cf5c5dcd4a1487691b6497a196c3803da9a39c1"
+    },
+    {
+      "path": "src/trigger-editor/tests/internal/native_x11.rs",
+      "read_mechanism": "git show 9f9252cfee895f30e659e2f87a42bc833eef0e5a:src/trigger-editor/tests/internal/native_x11.rs",
+      "bytes": 19775,
+      "sha256": "4547ef33b5113d2d7f2619f72cdd6bd6b5a7b6904c07eb0a5ca8957985fa9410"
+    },
+    {
+      "path": "src/trigger-editor/tests/internal/local_policy.rs",
+      "read_mechanism": "git show 9f9252cfee895f30e659e2f87a42bc833eef0e5a:src/trigger-editor/tests/internal/local_policy.rs",
+      "bytes": 10775,
+      "sha256": "4083dfe3a1938c7d3b5a21ff5408bd5e455fab6f54691d1007bd8dba8ca081f2"
+    },
+    {
+      "path": "src/trigger-editor/src/assets.rs",
+      "read_mechanism": "git show 9f9252cfee895f30e659e2f87a42bc833eef0e5a:src/trigger-editor/src/assets.rs",
+      "bytes": 3961,
+      "sha256": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584"
+    },
+    {
+      "path": "src/trigger-editor/tests/internal/production.rs",
+      "read_mechanism": "git show 9f9252cfee895f30e659e2f87a42bc833eef0e5a:src/trigger-editor/tests/internal/production.rs",
+      "bytes": 5893,
+      "sha256": "8c3710ae967f1acdcbb76ab96416b67b0adbb5fe246b642a7d2cad1fe9a083e3"
+    },
+    {
+      "path": "src/trigger-editor/tests/fixtures/production-observer.js",
+      "read_mechanism": "git show 9f9252cfee895f30e659e2f87a42bc833eef0e5a:src/trigger-editor/tests/fixtures/production-observer.js",
+      "bytes": 3402,
+      "sha256": "c64d08f416a0231e879884dad97fd45ff4c235ed7063206cb28470c5b4157c53"
+    },
+    {
+      "path": "openspec/changes/add-juce-free-trigger-clap-editor/proposal.md",
+      "read_mechanism": "git show 9f9252cfee895f30e659e2f87a42bc833eef0e5a:openspec/changes/add-juce-free-trigger-clap-editor/proposal.md",
+      "bytes": 2669,
+      "sha256": "15a69c17a817768a5122ae0663aa488cb970c3d31bd80bb54a20312a7167d21b"
+    },
+    {
+      "path": "openspec/changes/add-juce-free-trigger-clap-editor/design.md",
+      "read_mechanism": "git show 9f9252cfee895f30e659e2f87a42bc833eef0e5a:openspec/changes/add-juce-free-trigger-clap-editor/design.md",
+      "bytes": 8937,
+      "sha256": "ad8c9b50a9df1a52fa1872345d574e578eb9f30ca17cf91608e582a2722e36c7"
+    },
+    {
+      "path": "openspec/changes/add-juce-free-trigger-clap-editor/tasks.md",
+      "read_mechanism": "git show 9f9252cfee895f30e659e2f87a42bc833eef0e5a:openspec/changes/add-juce-free-trigger-clap-editor/tasks.md",
+      "bytes": 3635,
+      "sha256": "be87d4dd5aa5cc90a767fb36ccf9e726f117d3a789d36d824c47beba6d19ae99"
+    },
+    {
+      "path": "openspec/changes/add-juce-free-trigger-clap-editor/specs/juce-free-clap-proof/spec.md",
+      "read_mechanism": "git show 9f9252cfee895f30e659e2f87a42bc833eef0e5a:openspec/changes/add-juce-free-trigger-clap-editor/specs/juce-free-clap-proof/spec.md",
+      "bytes": 2739,
+      "sha256": "e17cddf2c42077a866c3d84e7dd8def43eac46768fd5d1674417642deac12a6f"
+    },
+    {
+      "path": "openspec/changes/add-juce-free-trigger-clap-editor/specs/juce-free-trigger-editor/spec.md",
+      "read_mechanism": "git show 9f9252cfee895f30e659e2f87a42bc833eef0e5a:openspec/changes/add-juce-free-trigger-clap-editor/specs/juce-free-trigger-editor/spec.md",
+      "bytes": 4167,
+      "sha256": "81ea0e75b1e86f04e65be3ae2075cbdf92c6cf709c410830e04ef026a0b53a88"
+    }
+  ],
+  "local_sources": [
+    {
+      "path": "/home/dan/code/ai-rules/rule-sets/ai-rules.md",
+      "bytes": 15850,
+      "sha256": "7b6de27215a388185c32e914035feff4af6a3b64a0cb2ba83bf6b21bbd26d000"
+    },
+    {
+      "path": "/home/dan/.agents/skills/security-by-design/SKILL.md",
+      "bytes": 8106,
+      "sha256": "326bd991be4439ea358d096b6edf70eadf2012ce57d673da7b780d6c79050b87"
+    },
+    {
+      "path": "/home/dan/.agents/skills/reflect/SKILL.md",
+      "bytes": 5022,
+      "sha256": "0071cffdf18b233b435dbfaf7a27f85e4bd9bdb0a7f54fae163dde7f83e17539"
+    },
+    {
+      "path": "/home/dan/.codex/skills/openspec/SKILL.md",
+      "bytes": 2563,
+      "sha256": "002e11fe75630c829731f9ba8ea3ab31d337b96b8d68fd3101fb109732abc83a"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/runtime/.opencode/skills/openspec-explore/SKILL.md",
+      "bytes": 10848,
+      "sha256": "217f884a377518c22d0f9ed8fcdd1c0659ad2fe38e179264c63f32031b5fffa9"
+    },
+    {
+      "path": "/tmp/dandrum-evidence/editor-subresource-readiness.md",
+      "bytes": 11373,
+      "sha256": "d706146425124e0dea1486f6fcb4af859d9341afe441f5985ac7534551571813"
+    },
+    {
+      "path": "/tmp/dandrum-evidence/editor-subresource-alternatives.md",
+      "bytes": 2156,
+      "sha256": "b830ebf4099e79a5ab1d5141e3e8e79b47b96e4419f7f85513cef212bfbb1cd2"
+    },
+    {
+      "path": "/tmp/dandrum-evidence/editor-subresource-readiness-sources.json",
+      "bytes": 2996,
+      "sha256": "85e01660e03837c2fcd4c8c420e8a72347adae068d3779796ad16cc8ed1f20c7"
+    },
+    {
+      "path": "/tmp/dandrum-evidence/editor-local-policy-investigation-sources.json",
+      "bytes": 10274,
+      "sha256": "36349af10ae4ca3fd4978dcc5a7dde0069b36a1079f7b0c38cb0b1bfb439461a"
+    },
+    {
+      "path": "/tmp/dandrum-evidence/editor-production-review/reviewer/review.md",
+      "bytes": 16571,
+      "sha256": "8d40e5f125924435cdeb344b59035e7b6d21988c5a55df90ec1eb23191f3646e"
+    },
+    {
+      "path": "/tmp/dandrum-evidence/editor-production-review/review-packet.md",
+      "bytes": 6835,
+      "sha256": "2c7a321dffef777a5c4f925f3b81869780dea58b30595395bbf5dda6ad038de6"
+    },
+    {
+      "path": "/tmp/dandrum-evidence/editor-production-review/manifest-final.json",
+      "bytes": 9983,
+      "sha256": "59793750ac42e3666521597524cb57f3418c951589c657f4cbe23b95c7f3bff5"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/runtime/docs/migrations/evidence/trigger-editor-production-2026-10-20/handoff.json",
+      "bytes": 40916,
+      "sha256": "5d8afe4bf1406fa70b7a33b2a9b6c4170096683319a4f5e0a971c22c05c11a15"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/runtime/docs/migrations/evidence/trigger-editor-production-2026-10-20/final-source-binding.json",
+      "bytes": 246,
+      "sha256": "1b48f7b340389a14b6b9069885a319b4f32f790744c7aac6f27e2f6f114364e7"
+    },
+    {
+      "path": "/usr/share/gir-1.0/WebKit2-4.1.gir",
+      "bytes": 1898798,
+      "sha256": "a810c946ead30c84fad31969a31911ce3c1d426bf2e166a4aa2d91fcbb021e8a"
+    },
+    {
+      "path": "/usr/include/webkitgtk-4.1/webkit/WebKitVersion.h",
+      "bytes": 1663,
+      "sha256": "4bd20cf4298826e99a6f4a26dc5cbd2cb60d64cc9b851be963d20d8868676958"
+    },
+    {
+      "path": "/home/dan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wry-0.57.0/src/lib.rs",
+      "bytes": 102979,
+      "sha256": "f5c9e28fbb1b6a4ddfed7ddface796a9e91689e8663457ed69b651ad00149ba7"
+    },
+    {
+      "path": "/home/dan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wry-0.57.0/src/webkitgtk/mod.rs",
+      "bytes": 40597,
+      "sha256": "20a4064b352747b46d7e15ae6962922dfa85017660e109e87e255219c6ee2017"
+    },
+    {
+      "path": "/home/dan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wry-0.57.0/src/webkitgtk/web_context.rs",
+      "bytes": 13946,
+      "sha256": "ef43edb59e19e60743c7858be846cac23ce8e7a188f77b12ac7e0a82a907628f"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/frontend/web/trigger/node_modules/react-dom/cjs/react-dom-client.production.js",
+      "bytes": 625168,
+      "sha256": "8a8147c1cebdb19d82fd11bdb76391be9b20d00edf67cc8e8b30f44e850ce693"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/frontend/web/trigger/dist-native/index.html",
+      "bytes": 326,
+      "sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26"
+    }
+  ],
+  "web_primary_sources": [
+    {
+      "url": "https://www.w3.org/TR/2026/WD-CSP3-20260916/",
+      "sections": [
+        "6.1.3",
+        "6.8.1-4",
+        "6.3",
+        "6.4",
+        "5.3-4"
+      ],
+      "retrieval": "web official standards; current alias https://www.w3.org/TR/CSP3/ identifies dated version",
+      "byte_hash": null,
+      "limit": "Normative semantics, not installed engine execution evidence"
+    },
+    {
+      "url": "https://html.spec.whatwg.org/multipage/workers.html#worker-processing-model",
+      "retrieval": "web official living standard, last-updated 2026-10-19",
+      "byte_hash": null,
+      "limit": "Worker origin/fetch processing, not WebKit native support"
+    },
+    {
+      "url": "https://webkitgtk.org/reference/webkit2gtk/stable/signal.WebView.decide-policy.html",
+      "retrieval": "web official API4.1 website library2.42.5",
+      "byte_hash": null
+    },
+    {
+      "url": "https://webkitgtk.org/reference/webkit2gtk/stable/method.WebView.evaluate_javascript.html",
+      "retrieval": "web official API4.1 website library2.42.5",
+      "byte_hash": null
+    },
+    {
+      "url": "https://raw.githubusercontent.com/WebKit/WebKit/webkitgtk-2.50.4/Source/WebKit/WebProcess/WebPage/WebPage.cpp",
+      "sections": [
+        "runJavaScript lines4096-4106"
+      ],
+      "retrieval": "web official WebKit repository pinned release tag",
+      "byte_hash": null,
+      "limit": "Entry dispatch inspected; full downloaded-file bytes unavailable to hash"
+    }
+  ],
+  "unavailable_primary_sources": [
+    {
+      "url": "https://raw.githubusercontent.com/WebKit/WebKit/webkitgtk-2.50.4/Source/WebCore/page/csp/ContentSecurityPolicyDirectiveList.cpp",
+      "result": "Web fetch cache miss/internal error; not used to assert engine internals"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/WebKit/WebKit/webkitgtk-2.50.4/Source/WebCore/page/csp/ContentSecurityPolicy.cpp",
+      "result": "Web fetch cache miss/internal error; not used to assert engine internals"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/WebKit/WebKit/webkitgtk-2.50.4/Source/WebCore/bindings/js/ScriptController.cpp",
+      "result": "Web fetch cache miss/internal error; not used to assert engine internals"
+    }
+  ],
+  "report": {
+    "path": "/tmp/dandrum-evidence/editor-policy-choice.md",
+    "bytes": 11896,
+    "sha256": "a4026bae1adaf61e8a238ccc08f38bcecba6d3318444e28daebfa4ca947e6ac9"
+  }
+}

@@ -1,0 +1,197 @@
+{
+  "state": "FROZEN; explicit source/build/resource release to root",
+  "base": "c3f6ca8adf93089dd08630151d1a4e70b11408be",
+  "criterion": "Task3.2 four-row resource CSP tracer only; remains unchecked.",
+  "candidate": {
+    "src/trigger-editor/src/native_x11.rs": "354f93734772eaaf41df4c8d0f524c0de2424da1f31752d9c404ea90023236bf",
+    "src/trigger-editor/tests/internal/native_x11.rs": "916ea71b2abac4d20ee76a8bf956aed285e08e633005c88688a96694ad9fb62d",
+    "src/trigger-editor/tests/internal/local_policy.rs": "cf75532edc8d9e37e637836ee717c1c3ff4cd484906a766bf45bfe60258b0158",
+    "src/trigger-editor/tests/internal/resource_policy.rs": "6402b8c32a038a8bc6c8b17b68450801d10594c36d684fca87f0f4dfba3af6ea",
+    "src/trigger-editor/tests/fixtures/resource-policy.mjs": "83757912582dac57c5be48fced7cc91ee2b4e066ab20e0d27eb30712e011173c",
+    "src/trigger-editor/tests/fixtures/resource-policy.png": "4ff6ab670a58c14270e034e2090d9a432caa263a14e0a25785386b0c12f880b5"
+  },
+  "full_source": "final-source-hashes.json (19paths;3newnative-testpaths)",
+  "snapshot": "release-candidate-source",
+  "source_checks": "final-source-binding.json (8checks,all19paths equal)",
+  "phases": "phase-source-binding.json (allattemptlogs/commands/env/exits/timings/source snapshots and own hashes)",
+  "production_delta": "Only response CSP literal: default-src none;script-src self;style-src self unsafe-inline;font-src self;connect-src self. Actual quotes in source. No publicknob/privilege/dependency/CMake/lib/frontend/host changes.",
+  "calibration": {
+    "baseline": "baseline-unchanged-four-resources: normal local module executes external classic script marker, CSS61px, exact packagedTTF FontFace loaded familyResourcePolicyExternal/weight500/inset, literalPNGnatural1x1,4browserGETs after5independentGETs. Multiset assertion ignores concurrentorder; rawsequence retained.",
+    "genuine_RED": "red-four-resource-denials: all4successful effects+4browserGETs+0violations; aggregate9failures.",
+    "oracle_assumption_failure": "green-header-only blocks all4; only exactblockedURI expectation failed (fullknownURLactual,notoriginonly). Preserved as calibration, not production defect.",
+    "corrected_exact": "red-calibrated-full-uri101 -> green-calibrated-full-uri0; final-test-old-header-red101 -> final-test-restored-header-green0 are comparableextraattempts alreadylaunched before rootno-redundancy directive. All finaltests equal; lastRED owner equals publishedbase. Only header differs RED/Green."
+  },
+  "final_oracle": {
+    "ordinary_page": "All attempts/listeners in normal packaged external module, no native-evaluatednegativeprobe. No browser/native shim/backend.",
+    "enforcing_events": "Exact effectiveDirective=violatedDirective script-src-elem/style-src-elem/font-src/img-src; dispositionenforce; blockedURI exactendpoint+/external.js,/external.css,/external.ttf,/external.png; documentURI exactdandrum://localhost/index.html. Rawreceipt in initial-native-coverage.log.",
+    "effects": "script rejected+markerabsent;stylesheet rejected+control7px;font error+expectedfamily/500/notinset;PNGerror+natural0x0;allrowscomplete before aggregate assertions;0browserGETs beyond5exactindependentcalibrations.",
+    "fallback": "Image reports effective/violatedimg-src; actualfixedheader lacksimg-src and uses default-src none, not an invented default-src eventidentity.",
+    "positive": "Local module/CSS/literalinline37px/43px/fetch404; existing enforcingconnect and fixedentrynav; unmodified production silentpreviewReact/inlineSVG/geometry,all8loadedfamily-weightsets,exact11responsepayload/status/MIME comparisons pass. Presentation/fixedu32rejection and immediateXID/weakdisposal/callback/rollback/immediatehostparentoracles retained."
+  },
+  "input_identity": {
+    "bundle": "production-bundle-input-hashes.json:14declaredassetbytes;actualstagingincludes15thpreexistingunservedfonts/.gitattributes",
+    "font": "Exactdeclaredfonts/91c841fdfa8e7b94.ttf;SHA/length retained; independentendpointresponsebyteequality; baselineactualFontFaceload success.",
+    "PNG": "resource-policy.png70bytes,literalknown1x1RGBA;independentIHDR/allCRC/zlibscanlineproof in png-independent-validation.json;baselinebrowsernatural1x1.",
+    "endpoint": "Existing testEndpoint shared through native-only helper; exactboundedbinaryresponses/MIME,no-store,test-onlyCORS;freshloopbackport,finite1secondI/O,ownednonblockingacceptworkerstop+join. No uncontrolleddownloadroute.",
+    "extra_metadata": "staged-extra-metadata.json records SHA/source-byte matches where available; extra unchanged unserved metadata, no packaging repair."
+  },
+  "checks": {
+    "initial-native-coverage": {
+      "snapshot": "initial-native-coverage-source",
+      "manifest": "initial-native-coverage-hashes.json",
+      "run": "initial-native-coverage-run.json",
+      "log": "initial-native-coverage.log",
+      "log_sha256": "4dc815121b414429c4f705723436a9a20f3dea93536b06fbd5d1cdf403b489be",
+      "exit": 0,
+      "elapsed_seconds": 4.840209599991795
+    },
+    "release-fast-coverage": {
+      "snapshot": "release-fast-coverage-source",
+      "manifest": "release-fast-coverage-hashes.json",
+      "run": "release-fast-coverage-run.json",
+      "log": "release-fast-coverage.log",
+      "log_sha256": "df6d8178e03f7b5ca7b11de8eefe5ec00a187d0b88d6abf6959071da5479a78b",
+      "exit": 0,
+      "elapsed_seconds": 0.5776084309909493
+    },
+    "release-clippy": {
+      "snapshot": "release-clippy-source",
+      "manifest": "release-clippy-hashes.json",
+      "run": "release-clippy-run.json",
+      "log": "release-clippy.log",
+      "log_sha256": "7c6177aa4e835610b37ea8d8205644146df06f53a9f677cdf0f624f2fafbec03",
+      "exit": 0,
+      "elapsed_seconds": 0.45957460399949923
+    },
+    "release-ctest": {
+      "snapshot": "release-ctest-source",
+      "manifest": "release-ctest-hashes.json",
+      "run": "release-ctest-run.json",
+      "log": "release-ctest.log",
+      "log_sha256": "9c046790906756a5d7de12f057bb4cf3235df8bda510eb2641a405a68ca2c540",
+      "exit": 0,
+      "elapsed_seconds": 4.034962466015713
+    },
+    "release-build": {
+      "snapshot": "release-build-source",
+      "manifest": "release-build-hashes.json",
+      "run": "release-build-run.json",
+      "log": "release-build.log",
+      "log_sha256": "12f89fe2868bfb0621e17d028bec5cb16e346271cef3170a57e48cd7e275bca1",
+      "exit": 0,
+      "elapsed_seconds": 0.2284661190060433
+    },
+    "release-fmt": {
+      "snapshot": "release-fmt-source",
+      "manifest": "release-fmt-hashes.json",
+      "run": "release-fmt-run.json",
+      "log": "release-fmt.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exit": 0,
+      "elapsed_seconds": 0.057878720021108165
+    },
+    "release-diff": {
+      "snapshot": "release-diff-source",
+      "manifest": "release-diff-hashes.json",
+      "run": "release-diff-run.json",
+      "log": "release-diff.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exit": 0,
+      "elapsed_seconds": 0.005653885018546134
+    },
+    "release-default-graph": {
+      "snapshot": "release-default-graph-source",
+      "manifest": "release-default-graph-hashes.json",
+      "run": "release-default-graph-run.json",
+      "log": "release-default-graph.log",
+      "log_sha256": "2fc97f45a6da36216e4901bc271843d05372f7b2fda3a20a3d01963a5e6b6c26",
+      "exit": 0,
+      "elapsed_seconds": 0.0629700809950009
+    }
+  },
+  "coverage": {
+    "owner_native": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 16,
+        "covered": 14,
+        "percent": 87.5
+      },
+      "instantiations": {
+        "count": 48,
+        "covered": 37,
+        "percent": 77.08333333333334
+      },
+      "lines": {
+        "count": 153,
+        "covered": 148,
+        "percent": 96.73202614379085
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 229,
+        "covered": 208,
+        "notcovered": 21,
+        "percent": 90.82969432314411
+      }
+    },
+    "assets_fast": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 5,
+        "covered": 5,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 11,
+        "covered": 7,
+        "percent": 63.63636363636363
+      },
+      "lines": {
+        "count": 52,
+        "covered": 52,
+        "percent": 100
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 87,
+        "covered": 86,
+        "notcovered": 1,
+        "percent": 98.85057471264368
+      }
+    },
+    "changed_code": "Only changed productionheaderline77 executed. No new productionbranch/module/extraction. All21uncoveredregions/5lines inherited from landedvisibility.",
+    "gaps": "Owner97-98solefreshIPCregistrationrefusal;151nonX11backend;154connecttransportloss;208reparentenqueuetransportloss. Otherunhitdirections:missingdisplay/realizationcast,validationtransport/races/wrongroot-depth,nonvalueIPC,dependencyerrors. Visibility118/131UIguarderrorpropagation notsafelytestable on thread-affineowner. No newexclusions/scoreseams/artificialAPI/mutation/branchclaim.",
+    "binding": "initial-native-coverage exactfinal19paths, fatalGTKwarnings; separatefastprofiles. Native/fast binarySHAequal9831bd524a5eee53f8f9aba253b7b567fe6da9be63f166fe4d2b39cc2148e43a; profiles/profdata/exports/annotations+exactcommands retained.",
+    "prior": "previous-accepted-coverage.json current148/153lines/208of229regions reviewed before modification."
+  },
+  "refactor": {
+    "decision": "After initialnativecoverage, no justifiedproductionextraction/headerabstraction. ExistingtestEndpoint extended forbinaryresourcefixtures instead of secondHTTPserver; new focusedmodule/MJS keepfourrowmatrix readable. No source/testchange aftercoveredreview.",
+    "timing": "Nativebaseline3.71sbody;initialcoveragebody inrawlog;3CTest4.03s(totalfast.08/package.06/native3.88). Explicitfast/native lanes unchanged; no stresssweep or extraidenticalcoverage.",
+    "unused_permissions": "unsafe-inline preserves literalstylepositive; Reactstyleprops alone are not necessityproof. Defaultdenial not claim all unusedfacilities blocked (workersmayfallbackscriptself)."
+  },
+  "limits": "LinuxX11/GTK3.24.33/WebKitGTK2.50.4 only. No popup/download/base/form/frame/worker/media/object/manifest/hints/eval or actualCLAP/session/nativebackend/audio/device/fullbeta claim. No followingcriterion begun.",
+  "default_boundary": "unchanged-boundary-hashes.json:13unchangedmanifestpaths,3changednativepaths+3newnative-onlymodule/MJS/PNG. Freshdefaultgraphstd-only. Root independentlyqualifies586current vs583previousinputs/cfg guardreuse; authorran no guard/sharedhookcache.",
+  "operations": "release-operational.json:0ownedprocesses;runtimeonly6intendedpaths atbase;mainclean68dd655;realphysical10.02GB/devshm7.48GBfree;allcaches preserved. Metadata-onlyreceiptsetupfailures retained in metadata-attempts.json, no testfailureclaim.",
+  "release": "Root now owns all6candidatepaths, editor-target/editor-cmake/staging and native build/execution resources. No further source/build/cache/Git/task/doc/nextRED action until reassigned."
+}

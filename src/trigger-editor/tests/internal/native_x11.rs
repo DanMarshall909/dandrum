@@ -15,6 +15,8 @@ use x11rb::{
 mod local_policy;
 #[path = "production.rs"]
 mod production;
+#[path = "resource_policy.rs"]
+mod resource_policy;
 
 #[test]
 #[ignore = "requires real Linux X11, GTK3 and WebKitGTK; native boundary lane"]
@@ -198,6 +200,7 @@ fn real_child_loads_local_content_and_drops_without_owning_the_host_parent() {
     local_policy::external_fetch_is_blocked_by_enforcing_csp(parent);
     local_policy::top_level_document_stays_at_fixed_entry(parent);
     production::unmodified_bundle_renders_silent_preview_with_all_eight_fonts(parent);
+    resource_policy::external_resources_are_blocked_by_enforcing_csp(parent);
     parent_can_be_destroyed_immediately_after_editor(&x, root);
     x.destroy_window(parent).unwrap().check().unwrap();
 }

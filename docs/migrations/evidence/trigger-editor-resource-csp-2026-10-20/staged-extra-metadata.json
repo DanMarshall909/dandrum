@@ -1,0 +1,25 @@
+{
+  "files": {
+    "/dev/shm/dandrum-beta-20261020/editor-cmake/clap/DandrumTrigger.resources/editor/fonts/.gitattributes": {
+      "sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616",
+      "length": 77,
+      "text": "# Preserve the upstream license notices byte for byte.\n*-OFL.txt -whitespace\n"
+    },
+    "/tmp/dandrum-lanes/frontend/web/trigger/dist-native/fonts/.gitattributes": {
+      "sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616",
+      "length": 77,
+      "text": "# Preserve the upstream license notices byte for byte.\n*-OFL.txt -whitespace\n"
+    },
+    "/tmp/dandrum-lanes/frontend/web/trigger/public/fonts/.gitattributes": {
+      "sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616",
+      "length": 77,
+      "text": "# Preserve the upstream license notices byte for byte.\n*-OFL.txt -whitespace\n"
+    },
+    "/tmp/dandrum-lanes/runtime/web/trigger/public/fonts/.gitattributes": {
+      "sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616",
+      "length": 77,
+      "text": "# Preserve the upstream license notices byte for byte.\n*-OFL.txt -whitespace\n"
+    }
+  },
+  "limit": "Read-only observation/source-byte matching where available; exact CMake copy chronology not independently traced in this task. Preexistingextra metadata untouched, not declared/served14asset. No packaging/policy repair."
+}
