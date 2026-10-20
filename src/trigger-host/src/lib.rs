@@ -1,14 +1,17 @@
 //! Format-neutral ownership boundary for the production Trigger instrument.
 //!
-//! Session, runtime handoff and editor protocol behavior will be added here.
+//! Packaged session resources, runtime handoff and editor protocol live here.
 //! CLAP and native WebView types stay in their adapter modules.
 
 #![forbid(unsafe_code)]
 
 pub mod protocol;
+pub mod runtime;
 
+use dandrum_engine::graph::PortDirection;
+use dandrum_engine::kernel::document::load_kernel_patch_str;
 use dandrum_engine::patch::RenderSettings;
-use dandrum_engine::preparation::PreparationContext;
+use dandrum_engine::preparation::{HostBuses, PreparationContext};
 use dandrum_instrument_session::{Attachment, PreparedDocumentReplacement, SessionError};
 use std::fmt;
 use std::path::{Path, PathBuf};
@@ -177,7 +180,20 @@ impl TriggerHost {
         };
         let context =
             PreparationContext::new(resources.instrument_root(), configuration.sample_rate_hz);
-        let session = InstrumentSession::new(resources.document(), context, settings)?;
+        let patch = load_kernel_patch_str(resources.document())
+            .map_err(|error| SessionError::InvalidDocument(error.to_string()))?;
+        // The Trigger host supplies mono controls and stereo output. Preparation
+        // validates those channel constraints against each named root port.
+        let buses = patch
+            .root()
+            .ports()
+            .iter()
+            .fold(HostBuses::new(), |buses, port| match port.direction() {
+                PortDirection::Input => buses.with_input(port.name(), 1),
+                PortDirection::Output => buses.with_output(port.name(), 2),
+            });
+        let session =
+            InstrumentSession::new_for_planar_host(resources.document(), context, settings, buses)?;
         Ok(Self { resources, session })
     }
 

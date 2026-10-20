@@ -65,6 +65,35 @@ fn render_note(prepared: &PreparedKernelInstrument, note: u8) -> Vec<Vec<f32>> {
 }
 
 #[test]
+fn packaged_host_binds_public_controls_to_the_rendered_sample_without_editing_history() {
+    use dandrum_trigger_host::runtime::{ControlEvent, PreparedRuntime, runtime_handoff};
+    let (_temporary, root) = copied_package();
+    let mut host = TriggerHost::open(&root, configuration()).unwrap();
+    let (attachment, before) = host.session_mut().attach().unwrap();
+    let prepared = PreparedRuntime::new(host.session().prepared(), configuration()).unwrap();
+    let (mut control, mut audio) = runtime_handoff(prepared, 4).unwrap();
+    let level = control.parameter_index("level").unwrap();
+    control
+        .try_send(ControlEvent::Parameter {
+            index: level,
+            value: 0.25,
+        })
+        .unwrap();
+    control
+        .try_send(ControlEvent::NoteOn {
+            note: 36,
+            velocity: 100,
+        })
+        .unwrap();
+    let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
+    audio.process(&mut left, &mut right).unwrap();
+    assert_eq!(left[0], -0.125);
+    assert_eq!(right[0], -0.125);
+    assert_eq!(control.parameter_value(level), Some(0.25));
+    assert_eq!(host.session().snapshot(&attachment).unwrap(), before);
+}
+
+#[test]
 fn copied_package_owns_the_real_kit_and_renders_known_signed_midi_36_output() {
     let (_temporary, root) = copied_package();
     let mut host = TriggerHost::open(&root, configuration()).unwrap();

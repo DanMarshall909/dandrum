@@ -147,6 +147,11 @@ if(DANDRUM_TRIGGER_CLAP_EDITOR)
             ${RUST_ENGINE_SOURCES}
         COMMENT "Building the format-neutral Trigger host scaffold")
     add_custom_target(dandrum-trigger-host-rust DEPENDS ${RUST_TRIGGER_HOST_LIB})
+    add_test(NAME trigger-host-tests
+        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+            ${CARGO_BIN} test --locked --jobs 2
+            --manifest-path ${RUST_TRIGGER_HOST_DIR}/Cargo.toml)
+    set_tests_properties(trigger-host-tests PROPERTIES LABELS "trigger-host-fast" TIMEOUT 1200)
 endif()
 
 add_test(
