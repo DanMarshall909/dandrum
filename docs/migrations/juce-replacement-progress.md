@@ -1073,3 +1073,36 @@ native undo, parameter dispatch and the real Wry/CLAP facade still require their
 joined behavior and destruction proof. The full beta remains active through
 CLAP and the next VST3, standalone, named-DAW, installed/offline and native gates.
 Main remains clean68dd655; mutation is excluded and reusable caches are retained.
+
+
+## Bounded browser native request broker — 20 October 2026
+
+The new isolated version1 browser broker preserves precise native instance,
+attachment and transport identities, limits pending requests and listeners to128,
+and enforces16KiB outbound/64KiB inbound UTF8 bounds. Matching actual accepted
+replies resolve calls; native rejection and local backpressure reject explicitly.
+Sequenced events reject stale/foreign messages. Disposal rejects retained calls
+once and leaves a fresh broker independent. Serialization is treated as caller
+code: nested toJSON/native calls cannot bypass final capacity, lifetime or ID
+admission. The descriptor declares all four optional services unavailable.
+
+All131 ordinary Trigger fast tests, static/component checks and22 focused tests
+pass. Focused V8 reports100% owner lines/branches/functions on the exact original
+source,13 executed functions and105 overlapping regions with no zero regions;
+this proves execution, not every boolean operand or assertion. Separate retained
+actual Rust initial/applied snapshot replies pass through the broker and unchanged
+production parsers. Rejection/event cases use literal protocol-authority unit
+inputs; actual emitted rejection/event calibration was not performed.
+
+[Portable evidence](evidence/trigger-webview-transport-2026-10-20/receipt.json)
+retains exact per-phase sources/logs, honest missing-API REDs, corrected assertion
+REDs and setup failures. An unchanged child-process guard initially hit Node
+spawnSync EPERM in the sandbox; ordinary elevated fast/check runs pass, with no
+guard edits or skipped checks. The component adds no dependency or UI/build path.
+The existing imported application graph is unchanged; actual bootstrap/Wry wiring,
+real browser/packaging and native method/lifecycle acceptance remain future gates.
+
+Independent completion review passed for the frozen browser transport source/evidence candidate; normal-hook publication remains.
+Tasks3.2 and3.3 remain open,7/14 overall. The full beta continues through the
+required shared owners, concrete CLAP and subsequent VST3/standalone/DAW/offline
+and native proof. Main stays clean68dd655; caches remain and mutation is excluded.

@@ -1,0 +1,87 @@
+{
+  "sourceSha256": "b0e0ecb976d79b012487216c16216d1cc33b4f811d5c0f05b1a0a506075f0ed1",
+  "rawFiles": [
+    "/tmp/dandrum-lanes/evidence-webview-transport/final-host-focused-coverage/v8/coverage-3240421-1792497941984-0.json"
+  ],
+  "functions": [
+    {
+      "function": "",
+      "count": 1,
+      "regions": 1,
+      "zeroRegions": []
+    },
+    {
+      "function": "decimal",
+      "count": 633,
+      "regions": 3,
+      "zeroRegions": []
+    },
+    {
+      "function": "failure",
+      "count": 361,
+      "regions": 1,
+      "zeroRegions": []
+    },
+    {
+      "function": "createWebViewTransport",
+      "count": 85,
+      "regions": 10,
+      "zeroRegions": []
+    },
+    {
+      "function": "getNativeFunction",
+      "count": 812,
+      "regions": 1,
+      "zeroRegions": []
+    },
+    {
+      "function": "",
+      "count": 812,
+      "regions": 1,
+      "zeroRegions": []
+    },
+    {
+      "function": "",
+      "count": 812,
+      "regions": 18,
+      "zeroRegions": []
+    },
+    {
+      "function": "",
+      "count": 958,
+      "regions": 5,
+      "zeroRegions": []
+    },
+    {
+      "function": "addEventListener",
+      "count": 156,
+      "regions": 8,
+      "zeroRegions": []
+    },
+    {
+      "function": "removeEventListener",
+      "count": 9,
+      "regions": 1,
+      "zeroRegions": []
+    },
+    {
+      "function": "receive",
+      "count": 471,
+      "regions": 50,
+      "zeroRegions": []
+    },
+    {
+      "function": "",
+      "count": 68,
+      "regions": 1,
+      "zeroRegions": []
+    },
+    {
+      "function": "dispose",
+      "count": 7,
+      "regions": 5,
+      "zeroRegions": []
+    }
+  ],
+  "limitation": "V8 offsets mapped directly to the exact untransformed ASCII production module; overlapping executed regions are not independent asserted branches. No mutation performed."
+}

@@ -1,0 +1,128 @@
+{
+  "scope": "Task3.3 isolated unwired version1 browser request broker",
+  "testedSourceBase": "29b8e90e9074aa667b2d7443376ba7aab5376fcb",
+  "sourcePaths": {
+    "web/trigger/engine/native-webview-transport.mjs": "b0e0ecb976d79b012487216c16216d1cc33b4f811d5c0f05b1a0a506075f0ed1",
+    "web/trigger/tests/native-webview-transport.test.mjs": "dca1d7cb887047dbd5614f16f15434683382813286fac30e5ef44d29d7792570"
+  },
+  "checks": {
+    "final-host-fast": {
+      "label": "final-host-fast",
+      "cwd": "/tmp/dandrum-lanes/frontend/web/trigger",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "sourceSha256": {
+        "web/trigger/engine/native-webview-transport.mjs": "b0e0ecb976d79b012487216c16216d1cc33b4f811d5c0f05b1a0a506075f0ed1",
+        "web/trigger/tests/native-webview-transport.test.mjs": "dca1d7cb887047dbd5614f16f15434683382813286fac30e5ef44d29d7792570"
+      },
+      "exitCode": 0,
+      "elapsedSeconds": 1.2540199756622314,
+      "startedUnix": 1792497939.4418755,
+      "node": "v22.19.0",
+      "sourceAfterSha256": {
+        "web/trigger/engine/native-webview-transport.mjs": "b0e0ecb976d79b012487216c16216d1cc33b4f811d5c0f05b1a0a506075f0ed1",
+        "web/trigger/tests/native-webview-transport.test.mjs": "dca1d7cb887047dbd5614f16f15434683382813286fac30e5ef44d29d7792570"
+      },
+      "sourceUnchanged": true
+    },
+    "final-host-check": {
+      "label": "final-host-check",
+      "cwd": "/tmp/dandrum-lanes/frontend/web/trigger",
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "sourceSha256": {
+        "web/trigger/engine/native-webview-transport.mjs": "b0e0ecb976d79b012487216c16216d1cc33b4f811d5c0f05b1a0a506075f0ed1",
+        "web/trigger/tests/native-webview-transport.test.mjs": "dca1d7cb887047dbd5614f16f15434683382813286fac30e5ef44d29d7792570"
+      },
+      "exitCode": 0,
+      "elapsedSeconds": 1.1196250915527344,
+      "startedUnix": 1792497940.7238066,
+      "node": "v22.19.0",
+      "sourceAfterSha256": {
+        "web/trigger/engine/native-webview-transport.mjs": "b0e0ecb976d79b012487216c16216d1cc33b4f811d5c0f05b1a0a506075f0ed1",
+        "web/trigger/tests/native-webview-transport.test.mjs": "dca1d7cb887047dbd5614f16f15434683382813286fac30e5ef44d29d7792570"
+      },
+      "sourceUnchanged": true
+    },
+    "final-host-focused-coverage": {
+      "label": "final-host-focused-coverage",
+      "cwd": "/tmp/dandrum-lanes/frontend/web/trigger",
+      "command": [
+        "node",
+        "--experimental-test-coverage",
+        "--test",
+        "tests/native-webview-transport.test.mjs"
+      ],
+      "sourceSha256": {
+        "web/trigger/engine/native-webview-transport.mjs": "b0e0ecb976d79b012487216c16216d1cc33b4f811d5c0f05b1a0a506075f0ed1",
+        "web/trigger/tests/native-webview-transport.test.mjs": "dca1d7cb887047dbd5614f16f15434683382813286fac30e5ef44d29d7792570"
+      },
+      "exitCode": 0,
+      "elapsedSeconds": 0.13849616050720215,
+      "startedUnix": 1792497941.8728662,
+      "node": "v22.19.0",
+      "sourceAfterSha256": {
+        "web/trigger/engine/native-webview-transport.mjs": "b0e0ecb976d79b012487216c16216d1cc33b4f811d5c0f05b1a0a506075f0ed1",
+        "web/trigger/tests/native-webview-transport.test.mjs": "dca1d7cb887047dbd5614f16f15434683382813286fac30e5ef44d29d7792570"
+      },
+      "sourceUnchanged": true
+    },
+    "final-real-replies": {
+      "label": "final-real-replies",
+      "cwd": "/tmp/dandrum-lanes/frontend/web/trigger",
+      "command": [
+        "node",
+        "/tmp/dandrum-lanes/evidence-webview-transport/calibrate-real-replies.mjs"
+      ],
+      "sourceSha256": {
+        "web/trigger/engine/native-webview-transport.mjs": "b0e0ecb976d79b012487216c16216d1cc33b4f811d5c0f05b1a0a506075f0ed1",
+        "web/trigger/tests/native-webview-transport.test.mjs": "dca1d7cb887047dbd5614f16f15434683382813286fac30e5ef44d29d7792570"
+      },
+      "exitCode": 0,
+      "elapsedSeconds": 0.08170628547668457,
+      "startedUnix": 1792497983.3100486,
+      "node": "v22.19.0",
+      "sourceAfterSha256": {
+        "web/trigger/engine/native-webview-transport.mjs": "b0e0ecb976d79b012487216c16216d1cc33b4f811d5c0f05b1a0a506075f0ed1",
+        "web/trigger/tests/native-webview-transport.test.mjs": "dca1d7cb887047dbd5614f16f15434683382813286fac30e5ef44d29d7792570"
+      },
+      "sourceUnchanged": true
+    }
+  },
+  "fastTests": 131,
+  "focusedTests": 22,
+  "coverage": "Exact untransformed owner:100% reported lines/branches/functions,13 executed functions/105 V8 regions/no zero regions; overlapping regions do not establish every boolean operand or checked assertion",
+  "calibration": {
+    "acceptedActualRustReplies": true,
+    "rejectedAndEvents": "Literal protocol-authority unit cases only; actual emitted calibration not performed",
+    "artifact": {
+      "path": "/tmp/dandrum-lanes/evidence-host-snapshot-final-verification/parser/actual-replies.json",
+      "sha256": "556a660e40061706c585a6481be9013c490ed62899f680105166f4dc14cda71e"
+    }
+  },
+  "refactor": "One focused lifetime owner; snapshot caller serialization before final capacity/ID admission, no new helper extraction",
+  "limits": [
+    "Unwired component; no bootstrap/main entry/UI/build/assets/dependency/native/Cargo changes",
+    "No actual Wry/CLAP/native notes or lifecycle acceptance",
+    "No fresh browser or packaging run for unchanged existing imported application graph; later integration gate remains",
+    "Earlier Node spawnSync EPERM is retained setup failure; elevated ordinary fullfast/check pass withoutsourceworkaround",
+    "Native rejection/event emission calibration remains a distinct unperformed check"
+  ],
+  "rawArtifacts": 221,
+  "review": {
+    "status": "PASS",
+    "manifest_sha256": "d691970ae8732d57b0845d27dc3d39c699d72f06dba80cb1cede740c150f280f",
+    "review_sha256": "811a905dc506db5168b987832c365da135fc02cbe4238745344ac9e77c4da10c",
+    "verdict_sha256": "b574fe1573d548e376db8574fbe8c3e08dd1447e6c3d3907b25219e8281857e6"
+  },
+  "task3_2Complete": false,
+  "task3_3Complete": false,
+  "betaComplete": false,
+  "mutation": "excluded by user",
+  "caches": "preserved"
+}

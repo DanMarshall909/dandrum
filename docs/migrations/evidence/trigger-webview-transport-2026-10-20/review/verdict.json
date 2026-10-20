@@ -1,0 +1,18 @@
+{
+  "verdict": "PASS",
+  "scope": "Isolated unwired version1 browser request broker only",
+  "manifest_sha256": "d691970ae8732d57b0845d27dc3d39c699d72f06dba80cb1cede740c150f280f",
+  "base": "29b8e90e9074aa667b2d7443376ba7aab5376fcb",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "29b8e90e9074aa667b2d7443376ba7aab5376fcb",
+  "findings": [],
+  "required_before_commit": "Exact five-file metadata envelope, named final validations, complete final manifest and same-reviewer external addendum",
+  "excluded_claims": [
+    "Task3.3 completion",
+    "Actual emitted native rejection/event calibration",
+    "Native note/gesture/worker cleanup",
+    "Wry/CLAP/bootstrap integration",
+    "Full beta completion"
+  ],
+  "reviewer_execution": "Read-only inspection and evidence/hash reconstruction; no tests/builds/native/cache operations"
+}

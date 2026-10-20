@@ -1,0 +1,18 @@
+{
+  "head": "29b8e90e9074aa667b2d7443376ba7aab5376fcb",
+  "files": {
+    "web/trigger/engine/native-webview-transport.mjs": "b0e0ecb976d79b012487216c16216d1cc33b4f811d5c0f05b1a0a506075f0ed1",
+    "web/trigger/tests/native-webview-transport.test.mjs": "dca1d7cb887047dbd5614f16f15434683382813286fac30e5ef44d29d7792570",
+    "web/trigger/engine/native-transport.mjs": "2a8ddba1fd958a949aaf33d916e2381fc610fd1ebbc3049692b13da674eb454a",
+    "web/trigger/engine/native-document.mjs": "3fe0101f7804809ff47ab4d93031514f27b1f0bb24588c8759d7861219e04de2",
+    "web/trigger/engine/session-connection.mjs": "4c82628091437387b2eb11446dcfa903ed812419b73bef4c6bcd906b29db03d9",
+    "web/trigger/package.json": "eee84408e787dfbdc12e8acfa98b1818ca65766b54de769cec44d19501867ed8",
+    "web/trigger/package-lock.json": "07d6d015bc9148c1f55f3146f38200f835727c0fc4bbe19cf7a415529ba342d9",
+    "src/trigger-host/src/protocol.rs": "1e12b7c163de522478ffe081cff47385209edc7427d8cf8366bc4271c1483a21"
+  },
+  "actualReplyArtifact": {
+    "path": "/tmp/dandrum-lanes/evidence-host-snapshot-final-verification/parser/actual-replies.json",
+    "sha256": "556a660e40061706c585a6481be9013c490ed62899f680105166f4dc14cda71e"
+  },
+  "ownership": "Only the two new native-webview-transport files edited. No Git/index/native/build/cache mutations. Frozen copies under evidence/frozen."
+}
