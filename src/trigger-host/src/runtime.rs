@@ -260,6 +260,57 @@ pub(crate) struct RestoringControl<'a> {
     values: Option<Vec<f64>>,
 }
 
+pub(crate) struct QuiescentControl<'a> {
+    control: &'a mut RuntimeControl,
+    audio: &'a mut RuntimeAudio,
+    configuration: TriggerHostConfiguration,
+}
+
+pub(crate) struct QuiescentLease<'a> {
+    configuration: &'a mut TriggerHostConfiguration,
+    audio: &'a mut AudioState,
+    candidate: PreparedRuntime,
+}
+
+impl ActivationHost for QuiescentControl<'_> {
+    type Error = RuntimeError;
+    type Lease<'a>
+        = QuiescentLease<'a>
+    where
+        Self: 'a;
+
+    fn activate<'a>(
+        &'a mut self,
+        prepared: &PreparedKernelInstrument,
+        _: &SessionSnapshot,
+    ) -> Result<Self::Lease<'a>, Self::Error> {
+        // Session has not published yet: construction, probing and every
+        // fallible check belong before its infallible publication boundary.
+        let candidate = PreparedRuntime::new(prepared, self.configuration)?;
+        if candidate.0.layout != self.control.layout
+            || self.audio.state.event_capacity > candidate.0.graph.pending_event_capacity() / 2
+        {
+            return Err(RuntimeError::InvalidConfiguration);
+        }
+        Ok(QuiescentLease {
+            configuration: &mut self.control.configuration,
+            audio: &mut self.audio.state,
+            candidate,
+        })
+    }
+}
+
+impl ActivationLease for QuiescentLease<'_> {
+    fn publish(self, _: Publication<'_>) {
+        *self.configuration = self.candidate.0.configuration;
+        let previous = std::mem::replace(&mut self.audio.current, self.candidate);
+        let intents =
+            std::array::from_fn(|pitch| self.audio.editor_intent[pitch].load(Ordering::Acquire));
+        self.audio.adopt_editor_intent(&intents);
+        drop(previous);
+    }
+}
+
 impl ActivationHost for RestoringControl<'_> {
     type Error = RuntimeError;
     type Lease<'a>
@@ -404,9 +455,7 @@ impl RuntimeControl {
         &mut self,
         audio: &mut RuntimeAudio,
     ) -> Result<QuiescentReport, RuntimeError> {
-        if !Arc::ptr_eq(&self.admission, &audio.admission) {
-            return Err(RuntimeError::ForeignEndpoints);
-        }
+        self.validate_endpoint(audio)?;
         let mut report = QuiescentReport::default();
         if let Some(retired) = self.reclaim() {
             drop(retired);
@@ -424,6 +473,30 @@ impl RuntimeControl {
             report.reclaimed_runtimes += 1;
         }
         Ok(report)
+    }
+
+    pub(crate) fn validate_endpoint(&self, audio: &RuntimeAudio) -> Result<(), RuntimeError> {
+        if Arc::ptr_eq(&self.admission, &audio.admission) {
+            Ok(())
+        } else {
+            Err(RuntimeError::ForeignEndpoints)
+        }
+    }
+
+    pub(crate) fn configuration(&self) -> TriggerHostConfiguration {
+        self.configuration
+    }
+
+    pub(crate) fn reconfiguring<'a>(
+        &'a mut self,
+        audio: &'a mut RuntimeAudio,
+        configuration: TriggerHostConfiguration,
+    ) -> QuiescentControl<'a> {
+        QuiescentControl {
+            control: self,
+            audio,
+            configuration,
+        }
     }
 
     pub(crate) fn activation_available(&self) -> bool {

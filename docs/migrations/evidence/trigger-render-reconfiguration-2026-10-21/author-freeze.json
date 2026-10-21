@@ -1,0 +1,38 @@
+{
+  "head": "301641faa72e57837df3d49c6c4aa6563882d6c4",
+  "owned": {
+    "src/instrument-session/src/lib.rs": {
+      "sha256": "b010be63d2a6c61e7362e80418acdb53ab35bf15f82d242a3d0c9c4fbd647cf4",
+      "mode": 436,
+      "size": 32977,
+      "mtime_ns": 1792548502099147231
+    },
+    "src/trigger-host/src/parameters.rs": {
+      "sha256": "9f686b6407008f290641a6c52aa913767e8a84d95e5c27fef3e71357694694f6",
+      "mode": 436,
+      "size": 52466,
+      "mtime_ns": 1792549521684903524
+    },
+    "src/trigger-host/src/runtime.rs": {
+      "sha256": "d9884a2bec8c64e1146c1cfcee9474c247c58b2e866d40be0114757297bbae10",
+      "mode": 436,
+      "size": 63829,
+      "mtime_ns": 1792549301927837707
+    },
+    "src/instrument-session/tests/render_configuration.rs": {
+      "sha256": "a64598b0cab81da23f0373fddb82ad61e66a00442c8fcf839999734109ae5ffd",
+      "mode": 436,
+      "size": 5550,
+      "mtime_ns": 1792548690821216299
+    },
+    "src/trigger-host/tests/render_reconfiguration.rs": {
+      "sha256": "34ca226c3d60327f72a1b69c0af2fc321e9feefd0edcdacb8ca1ed90d6df82b1",
+      "mode": 436,
+      "size": 33087,
+      "mtime_ns": 1792549539027749209
+    }
+  },
+  "status": " M openspec/changes/add-juce-free-trigger-clap-editor/design.md\n M src/instrument-session/src/lib.rs\n M src/trigger-host/src/parameters.rs\n M src/trigger-host/src/runtime.rs\n?? src/instrument-session/tests/render_configuration.rs\n?? src/trigger-host/tests/render_reconfiguration.rs\n",
+  "root_owned_design_sha256": "513aabdde4fbe92659df4f2e169ebf729c18fe01c75a92ed30c94795e8a83b41",
+  "scope": "Source freeze for final validation and fresh root-owned independent review. No author source changes after this receipt absent explicit root/reviewer request."
+}

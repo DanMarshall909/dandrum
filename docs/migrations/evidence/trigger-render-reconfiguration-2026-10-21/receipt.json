@@ -1,0 +1,179 @@
+{
+  "component": "Persistent controller paired service and atomic render reconfiguration",
+  "base": "301641faa72e57837df3d49c6c4aa6563882d6c4",
+  "scope": "Task4.1 core prerequisite only; stopped flush, actual CLAP/native/installed acceptance remain open",
+  "source_sha256": {
+    "src/instrument-session/src/lib.rs": "b010be63d2a6c61e7362e80418acdb53ab35bf15f82d242a3d0c9c4fbd647cf4",
+    "src/trigger-host/src/parameters.rs": "9f686b6407008f290641a6c52aa913767e8a84d95e5c27fef3e71357694694f6",
+    "src/trigger-host/src/runtime.rs": "d9884a2bec8c64e1146c1cfcee9474c247c58b2e866d40be0114757297bbae10",
+    "src/instrument-session/tests/render_configuration.rs": "a64598b0cab81da23f0373fddb82ad61e66a00442c8fcf839999734109ae5ffd",
+    "src/trigger-host/tests/render_reconfiguration.rs": "f725fcc7d035abad53727a478e386e869cf62a04d4abee3b44ac363a8e77f05e"
+  },
+  "verification": {
+    "new_public_host_tests": 10,
+    "new_public_session_tests": 3,
+    "full_host_tests": 138,
+    "compile_fail_docs": 2,
+    "full_session_tests": 33,
+    "host_full_LLVM": 138,
+    "session_full_LLVM": 33,
+    "format": "PASS",
+    "alltarget_clippy_Dwarnings": "PASS",
+    "sourcefree_release_or_native": "Deferred to actual facade/final gate; historical binaries are not new-source proof"
+  },
+  "coverage": {
+    "runtime.rs": {
+      "llvm_summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 103,
+          "covered": 103,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 182,
+          "covered": 168,
+          "percent": 92.3076923076923
+        },
+        "lines": {
+          "count": 1228,
+          "covered": 1222,
+          "percent": 99.51140065146579
+        },
+        "regions": {
+          "count": 1945,
+          "covered": 1932,
+          "notcovered": 13,
+          "percent": 99.33161953727506
+        }
+      },
+      "new_boundary_regions": {
+        "source_ranges": [
+          [
+            275,
+            315
+          ],
+          [
+            478,
+            502
+          ]
+        ],
+        "total": 46,
+        "hit": 45,
+        "unhit": [
+          [
+            289,
+            75,
+            289,
+            76
+          ]
+        ]
+      }
+    },
+    "parameters.rs": {
+      "llvm_summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 88,
+          "covered": 88,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 218,
+          "covered": 127,
+          "percent": 58.256880733944946
+        },
+        "lines": {
+          "count": 897,
+          "covered": 876,
+          "percent": 97.65886287625418
+        },
+        "regions": {
+          "count": 1352,
+          "covered": 1310,
+          "notcovered": 42,
+          "percent": 96.89349112426036
+        }
+      },
+      "new_boundary_regions": {
+        "source_ranges": [
+          [
+            625,
+            697
+          ]
+        ],
+        "total": 68,
+        "hit": 66,
+        "unhit": [
+          [
+            690,
+            38,
+            690,
+            43
+          ],
+          [
+            690,
+            48,
+            690,
+            78
+          ]
+        ]
+      }
+    }
+  },
+  "behavior": [
+    "Matched private endpoint identity checked before any mutation; bounded paired service forwards without jobs or note expiry",
+    "Foreign identity then configuration bounds then any outstanding structural/runtime work Busy before guarded equal-config no-op",
+    "Full candidate construction/probe/layout/event budget before Session mutation; infallible lease publishes Session settings/context and runtime configuration together",
+    "Control-thread replacement/destruction after actual returned audio ownership; callbacks retain zero allocation/deallocation",
+    "Persistent document/revision/history/identities/gestures/reservedEnds/values/feedback/nonzero UI settlement/reset cause/restore epoch/editor watermark and activity retained",
+    "Fresh DSP follows established live editor-intent and host arbitration law; no host-voice resumption promise",
+    "Missing/corrupt resource or capacity failure preserves old loaded runtime; E65/max130 cannot shrink below retained event budget",
+    "Signed48k/44.1k independently derived multi-frame PCM and subsequent Session publications prove new settings actually used"
+  ],
+  "qualifications": [
+    "Three new defensive propagation regions unexecuted through valid same-owner public transaction; existing owner gaps retained and detailed, no blanket100% or branch/MCDC claim",
+    "Genuine compile/API and changed-configuration REDs retained separately from setup/oracle corrections; watermark replay assertion is immediate-PASS characterization after original freeze, original evidence retained",
+    "Host12 and Session3 actual binaries/raw profiles separately bound before metadata invalidation; exact remerge and integer/source exports with disclosed derived-percent/Cargo metadata differences",
+    "Mutation explicitly excluded by user; reusable caches preserved; physical disk outputs and fixed disk/memory guards",
+    "No new dependency, unsafe code, extracted module, production test seam or native_ffi behavior change"
+  ],
+  "archives": [
+    {
+      "source": "/tmp/dandrum-lanes/evidence-render-reconfiguration",
+      "archive": "author-raw.tar.gz",
+      "archive_sha256": "a0dba83ad6bdfb3b9ce3e19d1fc9b0ff97cd2a02bea6eb17ce0f2b9186fe1f08",
+      "members": 807
+    }
+  ],
+  "review": {
+    "status": "PASS",
+    "manifest_sha256": "24bd25ae143ee0c5f5dbd8d605233829dd1dd7f8db736edd6e6debe4f4f48862",
+    "review_sha256": "a76c32bc4a814de0dad637f24adfb33afff9c623a72498fd611e80b4cbf1b8bc",
+    "verdict_sha256": "c8950130da7073209f98d868a4f2cf2165763681f408b5b238a258c400ad85f3"
+  },
+  "task4_1_complete": false,
+  "full_beta_complete": false
+}

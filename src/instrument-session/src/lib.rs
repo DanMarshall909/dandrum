@@ -558,7 +558,9 @@ impl InstrumentSession {
         self.prepare_render_configuration_owned(settings, host_buses)
     }
 
-    pub(crate) fn prepare_render_configuration_owned(
+    /// Prepare host render settings without borrowing a disposable editor.
+    /// The candidate retains this Session's private owner and accepted revision.
+    pub fn prepare_render_configuration_owned(
         &self,
         settings: RenderSettings,
         host_buses: HostBuses,

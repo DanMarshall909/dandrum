@@ -1468,3 +1468,44 @@ Controller-owned servicing, render reconfiguration, stopped parameter flush and
 actual CLAP/native lifecycle acceptance remain subsequent boundaries. Task4.1 and
 the full beta remain open; VST3, standalone, named DAW and installed offline proof
 are still required. Main remains clean68dd655 and mutation remains excluded.
+
+
+## Reconfigure the persistent Trigger session — 21 October 2026
+
+The parameter controller now exposes matched quiescent runtime service and an
+atomic host render-configuration transaction. Foreign endpoints fail first,
+invalid bounds fail next, then outstanding structural/runtime ownership returns
+Busy before even an equal-config request. Equal settings preserve live DSP and
+avoid resource access. A changed configuration constructs and probes its complete
+runtime before Session publication, checks the retained control layout and event
+budget, then publishes Session context/settings and runtime together. The old
+runtime is destroyed on the calling control thread after audio ownership returns.
+
+Ten new public host tests and three Session characterization tests prove rollback,
+nonzero UI sequence/restore epoch/reset cause, queued feedback and scalars,
+gestures/reserved Ends, request and editor-note replay identities, retained edits
+and undo journal, genuine cross-thread ownership and callback allocation audit.
+Signed independently derived48k/44.1k sample frames and subsequent structural
+publications distinguish actual sample-rate preparation. Live editor intent may
+resume on a real block; released/detached/reset notes cannot replay. Host pitch
+arbitration remains; host-voice resumption is not promised. Missing/corrupt sample
+or retainedE65 capacity rejection leaves the loaded runtime accepted.
+
+Full138 host tests plus2 compile-fail doctests,33 Session tests, formatting,
+strict all-target Clippy and full owning LLVM runs pass. Host12 and Session3
+executed binary/profile bindings reproduce merged profiles and source/integer
+coverage; tiny derived-percentage formatting/Cargo metadata differences remain
+qualified. Three new defensive error-propagation regions have no public execution
+witness; whole-owner gaps remain disclosed. No blanket100% or branch coverage is
+claimed. Original REDs, oracle/setup corrections and the test-only watermark
+strengthening after the first freeze are retained. No new source-free release,
+CMake, CLAP, browser, DAW or installed-product proof is claimed for this change.
+[Portable evidence](evidence/trigger-render-reconfiguration-2026-10-21/receipt.json)
+contains raw logs, source snapshots, profile evidence and qualifications.
+
+Independent completion review passed for the frozen render reconfiguration source/evidence candidate; normal-hook publication remains.
+Stopped parameter flush, outbound automation bridge and actual Trigger CLAP
+projection are subsequent boundaries. All editor/native/full-beta acceptance,
+VST3, standalone, named-DAW and installed offline proof remain open. No task
+checkbox or canonical scenario mapping is completed by this component alone.
+Main remains clean68dd655; mutation stays excluded.

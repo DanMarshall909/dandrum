@@ -1,0 +1,347 @@
+{
+  "created_utc": "2026-10-21T02:38:04.461029+00:00",
+  "status": "Author implementation and required format-neutral gates complete; fresh root-owned independent review and normal publication pending. Task4.1/beta remain open.",
+  "head": "301641faa72e57837df3d49c6c4aa6563882d6c4",
+  "freeze": "author-freeze-watermark.json",
+  "freeze_sha256": "4239394e6e21e63a3e2994caebc32f10c8f8f3a727f29a4d8112a1a7d85ed5a4",
+  "original_freeze_preserved": "author-freeze.json",
+  "owned": {
+    "src/instrument-session/src/lib.rs": {
+      "sha256": "b010be63d2a6c61e7362e80418acdb53ab35bf15f82d242a3d0c9c4fbd647cf4",
+      "mode": 436,
+      "size": 32977,
+      "mtime_ns": 1792548502099147231
+    },
+    "src/trigger-host/src/parameters.rs": {
+      "sha256": "9f686b6407008f290641a6c52aa913767e8a84d95e5c27fef3e71357694694f6",
+      "mode": 436,
+      "size": 52466,
+      "mtime_ns": 1792549521684903524
+    },
+    "src/trigger-host/src/runtime.rs": {
+      "sha256": "d9884a2bec8c64e1146c1cfcee9474c247c58b2e866d40be0114757297bbae10",
+      "mode": 436,
+      "size": 63829,
+      "mtime_ns": 1792549301927837707
+    },
+    "src/instrument-session/tests/render_configuration.rs": {
+      "sha256": "a64598b0cab81da23f0373fddb82ad61e66a00442c8fcf839999734109ae5ffd",
+      "mode": 436,
+      "size": 5550,
+      "mtime_ns": 1792548690821216299
+    },
+    "src/trigger-host/tests/render_reconfiguration.rs": {
+      "sha256": "f725fcc7d035abad53727a478e386e869cf62a04d4abee3b44ac363a8e77f05e",
+      "mode": 436,
+      "size": 33309,
+      "mtime_ns": 1792550054639050006
+    }
+  },
+  "counts": {
+    "new_host_public_tests": 10,
+    "new_session_public_characterizations": 3,
+    "full_host": 138,
+    "host_compile_fail_doctests": 2,
+    "full_session": 33,
+    "atomic_focused_then": {
+      "new_host_integration_tests": 9,
+      "existing_runtime_quiescent_integration_tests": 7,
+      "total": 16
+    }
+  },
+  "gates": {
+    "host_fmt": {
+      "phase": "17-watermark-fmt-check",
+      "exit": 0,
+      "seconds": 0.5040273800259456,
+      "receipt_sha256": "b68312838e3765c02429f4f42ad9befd89673578029511dd2137114c5ca7d21a",
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "src/trigger-host/Cargo.toml",
+        "--",
+        "--check"
+      ]
+    },
+    "host_clippy": {
+      "phase": "18-watermark-clippy",
+      "exit": 0,
+      "seconds": 0.5047074339818209,
+      "receipt_sha256": "bf2ded3dd0e5810f5e0db89e7c49fca69a76c4fdae90002ea7860ff275b69fb3",
+      "command": [
+        "cargo",
+        "clippy",
+        "--manifest-path",
+        "src/trigger-host/Cargo.toml",
+        "--offline",
+        "--locked",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ]
+    },
+    "host_tests": {
+      "phase": "19-watermark-full-host",
+      "exit": 0,
+      "seconds": 3.017710210988298,
+      "receipt_sha256": "b8aa8f906bc905d75ba1bf87b55be69ea4a8a3e6c24ab0bd1a8928ab64fe7ed8",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "src/trigger-host/Cargo.toml",
+        "--offline",
+        "--locked"
+      ]
+    },
+    "host_llvm": {
+      "phase": "20-watermark-host-cov",
+      "exit": 0,
+      "seconds": 29.140966826002114,
+      "receipt_sha256": "476c272659cffef39f67182d0b95707fa4ec00ef409553616f734039565b312e",
+      "command": [
+        "cargo",
+        "llvm-cov",
+        "--manifest-path",
+        "src/trigger-host/Cargo.toml",
+        "--offline",
+        "--locked",
+        "-vv",
+        "--json",
+        "--output-path",
+        "/tmp/dandrum-lanes/evidence-render-reconfiguration/20-watermark-host-cov/host.json"
+      ]
+    },
+    "host_profile_proof": {
+      "phase": "21-watermark-host-proof",
+      "exit": 0,
+      "seconds": 3.0173660349973943,
+      "receipt_sha256": "6b4e76af5d8c609cca573806ed07562b5a874c6f721968f12fdb2e006a92d797",
+      "command": [
+        "python3",
+        "/tmp/dandrum-lanes/evidence-render-reconfiguration/prove-final-host-profiles.py",
+        "20-watermark-host-cov",
+        "trigger-host",
+        "host.json",
+        "21-watermark-host-proof"
+      ]
+    },
+    "session_fmt": {
+      "phase": "07-session-fmt-check",
+      "exit": 0,
+      "seconds": 0.5052547799714375,
+      "receipt_sha256": "319c8f81a095bdabeac85ac560742a7bb0c3f4f7633208c918c9c4add4a5cc26",
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "src/instrument-session/Cargo.toml",
+        "--",
+        "--check"
+      ]
+    },
+    "session_clippy": {
+      "phase": "12-final-session-clippy",
+      "exit": 0,
+      "seconds": 1.0081840680213645,
+      "receipt_sha256": "46cfe54b54a40f86472642f76e9ed832069cf31e00ea4052b52a4647c13a51db",
+      "command": [
+        "cargo",
+        "clippy",
+        "--manifest-path",
+        "src/instrument-session/Cargo.toml",
+        "--offline",
+        "--locked",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ]
+    },
+    "session_tests": {
+      "phase": "07-full-session",
+      "exit": 0,
+      "seconds": 5.531366672017612,
+      "receipt_sha256": "132e4ebbd1c6b73127279d2ebeb7a6508acfd94359778e6695ad1c1219091d2f",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "src/instrument-session/Cargo.toml",
+        "--offline",
+        "--locked"
+      ]
+    },
+    "session_llvm": {
+      "phase": "10-full-session-cov",
+      "exit": 0,
+      "seconds": 8.039809191977838,
+      "receipt_sha256": "917540d470f226c5a288c72c4817e920e9d856124ba70e017e794b6212f7b812",
+      "command": [
+        "cargo",
+        "llvm-cov",
+        "--manifest-path",
+        "src/instrument-session/Cargo.toml",
+        "--offline",
+        "--locked",
+        "-vv",
+        "--json",
+        "--output-path",
+        "/tmp/dandrum-lanes/evidence-render-reconfiguration/10-full-session-cov/session.json"
+      ]
+    },
+    "session_profile_proof": {
+      "phase": "11-session-profile-proof",
+      "exit": 0,
+      "seconds": 1.0075521749968175,
+      "receipt_sha256": "4ad8c3684b920670a48d944d2e686168aeb3cf5a07fb8f957e7a1d59f67a039d",
+      "command": [
+        "python3",
+        "/tmp/dandrum-lanes/evidence-render-reconfiguration/prove-profiles.py",
+        "10-full-session-cov",
+        "instrument-session",
+        "session.json",
+        "11-session-profile-proof"
+      ]
+    },
+    "openspec": {
+      "phase": "13-openspec-validate-explicit-node",
+      "exit": 0,
+      "seconds": 1.5110104710038286,
+      "receipt_sha256": "141aefbc7688cedfb212b4e131adb8fa80dcff101d93ea836ea205af4e2e5b71",
+      "command": [
+        "/home/dan/.nvm/versions/node/v22.19.0/bin/node",
+        "/home/dan/.nvm/versions/node/v22.19.0/bin/openspec",
+        "validate",
+        "add-juce-free-trigger-clap-editor",
+        "--strict",
+        "--no-interactive"
+      ]
+    },
+    "diff_check": {
+      "phase": "14-diff-check",
+      "exit": 0,
+      "seconds": 0.5054662750044372,
+      "receipt_sha256": "c398fcd3542b719c4a955000cdbe7149d047158c4a2508dd63491899571cf7b7",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ]
+    }
+  },
+  "profiles_and_executed_binaries": {
+    "host": {
+      "path": "21-watermark-host-proof/proof.json",
+      "sha256": "b8cf676c18024e2359cea86eebac7d1bf45e233e98242dda5ad46b285d94198f",
+      "raw_count": 12,
+      "executed_binary_count": 12,
+      "merged_byte_identical": true,
+      "merged_profile_sha256": "77324cd55b85953ad8a3f42328e9bf2ae705a31a55605e06d4b48f7f885a1547",
+      "integer_export_semantics": "All paths, segments, expansions, functions, regions, counters and integer summaries exact. Derived percentage presentation and cargo_llvm_cov metadata qualified separately.",
+      "derived_percent_differences": [
+        {
+          "path": "/data/0/files/1/summary/regions/percent",
+          "direct": 96.89349112426035,
+          "cargo_reserialized": 96.89349112426036,
+          "difference": -1.4210854715202004e-14
+        },
+        {
+          "path": "/data/0/files/2/summary/regions/percent",
+          "direct": 96.89922480620154,
+          "cargo_reserialized": 96.89922480620156,
+          "difference": -1.4210854715202004e-14
+        }
+      ],
+      "archive_sha256": "505caa657853c0158a433d7099e829ebe09ef6b3909e1bc8d71736ef4510aed6",
+      "fingerprint_file_count": 84
+    },
+    "session": {
+      "path": "11-session-profile-proof/proof.json",
+      "sha256": "f598d4e36b7541c591abf978adb4746926f82f4ba2c86c5f161d537e5a917f6f",
+      "raw_count": 3,
+      "executed_binary_count": 3,
+      "merged_byte_identical": true,
+      "merged_profile_sha256": "9d27017b701ed3339355be1a15580e38e5564f3e59737df09f186c4306350a10",
+      "integer_export_semantics": "All paths, segments, expansions, functions, regions, counters and integer summaries exact. Derived percentage presentation and cargo_llvm_cov metadata qualified separately.",
+      "derived_percent_differences": [
+        {
+          "path": "/data/0/files/1/summary/lines/percent",
+          "direct": 85.4978354978355,
+          "cargo_reserialized": 85.49783549783548,
+          "difference": 1.4210854715202004e-14
+        }
+      ],
+      "archive_sha256": "8b2272b340703154e1233a204489e959ee8dd09807b50f5462ff55b2a7a70127",
+      "fingerprint_file_count": 80
+    }
+  },
+  "session_proof_reuse": "session-final-proof-reuse.json",
+  "coverage_qualification": "coverage-qualification-watermark.json",
+  "baseline": {
+    "host": "baseline-reuse.json: exact prior301641 source inputs,128host+2docs/fullLLVM reused before code",
+    "session": "00-session-baseline: full30 owning LLVM before changes;00-characterization-cov: existing uncovered Busy/resource/commit Busy edges characterized with33tests before visibility change"
+  },
+  "tdd": {
+    "owned_api": {
+      "red": "01-owned-api-red: E0624 missing public visibility",
+      "green": "01-owned-green",
+      "coverage": "01-owned-cov"
+    },
+    "controller_service": {
+      "red": "02-paired-service-red: E0599 missing API",
+      "green": "02-paired-service-green",
+      "coverage": "02-paired-cov"
+    },
+    "preflight_noop": {
+      "red": "03-preflight-red: absent API/report",
+      "green": "03-preflight-green",
+      "coverage": "03-preflight-cov"
+    },
+    "atomic_transaction": {
+      "red": "04-atomic-red-expanded:5 genuine assertion failures",
+      "green": "04-atomic-green-invalid-block-oracle:9pass after disclosed test-oracle corrections",
+      "coverage": "04-atomic-cov:9new+7existing=16"
+    },
+    "oracle_strengthening": [
+      "05-public-oracles-characterization: installed-worker variant and independent PCM/foreign-pair strengthening immediatePASS10",
+      "16-watermark-characterization: root-authorized same-admitted-note replay immediatePASS10"
+    ],
+    "refactor": "Assessments retained in criterion coverage directories. Small cohesive precommit adapter/lease; existing covered editor adoption helper reused, endpoint identity extraction covered. No new module."
+  },
+  "author_errors": [
+    "Initial existing Session characterization snapshot was retained after its immediate-PASS run before further changes; the driver snapshot/hash scope was corrected, and subsequent full33-test exact-source evidence binds the maintained test. Original qualification retained.",
+    "Strict Clippy caught an unused attachment test binding and a bool assertion comparison; corrected, original failures retained.",
+    "Atomic GREEN exposed author oracle errors: automation physical1.0 versus normalized.25; document generation1 versus invented press2; unavailable redo protocol replaced with supported real undo; invalid blocks zero output; control ownership oracle corrected from exact0 to signed negative live allocation delta. No production workaround or protocol expansion.",
+    "First final fmt check preceded formatting of strengthened tests and failed; rustfmt applied and fresh checks pass.",
+    "OpenSpec launcher lacked nvm in evidence-driver PATH and never launched: setup failure, not RED. setup-error.json retained; explicit installed Node/OpenSpec run passes.",
+    "Watermark assertion added only under root explicit narrow freeze reopening. Original freeze/gates/proofs preserved; renewed host gates/proof bind new test hash. Unchanged Session owner proof reused by exact hash."
+  ],
+  "limits": [
+    "No branch or MC/DC instrumentation; no blanket overall/owner100percent claim.",
+    "New defensive propagation regions: PreparedRuntime::new error exit in private QuiescentControl.activate; two Session-error arm regions in same-owner exclusive prepare/commit. Root acknowledged qualification rather than artificial seams.",
+    "Existing runtime apply_event error propagation and existing parameter propagation gaps remain unchanged and separately visible in owner summaries.",
+    "Public nonzero epoch/sequence observer gap is closed through controller service and atomic config tests: restoreepoch1, acceptedrevision2/4, settled1/2cancelled, genuine queued2/3 and nextadmitted3/4. No privatecounter observer introduced.",
+    "Ordinary note FIFO retention relies separate published runtime proof plus inspection that endpoints/queues remain untouched; controller has no ordinary-note injector.",
+    "Mutation excluded by user. Sourcefree/defaultrelease/CMake/native/CLAP acceptance deferred; no earlier sourcefree proof attributed to new code. Task4.1/beta remainopen."
+  ],
+  "terminal": "terminal-resources-watermark.json",
+  "cache_handback": {
+    "ordinary": "/tmp/dandrum-lanes/cache-runtime",
+    "llvm": "/tmp/dandrum-lanes/cache-host-snapshot-cov",
+    "state": "All author build/test/LLVM/profile processes terminal; no further target access. Returned exclusively to root now. No deletion/relocation/cleanup.",
+    "all_output_and_TMPDIR_on_disk": true
+  },
+  "candidate_paths": [
+    "src/instrument-session/src/lib.rs",
+    "src/trigger-host/src/parameters.rs",
+    "src/trigger-host/src/runtime.rs",
+    "src/instrument-session/tests/render_configuration.rs",
+    "src/trigger-host/tests/render_reconfiguration.rs"
+  ],
+  "noncandidate_evidence": "draft-host-tests.rs and phase/source snapshots are historical evidence, not candidate test routes. Root dirty design remains root-owned; no author Git/index/docs changes.",
+  "inventory": "evidence-inventory.json",
+  "handoff": "HANDOFF.md"
+}

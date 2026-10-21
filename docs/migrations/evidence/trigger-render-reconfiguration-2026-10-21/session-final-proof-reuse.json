@@ -1,0 +1,19 @@
+{
+  "classification": "Root-authorized exact owner-source reuse after host-test-only watermark assertion",
+  "session_tests": 33,
+  "coverage_phase": "10-full-session-cov",
+  "proof": "11-session-profile-proof/proof.json",
+  "exact_current_owner_source_and_test_hashes": {
+    "src/instrument-session/src/lib.rs": "b010be63d2a6c61e7362e80418acdb53ab35bf15f82d242a3d0c9c4fbd647cf4",
+    "src/instrument-session/src/native_ffi.rs": "cdada47286a2c2f94d45c652a9166b8d9a30870e56fca1111abdcdf5611934b8",
+    "src/instrument-session/tests/internal/revision_limit.rs": "62a48798e7cccdbe4ee86ed6ceb1571d9160e2c4350768a7e0dbd1b5ea3671d4",
+    "src/instrument-session/tests/render_configuration.rs": "a64598b0cab81da23f0373fddb82ad61e66a00442c8fcf839999734109ae5ffd",
+    "src/instrument-session/tests/session.rs": "a385cda3bb5cbe8db5145f04733cd6a9a214ad64c7621e6b6ed24dac8ae8b28c",
+    "src/instrument-session/Cargo.toml": "64121a3f75dde57b6a4cc0dcee2a96e4f8cab7ee1b72382f8da60998efba4c44",
+    "src/instrument-session/Cargo.lock": "1537a3dc07c17fb7fe79786d1863b7e9b7e3db328757845fdbe3ffdbb10201eb",
+    "src/rust-engine/Cargo.toml": "b854bee281b47373d018c881aa024a67349dd5ed0928b3d05597c12d7c4ce90b",
+    "src/rust-engine/Cargo.lock": "7b9868b097cc152c22ff3462ccfd60e822d8a1bb3724a89f43ba526e72ea20d7"
+  },
+  "manifest_lock_match_unchanged_HEAD": true,
+  "no_sourcefree_or_native_reuse_claim": true
+}

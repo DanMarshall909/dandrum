@@ -1,0 +1,17 @@
+{
+  "verdict": "PASS",
+  "manifest_sha256": "24bd25ae143ee0c5f5dbd8d605233829dd1dd7f8db736edd6e6debe4f4f48862",
+  "base": "301641faa72e57837df3d49c6c4aa6563882d6c4",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "301641faa72e57837df3d49c6c4aa6563882d6c4",
+  "candidate_paths": 18,
+  "full_tree": "ab7e48774fdc751f981299c804fcfb64d2c0ab4f",
+  "scope": "Task 4.1 core prerequisite: controller paired service and atomic returned-audio render reconfiguration only",
+  "findings": [],
+  "limitations": [
+    "No new product/native/source-free acceptance claim; task 4.1 and full beta remain open.",
+    "Coverage defenses and existing owner gaps are disclosed; no branch/MC/DC or blanket 100% claim.",
+    "Mutation excluded by user. Reviewer assessed retained hash-bound runs without rerunning tests or LLVM."
+  ],
+  "publication_gate": "Exact five-output envelope only; same-reviewer actual final tree and named validation addendum required before hooks."
+}

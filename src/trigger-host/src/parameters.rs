@@ -9,7 +9,7 @@ use crate::protocol::{
     MAX_SAFE_GENERATION, ProtocolError,
 };
 use crate::runtime::{
-    PreparedRuntime, RuntimeAudio, RuntimeControl, RuntimeError, runtime_handoff,
+    PreparedRuntime, QuiescentReport, RuntimeAudio, RuntimeControl, RuntimeError, runtime_handoff,
 };
 use crate::{TriggerHost, TriggerHostConfiguration};
 use dandrum_engine::kernel::document::load_kernel_patch_str;
@@ -161,6 +161,13 @@ pub enum SessionJobProgress {
     Idle,
     Pending,
     Completed,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// Whether the accepted render settings replaced the current DSP.
+pub enum ReconfigurationReport {
+    Unchanged,
+    Changed,
 }
 struct ActiveSessionJob {
     authority: std::sync::Arc<()>,
@@ -613,6 +620,77 @@ impl ParameterController {
             frame_offset: feedback.frame_offset,
             parameters: vec![parameter.project(feedback.value)],
         })
+    }
+    /// Service accepted runtime ownership after the audio endpoint is returned.
+    pub fn service_quiescent(
+        &mut self,
+        audio: &mut RuntimeAudio,
+    ) -> Result<QuiescentReport, ParameterError> {
+        self.runtime
+            .service_quiescent(audio)
+            .map_err(ParameterError::Runtime)
+    }
+
+    /// Change host render settings with returned audio ownership. Outstanding
+    /// work remains owned and returns Busy; callers service it separately.
+    /// Equal settings preserve live DSP without touching packaged resources.
+    pub fn reconfigure_quiescent(
+        &mut self,
+        audio: &mut RuntimeAudio,
+        configuration: TriggerHostConfiguration,
+    ) -> Result<ReconfigurationReport, ParameterError> {
+        self.runtime
+            .validate_endpoint(audio)
+            .map_err(ParameterError::Runtime)?;
+        if configuration.sample_rate_hz == 0
+            || !(1..=crate::runtime::MAX_BLOCK_FRAMES).contains(&configuration.max_block_frames)
+        {
+            return Err(ParameterError::Runtime(RuntimeError::InvalidConfiguration));
+        }
+        if self.session_job.is_some() || !self.runtime.activation_available() {
+            return Err(ParameterError::Runtime(RuntimeError::Busy));
+        }
+        if configuration == self.runtime.configuration() {
+            return Ok(ReconfigurationReport::Unchanged);
+        }
+        use dandrum_engine::graph::PortDirection;
+        use dandrum_engine::patch::RenderSettings;
+        use dandrum_engine::preparation::HostBuses;
+        use dandrum_instrument_session::CommitError;
+        // Accepted root metadata names the same planar buses as its document.
+        // The unchanged accepted YAML retains the already validated aliases;
+        // activation also checks the complete retained root control layout.
+        let buses = self
+            .host
+            .session()
+            .prepared()
+            .root_port_metadata()
+            .iter()
+            .fold(HostBuses::new(), |buses, port| match port.direction() {
+                PortDirection::Input => buses.with_input(port.name(), 1),
+                PortDirection::Output => buses.with_output(port.name(), 2),
+            });
+        let settings = RenderSettings {
+            sample_rate_hz: configuration.sample_rate_hz,
+            block_size_frames: configuration.max_block_frames,
+            duration_frames: u64::from(configuration.max_block_frames),
+        };
+        let candidate = self
+            .host
+            .session()
+            .prepare_render_configuration_owned(settings, buses)
+            .map_err(ParameterError::Session)?;
+        self.host
+            .session_mut()
+            .commit_render_configuration(
+                candidate,
+                &mut self.runtime.reconfiguring(audio, configuration),
+            )
+            .map_err(|error| match error {
+                CommitError::Session(error) => ParameterError::Session(error),
+                CommitError::Activation(error) => ParameterError::Runtime(error),
+            })?;
+        Ok(ReconfigurationReport::Changed)
     }
     pub fn open(
         root: impl AsRef<Path>,
