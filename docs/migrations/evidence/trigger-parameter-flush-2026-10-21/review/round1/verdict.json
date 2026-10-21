@@ -1,0 +1,29 @@
+{
+  "verdict": "FAIL",
+  "reviewer": "/root/parameter_flush_review",
+  "initial_manifest_sha256": "980d12fbbc03159fcd7696261f1f31b093b17af0e14195ff81767c7a44d3d956",
+  "base": "dfac45088d235d587cd4ff52338594eae53f09af",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "dfac45088d235d587cd4ff52338594eae53f09af",
+  "candidate_paths": 13,
+  "findings": [
+    {
+      "id": "R1",
+      "severity": "medium",
+      "path": "src/trigger-host/src/runtime.rs",
+      "symbol": "admission_tests::successful_state_publication_retires_queued_notes_and_reset_cannot_settle_old_generation_commands",
+      "requirement": "Preserve meaningful existing behavior regression protection while extending tests",
+      "evidence": "New flush consumes all eight old-epoch UI scalars before reset; reset.discarded_events is explicitly zero. Baseline reset itself consumed old-epoch sequence 10. No other inspected reset test supplies the obsolete nonzero-sequence witness.",
+      "consequence": "Removing reset epoch filtering could acknowledge an obsolete UI command while this candidate test still passes; its reset assertion is vacuous.",
+      "required_outcome": "Retain flush stale-prefix proof and separately make reset consume a real old-epoch nonzero UI command, asserting nonzero discarded count, zero current-command cancellations, and unchanged restored value/settlement/reset cause; refresh verification and whole-candidate evidence."
+    }
+  ],
+  "gaps": [
+    "Mutation excluded by user direction; no mutation score claimed.",
+    "Actual CLAP/native/release/browser/DAW/installed/VST3/standalone acceptance remains outside this prerequisite and open.",
+    "Flush 57/58 normal source regions; sole new uncovered closing path is unreachable after immutable parameter-only preflight. Prior defensive owner gaps remain disclosed.",
+    "No branch, MC/DC or exhaustive concurrency proof; false deferred does not imply an empty queue.",
+    "Read-only review verifies retained source-bound execution evidence rather than rerunning builds, tests or LLVM.",
+    "Required R1 test repair and whole-candidate re-review precede any envelope or publication."
+  ]
+}

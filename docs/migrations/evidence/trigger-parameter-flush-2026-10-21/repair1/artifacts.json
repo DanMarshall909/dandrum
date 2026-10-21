@@ -1,0 +1,747 @@
+{
+  "archive": "raw.tar.gz",
+  "archive_sha256": "b13b3db91081b39adcd439237f359f4c6f25b85553d01defe9a1d6fdfaaa9ecc",
+  "members": 148,
+  "artifacts": [
+    {
+      "path": "00-reset-oracle-corrected/output.log",
+      "sha256": "b87f3a1273b6d62024497f988318f855fea7d0001301b927345c231faa991b0e",
+      "bytes": 440
+    },
+    {
+      "path": "00-reset-oracle-corrected/receipt.json",
+      "sha256": "82c8f32b3ee8adb4f07b53e74db4fb4161ece87018272330e444d7124a1ba651",
+      "bytes": 4520
+    },
+    {
+      "path": "00-reset-oracle-corrected/src/trigger-host/src/runtime.rs",
+      "sha256": "41cb146824e21aa3c5814885b5561cd00d8152b5390338af25af26bc96f62592",
+      "bytes": 71140
+    },
+    {
+      "path": "00-reset-oracle-corrected/src/trigger-host/tests/parameter_flush.rs",
+      "sha256": "96d17783f093b08ca20cbf940ea21b6eb993c0e755b89769f7a2cc350ba6750e",
+      "bytes": 21080
+    },
+    {
+      "path": "00-reset-oracle/output.log",
+      "sha256": "a458c667b3aad5934f077869cb472af1f979fb979429f869452b4709bb503d26",
+      "bytes": 392
+    },
+    {
+      "path": "00-reset-oracle/receipt.json",
+      "sha256": "ef11621848ba062ad509c6dc7711dce1bf9ab5e5bbc99bba7dbccacb74a56d7e",
+      "bytes": 4666
+    },
+    {
+      "path": "00-reset-oracle/src/trigger-host/src/runtime.rs",
+      "sha256": "41cb146824e21aa3c5814885b5561cd00d8152b5390338af25af26bc96f62592",
+      "bytes": 71140
+    },
+    {
+      "path": "00-reset-oracle/src/trigger-host/tests/parameter_flush.rs",
+      "sha256": "96d17783f093b08ca20cbf940ea21b6eb993c0e755b89769f7a2cc350ba6750e",
+      "bytes": 21080
+    },
+    {
+      "path": "01-fmt/output.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "01-fmt/receipt.json",
+      "sha256": "9cfda2ac6f92fe14dd59b300abb94c674060de95512bc8b686fa4e164fc41d87",
+      "bytes": 4392
+    },
+    {
+      "path": "01-fmt/src/trigger-host/src/runtime.rs",
+      "sha256": "41cb146824e21aa3c5814885b5561cd00d8152b5390338af25af26bc96f62592",
+      "bytes": 71140
+    },
+    {
+      "path": "01-fmt/src/trigger-host/tests/parameter_flush.rs",
+      "sha256": "96d17783f093b08ca20cbf940ea21b6eb993c0e755b89769f7a2cc350ba6750e",
+      "bytes": 21080
+    },
+    {
+      "path": "02-clippy/output.log",
+      "sha256": "b2a0d834dd7f2ffcbb77f86eb1f94fdadea30afcec11de2d3f64c9fd6ea75f17",
+      "bytes": 159
+    },
+    {
+      "path": "02-clippy/receipt.json",
+      "sha256": "715ad1019dac27b7b8042ca41cb5b868edc26c175422371e4c16e9ceb02d7b55",
+      "bytes": 4459
+    },
+    {
+      "path": "02-clippy/src/trigger-host/src/runtime.rs",
+      "sha256": "41cb146824e21aa3c5814885b5561cd00d8152b5390338af25af26bc96f62592",
+      "bytes": 71140
+    },
+    {
+      "path": "02-clippy/src/trigger-host/tests/parameter_flush.rs",
+      "sha256": "96d17783f093b08ca20cbf940ea21b6eb993c0e755b89769f7a2cc350ba6750e",
+      "bytes": 21080
+    },
+    {
+      "path": "03-full-host/output.log",
+      "sha256": "5fee3d3708c4d2a347576bb7199fb0a52a06b74eb66362532e009e74e49cba5f",
+      "bytes": 17075
+    },
+    {
+      "path": "03-full-host/receipt.json",
+      "sha256": "6adc2ce6c93ad7a7a667a7cb46499bdb83c5f910159ce1561ca7ceeaa1894b80",
+      "bytes": 4402
+    },
+    {
+      "path": "03-full-host/src/trigger-host/src/runtime.rs",
+      "sha256": "41cb146824e21aa3c5814885b5561cd00d8152b5390338af25af26bc96f62592",
+      "bytes": 71140
+    },
+    {
+      "path": "03-full-host/src/trigger-host/tests/parameter_flush.rs",
+      "sha256": "96d17783f093b08ca20cbf940ea21b6eb993c0e755b89769f7a2cc350ba6750e",
+      "bytes": 21080
+    },
+    {
+      "path": "04-full-owner-cov/binary-hashes.json",
+      "sha256": "34418ff3b38cf6b87e7ee6e2113d33a31ea5b1eed1fcfe6c0b83de829773cce1",
+      "bytes": 3240
+    },
+    {
+      "path": "04-full-owner-cov/host.json",
+      "sha256": "29daebc93223731dd072957ed382031149f2fae563c3b67d578c5a2d07dd8fb0",
+      "bytes": 1054449
+    },
+    {
+      "path": "04-full-owner-cov/output.log",
+      "sha256": "d2ff44a0939334bf6e0c5d28a4207fcc13c84f516701b083ec29c5129bf50979",
+      "bytes": 52838
+    },
+    {
+      "path": "04-full-owner-cov/previous-binary-hashes.json",
+      "sha256": "8631661d3e98c15e9d43a5d07dc15e2dc9caeed25f962c773036e2b06a30c4f4",
+      "bytes": 3240
+    },
+    {
+      "path": "04-full-owner-cov/previous-profile-hashes.json",
+      "sha256": "29028bc2f02826a133b522ef9d6e7d4da0c1f7eba876cd9469379b9e3edb8c24",
+      "bytes": 2587
+    },
+    {
+      "path": "04-full-owner-cov/previous-profiles.tar.gz",
+      "sha256": "d929938592d810d010fbe4b73e63893edd8ce4bcab7a0af83d74000a2fd154b4",
+      "bytes": 347642
+    },
+    {
+      "path": "04-full-owner-cov/receipt.json",
+      "sha256": "67d384cd59c21fc23e691f7e72d92329ef02a8df450b3ad7051e64267546ab70",
+      "bytes": 4558
+    },
+    {
+      "path": "04-full-owner-cov/result-profiles.tar.gz",
+      "sha256": "5f439917adf48a7d0c9998dfd4d247a2b05c3b6bceb902a926bc930a15ec0445",
+      "bytes": 348728
+    },
+    {
+      "path": "04-full-owner-cov/src/trigger-host/src/runtime.rs",
+      "sha256": "41cb146824e21aa3c5814885b5561cd00d8152b5390338af25af26bc96f62592",
+      "bytes": 71140
+    },
+    {
+      "path": "04-full-owner-cov/src/trigger-host/tests/parameter_flush.rs",
+      "sha256": "96d17783f093b08ca20cbf940ea21b6eb993c0e755b89769f7a2cc350ba6750e",
+      "bytes": 21080
+    },
+    {
+      "path": "05-profile-proof/direct-export.json",
+      "sha256": "e5caee93f362194aba5cfce94fe1b4f43fe4f630574e254d7644f348c5473442",
+      "bytes": 1054317
+    },
+    {
+      "path": "05-profile-proof/direct-export.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-01d6e3922b9b3ad5/dep-test-lib-dandrum_trigger_host",
+      "sha256": "e2c733a15af47f56259bac32d2e51eef13428fc02c0f7619868849f10d9ae08c",
+      "bytes": 176
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-01d6e3922b9b3ad5/invoked.timestamp",
+      "sha256": "5a109e6643e8d3e88642e3f35e85d2a83e639d07523aa6e99166c48178e965c3",
+      "bytes": 48
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-01d6e3922b9b3ad5/test-lib-dandrum_trigger_host",
+      "sha256": "9b4ec1be3c3db919193d710bdf34dc8af42bb437caf997fe519084c4844d5ddf",
+      "bytes": 16
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-01d6e3922b9b3ad5/test-lib-dandrum_trigger_host.json",
+      "sha256": "7c7f09eeae0e4fde032cea575768617a9a411da739e27048e261991be91ccab3",
+      "bytes": 831
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-112221cf9b848dc8/dep-test-integration-test-runtime_quiescent",
+      "sha256": "ee2082d20974a818c0bc2032de0a7cf7305d8dfcdf9af621c35203bc05a8233c",
+      "bytes": 81
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-112221cf9b848dc8/invoked.timestamp",
+      "sha256": "5a109e6643e8d3e88642e3f35e85d2a83e639d07523aa6e99166c48178e965c3",
+      "bytes": 48
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-112221cf9b848dc8/test-integration-test-runtime_quiescent",
+      "sha256": "02d4670970a9c5af0f8d2f1aebd36b573d2354e291eb293a96dfd8cead363932",
+      "bytes": 16
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-112221cf9b848dc8/test-integration-test-runtime_quiescent.json",
+      "sha256": "ba04ea4a3edef82fe8b5e4feb1435882edeed4787b660c10b03ebd59c6977ba5",
+      "bytes": 913
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-1288529a60a727cb/dep-test-integration-test-render_reconfiguration",
+      "sha256": "675b1e568ad58ddd8f3809fb287088a6e851d2d952ebd6bb836c4f241806b2e9",
+      "bytes": 51
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-1288529a60a727cb/invoked.timestamp",
+      "sha256": "5a109e6643e8d3e88642e3f35e85d2a83e639d07523aa6e99166c48178e965c3",
+      "bytes": 48
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-1288529a60a727cb/test-integration-test-render_reconfiguration",
+      "sha256": "49ad2a9c8dfbe8a54ca5eba6ef94631be334e722f638b31b23f82ab22b3f4e7d",
+      "bytes": 16
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-1288529a60a727cb/test-integration-test-render_reconfiguration.json",
+      "sha256": "2f55f52f94766433ee748d35d2547df1791a025916432bfcd7610b4da8c73343",
+      "bytes": 916
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-32f72c984a29c4b4/dep-test-integration-test-runtime",
+      "sha256": "dcb9a4e1f1f63ee1c08fe29d3d9d128fae6cf1538647cc900ef91dd5c25a3985",
+      "bytes": 136
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-32f72c984a29c4b4/invoked.timestamp",
+      "sha256": "5a109e6643e8d3e88642e3f35e85d2a83e639d07523aa6e99166c48178e965c3",
+      "bytes": 48
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-32f72c984a29c4b4/test-integration-test-runtime",
+      "sha256": "8c55b8cbf2417e4b2489884d02bf08684f670ad3ea0f4f8593e676d763f7678d",
+      "bytes": 16
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-32f72c984a29c4b4/test-integration-test-runtime.json",
+      "sha256": "74748ee4aa1d971d9c91ab2f94c912c7d4e606b3aa43cf742b125d983c45373b",
+      "bytes": 903
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-57ce1b7d7f94df6c/dep-test-integration-test-editor_notes",
+      "sha256": "aa43f5b4502e793ef6a919eba7d17d4a0b8f93041fcaca4f29a30fec7ec03acb",
+      "bytes": 76
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-57ce1b7d7f94df6c/invoked.timestamp",
+      "sha256": "5a109e6643e8d3e88642e3f35e85d2a83e639d07523aa6e99166c48178e965c3",
+      "bytes": 48
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-57ce1b7d7f94df6c/test-integration-test-editor_notes",
+      "sha256": "976e483df17460344775ed521c6c814d9ec1f605cf3ace51e1aaee12d882601d",
+      "bytes": 16
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-57ce1b7d7f94df6c/test-integration-test-editor_notes.json",
+      "sha256": "18e35c2b0aa3687715dabcb46361e623238a599e288f8a5dc86fdeeb111e958e",
+      "bytes": 907
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-58f679460fc00ba1/dep-lib-dandrum_trigger_host",
+      "sha256": "ab4e147a9b3719d6b6fb1afdd825735d503ac24915a973bb82059273dac1faf5",
+      "bytes": 112
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-58f679460fc00ba1/invoked.timestamp",
+      "sha256": "5a109e6643e8d3e88642e3f35e85d2a83e639d07523aa6e99166c48178e965c3",
+      "bytes": 48
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-58f679460fc00ba1/lib-dandrum_trigger_host",
+      "sha256": "b08962b7607911db872ea778e5e1c1c392b4be4fd3a435cc0d200e28e336f7e4",
+      "bytes": 16
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-58f679460fc00ba1/lib-dandrum_trigger_host.json",
+      "sha256": "a2f4118b53c58d50c64fdb8c682985f4ac13a4176bf1d5ba36070cd458da1ca2",
+      "bytes": 696
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-66b05604889cfb16/dep-test-integration-test-editor_note_controller",
+      "sha256": "52da4321204df50489303d936e3c7abd346fb1f82f02e01a48e1fbae33a0955a",
+      "bytes": 51
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-66b05604889cfb16/invoked.timestamp",
+      "sha256": "5a109e6643e8d3e88642e3f35e85d2a83e639d07523aa6e99166c48178e965c3",
+      "bytes": 48
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-66b05604889cfb16/test-integration-test-editor_note_controller",
+      "sha256": "08bbec35d874311102f6e0b6596176e221429fe0d62c95e4b75782bef498f0c0",
+      "bytes": 16
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-66b05604889cfb16/test-integration-test-editor_note_controller.json",
+      "sha256": "ca17e01cff808a02e4510c3a02b85ebc8ef6bc92959288edb0b50506ddc72c20",
+      "bytes": 918
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-845a37e6d5eafa6f/dep-test-integration-test-packaged_resources",
+      "sha256": "138eb9150e9d52f2621cb1360f79403ad3071fbaa79f9e4fa63654e97732b61e",
+      "bytes": 47
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-845a37e6d5eafa6f/invoked.timestamp",
+      "sha256": "5a109e6643e8d3e88642e3f35e85d2a83e639d07523aa6e99166c48178e965c3",
+      "bytes": 48
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-845a37e6d5eafa6f/test-integration-test-packaged_resources",
+      "sha256": "408e918f5764fc465252464c1b889c5c18f7ed3ba5d3958a4a975ced32dc2be9",
+      "bytes": 16
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-845a37e6d5eafa6f/test-integration-test-packaged_resources.json",
+      "sha256": "da3e85504fa769677208c96f3237c4c04ecf2b3527ea3768b1733413f40a84b7",
+      "bytes": 912
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-a9e4488799b990d7/dep-test-integration-test-protocol",
+      "sha256": "34d44ad4380653f128ec8f02d4dd233acf2f9ed8d2e2e7d560ebdddccd3e3321",
+      "bytes": 37
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-a9e4488799b990d7/invoked.timestamp",
+      "sha256": "5a109e6643e8d3e88642e3f35e85d2a83e639d07523aa6e99166c48178e965c3",
+      "bytes": 48
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-a9e4488799b990d7/test-integration-test-protocol",
+      "sha256": "8a983084015ee1d1ae51e87671bf442c79d02c66205e84dea8947d533b6a757f",
+      "bytes": 16
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-a9e4488799b990d7/test-integration-test-protocol.json",
+      "sha256": "bf975081ceb925da5b187326b659eb924a5287908d08bf26d961e161c8b42652",
+      "bytes": 903
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-b4b0337c8cd646f6/dep-test-integration-test-parameters",
+      "sha256": "6aeb8d2c26d2b52ca860015bb64fea7db6afe52827b0792aa587ef6226025702",
+      "bytes": 39
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-b4b0337c8cd646f6/invoked.timestamp",
+      "sha256": "5a109e6643e8d3e88642e3f35e85d2a83e639d07523aa6e99166c48178e965c3",
+      "bytes": 48
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-b4b0337c8cd646f6/test-integration-test-parameters",
+      "sha256": "d4955d739d83d48f5e28acafd20c24af748bf3389c278f591a4662fc6035389b",
+      "bytes": 16
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-b4b0337c8cd646f6/test-integration-test-parameters.json",
+      "sha256": "4f051d258b42cefb4af1ef91b5fcc9dfbe3d3690c1ba85b18a7bbc6bd7653f98",
+      "bytes": 904
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-c2ece85510129c0c/dep-test-integration-test-session_jobs",
+      "sha256": "d5dacecd4b4bd9133bc74717ab060d682d676034c76b41b66bf6c43c0c568a9e",
+      "bytes": 41
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-c2ece85510129c0c/invoked.timestamp",
+      "sha256": "5a109e6643e8d3e88642e3f35e85d2a83e639d07523aa6e99166c48178e965c3",
+      "bytes": 48
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-c2ece85510129c0c/test-integration-test-session_jobs",
+      "sha256": "feb8b5b92230de472de0815f63c1e745ec240c2fedeb20c22d90220ed143de7c",
+      "bytes": 16
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-c2ece85510129c0c/test-integration-test-session_jobs.json",
+      "sha256": "965f41b78b184e4825a33fc0ae81269d5ce3748e56f87c00a623d4ed9b5c2029",
+      "bytes": 907
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-dd36f706834f1b41/dep-test-integration-test-state",
+      "sha256": "1b0be6c727c1a24a2dd3e54de715e11e147746a1c08609c8ea9c1c519fc86f06",
+      "bytes": 34
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-dd36f706834f1b41/invoked.timestamp",
+      "sha256": "5a109e6643e8d3e88642e3f35e85d2a83e639d07523aa6e99166c48178e965c3",
+      "bytes": 48
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-dd36f706834f1b41/test-integration-test-state",
+      "sha256": "1b2751be9bda614c5966a5e2e86fcbd775c4d15c150de2301ad1f0415e0d14e5",
+      "bytes": 16
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-dd36f706834f1b41/test-integration-test-state.json",
+      "sha256": "1d8bb0b12a7f5ed375e3ecc54c5e40e2d604e9aec64e0d26e45f22cf6dc5d84d",
+      "bytes": 899
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-ded8cc0656077fb7/dep-test-integration-test-parameter_flush",
+      "sha256": "b65b1b9bc12670645758092b541f072cfb6ee35c81a34e8a4a9117f850b4c381",
+      "bytes": 148
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-ded8cc0656077fb7/invoked.timestamp",
+      "sha256": "5a109e6643e8d3e88642e3f35e85d2a83e639d07523aa6e99166c48178e965c3",
+      "bytes": 48
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-ded8cc0656077fb7/test-integration-test-parameter_flush",
+      "sha256": "456ec6e1622dc21291a928620d622f848ce18940cb9e0eb7143a47a779127422",
+      "bytes": 16
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-ded8cc0656077fb7/test-integration-test-parameter_flush.json",
+      "sha256": "37379836b2330937a77e2ed1a07ee8f3e991b9a5df46c41ba70b0f465f868768",
+      "bytes": 910
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-fe59987495c736e1/dep-test-integration-test-snapshot",
+      "sha256": "1ccdc88916f265ae0aea2696c03466b4085ea56d21775f423056133defcdd373",
+      "bytes": 37
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-fe59987495c736e1/invoked.timestamp",
+      "sha256": "5a109e6643e8d3e88642e3f35e85d2a83e639d07523aa6e99166c48178e965c3",
+      "bytes": 48
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-fe59987495c736e1/test-integration-test-snapshot",
+      "sha256": "b4f5b92ecb0820cdc4fb35522f0aa46aabdb4941d782073f885f65b1e8fda243",
+      "bytes": 16
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum-trigger-host-fe59987495c736e1/test-integration-test-snapshot.json",
+      "sha256": "72c4af4509a56f5c305b425c876b54d4517cc9dbb479da7c9d457b52c01ba012",
+      "bytes": 903
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_engine-1bff405d1ab5a31f/dep-test-lib-dandrum_engine",
+      "sha256": "0652613a9595b966c544803b40ac0e335de401f2130f080c42f2bd053520e495",
+      "bytes": 6374
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_engine-1bff405d1ab5a31f/invoked.timestamp",
+      "sha256": "5a109e6643e8d3e88642e3f35e85d2a83e639d07523aa6e99166c48178e965c3",
+      "bytes": 48
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_engine-1bff405d1ab5a31f/test-lib-dandrum_engine",
+      "sha256": "fb352627a55b41d5574b3c6042c60068f607fa00bef8ee62f838f0978d9a0f65",
+      "bytes": 16
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_engine-1bff405d1ab5a31f/test-lib-dandrum_engine.json",
+      "sha256": "34a543b8915b6a11b97f186db19678a9c1bb8e7697628fccb143793160547c02",
+      "bytes": 1012
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_engine-d9eecec14431451f/dep-lib-dandrum_engine",
+      "sha256": "59c0a40d648f0e86e7a3fd8c6994bd96ac578f302b27b7dbbfb4d66e89b0a7df",
+      "bytes": 1863
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_engine-d9eecec14431451f/invoked.timestamp",
+      "sha256": "5a109e6643e8d3e88642e3f35e85d2a83e639d07523aa6e99166c48178e965c3",
+      "bytes": 48
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_engine-d9eecec14431451f/lib-dandrum_engine",
+      "sha256": "9ded354f9f254a7072503219654fd7c7d3bcec39d480e9dc6fa5b06b01e0f086",
+      "bytes": 16
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_engine-d9eecec14431451f/lib-dandrum_engine.json",
+      "sha256": "0888bc8ec2a567f11eb7e68a186528299eb2be35d9185f54314564d4baf995fb",
+      "bytes": 1012
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_instrument_session-07127e4c48bb1667/dep-test-integration-test-session",
+      "sha256": "88c9fad5d029bbb3d77fb410e9a541bad3ec4bdcb1c59e09a2c60527ba1e23dd",
+      "bytes": 139
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_instrument_session-07127e4c48bb1667/invoked.timestamp",
+      "sha256": "5a109e6643e8d3e88642e3f35e85d2a83e639d07523aa6e99166c48178e965c3",
+      "bytes": 48
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_instrument_session-07127e4c48bb1667/test-integration-test-session",
+      "sha256": "593860ed7a3aea80b62a59fcf4bb47a8994f39062ec6b41bb84d6f4496350302",
+      "bytes": 16
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_instrument_session-07127e4c48bb1667/test-integration-test-session.json",
+      "sha256": "c022950c8877a21f8e932e2da0c6501f5cffdaff88a2c4a09aba8a3680798280",
+      "bytes": 647
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_instrument_session-0dd7141079f4f167/dep-lib-dandrum_instrument_session",
+      "sha256": "321d02be1c2db800ff418c7a511141d84e5234ef4e810e1c26dc26f898509a04",
+      "bytes": 53
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_instrument_session-0dd7141079f4f167/invoked.timestamp",
+      "sha256": "5a109e6643e8d3e88642e3f35e85d2a83e639d07523aa6e99166c48178e965c3",
+      "bytes": 48
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_instrument_session-0dd7141079f4f167/lib-dandrum_instrument_session",
+      "sha256": "5c38465901fd222237d6e8a0f3aecda566188f7a80e0ac97687265ecb3f0a4d8",
+      "bytes": 16
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_instrument_session-0dd7141079f4f167/lib-dandrum_instrument_session.json",
+      "sha256": "8d48a749885ec47f6663ac8f7f5b8016af1be47746cc65f26aaf509702dffb44",
+      "bytes": 513
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_instrument_session-5793a9850cf7184d/dep-test-lib-dandrum_instrument_session",
+      "sha256": "a20c25efade556887ca5e31ade5b34292cf8ac4504f1889af6c8d308d0644d32",
+      "bytes": 91
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_instrument_session-5793a9850cf7184d/invoked.timestamp",
+      "sha256": "5a109e6643e8d3e88642e3f35e85d2a83e639d07523aa6e99166c48178e965c3",
+      "bytes": 48
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_instrument_session-5793a9850cf7184d/test-lib-dandrum_instrument_session",
+      "sha256": "fd69d421290b9090b77033568454131267bb0a9860ce50df805c03b10cffad12",
+      "bytes": 16
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_instrument_session-5793a9850cf7184d/test-lib-dandrum_instrument_session.json",
+      "sha256": "6bf3740077c6d74938c5ba79ef0774e907e8acfcd6488a59140606d70ef67f31",
+      "bytes": 576
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_instrument_session-aef46659b1de4470/dep-test-integration-test-render_configuration",
+      "sha256": "3690ec25a7da4ed2629f756583c7b919bf92a8365703969ebd69b9c0af77a213",
+      "bytes": 159
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_instrument_session-aef46659b1de4470/invoked.timestamp",
+      "sha256": "5a109e6643e8d3e88642e3f35e85d2a83e639d07523aa6e99166c48178e965c3",
+      "bytes": 48
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_instrument_session-aef46659b1de4470/test-integration-test-render_configuration",
+      "sha256": "43a15ad40ae33190608d560c6b322b40519ada402a511104b709fb87f2bd4778",
+      "bytes": 16
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_instrument_session-aef46659b1de4470/test-integration-test-render_configuration.json",
+      "sha256": "98924039d1da1214b5187019808446e9eae157371e811117dd3f37822f0b5aca",
+      "bytes": 662
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_instrument_session-bbd2ea1838ffa968/dep-lib-dandrum_instrument_session",
+      "sha256": "26010ad3c3749862d5b7ead7a001f2e303f5f8ebec93726eeed45a7deb3a88ad",
+      "bytes": 53
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_instrument_session-bbd2ea1838ffa968/invoked.timestamp",
+      "sha256": "5a109e6643e8d3e88642e3f35e85d2a83e639d07523aa6e99166c48178e965c3",
+      "bytes": 48
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_instrument_session-bbd2ea1838ffa968/lib-dandrum_instrument_session",
+      "sha256": "c7d1c34533c411dd43673d2faf53cf465579e01a70cce2dfd0b8df115d441346",
+      "bytes": 16
+    },
+    {
+      "path": "05-profile-proof/fingerprints/dandrum_instrument_session-bbd2ea1838ffa968/lib-dandrum_instrument_session.json",
+      "sha256": "078c3c899e6905ec976a6822b91a79141ac838b1eae93f142bd13fb183d250ee",
+      "bytes": 512
+    },
+    {
+      "path": "05-profile-proof/merge.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "05-profile-proof/output.log",
+      "sha256": "84f8e2ef685007e7e038793e0ccc13e6d9b9e34884853dbf0c015c91e66d66dc",
+      "bytes": 836
+    },
+    {
+      "path": "05-profile-proof/profile-list-original.txt",
+      "sha256": "aeab651562ea78fd4dddc40f74d177032724d6efd98526ac8ed84f6ede1da78a",
+      "bytes": 1229
+    },
+    {
+      "path": "05-profile-proof/profile-list.txt",
+      "sha256": "9e311e9900f5435e8e48d2116dc327d396c9a679dd6aec7235d96ca31bd8fb66",
+      "bytes": 1684
+    },
+    {
+      "path": "05-profile-proof/profiles/instrument-session.profdata",
+      "sha256": "9d27017b701ed3339355be1a15580e38e5564f3e59737df09f186c4306350a10",
+      "bytes": 43752
+    },
+    {
+      "path": "05-profile-proof/profiles/rust-engine.profdata",
+      "sha256": "7b00cfc61e99743d8d5f2773bbc84b05de856ecf24c90b6154286c4b48aaf080",
+      "bytes": 898912
+    },
+    {
+      "path": "05-profile-proof/profiles/trigger-host-1052410-2550028625705504781_0.profraw",
+      "sha256": "115f7a4ce1320df9b6803768a98eba81a9c87fec34abe6a69b847e29b212d8ba",
+      "bytes": 18656
+    },
+    {
+      "path": "05-profile-proof/profiles/trigger-host-1052430-16925825404398542609_0.profraw",
+      "sha256": "128cdcbca8bb22ed232ce70511541383c3ae39121a670b9ec286fdd5f2ad7345",
+      "bytes": 24872
+    },
+    {
+      "path": "05-profile-proof/profiles/trigger-host-1052471-14688880603186194053_0.profraw",
+      "sha256": "a6cfd65ba72f128f1021d1b3bdd6959b29efa1f4d31be4ba0d2cd004c84ac6f2",
+      "bytes": 13696
+    },
+    {
+      "path": "05-profile-proof/profiles/trigger-host-1052490-14600332412214332126_0.profraw",
+      "sha256": "3d31833ae373f9beab114ddf2ef51497d5b4f11fe7a72884886c7436aa8b50eb",
+      "bytes": 11208
+    },
+    {
+      "path": "05-profile-proof/profiles/trigger-host-1052499-2599591450112344921_0.profraw",
+      "sha256": "8d666cb4ce52ef752466eb8cd6b7b236e776b35ea13c474e11ad6cbf1b242759",
+      "bytes": 24528
+    },
+    {
+      "path": "05-profile-proof/profiles/trigger-host-1052509-12836692453408845003_0.profraw",
+      "sha256": "a41e74b7b412526cb2147f325e840e7312b66ea1f4f003526d0d20fd40330528",
+      "bytes": 19904
+    },
+    {
+      "path": "05-profile-proof/profiles/trigger-host-1052527-11769426811876691784_0.profraw",
+      "sha256": "3316f822ac8d49ae34834f8dc9f272b0f38a23dceee50e18b49ddf6a4ef98387",
+      "bytes": 8680
+    },
+    {
+      "path": "05-profile-proof/profiles/trigger-host-1052538-5871581907618468619_0.profraw",
+      "sha256": "11110d2d65b49beea6cd261cc652018bb84c2e70d4e7bce48103a85bad2cfbbe",
+      "bytes": 26904
+    },
+    {
+      "path": "05-profile-proof/profiles/trigger-host-1052556-6769168459142553703_0.profraw",
+      "sha256": "711e478d22ecc7e7e51648d217cf754a8e493ef9f1aa3c22dcfe5818d0712c0b",
+      "bytes": 14072
+    },
+    {
+      "path": "05-profile-proof/profiles/trigger-host-1052578-16330015815629046815_0.profraw",
+      "sha256": "cb8363c5cf2d246ac5d3907ffb48ba02270fc10ee9c21bedbc30fabbb0570629",
+      "bytes": 13896
+    },
+    {
+      "path": "05-profile-proof/profiles/trigger-host-1052587-16843635237745115217_0.profraw",
+      "sha256": "8a3b3f4f5cda81c852530388c530793ebd17026bcd099f03f328703fd832b544",
+      "bytes": 24664
+    },
+    {
+      "path": "05-profile-proof/profiles/trigger-host-1052622-5917692333601662903_0.profraw",
+      "sha256": "addadf4de0787c5f33563d4c518b9379f3ab4289cf30285b1dd6d33d311b01a3",
+      "bytes": 20624
+    },
+    {
+      "path": "05-profile-proof/profiles/trigger-host-1052628-6622292352634969513_0.profraw",
+      "sha256": "37a2d4616ed90a6151175383ad490bd31f6afb386492a2ff06645eff030bc50c",
+      "bytes": 22776
+    },
+    {
+      "path": "05-profile-proof/profiles/trigger-host.profdata",
+      "sha256": "6692032be8f2b6b5b251c982e1366a34be1fcea1aed50b0ed9805397431f5041",
+      "bytes": 174800
+    },
+    {
+      "path": "05-profile-proof/proof.json",
+      "sha256": "70239e55bf07aa2315086c5878118e18cc2a39c79697d9cf806551acfa74507b",
+      "bytes": 23504
+    },
+    {
+      "path": "05-profile-proof/receipt.json",
+      "sha256": "949d2fbe1367c7848aaa81ab8fbbfb7da2a2a542b2a85bbc2dc8114f49dd59d9",
+      "bytes": 4463
+    },
+    {
+      "path": "05-profile-proof/remerged.profdata",
+      "sha256": "6692032be8f2b6b5b251c982e1366a34be1fcea1aed50b0ed9805397431f5041",
+      "bytes": 174800
+    },
+    {
+      "path": "05-profile-proof/src/trigger-host/src/runtime.rs",
+      "sha256": "41cb146824e21aa3c5814885b5561cd00d8152b5390338af25af26bc96f62592",
+      "bytes": 71140
+    },
+    {
+      "path": "05-profile-proof/src/trigger-host/tests/parameter_flush.rs",
+      "sha256": "96d17783f093b08ca20cbf940ea21b6eb993c0e755b89769f7a2cc350ba6750e",
+      "bytes": 21080
+    },
+    {
+      "path": "author-freeze.json",
+      "sha256": "c4a8859a179d7628915a2df6ca65e59051e78f1612c149726d68cf984c7bbc68",
+      "bytes": 750
+    },
+    {
+      "path": "completion.json",
+      "sha256": "2fc87350fdefe5ef4b9bd339058e9e732b84bae35b786d4ba4f533f2b90d90d0",
+      "bytes": 35520
+    },
+    {
+      "path": "coverage-qualification.json",
+      "sha256": "ded7456003f75659801cd3ef7fd8a909739d8e49ef3c199c79db178e4561d27f",
+      "bytes": 5650
+    },
+    {
+      "path": "prove-profiles.py",
+      "sha256": "e2f183c8f0f6126ceca31be74ba5bb44d6c3e9d02e34da0153d666930bf6eeb6",
+      "bytes": 4415
+    },
+    {
+      "path": "qualify.py",
+      "sha256": "2006862559d8e58153768fe696f17b8d4c227c333e922c935bcf209107312fe5",
+      "bytes": 4881
+    },
+    {
+      "path": "repair.json",
+      "sha256": "147dfa5d29e9f21cbd39617fbe9a31a15ca6871c7fb2ec45ee3797429f5e6617",
+      "bytes": 813
+    },
+    {
+      "path": "run.py",
+      "sha256": "c0f00b307dc1fa92dba7c595d56e80ef31e508af622339c0c65232e999f10312",
+      "bytes": 4470
+    }
+  ]
+}

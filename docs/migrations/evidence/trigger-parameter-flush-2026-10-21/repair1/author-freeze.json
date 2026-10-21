@@ -1,0 +1,19 @@
+{
+  "head": "dfac45088d235d587cd4ff52338594eae53f09af",
+  "owned": {
+    "src/trigger-host/src/runtime.rs": {
+      "sha256": "41cb146824e21aa3c5814885b5561cd00d8152b5390338af25af26bc96f62592",
+      "mode": 436,
+      "size": 71140,
+      "mtime_ns": 1792554243948204045
+    },
+    "src/trigger-host/tests/parameter_flush.rs": {
+      "sha256": "96d17783f093b08ca20cbf940ea21b6eb993c0e755b89769f7a2cc350ba6750e",
+      "mode": 436,
+      "size": 21080,
+      "mtime_ns": 1792552646179051052
+    }
+  },
+  "root_owned_design_sha256": "810500bde0e3d404a6e3e4ac8c3408d46c754d0eae2dbd164c7d4a7cfafcdaee",
+  "scope": "Test-only R1 repair; production behavior unchanged. Restore existing nonempty stale-command reset oracle alongside flush prefix case."
+}

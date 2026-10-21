@@ -1,0 +1,20 @@
+{
+  "head": "dfac45088d235d587cd4ff52338594eae53f09af",
+  "owned": {
+    "src/trigger-host/src/runtime.rs": {
+      "sha256": "b468f51c5167cfb502ca0c86f9ee53cf12e151e8256712e6bc167b79495c3bb7",
+      "mode": 436,
+      "size": 69877,
+      "mtime_ns": 1792552408787712455
+    },
+    "src/trigger-host/tests/parameter_flush.rs": {
+      "sha256": "96d17783f093b08ca20cbf940ea21b6eb993c0e755b89769f7a2cc350ba6750e",
+      "mode": 436,
+      "size": 21080,
+      "mtime_ns": 1792552646179051052
+    }
+  },
+  "root_owned_design_sha256": "810500bde0e3d404a6e3e4ac8c3408d46c754d0eae2dbd164c7d4a7cfafcdaee",
+  "status": " M openspec/changes/add-juce-free-trigger-clap-editor/design.md\n M src/trigger-host/src/runtime.rs\n?? src/trigger-host/tests/parameter_flush.rs\n",
+  "scope": "Frozen runtime.rs and new parameter_flush.rs only; no further author source changes absent root/reviewer request. Root owns Git/index/design/docs/publication."
+}

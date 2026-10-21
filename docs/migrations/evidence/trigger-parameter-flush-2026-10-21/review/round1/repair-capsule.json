@@ -1,0 +1,24 @@
+{
+  "verdict": "FAIL",
+  "reviewer": "/root/parameter_flush_review",
+  "initial_manifest_sha256": "980d12fbbc03159fcd7696261f1f31b093b17af0e14195ff81767c7a44d3d956",
+  "findings": [
+    {
+      "id": "R1",
+      "severity": "medium",
+      "path": "src/trigger-host/src/runtime.rs",
+      "symbol": "admission_tests::successful_state_publication_retires_queued_notes_and_reset_cannot_settle_old_generation_commands",
+      "requirement": "Preserve meaningful existing behavior regression protection while extending tests",
+      "evidence": "New flush consumes all eight old-epoch UI scalars before reset; reset.discarded_events is explicitly zero. Baseline reset itself consumed old-epoch sequence 10. No other inspected reset test supplies the obsolete nonzero-sequence witness.",
+      "consequence": "Removing reset epoch filtering could acknowledge an obsolete UI command while this candidate test still passes; its reset assertion is vacuous.",
+      "required_outcome": "Retain flush stale-prefix proof and separately make reset consume a real old-epoch nonzero UI command, asserting nonzero discarded count, zero current-command cancellations, and unchanged restored value/settlement/reset cause; refresh verification and whole-candidate evidence."
+    }
+  ],
+  "preserve": [
+    "frozen candidate and all round1 evidence",
+    "new stale-prefix flush coverage",
+    "no mutation and no cache cleanup constraints"
+  ],
+  "review_again": "Whole rebuilt candidate, source-bound gates and new manifest, same reviewer",
+  "obsolete_draft": "predicted-final-manifest.json is not approved"
+}

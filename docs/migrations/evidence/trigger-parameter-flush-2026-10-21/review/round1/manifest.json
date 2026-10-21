@@ -1,0 +1,127 @@
+{
+  "base": "dfac45088d235d587cd4ff52338594eae53f09af",
+  "current": "dfac45088d235d587cd4ff52338594eae53f09af",
+  "branch": "lane/trigger-runtime-20261020",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "dfac45088d235d587cd4ff52338594eae53f09af",
+  "integration_base": "dfac45088d235d587cd4ff52338594eae53f09af",
+  "paths": [
+    {
+      "path": "docs/migrations/evidence/trigger-parameter-flush-2026-10-21/HANDOFF.md",
+      "change": "A",
+      "index_status": "A",
+      "worktree_status": " ",
+      "mode": "100644",
+      "sha256": "1c6b4b577f24c4939ec754dd8ad73f4497fc2785a9ef17bc08f4a59f6783176f",
+      "staged_object": "e10c88494e77717c0f82f15f6cce7e81003bec04"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parameter-flush-2026-10-21/SHA256SUMS",
+      "change": "A",
+      "index_status": "A",
+      "worktree_status": " ",
+      "mode": "100644",
+      "sha256": "b46baf1c06998655bffd474212d236c3f2e3fc5baca372cd4a05c76723275254",
+      "staged_object": "719012b83e1c6004298071c33a23e876248bc76a"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parameter-flush-2026-10-21/author-artifacts.json",
+      "change": "A",
+      "index_status": "A",
+      "worktree_status": " ",
+      "mode": "100644",
+      "sha256": "5acbadfd06ad6d2a8c8e9a7bd077e585848b0d84b2839b716c6b43aabeb23576",
+      "staged_object": "c4108ea9184bbf509b42b927d464618ba56583f2"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parameter-flush-2026-10-21/author-freeze.json",
+      "change": "A",
+      "index_status": "A",
+      "worktree_status": " ",
+      "mode": "100644",
+      "sha256": "10ed7884725373941f62989c1e1a4523f86b34711528c7f9fd32adfc14b08172",
+      "staged_object": "439fd7572946d636c14c5bad119d84992bc0f1db"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parameter-flush-2026-10-21/author-raw.tar.gz",
+      "change": "A",
+      "index_status": "A",
+      "worktree_status": " ",
+      "mode": "100644",
+      "sha256": "db85d35ff2af71bfb2acc04e04a8bf0ea3fd5f7246d72a3f5a2fb210170a055c",
+      "staged_object": "84df0075b382b4d155a1021879005265cf7b7a84"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parameter-flush-2026-10-21/baseline-reuse.json",
+      "change": "A",
+      "index_status": "A",
+      "worktree_status": " ",
+      "mode": "100644",
+      "sha256": "0023688374e0e252e7e249c0853769d1bef84fa80fd2d7a2f5f675982937d36c",
+      "staged_object": "96c9565d1e4c53591d8979081813331b7560c5ec"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parameter-flush-2026-10-21/completion.json",
+      "change": "A",
+      "index_status": "A",
+      "worktree_status": " ",
+      "mode": "100644",
+      "sha256": "02b545093196c13e9e8cb0bccc7a30db968e1f24931e5e694a7e1e49ac55fa34",
+      "staged_object": "c9f61de481864738c22f20fae551e5e2f61146b8"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parameter-flush-2026-10-21/coverage-qualification.json",
+      "change": "A",
+      "index_status": "A",
+      "worktree_status": " ",
+      "mode": "100644",
+      "sha256": "e6a3185f11490545c3f1187bcf03e056856e85bf0c502becf9204cfc4a9fcb1a",
+      "staged_object": "d39e5dcc34979b3873e5c521e914ab7a7ecccd8d"
+    },
+    {
+      "path": "docs/migrations/evidence/trigger-parameter-flush-2026-10-21/receipt.json",
+      "change": "A",
+      "index_status": "A",
+      "worktree_status": " ",
+      "mode": "100644",
+      "sha256": "a4fa40768bc4f5f7060ad65f96a9cfef1122d71cb947018c3e1651403db72fb9",
+      "staged_object": "23556d1a9a2d369aeb6e72aee4c49dba562b278b"
+    },
+    {
+      "path": "docs/migrations/juce-replacement-progress.md",
+      "change": "M",
+      "index_status": "M",
+      "worktree_status": " ",
+      "mode": "100644",
+      "sha256": "a15fbccf44fb7c98e8036ab537e70ed975c2b1cbe4b8936aa1353be7306caedf",
+      "staged_object": "12d865b3d2e34b4b25bc86b9f73e3a800ffe8bf6"
+    },
+    {
+      "path": "openspec/changes/add-juce-free-trigger-clap-editor/design.md",
+      "change": "M",
+      "index_status": "M",
+      "worktree_status": " ",
+      "mode": "100644",
+      "sha256": "810500bde0e3d404a6e3e4ac8c3408d46c754d0eae2dbd164c7d4a7cfafcdaee",
+      "staged_object": "fbc952afbe8377b46f6ff35bf0aea58fbd883af4"
+    },
+    {
+      "path": "src/trigger-host/src/runtime.rs",
+      "change": "M",
+      "index_status": "M",
+      "worktree_status": " ",
+      "mode": "100644",
+      "sha256": "b468f51c5167cfb502ca0c86f9ee53cf12e151e8256712e6bc167b79495c3bb7",
+      "staged_object": "8e350b9b33a455d442f1bd456def3434f894b930"
+    },
+    {
+      "path": "src/trigger-host/tests/parameter_flush.rs",
+      "change": "A",
+      "index_status": "A",
+      "worktree_status": " ",
+      "mode": "100644",
+      "sha256": "96d17783f093b08ca20cbf940ea21b6eb993c0e755b89769f7a2cc350ba6750e",
+      "staged_object": "915b05ab04564ac27bd8c6f70478baf213ffae4b"
+    }
+  ]
+}

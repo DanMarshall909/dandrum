@@ -1,0 +1,173 @@
+{
+  "source_phase": "04-full-owner-cov",
+  "functions": {
+    "flush_parameters": {
+      "normal_code_source_regions": 58,
+      "hit": 57,
+      "unhit": [
+        [
+          874,
+          13,
+          874,
+          14
+        ]
+      ],
+      "counts": {
+        "(830, 5, 833, 52)": 44,
+        "(834, 12, 834, 16)": 44,
+        "(834, 12, 834, 50)": 44,
+        "(835, 16, 835, 27)": 43,
+        "(835, 28, 835, 31)": 43,
+        "(840, 20, 840, 51)": 11,
+        "(841, 9, 841, 10)": 33,
+        "(842, 18, 842, 28)": 32,
+        "(842, 32, 842, 73)": 33,
+        "(843, 20, 846, 15)": 1,
+        "(848, 13, 848, 19)": 32,
+        "(848, 22, 848, 40)": 32,
+        "(848, 41, 848, 59)": 32,
+        "(849, 13, 849, 23)": 32,
+        "(849, 26, 849, 55)": 32,
+        "(850, 18, 850, 46)": 32,
+        "(851, 21, 851, 27)": 146,
+        "(851, 31, 851, 55)": 167,
+        "(852, 17, 852, 22)": 21,
+        "(854, 43, 854, 48)": 141,
+        "(854, 50, 854, 55)": 141,
+        "(854, 60, 854, 72)": 146,
+        "(855, 17, 855, 47)": 5,
+        "(856, 17, 856, 22)": 5,
+        "(858, 16, 858, 28)": 141,
+        "(858, 16, 858, 72)": 141,
+        "(858, 32, 858, 48)": 141,
+        "(858, 73, 866, 14)": 133,
+        "(859, 17, 859, 46)": 133,
+        "(860, 44, 860, 55)": 133,
+        "(860, 56, 860, 66)": 133,
+        "(860, 67, 860, 82)": 133,
+        "(861, 21, 861, 26)": 133,
+        "(866, 13, 866, 14)": 8,
+        "(867, 17, 867, 26)": 141,
+        "(867, 29, 867, 46)": 141,
+        "(867, 47, 867, 50)": 141,
+        "(867, 53, 867, 59)": 141,
+        "(867, 60, 867, 82)": 141,
+        "(869, 14, 869, 19)": 9,
+        "(869, 23, 869, 27)": 32,
+        "(870, 46, 870, 51)": 9,
+        "(870, 53, 870, 58)": 9,
+        "(870, 63, 870, 68)": 9,
+        "(870, 69, 874, 14)": 9,
+        "(871, 17, 871, 46)": 9,
+        "(873, 21, 873, 32)": 9,
+        "(873, 33, 873, 43)": 9,
+        "(873, 44, 873, 59)": 9,
+        "(874, 13, 874, 14)": 0,
+        "(876, 9, 876, 19)": 32,
+        "(877, 5, 877, 6)": 44,
+        "(835, 40, 835, 41)": 27,
+        "(836, 18, 836, 26)": 3,
+        "(836, 27, 836, 32)": 27,
+        "(837, 24, 837, 66)": 24,
+        "(837, 25, 837, 30)": 24,
+        "(838, 13, 838, 14)": 27
+      }
+    },
+    "apply_parameter": {
+      "normal_code_source_regions": 21,
+      "hit": 21,
+      "unhit": [],
+      "counts": {
+        "(1167, 5, 1173, 14)": 27940,
+        "(1174, 9, 1174, 27)": 27940,
+        "(1174, 28, 1174, 33)": 27940,
+        "(1174, 34, 1174, 39)": 27940,
+        "(1174, 40, 1174, 47)": 27940,
+        "(1174, 51, 1174, 67)": 27940,
+        "(1175, 12, 1175, 33)": 27940,
+        "(1175, 34, 1178, 10)": 35,
+        "(1176, 13, 1176, 28)": 35,
+        "(1177, 18, 1177, 23)": 35,
+        "(1178, 9, 1178, 10)": 27905,
+        "(1179, 9, 1179, 22)": 27940,
+        "(1179, 9, 1188, 15)": 27940,
+        "(1180, 14, 1180, 18)": 27940,
+        "(1181, 28, 1185, 18)": 27940,
+        "(1182, 21, 1182, 26)": 27940,
+        "(1186, 29, 1186, 44)": 27940,
+        "(1186, 29, 1186, 68)": 27940,
+        "(1187, 24, 1187, 34)": 27940,
+        "(1189, 14, 1189, 20)": 27940,
+        "(1190, 5, 1190, 6)": 27940
+      }
+    }
+  },
+  "merged_production_normal_regions": {
+    "total": 1117,
+    "hit": 1114,
+    "unhit": [
+      [
+        299,
+        75,
+        299,
+        76
+      ],
+      [
+        874,
+        13,
+        874,
+        14
+      ],
+      [
+        1066,
+        78,
+        1066,
+        79
+      ]
+    ]
+  },
+  "llvm_reported_runtime_summary": {
+    "branches": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0.0
+    },
+    "mcdc": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0.0
+    },
+    "functions": {
+      "count": 109,
+      "covered": 109,
+      "percent": 100.0
+    },
+    "instantiations": {
+      "count": 191,
+      "covered": 177,
+      "percent": 92.67015706806284
+    },
+    "lines": {
+      "count": 1372,
+      "covered": 1365,
+      "percent": 99.48979591836735
+    },
+    "regions": {
+      "count": 2130,
+      "covered": 2116,
+      "notcovered": 14,
+      "percent": 99.34272300469483
+    }
+  },
+  "limits": [
+    "No branch/MC-DC or blanket owner/overall100percent claim. Normal source coordinates merge duplicate emitted instantiations; raw summaries are retained separately.",
+    "The one new unhit flush region is the impossible nonparameter host-loop closing path after full immutable-slice preflight; root accepted retaining the clear safe scalar-only branch without unsafe casts, panic, test seam or typed-buffer allocation.",
+    "Earlier private QuiescentControl PreparedRuntime::new propagation and original process apply_event propagation remain unhit; these are prior qualified boundaries, not newly excluded code.",
+    "Deterministic closed admission and obsolete epoch use an actual paused/cancelled/published restoring lease inside existing runtime unit fixtures. No manual epoch counter writes or claim of a public-only deterministic lease window.",
+    "Finite real producer refill checks each actual flush<=E, exact total/latest values and overflow order; it does not claim exhaustive concurrency schedules or that deferred_at_note=false means empty.",
+    "The current NoteOff public test asserts the existing one-shot natural tail, not a new gated-release lifecycle promise. Existing gated editor/host lifecycle regressions remain in full owner tests.",
+    "Mutation excluded. New source-free/default-release/CMake/native/CLAP acceptance deferred to actual facade/final gate; no old binary proof attributed to new source. Task4.1/4.2/beta stay open."
+  ]
+}

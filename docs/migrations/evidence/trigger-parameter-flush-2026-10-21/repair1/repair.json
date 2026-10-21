@@ -1,0 +1,21 @@
+{
+  "finding": "R1",
+  "round1_manifest": "980d12fbbc03159fcd7696261f1f31b093b17af0e14195ff81767c7a44d3d956",
+  "original_evidence": "/tmp/dandrum-lanes/evidence-parameter-flush",
+  "behavior_change": false,
+  "TDD": "Restores an existing behavior witness; immediate PASS expected, not new RED. Original feature RED logs preserved. No mutation execution.",
+  "source_sha256": {
+    "src/trigger-host/src/runtime.rs": {
+      "sha256": "41cb146824e21aa3c5814885b5561cd00d8152b5390338af25af26bc96f62592",
+      "mode": 436,
+      "size": 71140,
+      "mtime_ns": 1792554243948204045
+    },
+    "src/trigger-host/tests/parameter_flush.rs": {
+      "sha256": "96d17783f093b08ca20cbf940ea21b6eb993c0e755b89769f7a2cc350ba6750e",
+      "mode": 436,
+      "size": 21080,
+      "mtime_ns": 1792552646179051052
+    }
+  }
+}

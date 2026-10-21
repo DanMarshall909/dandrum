@@ -1,0 +1,25 @@
+{
+  "verdict": "PASS",
+  "reviewer": "/root/parameter_flush_review",
+  "round": 2,
+  "initial_manifest_sha256": "b597a6132b19349fd2deafbe520fb46d45b2acbb69d21ef78b6e782ccf35a100",
+  "base": "dfac45088d235d587cd4ff52338594eae53f09af",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "dfac45088d235d587cd4ff52338594eae53f09af",
+  "candidate_paths": 23,
+  "findings": [],
+  "resolved_findings": [
+    {
+      "id": "R1",
+      "outcome": "Separate real obsolete nonzero command reaches reset; discarded1/cancelled0 and restored0.25/settlement0/resetcausefalse preserved. Eight-entry stale flush case retained."
+    }
+  ],
+  "gaps": [
+    "Mutation excluded by user; no score claimed.",
+    "Actual CLAP/native/release/browser/DAW/installed/VST3/standalone acceptance remains open.",
+    "Flush57/58 normal regions: sole new uncovered closing path unreachable after immutable parameter-only preflight; prior defensive owner gaps retained.",
+    "No branch/MC-DC/exhaustive concurrency proof; false deferred does not imply empty.",
+    "Read-only reviewer checked retained source-bound execution evidence without rerunning tests/builds/LLVM.",
+    "Exact actual final manifest/tree and named validations still require same-reviewer precommit gate; normal publication pending."
+  ]
+}

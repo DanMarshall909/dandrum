@@ -158,6 +158,16 @@ pub struct ProcessReport {
     pub dropped_feedback: usize,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct ParameterFlushReport {
+    pub admission_closed: bool,
+    pub parameter_updates: usize,
+    pub dropped_feedback: usize,
+    /// An ordinary note head was observed and retained. False does not promise
+    /// an empty queue: the bounded inspection budget may have been exhausted.
+    pub deferred_at_note: bool,
+}
+
 /// Progress made off audio while exclusively borrowing a matched endpoint pair.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct QuiescentReport {
@@ -814,6 +824,57 @@ impl Drop for ClosedAdmission<'_> {
 }
 
 impl RuntimeAudio {
+    /// Apply a bounded scalar prefix and parameter-only host batch without
+    /// advancing DSP or runtime ownership. Validate the complete batch before
+    /// admission; an ordinary queued note retains itself and its FIFO suffix.
+    pub fn flush_parameters(
+        &mut self,
+        host: &[ControlEvent],
+    ) -> Result<ParameterFlushReport, RuntimeError> {
+        if host.len() > self.state.event_capacity
+            || host.iter().any(|event| {
+                !matches!(event, ControlEvent::Parameter { .. })
+                    || !event.valid(&self.state.current.0.layout)
+            })
+        {
+            return Err(RuntimeError::InvalidEvent);
+        }
+        let Some(_admission) = CallbackAdmission::enter(&self.admission) else {
+            return Ok(ParameterFlushReport {
+                admission_closed: true,
+                ..ParameterFlushReport::default()
+            });
+        };
+        let _write = ScalarWrite::begin(&self.scalar_stamp);
+        let mut report = ParameterFlushReport::default();
+        for _ in 0..self.state.event_capacity {
+            let Ok(&queued) = self.state.events.peek() else {
+                break;
+            };
+            let ControlEvent::Parameter { index, value } = queued.event else {
+                report.deferred_at_note = true;
+                break;
+            };
+            if queued.epoch == self.state.epoch.load(Ordering::Relaxed) {
+                report.parameter_updates += 1;
+                report.dropped_feedback += usize::from(self.state.apply_parameter(
+                    index,
+                    value,
+                    0,
+                    queued.command_sequence,
+                ));
+            }
+            let _consumed = self.state.events.pop().expect("observed scalar head");
+        }
+        for &event in host {
+            if let ControlEvent::Parameter { index, value } = event {
+                report.parameter_updates += 1;
+                report.dropped_feedback +=
+                    usize::from(self.state.apply_parameter(index, value, 0, 0));
+            }
+        }
+        Ok(report)
+    }
     pub fn reset(&mut self) -> ResetReport {
         let Some(_admission) = CallbackAdmission::enter(&self.admission) else {
             return ResetReport {
@@ -1093,33 +1154,39 @@ impl AudioState {
                 self.editor_gates[usize::from(note)] = 0;
             }
             ControlEvent::Parameter { index, value } => {
-                self.values[index].store(value.to_bits(), Ordering::SeqCst);
-                if command_sequence != 0 {
-                    self.settlement
-                        .store(command_sequence << 1, Ordering::Release);
-                }
                 report.parameter_updates += 1;
-                if self
-                    .feedback
-                    .push(QueuedFeedback {
-                        parameter: ParameterFeedback {
-                            index,
-                            value,
-                            frame_offset,
-                        },
-                        settlement: self.settlement.load(Ordering::Relaxed),
-                        epoch: self.epoch.load(Ordering::Relaxed),
-                    })
-                    .is_err()
-                {
-                    // Scalar values remain available atomically even when the
-                    // bounded event queue is full. The caller requests a main
-                    // callback and reports/reconciles this explicit overflow.
-                    report.dropped_feedback += 1;
-                }
+                report.dropped_feedback +=
+                    usize::from(self.apply_parameter(index, value, frame_offset, command_sequence));
             }
         }
         Ok(())
+    }
+
+    /// Scalar application is infallible; only its bounded feedback may drop.
+    /// Admission, queue budgets and note ordering remain the caller's policy.
+    fn apply_parameter(
+        &mut self,
+        index: usize,
+        value: f64,
+        frame_offset: u32,
+        command_sequence: u64,
+    ) -> bool {
+        self.values[index].store(value.to_bits(), Ordering::SeqCst);
+        if command_sequence != 0 {
+            self.settlement
+                .store(command_sequence << 1, Ordering::Release);
+        }
+        self.feedback
+            .push(QueuedFeedback {
+                parameter: ParameterFeedback {
+                    index,
+                    value,
+                    frame_offset,
+                },
+                settlement: self.settlement.load(Ordering::Relaxed),
+                epoch: self.epoch.load(Ordering::Relaxed),
+            })
+            .is_err()
     }
 }
 
@@ -1150,6 +1217,50 @@ mod admission_tests {
     use super::*;
     use std::sync::mpsc;
     use std::time::{Duration, Instant};
+
+    #[test]
+    fn stopped_host_scalar_cannot_acknowledge_a_current_ui_command_behind_a_note() {
+        let (mut control, mut audio) = gain_runtime();
+        control
+            .try_send(ControlEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            })
+            .unwrap();
+        control.send_parameter(0, 0.5, 31).unwrap();
+        let audit = allocation_counter::measure(|| {
+            assert_eq!(
+                audio.flush_parameters(&[ControlEvent::Parameter {
+                    index: 0,
+                    value: 2.0
+                }]),
+                Ok(ParameterFlushReport {
+                    parameter_updates: 1,
+                    deferred_at_note: true,
+                    ..ParameterFlushReport::default()
+                })
+            );
+        });
+        assert_eq!(audit, allocation_counter::AllocationInfo::default());
+        assert_eq!(control.snapshot_parameters(), (0, false, vec![2.0]));
+        assert_eq!(
+            control.take_feedback(),
+            Some(ParameterFeedback {
+                index: 0,
+                value: 2.0,
+                frame_offset: 0
+            })
+        );
+        let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
+        assert_eq!(
+            audio
+                .process(&mut left, &mut right)
+                .unwrap()
+                .parameter_updates,
+            1
+        );
+        assert_eq!(control.snapshot_parameters(), (31, false, vec![0.5]));
+    }
 
     #[test]
     fn successful_state_publication_retires_queued_notes_and_reset_cannot_settle_old_generation_commands()
@@ -1203,6 +1314,26 @@ mod admission_tests {
         let lease = restoration.activate(session.prepared(), &before).unwrap();
         let (mut blocked_left, mut blocked_right) = ([1.0; 16], [1.0; 16]);
         let callback = allocation_counter::measure(|| {
+            assert_eq!(
+                audio.flush_parameters(&[ControlEvent::Parameter {
+                    index: 2,
+                    value: 1.0
+                }]),
+                Ok(ParameterFlushReport {
+                    admission_closed: true,
+                    ..ParameterFlushReport::default()
+                })
+            );
+            assert_eq!(
+                audio.flush_parameters(&[
+                    ControlEvent::Parameter {
+                        index: 2,
+                        value: 1.0
+                    },
+                    ControlEvent::NoteOff { note: 36 }
+                ]),
+                Err(RuntimeError::InvalidEvent)
+            );
             assert!(audio.reset().admission_closed);
             let report = audio
                 .process(&mut blocked_left, &mut blocked_right)
@@ -1210,6 +1341,23 @@ mod admission_tests {
             assert!(report.admission_closed);
             assert!(!report.swapped);
             assert_eq!((blocked_left, blocked_right), ([0.0; 16], [0.0; 16]));
+            assert!(
+                audio
+                    .process_events(
+                        &mut blocked_left,
+                        &mut blocked_right,
+                        &[TimedEvent {
+                            frame_offset: 16,
+                            event: ControlEvent::Parameter {
+                                index: usize::MAX,
+                                value: f64::NAN
+                            },
+                        }]
+                    )
+                    .unwrap()
+                    .admission_closed,
+                "process retains admission-before-validation precedence"
+            );
         });
         assert_eq!(
             (
@@ -1231,6 +1379,14 @@ mod admission_tests {
         session
             .commit_document_replacement(candidate, &mut control.restoring(values))
             .unwrap();
+        assert_eq!(
+            audio.flush_parameters(&[]),
+            Ok(ParameterFlushReport {
+                deferred_at_note: true,
+                ..ParameterFlushReport::default()
+            }),
+            "an obsolete note is still a stopped-flush barrier before epoch filtering"
+        );
         let (mut left, mut right) = ([1.0; 16], [1.0; 16]);
         audio.process(&mut left, &mut right).unwrap();
         assert_eq!(
@@ -1241,6 +1397,8 @@ mod admission_tests {
         assert_eq!(control.parameter_value(2), Some(0.5));
         assert!(control.take_feedback().is_none());
         drop(control.reclaim());
+        // Keep reset's original obsolete-command witness separate from flush:
+        // reset must inspect this nonzero sequence rather than an empty queue.
         control.send_parameter(2, 3.0, 10).unwrap();
         let candidate = session.prepare_document_replacement_owned(&yaml).unwrap();
         let mut values = control.snapshot_parameters().2;
@@ -1248,7 +1406,40 @@ mod admission_tests {
         session
             .commit_document_replacement(candidate, &mut control.restoring(values))
             .unwrap();
-        audio.reset();
+        let restored = control.snapshot_parameters();
+        assert_eq!((restored.0, restored.1, restored.2[2]), (0, false, 0.25));
+        let mut reset = None;
+        let audit = allocation_counter::measure(|| reset = Some(audio.reset()));
+        assert_eq!(audit, allocation_counter::AllocationInfo::default());
+        let reset = reset.unwrap();
+        assert_eq!(
+            (reset.discarded_events, reset.cancelled_parameter_commands),
+            (1, 0),
+            "reset discards obsolete UI commands without cancelling this epoch"
+        );
+        assert_eq!(control.snapshot_parameters(), restored);
+        assert!(control.take_feedback().is_none());
+        audio.process(&mut left, &mut right).unwrap();
+        drop(control.reclaim());
+        for sequence in 20..28 {
+            control.send_parameter(2, 3.0, sequence).unwrap();
+        }
+        let candidate = session.prepare_document_replacement_owned(&yaml).unwrap();
+        let mut values = control.snapshot_parameters().2;
+        values[2] = 0.25;
+        session
+            .commit_document_replacement(candidate, &mut control.restoring(values))
+            .unwrap();
+        assert_eq!(
+            audio.flush_parameters(&[]),
+            Ok(ParameterFlushReport::default()),
+            "an entire capacity of obsolete scalar prefix is discarded without settlement/feedback or adopting the pending graph"
+        );
+        assert_eq!(
+            audio.reset().discarded_events,
+            0,
+            "flush consumed the obsolete scalar prefix"
+        );
         assert_eq!(
             control.snapshot_parameters(),
             (0, false, control.snapshot_parameters().2),

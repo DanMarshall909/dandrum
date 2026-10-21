@@ -1509,3 +1509,51 @@ projection are subsequent boundaries. All editor/native/full-beta acceptance,
 VST3, standalone, named-DAW and installed offline proof remain open. No task
 checkbox or canonical scenario mapping is completed by this component alone.
 Main remains clean68dd655; mutation stays excluded.
+
+
+## Stopped parameter flush — 21 October 2026
+
+RuntimeAudio can now flush bounded scalar parameters without rendering audio.
+The complete host batch must contain valid parameters and fit the configured
+budget before admission or mutation. A valid denied callback reports closed
+admission. Admitted service examines at most E queued UI entries, stops at any
+ordinary note before checking epoch, discards stale scalar prefixes and applies
+current UI values before the host batch. UI commands settle their own sequence;
+host-only writes preserve earlier UI settlement and reset cause. Feedback overflow
+is explicit while atomic latest values remain readable. A deferred note and its
+suffix remain for a real process call; a later queued UI value may follow the
+host flush value. A false deferred flag does not promise an empty queue.
+
+Seven new public tests include a characterization of existing process order;
+one new unit and an extended real restore fixture cover settlement and admission.
+All146 host tests plus2 compile-fail doctests, formatting, strict all-target
+Clippy and full owner LLVM pass. Signed sample continuation, once-only notes,
+pending replacement, editor intent, controller snapshots/save/undo, independent
+instances and real producer refill are asserted. Callback allocation/destruction
+sentinels stay zero across valid, invalid, closed and deferred paths. Thirteen
+actual executed binaries bind to thirteen raw profiles; byte-identical remerge
+and exact source/integer exports are retained with derived-percent and Cargo
+metadata qualifications. The scalar helper has21/21 normal source regions;
+flush has57/58 with one unreachable nonparameter host-loop closing region after
+immutable-slice validation. Earlier defensive owner gaps remain disclosed. No
+blanket100%, branch, MC-DC or exhaustive scheduling claim is made.
+
+[Portable evidence](evidence/trigger-parameter-flush-2026-10-21/receipt.json)
+retains exact REDs, phase snapshots, logs, hashes and profile evidence. Mutation
+remains excluded. No new source-free release, CMake, CLAP, browser, DAW or installed
+artifact acceptance is claimed; those gates remain for the actual facade.
+
+Independent review found the extended restore fixture had consumed stale commands
+before reset, weakening an existing regression oracle. The test now separately
+makes reset discard one real obsolete nonzero UI command, asserting zero current
+cancellations, retained values/settlement/reset cause and zero callback allocation.
+The eight-stale-scalar flush case remains. Production code is byte-identical to
+the initial candidate. The repaired full146+2 gates and LLVM/profile bindings were
+rerun. An initial incorrect exact test filter selected zero; its corrected unique
+filter ran one test. Both records remain, with no zero-selection PASS claim.
+
+Independent completion review passed for the frozen stopped parameter flush source/evidence candidate; normal-hook publication remains.
+Outbound automation and the actual Trigger CLAP projection remain subsequent
+boundaries. No task checkbox or canonical scenario mapping is completed by this
+component alone. VST3, standalone, named-DAW and offline installed proof remain
+open. Main remains clean at68dd655; reusable caches are preserved.
