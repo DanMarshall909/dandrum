@@ -1,0 +1,50 @@
+{
+  "base": "16a4dafa1994211ddad2d80e22038f20e3e61f19",
+  "scope": "Test-only native held-note/gesture destruction characterization; no task or beta closure.",
+  "files": {
+    "README.md": {
+      "sha256": "05e5e626fd9e099ce6e75b03f7f197effef979984f8491a91beb552e4b987219",
+      "bytes": 4814
+    },
+    "author-archive.json": {
+      "sha256": "77510f10216bfca5e027e03ed693567f11eb0da93f5566df005eeb1de5c38a9d",
+      "bytes": 192
+    },
+    "author-handoff.md": {
+      "sha256": "cc090002e6bd04de8088d6a4131a927f9f2898ae3d996310d9f66034ba9642b4",
+      "bytes": 7953
+    },
+    "author-raw.tar.gz": {
+      "sha256": "bf1bdd74c8ffb700472a13f00c5ae8b8dbc1d6649e41b95a4ad7f2378371acdf",
+      "bytes": 485534
+    },
+    "root-actual-cargo-bindings.json": {
+      "sha256": "4b71b48648f9a3bb1c4c99be52468adfde200ee7ce5d50cf87565727415e79ba",
+      "bytes": 8079
+    },
+    "root-archive.json": {
+      "sha256": "0dff42d24e17f6a936b1916b74a3415d5331bdba103d66a308bfd4503422ce6c",
+      "bytes": 189
+    },
+    "root-build-boundary-reuse.json": {
+      "sha256": "5b48ad7b003ced4c99da816910454a606265f868453d4f798de95812a6865dfb",
+      "bytes": 10264
+    },
+    "root-final-coverage-assessment.json": {
+      "sha256": "7d24a289ff0775b56d20942ef585efd7497eb778a2afe368169c32090c051b07",
+      "bytes": 9538
+    },
+    "root-linkage-audit.json": {
+      "sha256": "ecd2eab9879f41e9ff14487a56fb96b063f9c590e9e411d8085d2cc3618b8b0f",
+      "bytes": 5612
+    },
+    "root-native-result.json": {
+      "sha256": "5b49a5e58a26091121fe51e565c5b4f3e9ac2decb14d412ed353c09d9986982f",
+      "bytes": 2779
+    },
+    "root-raw.tar.gz": {
+      "sha256": "f9d51fcdaf4dd08223160b37512dea4a249265d276abedc7c723a5708ceed3cb",
+      "bytes": 211766
+    }
+  }
+}

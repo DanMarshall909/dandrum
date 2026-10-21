@@ -1,0 +1,218 @@
+{
+  "runs": {
+    "dso": {
+      "binding_sha256": "4a7781ff5862710ea32481ab5336dd5d5e99ef9a316dab4669621c87d5a77341",
+      "elf_sha256": "c01945a5291f7f1df1e6af5ec9851aad61371c1de1f0c154a6227b27763396d9",
+      "raw_profiles": 1,
+      "regenerated_export_sha256": "4a1bbf633d0ad9bef647a0f7abb143da4987bcecd447815979c932649db121be",
+      "original_export_sha256": "4a1bbf633d0ad9bef647a0f7abb143da4987bcecd447815979c932649db121be",
+      "regeneration_seconds": 0.025798251037485898,
+      "functions": [
+        {
+          "name": "_RNCNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB9_4Core18cleanup_attachment0Bb_",
+          "source": "src/clap-adapter/src/trigger/gui.rs",
+          "source_sha256": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+          "function_count": 0,
+          "source_regions": 1,
+          "positive_source_regions": 0,
+          "zero_hit_spans": [
+            [
+              208,
+              75,
+              208,
+              83
+            ]
+          ]
+        },
+        {
+          "name": "_RNCNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB9_4Core18cleanup_attachments0_0Bb_",
+          "source": "src/clap-adapter/src/trigger/gui.rs",
+          "source_sha256": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+          "function_count": 0,
+          "source_regions": 1,
+          "positive_source_regions": 0,
+          "zero_hit_spans": [
+            [
+              213,
+              30,
+              213,
+              38
+            ]
+          ]
+        },
+        {
+          "name": "_RNCNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB9_4Core18cleanup_attachments_0Bb_",
+          "source": "src/clap-adapter/src/trigger/gui.rs",
+          "source_sha256": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+          "function_count": 0,
+          "source_regions": 1,
+          "positive_source_regions": 0,
+          "zero_hit_spans": [
+            [
+              209,
+              63,
+              209,
+              71
+            ]
+          ]
+        },
+        {
+          "name": "_RNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB7_4Core14destroy_editor",
+          "source": "src/clap-adapter/src/trigger/gui.rs",
+          "source_sha256": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+          "function_count": 5,
+          "source_regions": 13,
+          "positive_source_regions": 13,
+          "zero_hit_spans": []
+        },
+        {
+          "name": "_RNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB7_4Core18cleanup_attachment",
+          "source": "src/clap-adapter/src/trigger/gui.rs",
+          "source_sha256": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+          "function_count": 7,
+          "source_regions": 20,
+          "positive_source_regions": 17,
+          "zero_hit_spans": [
+            [
+              208,
+              86,
+              208,
+              87
+            ],
+            [
+              209,
+              74,
+              209,
+              75
+            ],
+            [
+              213,
+              41,
+              213,
+              42
+            ]
+          ]
+        },
+        {
+          "name": "_RNvXs3_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB7_4MainNtNtNtCs9M4FlnzaK2r_16clack_extensions3gui6plugin13PluginGuiImpl7destroy",
+          "source": "src/clap-adapter/src/trigger/gui.rs",
+          "source_sha256": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+          "function_count": 4,
+          "source_regions": 7,
+          "positive_source_regions": 7,
+          "zero_hit_spans": []
+        }
+      ]
+    },
+    "host": {
+      "binding_sha256": "a599fd093b1d2ff9f6b577aea86d355d1a34228c275ab716e48e1842e160f947",
+      "elf_sha256": "60c3dee437b3629d487ff240ef12d9add55329ec277596f963b06ede27728b7f",
+      "raw_profiles": 2,
+      "regenerated_export_sha256": "d897e543a4d3bb6a6e10bfd44b12049af717a505a3f24fd4d122dec66aee5028",
+      "original_export_sha256": "d897e543a4d3bb6a6e10bfd44b12049af717a505a3f24fd4d122dec66aee5028",
+      "regeneration_seconds": 0.031430303992237896,
+      "functions": [
+        {
+          "name": "_RNCNCNCNvMs0_NtCsjkduUWRBBt7_18trigger_parameters11note_nativeNtBb_9HeldAudio6render000Bd_",
+          "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+          "source_sha256": "edb8ff581897df35ed3f70415b8ea5037d17770145563e387827bf6656266aee",
+          "function_count": 96,
+          "source_regions": 2,
+          "positive_source_regions": 2,
+          "zero_hit_spans": []
+        },
+        {
+          "name": "_RNCNCNvMs0_NtCsjkduUWRBBt7_18trigger_parameters11note_nativeNtB9_9HeldAudio6render00Bb_",
+          "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+          "source_sha256": "edb8ff581897df35ed3f70415b8ea5037d17770145563e387827bf6656266aee",
+          "function_count": 48,
+          "source_regions": 34,
+          "positive_source_regions": 34,
+          "zero_hit_spans": []
+        },
+        {
+          "name": "_RNCNvMs0_NtCsjkduUWRBBt7_18trigger_parameters11note_nativeNtB7_9HeldAudio5starts_0B9_",
+          "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+          "source_sha256": "edb8ff581897df35ed3f70415b8ea5037d17770145563e387827bf6656266aee",
+          "function_count": 1,
+          "source_regions": 3,
+          "positive_source_regions": 3,
+          "zero_hit_spans": []
+        },
+        {
+          "name": "_RNCNvMs0_NtCsjkduUWRBBt7_18trigger_parameters11note_nativeNtB7_9HeldAudio6render0B9_",
+          "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+          "source_sha256": "edb8ff581897df35ed3f70415b8ea5037d17770145563e387827bf6656266aee",
+          "function_count": 48,
+          "source_regions": 6,
+          "positive_source_regions": 6,
+          "zero_hit_spans": []
+        },
+        {
+          "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters11note_natives_64copied_native_destroy_releases_held_activity_once_and_reconnects0B5_",
+          "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+          "source_sha256": "edb8ff581897df35ed3f70415b8ea5037d17770145563e387827bf6656266aee",
+          "function_count": 1,
+          "source_regions": 261,
+          "positive_source_regions": 261,
+          "zero_hit_spans": []
+        },
+        {
+          "name": "_RNvMs0_NtCsjkduUWRBBt7_18trigger_parameters11note_nativeNtB5_9HeldAudio18service_and_render",
+          "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+          "source_sha256": "edb8ff581897df35ed3f70415b8ea5037d17770145563e387827bf6656266aee",
+          "function_count": 38,
+          "source_regions": 13,
+          "positive_source_regions": 13,
+          "zero_hit_spans": []
+        },
+        {
+          "name": "_RNvMs0_NtCsjkduUWRBBt7_18trigger_parameters11note_nativeNtB5_9HeldAudio5start",
+          "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+          "source_sha256": "edb8ff581897df35ed3f70415b8ea5037d17770145563e387827bf6656266aee",
+          "function_count": 1,
+          "source_regions": 11,
+          "positive_source_regions": 11,
+          "zero_hit_spans": []
+        },
+        {
+          "name": "_RNvMs0_NtCsjkduUWRBBt7_18trigger_parameters11note_nativeNtB5_9HeldAudio5until",
+          "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+          "source_sha256": "edb8ff581897df35ed3f70415b8ea5037d17770145563e387827bf6656266aee",
+          "function_count": 2,
+          "source_regions": 9,
+          "positive_source_regions": 9,
+          "zero_hit_spans": []
+        },
+        {
+          "name": "_RNvMs0_NtCsjkduUWRBBt7_18trigger_parameters11note_nativeNtB5_9HeldAudio6finish",
+          "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+          "source_sha256": "edb8ff581897df35ed3f70415b8ea5037d17770145563e387827bf6656266aee",
+          "function_count": 1,
+          "source_regions": 6,
+          "positive_source_regions": 6,
+          "zero_hit_spans": []
+        },
+        {
+          "name": "_RNvMs0_NtCsjkduUWRBBt7_18trigger_parameters11note_nativeNtB5_9HeldAudio6render",
+          "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+          "source_sha256": "edb8ff581897df35ed3f70415b8ea5037d17770145563e387827bf6656266aee",
+          "function_count": 48,
+          "source_regions": 9,
+          "positive_source_regions": 9,
+          "zero_hit_spans": []
+        },
+        {
+          "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters11note_natives_64copied_native_destroy_releases_held_activity_once_and_reconnects",
+          "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+          "source_sha256": "edb8ff581897df35ed3f70415b8ea5037d17770145563e387827bf6656266aee",
+          "function_count": 1,
+          "source_regions": 6,
+          "positive_source_regions": 6,
+          "zero_hit_spans": []
+        }
+      ]
+    }
+  },
+  "qualification": "Fresh root merge/export from rehashed raw profiles and actual ELFs using verified exact tools; parsed LLVM data equals author final exports. File-identified code regions only, no branch/whole-owner/universal-callback proof. Production unchanged; normal cleanup error spans disclosed. Host profile pair includes exact-list invocation and actual case, not two test executions."
+}

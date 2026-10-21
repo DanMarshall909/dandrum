@@ -88,6 +88,7 @@ impl Drop for HeldSample {
 struct HeldAudio {
     audio: StartedPluginAudioProcessor<GuiHost>,
     frames: usize,
+    output: Recorder,
 }
 impl HeldAudio {
     fn start(plugin: &mut PluginInstance<GuiHost>) -> Self {
@@ -106,6 +107,7 @@ impl HeldAudio {
                 .join()
                 .unwrap(),
             frames: 0,
+            output: Recorder::new(64),
         }
     }
     fn render(&mut self, note: Option<[u8; 3]>) -> [[f32; BLOCK_FRAMES]; 2] {
@@ -137,7 +139,7 @@ impl HeldAudio {
                             &input,
                             &mut buffers,
                             &events.as_input(),
-                            &mut OutputEvents::from_buffer(&mut Recorder::new(64)),
+                            &mut OutputEvents::from_buffer(&mut self.output),
                             None,
                             None,
                         )
@@ -232,6 +234,181 @@ fn close_view(plugin: &mut PluginInstance<GuiHost>, browser: webkit2gtk::WebView
         .unwrap()
         .destroy(&plugin.plugin_handle());
     drop(browser);
+}
+
+#[test]
+#[ignore = "native destruction boundary: inherited X11, copied release and unmodified production app"]
+fn copied_native_destroy_releases_held_activity_once_and_reconnects() {
+    std::thread::spawn(|| {
+        let _fixture = HeldSample::install();
+        let parent = Parent::new();
+        let mut plugin = copied_plugin();
+        // This fixture declares exactly one public alias, unlike the full kit.
+        let params = plugin
+            .plugin_handle()
+            .get_extension::<PluginParams>()
+            .unwrap();
+        assert_eq!(params.count(&plugin.plugin_handle()), 1);
+        let mut info_buffer = clack_extensions::params::ParamInfoBuffer::new();
+        let info = params
+            .get_info(&plugin.plugin_handle(), 0, &mut info_buffer)
+            .unwrap();
+        assert_eq!(info.id, ClapId::new(1));
+        assert_eq!(info.name, b"drums.level");
+        let browser = open_view(&mut plugin, &parent);
+        let child = parent.children()[0];
+        let weak_browser = weak_browser_in_child(child);
+        let attachment = javascript(
+            &mut plugin,
+            &browser,
+            "window.__DANDRUM_NATIVE__.attachmentId",
+        );
+        let mut audio = HeldAudio::start(&mut plugin);
+        let held_since = Instant::now();
+        for (method, args) in [
+            ("beginGesture", "'drums.level',1"),
+            ("setParameter", "'drums.level',0.125,1"),
+            ("noteOn", "60,1,1"),
+        ] {
+            assert_eq!(
+                command(&mut plugin, &browser, method, args)["status"],
+                "accepted"
+            );
+        }
+        plugin.call_on_main_thread_callback();
+        flush_audio(&mut audio.audio, &EventBuffer::new(), &mut audio.output);
+        let open_gesture = [Some(Recorded::Begin(1)), Some(Recorded::Value(1, 0.5))];
+        assert_eq!(&audio.output.accepted[..audio.output.len], &open_gesture);
+        // Literal PCM16 input, multiplied by physical gain 0.5. Normalized
+        // drums.level 0.125 spans physical [0,4]; neither audio path is an oracle.
+        for channel in audio.render(None) {
+            assert_eq!(
+                &channel[..4],
+                &[-0.25, 8191.0 / 65536.0, -0.125, 16383.0 / 65536.0]
+            );
+        }
+        assert_eq!(audio.render(None), [[-0.0625; BLOCK_FRAMES]; 2]);
+        let host_onset = audio.render(Some([0x90, 61, 127]));
+        assert_eq!([host_onset[0][0], host_onset[1][0]], [-0.3125; 2]);
+        assert_eq!(audio.render(None), [[-0.125; BLOCK_FRAMES]; 2]);
+        assert_eq!(&audio.output.accepted[..audio.output.len], &open_gesture);
+
+        // No noteOff or endGesture is sent: complete native destruction owns
+        // both cleanup obligations. Release the observer's strong reference too.
+        close_view(&mut plugin, browser);
+        assert!(parent.children().is_empty());
+        assert!(parent.x.get_geometry(child).unwrap().reply().is_err());
+        assert!(
+            weak_browser.upgrade().is_none(),
+            "destroy releases the actual WebView"
+        );
+        flush_audio(&mut audio.audio, &EventBuffer::new(), &mut audio.output);
+        let closed_gesture = [
+            Some(Recorded::Begin(1)),
+            Some(Recorded::Value(1, 0.5)),
+            Some(Recorded::End(1)),
+        ];
+        assert_eq!(&audio.output.accepted[..audio.output.len], &closed_gesture);
+        assert_eq!(
+            audio.render(None),
+            [[-0.0625; BLOCK_FRAMES]; 2],
+            "only the editor note is released"
+        );
+        assert!(
+            held_since.elapsed() < Duration::from_millis(1800),
+            "destruction cleanup must precede the independent two-second note expiry"
+        );
+        let gui = plugin.plugin_handle().get_extension::<PluginGui>().unwrap();
+        gui.destroy(&plugin.plugin_handle());
+        // Bounded host-loop progress proves no additional accepted automation
+        // here; synchronous application-handler release has a separate owner test.
+        audio.until(Instant::now() + Duration::from_millis(100), -0.0625);
+        plugin.call_on_main_thread_callback();
+        flush_audio(&mut audio.audio, &EventBuffer::new(), &mut audio.output);
+        assert_eq!(audio.render(Some([0x80, 61, 0])), [[0.0; BLOCK_FRAMES]; 2]);
+        assert_eq!(&audio.output.accepted[..audio.output.len], &closed_gesture);
+        assert_eq!(audio.output.attempts, 3, "no duplicate End is even offered");
+        assert!(parent.children().is_empty());
+        assert!(weak_browser.upgrade().is_none());
+
+        let browser = open_view(&mut plugin, &parent);
+        let fresh_attachment = javascript(
+            &mut plugin,
+            &browser,
+            "window.__DANDRUM_NATIVE__.attachmentId",
+        );
+        assert_ne!(fresh_attachment, attachment);
+        let session = command(&mut plugin, &browser, "getSamplerSession", "");
+        assert_eq!(session["status"], "accepted");
+        assert_eq!(
+            session["result"]["connection"]["attachmentId"],
+            fresh_attachment
+        );
+        let params = plugin
+            .plugin_handle()
+            .get_extension::<PluginParams>()
+            .unwrap();
+        assert_eq!(
+            params.get_value(&plugin.plugin_handle(), ClapId::new(1)),
+            Some(0.5)
+        );
+        assert_eq!(
+            audio.render(None),
+            [[0.0; BLOCK_FRAMES]; 2],
+            "reconnect cannot replay the old press"
+        );
+        assert_eq!(
+            command(&mut plugin, &browser, "noteOn", "60,1,1")["status"],
+            "accepted"
+        );
+        let onset = audio.render(None);
+        assert_eq!([onset[0][0], onset[1][0]], [-0.25; 2]);
+        assert_eq!(audio.render(None), [[-0.0625; BLOCK_FRAMES]; 2]);
+        assert_eq!(
+            command(&mut plugin, &browser, "noteOff", "60,1")["status"],
+            "accepted"
+        );
+        assert_eq!(audio.render(None), [[0.0; BLOCK_FRAMES]; 2]);
+        for (method, args) in [
+            ("beginGesture", "'drums.level',1"),
+            ("setParameter", "'drums.level',0.375,1"),
+            ("endGesture", "'drums.level',1"),
+        ] {
+            assert_eq!(
+                command(&mut plugin, &browser, method, args)["status"],
+                "accepted"
+            );
+        }
+        plugin.call_on_main_thread_callback();
+        flush_audio(&mut audio.audio, &EventBuffer::new(), &mut audio.output);
+        let both_gestures = [
+            Some(Recorded::Begin(1)),
+            Some(Recorded::Value(1, 0.5)),
+            Some(Recorded::End(1)),
+            Some(Recorded::Begin(1)),
+            Some(Recorded::Value(1, 1.5)),
+            Some(Recorded::End(1)),
+        ];
+        assert_eq!(&audio.output.accepted[..audio.output.len], &both_gestures);
+        assert_eq!(
+            params.get_value(&plugin.plugin_handle(), ClapId::new(1)),
+            Some(1.5)
+        );
+        close_view(&mut plugin, browser);
+        gui.destroy(&plugin.plugin_handle());
+        audio.until(Instant::now() + Duration::from_millis(100), 0.0);
+        plugin.call_on_main_thread_callback();
+        flush_audio(&mut audio.audio, &EventBuffer::new(), &mut audio.output);
+        assert_eq!(&audio.output.accepted[..audio.output.len], &both_gestures);
+        assert_eq!(audio.output.attempts, 6);
+        eprintln!(
+            "destroyed attachment {attachment}; fresh attachment {fresh_attachment}; accepted CLAP events {:?}; attempts {}",
+            &audio.output.accepted[..audio.output.len], audio.output.attempts
+        );
+        audio.finish(&mut plugin);
+    })
+    .join()
+    .expect("native held-activity destruction and reconnect completed");
 }
 
 #[test]

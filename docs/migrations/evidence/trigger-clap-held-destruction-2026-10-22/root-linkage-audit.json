@@ -1,0 +1,135 @@
+{
+  "artifacts": [
+    {
+      "label": "trigger-clap-native-fixture-plugin",
+      "path": "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/trigger-clap-native-fixture/DandrumTrigger.clap",
+      "elf_sha256": "e9200fbb0bdc714e6f6d3950aefea03b1025302a328374b31310a45e745b0741",
+      "results": [
+        {
+          "command": [
+            "readelf",
+            "-d",
+            "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/trigger-clap-native-fixture/DandrumTrigger.clap"
+          ],
+          "exit": 0,
+          "log": "root-link-trigger-clap-native-fixture-plugin-readelf.log",
+          "sha256": "7f04319b3dfc5c446439224275775ef23361b3a561e5a6fffdf9359a2fbf952e"
+        },
+        {
+          "command": [
+            "ldd",
+            "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/trigger-clap-native-fixture/DandrumTrigger.clap"
+          ],
+          "exit": 0,
+          "log": "root-link-trigger-clap-native-fixture-plugin-ldd.log",
+          "sha256": "1dc7037d2b884c532562915385814a673f14aa6075cd4a46bdf6a1bb88f9773a"
+        }
+      ]
+    },
+    {
+      "label": "trigger-clap-native-fixture-test",
+      "path": "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/trigger-clap-native-fixture/trigger-gui-test",
+      "elf_sha256": "256d168af1a1243f50f7d13a479d8772711a5f8240bdb28392b181324239a15c",
+      "results": [
+        {
+          "command": [
+            "readelf",
+            "-d",
+            "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/trigger-clap-native-fixture/trigger-gui-test"
+          ],
+          "exit": 0,
+          "log": "root-link-trigger-clap-native-fixture-test-readelf.log",
+          "sha256": "6c80c8a28cdd2512c3d684bb6c962950817b932e476ad04b3f5735ff363f473a"
+        },
+        {
+          "command": [
+            "ldd",
+            "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/trigger-clap-native-fixture/trigger-gui-test"
+          ],
+          "exit": 0,
+          "log": "root-link-trigger-clap-native-fixture-test-ldd.log",
+          "sha256": "1e59e18478b96621b5ec9b0e6476a1f268df9546ab9717495d29f283a4f9815d"
+        }
+      ]
+    },
+    {
+      "label": "trigger-clap-parameters-fixture-plugin",
+      "path": "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/trigger-clap-parameters-fixture/DandrumTrigger.clap",
+      "elf_sha256": "e9200fbb0bdc714e6f6d3950aefea03b1025302a328374b31310a45e745b0741",
+      "results": [
+        {
+          "command": [
+            "readelf",
+            "-d",
+            "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/trigger-clap-parameters-fixture/DandrumTrigger.clap"
+          ],
+          "exit": 0,
+          "log": "root-link-trigger-clap-parameters-fixture-plugin-readelf.log",
+          "sha256": "7f04319b3dfc5c446439224275775ef23361b3a561e5a6fffdf9359a2fbf952e"
+        },
+        {
+          "command": [
+            "ldd",
+            "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/trigger-clap-parameters-fixture/DandrumTrigger.clap"
+          ],
+          "exit": 0,
+          "log": "root-link-trigger-clap-parameters-fixture-plugin-ldd.log",
+          "sha256": "d7f8ba603f1b2c7d26fed0622905783e19cd2d95f45d9c89278b7e3fb0859eac"
+        }
+      ]
+    },
+    {
+      "label": "trigger-clap-parameters-fixture-test",
+      "path": "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/trigger-clap-parameters-fixture/trigger-parameters-test",
+      "elf_sha256": "51035832bb31d8381ceaf193aba09cbc020b368ddda9faf2870b40669f60659a",
+      "results": [
+        {
+          "command": [
+            "readelf",
+            "-d",
+            "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/trigger-clap-parameters-fixture/trigger-parameters-test"
+          ],
+          "exit": 0,
+          "log": "root-link-trigger-clap-parameters-fixture-test-readelf.log",
+          "sha256": "acca506a20cc14a260ed7532c848f7ce766af74777a9e3cf3011ea1f7cab76d8"
+        },
+        {
+          "command": [
+            "ldd",
+            "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/trigger-clap-parameters-fixture/trigger-parameters-test"
+          ],
+          "exit": 0,
+          "log": "root-link-trigger-clap-parameters-fixture-test-ldd.log",
+          "sha256": "8242a9bfc14a149c83fa19fed3d9d5ea18ae639adaff8adeea82895b81263500"
+        }
+      ]
+    },
+    {
+      "label": "ordinary-product",
+      "path": "/tmp/dandrum-evidence/g3-held-destruction/artifacts/final-product-build/libdandrum_clap_adapter.so",
+      "elf_sha256": "17251daa8ecbcc4ec3da600e04056e2338426926c0a274ebb84b70e72e810df3",
+      "results": [
+        {
+          "command": [
+            "readelf",
+            "-d",
+            "/tmp/dandrum-evidence/g3-held-destruction/artifacts/final-product-build/libdandrum_clap_adapter.so"
+          ],
+          "exit": 0,
+          "log": "root-link-ordinary-product-readelf.log",
+          "sha256": "0ef73ea3b09ac7e5b40080669d5cd1db6684815081bbcc1fba74854520eecc78"
+        },
+        {
+          "command": [
+            "ldd",
+            "/tmp/dandrum-evidence/g3-held-destruction/artifacts/final-product-build/libdandrum_clap_adapter.so"
+          ],
+          "exit": 0,
+          "log": "root-link-ordinary-product-ldd.log",
+          "sha256": "9d55d54faa324e9c78b4fef5d1ee46ed4e134c0c35c76f371eaf248261fa1089"
+        }
+      ]
+    }
+  ],
+  "scope": "Current actual Cargo-selected maintained fixture DSOs and both host binaries plus immutable ordinary product DSO: no unresolved/JUCE linkage. No current headless rebuild or installed-beta claim."
+}

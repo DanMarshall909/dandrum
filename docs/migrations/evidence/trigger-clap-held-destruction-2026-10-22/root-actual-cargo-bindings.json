@@ -1,0 +1,224 @@
+{
+  "trigger-clap-native-fixture": {
+    "schema_version": 1,
+    "owner": "prepare-trigger-clap-native.py",
+    "command": [
+      "/home/dan/.cargo/bin/cargo",
+      "test",
+      "--release",
+      "--locked",
+      "--jobs",
+      "2",
+      "--manifest-path",
+      "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+      "--features",
+      "trigger-editor",
+      "--test",
+      "trigger_gui",
+      "--no-run",
+      "--message-format=json"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime/src/clap-adapter",
+    "exit_status": 0,
+    "artifacts": {
+      "plugin": {
+        "source": "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/rust-target/release/deps/libdandrum_clap_adapter.so",
+        "copy": "DandrumTrigger.clap",
+        "source_sha256": "e9200fbb0bdc714e6f6d3950aefea03b1025302a328374b31310a45e745b0741",
+        "copy_sha256": "e9200fbb0bdc714e6f6d3950aefea03b1025302a328374b31310a45e745b0741",
+        "compiler_artifact": {
+          "reason": "compiler-artifact",
+          "package_id": "path+file:///tmp/dandrum-lanes/runtime/src/clap-adapter#dandrum_clap_adapter@0.1.0",
+          "manifest_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+          "target": {
+            "kind": [
+              "cdylib",
+              "rlib"
+            ],
+            "crate_types": [
+              "cdylib",
+              "rlib"
+            ],
+            "name": "dandrum_clap_adapter",
+            "src_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/src/lib.rs",
+            "edition": "2024",
+            "doc": true,
+            "doctest": true,
+            "test": true
+          },
+          "profile": {
+            "opt_level": "3",
+            "debuginfo": 0,
+            "debug_assertions": false,
+            "overflow_checks": false,
+            "test": false
+          },
+          "features": [
+            "default",
+            "trigger",
+            "trigger-editor"
+          ],
+          "filenames": [
+            "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/rust-target/release/deps/libdandrum_clap_adapter.so",
+            "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/rust-target/release/deps/libdandrum_clap_adapter.rlib"
+          ],
+          "executable": null,
+          "fresh": false
+        }
+      },
+      "test": {
+        "source": "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/rust-target/release/deps/trigger_gui-fa37e3dc64994625",
+        "copy": "trigger-gui-test",
+        "source_sha256": "256d168af1a1243f50f7d13a479d8772711a5f8240bdb28392b181324239a15c",
+        "copy_sha256": "256d168af1a1243f50f7d13a479d8772711a5f8240bdb28392b181324239a15c",
+        "compiler_artifact": {
+          "reason": "compiler-artifact",
+          "package_id": "path+file:///tmp/dandrum-lanes/runtime/src/clap-adapter#dandrum_clap_adapter@0.1.0",
+          "manifest_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+          "target": {
+            "kind": [
+              "test"
+            ],
+            "crate_types": [
+              "bin"
+            ],
+            "name": "trigger_gui",
+            "src_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/tests/trigger_gui.rs",
+            "edition": "2024",
+            "doc": false,
+            "doctest": false,
+            "test": true
+          },
+          "profile": {
+            "opt_level": "3",
+            "debuginfo": 0,
+            "debug_assertions": false,
+            "overflow_checks": false,
+            "test": true
+          },
+          "features": [
+            "default",
+            "trigger",
+            "trigger-editor"
+          ],
+          "filenames": [
+            "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/rust-target/release/deps/trigger_gui-fa37e3dc64994625"
+          ],
+          "executable": "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/rust-target/release/deps/trigger_gui-fa37e3dc64994625",
+          "fresh": false
+        }
+      }
+    }
+  },
+  "trigger-clap-parameters-fixture": {
+    "schema_version": 1,
+    "owner": "prepare-trigger-clap-native.py",
+    "command": [
+      "/home/dan/.cargo/bin/cargo",
+      "test",
+      "--release",
+      "--locked",
+      "--jobs",
+      "2",
+      "--manifest-path",
+      "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+      "--features",
+      "trigger-editor",
+      "--test",
+      "trigger_parameters",
+      "--no-run",
+      "--message-format=json"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime/src/clap-adapter",
+    "exit_status": 0,
+    "artifacts": {
+      "plugin": {
+        "source": "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/rust-target/release/deps/libdandrum_clap_adapter.so",
+        "copy": "DandrumTrigger.clap",
+        "source_sha256": "e9200fbb0bdc714e6f6d3950aefea03b1025302a328374b31310a45e745b0741",
+        "copy_sha256": "e9200fbb0bdc714e6f6d3950aefea03b1025302a328374b31310a45e745b0741",
+        "compiler_artifact": {
+          "reason": "compiler-artifact",
+          "package_id": "path+file:///tmp/dandrum-lanes/runtime/src/clap-adapter#dandrum_clap_adapter@0.1.0",
+          "manifest_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+          "target": {
+            "kind": [
+              "cdylib",
+              "rlib"
+            ],
+            "crate_types": [
+              "cdylib",
+              "rlib"
+            ],
+            "name": "dandrum_clap_adapter",
+            "src_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/src/lib.rs",
+            "edition": "2024",
+            "doc": true,
+            "doctest": true,
+            "test": true
+          },
+          "profile": {
+            "opt_level": "3",
+            "debuginfo": 0,
+            "debug_assertions": false,
+            "overflow_checks": false,
+            "test": false
+          },
+          "features": [
+            "default",
+            "trigger",
+            "trigger-editor"
+          ],
+          "filenames": [
+            "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/rust-target/release/deps/libdandrum_clap_adapter.so",
+            "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/rust-target/release/deps/libdandrum_clap_adapter.rlib"
+          ],
+          "executable": null,
+          "fresh": true
+        }
+      },
+      "test": {
+        "source": "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/rust-target/release/deps/trigger_parameters-8fc57b2ef83fb6e4",
+        "copy": "trigger-parameters-test",
+        "source_sha256": "51035832bb31d8381ceaf193aba09cbc020b368ddda9faf2870b40669f60659a",
+        "copy_sha256": "51035832bb31d8381ceaf193aba09cbc020b368ddda9faf2870b40669f60659a",
+        "compiler_artifact": {
+          "reason": "compiler-artifact",
+          "package_id": "path+file:///tmp/dandrum-lanes/runtime/src/clap-adapter#dandrum_clap_adapter@0.1.0",
+          "manifest_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+          "target": {
+            "kind": [
+              "test"
+            ],
+            "crate_types": [
+              "bin"
+            ],
+            "name": "trigger_parameters",
+            "src_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/tests/trigger_parameters.rs",
+            "edition": "2024",
+            "doc": false,
+            "doctest": false,
+            "test": true
+          },
+          "profile": {
+            "opt_level": "3",
+            "debuginfo": 0,
+            "debug_assertions": false,
+            "overflow_checks": false,
+            "test": true
+          },
+          "features": [
+            "default",
+            "trigger",
+            "trigger-editor"
+          ],
+          "filenames": [
+            "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/rust-target/release/deps/trigger_parameters-8fc57b2ef83fb6e4"
+          ],
+          "executable": "/tmp/dandrum-evidence/g3-held-native-fixture/native-build/rust-target/release/deps/trigger_parameters-8fc57b2ef83fb6e4",
+          "fresh": false
+        }
+      }
+    }
+  }
+}

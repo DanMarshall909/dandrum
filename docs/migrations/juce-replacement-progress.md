@@ -1684,3 +1684,46 @@ This does not close tasks3.2/3.3/4.2/4.3 or the full beta. VST3, standalone devi
 named DAW and installed offline artifacts remain required. Independent review
 and normal publication are separate live-tracker receipts. Main stays clean68dd655;
 mutation is excluded and reusable caches are preserved.
+
+
+## Native held-activity destruction checkpoint — 22 October 2026
+
+The copied ordinary Trigger product now has joined acceptance for complete view
+destruction while an authenticated editor note and parameter gesture are held.
+Existing production cleanup passed; this checkpoint changes only the native test
+helper, maintained registration and evidence. The helper retains every process /
+flush output, so a render cannot hide duplicate automation. The one-parameter
+fixture pins its public ID 1 independently; an initial full-kit ID 3 expectation
+was an oracle calibration failure, not a product RED.
+
+With physical level 0.5, literal stereo editor tail -0.0625 plus host MIDI61
+tail -0.0625 sum to -0.125. Destruction leaves host-only -0.0625 and host release
+gives zero. Cleanup is observed before 1800ms, below the two-second note lease;
+rendered frames also stay below half the finite sample length. Actual host output
+is exactly Begin/Value/End once for each attachment, with physical values 0.5 and
+1.5. Repeated destruction, flush and bounded late dispatch offer no extra End.
+The old child XID and WebView disappear; fresh authenticated attachment2 retains
+the value, starts silent, plays/releases and accepts a new balanced gesture.
+
+[Portable evidence](evidence/trigger-clap-held-destruction-2026-10-22/README.md)
+retains the qualified initial PASS, final strengthened source, exact artifacts
+and raw LLVM. Root independently merges profiles and reproduces the exports:
+new test body 261/261 and wrapper 6/6 code regions execute; all retained-audio helper
+regions execute. Existing destroy_editor 13/13 and GUI destroy 7/7 execute, while
+cleanup_attachment is 17/20 with its three error closures also unhit. No blanket
+branch, whole-owner or universal callback-quiescence claim is made. Prior
+application-handler release calibration remains source-identical and separate.
+
+All 16 author native cases,13 fast owner tests, formatting and strict Clippy pass.
+Root passes 24 maintained CTests, three affected configuration guards, current
+linkage and strict scoped/canonical/spec-coverage checks. Prior eight-case headless
+build evidence remains qualified unchanged-input reuse (76 inputs plus the
+deliberately removed copied-asset limitation), not a fresh execution. No host
+production bytes changed; the prior 154-host-test checkpoint remains at 16a4dafa.
+
+Per-block cross-thread processing does not prove continuous lifecycle audio.
+Creation failure, OS-input playing, independently edited native instances, the
+fractional-rate validator failure and all later beta products remain open. No
+OpenSpec task checkbox or full-beta closure follows. Independent review and
+normal publication are recorded separately in the live tracker. Main stays
+clean 68dd655; mutation is excluded and reusable caches are preserved.

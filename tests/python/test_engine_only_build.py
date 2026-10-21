@@ -383,6 +383,8 @@ class ClapProofBuildTest(EngineBuildFixture):
                 "note_native::copied_native_heartbeat_renews_held_note_past_original_deadline",
             "trigger-clap-native-parameter-note-expiry":
                 "note_native::copied_native_live_attachment_expires_renewed_note_and_preserves_host_voice",
+            "trigger-clap-native-parameter-note-destroy":
+                "note_native::copied_native_destroy_releases_held_activity_once_and_reconnects",
         }
         for name, case in parameter_cases.items():
             with self.subTest(parameter_case=name):
