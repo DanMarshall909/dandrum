@@ -1,0 +1,354 @@
+{
+  "base": "1cf1933d74193c78f26f51b2c6803faccd59d241",
+  "criterion": "continuous synthetic host audio across two actual native editor lifecycles, retained accepted state/history and worker TLS callback audit",
+  "production_disposition": "initial PASS; unchanged production; no product RED or repair",
+  "final_source_sha256": {
+    "src/clap-adapter/tests/internal/trigger_note_native.rs": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+    "src/clap-adapter/tests/trigger_parameters.rs": "8a304ae71df8b99df0bd132e0d41e776f7b053e8fcdff653adf01c7a98033579"
+  },
+  "ordinary_binding": {
+    "library": {
+      "source": "/tmp/dandrum-lanes/cache-editor-guard/release/libdandrum_clap_adapter.so",
+      "copy": "/tmp/dandrum-evidence/g3-continuous-native-audio/installed/DandrumTrigger.clap",
+      "sha256": "17251daa8ecbcc4ec3da600e04056e2338426926c0a274ebb84b70e72e810df3"
+    },
+    "test": null,
+    "cargo_log_sha256": "79e4d36b2f75035cb7a481db09c79b764dfd41fea54d400d27a9927f295c7194"
+  },
+  "test_bindings": {
+    "trigger_parameters": {
+      "source": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/trigger_parameters-8fc57b2ef83fb6e4",
+      "copy": "/tmp/dandrum-evidence/g3-continuous-native-audio/trigger_parameters",
+      "sha256": "ee20b860b4922ae1a750d60780fda7d9e24305c2978f6df0d6c3bacbefe1ca97"
+    },
+    "trigger_gui": {
+      "source": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/trigger_gui-fa37e3dc64994625",
+      "copy": "/tmp/dandrum-evidence/g3-continuous-native-audio/trigger_gui",
+      "sha256": "256d168af1a1243f50f7d13a479d8772711a5f8240bdb28392b181324239a15c"
+    }
+  },
+  "coverage_binding_file": "/tmp/dandrum-evidence/g3-continuous-native-audio/refactor-coverage-binding.json",
+  "coverage_binding_sha256": "96de778be65af9b068ecd6840c9f6c3172fd97040331e846820e7d5176c915c1",
+  "coverage_execution": {
+    "profile_pattern": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/refactor-profiles/%m-%p.profraw",
+    "test": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/test-refactor/trigger_parameters-8fc57b2ef83fb6e4",
+    "test_sha256": "adf7ac92d77903613fd3b224112a4765692c99ad8e344b2828b3f988217da468",
+    "instrumented_dso": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/dso-final/libdandrum_clap_adapter.so",
+    "dso_sha256": "3738110026a86cc6c4744bd241fbc244ea454ad4ce866a47882dc38778623e26",
+    "ordinary_dso": {
+      "source": "/tmp/dandrum-lanes/cache-editor-guard/release/libdandrum_clap_adapter.so",
+      "copy": "/tmp/dandrum-evidence/g3-continuous-native-audio/installed/DandrumTrigger.clap",
+      "sha256": "17251daa8ecbcc4ec3da600e04056e2338426926c0a274ebb84b70e72e810df3"
+    },
+    "cases": [
+      {
+        "command": [
+          "/usr/bin/python3",
+          "-c",
+          "from exact import run_exact; import sys; sys.exit(run_exact(sys.argv[1],sys.argv[2],True))",
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/test-refactor/trigger_parameters-8fc57b2ef83fb6e4",
+          "note_native::copied_native_continuous_audio_survives_view_replacement"
+        ],
+        "exit": 0,
+        "seconds": 3.231704544974491
+      },
+      {
+        "command": [
+          "/usr/bin/python3",
+          "-c",
+          "from exact import run_exact; import sys; sys.exit(run_exact(sys.argv[1],sys.argv[2],True))",
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/test-refactor/trigger_parameters-8fc57b2ef83fb6e4",
+          "note_native::copied_native_continuous_audio_callbacks_allocate_and_deallocate_nothing"
+        ],
+        "exit": 0,
+        "seconds": 3.4324934519827366
+      },
+      {
+        "command": [
+          "/usr/bin/python3",
+          "-c",
+          "from exact import run_exact; import sys; sys.exit(run_exact(sys.argv[1],sys.argv[2],True))",
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/test-refactor/trigger_parameters-8fc57b2ef83fb6e4",
+          "copied_native_parameter_callbacks_allocate_and_destroy_nothing_while_gui_services"
+        ],
+        "exit": 0,
+        "seconds": 1.3207210160326213
+      }
+    ],
+    "copy_sha256": "3738110026a86cc6c4744bd241fbc244ea454ad4ce866a47882dc38778623e26",
+    "restored_sha256": "17251daa8ecbcc4ec3da600e04056e2338426926c0a274ebb84b70e72e810df3",
+    "profiles": {
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/refactor-profiles/11413247499942899091_0-2251617.profraw": "4d25afaf2131dac5a279a6f5a336fba7cc243122ff6527948359702a26bdc3a2",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/refactor-profiles/11413247499942899091_0-2251829.profraw": "2d4c6832bbd646b89fba7a34ff3617b73ad01be03791179bd98d3286f3bb7044",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/refactor-profiles/12894584750217267763_0-2251662.profraw": "725f65ebbefb68b9d014e78b730f97d99449133700f300de06c34fe6e6d1fe0a",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/refactor-profiles/11413247499942899091_0-2251494.profraw": "2e41a4cbccd8cd70142a6e15d889a9111f93abcaa6827c1ce543917ea37fc18c",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/refactor-profiles/11413247499942899091_0-2251616.profraw": "9df3ca89ead12223256318ed63890af15fa5dbaf60458df8cfbfd9a7d7e1ee28",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/refactor-profiles/12894584750217267763_0-2251829.profraw": "37914e6eb825cc1b19988db0ff3363e4fad2e4986294a4f4a75200bc76d3b4d2",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/refactor-profiles/11413247499942899091_0-2251783.profraw": "ed700209a6e9b0bf34b7609ec0d27e1069b015ccf3d2c8ec9f8ca7cb9e74073c",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/refactor-profiles/11413247499942899091_0-2251662.profraw": "503e09d1d6e4a60697620337bdbdd5531ed0db555c1339955c4188cc5e3b8aa1",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/refactor-profiles/11413247499942899091_0-2251493.profraw": "67b4b24939331b6dcd4a720e18051aad0451829bcef8949311efb3d9f13d0f90",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/refactor-profiles/11413247499942899091_0-2251827.profraw": "2a7187d596bd0fa6c25eede44f8d685a9da2b006c98288627943815cb03d22f5",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/refactor-profiles/11413247499942899091_0-2251660.profraw": "e1dddcd8a78b72f84ceb79b87a57074dd0187c93d368dd73559aa82fdf5f3eb4",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/refactor-profiles/11413247499942899091_0-2251784.profraw": "d81965a0311e8f285017e1207a4f5b0337a2ebb76cc430cbc99707fb548e8717",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/refactor-profiles/12894584750217267763_0-2251494.profraw": "112b7c94da730ca2b8ed362b8a0cc0cbd97a21fa6f1ff21124dc6243f030cfa9"
+    }
+  },
+  "report_sha256": "54ee20e6971fe840e270ccd2e459ea0f3ed48567ee128bf79be148066c3c22b1",
+  "source_checkpoints_sha256": "7318f2077255963d2a14f38a8ba3621183a97006a5ef624a916d657394209f81",
+  "restoration_audit_sha256": "ffbb1b7e0fbfa82052828340b02a18d91ee07747f62e2019375ddb7d9b51f978",
+  "checks": {
+    "refactor-build": {
+      "receipt": "/tmp/dandrum-evidence/g3-continuous-native-audio/refactor-build.json",
+      "receipt_sha256": "c7255e52248a6de64b698858f40e61a5da886bebe804c9ef6f52ae5e639a1634",
+      "exit": 0,
+      "seconds": 66.07664181297878,
+      "sources": {
+        "src/clap-adapter/tests/internal/trigger_note_native.rs": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+        "src/clap-adapter/tests/trigger_parameters.rs": "8a304ae71df8b99df0bd132e0d41e776f7b053e8fcdff653adf01c7a98033579"
+      }
+    },
+    "refactor-ordinary-product-build": {
+      "receipt": "/tmp/dandrum-evidence/g3-continuous-native-audio/refactor-ordinary-product-build.json",
+      "receipt_sha256": "9226832d31c2cb115e9487b42d0fcc89b59a785a23f61efbf2971bd4e80d2641",
+      "exit": 0,
+      "seconds": 4.070511190046091,
+      "sources": {
+        "src/clap-adapter/tests/internal/trigger_note_native.rs": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+        "src/clap-adapter/tests/trigger_parameters.rs": "8a304ae71df8b99df0bd132e0d41e776f7b053e8fcdff653adf01c7a98033579"
+      }
+    },
+    "refactor-native-regression": {
+      "receipt": "/tmp/dandrum-evidence/g3-continuous-native-audio/refactor-native-regression.json",
+      "receipt_sha256": "6e92c65af00c6516c7a13116d3d8480c793624f952d7c16b4f55f7277c5c5729",
+      "exit": 0,
+      "seconds": 32.52850503002992,
+      "sources": {
+        "src/clap-adapter/tests/internal/trigger_note_native.rs": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+        "src/clap-adapter/tests/trigger_parameters.rs": "8a304ae71df8b99df0bd132e0d41e776f7b053e8fcdff653adf01c7a98033579"
+      }
+    },
+    "refactor-llvm-test-build": {
+      "receipt": "/tmp/dandrum-evidence/g3-continuous-native-audio/refactor-llvm-test-build.json",
+      "receipt_sha256": "88638a2b98c68a797ea8a259b4ae4330be4b3729bec95e001d9f5ea0771a7e7a",
+      "exit": 0,
+      "seconds": 50.82106292503886,
+      "sources": {
+        "src/clap-adapter/tests/internal/trigger_note_native.rs": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+        "src/clap-adapter/tests/trigger_parameters.rs": "8a304ae71df8b99df0bd132e0d41e776f7b053e8fcdff653adf01c7a98033579"
+      }
+    },
+    "refactor-llvm-native": {
+      "receipt": "/tmp/dandrum-evidence/g3-continuous-native-audio/refactor-llvm-native.json",
+      "receipt_sha256": "11999f87f6ef2dbb3cda2c65ca29fa6b446d93bffec36dec37b7cd582708801f",
+      "exit": 0,
+      "seconds": 9.145515302021522,
+      "sources": {
+        "src/clap-adapter/tests/internal/trigger_note_native.rs": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+        "src/clap-adapter/tests/trigger_parameters.rs": "8a304ae71df8b99df0bd132e0d41e776f7b053e8fcdff653adf01c7a98033579"
+      }
+    },
+    "refactor-llvm-export": {
+      "receipt": "/tmp/dandrum-evidence/g3-continuous-native-audio/refactor-llvm-export.json",
+      "receipt_sha256": "499c7280fb13e5a7ce8ebc847fb741de0456c7cd535249995faede422e842cc6",
+      "exit": 0,
+      "seconds": 1.0189402290270664,
+      "sources": {
+        "src/clap-adapter/tests/internal/trigger_note_native.rs": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+        "src/clap-adapter/tests/trigger_parameters.rs": "8a304ae71df8b99df0bd132e0d41e776f7b053e8fcdff653adf01c7a98033579"
+      }
+    },
+    "refactor-formatting": {
+      "receipt": "/tmp/dandrum-evidence/g3-continuous-native-audio/refactor-formatting.json",
+      "receipt_sha256": "acb34ec05471ee52edb3e9a6bc2515245ef84cb4eab88416a748908ff6609c15",
+      "exit": 0,
+      "seconds": 1.0183586640050635,
+      "sources": {
+        "src/clap-adapter/tests/internal/trigger_note_native.rs": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+        "src/clap-adapter/tests/trigger_parameters.rs": "8a304ae71df8b99df0bd132e0d41e776f7b053e8fcdff653adf01c7a98033579"
+      }
+    },
+    "refactor-strict-clippy": {
+      "receipt": "/tmp/dandrum-evidence/g3-continuous-native-audio/refactor-strict-clippy.json",
+      "receipt_sha256": "9e5c2d3e36f4c31cf4fda70792c5ec590e12419f40341a5db766ad91c617d198",
+      "exit": 0,
+      "seconds": 1.0186729640117846,
+      "sources": {
+        "src/clap-adapter/tests/internal/trigger_note_native.rs": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+        "src/clap-adapter/tests/trigger_parameters.rs": "8a304ae71df8b99df0bd132e0d41e776f7b053e8fcdff653adf01c7a98033579"
+      }
+    },
+    "refactor-normal-restoration": {
+      "receipt": "/tmp/dandrum-evidence/g3-continuous-native-audio/refactor-normal-restoration.json",
+      "receipt_sha256": "2909c45fe68302787f3589d17fe009fc1393c478b7c8e63550fe08d04950bdf6",
+      "exit": 0,
+      "seconds": 4.066174297011457,
+      "sources": {
+        "src/clap-adapter/tests/internal/trigger_note_native.rs": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+        "src/clap-adapter/tests/trigger_parameters.rs": "8a304ae71df8b99df0bd132e0d41e776f7b053e8fcdff653adf01c7a98033579"
+      }
+    }
+  },
+  "unchanged_owner_checks": {
+    "final-gui-regression": {
+      "receipt": "/tmp/dandrum-evidence/g3-continuous-native-audio/final-gui-regression.json",
+      "sha256": "e0d702641a801075ef6431ae9de9ae7f0e53a0f69eb16c24ac89e766e52fb16b",
+      "qualification": "All compiled production/unchanged-owner sources remain exact; preliminary unrelated test-source hashes are not claimed final",
+      "owner_source_sha256": {
+        "src/clap-adapter/src/trigger.rs": "14ca55d2f68a4a99e4f27ec785af2b43a66ea659382120f1f96fae9fc6ee6bdb",
+        "src/clap-adapter/src/lib.rs": "26955a02dd99fa07fa7601072b8cd67aac658c90f7c738ca09d552a153d87ed6",
+        "src/clap-adapter/src/trigger/automation.rs": "c2f2f6a08d04a862834ffb96244149de55d051c8015477e64857ddec194233ea",
+        "src/clap-adapter/src/trigger/gui.rs": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+        "src/trigger-editor/Cargo.lock": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814",
+        "src/trigger-editor/Cargo.toml": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c",
+        "src/trigger-editor/src/assets.rs": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584",
+        "src/trigger-editor/src/native_x11.rs": "a2803e24488a04350d951fc2809c7afe2025a191fb38995efe9610181e2aea73",
+        "src/trigger-editor/src/lib.rs": "79f49cb29ed9376f8119c06f687ad069d6a7f33114da686797d9962f034b2d2c",
+        "src/trigger-editor/tests/packaged_assets.rs": "2520e026f6921fa697220bc40bcc4eda58711dde76529f1ac6957add63d5411c",
+        "src/trigger-editor/tests/fixtures/resource-policy.png": "4ff6ab670a58c14270e034e2090d9a432caa263a14e0a25785386b0c12f880b5",
+        "src/trigger-editor/tests/fixtures/navigation.mjs": "3626e1d47e5d3be9d2c84d571c043005cb6ce797271e55826b46aefcfa0e8ff9",
+        "src/trigger-editor/tests/fixtures/resource-policy.mjs": "83757912582dac57c5be48fced7cc91ee2b4e066ab20e0d27eb30712e011173c",
+        "src/trigger-editor/tests/fixtures/local-policy.mjs": "136578e291e562367d8e3f220218d5e99c149e905bb61c48b5e32c5fda9d2033",
+        "src/trigger-editor/tests/fixtures/production-observer.js": "c64d08f416a0231e879884dad97fd45ff4c235ed7063206cb28470c5b4157c53",
+        "src/trigger-editor/tests/internal/local_policy.rs": "cf75532edc8d9e37e637836ee717c1c3ff4cd484906a766bf45bfe60258b0158",
+        "src/trigger-editor/tests/internal/assets.rs": "dace7c0861a8eebb2b4ca36891809bb7f9d63367122ecb44faed21aa41db4c4e",
+        "src/trigger-editor/tests/internal/resource_policy.rs": "6402b8c32a038a8bc6c8b17b68450801d10594c36d684fca87f0f4dfba3af6ea",
+        "src/trigger-editor/tests/internal/production.rs": "8c3710ae967f1acdcbb76ab96416b67b0adbb5fe246b642a7d2cad1fe9a083e3",
+        "src/trigger-editor/tests/internal/native_x11.rs": "73ce40cf06504dfb596eeb47022aeabefc982c118a753ec82f333dcc26a41e35",
+        "src/trigger-editor/tests/common/mod.rs": "46746923660a618e87bdb1f65f4ca63ef3a1f5defc250ef251f7fa2e096ef5aa"
+      }
+    },
+    "owner-fast": {
+      "receipt": "/tmp/dandrum-evidence/g3-continuous-native-audio/owner-fast.json",
+      "sha256": "dc938c29115ada105a61813a9c8565577794415a32415e069432ac36a27c411c",
+      "qualification": "All compiled production/unchanged-owner sources remain exact; preliminary unrelated test-source hashes are not claimed final",
+      "owner_source_sha256": {
+        "src/clap-adapter/src/trigger.rs": "14ca55d2f68a4a99e4f27ec785af2b43a66ea659382120f1f96fae9fc6ee6bdb",
+        "src/clap-adapter/src/lib.rs": "26955a02dd99fa07fa7601072b8cd67aac658c90f7c738ca09d552a153d87ed6",
+        "src/clap-adapter/src/trigger/automation.rs": "c2f2f6a08d04a862834ffb96244149de55d051c8015477e64857ddec194233ea",
+        "src/clap-adapter/src/trigger/gui.rs": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+        "src/trigger-editor/Cargo.lock": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814",
+        "src/trigger-editor/Cargo.toml": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c",
+        "src/trigger-editor/src/assets.rs": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584",
+        "src/trigger-editor/src/native_x11.rs": "a2803e24488a04350d951fc2809c7afe2025a191fb38995efe9610181e2aea73",
+        "src/trigger-editor/src/lib.rs": "79f49cb29ed9376f8119c06f687ad069d6a7f33114da686797d9962f034b2d2c",
+        "src/trigger-editor/tests/packaged_assets.rs": "2520e026f6921fa697220bc40bcc4eda58711dde76529f1ac6957add63d5411c",
+        "src/trigger-editor/tests/fixtures/resource-policy.png": "4ff6ab670a58c14270e034e2090d9a432caa263a14e0a25785386b0c12f880b5",
+        "src/trigger-editor/tests/fixtures/navigation.mjs": "3626e1d47e5d3be9d2c84d571c043005cb6ce797271e55826b46aefcfa0e8ff9",
+        "src/trigger-editor/tests/fixtures/resource-policy.mjs": "83757912582dac57c5be48fced7cc91ee2b4e066ab20e0d27eb30712e011173c",
+        "src/trigger-editor/tests/fixtures/local-policy.mjs": "136578e291e562367d8e3f220218d5e99c149e905bb61c48b5e32c5fda9d2033",
+        "src/trigger-editor/tests/fixtures/production-observer.js": "c64d08f416a0231e879884dad97fd45ff4c235ed7063206cb28470c5b4157c53",
+        "src/trigger-editor/tests/internal/local_policy.rs": "cf75532edc8d9e37e637836ee717c1c3ff4cd484906a766bf45bfe60258b0158",
+        "src/trigger-editor/tests/internal/assets.rs": "dace7c0861a8eebb2b4ca36891809bb7f9d63367122ecb44faed21aa41db4c4e",
+        "src/trigger-editor/tests/internal/resource_policy.rs": "6402b8c32a038a8bc6c8b17b68450801d10594c36d684fca87f0f4dfba3af6ea",
+        "src/trigger-editor/tests/internal/production.rs": "8c3710ae967f1acdcbb76ab96416b67b0adbb5fe246b642a7d2cad1fe9a083e3",
+        "src/trigger-editor/tests/internal/native_x11.rs": "73ce40cf06504dfb596eeb47022aeabefc982c118a753ec82f333dcc26a41e35",
+        "src/trigger-editor/tests/common/mod.rs": "46746923660a618e87bdb1f65f4ca63ef3a1f5defc250ef251f7fa2e096ef5aa"
+      }
+    },
+    "editor-native-handler": {
+      "receipt": "/tmp/dandrum-evidence/g3-continuous-native-audio/editor-native-handler.json",
+      "sha256": "9eb3e8fe5d48e3cc7630b8b3625604d5dd600ab5ba9509bbbc8c564f1599c849",
+      "qualification": "All compiled production/unchanged-owner sources remain exact; preliminary unrelated test-source hashes are not claimed final",
+      "owner_source_sha256": {
+        "src/clap-adapter/src/trigger.rs": "14ca55d2f68a4a99e4f27ec785af2b43a66ea659382120f1f96fae9fc6ee6bdb",
+        "src/clap-adapter/src/lib.rs": "26955a02dd99fa07fa7601072b8cd67aac658c90f7c738ca09d552a153d87ed6",
+        "src/clap-adapter/src/trigger/automation.rs": "c2f2f6a08d04a862834ffb96244149de55d051c8015477e64857ddec194233ea",
+        "src/clap-adapter/src/trigger/gui.rs": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+        "src/trigger-editor/Cargo.lock": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814",
+        "src/trigger-editor/Cargo.toml": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c",
+        "src/trigger-editor/src/assets.rs": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584",
+        "src/trigger-editor/src/native_x11.rs": "a2803e24488a04350d951fc2809c7afe2025a191fb38995efe9610181e2aea73",
+        "src/trigger-editor/src/lib.rs": "79f49cb29ed9376f8119c06f687ad069d6a7f33114da686797d9962f034b2d2c",
+        "src/trigger-editor/tests/packaged_assets.rs": "2520e026f6921fa697220bc40bcc4eda58711dde76529f1ac6957add63d5411c",
+        "src/trigger-editor/tests/fixtures/resource-policy.png": "4ff6ab670a58c14270e034e2090d9a432caa263a14e0a25785386b0c12f880b5",
+        "src/trigger-editor/tests/fixtures/navigation.mjs": "3626e1d47e5d3be9d2c84d571c043005cb6ce797271e55826b46aefcfa0e8ff9",
+        "src/trigger-editor/tests/fixtures/resource-policy.mjs": "83757912582dac57c5be48fced7cc91ee2b4e066ab20e0d27eb30712e011173c",
+        "src/trigger-editor/tests/fixtures/local-policy.mjs": "136578e291e562367d8e3f220218d5e99c149e905bb61c48b5e32c5fda9d2033",
+        "src/trigger-editor/tests/fixtures/production-observer.js": "c64d08f416a0231e879884dad97fd45ff4c235ed7063206cb28470c5b4157c53",
+        "src/trigger-editor/tests/internal/local_policy.rs": "cf75532edc8d9e37e637836ee717c1c3ff4cd484906a766bf45bfe60258b0158",
+        "src/trigger-editor/tests/internal/assets.rs": "dace7c0861a8eebb2b4ca36891809bb7f9d63367122ecb44faed21aa41db4c4e",
+        "src/trigger-editor/tests/internal/resource_policy.rs": "6402b8c32a038a8bc6c8b17b68450801d10594c36d684fca87f0f4dfba3af6ea",
+        "src/trigger-editor/tests/internal/production.rs": "8c3710ae967f1acdcbb76ab96416b67b0adbb5fe246b642a7d2cad1fe9a083e3",
+        "src/trigger-editor/tests/internal/native_x11.rs": "73ce40cf06504dfb596eeb47022aeabefc982c118a753ec82f333dcc26a41e35",
+        "src/trigger-editor/tests/common/mod.rs": "46746923660a618e87bdb1f65f4ca63ef3a1f5defc250ef251f7fa2e096ef5aa"
+      }
+    },
+    "llvm-editor-build": {
+      "receipt": "/tmp/dandrum-evidence/g3-continuous-native-audio/llvm-editor-build.json",
+      "sha256": "56475c5a84d1cd5bea68d4707ef11a5a46e48669b1593b87ccb4b44cd21bd9f6",
+      "qualification": "All compiled production/unchanged-owner sources remain exact; preliminary unrelated test-source hashes are not claimed final",
+      "owner_source_sha256": {
+        "src/clap-adapter/src/trigger.rs": "14ca55d2f68a4a99e4f27ec785af2b43a66ea659382120f1f96fae9fc6ee6bdb",
+        "src/clap-adapter/src/lib.rs": "26955a02dd99fa07fa7601072b8cd67aac658c90f7c738ca09d552a153d87ed6",
+        "src/clap-adapter/src/trigger/automation.rs": "c2f2f6a08d04a862834ffb96244149de55d051c8015477e64857ddec194233ea",
+        "src/clap-adapter/src/trigger/gui.rs": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+        "src/trigger-editor/Cargo.lock": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814",
+        "src/trigger-editor/Cargo.toml": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c",
+        "src/trigger-editor/src/assets.rs": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584",
+        "src/trigger-editor/src/native_x11.rs": "a2803e24488a04350d951fc2809c7afe2025a191fb38995efe9610181e2aea73",
+        "src/trigger-editor/src/lib.rs": "79f49cb29ed9376f8119c06f687ad069d6a7f33114da686797d9962f034b2d2c",
+        "src/trigger-editor/tests/packaged_assets.rs": "2520e026f6921fa697220bc40bcc4eda58711dde76529f1ac6957add63d5411c",
+        "src/trigger-editor/tests/fixtures/resource-policy.png": "4ff6ab670a58c14270e034e2090d9a432caa263a14e0a25785386b0c12f880b5",
+        "src/trigger-editor/tests/fixtures/navigation.mjs": "3626e1d47e5d3be9d2c84d571c043005cb6ce797271e55826b46aefcfa0e8ff9",
+        "src/trigger-editor/tests/fixtures/resource-policy.mjs": "83757912582dac57c5be48fced7cc91ee2b4e066ab20e0d27eb30712e011173c",
+        "src/trigger-editor/tests/fixtures/local-policy.mjs": "136578e291e562367d8e3f220218d5e99c149e905bb61c48b5e32c5fda9d2033",
+        "src/trigger-editor/tests/fixtures/production-observer.js": "c64d08f416a0231e879884dad97fd45ff4c235ed7063206cb28470c5b4157c53",
+        "src/trigger-editor/tests/internal/local_policy.rs": "cf75532edc8d9e37e637836ee717c1c3ff4cd484906a766bf45bfe60258b0158",
+        "src/trigger-editor/tests/internal/assets.rs": "dace7c0861a8eebb2b4ca36891809bb7f9d63367122ecb44faed21aa41db4c4e",
+        "src/trigger-editor/tests/internal/resource_policy.rs": "6402b8c32a038a8bc6c8b17b68450801d10594c36d684fca87f0f4dfba3af6ea",
+        "src/trigger-editor/tests/internal/production.rs": "8c3710ae967f1acdcbb76ab96416b67b0adbb5fe246b642a7d2cad1fe9a083e3",
+        "src/trigger-editor/tests/internal/native_x11.rs": "73ce40cf06504dfb596eeb47022aeabefc982c118a753ec82f333dcc26a41e35",
+        "src/trigger-editor/tests/common/mod.rs": "46746923660a618e87bdb1f65f4ca63ef3a1f5defc250ef251f7fa2e096ef5aa"
+      }
+    },
+    "llvm-dso-build": {
+      "receipt": "/tmp/dandrum-evidence/g3-continuous-native-audio/llvm-dso-build.json",
+      "sha256": "9d4a346b2c01d0f2734f582aa7ae28cf572e2c6d0d6af4f5e34b48ec06d41a54",
+      "qualification": "All compiled production/unchanged-owner sources remain exact; preliminary unrelated test-source hashes are not claimed final",
+      "owner_source_sha256": {
+        "src/clap-adapter/src/trigger.rs": "14ca55d2f68a4a99e4f27ec785af2b43a66ea659382120f1f96fae9fc6ee6bdb",
+        "src/clap-adapter/src/lib.rs": "26955a02dd99fa07fa7601072b8cd67aac658c90f7c738ca09d552a153d87ed6",
+        "src/clap-adapter/src/trigger/automation.rs": "c2f2f6a08d04a862834ffb96244149de55d051c8015477e64857ddec194233ea",
+        "src/clap-adapter/src/trigger/gui.rs": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+        "src/trigger-editor/Cargo.lock": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814",
+        "src/trigger-editor/Cargo.toml": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c",
+        "src/trigger-editor/src/assets.rs": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584",
+        "src/trigger-editor/src/native_x11.rs": "a2803e24488a04350d951fc2809c7afe2025a191fb38995efe9610181e2aea73",
+        "src/trigger-editor/src/lib.rs": "79f49cb29ed9376f8119c06f687ad069d6a7f33114da686797d9962f034b2d2c",
+        "src/trigger-editor/tests/packaged_assets.rs": "2520e026f6921fa697220bc40bcc4eda58711dde76529f1ac6957add63d5411c",
+        "src/trigger-editor/tests/fixtures/resource-policy.png": "4ff6ab670a58c14270e034e2090d9a432caa263a14e0a25785386b0c12f880b5",
+        "src/trigger-editor/tests/fixtures/navigation.mjs": "3626e1d47e5d3be9d2c84d571c043005cb6ce797271e55826b46aefcfa0e8ff9",
+        "src/trigger-editor/tests/fixtures/resource-policy.mjs": "83757912582dac57c5be48fced7cc91ee2b4e066ab20e0d27eb30712e011173c",
+        "src/trigger-editor/tests/fixtures/local-policy.mjs": "136578e291e562367d8e3f220218d5e99c149e905bb61c48b5e32c5fda9d2033",
+        "src/trigger-editor/tests/fixtures/production-observer.js": "c64d08f416a0231e879884dad97fd45ff4c235ed7063206cb28470c5b4157c53",
+        "src/trigger-editor/tests/internal/local_policy.rs": "cf75532edc8d9e37e637836ee717c1c3ff4cd484906a766bf45bfe60258b0158",
+        "src/trigger-editor/tests/internal/assets.rs": "dace7c0861a8eebb2b4ca36891809bb7f9d63367122ecb44faed21aa41db4c4e",
+        "src/trigger-editor/tests/internal/resource_policy.rs": "6402b8c32a038a8bc6c8b17b68450801d10594c36d684fca87f0f4dfba3af6ea",
+        "src/trigger-editor/tests/internal/production.rs": "8c3710ae967f1acdcbb76ab96416b67b0adbb5fe246b642a7d2cad1fe9a083e3",
+        "src/trigger-editor/tests/internal/native_x11.rs": "73ce40cf06504dfb596eeb47022aeabefc982c118a753ec82f333dcc26a41e35",
+        "src/trigger-editor/tests/common/mod.rs": "46746923660a618e87bdb1f65f4ca63ef3a1f5defc250ef251f7fa2e096ef5aa"
+      }
+    }
+  },
+  "native_outer_cases": 19,
+  "nested_allocator_children": 2,
+  "gui_cases": 5,
+  "fast_owner_cases": 17,
+  "lower_editor_native_cases": 1,
+  "known_untracked_cache_files_preserved": 1766,
+  "owned_workers_remaining": [],
+  "builders_remaining": [],
+  "superseded_evidence": "Preliminary per-case native-cases logs overwritten by final rerun; not reconstructed. Use immutable refactor-native-cases for final claims. Initial full characterization and earlier aggregate receipts remain preliminary.",
+  "leases_returned": {
+    "sources": [
+      "/tmp/dandrum-lanes/runtime/src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "/tmp/dandrum-lanes/runtime/src/clap-adapter/tests/trigger_parameters.rs"
+    ],
+    "caches": [
+      "/tmp/dandrum-lanes/cache-editor-guard",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov"
+    ],
+    "no_pending_workers_or_commands": true
+  },
+  "no_commit_checkbox_or_beta_closure": true
+}

@@ -1766,3 +1766,45 @@ alongside all later VST3/standalone/named-DAW/installed beta gates. No task, sce
 mapping or overall beta closes. Independent review and normal publication are
 recorded separately in the sole live tracker. Main remains clean68dd655; mutation
 is excluded and all reusable caches are retained.
+
+
+## Continuous native audio lifecycle checkpoint — 22 October 2026
+
+A single synthetic host worker now retains the same activated audio endpoint
+through two actual editor create/parent/show/mount/destroy cycles. Setup accepts
+mapping36 to37, revision1 and undoCount1, with physical drums.level0.5. Recreated
+React views preserve document/YAML, identity, scalar and history while attachment
+IDs change. Saved bytes remain identical. The host-held pitch60 voice survives
+view cleanup; every stereo sample matches the independently derived signed
+fixture, and final host note-off produces exact zero. Weak views and old XIDs
+expire. The worker stops on its own thread, returns by join, matches the original
+instance and is deactivated on main. Production already passed and is unchanged.
+
+[Portable evidence](evidence/trigger-clap-continuous-audio-2026-10-22/README.md)
+separates ordinary and calibrated worker-TLS audit runs. Calibration detects a
+known allocation, preexisting free and empty bracket; every measured actual
+process callback records zero allocations/deallocations. The shared launcher
+requires its exact child to execute one test. Root passes27 maintained CTests
+in95.789s and five-artifact linkage; three affected guards pass after genuine
+missing-registration RED/GREEN. Author19 outer cases plus2 private children,
+GUI5/fast17/lower-handler/fmt/strictClippy and final LLVM/restoration pass.
+
+Root independently rehashes two ELFs, LLVM tools and13 profiles, regenerates equal
+LLVM data without warnings, and confirms launcher116/116, calibration49/49 and
+six measure instantiations12/12. New lifecycle closure97/97, open66/66, close32/32
+and progress22/22 execute. Worker/scenario/error/timeout defenses remain visible
+coverage gaps; no whole-owner or branch claim. An eager diagnostic-only helper
+refactor has separately bound final source and reruns; overwritten preliminary
+per-case logs are explicitly qualified rather than reconstructed.
+
+This is paced synthetic processing, not physical device cadence or a complete
+internal DSP cursor proof for identical tail samples. The real mount intervals
+have callback overlap. Narrow synchronous-call overlap is measured separately:
+root observes one ordinary destroy overlap; the other destroy intervals do not
+force it. No universal synchronous destroy-overlap or hard-realtime claim follows.
+Prior eight-case headless evidence remains qualified76-input reuse with one
+removed-asset limit, not a fresh native-editor source-free build. Strict active /
+all51/spec-coverage gates pass without task/spec/map changes. Independently edited
+native instances, OS input, validator limitation and later VST3/standalone/DAW /
+installed beta gates remain open. Review/publication receipts remain in the sole
+tracker; caches and clean main68dd655 are preserved, mutation excluded.

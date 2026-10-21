@@ -570,3 +570,570 @@ fn copied_native_live_attachment_expires_renewed_note_and_preserves_host_voice()
         assert_eq!(after_host_release,[[0.0;BLOCK_FRAMES];2],"host release leaves silence after native editor expiry");
     }).join().expect("native live-attachment expiry completed");
 }
+
+// These synthetic callbacks deliberately run slower than a physical device.
+// The watchdog detects gross stalls; it is not a hard realtime deadline.
+const CONTINUOUS_BLOCKS: usize = 1_500;
+const CONTINUOUS_PHASES: usize = 8;
+const CONTINUOUS_WATCHDOG: Duration = Duration::from_millis(500);
+
+#[derive(Default)]
+struct ContinuousProgress {
+    stop: std::sync::atomic::AtomicBool,
+    release: std::sync::atomic::AtomicBool,
+    finished: std::sync::atomic::AtomicBool,
+    phase: std::sync::atomic::AtomicUsize,
+    blocks: [std::sync::atomic::AtomicUsize; CONTINUOUS_PHASES],
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+struct CallbackInterval {
+    start_us: u64,
+    end_us: u64,
+}
+
+#[derive(Debug)]
+struct ContinuousReceipt {
+    blocks: usize,
+    released_blocks: usize,
+    max_gap: Duration,
+    max_duration: Duration,
+    failure: Option<&'static str>,
+    mismatch: Option<(usize, usize, f32, f32)>,
+    allocation_counts: (u64, u64),
+    intervals: [CallbackInterval; CONTINUOUS_BLOCKS],
+}
+impl Default for ContinuousReceipt {
+    fn default() -> Self {
+        Self {
+            blocks: 0,
+            released_blocks: 0,
+            max_gap: Duration::ZERO,
+            max_duration: Duration::ZERO,
+            failure: None,
+            mismatch: None,
+            allocation_counts: (0, 0),
+            intervals: [CallbackInterval::default(); CONTINUOUS_BLOCKS],
+        }
+    }
+}
+
+fn continuous_worker(
+    stopped: clack_host::process::StoppedPluginAudioProcessor<GuiHost>,
+    progress: std::sync::Arc<ContinuousProgress>,
+    origin: Instant,
+    audited: bool,
+) -> (
+    clack_host::process::StoppedPluginAudioProcessor<GuiHost>,
+    ContinuousReceipt,
+) {
+    use std::sync::atomic::Ordering;
+    let mut receipt = ContinuousReceipt::default();
+    let mut audio = match stopped.start_processing() {
+        Ok(audio) => audio,
+        Err(error) => {
+            receipt.failure = Some("start_processing failed");
+            progress.finished.store(true, Ordering::Release);
+            return (error.into_stopped_processor(), receipt);
+        }
+    };
+    // Keep the owning endpoint outside the caught work so failures still return
+    // it through stop -> join -> matches -> deactivate on the normal threads.
+    let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let audit = audited.then(calibrated_callback_audit);
+        let mut pcm = [[123.0; BLOCK_FRAMES]; 2];
+        let mut inputs = AudioPorts::with_capacity(0, 0);
+        let input = inputs.with_input_buffers(std::iter::empty::<
+            AudioPortBuffer<[InputChannel<'_, f32>; 0], [InputChannel<'_, f64>; 0]>,
+        >());
+        let mut outputs = AudioPorts::with_capacity(2, 1);
+        let mut onset = EventBuffer::new();
+        onset.push(&MidiEvent::new(3, 0, [0x90, 60, 127]));
+        let mut release = EventBuffer::new();
+        release.push(&MidiEvent::new(0, 0, [0x80, 60, 0]));
+        let empty = EventBuffer::new();
+        let mut output = Recorder::new(64);
+        let mut released = false;
+        let mut last_completion = None;
+        while !progress.stop.load(Ordering::Acquire) {
+            if origin.elapsed() >= Duration::from_secs(15)
+                || receipt.blocks >= CONTINUOUS_BLOCKS - 2
+            {
+                receipt.failure = Some("finite continuous interval exhausted");
+                break;
+            }
+            pcm.fill([123.0; BLOCK_FRAMES]);
+            output.attempts = 0;
+            let events = if receipt.blocks == 0 {
+                &onset
+            } else if progress.release.load(Ordering::Acquire) && !released {
+                released = true;
+                &release
+            } else {
+                &empty
+            };
+            let mut buffers = outputs.with_output_buffers([AudioPortBuffer {
+                latency: 0,
+                channels: AudioPortBufferType::f32_output_only(
+                    pcm.iter_mut().map(|channel| channel.as_mut_slice()),
+                ),
+            }]);
+            let phase = progress.phase.load(Ordering::Acquire);
+            let start = Instant::now();
+            let mut callback = || {
+                audio.process(
+                    &input,
+                    &mut buffers,
+                    &events.as_input(),
+                    &mut OutputEvents::from_buffer(&mut output),
+                    Some((receipt.blocks * BLOCK_FRAMES) as u64),
+                    None,
+                )
+            };
+            let (status, counts) = match &audit {
+                Some((audit, _probe)) => audit.measure(callback),
+                None => (callback(), (0, 0)),
+            };
+            let end = Instant::now();
+            receipt.intervals[receipt.blocks] = CallbackInterval {
+                start_us: start.duration_since(origin).as_micros() as u64,
+                end_us: end.duration_since(origin).as_micros() as u64,
+            };
+            receipt.max_duration = receipt.max_duration.max(end.duration_since(start));
+            if let Some(previous) = last_completion {
+                receipt.max_gap = receipt.max_gap.max(end.duration_since(previous));
+            }
+            last_completion = Some(end);
+            if !matches!(status, Ok(ProcessStatus::Continue)) {
+                receipt.failure = Some("process did not return Continue");
+                break;
+            }
+            if counts != (0, 0) {
+                receipt.failure = Some("process allocated or deallocated");
+                receipt.allocation_counts = counts;
+                break;
+            }
+            if receipt.max_duration > CONTINUOUS_WATCHDOG || receipt.max_gap > CONTINUOUS_WATCHDOG {
+                receipt.failure = Some("synthetic 500ms callback watchdog exceeded");
+                break;
+            }
+            for (channel, samples) in pcm.iter().enumerate() {
+                for (index, actual) in samples.iter().copied().enumerate() {
+                    let frame = receipt.blocks * BLOCK_FRAMES + index;
+                    let expected = if released || frame < 3 {
+                        0.0
+                    } else if frame < 7 {
+                        [-0.25, 8191.0 / 65536.0, -0.125, 16383.0 / 65536.0][frame - 3]
+                    } else {
+                        -0.0625
+                    };
+                    if actual != expected {
+                        receipt.failure = Some("signed continuous PCM mismatch");
+                        receipt.mismatch = Some((frame, channel, expected, actual));
+                        return;
+                    }
+                }
+            }
+            receipt.blocks += 1;
+            receipt.released_blocks += usize::from(released);
+            if phase == progress.phase.load(Ordering::Acquire) {
+                progress.blocks[phase].fetch_add(1, Ordering::Release);
+            }
+            // No catch-up bursts, and no wait for the GUI to advance its phase.
+            std::thread::sleep(Duration::from_millis(10));
+        }
+    }));
+    if outcome.is_err() {
+        receipt.failure = Some("worker preparation or loop panicked");
+    }
+    let stopped = audio.stop_processing();
+    progress
+        .finished
+        .store(true, std::sync::atomic::Ordering::Release);
+    (stopped, receipt)
+}
+
+// This UI helper shares one remaining deadline across every asynchronous reply.
+// It does not inherit the older helper's fresh 15-second budget for each call.
+fn continuous_javascript(
+    plugin: &mut PluginInstance<GuiHost>,
+    browser: &webkit2gtk::WebView,
+    script: &str,
+    deadline: Instant,
+) -> String {
+    let result = Rc::new(RefCell::new(None));
+    let received = Rc::clone(&result);
+    browser.run_javascript(script, None::<&gtk::gio::Cancellable>, move |value| {
+        *received.borrow_mut() = Some(
+            value
+                .map(|value| value.js_value().unwrap().to_string())
+                .map_err(|error| error.to_string()),
+        );
+    });
+    loop {
+        assert!(Instant::now() < deadline, "shared native UI deadline");
+        dispatch_context(plugin);
+        if let Some(value) = result.borrow_mut().take() {
+            return value.expect("public WebKit evaluation succeeds");
+        }
+        std::thread::sleep(Duration::from_millis(5));
+    }
+}
+
+fn continuous_invoke(
+    plugin: &mut PluginInstance<GuiHost>,
+    browser: &webkit2gtk::WebView,
+    expression: &str,
+    deadline: Instant,
+) -> serde_json::Value {
+    continuous_javascript(
+        plugin,
+        browser,
+        &format!(
+            "window.__CONTINUOUS_REPLY__=null;({expression}).then(result=>window.__CONTINUOUS_REPLY__={{status:'accepted',result}},error=>window.__CONTINUOUS_REPLY__={{status:'rejected',code:error.code}});'started'"
+        ),
+        deadline,
+    );
+    loop {
+        let reply = continuous_javascript(
+            plugin,
+            browser,
+            "JSON.stringify(window.__CONTINUOUS_REPLY__)",
+            deadline,
+        );
+        if reply != "null" {
+            let reply: serde_json::Value = serde_json::from_str(&reply).unwrap();
+            assert_eq!(reply["status"], "accepted", "native reply {reply}");
+            return reply["result"].clone();
+        }
+    }
+}
+
+fn continuous_open(
+    plugin: &mut PluginInstance<GuiHost>,
+    parent: &Parent,
+    deadline: Instant,
+    operations: &mut Vec<(&'static str, Instant, Instant)>,
+) -> webkit2gtk::WebView {
+    let gui = plugin.plugin_handle().get_extension::<PluginGui>().unwrap();
+    let start = Instant::now();
+    gui.create(
+        &plugin.plugin_handle(),
+        GuiConfiguration {
+            api_type: GuiApiType::X11,
+            is_floating: false,
+        },
+    )
+    .unwrap();
+    operations.push(("gui.create", start, Instant::now()));
+    let start = Instant::now();
+    unsafe {
+        gui.set_parent(
+            &plugin.plugin_handle(),
+            Window::from_x11_handle(parent.id.into()),
+        )
+    }
+    .unwrap();
+    operations.push(("gui.set_parent", start, Instant::now()));
+    let start = Instant::now();
+    gui.show(&plugin.plugin_handle()).unwrap();
+    operations.push(("gui.show", start, Instant::now()));
+    let children = parent.children();
+    assert_eq!(children.len(), 1);
+    let geometry = parent.x.get_geometry(children[0]).unwrap().reply().unwrap();
+    assert_eq!(
+        (geometry.x, geometry.y, geometry.width, geometry.height),
+        (0, 0, 1200, 800)
+    );
+    let browser = weak_browser_in_child(children[0])
+        .upgrade()
+        .unwrap()
+        .downcast::<webkit2gtk::WebView>()
+        .unwrap();
+    loop {
+        if continuous_javascript(
+            plugin,
+            &browser,
+            "String(Boolean(document.querySelector('[data-testid=trigger-editor]')))",
+            deadline,
+        ) == "true"
+        {
+            return browser;
+        }
+    }
+}
+
+fn continuous_close(
+    plugin: &mut PluginInstance<GuiHost>,
+    parent: &Parent,
+    browser: webkit2gtk::WebView,
+    operations: &mut Vec<(&'static str, Instant, Instant)>,
+) {
+    let child = parent.children()[0];
+    let weak = weak_browser_in_child(child);
+    let gui = plugin.plugin_handle().get_extension::<PluginGui>().unwrap();
+    let start = Instant::now();
+    gui.destroy(&plugin.plugin_handle());
+    operations.push(("gui.destroy", start, Instant::now()));
+    drop(browser);
+    assert!(
+        weak.upgrade().is_none(),
+        "destroyed WebView releases its owner"
+    );
+    assert!(
+        parent.children().is_empty(),
+        "same host parent remains live"
+    );
+    assert!(
+        parent.x.get_geometry(child).unwrap().reply().is_err(),
+        "old child XID no longer exists"
+    );
+}
+
+fn continuous_window(
+    plugin: &mut PluginInstance<GuiHost>,
+    progress: &ContinuousProgress,
+    phase: usize,
+    deadline: Instant,
+) {
+    use std::sync::atomic::Ordering;
+    progress.phase.store(phase, Ordering::Release);
+    let start = Instant::now();
+    loop {
+        assert!(
+            !progress.finished.load(Ordering::Acquire),
+            "audio worker ended before lifecycle completed"
+        );
+        assert!(Instant::now() < deadline, "shared continuous deadline");
+        dispatch_context(plugin);
+        if start.elapsed() >= Duration::from_millis(100)
+            && progress.blocks[phase].load(Ordering::Acquire) >= 5
+        {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(5));
+    }
+}
+
+#[test]
+#[ignore = "continuous native audio: inherited X11, trusted copied release and one persistent host worker"]
+fn copied_native_continuous_audio_survives_view_replacement() {
+    std::thread::spawn(|| continuous_scenario(false))
+        .join()
+        .expect("continuous native host completed");
+}
+
+#[test]
+#[ignore = "continuous native callback audit: calibrated preload on the persistent audio worker"]
+fn copied_native_continuous_audio_callbacks_allocate_and_deallocate_nothing() {
+    run_allocator_audit_child("note_native::continuous_audio_allocator_audit_child");
+}
+
+#[test]
+#[ignore = "only the calibrated continuous callback audit parent may launch this child"]
+fn continuous_audio_allocator_audit_child() {
+    std::thread::spawn(|| continuous_scenario(true))
+        .join()
+        .expect("continuous audited native host completed");
+}
+
+fn continuous_scenario(audited: bool) {
+    use std::sync::{Arc, atomic::Ordering};
+    let _fixture = HeldSample::install();
+    let parent = Parent::new();
+    let mut plugin = copied_plugin();
+    let params = plugin
+        .plugin_handle()
+        .get_extension::<PluginParams>()
+        .unwrap();
+    assert_eq!(params.count(&plugin.plugin_handle()), 1);
+    let mut info_buffer = clack_extensions::params::ParamInfoBuffer::new();
+    let info = params
+        .get_info(&plugin.plugin_handle(), 0, &mut info_buffer)
+        .unwrap();
+    assert_eq!(info.id, ClapId::new(1));
+    assert_eq!(info.name, b"drums.level");
+    assert_eq!(
+        (info.min_value, info.max_value, info.default_value),
+        (0.0, 4.0, 1.0)
+    );
+    let setup_deadline = Instant::now() + Duration::from_secs(15);
+    let mut operations = Vec::with_capacity(12);
+    let browser = continuous_open(&mut plugin, &parent, setup_deadline, &mut operations);
+    let initial = continuous_invoke(
+        &mut plugin,
+        &browser,
+        "window.__DANDRUM__.backend.getNativeFunction('getSamplerSession')()",
+        setup_deadline,
+    );
+    assert_eq!(initial["connection"]["revision"], "0");
+    let admission = continuous_invoke(
+        &mut plugin,
+        &browser,
+        "(()=>{const c=window.__DANDRUM_NATIVE__;return window.__DANDRUM__.backend.getNativeFunction('setInstrumentZoneKeyRange')(c.instanceId,c.attachmentId,'8101','0','kit','kick',37,37);})()",
+        setup_deadline,
+    );
+    assert_eq!(admission["job_id"], "8101");
+    loop {
+        let job = continuous_invoke(
+            &mut plugin,
+            &browser,
+            "window.__DANDRUM__.backend.getNativeFunction('getInstrumentSessionJobStatus')('8101')",
+            setup_deadline,
+        );
+        if job["state"] == "completed" {
+            assert_eq!(job["revision"], "1");
+            break;
+        }
+        assert_ne!(job["state"], "failed", "mapping setup job {job}");
+    }
+    let mut scalar = EventBuffer::new();
+    scalar.push(&ParamValueEvent::new(
+        0,
+        ClapId::new(1),
+        Pckn::match_all(),
+        0.5,
+    ));
+    params.flush(
+        &mut plugin.inactive_plugin_handle().unwrap(),
+        &scalar.as_input(),
+        &mut OutputEvents::from_buffer(&mut Recorder::new(64)),
+    );
+    let accepted = continuous_invoke(
+        &mut plugin,
+        &browser,
+        "window.__DANDRUM__.backend.getNativeFunction('getSamplerSession')()",
+        setup_deadline,
+    );
+    assert_eq!(accepted["connection"]["revision"], "1");
+    assert_eq!(
+        accepted["connection"]["history"],
+        serde_json::json!({"undoCount":1,"redoCount":0})
+    );
+    assert_eq!(accepted["document"]["maps"][0]["zones"][0]["keyLow"], 37);
+    assert_eq!(accepted["document"]["maps"][0]["zones"][0]["keyHigh"], 37);
+    let saved = saved_state(&mut plugin);
+    let mut attachment = accepted["connection"]["attachmentId"].clone();
+    continuous_close(&mut plugin, &parent, browser, &mut operations);
+    let stopped = plugin
+        .activate(
+            |_, _| (),
+            PluginAudioConfiguration {
+                sample_rate: 48_000.0,
+                min_frames_count: 1,
+                max_frames_count: BLOCK_FRAMES as u32,
+            },
+        )
+        .unwrap();
+    let progress = Arc::new(ContinuousProgress::default());
+    let origin = Instant::now();
+    let deadline = origin + Duration::from_secs(15);
+    let worker_progress = Arc::clone(&progress);
+    let worker =
+        std::thread::spawn(move || continuous_worker(stopped, worker_progress, origin, audited));
+    // API-call intervals are kept separate from complete opening/mount windows.
+    operations.clear();
+    let scenario = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        continuous_window(&mut plugin, &progress, 0, deadline);
+        for (opening, live, after) in [(1, 2, 3), (4, 5, 6)] {
+            progress.phase.store(opening, Ordering::Release);
+            let start = Instant::now();
+            let browser = continuous_open(&mut plugin, &parent, deadline, &mut operations);
+            let end = Instant::now();
+            operations.push(("opening including React mount", start, end));
+            let current = continuous_invoke(
+                &mut plugin,
+                &browser,
+                "window.__DANDRUM__.backend.getNativeFunction('getSamplerSession')()",
+                deadline,
+            );
+            for field in ["instanceId", "revision", "history"] {
+                assert_eq!(current["connection"][field], accepted["connection"][field]);
+            }
+            assert_ne!(current["connection"]["attachmentId"], attachment);
+            attachment = current["connection"]["attachmentId"].clone();
+            assert_eq!(current["document"], accepted["document"]);
+            assert_eq!(current["yaml"], accepted["yaml"]);
+            let values = continuous_invoke(
+                &mut plugin,
+                &browser,
+                "window.__DANDRUM__.backend.getNativeFunction('getParameterState')()",
+                deadline,
+            );
+            assert_eq!(
+                values["parameters"],
+                serde_json::json!([{"id":"drums.level","name":"drums.level","value":0.125}])
+            );
+            assert_eq!(
+                params.get_value(&plugin.plugin_handle(), ClapId::new(1)),
+                Some(0.5)
+            );
+            assert_eq!(saved_state(&mut plugin), saved);
+            assert!(
+                progress.blocks[opening].load(Ordering::Acquire) > 0,
+                "actual opening/mounting has signed callback progress"
+            );
+            continuous_window(&mut plugin, &progress, live, deadline);
+            continuous_close(&mut plugin, &parent, browser, &mut operations);
+            continuous_window(&mut plugin, &progress, after, deadline);
+            assert_eq!(saved_state(&mut plugin), saved);
+        }
+        progress.release.store(true, Ordering::Release);
+        continuous_window(&mut plugin, &progress, 7, deadline);
+    }));
+    // Main assertion failures also request stop, return the exact endpoint and
+    // deactivate before unwinding. A stuck foreign call needs the outer timeout.
+    progress.stop.store(true, Ordering::Release);
+    let (stopped, receipt) = worker.join().expect("audio worker returns ownership");
+    let matched = stopped.matches(&plugin);
+    plugin.deactivate(stopped);
+    assert!(
+        matched,
+        "returned audio endpoint belongs to this same instance"
+    );
+    eprintln!(
+        "continuous audited={audited}: callbacks={}, frames={}, released={}, max_duration={:?}, max_completion_gap={:?}, phase_counts={:?}, failure={:?}, mismatch={:?}, allocation_counts={:?}",
+        receipt.blocks,
+        receipt.blocks * BLOCK_FRAMES,
+        receipt.released_blocks,
+        receipt.max_duration,
+        receipt.max_gap,
+        progress
+            .blocks
+            .each_ref()
+            .map(|count| count.load(Ordering::Acquire)),
+        receipt.failure,
+        receipt.mismatch,
+        receipt.allocation_counts
+    );
+    for (operation, start, end) in operations {
+        let start = start.duration_since(origin).as_micros() as u64;
+        let end = end.duration_since(origin).as_micros() as u64;
+        let overlap = receipt.intervals[..receipt.blocks]
+            .iter()
+            .filter(|callback| callback.start_us < end && callback.end_us > start)
+            .count();
+        eprintln!(
+            "operation {operation}: [{start}, {end}]us, actual overlapping callbacks={overlap}"
+        );
+        if operation == "opening including React mount" {
+            assert!(
+                overlap > 0,
+                "audio callbacks overlap each actual opening/mount interval"
+            );
+        }
+    }
+    if let Err(error) = scenario {
+        // The GUI may still be live after a main-side assertion failure.
+        plugin
+            .plugin_handle()
+            .get_extension::<PluginGui>()
+            .unwrap()
+            .destroy(&plugin.plugin_handle());
+        std::panic::resume_unwind(error);
+    }
+    assert_eq!(receipt.failure, None);
+    assert!(receipt.released_blocks >= 5);
+    assert!(receipt.blocks * BLOCK_FRAMES < SAMPLE_FRAMES);
+    assert_eq!(saved_state(&mut plugin), saved);
+}

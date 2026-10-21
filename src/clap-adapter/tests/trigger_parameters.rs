@@ -1070,6 +1070,10 @@ fn copied_native_invalid_stopped_flush_preserves_uncollected_automation_ownershi
 #[test]
 #[ignore = "native callback audit: trusted copied product, real inherited X11 and explicit calibrated child"]
 fn copied_native_parameter_callbacks_allocate_and_destroy_nothing_while_gui_services() {
+    run_allocator_audit_child("native_parameter_callback_allocator_audit_child");
+}
+
+fn run_allocator_audit_child(name: &str) {
     let directory = tempfile::tempdir().unwrap();
     let interposer = directory.path().join("allocator_interpose.c");
     let probe = directory.path().join("allocator_probe.rs");
@@ -1086,10 +1090,10 @@ fn copied_native_parameter_callbacks_allocate_and_destroy_nothing_while_gui_serv
         .arg(&library)
         .output()
         .unwrap();
+    let compiler_stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
         output.status.success(),
-        "interposer compile: {}",
-        String::from_utf8_lossy(&output.stderr)
+        "interposer compile: {compiler_stderr}"
     );
     let output = std::process::Command::new("rustc")
         .args(["--edition=2024", "--crate-type=cdylib", "-Copt-level=1"])
@@ -1098,13 +1102,12 @@ fn copied_native_parameter_callbacks_allocate_and_destroy_nothing_while_gui_serv
         .arg(&rust_library)
         .output()
         .unwrap();
+    let compiler_stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
         output.status.success(),
-        "Rust probe compile: {}",
-        String::from_utf8_lossy(&output.stderr)
+        "Rust probe compile: {compiler_stderr}"
     );
     let executable = std::env::current_exe().unwrap();
-    let name = "native_parameter_callback_allocator_audit_child";
     let listing = std::process::Command::new(&executable)
         .arg("--list")
         .output()
@@ -1173,31 +1176,28 @@ fn native_parameter_callback_allocator_audit_child() {
         .expect("calibrated GUI/audio audit host completed");
 }
 
-fn parameter_callback_allocator_audit_on_host_thread() {
-    use std::sync::{
-        Arc,
-        atomic::{AtomicBool, AtomicUsize, Ordering},
-    };
-    type Begin = unsafe extern "C" fn();
-    type End = unsafe extern "C" fn(*mut u64, *mut u64);
-    #[derive(Clone, Copy)]
-    struct Audit {
-        begin: Begin,
-        end: End,
-    }
-    impl Audit {
-        fn measure<T>(&self, callback: impl FnOnce() -> T) -> (T, (u64, u64)) {
-            unsafe {
-                (self.begin)();
-            }
-            let result = callback();
-            let (mut allocations, mut deallocations) = (0, 0);
-            unsafe {
-                (self.end)(&mut allocations, &mut deallocations);
-            }
-            (result, (allocations, deallocations))
+type Begin = unsafe extern "C" fn();
+type End = unsafe extern "C" fn(*mut u64, *mut u64);
+#[derive(Clone, Copy)]
+struct Audit {
+    begin: Begin,
+    end: End,
+}
+impl Audit {
+    fn measure<T>(&self, callback: impl FnOnce() -> T) -> (T, (u64, u64)) {
+        unsafe {
+            (self.begin)();
         }
+        let result = callback();
+        let (mut allocations, mut deallocations) = (0, 0);
+        unsafe {
+            (self.end)(&mut allocations, &mut deallocations);
+        }
+        (result, (allocations, deallocations))
     }
+}
+
+fn calibrated_callback_audit() -> (Audit, libloading::Library) {
     // The trusted parent supplies these test-only observer symbols and probe.
     let global = libloading::os::unix::Library::this();
     let audit = unsafe {
@@ -1233,6 +1233,18 @@ fn parameter_callback_allocator_audit_on_host_thread() {
         deallocate(fresh);
     }
     assert_eq!(audit.measure(|| ()).1, (0, 0));
+    eprintln!(
+        "current-thread TLS calibration: allocation={allocation:?}, deallocation={destruction:?}, empty=(0, 0)"
+    );
+    (audit, probe)
+}
+
+fn parameter_callback_allocator_audit_on_host_thread() {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, AtomicUsize, Ordering},
+    };
+    let (audit, _probe) = calibrated_callback_audit();
     let parent = Parent::new();
     let mut plugin = copied_plugin();
     let gui = plugin.plugin_handle().get_extension::<PluginGui>().unwrap();
@@ -1461,7 +1473,7 @@ fn parameter_callback_allocator_audit_on_host_thread() {
     gui.destroy(&plugin.plugin_handle());
     drop(browser);
     println!(
-        "Rust cdylib calibration allocate={allocation:?} preexisting-destruction={destruction:?}; plugin+Clack activeflush={flush_count:?}, process={process_count:?}, callbacks={iterations}, whole callback/service overlaps={}, callbacks during live browser/context progress={browser_progress}",
+        "Rust cdylib calibration recorded above; plugin+Clack activeflush={flush_count:?}, process={process_count:?}, callbacks={iterations}, whole callback/service overlaps={}, callbacks during live browser/context progress={browser_progress}",
         overlap.load(Ordering::Acquire)
     );
 }

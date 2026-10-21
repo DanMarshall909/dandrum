@@ -1,0 +1,589 @@
+{
+  "binding_sha256": "96de778be65af9b068ecd6840c9f6c3172fd97040331e846820e7d5176c915c1",
+  "objects": {
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/dso-final/libdandrum_clap_adapter.so": "3738110026a86cc6c4744bd241fbc244ea454ad4ce866a47882dc38778623e26",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/test-refactor/trigger_parameters-8fc57b2ef83fb6e4": "adf7ac92d77903613fd3b224112a4765692c99ad8e344b2828b3f988217da468"
+  },
+  "profiles": {
+    "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/11413247499942899091_0-2251617.profraw": "4d25afaf2131dac5a279a6f5a336fba7cc243122ff6527948359702a26bdc3a2",
+    "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/11413247499942899091_0-2251829.profraw": "2d4c6832bbd646b89fba7a34ff3617b73ad01be03791179bd98d3286f3bb7044",
+    "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/12894584750217267763_0-2251662.profraw": "725f65ebbefb68b9d014e78b730f97d99449133700f300de06c34fe6e6d1fe0a",
+    "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/11413247499942899091_0-2251494.profraw": "2e41a4cbccd8cd70142a6e15d889a9111f93abcaa6827c1ce543917ea37fc18c",
+    "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/11413247499942899091_0-2251616.profraw": "9df3ca89ead12223256318ed63890af15fa5dbaf60458df8cfbfd9a7d7e1ee28",
+    "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/12894584750217267763_0-2251829.profraw": "37914e6eb825cc1b19988db0ff3363e4fad2e4986294a4f4a75200bc76d3b4d2",
+    "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/11413247499942899091_0-2251783.profraw": "ed700209a6e9b0bf34b7609ec0d27e1069b015ccf3d2c8ec9f8ca7cb9e74073c",
+    "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/11413247499942899091_0-2251662.profraw": "503e09d1d6e4a60697620337bdbdd5531ed0db555c1339955c4188cc5e3b8aa1",
+    "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/11413247499942899091_0-2251493.profraw": "67b4b24939331b6dcd4a720e18051aad0451829bcef8949311efb3d9f13d0f90",
+    "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/11413247499942899091_0-2251827.profraw": "2a7187d596bd0fa6c25eede44f8d685a9da2b006c98288627943815cb03d22f5",
+    "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/11413247499942899091_0-2251660.profraw": "e1dddcd8a78b72f84ceb79b87a57074dd0187c93d368dd73559aa82fdf5f3eb4",
+    "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/11413247499942899091_0-2251784.profraw": "d81965a0311e8f285017e1207a4f5b0337a2ebb76cc430cbc99707fb548e8717",
+    "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/12894584750217267763_0-2251494.profraw": "112b7c94da730ca2b8ed362b8a0cc0cbd97a21fa6f1ff21124dc6243f030cfa9"
+  },
+  "raw_profile_count": 13,
+  "original_export_sha256": "f84ebaeea5a416f2a0ccd56c51ca5de2cc3d4b43adf9709f3e06707bbf6d3b30",
+  "regenerated_export_sha256": "f84ebaeea5a416f2a0ccd56c51ca5de2cc3d4b43adf9709f3e06707bbf6d3b30",
+  "commands": [
+    [
+      "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-profdata",
+      "merge",
+      "-sparse",
+      "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/11413247499942899091_0-2251617.profraw",
+      "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/11413247499942899091_0-2251829.profraw",
+      "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/12894584750217267763_0-2251662.profraw",
+      "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/11413247499942899091_0-2251494.profraw",
+      "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/11413247499942899091_0-2251616.profraw",
+      "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/12894584750217267763_0-2251829.profraw",
+      "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/11413247499942899091_0-2251783.profraw",
+      "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/11413247499942899091_0-2251662.profraw",
+      "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/11413247499942899091_0-2251493.profraw",
+      "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/11413247499942899091_0-2251827.profraw",
+      "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/11413247499942899091_0-2251660.profraw",
+      "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/11413247499942899091_0-2251784.profraw",
+      "/tmp/dandrum-evidence/g3-continuous-native-audio/coverage-final/12894584750217267763_0-2251494.profraw",
+      "-o",
+      "/tmp/dandrum-evidence/g3-continuous-native-fixture/root-final.profdata"
+    ],
+    [
+      "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov",
+      "export",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/dso-final/libdandrum_clap_adapter.so",
+      "--object=/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/test-refactor/trigger_parameters-8fc57b2ef83fb6e4",
+      "--instr-profile=/tmp/dandrum-evidence/g3-continuous-native-fixture/root-final.profdata"
+    ]
+  ],
+  "exit": [
+    0,
+    0
+  ],
+  "seconds": 0.04910757200559601,
+  "functions": [
+    {
+      "name": "_RINvMs9_CsjkduUWRBBt7_18trigger_parametersNtB6_5Audit7measureINtNtCs27Vx93FoQ6z_4core6result6ResultNtNtCsfevk0M3L1t3_12clack_common7process13ProcessStatusNtNtNtCshFi77PTWjbV_10clack_host6plugin5error19PluginInstanceErrorENCNCNCNvB6_49parameter_callback_allocator_audit_on_host_thread00s0_0EB6_",
+      "source": "src/clap-adapter/tests/trigger_parameters.rs",
+      "source_sha256": "8a304ae71df8b99df0bd132e0d41e776f7b053e8fcdff653adf01c7a98033579",
+      "function_count": 31465,
+      "source_regions": 12,
+      "positive_source_regions": 12,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RINvMs9_CsjkduUWRBBt7_18trigger_parametersNtB6_5Audit7measureINtNtCs27Vx93FoQ6z_4core6result6ResultNtNtCsfevk0M3L1t3_12clack_common7process13ProcessStatusNtNtNtCshFi77PTWjbV_10clack_host6plugin5error19PluginInstanceErrorENCNCNvNtB6_11note_native17continuous_worker0s_0EB6_",
+      "source": "src/clap-adapter/tests/trigger_parameters.rs",
+      "source_sha256": "8a304ae71df8b99df0bd132e0d41e776f7b053e8fcdff653adf01c7a98033579",
+      "function_count": 150,
+      "source_regions": 12,
+      "positive_source_regions": 12,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RINvMs9_CsjkduUWRBBt7_18trigger_parametersNtB6_5Audit7measureOhNCNvB6_25calibrated_callback_audit0EB6_",
+      "source": "src/clap-adapter/tests/trigger_parameters.rs",
+      "source_sha256": "8a304ae71df8b99df0bd132e0d41e776f7b053e8fcdff653adf01c7a98033579",
+      "function_count": 2,
+      "source_regions": 12,
+      "positive_source_regions": 12,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RINvMs9_CsjkduUWRBBt7_18trigger_parametersNtB6_5Audit7measureuNCNCNCNvB6_49parameter_callback_allocator_audit_on_host_thread000EB6_",
+      "source": "src/clap-adapter/tests/trigger_parameters.rs",
+      "source_sha256": "8a304ae71df8b99df0bd132e0d41e776f7b053e8fcdff653adf01c7a98033579",
+      "function_count": 1,
+      "source_regions": 12,
+      "positive_source_regions": 12,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RINvMs9_CsjkduUWRBBt7_18trigger_parametersNtB6_5Audit7measureuNCNvB6_25calibrated_callback_audits0_0EB6_",
+      "source": "src/clap-adapter/tests/trigger_parameters.rs",
+      "source_sha256": "8a304ae71df8b99df0bd132e0d41e776f7b053e8fcdff653adf01c7a98033579",
+      "function_count": 2,
+      "source_regions": 12,
+      "positive_source_regions": 12,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RINvMs9_CsjkduUWRBBt7_18trigger_parametersNtB6_5Audit7measureuNCNvB6_25calibrated_callback_audits_0EB6_",
+      "source": "src/clap-adapter/tests/trigger_parameters.rs",
+      "source_sha256": "8a304ae71df8b99df0bd132e0d41e776f7b053e8fcdff653adf01c7a98033579",
+      "function_count": 2,
+      "source_regions": 12,
+      "positive_source_regions": 12,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNCNvNtCsjkduUWRBBt7_18trigger_parameters11note_native17continuous_worker00B7_",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 596,
+      "source_regions": 2,
+      "positive_source_regions": 2,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNCNvNtCsjkduUWRBBt7_18trigger_parameters11note_native17continuous_worker0s_0B7_",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 298,
+      "source_regions": 10,
+      "positive_source_regions": 10,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNCNvNtCsjkduUWRBBt7_18trigger_parameters11note_native21continuous_javascript00B7_",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 77,
+      "source_regions": 3,
+      "positive_source_regions": 3,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNCNvNtCsjkduUWRBBt7_18trigger_parameters11note_native21continuous_javascript0s_0B7_",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 0,
+      "source_regions": 2,
+      "positive_source_regions": 0,
+      "zero_hit_spans": [
+        [
+          770,
+          34,
+          770,
+          39
+        ],
+        [
+          770,
+          40,
+          770,
+          49
+        ]
+      ]
+    },
+    {
+      "name": "_RNCNvCsjkduUWRBBt7_18trigger_parameters25calibrated_callback_audit0B3_",
+      "source": "src/clap-adapter/tests/trigger_parameters.rs",
+      "source_sha256": "8a304ae71df8b99df0bd132e0d41e776f7b053e8fcdff653adf01c7a98033579",
+      "function_count": 2,
+      "source_regions": 2,
+      "positive_source_regions": 2,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNvCsjkduUWRBBt7_18trigger_parameters25calibrated_callback_audits_0B3_",
+      "source": "src/clap-adapter/tests/trigger_parameters.rs",
+      "source_sha256": "8a304ae71df8b99df0bd132e0d41e776f7b053e8fcdff653adf01c7a98033579",
+      "function_count": 2,
+      "source_regions": 2,
+      "positive_source_regions": 2,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNvCsjkduUWRBBt7_18trigger_parameters25run_allocator_audit_child0B3_",
+      "source": "src/clap-adapter/tests/trigger_parameters.rs",
+      "source_sha256": "8a304ae71df8b99df0bd132e0d41e776f7b053e8fcdff653adf01c7a98033579",
+      "function_count": 27,
+      "source_regions": 2,
+      "positive_source_regions": 2,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters11note_native17continuous_worker0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 2,
+      "source_regions": 148,
+      "positive_source_regions": 132,
+      "zero_hit_spans": [
+        [
+          662,
+          17,
+          662,
+          79
+        ],
+        [
+          663,
+          17,
+          663,
+          22
+        ],
+        [
+          707,
+          17,
+          707,
+          25
+        ],
+        [
+          708,
+          17,
+          708,
+          74
+        ],
+        [
+          709,
+          17,
+          709,
+          22
+        ],
+        [
+          712,
+          17,
+          712,
+          75
+        ],
+        [
+          713,
+          17,
+          713,
+          51
+        ],
+        [
+          714,
+          17,
+          714,
+          22
+        ],
+        [
+          717,
+          17,
+          717,
+          85
+        ],
+        [
+          718,
+          17,
+          718,
+          22
+        ],
+        [
+          731,
+          25,
+          731,
+          81
+        ],
+        [
+          732,
+          25,
+          732,
+          84
+        ],
+        [
+          732,
+          50,
+          732,
+          55
+        ],
+        [
+          732,
+          57,
+          732,
+          64
+        ],
+        [
+          733,
+          25,
+          733,
+          31
+        ],
+        [
+          741,
+          13,
+          741,
+          14
+        ]
+      ]
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters11note_native19continuous_scenarios0_0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 2,
+      "source_regions": 97,
+      "positive_source_regions": 97,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters11note_native19continuous_scenarios1_0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 2980,
+      "source_regions": 2,
+      "positive_source_regions": 2,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters11note_native19continuous_scenarios2_0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 16,
+      "source_regions": 3,
+      "positive_source_regions": 3,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters11note_native19continuous_scenarios_0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 2,
+      "source_regions": 5,
+      "positive_source_regions": 5,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters11note_native21continuous_javascript0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 77,
+      "source_regions": 6,
+      "positive_source_regions": 6,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters11note_natives_38continuous_audio_allocator_audit_child0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 1,
+      "source_regions": 1,
+      "positive_source_regions": 1,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters11note_natives_56copied_native_continuous_audio_survives_view_replacement0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 1,
+      "source_regions": 1,
+      "positive_source_regions": 1,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvCsjkduUWRBBt7_18trigger_parameters25calibrated_callback_audit",
+      "source": "src/clap-adapter/tests/trigger_parameters.rs",
+      "source_sha256": "8a304ae71df8b99df0bd132e0d41e776f7b053e8fcdff653adf01c7a98033579",
+      "function_count": 2,
+      "source_regions": 49,
+      "positive_source_regions": 49,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvCsjkduUWRBBt7_18trigger_parameters25run_allocator_audit_child",
+      "source": "src/clap-adapter/tests/trigger_parameters.rs",
+      "source_sha256": "8a304ae71df8b99df0bd132e0d41e776f7b053e8fcdff653adf01c7a98033579",
+      "function_count": 2,
+      "source_regions": 116,
+      "positive_source_regions": 116,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters11note_native15continuous_open",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 6,
+      "source_regions": 66,
+      "positive_source_regions": 66,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters11note_native16continuous_close",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 6,
+      "source_regions": 32,
+      "positive_source_regions": 32,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters11note_native17continuous_invoke",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 16,
+      "source_regions": 24,
+      "positive_source_regions": 23,
+      "zero_hit_spans": [
+        [
+          808,
+          9,
+          808,
+          10
+        ]
+      ]
+    },
+    {
+      "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters11note_native17continuous_window",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 12,
+      "source_regions": 22,
+      "positive_source_regions": 22,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters11note_native17continuous_worker",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 2,
+      "source_regions": 28,
+      "positive_source_regions": 20,
+      "zero_hit_spans": [
+        [
+          634,
+          13,
+          634,
+          18
+        ],
+        [
+          635,
+          13,
+          635,
+          62
+        ],
+        [
+          636,
+          13,
+          636,
+          30
+        ],
+        [
+          636,
+          31,
+          636,
+          36
+        ],
+        [
+          636,
+          43,
+          636,
+          60
+        ],
+        [
+          637,
+          20,
+          637,
+          61
+        ],
+        [
+          637,
+          21,
+          637,
+          26
+        ],
+        [
+          746,
+          25,
+          748,
+          6
+        ]
+      ]
+    },
+    {
+      "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters11note_native19continuous_scenario",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 2,
+      "source_regions": 187,
+      "positive_source_regions": 178,
+      "zero_hit_spans": [
+        [
+          987,
+          9,
+          987,
+          10
+        ],
+        [
+          988,
+          9,
+          988,
+          19
+        ],
+        [
+          988,
+          20,
+          988,
+          32
+        ],
+        [
+          1126,
+          16,
+          1126,
+          21
+        ],
+        [
+          1128,
+          9,
+          1131,
+          22
+        ],
+        [
+          1132,
+          14,
+          1132,
+          21
+        ],
+        [
+          1132,
+          22,
+          1132,
+          45
+        ],
+        [
+          1133,
+          9,
+          1133,
+          34
+        ],
+        [
+          1133,
+          35,
+          1133,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters11note_native21continuous_javascript",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 77,
+      "source_regions": 25,
+      "positive_source_regions": 25,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters11note_natives_38continuous_audio_allocator_audit_child",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 1,
+      "source_regions": 6,
+      "positive_source_regions": 6,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters11note_natives_56copied_native_continuous_audio_survives_view_replacement",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 1,
+      "source_regions": 6,
+      "positive_source_regions": 6,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters11note_natives_72copied_native_continuous_audio_callbacks_allocate_and_deallocate_nothing",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 1,
+      "source_regions": 4,
+      "positive_source_regions": 4,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvXs1_NtCsjkduUWRBBt7_18trigger_parameters11note_nativeNtB5_17ContinuousReceiptNtNtCs27Vx93FoQ6z_4core7default7Default7default",
+      "source": "src/clap-adapter/tests/internal/trigger_note_native.rs",
+      "source_sha256": "72efa703a9816f079bd52013384483b386db8f5a5f21d7337beaaf621b6060be",
+      "function_count": 2,
+      "source_regions": 5,
+      "positive_source_regions": 5,
+      "zero_hit_spans": []
+    }
+  ],
+  "scope": "Fresh independent merge/export from verified tools,2 actual ELFs and13 raw profiles; parsed data equality. Profiles include exact --list invocations plus3 outer tests and2 parent-owned allocator children, not13 executions. Both lists and parent-only runs may emit host profiles without a DSO. File-identified code-region accounting, not branch/whole-owner completeness; fixture error/timeout/ownership defenses remain disclosed. No physical-device or narrow destroy-call-overlap claim."
+}

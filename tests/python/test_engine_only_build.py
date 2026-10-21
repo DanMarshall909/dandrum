@@ -387,6 +387,10 @@ class ClapProofBuildTest(EngineBuildFixture):
                 "note_native::copied_native_destroy_releases_held_activity_once_and_reconnects",
             "trigger-clap-native-parameter-creation-failure":
                 "creation_failure_native::copied_native_ipc_registration_failure_cleans_up_and_retries_preserving_state",
+            "trigger-clap-native-parameter-continuous-audio":
+                "note_native::copied_native_continuous_audio_survives_view_replacement",
+            "trigger-clap-native-parameter-continuous-audio-audit":
+                "note_native::copied_native_continuous_audio_callbacks_allocate_and_deallocate_nothing",
         }
         for name, case in parameter_cases.items():
             with self.subTest(parameter_case=name):

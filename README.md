@@ -190,7 +190,9 @@ host MIDI remains audible. A joined destruction test covers held editor notes,
 open gestures and a fresh attachment without disturbing host MIDI. Injected
 WebKit IPC-registration failure now has copied-product cleanup and same-instance
 retry acceptance, retaining nondefault state and signed audio. Continuous
-create/destroy/recreate audio remains open in G3.
+synthetic-host tests now preserve signed audio and accepted mapping/history across
+view replacement, with calibrated callback allocation/deallocation checks. Native
+OS input and independently edited instances remain open in G3.
 The GUI is not ready for instrument editing or normal playing; the maintained
 CMake product above continues to use the headless `trigger` feature.
 
