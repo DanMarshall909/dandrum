@@ -1,0 +1,83 @@
+{
+  "status": "G1 developer-only source checkpoint; actual five native processGREEN and headless regressions verified, coverage qualified. Not usableGUI/G2/G3 completion or publication. Root owns review/integration/docs/build-registration/Git.",
+  "HEAD": "9f4b240177c1dd6ea0ee9eb65322e6d1bd683c83",
+  "design_SHA256": "744ace5e0f73e76bacc8d004ce7d3adb20e2365da230f19678a203a8f72bc413",
+  "owned_source_sha256": {
+    "src/clap-adapter/Cargo.toml": "345bb98d0799fdccfe0edac749aa283e5ab4e9300a1a2153129528f9a68774e7",
+    "src/clap-adapter/Cargo.lock": "672e0946f3e9197100ca2419caf45fd7494013b5d6570ec1cb408403a6aaefe5",
+    "src/clap-adapter/src/trigger.rs": "fa4a9822e3ae6c08b36916699b9a77b6df5e057058991021db0c78f5db890a96",
+    "src/clap-adapter/src/trigger/gui.rs": "f56eade8a07ecf0af3122af8b6fcd1f82139f43b12294899cc44ceb2ee0ce94d",
+    "src/clap-adapter/tests/trigger_gui.rs": "11b32f1c74004397e1b6799ff004e1687f5f10557c33cfd83814c864e6ff69b1",
+    "src/clap-adapter/tests/fixtures/trigger-gui-native-observer.js": "28d2230dbfa077fd202d112e62164d213d0690fecc9277e4f74f0170991f773a"
+  },
+  "frozen_owned_sources": "/tmp/dandrum-lanes/evidence-trigger-native-gui/162-frozen-owned-source",
+  "source_full_effective_graph": "150-final-native-release-build/source;150-final-native-release-build.json (all effective adapter/editor fixtures inclJS/MJS);155-g1-owner-coverage-compile/source",
+  "published_native_editor": "9f4b240177c1dd6ea0ee9eb65322e6d1bd683c83 unchanged; separate published repair verification unaffected by binding correction. Actual currentpublicG1 weakWebViewexpiry/XID/postEntrydispatch calibrates joined consumer; no producttestAPI.",
+  "current_artifacts": {
+    "source_elf": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/libdandrum_clap_adapter.so",
+    "source_elf_sha256": "04936ed2ef3f575418454cc3fedb332a53bf98a3e2ee108de9ea7cb1b4b415ed",
+    "copied_elf": "/tmp/dandrum-lanes/evidence-trigger-native-gui/installed/DandrumTrigger.clap",
+    "copied_elf_sha256": "04936ed2ef3f575418454cc3fedb332a53bf98a3e2ee108de9ea7cb1b4b415ed",
+    "test_elf": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/trigger_gui-38f819efb15c476e",
+    "test_elf_sha256": "a126e075d4eb286f072e0e5164e0cf9aebd6e7f6525c5bb60cd10a55a5ca3ead",
+    "observer_sha256": "28d2230dbfa077fd202d112e62164d213d0690fecc9277e4f74f0170991f773a",
+    "observer_bytes": 3053,
+    "observer_exact_ELF_offset": 102008,
+    "production_original_app_sha256": "4b9ce5a356fea5f22703f9046c77a80ac616c00242348a12fe81f58fe4f760f2"
+  },
+  "artifact_authority": "151-final-native-artifact-binding.json records exact150CargoJSON compiler-artifact unique reported.so and source==copy. No conveniencepath fallback/mtime inference.",
+  "checks": {
+    "default": "139build/actual895b57\u2026copy,143exec:19dynamic+2enginePASS;148strictClippyPASS",
+    "plain_trigger": "144build/actual4f8170\u2026copy,146exec:16dynamicPASS+2enginePASS;allocatorparentPASS owns ignoredchild;149strictClippyPASS",
+    "unique_headless_acceptance_tests": 37,
+    "current_plain_GUI_absence_unload": "147processPASS/crossbinding;GUIcalls excluded for trueheadless artifact, ownedthreadjoin+successfulbalancedrescan actuallyunmap",
+    "native": "150build;151binding;152five exact fresh-process actualnative casesPASS;153strictClippyalltargets-DwarningsPASS;154fmt--checkPASS",
+    "positive_actual_nonUTF8_plugin_path": "138processPASS after137losslesspublichostfixturebinding;no newproductbehavior;134setupfailure retained",
+    "coverage": "155exactownercompile;156separatestagebinding;157samefivepubliccasesprocessPASS;158exact5newprofiles merge/exportPASS emptystderr;159show;160fullraw/refactorreview"
+  },
+  "coverage_qualification": {
+    "gui_lines": {
+      "count": 246,
+      "covered": 212
+    },
+    "gui_regions": {
+      "count": 375,
+      "covered": 322
+    },
+    "gui_function_instantiations": {
+      "count": 40,
+      "covered": 26
+    },
+    "emitted_branch_entries": 0,
+    "branch_coverage": "unavailable; no branch claim",
+    "primitive_executions": 6,
+    "scope": "Adapterowner only. All lib.rs/trigger.rs/gui.rs raw summaries+125owned function/closureinstantiations retained160;129total emittedfunctionrecords158. No denominator exclusions, no100/transitive/browser/allocator/performance claim. Explicit defensive/platform/IPCguard gaps160.",
+    "refactor": "Audited linear privatehelper retained; no new extraction/ABI/injection. No further sourcechange after150."
+  },
+  "chronology_correction": {
+    "authoritative_root_receipt": "/tmp/dandrum-evidence/trigger-native-gui-next/g1-artifact-binding-correction.json",
+    "withdrawn_source_freshness": "101/102/103/105/108 used stale conveniencepath DSO15fcfe\u2026 despite newerCargo deps.so. Actualfailureobservations retained, not current9f4sourcebound.111actualpin54e5\u2026preserved113 beforecacheoverwrites.51/41 truebeforepin timing/failures retained but exacthistoricaldeps/sourcebinding remainsqualified.106priorREDreferences subjecttothiscorrection.",
+    "recovery": "114build/115uniqueCargoactualcopy56fdbf\u2026 independently rootverified.116-119 current9f4prepin4assertionREDs are explicitly RETROSPECTIVE AFTERfirstpinwrite.120 exactsavedpinreapplied/121actualcopy54e5\u2026 independentlyrootverified before122-125FIRSTactualrecoveredGREEN. Nochronologyrewrite.",
+    "other_setup_failures": "134lossyhostprovider/142selectorunitrecord ambiguity; retainedraw; neither productRED."
+  },
+  "limits": [
+    "GNU Linux x86_64 X11 systemGTK/WebKit selectedproof; nonGNUcompile diagnostic added but actualnonGNUtarget buildnotrun (target/systemdepsunavailable).",
+    "WireIDs monotonic onlyone loadedfactory/artifact; no crossdifferentDSO uniqueness.",
+    "NODELETE code/frameworkresidency is adopted boundedpolicy; not Core/session/host/view retention or globalquiescence/RSSreclamation proof.",
+    "Required later editorservices remain honestly capabilityUnavailable. No G2automation/mirror/timer or G3structural/job/recovery semantics added. CMake product remainsheadless; sourcefeaturedeveloper-only.",
+    "Actualnative :10.0 existingauthorizeddesktop/standardXauthority noauthorizationmutation/nohelpers/preload/runtimeMinStackoverride."
+  ],
+  "dependency_receipts": [
+    "106-typed-loader-ABI-license-decision.json",
+    "109-lock-direct-edge-diff.json",
+    "110-locked-linux-libc-graph.json",
+    "/tmp/dandrum-evidence/trigger-native-gui-next/combined-lock-license-summary.json"
+  ],
+  "terminal_resources": "161-terminal-resource-inventory.json; noownedgroups/builders;3.87GBfree/11.84GBMemAvailable",
+  "cache_handback": [
+    "/tmp/dandrum-lanes/cache-runtime",
+    "/tmp/dandrum-lanes/cache-editor-guard",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov"
+  ],
+  "write_boundary": "No stage/commit/hooks/push/index/task edits; root CMake/README/design/Python additions preserved. NativeEditor unchanged."
+}

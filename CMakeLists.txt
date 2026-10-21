@@ -294,6 +294,10 @@ add_test(NAME engine-only-build
 set_tests_properties(engine-only-build PROPERTIES LABELS "build-boundary" RUN_SERIAL TRUE TIMEOUT 1200)
 
 if(DANDRUM_CLAP_PROOF)
+    add_test(NAME trigger-clap-native-fixture-driver
+        COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_trigger_native_fixture.py)
+    set_tests_properties(trigger-clap-native-fixture-driver PROPERTIES
+        LABELS "trigger-clap-boundary;fast" TIMEOUT 30)
     set(DANDRUM_CLAP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/clap-adapter)
     set(DANDRUM_CLAP_LIBRARY ${CMAKE_CURRENT_BINARY_DIR}/rust-target/release/libdandrum_clap_adapter.so)
     set(DANDRUM_CLAP_ARTIFACT ${CMAKE_CURRENT_BINARY_DIR}/clap/DandrumHeadlessProof.clap)
@@ -415,6 +419,39 @@ if(DANDRUM_CLAP_PROOF)
                     FIXTURES_REQUIRED trigger-editor-native-compiled
                     RUN_SERIAL TRUE TIMEOUT 60
                     # libtest succeeds when an exact filter matches no test.
+                    FAIL_REGULAR_EXPRESSION "running 0 tests")
+            endforeach()
+            # Private developer lifecycle fixture, separate from the headless
+            # product. Select Cargo's reported artifacts, never convenience paths.
+            set(DANDRUM_TRIGGER_NATIVE_FIXTURE ${CMAKE_CURRENT_BINARY_DIR}/trigger-clap-native-fixture)
+            add_test(NAME trigger-clap-native-prepare
+                COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/scripts/prepare-trigger-clap-native.py
+                    --cargo ${CARGO_BIN}
+                    --manifest ${DANDRUM_CLAP_DIR}/Cargo.toml
+                    --target-dir ${CMAKE_CURRENT_BINARY_DIR}/rust-target
+                    --resource-dir ${DANDRUM_TRIGGER_RESOURCE_DIR}
+                    --output-dir ${DANDRUM_TRIGGER_NATIVE_FIXTURE})
+            set_tests_properties(trigger-clap-native-prepare PROPERTIES
+                LABELS "trigger-clap-boundary;native-x11"
+                FIXTURES_SETUP trigger-clap-native-compiled
+                RUN_SERIAL TRUE TIMEOUT 1200)
+            set(trigger_native_names extension lifecycle configuration loader-identity failed-parent)
+            set(trigger_native_cases
+                copied_trigger_editor_exposes_the_actual_clap_gui_extension
+                copied_native_editor_lifecycle_initializes_the_real_react_session_and_preserves_audio
+                copied_editor_scan_and_configuration_only_do_not_make_code_resident
+                copied_editor_rejects_wrong_loaded_entry_identity_before_gtk_without_state_or_audio_loss
+                copied_editor_failed_native_parent_attempt_retains_only_code_and_preserves_audio)
+            foreach(native_name native_case IN ZIP_LISTS trigger_native_names trigger_native_cases)
+                add_test(NAME trigger-clap-native-${native_name}
+                    COMMAND ${CMAKE_COMMAND} -E env GDK_BACKEND=x11
+                        DANDRUM_TRIGGER_GUI_PLUGIN_PATH=${DANDRUM_TRIGGER_NATIVE_FIXTURE}/DandrumTrigger.clap
+                        ${DANDRUM_TRIGGER_NATIVE_FIXTURE}/trigger-gui-test
+                        ${native_case} --ignored --exact --nocapture --test-threads=1)
+                set_tests_properties(trigger-clap-native-${native_name} PROPERTIES
+                    LABELS "trigger-clap-boundary;native-x11"
+                    FIXTURES_REQUIRED trigger-clap-native-compiled
+                    RUN_SERIAL TRUE TIMEOUT 60
                     FAIL_REGULAR_EXPRESSION "running 0 tests")
             endforeach()
         endif()

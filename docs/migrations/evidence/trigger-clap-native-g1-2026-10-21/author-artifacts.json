@@ -1,0 +1,2560 @@
+{
+  "purpose": "Portable source-bound G1 developer-only evidence. No ELF, rlib, buildcache or complete cache copy. One final effective-source snapshot only; four distinct retrospective-prepin files and narrow qualified historical sources retained. Original React/resources separate from observerfixture. Raw only exactfive newlyexecuted ownerprofiles+matchingmergeddata; actualELFs remain retained at originalpaths/hashbound, not distributed.",
+  "chronology": "162-g1-verified-checkpoint.json and root-authority/g1-artifact-binding-correction.json govern corrected sourcebinding.116-119RETROSPECTIVE afterfirstpinwrite; never presentedas beforecode.51/41timing/failurevalid buthistoricalexactdepsbindingqualified.",
+  "source_checkout_HEAD": "9f4b240177c1dd6ea0ee9eb65322e6d1bd683c83",
+  "root_developer_cut_design_SHA256": "f4999d24c3903c6e46cd9c591f22e66354e2dca9e1ff2911a03513c9a44fcd53",
+  "earlier_author_design_SHA256": "744ace5e0f73e76bacc8d004ce7d3adb20e2365da230f19678a203a8f72bc413",
+  "entries": {
+    "actual-original-resources/DandrumTrigger.resources/editor/app.css": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/installed/DandrumTrigger.resources/editor/app.css",
+      "bytes": 11023,
+      "sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5"
+    },
+    "actual-original-resources/DandrumTrigger.resources/editor/app.js": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/installed/DandrumTrigger.resources/editor/app.js",
+      "bytes": 812751,
+      "sha256": "4b9ce5a356fea5f22703f9046c77a80ac616c00242348a12fe81f58fe4f760f2"
+    },
+    "actual-original-resources/DandrumTrigger.resources/editor/fonts/.gitattributes": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/installed/DandrumTrigger.resources/editor/fonts/.gitattributes",
+      "bytes": 77,
+      "sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616"
+    },
+    "actual-original-resources/DandrumTrigger.resources/editor/fonts/3386a05f6ece969e.ttf": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/installed/DandrumTrigger.resources/editor/fonts/3386a05f6ece969e.ttf",
+      "bytes": 112204,
+      "sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160"
+    },
+    "actual-original-resources/DandrumTrigger.resources/editor/fonts/6098b66ce7d608dc.ttf": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/installed/DandrumTrigger.resources/editor/fonts/6098b66ce7d608dc.ttf",
+      "bytes": 88644,
+      "sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef"
+    },
+    "actual-original-resources/DandrumTrigger.resources/editor/fonts/74103fd6d41bc32c.ttf": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/installed/DandrumTrigger.resources/editor/fonts/74103fd6d41bc32c.ttf",
+      "bytes": 85776,
+      "sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154"
+    },
+    "actual-original-resources/DandrumTrigger.resources/editor/fonts/91c841fdfa8e7b94.ttf": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/installed/DandrumTrigger.resources/editor/fonts/91c841fdfa8e7b94.ttf",
+      "bytes": 81924,
+      "sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc"
+    },
+    "actual-original-resources/DandrumTrigger.resources/editor/fonts/barlow-OFL.txt": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/installed/DandrumTrigger.resources/editor/fonts/barlow-OFL.txt",
+      "bytes": 4377,
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+    },
+    "actual-original-resources/DandrumTrigger.resources/editor/fonts/barlowsemicondensed-OFL.txt": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/installed/DandrumTrigger.resources/editor/fonts/barlowsemicondensed-OFL.txt",
+      "bytes": 4377,
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+    },
+    "actual-original-resources/DandrumTrigger.resources/editor/fonts/c15439e7a03af571.ttf": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/installed/DandrumTrigger.resources/editor/fonts/c15439e7a03af571.ttf",
+      "bytes": 85876,
+      "sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c"
+    },
+    "actual-original-resources/DandrumTrigger.resources/editor/fonts/c2b046235fb4c2f8.ttf": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/installed/DandrumTrigger.resources/editor/fonts/c2b046235fb4c2f8.ttf",
+      "bytes": 83412,
+      "sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9"
+    },
+    "actual-original-resources/DandrumTrigger.resources/editor/fonts/cb75439ae401f776.ttf": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/installed/DandrumTrigger.resources/editor/fonts/cb75439ae401f776.ttf",
+      "bytes": 86708,
+      "sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da"
+    },
+    "actual-original-resources/DandrumTrigger.resources/editor/fonts/df54dbfafba61d49.ttf": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/installed/DandrumTrigger.resources/editor/fonts/df54dbfafba61d49.ttf",
+      "bytes": 112160,
+      "sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8"
+    },
+    "actual-original-resources/DandrumTrigger.resources/editor/fonts/jetbrainsmono-OFL.txt": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/installed/DandrumTrigger.resources/editor/fonts/jetbrainsmono-OFL.txt",
+      "bytes": 4399,
+      "sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d"
+    },
+    "actual-original-resources/DandrumTrigger.resources/editor/index.html": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/installed/DandrumTrigger.resources/editor/index.html",
+      "bytes": 326,
+      "sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26"
+    },
+    "actual-original-resources/DandrumTrigger.resources/instrument/advanced-drum-kit.yaml": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/installed/DandrumTrigger.resources/instrument/advanced-drum-kit.yaml",
+      "bytes": 6699,
+      "sha256": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008"
+    },
+    "actual-original-resources/DandrumTrigger.resources/instrument/assets/advanced-drums.wav": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/installed/DandrumTrigger.resources/instrument/assets/advanced-drums.wav",
+      "bytes": 102044,
+      "sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503"
+    },
+    "embedded-fixtures/examples/patches/tb303-acid.yaml": {
+      "original_path": "/tmp/dandrum-lanes/runtime/examples/patches/tb303-acid.yaml",
+      "bytes": 3659,
+      "sha256": "1df14ac62dcc3b0b4d6815f15bafd3ff52abee0e34d05ace81e1f9da08909a20"
+    },
+    "embedded-fixtures/src/clap-adapter/fixtures/signed-gain.yaml": {
+      "original_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/fixtures/signed-gain.yaml",
+      "bytes": 506,
+      "sha256": "e02a0db995d43fd585b3da9744a2ca4df1295c911e084782ff47220fa12ae971"
+    },
+    "evidence/100-capture-adapter-rustc.py": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/100-capture-adapter-rustc.py",
+      "bytes": 682,
+      "sha256": "6a6e088e6c865f0d158fb8fe881d35a9284b9e5557694c1e23eeeb4f2227ef92"
+    },
+    "evidence/100-current9f4-g1-candidate-build.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/100-current9f4-g1-candidate-build.json",
+      "bytes": 19532,
+      "sha256": "8191732fbe2bf5be72bee5d11e07d0de782541242a3ea03efe59dfc5d37badcd"
+    },
+    "evidence/100-current9f4-g1-candidate-build.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/100-current9f4-g1-candidate-build.samples.json",
+      "bytes": 30561,
+      "sha256": "b10416d59243d93f7527817f203ab792b581b70528724d9fc881e2ff10ff9cc9"
+    },
+    "evidence/100-current9f4-g1-candidate-build.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/100-current9f4-g1-candidate-build.stderr.log",
+      "bytes": 15123,
+      "sha256": "7d57acdbbdb0e62bac5b973ad53a3fe563bb97a85b61510fe9e3c9e883bc8326"
+    },
+    "evidence/100-current9f4-g1-candidate-build.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/100-current9f4-g1-candidate-build.stdout.log",
+      "bytes": 234329,
+      "sha256": "1a7d6e81fd5f3ce5b61933b3f63a4784b9bedd432f1fe6c19401a448c54ed9a2"
+    },
+    "evidence/100-dandrum_clap_adapter-rustc.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/100-dandrum_clap_adapter-rustc.json",
+      "bytes": 3428,
+      "sha256": "3495e6d9a30782ddeb2a2deff4cc376df3772ea1a6fca86989b3b5ae7d12f599"
+    },
+    "evidence/100-identity-test-calibration.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/100-identity-test-calibration.json",
+      "bytes": 435,
+      "sha256": "528f00eb91c4a38e7386970c8fd862f4746f65a347253c17e87e688badf96507"
+    },
+    "evidence/100-trigger_gui-rustc.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/100-trigger_gui-rustc.json",
+      "bytes": 3994,
+      "sha256": "e3f066df171c4609c6aff2fcce86942399fd2661a064a574a921055d310f13cb"
+    },
+    "evidence/101-current9f4-copied-red-binding.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/101-current9f4-copied-red-binding.json",
+      "bytes": 3252,
+      "sha256": "3fccfb5d8f30c164ef0970f3d08e2bbadf163be13101caa48641284e5fe23156"
+    },
+    "evidence/102-current9f4-residency-red.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/102-current9f4-residency-red.json",
+      "bytes": 19494,
+      "sha256": "381a15b00b5d28700a7065d3cc04faa1c54e26af69834c9360cda8c12b511ede"
+    },
+    "evidence/102-current9f4-residency-red.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/102-current9f4-residency-red.samples.json",
+      "bytes": 507,
+      "sha256": "4fc83fa2ddb8dde8aa88e5c95b403bf3cd0c1dcd0e95683076579a68d9d9cded"
+    },
+    "evidence/102-current9f4-residency-red.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/102-current9f4-residency-red.stderr.log",
+      "bytes": 7019,
+      "sha256": "6a44c842165ef1fcb040a33229e993bfc9e54636d9a456cd864f4674c0947255"
+    },
+    "evidence/102-current9f4-residency-red.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/102-current9f4-residency-red.stdout.log",
+      "bytes": 330,
+      "sha256": "b27201036fa9026cd138d5946f988086faf8ebf29b8a1b08bba5367ce21e3a55"
+    },
+    "evidence/103-current9f4-identity-red.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/103-current9f4-identity-red.json",
+      "bytes": 19497,
+      "sha256": "ee44e00dfae99c952180e51236ea0fdcaf98359a5d54fe608753410e2d6d1425"
+    },
+    "evidence/103-current9f4-identity-red.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/103-current9f4-identity-red.samples.json",
+      "bytes": 172,
+      "sha256": "a589eb767ecb14c5f700fc2cf7ef7c69e520ae2a7145765122315980a6d6c0c3"
+    },
+    "evidence/103-current9f4-identity-red.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/103-current9f4-identity-red.stderr.log",
+      "bytes": 482,
+      "sha256": "ad0667e7d1b014132faf7e720c4be51ed7756fc663a3e6d1b023f815e9d58969"
+    },
+    "evidence/103-current9f4-identity-red.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/103-current9f4-identity-red.stdout.log",
+      "bytes": 336,
+      "sha256": "ddd5c83af35fe36460603a0a5b9eeda5441aa41e15b6926756c59030c8c0e28e"
+    },
+    "evidence/104-cheap-assets-order-test-build.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/104-cheap-assets-order-test-build.json",
+      "bytes": 19423,
+      "sha256": "4a803dff317e714644e4d39699efcc3e0dc4bc5ef1b7bc3b88b0c3d1859b4126"
+    },
+    "evidence/104-cheap-assets-order-test-build.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/104-cheap-assets-order-test-build.samples.json",
+      "bytes": 19310,
+      "sha256": "43be73f497614ca861e91830016f7ce29c50aa218e7aa87f843bdef6eb7bc41e"
+    },
+    "evidence/104-cheap-assets-order-test-build.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/104-cheap-assets-order-test-build.stderr.log",
+      "bytes": 149,
+      "sha256": "301ff52528e35df2d063b62ccbf4f538cbd37fefc8eae386e405c5035207da55"
+    },
+    "evidence/104-cheap-assets-order-test-build.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/104-cheap-assets-order-test-build.stdout.log",
+      "bytes": 234327,
+      "sha256": "b81bf444774783be83aa7d4cc3401ad81c0fa7eb53c2a94e1a12aced17bf3332"
+    },
+    "evidence/105-cheap-assets-before-gtk-red.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/105-cheap-assets-before-gtk-red.json",
+      "bytes": 19476,
+      "sha256": "0a736235710917a1d55df6e637df3ab46df4bc8ff769db4537856a78572eb23f"
+    },
+    "evidence/105-cheap-assets-before-gtk-red.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/105-cheap-assets-before-gtk-red.samples.json",
+      "bytes": 172,
+      "sha256": "a4cf3d0c475271f6d7fa07f9c375db42ad7cd5bd3f6eca1539213831113acf93"
+    },
+    "evidence/105-cheap-assets-before-gtk-red.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/105-cheap-assets-before-gtk-red.stderr.log",
+      "bytes": 572,
+      "sha256": "5464fbc7e4c1504cb9f08fba361b4f1eab71da9bdfe8f4eb832678d3b8413298"
+    },
+    "evidence/105-cheap-assets-before-gtk-red.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/105-cheap-assets-before-gtk-red.stdout.log",
+      "bytes": 294,
+      "sha256": "b136482ab1609dcf3fed2d60063759cce3649565992556359571b3cce9678f11"
+    },
+    "evidence/105-cheap-assets-order-binding.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/105-cheap-assets-order-binding.json",
+      "bytes": 345,
+      "sha256": "a1edc0227755fd1680e3a6923208fc3c3ae3c22e7a65caf4ca53421b7975b88f"
+    },
+    "evidence/106-before-libc-lock.txt": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/106-before-libc-lock.txt",
+      "bytes": 83030,
+      "sha256": "d08d1b0c12f4bc31a43bbd322ba5a9b0d3800071fbffcc7c029c2f1f8a6de023"
+    },
+    "evidence/106-typed-loader-ABI-license-decision.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/106-typed-loader-ABI-license-decision.json",
+      "bytes": 3896,
+      "sha256": "e4ad5be6cd1216fe35ba654ee37cf91960b06f550be06e7a8cca0b565d38096f"
+    },
+    "evidence/107-failed-native-attempt-test-build.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/107-failed-native-attempt-test-build.json",
+      "bytes": 19422,
+      "sha256": "76a04d8d7190ab00adf4372a48ab266392515c84384150455983c0f3174e40a8"
+    },
+    "evidence/107-failed-native-attempt-test-build.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/107-failed-native-attempt-test-build.samples.json",
+      "bytes": 19309,
+      "sha256": "b7d9ef95d301f310cb09cff2ee9859b76713df411857d9245250cb016ff63023"
+    },
+    "evidence/107-failed-native-attempt-test-build.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/107-failed-native-attempt-test-build.stderr.log",
+      "bytes": 149,
+      "sha256": "c0d2791e93b60183786ddcb7f42dfdfa1868e04db33bb7dbb41b7a15932ca904"
+    },
+    "evidence/107-failed-native-attempt-test-build.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/107-failed-native-attempt-test-build.stdout.log",
+      "bytes": 234327,
+      "sha256": "0949b48200c9dc88ccbb8350a6ebaaa7eb7aeab1364a6c0818b48a666ab2da87"
+    },
+    "evidence/108-failed-native-attempt-binding.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/108-failed-native-attempt-binding.json",
+      "bytes": 391,
+      "sha256": "efe4eeea42880a738a0c5db24ca5b4201f225abe19f2a8afe79f22eec2118d76"
+    },
+    "evidence/108-failed-native-attempt-residency-red.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/108-failed-native-attempt-residency-red.json",
+      "bytes": 19488,
+      "sha256": "d449088512dae8f86f4b2cba60a8a8d7b83f12b1730d616bda653d3c43e97750"
+    },
+    "evidence/108-failed-native-attempt-residency-red.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/108-failed-native-attempt-residency-red.samples.json",
+      "bytes": 172,
+      "sha256": "4439efe3f3ae9b5a3f62fb91a55c1137db4602d7ddf86fa3b6c8c8de22127eaf"
+    },
+    "evidence/108-failed-native-attempt-residency-red.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/108-failed-native-attempt-residency-red.stderr.log",
+      "bytes": 1709,
+      "sha256": "454b468f352a6eacf153d96696f607f4d85b73aa1976dce69bdc7ac598e45a3e"
+    },
+    "evidence/108-failed-native-attempt-residency-red.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/108-failed-native-attempt-residency-red.stdout.log",
+      "bytes": 320,
+      "sha256": "a1596b276d6b6894c7512f1de68fb130abf195e9c8053948a99fd0bf5620f38f"
+    },
+    "evidence/109-libc-direct-edge-lock-resolution.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/109-libc-direct-edge-lock-resolution.json",
+      "bytes": 19280,
+      "sha256": "50bd6c5fc97cf1cb8ecabe90edcf7315d319c6b28603a8131d90c17bde26c8f9"
+    },
+    "evidence/109-libc-direct-edge-lock-resolution.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/109-libc-direct-edge-lock-resolution.samples.json",
+      "bytes": 442,
+      "sha256": "e1edf22a1e22da6be5c9effede74f00658126f053c3dc05fcf48ddaa35630ad8"
+    },
+    "evidence/109-libc-direct-edge-lock-resolution.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/109-libc-direct-edge-lock-resolution.stderr.log",
+      "bytes": 116,
+      "sha256": "8a73469f4bd30c912dec63b8229c71abb94e17fc87b414d018101066c81e6cb5"
+    },
+    "evidence/109-libc-direct-edge-lock-resolution.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/109-libc-direct-edge-lock-resolution.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/109-lock-direct-edge-diff.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/109-lock-direct-edge-diff.json",
+      "bytes": 849,
+      "sha256": "891859644dd0b8edf1bb02d34c3f9320b7362a95e4e8ed2261c078f8fe10dcc4"
+    },
+    "evidence/110-locked-linux-libc-graph.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/110-locked-linux-libc-graph.json",
+      "bytes": 19350,
+      "sha256": "b3717a6dde476d1eb085617cb914d27dd6e3fd9ff3151896714370ff59134fbe"
+    },
+    "evidence/110-locked-linux-libc-graph.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/110-locked-linux-libc-graph.samples.json",
+      "bytes": 495,
+      "sha256": "1a9e898e43b5595a87844f4c4175952ed34cd16973c128738bf0dbdb71102c52"
+    },
+    "evidence/110-locked-linux-libc-graph.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/110-locked-linux-libc-graph.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/110-locked-linux-libc-graph.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/110-locked-linux-libc-graph.stdout.log",
+      "bytes": 924878,
+      "sha256": "126ba0a60a47e409948a73bbe0ea9d9588b3a1874d276401738177ade9f97091"
+    },
+    "evidence/111-dandrum_clap_adapter-rustc.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/111-dandrum_clap_adapter-rustc.json",
+      "bytes": 3537,
+      "sha256": "bf7362afc7ba603830a76d672d3f128954a103754e07455a197e80b6cb742675"
+    },
+    "evidence/111-trigger_gui-rustc.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/111-trigger_gui-rustc.json",
+      "bytes": 4103,
+      "sha256": "1a7fc03168f49b86d96362033eca7e1f8835874dd328bda9922003ff35137467"
+    },
+    "evidence/111-typed-loader-native-green-build.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/111-typed-loader-native-green-build.json",
+      "bytes": 19572,
+      "sha256": "1c233394ce8e0c00a1744027b6a9364d3d2a07562687c44c681579814c7b7e0b"
+    },
+    "evidence/111-typed-loader-native-green-build.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/111-typed-loader-native-green-build.samples.json",
+      "bytes": 29831,
+      "sha256": "1f1685060fdebc48b18c18f371c9c1c0bebde94817954a5e2c0d82e1e8231bff"
+    },
+    "evidence/111-typed-loader-native-green-build.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/111-typed-loader-native-green-build.stderr.log",
+      "bytes": 13032,
+      "sha256": "1ef0e67006e5f2bb2d75e3fb4951518e4e37ff5923b1d7831a647f2f89335a01"
+    },
+    "evidence/111-typed-loader-native-green-build.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/111-typed-loader-native-green-build.stdout.log",
+      "bytes": 234328,
+      "sha256": "2ab225350278284a49efb11398b06ec84b534a291553218aaf85c61f00a8c459"
+    },
+    "evidence/112-typed-loader-native-binding.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/112-typed-loader-native-binding.json",
+      "bytes": 2922,
+      "sha256": "3f26a83f41c85a9332825df094a3726116b98b4941eb45d5ac89ac42ade0c988"
+    },
+    "evidence/113-stale-top-level-artifact-diagnosis.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/113-stale-top-level-artifact-diagnosis.json",
+      "bytes": 3216,
+      "sha256": "efdc6f270a6e3499143eb1790776ef4b5905cee5b722b8212a5c8a8e1c5df2e9"
+    },
+    "evidence/114-authorized-retrospective-baseline-restore.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/114-authorized-retrospective-baseline-restore.json",
+      "bytes": 1360,
+      "sha256": "2971c8497d8a5ed6839264d326fedf86d3221a047f16fc1a3a03e4881d664b93"
+    },
+    "evidence/114-dandrum_clap_adapter-rustc.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/114-dandrum_clap_adapter-rustc.json",
+      "bytes": 3428,
+      "sha256": "3495e6d9a30782ddeb2a2deff4cc376df3772ea1a6fca86989b3b5ae7d12f599"
+    },
+    "evidence/114-retrospective-current9f4-prepin-build.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/114-retrospective-current9f4-prepin-build.json",
+      "bytes": 19571,
+      "sha256": "1938f23e70561c86a60abd2f86b3bffc8d3592f8050643343b1b80522ae25095"
+    },
+    "evidence/114-retrospective-current9f4-prepin-build.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/114-retrospective-current9f4-prepin-build.samples.json",
+      "bytes": 26354,
+      "sha256": "9f9b6ce2085c0397ee08b09a3acf1463fc39280e110f4e4613923966d56a7095"
+    },
+    "evidence/114-retrospective-current9f4-prepin-build.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/114-retrospective-current9f4-prepin-build.stderr.log",
+      "bytes": 12842,
+      "sha256": "3bf5dc0e5f28f36fb5e26a6265e6d79f4eb0aea3149ef2592f343773e9f890fa"
+    },
+    "evidence/114-retrospective-current9f4-prepin-build.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/114-retrospective-current9f4-prepin-build.stdout.log",
+      "bytes": 234328,
+      "sha256": "c9cb4634ac0c5c74c1a95bf1ffd28b285af8d5d9f40e0f0955924f3e67eca118"
+    },
+    "evidence/114-trigger_gui-rustc.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/114-trigger_gui-rustc.json",
+      "bytes": 3994,
+      "sha256": "e3f066df171c4609c6aff2fcce86942399fd2661a064a574a921055d310f13cb"
+    },
+    "evidence/115-bind-cargo-product.py": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/115-bind-cargo-product.py",
+      "bytes": 3180,
+      "sha256": "64530552877059e0bd05847558bf738454cbb8182f1f5699423b016ce122e3e5"
+    },
+    "evidence/115-retrospective-current9f4-artifact-binding.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/115-retrospective-current9f4-artifact-binding.json",
+      "bytes": 45761,
+      "sha256": "8daeaad4ac5946f85c3d72342709a5e5a148708c7f032ad96f7e768beb695c38"
+    },
+    "evidence/116-retrospective-current9f4-residency-red.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/116-retrospective-current9f4-residency-red.json",
+      "bytes": 19741,
+      "sha256": "ec4a16c96ec2b49c037d46ee1eb06a3ea6687a7fb9c50466b67e58d624e6ee13"
+    },
+    "evidence/116-retrospective-current9f4-residency-red.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/116-retrospective-current9f4-residency-red.samples.json",
+      "bytes": 507,
+      "sha256": "2b2ee69f245a65f9d41c2fcf053c44009624d1b9484a4b59fd7ba80206d06d27"
+    },
+    "evidence/116-retrospective-current9f4-residency-red.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/116-retrospective-current9f4-residency-red.stderr.log",
+      "bytes": 7019,
+      "sha256": "53f75b5b3c05107a51137a52f79232ba394dd4692ffc18c4dbea98c0c8a03e6f"
+    },
+    "evidence/116-retrospective-current9f4-residency-red.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/116-retrospective-current9f4-residency-red.stdout.log",
+      "bytes": 330,
+      "sha256": "6dc4381c22e36c696ac14d323ca0422cd542c92caa8e8979337c48f1c49456c2"
+    },
+    "evidence/117-retrospective-current9f4-identity-red.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/117-retrospective-current9f4-identity-red.json",
+      "bytes": 19744,
+      "sha256": "06b79bd055b15ed35aeb872ac945c4deee0d83f42d8a44759cf39c7b874eccdf"
+    },
+    "evidence/117-retrospective-current9f4-identity-red.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/117-retrospective-current9f4-identity-red.samples.json",
+      "bytes": 171,
+      "sha256": "e094b699e37d9a0d03e189e6ff35a6bbcaef66dc4bf70c1e998d8994aa668d2d"
+    },
+    "evidence/117-retrospective-current9f4-identity-red.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/117-retrospective-current9f4-identity-red.stderr.log",
+      "bytes": 482,
+      "sha256": "8c0f07b374f729067d4ca6c9f0ea1df8f5d088d4ee6337dbcf0b6a013279d508"
+    },
+    "evidence/117-retrospective-current9f4-identity-red.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/117-retrospective-current9f4-identity-red.stdout.log",
+      "bytes": 336,
+      "sha256": "d510cab553b4c738bafe4f8ec752fe70b5bab72bcb011ba3eba059d940475d37"
+    },
+    "evidence/118-retrospective-current9f4-cheap-assets-red.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/118-retrospective-current9f4-cheap-assets-red.json",
+      "bytes": 19723,
+      "sha256": "b0ce46f9c09a742b9de84122e37d8bf81aa2509bfb4b34479b34eab17916f403"
+    },
+    "evidence/118-retrospective-current9f4-cheap-assets-red.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/118-retrospective-current9f4-cheap-assets-red.samples.json",
+      "bytes": 172,
+      "sha256": "4dba73e38f53bff3623962561c0018b25fc7701df14d64cff09cb9846f00f117"
+    },
+    "evidence/118-retrospective-current9f4-cheap-assets-red.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/118-retrospective-current9f4-cheap-assets-red.stderr.log",
+      "bytes": 572,
+      "sha256": "7f20774c2875ff6113fa8039a701d5f9bbbac4a0b0b6538eef0a68623c2c850a"
+    },
+    "evidence/118-retrospective-current9f4-cheap-assets-red.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/118-retrospective-current9f4-cheap-assets-red.stdout.log",
+      "bytes": 294,
+      "sha256": "6090dc86fcb7ecfe04e267996f3c4005c8cc9225fcbff39f9e8279e3391e21ba"
+    },
+    "evidence/119-retrospective-current9f4-failed-attempt-red.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/119-retrospective-current9f4-failed-attempt-red.json",
+      "bytes": 19736,
+      "sha256": "6ec343877191d4ada32636c6331dca0922f1e12b995361081a9d855d16d9ef94"
+    },
+    "evidence/119-retrospective-current9f4-failed-attempt-red.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/119-retrospective-current9f4-failed-attempt-red.samples.json",
+      "bytes": 171,
+      "sha256": "e2b8bd827aa7f6f893afd460565503312f1181c33e7508e7801842b416b1ee39"
+    },
+    "evidence/119-retrospective-current9f4-failed-attempt-red.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/119-retrospective-current9f4-failed-attempt-red.stderr.log",
+      "bytes": 1709,
+      "sha256": "f7bd6251f9cb7dae6238f7261debf2b09796be185bd889a7bcb83dd551a615cf"
+    },
+    "evidence/119-retrospective-current9f4-failed-attempt-red.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/119-retrospective-current9f4-failed-attempt-red.stdout.log",
+      "bytes": 320,
+      "sha256": "caf17169274177504b502e310d1ab98f2608140b72285250509786b2d4a14795"
+    },
+    "evidence/120-dandrum_clap_adapter-rustc.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/120-dandrum_clap_adapter-rustc.json",
+      "bytes": 3537,
+      "sha256": "bf7362afc7ba603830a76d672d3f128954a103754e07455a197e80b6cb742675"
+    },
+    "evidence/120-exact-pin-source-reapplied.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/120-exact-pin-source-reapplied.json",
+      "bytes": 1150,
+      "sha256": "290ff9076482aca2fc1188d4a17bac6bea65e87be9191e248a3ef75e243df962"
+    },
+    "evidence/120-recovered-typed-pin-build.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/120-recovered-typed-pin-build.json",
+      "bytes": 19819,
+      "sha256": "00854b61a1c29951c6ea5456f9c6556b09c206cc384b1ea1fc87ff31e2928412"
+    },
+    "evidence/120-recovered-typed-pin-build.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/120-recovered-typed-pin-build.samples.json",
+      "bytes": 27043,
+      "sha256": "2ccd7fc51a3045558aaaaff2ecbab525e614e35be21e50ee806cc58775f0dc50"
+    },
+    "evidence/120-recovered-typed-pin-build.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/120-recovered-typed-pin-build.stderr.log",
+      "bytes": 13032,
+      "sha256": "aa623db4a8dc4f781d05ad5909da7485c3db9be007de9db3a9892db0d1419121"
+    },
+    "evidence/120-recovered-typed-pin-build.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/120-recovered-typed-pin-build.stdout.log",
+      "bytes": 234328,
+      "sha256": "3bd6af31e3fc5c62a931f98e1fd8c00a68be7520baf009f265f1378ba7d1289a"
+    },
+    "evidence/120-trigger_gui-rustc.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/120-trigger_gui-rustc.json",
+      "bytes": 4103,
+      "sha256": "1a7fc03168f49b86d96362033eca7e1f8835874dd328bda9922003ff35137467"
+    },
+    "evidence/121-recovered-typed-pin-artifact-binding.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/121-recovered-typed-pin-artifact-binding.json",
+      "bytes": 46067,
+      "sha256": "0658aa62038f5def9fd7679f78fdd9ac15f6b041828c10e9e06f0c3e36106933"
+    },
+    "evidence/122-recovered-native-lifecycle-green.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/122-recovered-native-lifecycle-green.json",
+      "bytes": 19738,
+      "sha256": "f8f9167287d13af572f02b4e8f0c33303f8aa6d83aa7840d2cfb1621faf9b350"
+    },
+    "evidence/122-recovered-native-lifecycle-green.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/122-recovered-native-lifecycle-green.samples.json",
+      "bytes": 508,
+      "sha256": "7c9354e7b0c5fa686f8098bf6b3f962d0c39aa81ef1e8c3dd17386ae0928fc02"
+    },
+    "evidence/122-recovered-native-lifecycle-green.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/122-recovered-native-lifecycle-green.stderr.log",
+      "bytes": 8096,
+      "sha256": "e05b43d95c7edb422f27f0a326edf6b9ff681865308cba1a4f429bf472835f1e"
+    },
+    "evidence/122-recovered-native-lifecycle-green.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/122-recovered-native-lifecycle-green.stdout.log",
+      "bytes": 210,
+      "sha256": "04b3f71cc5bfab12bae658254dde13105c613bcc2dd8d7844645f680327df9f9"
+    },
+    "evidence/123-recovered-wrong-identity-green.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/123-recovered-wrong-identity-green.json",
+      "bytes": 19742,
+      "sha256": "e3f35afff2dedd13699720622fed5745f83fde2bb2fff530404d40b7aa2b4107"
+    },
+    "evidence/123-recovered-wrong-identity-green.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/123-recovered-wrong-identity-green.samples.json",
+      "bytes": 171,
+      "sha256": "a4829f903b496703ed21c2ce0c900fca218073a09c88f0767065c2ad742d3e38"
+    },
+    "evidence/123-recovered-wrong-identity-green.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/123-recovered-wrong-identity-green.stderr.log",
+      "bytes": 545,
+      "sha256": "2cb5628435b387b9d6b4147772b4fbcf599b99d84f76746a36ef6187878301a2"
+    },
+    "evidence/123-recovered-wrong-identity-green.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/123-recovered-wrong-identity-green.stdout.log",
+      "bytes": 213,
+      "sha256": "7a2b373b84797655def577443f1d0fd53a98e0aa4190049f7ed54ff43e65cfb5"
+    },
+    "evidence/124-recovered-cheap-assets-ordinary-unload-green.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/124-recovered-cheap-assets-ordinary-unload-green.json",
+      "bytes": 19721,
+      "sha256": "bc4f22af99d248a6da191dd8b385ee7f81e314e378d8be7fdcf00ddcad88bf25"
+    },
+    "evidence/124-recovered-cheap-assets-ordinary-unload-green.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/124-recovered-cheap-assets-ordinary-unload-green.samples.json",
+      "bytes": 171,
+      "sha256": "cb0d1a95648a8435adc5ec2d1e867b8567b3fda1fb10b4972b7d7b51150cab29"
+    },
+    "evidence/124-recovered-cheap-assets-ordinary-unload-green.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/124-recovered-cheap-assets-ordinary-unload-green.stderr.log",
+      "bytes": 3977,
+      "sha256": "86b3d84ea90657588eda2e135255f65c6b9f8bb310e58c3c892323116b5870b3"
+    },
+    "evidence/124-recovered-cheap-assets-ordinary-unload-green.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/124-recovered-cheap-assets-ordinary-unload-green.stdout.log",
+      "bytes": 192,
+      "sha256": "115813dc1acb4b6db91c93eb7c0d38e35f10810c6c0499d2fd5a216b8ef86d44"
+    },
+    "evidence/125-recovered-failed-native-attempt-green.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/125-recovered-failed-native-attempt-green.json",
+      "bytes": 19734,
+      "sha256": "c1591d5aa7d052189b40c3c6aa1dc43ffd5bf860532e2faadfa7e58de6605e16"
+    },
+    "evidence/125-recovered-failed-native-attempt-green.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/125-recovered-failed-native-attempt-green.samples.json",
+      "bytes": 172,
+      "sha256": "09ce0daae6d649c755013d7bceeeba08af59b1ea62e49a8e55effb951393304d"
+    },
+    "evidence/125-recovered-failed-native-attempt-green.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/125-recovered-failed-native-attempt-green.stderr.log",
+      "bytes": 2785,
+      "sha256": "11ef6d697df77a97be1b4bac9634901bd8bd7ebba20bb3b877ea66ab239755cc"
+    },
+    "evidence/125-recovered-failed-native-attempt-green.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/125-recovered-failed-native-attempt-green.stdout.log",
+      "bytes": 205,
+      "sha256": "f34612cfe7ca27ba5ee1b6204b701252b09e688a328d4ad563164b46d59db459"
+    },
+    "evidence/126-native-adapter-format.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/126-native-adapter-format.json",
+      "bytes": 19429,
+      "sha256": "017c4ac2de637944ef37202d50bc7dd4a980938744db519b6eb31d04c224ba48"
+    },
+    "evidence/126-native-adapter-format.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/126-native-adapter-format.samples.json",
+      "bytes": 383,
+      "sha256": "82973504e41e439a32ed97c07146638e9950b5a1d12ebac70ea70680fbaa3d64"
+    },
+    "evidence/126-native-adapter-format.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/126-native-adapter-format.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/126-native-adapter-format.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/126-native-adapter-format.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/127-dandrum_clap_adapter-rustc.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/127-dandrum_clap_adapter-rustc.json",
+      "bytes": 3537,
+      "sha256": "bf7362afc7ba603830a76d672d3f128954a103754e07455a197e80b6cb742675"
+    },
+    "evidence/127-formatted-native-adapter-build.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/127-formatted-native-adapter-build.json",
+      "bytes": 19818,
+      "sha256": "8471be07aa25129d66ca27646fae42254d1ac53efee6270fb899d7095990b29d"
+    },
+    "evidence/127-formatted-native-adapter-build.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/127-formatted-native-adapter-build.samples.json",
+      "bytes": 27045,
+      "sha256": "cf730f2491db5c3371d80db8c4d1fb59285fdb6668181e5753c6c165f3106c79"
+    },
+    "evidence/127-formatted-native-adapter-build.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/127-formatted-native-adapter-build.stderr.log",
+      "bytes": 13106,
+      "sha256": "f085700a094090c275bb52c3c72b5ca935c9eea47368cd48e755f7ce648fcf0f"
+    },
+    "evidence/127-formatted-native-adapter-build.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/127-formatted-native-adapter-build.stdout.log",
+      "bytes": 234328,
+      "sha256": "6686990741cbebb6e43303e777efb224165b36b6030a032b1e699acdbb639ea6"
+    },
+    "evidence/127-trigger_gui-rustc.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/127-trigger_gui-rustc.json",
+      "bytes": 4103,
+      "sha256": "1a7fc03168f49b86d96362033eca7e1f8835874dd328bda9922003ff35137467"
+    },
+    "evidence/128-formatted-native-artifact-binding.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/128-formatted-native-artifact-binding.json",
+      "bytes": 46077,
+      "sha256": "739745d7939e1cdbdff119b5e495befc44b49b4739353619f6c06d268410236c"
+    },
+    "evidence/129-native-adapter-strict-clippy.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/129-native-adapter-strict-clippy.json",
+      "bytes": 19645,
+      "sha256": "89f9afc21b42ed791007aa458de98c56dd0a21c80ec34bf110268189021166cb"
+    },
+    "evidence/129-native-adapter-strict-clippy.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/129-native-adapter-strict-clippy.samples.json",
+      "bytes": 937,
+      "sha256": "923da5c6e1a729f108f22c72e07d9f4a9704f385309c178cda9affc35b70e215"
+    },
+    "evidence/129-native-adapter-strict-clippy.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/129-native-adapter-strict-clippy.stderr.log",
+      "bytes": 240,
+      "sha256": "e9c50c81467f61c65ee0071ebada9448d9dbdffe73c7f979bdc255c410c22ff8"
+    },
+    "evidence/129-native-adapter-strict-clippy.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/129-native-adapter-strict-clippy.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/130-formatted-native-lifecycle-green.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/130-formatted-native-lifecycle-green.json",
+      "bytes": 19738,
+      "sha256": "827e4aa78228c9daa00969450761dca70da073d8387089858e679b562bae4f19"
+    },
+    "evidence/130-formatted-native-lifecycle-green.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/130-formatted-native-lifecycle-green.samples.json",
+      "bytes": 507,
+      "sha256": "cb65680c06152351d0e871fd55ebb86f107835c55521a6de58c8d4d9bca4d540"
+    },
+    "evidence/130-formatted-native-lifecycle-green.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/130-formatted-native-lifecycle-green.stderr.log",
+      "bytes": 8096,
+      "sha256": "7e60223bf8e068c505c42130073279e6b2a1993adbf698a2ba3305e6e293dd88"
+    },
+    "evidence/130-formatted-native-lifecycle-green.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/130-formatted-native-lifecycle-green.stdout.log",
+      "bytes": 210,
+      "sha256": "2ae7c03f81bd22f84aa6a54585ecf5e8d890af25a9f1b15088e727caaee90dfb"
+    },
+    "evidence/131-formatted-wrong-identity-green.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/131-formatted-wrong-identity-green.json",
+      "bytes": 19742,
+      "sha256": "29d763a6f5206a150e625c83fb0c25889ebb52b207720d37128f7c1fe637eca8"
+    },
+    "evidence/131-formatted-wrong-identity-green.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/131-formatted-wrong-identity-green.samples.json",
+      "bytes": 172,
+      "sha256": "5035e893f4aa760d487f2d4fbb42f89629e9c53dccb1bed8b53b9930d55b37bd"
+    },
+    "evidence/131-formatted-wrong-identity-green.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/131-formatted-wrong-identity-green.stderr.log",
+      "bytes": 545,
+      "sha256": "c98a8534e0798719d1ced2b8efdfcf63a60c59df80e8483daf17eec4e7e4d408"
+    },
+    "evidence/131-formatted-wrong-identity-green.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/131-formatted-wrong-identity-green.stdout.log",
+      "bytes": 213,
+      "sha256": "7a2b373b84797655def577443f1d0fd53a98e0aa4190049f7ed54ff43e65cfb5"
+    },
+    "evidence/132-formatted-cheap-assets-unload-green.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/132-formatted-cheap-assets-unload-green.json",
+      "bytes": 19720,
+      "sha256": "da5961ffec2c7da556a3399d7a0cd58d8d7e2c2aee772817420f72577f51c2df"
+    },
+    "evidence/132-formatted-cheap-assets-unload-green.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/132-formatted-cheap-assets-unload-green.samples.json",
+      "bytes": 172,
+      "sha256": "747f9658a28135ca615357edda2480970ec978cd56f07a17118d93bd40f4e5f1"
+    },
+    "evidence/132-formatted-cheap-assets-unload-green.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/132-formatted-cheap-assets-unload-green.stderr.log",
+      "bytes": 3977,
+      "sha256": "2028b92881aa9b115e67614311faa005412dcb3b5efab62bb8eb09dee9c8e443"
+    },
+    "evidence/132-formatted-cheap-assets-unload-green.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/132-formatted-cheap-assets-unload-green.stdout.log",
+      "bytes": 192,
+      "sha256": "115813dc1acb4b6db91c93eb7c0d38e35f10810c6c0499d2fd5a216b8ef86d44"
+    },
+    "evidence/133-formatted-failed-attempt-green.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/133-formatted-failed-attempt-green.json",
+      "bytes": 19734,
+      "sha256": "c03b07f60d409f30123e3b043a807bb8d52b70b39eba5bb2bced64c37c7bd9fb"
+    },
+    "evidence/133-formatted-failed-attempt-green.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/133-formatted-failed-attempt-green.samples.json",
+      "bytes": 171,
+      "sha256": "f5711c37190b63825c4b80d6cc5531e4dfac69fcc373c1dc40c9fd797b3c80e0"
+    },
+    "evidence/133-formatted-failed-attempt-green.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/133-formatted-failed-attempt-green.stderr.log",
+      "bytes": 2785,
+      "sha256": "a61310c6b159d304b720fd44a372ab161803038d2b5843d0e5959481b0c68608"
+    },
+    "evidence/133-formatted-failed-attempt-green.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/133-formatted-failed-attempt-green.stdout.log",
+      "bytes": 205,
+      "sha256": "f34612cfe7ca27ba5ee1b6204b701252b09e688a328d4ad563164b46d59db459"
+    },
+    "evidence/134-positive-os-byte-native-binding.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/134-positive-os-byte-native-binding.json",
+      "bytes": 1051,
+      "sha256": "7732e5530fea842b08266103ec9ad1431790758e1749c695ebfb4c3b777788de"
+    },
+    "evidence/134-positive-os-byte-native-characterization.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/134-positive-os-byte-native-characterization.json",
+      "bytes": 19610,
+      "sha256": "2fc6df7476bfb3a50cecdcb123257511992dd29fb906dce01c5c0df9479888ab"
+    },
+    "evidence/134-positive-os-byte-native-characterization.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/134-positive-os-byte-native-characterization.samples.json",
+      "bytes": 172,
+      "sha256": "829af2b94e51586a42d6381122cbaddacaa78c1c120747f846706812f5f26954"
+    },
+    "evidence/134-positive-os-byte-native-characterization.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/134-positive-os-byte-native-characterization.stderr.log",
+      "bytes": 672,
+      "sha256": "04515733fbacad16266cf4968390b1ec32e76a8a2dbad78a4a5fb0cbb289174f"
+    },
+    "evidence/134-positive-os-byte-native-characterization.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/134-positive-os-byte-native-characterization.stdout.log",
+      "bytes": 330,
+      "sha256": "22a6d912476429670095dbb1e9bbab0116d112ba292c13085cb624ea4a6bf285"
+    },
+    "evidence/134-positive-os-byte-native.py": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/134-positive-os-byte-native.py",
+      "bytes": 1593,
+      "sha256": "a241de574ec9196b0211bac3938ba5d147391633c5208765bba512b564ef24c4"
+    },
+    "evidence/135-lossless-host-fixture-format.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/135-lossless-host-fixture-format.json",
+      "bytes": 19430,
+      "sha256": "c99c2b86fe919db83f9d2c92e3f0b94569d66f1c9acc53b6887417d527cbda78"
+    },
+    "evidence/135-lossless-host-fixture-format.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/135-lossless-host-fixture-format.samples.json",
+      "bytes": 383,
+      "sha256": "8d58450532d543245cb85ec567cbc4cc09d6678cfcfe28eaa8f18be119e7c872"
+    },
+    "evidence/135-lossless-host-fixture-format.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/135-lossless-host-fixture-format.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/135-lossless-host-fixture-format.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/135-lossless-host-fixture-format.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/136-lossless-host-fixture-native-build.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/136-lossless-host-fixture-native-build.json",
+      "bytes": 19818,
+      "sha256": "9a66fc747b8e2bb7195e5f328b7e2cfa2eea8fa3805569d1b271911a4690b1b1"
+    },
+    "evidence/136-lossless-host-fixture-native-build.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/136-lossless-host-fixture-native-build.samples.json",
+      "bytes": 20008,
+      "sha256": "99c09944b860da1ceae7741df462eaa597e0e9dc14136363446f171b6e45ba10"
+    },
+    "evidence/136-lossless-host-fixture-native-build.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/136-lossless-host-fixture-native-build.stderr.log",
+      "bytes": 10499,
+      "sha256": "bedd19b621fe98c1013beff84310ffe3b624ca9691f3f4afa3eeb361e3e2f0d9"
+    },
+    "evidence/136-lossless-host-fixture-native-build.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/136-lossless-host-fixture-native-build.stdout.log",
+      "bytes": 234327,
+      "sha256": "c156f248b8b4eca99b654703a9b8a097f03b2b6fc69fb52f0088fda7d0c16cb9"
+    },
+    "evidence/136-trigger_gui-rustc.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/136-trigger_gui-rustc.json",
+      "bytes": 4103,
+      "sha256": "1a7fc03168f49b86d96362033eca7e1f8835874dd328bda9922003ff35137467"
+    },
+    "evidence/137-lossless-host-fixture-artifact-binding.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/137-lossless-host-fixture-artifact-binding.json",
+      "bytes": 46084,
+      "sha256": "f8625fff96e83a6eaeeb5b222c6fffbebd1b6d7b028584df7569ede34bbd4a35"
+    },
+    "evidence/138-positive-lossless-native-path-characterization.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/138-positive-lossless-native-path-characterization.json",
+      "bytes": 19607,
+      "sha256": "6ebf1e37815c26ede6037997a202f2d100076b2cf5bd53c69dfd3acd918d091e"
+    },
+    "evidence/138-positive-lossless-native-path-characterization.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/138-positive-lossless-native-path-characterization.samples.json",
+      "bytes": 508,
+      "sha256": "95fc87484a5474257b1782cddd21748e488b3cbf2451cd990d843a19545ca344"
+    },
+    "evidence/138-positive-lossless-native-path-characterization.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/138-positive-lossless-native-path-characterization.stderr.log",
+      "bytes": 8290,
+      "sha256": "acb6a4d56d5960182e964294049d4087c50461686064ca5d269c5cdb4b74f721"
+    },
+    "evidence/138-positive-lossless-native-path-characterization.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/138-positive-lossless-native-path-characterization.stdout.log",
+      "bytes": 210,
+      "sha256": "2ae7c03f81bd22f84aa6a54585ecf5e8d890af25a9f1b15088e727caaee90dfb"
+    },
+    "evidence/138-positive-os-byte-native-binding.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/138-positive-os-byte-native-binding.json",
+      "bytes": 1054,
+      "sha256": "baec1a3d99d9785df41ae5058b3f5b8cb10772e6b7b5fb177d86efa290ec0fdf"
+    },
+    "evidence/138-positive-os-byte-native.py": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/138-positive-os-byte-native.py",
+      "bytes": 1713,
+      "sha256": "6b4ad727624a0644e681f74cc387b246279c72fb2e993ec73c340d974cba91bb"
+    },
+    "evidence/139-current-default-release-build-artifact-binding.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/139-current-default-release-build-artifact-binding.json",
+      "bytes": 8566,
+      "sha256": "aca65588a27431d9552216ed2f6868d3478db394e86c4a18be0bab9b7b8e6fd9"
+    },
+    "evidence/139-current-default-release-build-clap_dynamic.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/139-current-default-release-build-clap_dynamic.stderr.log",
+      "bytes": 1243,
+      "sha256": "a7ec53bcd2c369e8733a2e20c5dfeeee8069010ea8fb22afe183258aa630184e"
+    },
+    "evidence/139-current-default-release-build-clap_dynamic.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/139-current-default-release-build-clap_dynamic.stdout.log",
+      "bytes": 1624,
+      "sha256": "365d59b8eb247abeb1b47875523379cdd73dfc7af69a90f7c88fd6be9ca786b4"
+    },
+    "evidence/139-current-default-release-build-executed-regressions.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/139-current-default-release-build-executed-regressions.json",
+      "bytes": 1213,
+      "sha256": "cdd0b22a28b7e9a10cfd1b7bcdc03d44989b917c5d801fc5cb8af9c329ef645a"
+    },
+    "evidence/139-current-default-release-build-public_engine_baseline.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/139-current-default-release-build-public_engine_baseline.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/139-current-default-release-build-public_engine_baseline.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/139-current-default-release-build-public_engine_baseline.stdout.log",
+      "bytes": 215,
+      "sha256": "855ad0203b8609271eae3c44d54f6731f9c76424b4c3e0ce6c9b918d9ef78ba0"
+    },
+    "evidence/139-current-default-release-build.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/139-current-default-release-build.json",
+      "bytes": 19608,
+      "sha256": "8b646afa4c1994c856cb0004638c816babe2a8180d54300361708408211461a7"
+    },
+    "evidence/139-current-default-release-build.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/139-current-default-release-build.samples.json",
+      "bytes": 328826,
+      "sha256": "306010fa38b8d5d762e1173f849ad3cbf1ced78262423d8d533871369939398d"
+    },
+    "evidence/139-current-default-release-build.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/139-current-default-release-build.stderr.log",
+      "bytes": 18392,
+      "sha256": "f5709b69f10ca53984251d6aeb3e4d324b5eef6612846fe96dcac7ece13e28e2"
+    },
+    "evidence/139-current-default-release-build.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/139-current-default-release-build.stdout.log",
+      "bytes": 130446,
+      "sha256": "092be6459fa671ed6a1e89bbe8888190da26a02f1a9b904e08b97f20f636279c"
+    },
+    "evidence/140-bind-headless.py": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/140-bind-headless.py",
+      "bytes": 1880,
+      "sha256": "fd4e84b38ecd29a372df98dab300f493ca304331e74953bd22992f37f0f501df"
+    },
+    "evidence/141-run-regression.py": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/141-run-regression.py",
+      "bytes": 1712,
+      "sha256": "44229ec54af3971c232f72aa7cdc8f7db6a2e44bb07da4e6b550081b6ad25c28"
+    },
+    "evidence/142-current-default-regressions.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/142-current-default-regressions.json",
+      "bytes": 19473,
+      "sha256": "01c544904ff618d57cb075cd0950a74dd93646707fbbddc107cd67bc5a74c4ef"
+    },
+    "evidence/142-current-default-regressions.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/142-current-default-regressions.samples.json",
+      "bytes": 172,
+      "sha256": "21a601163e2e6384c58eafe6e613b928f2a554ae63057129eab94f31fa5f3293"
+    },
+    "evidence/142-current-default-regressions.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/142-current-default-regressions.stderr.log",
+      "bytes": 799,
+      "sha256": "d6b3ac353e84162154f7c1435f088dc6f716fab973135b748b3ddbd5149d0c51"
+    },
+    "evidence/142-current-default-regressions.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/142-current-default-regressions.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/142-selector-setup-qualification.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/142-selector-setup-qualification.json",
+      "bytes": 450,
+      "sha256": "4ea1cb6bbc91a009a7732b1fba10cd7f0e48e13b702891521da595c628fc3a73"
+    },
+    "evidence/143-current-default-regressions.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/143-current-default-regressions.json",
+      "bytes": 19474,
+      "sha256": "d48e007587bf420962f6b6c6b943f98d65428afd3235ddb2d47428dfb49da96a"
+    },
+    "evidence/143-current-default-regressions.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/143-current-default-regressions.samples.json",
+      "bytes": 172,
+      "sha256": "6d267e07e55c23ab8193de6abd5965c5ef290f4bcd2c9a1f74ecdc5d86baa5a5"
+    },
+    "evidence/143-current-default-regressions.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/143-current-default-regressions.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/143-current-default-regressions.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/143-current-default-regressions.stdout.log",
+      "bytes": 957,
+      "sha256": "4edf4fbf59f7b45160184d591e6ee7a7562bbea5ddd30d7394c98207b0249ea4"
+    },
+    "evidence/144-current-plain-trigger-release-build-artifact-binding.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/144-current-plain-trigger-release-build-artifact-binding.json",
+      "bytes": 4858,
+      "sha256": "df6a0b871e6ae0a40cbb58f301a3eebedd9f7572dfd079173e30688240c8067d"
+    },
+    "evidence/144-current-plain-trigger-release-build-executed-regressions.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/144-current-plain-trigger-release-build-executed-regressions.json",
+      "bytes": 1231,
+      "sha256": "3e7d99a04e4bc717c84bf54895bcdefd93d133943ddbab95fdd8bb13b5981067"
+    },
+    "evidence/144-current-plain-trigger-release-build-public_engine_baseline.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/144-current-plain-trigger-release-build-public_engine_baseline.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/144-current-plain-trigger-release-build-public_engine_baseline.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/144-current-plain-trigger-release-build-public_engine_baseline.stdout.log",
+      "bytes": 215,
+      "sha256": "855ad0203b8609271eae3c44d54f6731f9c76424b4c3e0ce6c9b918d9ef78ba0"
+    },
+    "evidence/144-current-plain-trigger-release-build-trigger_dynamic.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/144-current-plain-trigger-release-build-trigger_dynamic.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/144-current-plain-trigger-release-build-trigger_dynamic.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/144-current-plain-trigger-release-build-trigger_dynamic.stdout.log",
+      "bytes": 3342,
+      "sha256": "848b356e4a2b6681a14a596e84cf70beab1b1ac04f797571f7d465ae377c99a6"
+    },
+    "evidence/144-current-plain-trigger-release-build.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/144-current-plain-trigger-release-build.json",
+      "bytes": 19722,
+      "sha256": "8c90830c3a6a0bf4df466ec017eb2936414858d3cae128950800c64845cf3789"
+    },
+    "evidence/144-current-plain-trigger-release-build.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/144-current-plain-trigger-release-build.samples.json",
+      "bytes": 152351,
+      "sha256": "afc5fbf44421b330c34aa75ddc1d9f6d40b32fff47ef474e1c082d6c30f63193"
+    },
+    "evidence/144-current-plain-trigger-release-build.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/144-current-plain-trigger-release-build.stderr.log",
+      "bytes": 11951,
+      "sha256": "7329bd901266e72c1d380bac60a6d048c69c9f178c75884bb4316bf73049f739"
+    },
+    "evidence/144-current-plain-trigger-release-build.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/144-current-plain-trigger-release-build.stdout.log",
+      "bytes": 130592,
+      "sha256": "467fa650b59e69a5623bea2b026a3295cfca1615aeda6c79059251c52fb08349"
+    },
+    "evidence/145-g1-owner-instrument.py": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/145-g1-owner-instrument.py",
+      "bytes": 2104,
+      "sha256": "04954d86fbceb10a79282969dd4e9e1cbdc5195aa23a98edb443407eede80f79"
+    },
+    "evidence/146-current-plain-trigger-regressions.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/146-current-plain-trigger-regressions.json",
+      "bytes": 19486,
+      "sha256": "c469edfddb331745ad30f2fa4a505d04c421eb5d445260a12bc5dd8c05fb1598"
+    },
+    "evidence/146-current-plain-trigger-regressions.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/146-current-plain-trigger-regressions.samples.json",
+      "bytes": 172,
+      "sha256": "aaaf246fb78d0f48bbe7776d5bb312463b02c0f564b9705391c0bb90db7baaf9"
+    },
+    "evidence/146-current-plain-trigger-regressions.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/146-current-plain-trigger-regressions.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/146-current-plain-trigger-regressions.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/146-current-plain-trigger-regressions.stdout.log",
+      "bytes": 960,
+      "sha256": "e28e410f271b6d1bae63b8c8fb02cec76e121534a531588e2c5646ace307005f"
+    },
+    "evidence/147-current-plain-cross-binding.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/147-current-plain-cross-binding.json",
+      "bytes": 907,
+      "sha256": "3c8b6b52685f8816616379bdbc6a796c0889b28870a8ec5d205e40bafb88bda0"
+    },
+    "evidence/147-current-plain-trigger-no-gui-unload.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/147-current-plain-trigger-no-gui-unload.json",
+      "bytes": 19894,
+      "sha256": "802815cfeacf4aacc5f44b0eff7f102aae062eac3d8a76fc41855b0d49d28af5"
+    },
+    "evidence/147-current-plain-trigger-no-gui-unload.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/147-current-plain-trigger-no-gui-unload.samples.json",
+      "bytes": 172,
+      "sha256": "3606b14400eb24e8d0706c44ce71c547d45a7fe55d1e1116a50bce7664fd9f3c"
+    },
+    "evidence/147-current-plain-trigger-no-gui-unload.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/147-current-plain-trigger-no-gui-unload.stderr.log",
+      "bytes": 4080,
+      "sha256": "7a12443b7ce472d9512ede9f2d0b12b06dfe5b86f66c3e6a312088e1de8ac80d"
+    },
+    "evidence/147-current-plain-trigger-no-gui-unload.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/147-current-plain-trigger-no-gui-unload.stdout.log",
+      "bytes": 192,
+      "sha256": "5ce548ee4086e49b4943c9c7e3eeff022904a316b0d1fb37fb5b3c82efba38a8"
+    },
+    "evidence/148-default-strict-clippy.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/148-default-strict-clippy.json",
+      "bytes": 19604,
+      "sha256": "a5631470ab28ceacaf79b34c7a39b9563a693fedd001cfb7de9b4eed2b77e4ac"
+    },
+    "evidence/148-default-strict-clippy.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/148-default-strict-clippy.samples.json",
+      "bytes": 31990,
+      "sha256": "36b5c5b5efe8607c17fc7872ec71115478a1d0ec435487e79e74e9c28ac364d0"
+    },
+    "evidence/148-default-strict-clippy.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/148-default-strict-clippy.stderr.log",
+      "bytes": 635,
+      "sha256": "f0d0df23b6bc8ed8d658330005a4d8c4ef05296fe5260ac4d5acf8ee2b6865d8"
+    },
+    "evidence/148-default-strict-clippy.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/148-default-strict-clippy.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/149-plain-trigger-strict-clippy.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/149-plain-trigger-strict-clippy.json",
+      "bytes": 19638,
+      "sha256": "2eddce269608e4a910ef80ee76791c9436a85975c1e87fb0fb25af90dc4f1fff"
+    },
+    "evidence/149-plain-trigger-strict-clippy.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/149-plain-trigger-strict-clippy.samples.json",
+      "bytes": 924,
+      "sha256": "cde385ed9601b2c3e4d99cc8ffe0c5d7c4445b10c5928a1ee782baf2b27e058b"
+    },
+    "evidence/149-plain-trigger-strict-clippy.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/149-plain-trigger-strict-clippy.stderr.log",
+      "bytes": 335,
+      "sha256": "e33a518f2671e7fe889de3386c9fce80ea3755207eaa6c565155c4164faa7574"
+    },
+    "evidence/149-plain-trigger-strict-clippy.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/149-plain-trigger-strict-clippy.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/150-dandrum_clap_adapter-rustc.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-dandrum_clap_adapter-rustc.json",
+      "bytes": 3537,
+      "sha256": "bf7362afc7ba603830a76d672d3f128954a103754e07455a197e80b6cb742675"
+    },
+    "evidence/150-final-native-release-build.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build.json",
+      "bytes": 19819,
+      "sha256": "2f8a49600881ee1794a4f82d909093ef1558b3d611e134ec7ab5f45ac61500ab"
+    },
+    "evidence/150-final-native-release-build.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build.samples.json",
+      "bytes": 29829,
+      "sha256": "c763144e8d1492740411b1dcc2ce6c7f149d1acab47f691e7c000e2d93b489a7"
+    },
+    "evidence/150-final-native-release-build.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build.stderr.log",
+      "bytes": 13020,
+      "sha256": "eae9ece6cdd924b9fd333482cd299f35daf92f8b98a7085663a92dd188c4d856"
+    },
+    "evidence/150-final-native-release-build.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build.stdout.log",
+      "bytes": 234328,
+      "sha256": "2fa232f1b6db04861b62156a77814940abbf0e9a0ccc4de87839b400ce64b1d8"
+    },
+    "evidence/150-trigger_gui-rustc.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-trigger_gui-rustc.json",
+      "bytes": 4103,
+      "sha256": "1a7fc03168f49b86d96362033eca7e1f8835874dd328bda9922003ff35137467"
+    },
+    "evidence/151-final-native-artifact-binding.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/151-final-native-artifact-binding.json",
+      "bytes": 46069,
+      "sha256": "1989891837cbce9b423b54e5816558f9db221487531443703b0e33e868abb68d"
+    },
+    "evidence/152-final-native-0.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/152-final-native-0.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/152-final-native-0.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/152-final-native-0.stdout.log",
+      "bytes": 184,
+      "sha256": "6b08f1fe9c4a5a8a52c3d7a9e32a223c9742e80245bb7b78a018ec0c21853401"
+    },
+    "evidence/152-final-native-1.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/152-final-native-1.stderr.log",
+      "bytes": 8096,
+      "sha256": "32c3be69f036836eb9a5831b13c3f7adb98c175078838b540e025d42729ae88b"
+    },
+    "evidence/152-final-native-1.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/152-final-native-1.stdout.log",
+      "bytes": 210,
+      "sha256": "fe1ace438bb6b3ae48e40a8f5d8b618905961b9b6d9d7ade8d618e74923a7f63"
+    },
+    "evidence/152-final-native-2.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/152-final-native-2.stderr.log",
+      "bytes": 3977,
+      "sha256": "289197013044112709a4395418e32f64fb9b648cd0cbc5d73317ae87551f58f4"
+    },
+    "evidence/152-final-native-2.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/152-final-native-2.stdout.log",
+      "bytes": 192,
+      "sha256": "115813dc1acb4b6db91c93eb7c0d38e35f10810c6c0499d2fd5a216b8ef86d44"
+    },
+    "evidence/152-final-native-3.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/152-final-native-3.stderr.log",
+      "bytes": 545,
+      "sha256": "d49ab22f47f0312e9ea3b6b3d563b5ac3fc5bd5567005bac3b5031a08986d8c8"
+    },
+    "evidence/152-final-native-3.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/152-final-native-3.stdout.log",
+      "bytes": 213,
+      "sha256": "7a2b373b84797655def577443f1d0fd53a98e0aa4190049f7ed54ff43e65cfb5"
+    },
+    "evidence/152-final-native-4.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/152-final-native-4.stderr.log",
+      "bytes": 2785,
+      "sha256": "4f217b1aefe037b01b05144cf71081b0bae74840e49426e634bf0eee5785b71a"
+    },
+    "evidence/152-final-native-4.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/152-final-native-4.stdout.log",
+      "bytes": 205,
+      "sha256": "001760d920fe89ec0fb3122db5fea816c7762b22ae488c51520ae6a028dbf6ac"
+    },
+    "evidence/152-final-native-executed-cases.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/152-final-native-executed-cases.json",
+      "bytes": 3759,
+      "sha256": "689b824bdd96c32d5e43d3445e03265e395576d780fd246fe8eec803d43dbb83"
+    },
+    "evidence/152-final-native-public-cases.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/152-final-native-public-cases.json",
+      "bytes": 19573,
+      "sha256": "ca58e58ae535daaeb6eb74b272e0a49400f68536d732417e32d152f099efa8df"
+    },
+    "evidence/152-final-native-public-cases.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/152-final-native-public-cases.samples.json",
+      "bytes": 508,
+      "sha256": "77066fcecca8c69aac0e05959d7b937663280cf0125e4bdb88f492510d573eda"
+    },
+    "evidence/152-final-native-public-cases.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/152-final-native-public-cases.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/152-final-native-public-cases.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/152-final-native-public-cases.stdout.log",
+      "bytes": 394,
+      "sha256": "10c0e9d5c8b8027ea8d3d3a57f944209131a4475edf2c6230b22cb4f2f69a264"
+    },
+    "evidence/152-run-native-cases.py": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/152-run-native-cases.py",
+      "bytes": 1993,
+      "sha256": "b387cf51fb4fdd725445624f0b57885125f1f34c69f25b52ed9b284e690cdc54"
+    },
+    "evidence/153-final-native-strict-clippy.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/153-final-native-strict-clippy.json",
+      "bytes": 19643,
+      "sha256": "4f68462f39fdb96f68e0652067b486f41c7fa3ab0fd2e23e2249065cbd56fd7b"
+    },
+    "evidence/153-final-native-strict-clippy.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/153-final-native-strict-clippy.samples.json",
+      "bytes": 938,
+      "sha256": "932797e5ec95b8bcfac73eb625164427426dbb7e789cc70567c9b6b812760cca"
+    },
+    "evidence/153-final-native-strict-clippy.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/153-final-native-strict-clippy.stderr.log",
+      "bytes": 149,
+      "sha256": "5db9df27055856ccd8c0e004608a785a779c59cf0a79c8c22a64d4b91822b31f"
+    },
+    "evidence/153-final-native-strict-clippy.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/153-final-native-strict-clippy.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/154-final-format-check.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/154-final-format-check.json",
+      "bytes": 19445,
+      "sha256": "fd893ac1f9ab7795bcccebe0ddda51d7f4459da48c0268420df7eae8716bbada"
+    },
+    "evidence/154-final-format-check.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/154-final-format-check.samples.json",
+      "bytes": 391,
+      "sha256": "fd94a8e5e3d3c0f79eae95607f66500b619bb3d92b0420b72e1b6586665bc62a"
+    },
+    "evidence/154-final-format-check.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/154-final-format-check.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/154-final-format-check.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/154-final-format-check.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/155-g1-owner-coverage-compile.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/155-g1-owner-coverage-compile.json",
+      "bytes": 19465,
+      "sha256": "f352eca349167c84cd508407fffc85b2429e16cdcac2f63b29c7b4589fbe2015"
+    },
+    "evidence/155-g1-owner-coverage-compile.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/155-g1-owner-coverage-compile.samples.json",
+      "bytes": 6381,
+      "sha256": "42a11368193b11e274a109aefc719b983bdf5314383b471a71c2bc7b29185ef5"
+    },
+    "evidence/155-g1-owner-coverage-compile.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/155-g1-owner-coverage-compile.stderr.log",
+      "bytes": 482,
+      "sha256": "718865652d4a1a12a3f92f5bb6771b315eb7401d0e1f9bc6eb52a645bba6b2f5"
+    },
+    "evidence/155-g1-owner-coverage-compile.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/155-g1-owner-coverage-compile.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/156-instrumented-native-binding.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/156-instrumented-native-binding.json",
+      "bytes": 49401,
+      "sha256": "3ac0ce8377b6bca948b86b5f2ad61e4c674d0f5ca24e56185dc3ab677c75d29b"
+    },
+    "evidence/156-stage-instrumented.py": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/156-stage-instrumented.py",
+      "bytes": 2018,
+      "sha256": "ca5379ca9d2fa5fbb7e9bccc70a041f05a5f29cf990a7e5c80ffcaafcc5439b5"
+    },
+    "evidence/157-g1-instrumented-public-cases.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/157-g1-instrumented-public-cases.json",
+      "bytes": 19728,
+      "sha256": "d515fc01414f8caeb19ccd39c5c5c8c9bd3570fb6255d40a820934a02533d207"
+    },
+    "evidence/157-g1-instrumented-public-cases.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/157-g1-instrumented-public-cases.samples.json",
+      "bytes": 507,
+      "sha256": "4e7603fa106566d71410604baa50544481a0d84a8001bc77b422db984be32264"
+    },
+    "evidence/157-g1-instrumented-public-cases.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/157-g1-instrumented-public-cases.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/157-g1-instrumented-public-cases.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/157-g1-instrumented-public-cases.stdout.log",
+      "bytes": 394,
+      "sha256": "10c0e9d5c8b8027ea8d3d3a57f944209131a4475edf2c6230b22cb4f2f69a264"
+    },
+    "evidence/157-instrumented-native-0.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/157-instrumented-native-0.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/157-instrumented-native-0.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/157-instrumented-native-0.stdout.log",
+      "bytes": 184,
+      "sha256": "6b08f1fe9c4a5a8a52c3d7a9e32a223c9742e80245bb7b78a018ec0c21853401"
+    },
+    "evidence/157-instrumented-native-1.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/157-instrumented-native-1.stderr.log",
+      "bytes": 8222,
+      "sha256": "c84393dd5e5725e50b563bc667319cd84498449edbc295e95ba6c561b706cde3"
+    },
+    "evidence/157-instrumented-native-1.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/157-instrumented-native-1.stdout.log",
+      "bytes": 210,
+      "sha256": "1128e1c200f569e8051ccfb813298ab663396e85f4b10eef3f921b7530d9988d"
+    },
+    "evidence/157-instrumented-native-2.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/157-instrumented-native-2.stderr.log",
+      "bytes": 4109,
+      "sha256": "27d6c6be6c5dc127768f68d5339c80a3bbbf531aa0db9f429e18333a6375dc21"
+    },
+    "evidence/157-instrumented-native-2.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/157-instrumented-native-2.stdout.log",
+      "bytes": 192,
+      "sha256": "115813dc1acb4b6db91c93eb7c0d38e35f10810c6c0499d2fd5a216b8ef86d44"
+    },
+    "evidence/157-instrumented-native-3.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/157-instrumented-native-3.stderr.log",
+      "bytes": 557,
+      "sha256": "abe4a558de51927224a1022038946e96b599a05f5f87fe5fa1003e1ba5e34c21"
+    },
+    "evidence/157-instrumented-native-3.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/157-instrumented-native-3.stdout.log",
+      "bytes": 213,
+      "sha256": "00cb57e73642c53fe3c7b82b9f4a2b10796297d67e2867a16785f92253377359"
+    },
+    "evidence/157-instrumented-native-4.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/157-instrumented-native-4.stderr.log",
+      "bytes": 2845,
+      "sha256": "a502227791766dd0d04a545e48b66a16a2e8255c04d9cce0313b046a5634753c"
+    },
+    "evidence/157-instrumented-native-4.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/157-instrumented-native-4.stdout.log",
+      "bytes": 205,
+      "sha256": "001760d920fe89ec0fb3122db5fea816c7762b22ae488c51520ae6a028dbf6ac"
+    },
+    "evidence/157-instrumented-native-executed-cases.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/157-instrumented-native-executed-cases.json",
+      "bytes": 3839,
+      "sha256": "c935bfe5941b3f40c4b7b97210b17b40a7b5923b23542019d2925e1215855a88"
+    },
+    "evidence/158-export-g1-coverage.py": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/158-export-g1-coverage.py",
+      "bytes": 2852,
+      "sha256": "b4a127e3180c86a6cff7effe1842af1212ba13acd4289f61b7d763986dc05f54"
+    },
+    "evidence/158-g1-owner-coverage-binding.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/158-g1-owner-coverage-binding.json",
+      "bytes": 7243,
+      "sha256": "a404200f64af8e18b92c130def2df0f5631736cf508fa2f4a66ac34348975f6c"
+    },
+    "evidence/158-g1-owner-coverage-export.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/158-g1-owner-coverage-export.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/158-g1-owner-coverage-merge.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/158-g1-owner-coverage-merge.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/158-g1-owner-coverage-raw-export.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/158-g1-owner-coverage-raw-export.json",
+      "bytes": 168290,
+      "sha256": "5b7e0a035486af0982ec2deb450eb72f1d464d14b97f0d2d4e036b5823adf1e2"
+    },
+    "evidence/159-g1-gui-coverage-show.txt": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/159-g1-gui-coverage-show.txt",
+      "bytes": 18485,
+      "sha256": "9ff01705b2a7141479f77be26901d843cd1a28a9ee59df30bfc2fca0f032399b"
+    },
+    "evidence/160-coverage-review.py": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/160-coverage-review.py",
+      "bytes": 4613,
+      "sha256": "80277d32da1d17f97f7627a49c7f44e416a78475b611100af4e20216c3f8b8c4"
+    },
+    "evidence/160-g1-coverage-and-refactor-review.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/160-g1-coverage-and-refactor-review.json",
+      "bytes": 260466,
+      "sha256": "5fd0f961689aa906ed466b7b2dda75493f62936bad32efe42f42d9ef59aa652e"
+    },
+    "evidence/161-terminal-resource-inventory.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/161-terminal-resource-inventory.json",
+      "bytes": 293,
+      "sha256": "ffb868445eb7f5e8f5b5cb53ba0c24c535006b0a3a4d758d11db0f112229bfb5"
+    },
+    "evidence/162-freeze-g1.py": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/162-freeze-g1.py",
+      "bytes": 6815,
+      "sha256": "e82e7c75b08ca04a2014f03e3e8f0ff9a4c170d09a8c233d2982991e76cb1d82"
+    },
+    "evidence/162-g1-verified-checkpoint.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/162-g1-verified-checkpoint.json",
+      "bytes": 6879,
+      "sha256": "fccca69d0f867cfa0cc148cd1a5d468f05cae4d196b926199b90642c7928001b"
+    },
+    "evidence/162-owned-tracked.diff": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/162-owned-tracked.diff",
+      "bytes": 74924,
+      "sha256": "d2361f4192998591fd7a12731d6c96b60643949767ee92970c7d3a3608d71fd8"
+    },
+    "evidence/163-archive-portable.py": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/163-archive-portable.py",
+      "bytes": 5160,
+      "sha256": "bfb4e4f3224b627540d526698cb98c8a8e4d44622b0c4ca99d9c81d89cf28480"
+    },
+    "evidence/163-portable-archive-receipt.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/163-portable-archive-receipt.json",
+      "bytes": 456,
+      "sha256": "1a338b44a95c76ac3eec114059f582463b50c389a0e78d29366cc8369b48e919"
+    },
+    "evidence/163-portable-manifest.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/163-portable-manifest.json",
+      "bytes": 150947,
+      "sha256": "ad12303cfe4c6cd109db91342212c007f9154516c448391add133308c190dd6f"
+    },
+    "evidence/164-frontend-and-allocator-scope-addendum.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/164-frontend-and-allocator-scope-addendum.json",
+      "bytes": 2281,
+      "sha256": "579592e218c5bebb82c643a0a4803ddb9f0a69254a73e9dca38d80b35a768d50"
+    },
+    "evidence/20-g1-native-green-attempt.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/20-g1-native-green-attempt.json",
+      "bytes": 18654,
+      "sha256": "3a4de8eea8b87011e18cc7164b554cf14de7e8422c472b26c934b555eb5db79d"
+    },
+    "evidence/20-g1-native-green-attempt.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/20-g1-native-green-attempt.samples.json",
+      "bytes": 2852,
+      "sha256": "454be445831ad89996765fa0373d5c8065033f1976610db3e32ebb850aa80b26"
+    },
+    "evidence/20-g1-native-green-attempt.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/20-g1-native-green-attempt.stderr.log",
+      "bytes": 1416,
+      "sha256": "fbb2b6acf14874111f184324b2ea0f3c3166eeff56c8e4652633d749444a8661"
+    },
+    "evidence/20-g1-native-green-attempt.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/20-g1-native-green-attempt.stdout.log",
+      "bytes": 331,
+      "sha256": "500ad5dbc1476bf48004852d951eaad53085b5fed7b2b685edd919de8b46ae26"
+    },
+    "evidence/23-current-frontend-build.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/23-current-frontend-build.json",
+      "bytes": 18473,
+      "sha256": "c7d52b3a39079ad1d1b09063ac0d71ccf568678913370f4ac554dc1de4f9543c"
+    },
+    "evidence/23-current-frontend-build.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/23-current-frontend-build.samples.json",
+      "bytes": 508,
+      "sha256": "7c856f4824a64ddfceab65085e696daad4c9216591ff30eebdbd6fd1eaa39c3e"
+    },
+    "evidence/23-current-frontend-build.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/23-current-frontend-build.stderr.log",
+      "bytes": 496,
+      "sha256": "b7090aa6899b70bb5124ab36296f6c8311399deb8dbce9f7988a25d7fd675e54"
+    },
+    "evidence/23-current-frontend-build.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/23-current-frontend-build.stdout.log",
+      "bytes": 607,
+      "sha256": "74b968e045720864dfff91020b16ee2634d722066f624d198a213cde6435dc64"
+    },
+    "evidence/24-current-resource-binding.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/24-current-resource-binding.json",
+      "bytes": 2046,
+      "sha256": "ec88e399c13121426acf5ff3dda71145a728ece78cfcc395b7f4b1dde2e67f0a"
+    },
+    "evidence/26-fault-map-summary.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/26-fault-map-summary.json",
+      "bytes": 778,
+      "sha256": "01e8fb625f79b6c9c1ac621c253ac52e604a7640795e9d6aef3a46468aa8d0d3"
+    },
+    "evidence/26-g1-unload-signal-trace.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/26-g1-unload-signal-trace.json",
+      "bytes": 18898,
+      "sha256": "47aa430ff8008160331a813070e1e52c9d06cccdd9d6980241a6f6642370faed"
+    },
+    "evidence/26-g1-unload-signal-trace.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/26-g1-unload-signal-trace.samples.json",
+      "bytes": 676,
+      "sha256": "9a7e9040e35d7e5ee5ead4cc95b9ad437fb2300613fdae1dca92c69bebac3b01"
+    },
+    "evidence/26-g1-unload-signal-trace.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/26-g1-unload-signal-trace.stderr.log",
+      "bytes": 1913,
+      "sha256": "b990e5185eb1fdcfefac098c04ff97f50e4ed0577468b23a20d56e699a0cc7a4"
+    },
+    "evidence/26-g1-unload-signal-trace.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/26-g1-unload-signal-trace.stdout.log",
+      "bytes": 210,
+      "sha256": "015169ff5e5f59fdd00b5139204328bfc88005e1f349777ea4106b3b93d09fc5"
+    },
+    "evidence/26-mappings-and-signal.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/26-mappings-and-signal.log",
+      "bytes": 1444268,
+      "sha256": "d7b17042b2177f3de44dec67a541845673764752071149804cac07376aa2f8f4"
+    },
+    "evidence/26-owned-process-terminal-inventory.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/26-owned-process-terminal-inventory.json",
+      "bytes": 6297,
+      "sha256": "16937a489d333eceee145e0de6d663f03c1031295ad2e089a02f5555a0ca718b"
+    },
+    "evidence/41-wrong-loader-identity-red.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/41-wrong-loader-identity-red.json",
+      "bytes": 18743,
+      "sha256": "c7483375a94c0208b6ffda59d0e9d9ca5f175dbf4e65210a30fea30bd9fc74da"
+    },
+    "evidence/41-wrong-loader-identity-red.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/41-wrong-loader-identity-red.samples.json",
+      "bytes": 172,
+      "sha256": "47db5a24c6cc3e6bba2143fcd00cda8f8872fea64fbddf3de3d0aee76f147b26"
+    },
+    "evidence/41-wrong-loader-identity-red.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/41-wrong-loader-identity-red.stderr.log",
+      "bytes": 362,
+      "sha256": "e603d4c352b3096e4994ad85e699c73ce134ab1dfe07e783c748634d949aac2a"
+    },
+    "evidence/41-wrong-loader-identity-red.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/41-wrong-loader-identity-red.stdout.log",
+      "bytes": 336,
+      "sha256": "4bc32eb9f7e2691e4f4698fca38aa4765dde5695d28fbd8d2db29b026af8d687"
+    },
+    "evidence/51-revised-strengthened-native-red.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/51-revised-strengthened-native-red.json",
+      "bytes": 18985,
+      "sha256": "21d57988dd098eb5d0dfd2eca93e006b5e65084239a80c2cf8d1f230cf1052e2"
+    },
+    "evidence/51-revised-strengthened-native-red.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/51-revised-strengthened-native-red.samples.json",
+      "bytes": 507,
+      "sha256": "ffe39a867c8aa8426a590d6f5af5376d7431e5bf9ae1a580ee7b2caa00b6a9b2"
+    },
+    "evidence/51-revised-strengthened-native-red.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/51-revised-strengthened-native-red.stderr.log",
+      "bytes": 6643,
+      "sha256": "5d0d48e0b2483fd64e1b9490d75737b83d94020c832f8a3d1c8869ad40d1dea1"
+    },
+    "evidence/51-revised-strengthened-native-red.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/51-revised-strengthened-native-red.stdout.log",
+      "bytes": 330,
+      "sha256": "7a0be8c4fd224a6caf3d5351d748b2b9d22f669c796708926b705871bf86b004"
+    },
+    "evidence/52-gui-no-native-loader.1377342": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/52-gui-no-native-loader.1377342",
+      "bytes": 145385,
+      "sha256": "ccabdbd4ad049a6ea19c65d11b6306cc48e535162e2e03f61aa7fbf791363678"
+    },
+    "evidence/52-gui-no-native.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/52-gui-no-native.stderr.log",
+      "bytes": 3697,
+      "sha256": "bacecf18942b63065ba0c956502c6a0ec9d51c426c801586897796fdc50813f3"
+    },
+    "evidence/52-gui-no-native.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/52-gui-no-native.stdout.log",
+      "bytes": 192,
+      "sha256": "bb0d73bb69a3ffbb88a00efd7236d393712e8526da8f172cc13a9e469c528201"
+    },
+    "evidence/52-loader-control-results.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/52-loader-control-results.json",
+      "bytes": 1294,
+      "sha256": "2a86ee3a7c7311fd34ab062142824b0153a62efa277dd9c75cd5e109b3d5508a"
+    },
+    "evidence/52-loader-control.py": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/52-loader-control.py",
+      "bytes": 1496,
+      "sha256": "9f18660b35e1c897a5f618168a5e7bb727b0fa7db39c091628f3ad284e481594"
+    },
+    "evidence/52-loader-controls.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/52-loader-controls.json",
+      "bytes": 18842,
+      "sha256": "ab4e8b8e19e45382477ac106f3d05a5ca9ac5ce1fd2d8319ecfecd494e3f4f60"
+    },
+    "evidence/52-loader-controls.samples.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/52-loader-controls.samples.json",
+      "bytes": 171,
+      "sha256": "41f8fe97decd61b36c30f19a0c511a3656f362e1276637333ccc05727e7b0545"
+    },
+    "evidence/52-loader-controls.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/52-loader-controls.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence/52-loader-controls.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/52-loader-controls.stdout.log",
+      "bytes": 1295,
+      "sha256": "1abaa84f64ff717b64d4cfbe3ce3926bf0a3b59c87f415688ec18ae899cec44c"
+    },
+    "evidence/52-plain73af-loader.1377352": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/52-plain73af-loader.1377352",
+      "bytes": 42379,
+      "sha256": "8dcd308e4061ce063987072ea475ca68305ebcc27072e8be2572a3222d7ceac6"
+    },
+    "evidence/52-plain73af.stderr.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/52-plain73af.stderr.log",
+      "bytes": 3882,
+      "sha256": "7dff7fe94f377746f0f1746526b06ed850d52d5265b85ba2e2b099acba45eed4"
+    },
+    "evidence/52-plain73af.stdout.log": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/52-plain73af.stdout.log",
+      "bytes": 192,
+      "sha256": "b339d2f11ae5a809eb5efd4a31f2ec1e4dd7fa645b50a0461ff10d2e888d4216"
+    },
+    "evidence/current-native-build-inputs.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/current-native-build-inputs.json",
+      "bytes": 33751,
+      "sha256": "8fc0e108c12ba965218f89adb05caa224cf26f30379e78aa6483f8d0e8699d63"
+    },
+    "evidence/g1-owner-instrument-binding.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/g1-owner-instrument-binding.json",
+      "bytes": 9437,
+      "sha256": "76a6c32d564c020283d9e4eebb2f071152f04b3dff7f829ffa3fc060162d17e5"
+    },
+    "evidence/production-resource-binding.json": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/production-resource-binding.json",
+      "bytes": 1754,
+      "sha256": "530d3a159e35496e87fea5d491eefacb7d1f86a33d584eced6796c1c13d1bfbb"
+    },
+    "evidence/run.py": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/run.py",
+      "bytes": 3892,
+      "sha256": "d115d06e4c78b3f91e173bafa5e29aa6cb076a97b1a1827a65c3a3a07c1b8247"
+    },
+    "historical-qualified-source/41-wrong-loader-identity-red/src/clap-adapter/src/trigger/gui.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/41-wrong-loader-identity-red/source/src/clap-adapter/src/trigger/gui.rs",
+      "bytes": 9380,
+      "sha256": "79560e80fa9f4236c4817fc0ac69dcc0c83c31ab99378425ac31a8acb0f1fda6"
+    },
+    "historical-qualified-source/41-wrong-loader-identity-red/src/clap-adapter/tests/trigger_gui.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/41-wrong-loader-identity-red/source/src/clap-adapter/tests/trigger_gui.rs",
+      "bytes": 32121,
+      "sha256": "6b530fccb7d2a7c6e302ac7f3946d14c1e46af7d98d525022cb844a8faa0038a"
+    },
+    "historical-qualified-source/51-revised-strengthened-native-red/src/clap-adapter/src/trigger/gui.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/51-revised-strengthened-native-red/source/src/clap-adapter/src/trigger/gui.rs",
+      "bytes": 9380,
+      "sha256": "79560e80fa9f4236c4817fc0ac69dcc0c83c31ab99378425ac31a8acb0f1fda6"
+    },
+    "historical-qualified-source/51-revised-strengthened-native-red/src/clap-adapter/tests/fixtures/trigger-gui-native-observer.js": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/51-revised-strengthened-native-red/source/src/clap-adapter/tests/fixtures/trigger-gui-native-observer.js",
+      "bytes": 3053,
+      "sha256": "28d2230dbfa077fd202d112e62164d213d0690fecc9277e4f74f0170991f773a"
+    },
+    "historical-qualified-source/51-revised-strengthened-native-red/src/clap-adapter/tests/trigger_gui.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/51-revised-strengthened-native-red/source/src/clap-adapter/tests/trigger_gui.rs",
+      "bytes": 33339,
+      "sha256": "efb67c81ba131ce65f2376bc47d7389b8bb4005cd8341ac206439448ea4d76d7"
+    },
+    "llvm/158-g1-owner-coverage.profdata": {
+      "original_path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/trigger-g1-adapter-owner-20261021/158-g1-owner-coverage.profdata",
+      "bytes": 12048,
+      "sha256": "eb3673529108fe6a80ba8e0f48ae0e8b79b46e87f7b54852e93faee6c16733f0"
+    },
+    "llvm/profiles/156-g1-3451906911581121126_0-1460900.profraw": {
+      "original_path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/trigger-g1-adapter-owner-20261021/profiles/156-g1-3451906911581121126_0-1460900.profraw",
+      "bytes": 12856,
+      "sha256": "10de85b797be3eea3f5eeea7714ee0f88f64e3a9807ce21ecc74b45d544b1d1d"
+    },
+    "llvm/profiles/156-g1-3451906911581121126_0-1460903.profraw": {
+      "original_path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/trigger-g1-adapter-owner-20261021/profiles/156-g1-3451906911581121126_0-1460903.profraw",
+      "bytes": 12856,
+      "sha256": "96171c1ff4c2ef84164dd334a9b032179b3f85c955612669756c9527f3480594"
+    },
+    "llvm/profiles/156-g1-3451906911581121126_0-1461458.profraw": {
+      "original_path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/trigger-g1-adapter-owner-20261021/profiles/156-g1-3451906911581121126_0-1461458.profraw",
+      "bytes": 12856,
+      "sha256": "b489e4ee5629f58960ca15137d5fedf1ac310c6088012e8ed67650672e97b0e7"
+    },
+    "llvm/profiles/156-g1-3451906911581121126_0-1461483.profraw": {
+      "original_path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/trigger-g1-adapter-owner-20261021/profiles/156-g1-3451906911581121126_0-1461483.profraw",
+      "bytes": 12856,
+      "sha256": "eacf4b80c061d12cd56d16e2b5833d9661b9be6071f9e6be9870eba5cef72f64"
+    },
+    "llvm/profiles/156-g1-3451906911581121126_0-1461491.profraw": {
+      "original_path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/trigger-g1-adapter-owner-20261021/profiles/156-g1-3451906911581121126_0-1461491.profraw",
+      "bytes": 12856,
+      "sha256": "334314226a7ac44970b8252ee8e8fc06af93e68ecdd862cedc55482bdaf934c6"
+    },
+    "retrospective-prepin-source/src/clap-adapter/Cargo.lock": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/114-retrospective-current9f4-prepin-build/source/src/clap-adapter/Cargo.lock",
+      "bytes": 83030,
+      "sha256": "d08d1b0c12f4bc31a43bbd322ba5a9b0d3800071fbffcc7c029c2f1f8a6de023"
+    },
+    "retrospective-prepin-source/src/clap-adapter/Cargo.toml": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/114-retrospective-current9f4-prepin-build/source/src/clap-adapter/Cargo.toml",
+      "bytes": 1824,
+      "sha256": "46878aa97fe00af02f9b4652b1e9b6dca7e92a3f5d3032963f1da29cc7fca98d"
+    },
+    "retrospective-prepin-source/src/clap-adapter/src/trigger.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/114-retrospective-current9f4-prepin-build/source/src/clap-adapter/src/trigger.rs",
+      "bytes": 18829,
+      "sha256": "eff72a684b12ff45c82eff463cbfb02512c4b1ff29185b172a27a649495268ab"
+    },
+    "retrospective-prepin-source/src/clap-adapter/src/trigger/gui.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/114-retrospective-current9f4-prepin-build/source/src/clap-adapter/src/trigger/gui.rs",
+      "bytes": 9380,
+      "sha256": "79560e80fa9f4236c4817fc0ac69dcc0c83c31ab99378425ac31a8acb0f1fda6"
+    },
+    "root-authority/combined-lock-license-summary.json": {
+      "original_path": "/tmp/dandrum-evidence/trigger-native-gui-next/combined-lock-license-summary.json",
+      "bytes": 9445,
+      "sha256": "4bd0dcd3678d55ddfd7cae58f174385e17a792d4bbc0a6ce90ac65c6ea5bca13"
+    },
+    "root-authority/g1-artifact-binding-correction.json": {
+      "original_path": "/tmp/dandrum-evidence/trigger-native-gui-next/g1-artifact-binding-correction.json",
+      "bytes": 649,
+      "sha256": "1a230d2fd5b263c013c55d3176f51c641232268742bdfc8dd8793c42521d8c8d"
+    },
+    "root-authority/gnu-loader-boundary-adoption.json": {
+      "original_path": "/tmp/dandrum-evidence/trigger-native-gui-next/gnu-loader-boundary-adoption.json",
+      "bytes": 1155,
+      "sha256": "a1457a8421af2d1e4834b5ff93ac495ca54788adf1c932ec4ab3162d923d29b2"
+    },
+    "root-authority/lifetime-assessment/assessment.md": {
+      "original_path": "/tmp/dandrum-evidence/trigger-native-gui-next/lifetime-assessment/assessment.md",
+      "bytes": 7849,
+      "sha256": "969fc94782c1858d509850a7c9a8e5e9563516c3b8735f0b6ddd7e1e4b350553"
+    },
+    "root-authority/lifetime-policy-adoption.json": {
+      "original_path": "/tmp/dandrum-evidence/trigger-native-gui-next/lifetime-policy-adoption.json",
+      "bytes": 953,
+      "sha256": "9a5603546c1a904bb614f3aa6e6668b8c7056d6b5427757c9a8182d7a2d3216b"
+    },
+    "root-authority/recovered-pin-artifact-independent-check.json": {
+      "original_path": "/tmp/dandrum-evidence/trigger-native-gui-next/recovered-pin-artifact-independent-check.json",
+      "bytes": 958,
+      "sha256": "0cfb5df3bc117d74d9125a090da7ec4ef9bdf77802cd2e2eaec428de57312448"
+    },
+    "root-authority/recovered-prepin-artifact-independent-check.json": {
+      "original_path": "/tmp/dandrum-evidence/trigger-native-gui-next/recovered-prepin-artifact-independent-check.json",
+      "bytes": 727,
+      "sha256": "c745b21ad0fd968e25d0374a53a3351efe4b7ef773ee6d3d09980a0d079ced73"
+    },
+    "root-authority/trigger-gui-dso-unload-readiness.md": {
+      "original_path": "/tmp/dandrum-evidence/trigger-gui-dso-unload-readiness.md",
+      "bytes": 5780,
+      "sha256": "1fa994f596ddf8dab84cfd184f7f3520b0dd6f19b73c5726c0ccc1287ac94bd8"
+    },
+    "source-final/src/clap-adapter/Cargo.lock": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/clap-adapter/Cargo.lock",
+      "bytes": 83039,
+      "sha256": "672e0946f3e9197100ca2419caf45fd7494013b5d6570ec1cb408403a6aaefe5"
+    },
+    "source-final/src/clap-adapter/Cargo.toml": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/clap-adapter/Cargo.toml",
+      "bytes": 2100,
+      "sha256": "345bb98d0799fdccfe0edac749aa283e5ab4e9300a1a2153129528f9a68774e7"
+    },
+    "source-final/src/clap-adapter/fixtures/signed-gain.yaml": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/clap-adapter/fixtures/signed-gain.yaml",
+      "bytes": 506,
+      "sha256": "e02a0db995d43fd585b3da9744a2ca4df1295c911e084782ff47220fa12ae971"
+    },
+    "source-final/src/clap-adapter/src/lib.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/clap-adapter/src/lib.rs",
+      "bytes": 25234,
+      "sha256": "26955a02dd99fa07fa7601072b8cd67aac658c90f7c738ca09d552a153d87ed6"
+    },
+    "source-final/src/clap-adapter/src/trigger.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/clap-adapter/src/trigger.rs",
+      "bytes": 19698,
+      "sha256": "fa4a9822e3ae6c08b36916699b9a77b6df5e057058991021db0c78f5db890a96"
+    },
+    "source-final/src/clap-adapter/src/trigger/gui.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/clap-adapter/src/trigger/gui.rs",
+      "bytes": 12001,
+      "sha256": "f56eade8a07ecf0af3122af8b6fcd1f82139f43b12294899cc44ceb2ee0ce94d"
+    },
+    "source-final/src/clap-adapter/tests/clap_dynamic.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/clap-adapter/tests/clap_dynamic.rs",
+      "bytes": 48570,
+      "sha256": "bc11036d1cd41491210ec273e19560892b9c781343e7499b28e316d1ff024bc5"
+    },
+    "source-final/src/clap-adapter/tests/common/mod.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/clap-adapter/tests/common/mod.rs",
+      "bytes": 3497,
+      "sha256": "62fc5cb5dbab02f74683d49273d6b0e5ccd44f1624861920fe928031b0bbd3d1"
+    },
+    "source-final/src/clap-adapter/tests/fixtures/allocator_interpose.c": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/clap-adapter/tests/fixtures/allocator_interpose.c",
+      "bytes": 1616,
+      "sha256": "6b80a560e2eded4276befd2252699c427fcdc7638387975c7c343e41d63c8dc9"
+    },
+    "source-final/src/clap-adapter/tests/fixtures/allocator_probe.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/clap-adapter/tests/fixtures/allocator_probe.rs",
+      "bytes": 503,
+      "sha256": "6ae6c66a02750fea4ed381e2d3088638c6b500eb21bb35b9c131897111a8a11e"
+    },
+    "source-final/src/clap-adapter/tests/fixtures/trigger-gui-native-observer.js": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/clap-adapter/tests/fixtures/trigger-gui-native-observer.js",
+      "bytes": 3053,
+      "sha256": "28d2230dbfa077fd202d112e62164d213d0690fecc9277e4f74f0170991f773a"
+    },
+    "source-final/src/clap-adapter/tests/public_engine_baseline.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/clap-adapter/tests/public_engine_baseline.rs",
+      "bytes": 1297,
+      "sha256": "57749272dafa9eaace07c4d8a0ed95c0a4013c5495df5986ea8763dc4141d5ee"
+    },
+    "source-final/src/clap-adapter/tests/trigger_dynamic.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/clap-adapter/tests/trigger_dynamic.rs",
+      "bytes": 53960,
+      "sha256": "3009f36b815571d0b03827cd8453195cf356cd93cd6144a010473be87c0e47c7"
+    },
+    "source-final/src/clap-adapter/tests/trigger_gui.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/clap-adapter/tests/trigger_gui.rs",
+      "bytes": 38673,
+      "sha256": "11b32f1c74004397e1b6799ff004e1687f5f10557c33cfd83814c864e6ff69b1"
+    },
+    "source-final/src/instrument-session/Cargo.lock": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/instrument-session/Cargo.lock",
+      "bytes": 33866,
+      "sha256": "1537a3dc07c17fb7fe79786d1863b7e9b7e3db328757845fdbe3ffdbb10201eb"
+    },
+    "source-final/src/instrument-session/Cargo.toml": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/instrument-session/Cargo.toml",
+      "bytes": 302,
+      "sha256": "64121a3f75dde57b6a4cc0dcee2a96e4f8cab7ee1b72382f8da60998efba4c44"
+    },
+    "source-final/src/instrument-session/src/lib.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/instrument-session/src/lib.rs",
+      "bytes": 32977,
+      "sha256": "b010be63d2a6c61e7362e80418acdb53ab35bf15f82d242a3d0c9c4fbd647cf4"
+    },
+    "source-final/src/instrument-session/src/native_ffi.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/instrument-session/src/native_ffi.rs",
+      "bytes": 40569,
+      "sha256": "cdada47286a2c2f94d45c652a9166b8d9a30870e56fca1111abdcdf5611934b8"
+    },
+    "source-final/src/instrument-session/tests/internal/revision_limit.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/instrument-session/tests/internal/revision_limit.rs",
+      "bytes": 3897,
+      "sha256": "62a48798e7cccdbe4ee86ed6ceb1571d9160e2c4350768a7e0dbd1b5ea3671d4"
+    },
+    "source-final/src/instrument-session/tests/render_configuration.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/instrument-session/tests/render_configuration.rs",
+      "bytes": 5550,
+      "sha256": "a64598b0cab81da23f0373fddb82ad61e66a00442c8fcf839999734109ae5ffd"
+    },
+    "source-final/src/instrument-session/tests/session.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/instrument-session/tests/session.rs",
+      "bytes": 55018,
+      "sha256": "a385cda3bb5cbe8db5145f04733cd6a9a214ad64c7621e6b6ed24dac8ae8b28c"
+    },
+    "source-final/src/rust-engine/Cargo.lock": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/Cargo.lock",
+      "bytes": 33733,
+      "sha256": "7b9868b097cc152c22ff3462ccfd60e822d8a1bb3724a89f43ba526e72ea20d7"
+    },
+    "source-final/src/rust-engine/Cargo.toml": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/Cargo.toml",
+      "bytes": 539,
+      "sha256": "b854bee281b47373d018c881aa024a67349dd5ed0928b3d05597c12d7c4ce90b"
+    },
+    "source-final/src/rust-engine/src/audio_loading.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/audio_loading.rs",
+      "bytes": 15278,
+      "sha256": "9e456cafe2eef0d62da62a4ad60c0c9859c27c74bf88727f4725fa8d8609c25b"
+    },
+    "source-final/src/rust-engine/src/bin/dandrum-cli.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/bin/dandrum-cli.rs",
+      "bytes": 185,
+      "sha256": "fe346d5a3ce9583d90389450b1e62b95584f28de6b1f791a4b57f7ee9f80ad46"
+    },
+    "source-final/src/rust-engine/src/bin/dandrum-demo.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/bin/dandrum-demo.rs",
+      "bytes": 688,
+      "sha256": "1ae883f67e4f2b9042ac7671a10dc230daf65eebb253d2053f7426f8317999cc"
+    },
+    "source-final/src/rust-engine/src/bin/dandrum-sound-workbench.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/bin/dandrum-sound-workbench.rs",
+      "bytes": 253,
+      "sha256": "b95c20bd95ea8d07013f6bad08afd065763c6a905314b67872ba800899ff10da"
+    },
+    "source-final/src/rust-engine/src/bin/dandrum-stepseq.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/bin/dandrum-stepseq.rs",
+      "bytes": 22861,
+      "sha256": "0687f2bbe2d8b2bf158d897da36a1a73308f260b02b24ac22702dcbeaaaefd34"
+    },
+    "source-final/src/rust-engine/src/bin/render-kick.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/bin/render-kick.rs",
+      "bytes": 2062,
+      "sha256": "110bc1b6355bba531492324bca20551cb71d00dde5eefa46ba185359f2695ffe"
+    },
+    "source-final/src/rust-engine/src/builtins.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/builtins.rs",
+      "bytes": 32555,
+      "sha256": "54527f81aa9a1fd310682abc606a68f4da618fb090c5d5c0ae214a59e3da1322"
+    },
+    "source-final/src/rust-engine/src/builtins/module_kind.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/builtins/module_kind.rs",
+      "bytes": 4923,
+      "sha256": "1ca4a2ffb441183dbc8f97b5abc48f53200014dcef9ca58936337535714a2107"
+    },
+    "source-final/src/rust-engine/src/builtins/module_types.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/builtins/module_types.rs",
+      "bytes": 2451,
+      "sha256": "e7f80502cfc3185668d82ce8762a01180e51511a3f8f45d2d4a79ee0bb25e6d2"
+    },
+    "source-final/src/rust-engine/src/builtins/tests.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/builtins/tests.rs",
+      "bytes": 19911,
+      "sha256": "522d226350256b0b4d258381bc567fcf73c171b880654907faf199dbe796e4f3"
+    },
+    "source-final/src/rust-engine/src/cli.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/cli.rs",
+      "bytes": 46023,
+      "sha256": "5a7164e0934b62d4b955199166b616f826c6b87aca75dadc7b2ced8d4d7749f8"
+    },
+    "source-final/src/rust-engine/src/codex_cli_provider.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/codex_cli_provider.rs",
+      "bytes": 34978,
+      "sha256": "d792ddbd82d2f9e5a0c3d03e968a07a1d257c53f0a6325d5969db5af53eb601b"
+    },
+    "source-final/src/rust-engine/src/compiled_patch.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/compiled_patch.rs",
+      "bytes": 67540,
+      "sha256": "b833af2a1b1cac065eb7e465fd39412fd9d5ce96cda3cb61931f4f515ad75f2d"
+    },
+    "source-final/src/rust-engine/src/convolution.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/convolution.rs",
+      "bytes": 9537,
+      "sha256": "9b708658b10699e646cf332082b1af3ce78be0242f22e9438034064e82b401ae"
+    },
+    "source-final/src/rust-engine/src/core.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/core.rs",
+      "bytes": 9537,
+      "sha256": "75073bd96d63d55e4dcc45569c0dd0436fb41b470a1c20e8009370868b2dd91a"
+    },
+    "source-final/src/rust-engine/src/crossover.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/crossover.rs",
+      "bytes": 3761,
+      "sha256": "5e095c51db2f3cd49de3dab6c1b94f4d4c224734d4066f483dd037903fcc51a2"
+    },
+    "source-final/src/rust-engine/src/curve_mapper.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/curve_mapper.rs",
+      "bytes": 4936,
+      "sha256": "318660b92acdecfd06dc68dd526e0cb3de471c6c95a23972a5bab3ee787ca303"
+    },
+    "source-final/src/rust-engine/src/decay.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/decay.rs",
+      "bytes": 329,
+      "sha256": "e28c471be6fe7d3dfcfcbec37f02d045487685f540541e8b80061da278ccf014"
+    },
+    "source-final/src/rust-engine/src/delay_line.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/delay_line.rs",
+      "bytes": 5965,
+      "sha256": "31a59fe2872c358f987f7764b0d83ee8605f1f420d4db74f9edbc6841fb08d6a"
+    },
+    "source-final/src/rust-engine/src/diagnostics.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/diagnostics.rs",
+      "bytes": 17772,
+      "sha256": "ed180887bd017e2153c3882277de0c18b5f4309d8e4572d97d43b843fc1fb5db"
+    },
+    "source-final/src/rust-engine/src/drum_voice_authoring_tests.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/drum_voice_authoring_tests.rs",
+      "bytes": 11395,
+      "sha256": "2475946e7c076ff0d987cacdbc12a8f4635abc5d60453dce521801ab65823802"
+    },
+    "source-final/src/rust-engine/src/dynamics_processor.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/dynamics_processor.rs",
+      "bytes": 18602,
+      "sha256": "696e8e34e0afc9b24829eef807ccecee1b4ecd5b27a87f3c023159c09826678c"
+    },
+    "source-final/src/rust-engine/src/echo.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/echo.rs",
+      "bytes": 12612,
+      "sha256": "46549d0d5c1f4f889f814ec191a910dd5c531786abdb8402296d805577f2b652"
+    },
+    "source-final/src/rust-engine/src/envelope_follower.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/envelope_follower.rs",
+      "bytes": 6430,
+      "sha256": "a8c2a65fc73f2dab92f1e0e84749df3bed82333270bcceec7099631d741cc31f"
+    },
+    "source-final/src/rust-engine/src/ffi.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/ffi.rs",
+      "bytes": 102833,
+      "sha256": "ef1b15913cdadf9147d315ae0b4b310ada8e1f6ecbe208add2a180f5d0bebb1e"
+    },
+    "source-final/src/rust-engine/src/fft.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/fft.rs",
+      "bytes": 2219,
+      "sha256": "8158e9c39779b291ac602ab5e0f4203e9e07411bfdc519c0327bd22aa7e99985"
+    },
+    "source-final/src/rust-engine/src/filter/biquad.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/filter/biquad.rs",
+      "bytes": 4627,
+      "sha256": "3af69f79a3efc4823c106fe74910a6cc7629e8d24fc4d6cce6ca112e3369c061"
+    },
+    "source-final/src/rust-engine/src/filter/comb.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/filter/comb.rs",
+      "bytes": 2279,
+      "sha256": "a94590de8c95e366a38ef1080104ab871b7f2879ca89fd7326505b2e0c202b9a"
+    },
+    "source-final/src/rust-engine/src/filter/mod.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/filter/mod.rs",
+      "bytes": 784,
+      "sha256": "7335be4e4fdaac662f1c1d0d49263d4dae7ffaf2176b01e16ef0aa738115bca9"
+    },
+    "source-final/src/rust-engine/src/filter/moog.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/filter/moog.rs",
+      "bytes": 1697,
+      "sha256": "36017d5c663fdeaf78a012bcf03a51ed8333964507fa8fb945e7cb3f06c00bfe"
+    },
+    "source-final/src/rust-engine/src/filter/one_pole.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/filter/one_pole.rs",
+      "bytes": 1622,
+      "sha256": "a9b227127b5b081c58ddc5e33bf0eea81eb51458730992b21e184b0d1b8318de"
+    },
+    "source-final/src/rust-engine/src/filter/tests.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/filter/tests.rs",
+      "bytes": 11417,
+      "sha256": "b3a1fee225f4535dd6b1cde31654155ba8d2e0cf69ae814ef746116ccc4a3b78"
+    },
+    "source-final/src/rust-engine/src/graph.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph.rs",
+      "bytes": 24208,
+      "sha256": "989d2017dadd7026a1f0d01323fe5243b2261ee56c25b8f095bb7fd87b8cf13f"
+    },
+    "source-final/src/rust-engine/src/graph/builtin_ports.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph/builtin_ports.rs",
+      "bytes": 3015,
+      "sha256": "95cc0ae020ee86b758a2ed79f67912a6902811878b9baf6c1fcf15e70880cfd7"
+    },
+    "source-final/src/rust-engine/src/graph/tests.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph/tests.rs",
+      "bytes": 52385,
+      "sha256": "dd815218ff47a42fcd364551a73c712149b398ae2a42ff0f7d197581a0deade9"
+    },
+    "source-final/src/rust-engine/src/graph_module.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph_module.rs",
+      "bytes": 9117,
+      "sha256": "495fb45d06d354ffc4449b07d69f84205abfbdc5585a2a0350f515e6f5d3fba6"
+    },
+    "source-final/src/rust-engine/src/graph_processor/arena_processing.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph_processor/arena_processing.rs",
+      "bytes": 59579,
+      "sha256": "f0909e4a95f1f9b09ffc8ea4ad89a7897eaab6c66984072a517416bb7fe247f1"
+    },
+    "source-final/src/rust-engine/src/graph_processor/audio_arena.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph_processor/audio_arena.rs",
+      "bytes": 7842,
+      "sha256": "837db21b9d144a0399b89307289a029c8259e73c451680dfb4581e3fee3f4d36"
+    },
+    "source-final/src/rust-engine/src/graph_processor/block.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph_processor/block.rs",
+      "bytes": 8898,
+      "sha256": "970db7c8f16771173e047b369b0761d40214e936de2fc283d7f3505c4bfebcc8"
+    },
+    "source-final/src/rust-engine/src/graph_processor/dispatch.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph_processor/dispatch.rs",
+      "bytes": 9340,
+      "sha256": "d3cc22b0a43afbe320735383d5f117e2260113d0cc547c61d6406b1215a2b90e"
+    },
+    "source-final/src/rust-engine/src/graph_processor/event_queue.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph_processor/event_queue.rs",
+      "bytes": 14726,
+      "sha256": "d6b56cb3d769895ec85ad812a7c14bd0c3d7fc09ac9c7ea3d5c83d2985542bd3"
+    },
+    "source-final/src/rust-engine/src/graph_processor/helpers.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph_processor/helpers.rs",
+      "bytes": 1708,
+      "sha256": "d570262f86c841f4f3cf0a4b463b497b5c57851005b76037e9004bb4eb834b0e"
+    },
+    "source-final/src/rust-engine/src/graph_processor/input_provider.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph_processor/input_provider.rs",
+      "bytes": 6013,
+      "sha256": "2846e0d1701e8739b4cd8caf0ddbe26dbadc07dd08a33a5b42ebd617a37351f9"
+    },
+    "source-final/src/rust-engine/src/graph_processor/mod.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph_processor/mod.rs",
+      "bytes": 1525,
+      "sha256": "34c10b5bd9accc1d9c6c4e8ae2564921d14dabd26397cf9f4345c217735a0433"
+    },
+    "source-final/src/rust-engine/src/graph_processor/offline.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph_processor/offline.rs",
+      "bytes": 15793,
+      "sha256": "aff78a9fd3e92ca34d2a06a8276d875c7c60fec952f14f46d3b8053f7812b416"
+    },
+    "source-final/src/rust-engine/src/graph_processor/outputs.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph_processor/outputs.rs",
+      "bytes": 723,
+      "sha256": "65b0a3934727347602cd89f3f2a935951520ef1d5864c39d08c9def3dfa1ff12"
+    },
+    "source-final/src/rust-engine/src/graph_processor/polyphony.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph_processor/polyphony.rs",
+      "bytes": 42716,
+      "sha256": "38877cffcfcada58684f79632f953dfd3beab5cfc5e0677bbe7656962540aae3"
+    },
+    "source-final/src/rust-engine/src/graph_processor/process_context.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph_processor/process_context.rs",
+      "bytes": 5768,
+      "sha256": "deff137d8f638b29c045bfdf333f0a6626f742885422e314e7ff84b5e751f340"
+    },
+    "source-final/src/rust-engine/src/graph_processor/processing.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph_processor/processing.rs",
+      "bytes": 33267,
+      "sha256": "9c3a981938df15c70e471008a04befd2d91128e16546711a614f8200f802ae11"
+    },
+    "source-final/src/rust-engine/src/graph_processor/realtime_allocation_tests.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph_processor/realtime_allocation_tests.rs",
+      "bytes": 34331,
+      "sha256": "4f2dbca7d3a3bbd5371a5923ef2f1236e4623ff63281db83faf8965ceaed6795"
+    },
+    "source-final/src/rust-engine/src/graph_processor/realtime_graph_processor.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph_processor/realtime_graph_processor.rs",
+      "bytes": 103872,
+      "sha256": "0241d795f703468036164bc31015286d977d0f5598e73553fc340193015d2761"
+    },
+    "source-final/src/rust-engine/src/graph_processor/render_plan.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph_processor/render_plan.rs",
+      "bytes": 22529,
+      "sha256": "63dee65fb86ff86a861d31ae8d872287aca397d9ac65c696323885d4ef098df4"
+    },
+    "source-final/src/rust-engine/src/graph_processor/state.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph_processor/state.rs",
+      "bytes": 28451,
+      "sha256": "a8150023e7298930b4a5e20131ea2dfb7e1081769d6931d68352f4a41f1a6301"
+    },
+    "source-final/src/rust-engine/src/graph_processor/tests.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph_processor/tests.rs",
+      "bytes": 289316,
+      "sha256": "5a17506c44139398dc7845a0077fa7514df9f058acb0ef55a46c830db670be64"
+    },
+    "source-final/src/rust-engine/src/graph_proposal.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/graph_proposal.rs",
+      "bytes": 39089,
+      "sha256": "ee6fd5071bdbdf04c1031b791257da0fbee5f578ff9ff5012c28b40cf99825e1"
+    },
+    "source-final/src/rust-engine/src/instrument_state.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/instrument_state.rs",
+      "bytes": 4419,
+      "sha256": "2ee7fe57aa02b0376aac3fef9a0f52eaef9cbb946ccd4eedf45ae8cdf0a89ee0"
+    },
+    "source-final/src/rust-engine/src/kernel.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/kernel.rs",
+      "bytes": 88924,
+      "sha256": "ed703f8b7a81c45d61f15f7f2fbae0d9fa9d4efe5e1ec323527672d6c05c76d0"
+    },
+    "source-final/src/rust-engine/src/kernel/builtins.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/kernel/builtins.rs",
+      "bytes": 27198,
+      "sha256": "7d7c418cd613d79ca84ca08022163af8a225101203a9280f8c8eebb06e2ebc4d"
+    },
+    "source-final/src/rust-engine/src/kernel/builtins/tests.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/kernel/builtins/tests.rs",
+      "bytes": 35603,
+      "sha256": "e0543690a6c0ab7ece9df6c185a732e7d8b923ae77fa7a9c499f3eda417e0200"
+    },
+    "source-final/src/rust-engine/src/kernel/document.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/kernel/document.rs",
+      "bytes": 48297,
+      "sha256": "563c907e69936e87ce92ff844b9856d4407ddcb64a868d2faef9942235c2ef24"
+    },
+    "source-final/src/rust-engine/src/kernel/document/tests.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/kernel/document/tests.rs",
+      "bytes": 217569,
+      "sha256": "e90ccfe09de548d7fe7796e45c6239af1c66b44d6552d1b7811abf341fde678f"
+    },
+    "source-final/src/rust-engine/src/kernel/flatten.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/kernel/flatten.rs",
+      "bytes": 37409,
+      "sha256": "eed495c18b63ba98bd87a9cd55dc94d7fb6866be9d90a13a23a6f6517f94eca5"
+    },
+    "source-final/src/rust-engine/src/kernel/flatten/tests.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/kernel/flatten/tests.rs",
+      "bytes": 42730,
+      "sha256": "7acea6723404e1f70672e7a3b53c54a0c2a1806b56c4c6688a0c790f8f27ad4f"
+    },
+    "source-final/src/rust-engine/src/kernel/latency.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/kernel/latency.rs",
+      "bytes": 17078,
+      "sha256": "b7ac9837e96b373729d37654348b37941d36c90347acfd4a432c2e96c7529721"
+    },
+    "source-final/src/rust-engine/src/kernel/latency/tests.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/kernel/latency/tests.rs",
+      "bytes": 21745,
+      "sha256": "9a8a74a9cda6326ba6d9dc912e1ebf8c13bbf5d1893b430ca821583e63b95732"
+    },
+    "source-final/src/rust-engine/src/kernel/tests.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/kernel/tests.rs",
+      "bytes": 64431,
+      "sha256": "ba1fcc81406029d45199dde2586bb0a65f72aa0fc3f917ff6a30ced8956d13b8"
+    },
+    "source-final/src/rust-engine/src/legacy_tests/declarative_parameters_red_tests.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/legacy_tests/declarative_parameters_red_tests.rs",
+      "bytes": 9424,
+      "sha256": "925904fb829f2cf5c7343cf4358588af656bc2df6461dcfcb5df8d78e15cfcd8"
+    },
+    "source-final/src/rust-engine/src/legacy_tests/declarative_parameters_remaining_red_tests.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/legacy_tests/declarative_parameters_remaining_red_tests.rs",
+      "bytes": 22856,
+      "sha256": "d2d3cc34c75842e1340f397c5a123abddb5ac042a1170273d8469f471b63935f"
+    },
+    "source-final/src/rust-engine/src/legacy_tests/engine_patch_behaviour_tests.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/legacy_tests/engine_patch_behaviour_tests.rs",
+      "bytes": 18074,
+      "sha256": "1c380b417b3340eccb408132891200342d0c3d6006c4dcbd463b4aa457bb9262"
+    },
+    "source-final/src/rust-engine/src/lib.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/lib.rs",
+      "bytes": 1634,
+      "sha256": "f8039a7317632b9e7b3442f7746f1a9224c5308571cbf2043f25242a667984ac"
+    },
+    "source-final/src/rust-engine/src/module_library.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/module_library.rs",
+      "bytes": 46169,
+      "sha256": "72b43190bca73246cf22371f9b3ba6b32248320d2759bf3bc4e0e48a59442e32"
+    },
+    "source-final/src/rust-engine/src/module_package.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/module_package.rs",
+      "bytes": 51876,
+      "sha256": "a8a32309a55c8cc2d3ea2cba5a74549f5235f1d4bdf1b2791b8fde6f05b39d41"
+    },
+    "source-final/src/rust-engine/src/module_reference.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/module_reference.rs",
+      "bytes": 19002,
+      "sha256": "0b9b27584f87cd436633580220ce53d403a4d0baef0a6a8b7c0612419da5b534"
+    },
+    "source-final/src/rust-engine/src/oscillator.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/oscillator.rs",
+      "bytes": 3284,
+      "sha256": "b57ac211a13850a98ac6a17e9f831d7906edc0090086f6f13720057f3d2fea99"
+    },
+    "source-final/src/rust-engine/src/patch.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/patch.rs",
+      "bytes": 74885,
+      "sha256": "177747327e15f9e8f52f7a1947a2d8d1a3b0d0aaed2212bd538c17523403f128"
+    },
+    "source-final/src/rust-engine/src/patch_module.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/patch_module.rs",
+      "bytes": 21772,
+      "sha256": "d753466553510dccd6390bbfd1aa7d550d862575b344d76ba437a67be9510670"
+    },
+    "source-final/src/rust-engine/src/preparation.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/preparation.rs",
+      "bytes": 264191,
+      "sha256": "1179b659082e4751e8ef7833dc582900d6da95520c25b22ef1d8ac2079f2f8cf"
+    },
+    "source-final/src/rust-engine/src/realtime.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/realtime.rs",
+      "bytes": 2202,
+      "sha256": "1ffd49661612919577954c24a7ac41dd46ac24cfc1d8c7a2a34faa1996d25352"
+    },
+    "source-final/src/rust-engine/src/reverb.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/reverb.rs",
+      "bytes": 19298,
+      "sha256": "8425b768a45e6ee5879a525fd535b4c05740f9708feb0ab354b67d03c63667b5"
+    },
+    "source-final/src/rust-engine/src/sample.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/sample.rs",
+      "bytes": 12809,
+      "sha256": "b1a76a9e0a4451df0b044c0183de0a3eb409112990e3a701cd606cdcd2598931"
+    },
+    "source-final/src/rust-engine/src/saturator.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/saturator.rs",
+      "bytes": 9478,
+      "sha256": "546f04fb2ab65be381f8a72e7d422ec6eff7539cd8f0c3cfb255678ae1ae5019"
+    },
+    "source-final/src/rust-engine/src/script.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/script.rs",
+      "bytes": 37729,
+      "sha256": "26b4d31fcf4c535412068d746c605e59020eb8c758251bfe9b7f60448236b038"
+    },
+    "source-final/src/rust-engine/src/sound_analysis.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/sound_analysis.rs",
+      "bytes": 12194,
+      "sha256": "d6a30207b4a4995d3560df6cdc408ca61893b6b7b0cd78e964496c2ff29a38d4"
+    },
+    "source-final/src/rust-engine/src/sound_matching.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/sound_matching.rs",
+      "bytes": 61464,
+      "sha256": "1de6101d1d88f569ca704a77ccfecc9ad9fc453f3d0b74a07adec74b8e1397b2"
+    },
+    "source-final/src/rust-engine/src/sound_workbench.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/sound_workbench.rs",
+      "bytes": 63246,
+      "sha256": "8d3f884f6029d53ea5660efb3269dcb90e4062680cc67d5ca2e2ac15feb9d16c"
+    },
+    "source-final/src/rust-engine/src/sound_workbench_ffi.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/sound_workbench_ffi.rs",
+      "bytes": 52549,
+      "sha256": "4df6efc058701e396aa10663def42e87ce963104f798e1120ade392cf119344a"
+    },
+    "source-final/src/rust-engine/src/spectral.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/spectral.rs",
+      "bytes": 6955,
+      "sha256": "b085c9c9b95bfa854d9271ddb02f417048a14231d686eb60309cfb0e8eab1474"
+    },
+    "source-final/src/rust-engine/src/synth.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/synth.rs",
+      "bytes": 23033,
+      "sha256": "5465d59e4f2e89eff4df50bc5dbced92963e19e458eb92e6396f4c2d7e35fafa"
+    },
+    "source-final/src/rust-engine/src/test_allocator.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/test_allocator.rs",
+      "bytes": 1468,
+      "sha256": "a608a8b8e995e8ac84ec381ed157e687d5900b9450c3a6ad19a3789e38e6996e"
+    },
+    "source-final/src/rust-engine/src/test_support.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/test_support.rs",
+      "bytes": 2551,
+      "sha256": "8e5a8646bf8c0ac369c709e5d54ff7b05ffe74b245789dacf978fe1bcfec1548"
+    },
+    "source-final/src/rust-engine/src/voice_allocator.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/voice_allocator.rs",
+      "bytes": 5933,
+      "sha256": "6c10159344d6f4425d717d35d6bb864582d10fd55d5ee70e8e0f8a25b0463eb6"
+    },
+    "source-final/src/rust-engine/src/wav.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/src/wav.rs",
+      "bytes": 5096,
+      "sha256": "6f64c1daf704f3ab3b00765e255d66d28e41dea976cd2d1a622ae479d3dddb00"
+    },
+    "source-final/src/rust-engine/tests/runtime_thread_ownership.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/rust-engine/tests/runtime_thread_ownership.rs",
+      "bytes": 4943,
+      "sha256": "363babd6c498b40ad94a5e58247305c8eed3f93e917004be3c0fa7f9b28728af"
+    },
+    "source-final/src/trigger-editor/Cargo.lock": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-editor/Cargo.lock",
+      "bytes": 59582,
+      "sha256": "861c5ce898d50232783078a83dddd697e8f37b8baa12d2a19e67be24d8b81814"
+    },
+    "source-final/src/trigger-editor/Cargo.toml": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-editor/Cargo.toml",
+      "bytes": 620,
+      "sha256": "de516f06c2ab75b1c1c5050989ebda9beeee89ae960e48a94a0f8d733eda129c"
+    },
+    "source-final/src/trigger-editor/src/assets.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-editor/src/assets.rs",
+      "bytes": 3961,
+      "sha256": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584"
+    },
+    "source-final/src/trigger-editor/src/lib.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-editor/src/lib.rs",
+      "bytes": 549,
+      "sha256": "79f49cb29ed9376f8119c06f687ad069d6a7f33114da686797d9962f034b2d2c"
+    },
+    "source-final/src/trigger-editor/src/native_x11.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-editor/src/native_x11.rs",
+      "bytes": 10965,
+      "sha256": "a2803e24488a04350d951fc2809c7afe2025a191fb38995efe9610181e2aea73"
+    },
+    "source-final/src/trigger-editor/tests/common/mod.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-editor/tests/common/mod.rs",
+      "bytes": 1506,
+      "sha256": "46746923660a618e87bdb1f65f4ca63ef3a1f5defc250ef251f7fa2e096ef5aa"
+    },
+    "source-final/src/trigger-editor/tests/fixtures/local-policy.mjs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-editor/tests/fixtures/local-policy.mjs",
+      "bytes": 970,
+      "sha256": "136578e291e562367d8e3f220218d5e99c149e905bb61c48b5e32c5fda9d2033"
+    },
+    "source-final/src/trigger-editor/tests/fixtures/navigation.mjs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-editor/tests/fixtures/navigation.mjs",
+      "bytes": 777,
+      "sha256": "3626e1d47e5d3be9d2c84d571c043005cb6ce797271e55826b46aefcfa0e8ff9"
+    },
+    "source-final/src/trigger-editor/tests/fixtures/production-observer.js": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-editor/tests/fixtures/production-observer.js",
+      "bytes": 3402,
+      "sha256": "c64d08f416a0231e879884dad97fd45ff4c235ed7063206cb28470c5b4157c53"
+    },
+    "source-final/src/trigger-editor/tests/fixtures/resource-policy.mjs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-editor/tests/fixtures/resource-policy.mjs",
+      "bytes": 2179,
+      "sha256": "83757912582dac57c5be48fced7cc91ee2b4e066ab20e0d27eb30712e011173c"
+    },
+    "source-final/src/trigger-editor/tests/fixtures/resource-policy.png": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-editor/tests/fixtures/resource-policy.png",
+      "bytes": 70,
+      "sha256": "4ff6ab670a58c14270e034e2090d9a432caa263a14e0a25785386b0c12f880b5"
+    },
+    "source-final/src/trigger-editor/tests/internal/assets.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-editor/tests/internal/assets.rs",
+      "bytes": 6355,
+      "sha256": "dace7c0861a8eebb2b4ca36891809bb7f9d63367122ecb44faed21aa41db4c4e"
+    },
+    "source-final/src/trigger-editor/tests/internal/local_policy.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-editor/tests/internal/local_policy.rs",
+      "bytes": 11619,
+      "sha256": "cf75532edc8d9e37e637836ee717c1c3ff4cd484906a766bf45bfe60258b0158"
+    },
+    "source-final/src/trigger-editor/tests/internal/native_x11.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-editor/tests/internal/native_x11.rs",
+      "bytes": 36985,
+      "sha256": "73ce40cf06504dfb596eeb47022aeabefc982c118a753ec82f333dcc26a41e35"
+    },
+    "source-final/src/trigger-editor/tests/internal/production.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-editor/tests/internal/production.rs",
+      "bytes": 5893,
+      "sha256": "8c3710ae967f1acdcbb76ab96416b67b0adbb5fe246b642a7d2cad1fe9a083e3"
+    },
+    "source-final/src/trigger-editor/tests/internal/resource_policy.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-editor/tests/internal/resource_policy.rs",
+      "bytes": 4371,
+      "sha256": "6402b8c32a038a8bc6c8b17b68450801d10594c36d684fca87f0f4dfba3af6ea"
+    },
+    "source-final/src/trigger-editor/tests/packaged_assets.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-editor/tests/packaged_assets.rs",
+      "bytes": 3069,
+      "sha256": "2520e026f6921fa697220bc40bcc4eda58711dde76529f1ac6957add63d5411c"
+    },
+    "source-final/src/trigger-host/Cargo.lock": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/Cargo.lock",
+      "bytes": 34439,
+      "sha256": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b"
+    },
+    "source-final/src/trigger-host/Cargo.toml": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/Cargo.toml",
+      "bytes": 449,
+      "sha256": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937"
+    },
+    "source-final/src/trigger-host/src/lib.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/src/lib.rs",
+      "bytes": 7229,
+      "sha256": "d16daf1630f43184909847e03107d402a8d54f3bf2fe6085a8bfd966c1aa80f9"
+    },
+    "source-final/src/trigger-host/src/parameters.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/src/parameters.rs",
+      "bytes": 53590,
+      "sha256": "48d5d72677fbbca5c5831e3c52dc510761c721e2a630359362507941ec2afcc1"
+    },
+    "source-final/src/trigger-host/src/protocol.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/src/protocol.rs",
+      "bytes": 20391,
+      "sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e"
+    },
+    "source-final/src/trigger-host/src/runtime.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/src/runtime.rs",
+      "bytes": 71140,
+      "sha256": "41cb146824e21aa3c5814885b5561cd00d8152b5390338af25af26bc96f62592"
+    },
+    "source-final/src/trigger-host/src/state.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/src/state.rs",
+      "bytes": 6354,
+      "sha256": "9355b2c855998d2306c053d50485eea617103b932c7de7e04aa1929d7719afaf"
+    },
+    "source-final/src/trigger-host/tests/editor_encoding.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/tests/editor_encoding.rs",
+      "bytes": 13175,
+      "sha256": "3a3732aacfdba14dcd0c28100e21ae51b856ffe1928455f16f01a4ed6beaf6a0"
+    },
+    "source-final/src/trigger-host/tests/editor_note_controller.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/tests/editor_note_controller.rs",
+      "bytes": 32173,
+      "sha256": "99b99000f9e35406e87d29325d4f6ae07a6354097a40a94544c7cfff68fbb08e"
+    },
+    "source-final/src/trigger-host/tests/editor_notes.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/tests/editor_notes.rs",
+      "bytes": 24515,
+      "sha256": "669c8d141661eb649eb2a5d83b1d71783cca6e09d15ba8e85093cd0b938f270a"
+    },
+    "source-final/src/trigger-host/tests/internal/state.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/tests/internal/state.rs",
+      "bytes": 6748,
+      "sha256": "cb51a4d5ea903b21ff954010e7e4c04d989a47b859c6d94ef6d44e4a79e98e35"
+    },
+    "source-final/src/trigger-host/tests/packaged_resources.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/tests/packaged_resources.rs",
+      "bytes": 10994,
+      "sha256": "14cf8d062ef37c69434e3e6a5de4ecc8c29381944cbd3ceec2a84d58962d9003"
+    },
+    "source-final/src/trigger-host/tests/parameter_flush.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/tests/parameter_flush.rs",
+      "bytes": 21080,
+      "sha256": "96d17783f093b08ca20cbf940ea21b6eb993c0e755b89769f7a2cc350ba6750e"
+    },
+    "source-final/src/trigger-host/tests/parameters.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/tests/parameters.rs",
+      "bytes": 35775,
+      "sha256": "8bcbba34b63edb4e01c7747d7099b23701972f1a78b3f102f792eaae65a455c6"
+    },
+    "source-final/src/trigger-host/tests/protocol.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/tests/protocol.rs",
+      "bytes": 25429,
+      "sha256": "6ac729489e479f6457e23ba56be48c0f1ca11b431b6e968abfa27352012a70e0"
+    },
+    "source-final/src/trigger-host/tests/render_reconfiguration.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/tests/render_reconfiguration.rs",
+      "bytes": 33309,
+      "sha256": "f725fcc7d035abad53727a478e386e869cf62a04d4abee3b44ac363a8e77f05e"
+    },
+    "source-final/src/trigger-host/tests/runtime.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/tests/runtime.rs",
+      "bytes": 33603,
+      "sha256": "4405fa17093a49776569a817a4891cf6bb68978fdfe4c61c23ed8b376203690a"
+    },
+    "source-final/src/trigger-host/tests/runtime_quiescent.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/tests/runtime_quiescent.rs",
+      "bytes": 18697,
+      "sha256": "c3d23533215e762663c0eb2706ba4ee58ffe83e54a95b79e62ec58f00de3568f"
+    },
+    "source-final/src/trigger-host/tests/session_jobs.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/tests/session_jobs.rs",
+      "bytes": 42950,
+      "sha256": "95d3be564f52fc38156eb5c015d3299d5ce77fd0cef1424cff1faa0272e8eafa"
+    },
+    "source-final/src/trigger-host/tests/snapshot.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/tests/snapshot.rs",
+      "bytes": 16279,
+      "sha256": "d93cbf1f16216c1413d25027f56d731832b3aad62a20e13603ede69f3179f9be"
+    },
+    "source-final/src/trigger-host/tests/state.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/tests/state.rs",
+      "bytes": 31675,
+      "sha256": "9e5fd3a116e507fdbf7a35b2edf30d77868bf0f261e9c52c82546e678debf2f6"
+    },
+    "source-final/src/trigger-host/tests/support/editor_notes.rs": {
+      "original_path": "/tmp/dandrum-lanes/evidence-trigger-native-gui/150-final-native-release-build/source/src/trigger-host/tests/support/editor_notes.rs",
+      "bytes": 3775,
+      "sha256": "8eff39ddbb42447a45f58700da84e65f87fc30d0c58ad7dfa8c13939e098ceae"
+    }
+  },
+  "excluded": "AllELFs/rlibs/dependencycachetrees/redundantsourcesnapshots; rootpublishedNativeEditor9f4portableproof alreadyseparate; old wholeG1workinglogs remainretainedlocally. No completenessclaim for allhistoricalsetupattempts."
+}

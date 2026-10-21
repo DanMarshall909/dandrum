@@ -1,0 +1,253 @@
+{
+  "root-checkpoint": {
+    "before_code_red": {
+      "command": [
+        "python3",
+        "tests/python/test_engine_only_build.py",
+        "ClapProofBuildTest.test_private_clap_native_fixture_uses_reported_artifacts_and_exact_processes"
+      ],
+      "exit": 1,
+      "assertion": "trigger-clap-native-prepare missing from actual configured CTest inventory",
+      "log": "red.log"
+    },
+    "green": {
+      "exit": 0,
+      "seconds": 0.588,
+      "log": "green.log"
+    },
+    "regression": {
+      "exit": 0,
+      "tests": 2,
+      "seconds": 1.123,
+      "log": "configure-verification.log"
+    },
+    "sha256": {
+      "CMakeLists.txt": "4aa894a8e7ac6a0738d4ad49580039b73b9453f88f75eec1758c3749905112fa",
+      "README.md": "1688065e79d84d735a4123f3433f74b5af2ff49ef115b835e652957abc62afa8",
+      "tests/python/test_engine_only_build.py": "0fd12850dac38eea58314fa013b9d79ac7932b9135a03dac98f226c0e24857fa",
+      "openspec/changes/add-juce-free-trigger-clap-editor/design.md": "f4999d24c3903c6e46cd9c591f22e66354e2dca9e1ff2911a03513c9a44fcd53"
+    },
+    "refactor": "Moved fast driver registration from option validation to matching CLAP build/test section; two configure behavior tests pass. Existing native ownership tests remain distinct from new artifact-binding/native CLAP process tests."
+  },
+  "native-maintained-runtime": {
+    "command": [
+      "ctest",
+      "--test-dir",
+      "/tmp/dandrum-evidence/g1-native-registration/native-build",
+      "--verbose",
+      "-R",
+      "^trigger-clap-native-"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "exit": 0,
+    "seconds": 3.3320893499767408,
+    "source_sha256": {
+      "CMakeLists.txt": "4aa894a8e7ac6a0738d4ad49580039b73b9453f88f75eec1758c3749905112fa",
+      "README.md": "1688065e79d84d735a4123f3433f74b5af2ff49ef115b835e652957abc62afa8",
+      "tests/python/test_engine_only_build.py": "0fd12850dac38eea58314fa013b9d79ac7932b9135a03dac98f226c0e24857fa",
+      "scripts/prepare-trigger-clap-native.py": "cb60cb1c85537dae750ace87d39325d38b9eff3f239e05a937c4cc26d36dc810",
+      "tests/python/test_trigger_native_fixture.py": "1fecaaa3efdd29eacee86686ebd4b7adfbd8df5de7a8105ae8375b06a6d4b2b6",
+      "src/clap-adapter/src/trigger.rs": "fa4a9822e3ae6c08b36916699b9a77b6df5e057058991021db0c78f5db890a96",
+      "src/clap-adapter/src/trigger/gui.rs": "f56eade8a07ecf0af3122af8b6fcd1f82139f43b12294899cc44ceb2ee0ce94d",
+      "src/clap-adapter/tests/trigger_gui.rs": "11b32f1c74004397e1b6799ff004e1687f5f10557c33cfd83814c864e6ff69b1"
+    }
+  },
+  "actual-cargo-binding": {
+    "schema_version": 1,
+    "owner": "prepare-trigger-clap-native.py",
+    "command": [
+      "/home/dan/.cargo/bin/cargo",
+      "test",
+      "--release",
+      "--locked",
+      "--jobs",
+      "2",
+      "--manifest-path",
+      "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+      "--features",
+      "trigger-editor",
+      "--test",
+      "trigger_gui",
+      "--no-run",
+      "--message-format=json"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime/src/clap-adapter",
+    "exit_status": 0,
+    "artifacts": {
+      "plugin": {
+        "source": "/tmp/dandrum-evidence/g1-native-registration/native-build/rust-target/release/deps/libdandrum_clap_adapter.so",
+        "copy": "DandrumTrigger.clap",
+        "source_sha256": "04936ed2ef3f575418454cc3fedb332a53bf98a3e2ee108de9ea7cb1b4b415ed",
+        "copy_sha256": "04936ed2ef3f575418454cc3fedb332a53bf98a3e2ee108de9ea7cb1b4b415ed",
+        "compiler_artifact": {
+          "reason": "compiler-artifact",
+          "package_id": "path+file:///tmp/dandrum-lanes/runtime/src/clap-adapter#dandrum_clap_adapter@0.1.0",
+          "manifest_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+          "target": {
+            "kind": [
+              "cdylib",
+              "rlib"
+            ],
+            "crate_types": [
+              "cdylib",
+              "rlib"
+            ],
+            "name": "dandrum_clap_adapter",
+            "src_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/src/lib.rs",
+            "edition": "2024",
+            "doc": true,
+            "doctest": true,
+            "test": true
+          },
+          "profile": {
+            "opt_level": "3",
+            "debuginfo": 0,
+            "debug_assertions": false,
+            "overflow_checks": false,
+            "test": false
+          },
+          "features": [
+            "default",
+            "trigger",
+            "trigger-editor"
+          ],
+          "filenames": [
+            "/tmp/dandrum-evidence/g1-native-registration/native-build/rust-target/release/deps/libdandrum_clap_adapter.so",
+            "/tmp/dandrum-evidence/g1-native-registration/native-build/rust-target/release/deps/libdandrum_clap_adapter.rlib"
+          ],
+          "executable": null,
+          "fresh": true
+        }
+      },
+      "test": {
+        "source": "/tmp/dandrum-evidence/g1-native-registration/native-build/rust-target/release/deps/trigger_gui-38f819efb15c476e",
+        "copy": "trigger-gui-test",
+        "source_sha256": "a126e075d4eb286f072e0e5164e0cf9aebd6e7f6525c5bb60cd10a55a5ca3ead",
+        "copy_sha256": "a126e075d4eb286f072e0e5164e0cf9aebd6e7f6525c5bb60cd10a55a5ca3ead",
+        "compiler_artifact": {
+          "reason": "compiler-artifact",
+          "package_id": "path+file:///tmp/dandrum-lanes/runtime/src/clap-adapter#dandrum_clap_adapter@0.1.0",
+          "manifest_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+          "target": {
+            "kind": [
+              "test"
+            ],
+            "crate_types": [
+              "bin"
+            ],
+            "name": "trigger_gui",
+            "src_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/tests/trigger_gui.rs",
+            "edition": "2024",
+            "doc": false,
+            "doctest": false,
+            "test": true
+          },
+          "profile": {
+            "opt_level": "3",
+            "debuginfo": 0,
+            "debug_assertions": false,
+            "overflow_checks": false,
+            "test": true
+          },
+          "features": [
+            "default",
+            "trigger",
+            "trigger-editor"
+          ],
+          "filenames": [
+            "/tmp/dandrum-evidence/g1-native-registration/native-build/rust-target/release/deps/trigger_gui-38f819efb15c476e"
+          ],
+          "executable": "/tmp/dandrum-evidence/g1-native-registration/native-build/rust-target/release/deps/trigger_gui-38f819efb15c476e",
+          "fresh": true
+        }
+      }
+    }
+  },
+  "native-zero-test-rejected": {
+    "command": [
+      "ctest",
+      "--test-dir",
+      "/tmp/dandrum-evidence/g1-native-registration/native-build",
+      "--verbose",
+      "-FA",
+      "trigger-clap-native-compiled",
+      "-R",
+      "^trigger-clap-native-failed-parent$"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "exit": 8,
+    "seconds": 0.015826786984689534,
+    "source_sha256": {
+      "CMakeLists.txt": "4aa894a8e7ac6a0738d4ad49580039b73b9453f88f75eec1758c3749905112fa",
+      "README.md": "1688065e79d84d735a4123f3433f74b5af2ff49ef115b835e652957abc62afa8",
+      "tests/python/test_engine_only_build.py": "0fd12850dac38eea58314fa013b9d79ac7932b9135a03dac98f226c0e24857fa",
+      "scripts/prepare-trigger-clap-native.py": "cb60cb1c85537dae750ace87d39325d38b9eff3f239e05a937c4cc26d36dc810",
+      "tests/python/test_trigger_native_fixture.py": "1fecaaa3efdd29eacee86686ebd4b7adfbd8df5de7a8105ae8375b06a6d4b2b6",
+      "src/clap-adapter/src/trigger.rs": "fa4a9822e3ae6c08b36916699b9a77b6df5e057058991021db0c78f5db890a96",
+      "src/clap-adapter/src/trigger/gui.rs": "f56eade8a07ecf0af3122af8b6fcd1f82139f43b12294899cc44ceb2ee0ce94d",
+      "src/clap-adapter/tests/trigger_gui.rs": "11b32f1c74004397e1b6799ff004e1687f5f10557c33cfd83814c864e6ff69b1"
+    }
+  },
+  "native-guard-calibration": {
+    "positive": "private driver actual Cargo JSON reported artifacts independently hash matched; five exact native process cases plus seven driver fast tests pass",
+    "negative": "exact missing Rust test exits zero; CTest fails its zero-test diagnostic",
+    "restored_generated_ctest_sha256": "31680cfc9f56bf13f1a1d5ed7febdcd37e16cdcaf47c02c17c9827e8edfdaeae"
+  },
+  "source-free": {
+    "command": [
+      "python3",
+      "tests/python/test_engine_only_build.py",
+      "ClapProofBuildTest"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "environment": {
+      "CARGO_PROFILE_DEV_DEBUG": "0",
+      "CARGO_PROFILE_TEST_DEBUG": "0",
+      "CARGO_INCREMENTAL": "0",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "exit": 0,
+    "seconds": 92.4304062910378,
+    "disk_min_bytes": 1952952320,
+    "mem_min_bytes": 10573979648
+  },
+  "spec-checks": {
+    "source": {
+      "design": "f4999d24c3903c6e46cd9c591f22e66354e2dca9e1ff2911a03513c9a44fcd53"
+    },
+    "checks": [
+      {
+        "command": [
+          "openspec",
+          "validate",
+          "add-juce-free-trigger-clap-editor",
+          "--strict"
+        ],
+        "exit": 0,
+        "log": "scoped-spec.log"
+      },
+      {
+        "command": [
+          "openspec",
+          "validate",
+          "--specs",
+          "--strict"
+        ],
+        "exit": 0,
+        "log": "canonical-spec.log",
+        "passed": 51
+      },
+      {
+        "command": [
+          "scripts/check-spec-coverage"
+        ],
+        "exit": 0,
+        "log": "spec-coverage.log",
+        "scenarios": 618,
+        "mapped": 379,
+        "ratchet": 239
+      }
+    ],
+    "tasks_closed": 0
+  }
+}

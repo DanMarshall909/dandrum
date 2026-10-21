@@ -1,0 +1,26 @@
+{
+  "scope": "Addendum governing162/portablepacket; finalsourcefreeze unchanged.",
+  "frontend_build": "23-current-frontend-build.json",
+  "frontend_inputs": "current-native-build-inputs.json",
+  "frontend_input_count": 296,
+  "current9f4_tracked_frontend_inputs_all_match": true,
+  "resource_binding": "24-current-resource-binding.json (current originalbundle/observer only; its historicalDSO/testhashes superseded by151)",
+  "supersedes": "production-resource-binding.json app2429bce\u2026/oldobserver57bc\u2026 is STALE and notcurrentproof. Actual20staleinputfailure retained; currentbundle23/24/151/164 is4b9ce5\u2026.",
+  "current_original_app_sha256": "4b9ce5a356fea5f22703f9046c77a80ac616c00242348a12fe81f58fe4f760f2",
+  "observer_sha256": "28d2230dbfa077fd202d112e62164d213d0690fecc9277e4f74f0170991f773a",
+  "observer_bytes": 3053,
+  "actual_G1_executed_augmented_app_sha256": {
+    "1": "a2b5083cec15084efe136fef8869c232deccbb8a1e545ba541fcee9c4eaf12b4",
+    "2": "5f7c55a64a5c5aa9bd4e57965f5a3beaf9823ffaec44c3c38b524b1521ee1242",
+    "3": "fc937ca93c3d2931b2a3e95b5dbf7e7e1e1f28796c98416aa2967734c2fec9b2"
+  },
+  "executed_scope": "Actual copied current productionReact bundle with APPENDED testobserver and expectedinstance marker only. Observer checks realnativeDOM/session consumption before existingauthenticatednoteOn/off signedPCM oracle. Original appbytes restored byRAII aftereachtest. No unmodified-production React connection/interaction acceptance claimed; such a run was NOT performed.",
+  "allocator_scope": "146current plainTrigger maintained allocator audit validates headlesscallback path with unchangedcallbackbody and separateownedinterposerchild. NativeG1 release/coverage runs usednoLD_PRELOAD andno GUI-concurrent allocator sentinel. No GUIconcurrent RTallocator/performance claim; laterjoinedgate remains.",
+  "later_gate": [
+    "Unmodified productionasset nativeconnection/interaction acceptance",
+    "GUIconcurrent realaudio allocator/performance sentinel",
+    "G2automation/feedback andG3structural/noteexpiry/recovery owningbehaviorREDs beforeimplementation"
+  ],
+  "terminal_source_HEAD": "9f4b240177c1dd6ea0ee9eb65322e6d1bd683c83",
+  "root_developer_cut_design_SHA256": "f4999d24c3903c6e46cd9c591f22e66354e2dca9e1ff2911a03513c9a44fcd53"
+}

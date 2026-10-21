@@ -254,6 +254,72 @@ class ClapProofBuildTest(EngineBuildFixture):
                 self.assertIn("running 0 tests", properties["FAIL_REGULAR_EXPRESSION"],
                               "an exact filter matching no test must fail the native gate")
 
+    def test_private_clap_native_fixture_uses_reported_artifacts_and_exact_processes(self):
+        bundle = self.fixture_root / "clap-native-registration-input"
+        bundle.mkdir()
+        for name in ("index.html", "app.js", "app.css"):
+            (bundle / name).write_text("native registration fixture")
+        options = ("-DDANDRUM_ENGINE_ONLY=ON", "-DDANDRUM_CLAP_PROOF=ON",
+                   "-DDANDRUM_TRIGGER_CLAP_EDITOR=ON",
+                   "-DDANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=" + str(bundle))
+
+        def inventory(label, build):
+            code, output = self.command(label, [CTEST, "--test-dir", str(build),
+                                                "--show-only=json-v1"])
+            self.assertEqual(code, 0, output)
+            return {test["name"]: test for test in json.loads(output)["tests"]}
+
+        disabled, code, output = self.configure("clap-native-disabled", *options)
+        self.assertEqual(code, 0, output)
+        self.assertNotIn("trigger-clap-native-prepare",
+                         inventory("clap-native-disabled-inventory", disabled))
+        enabled, code, output = self.configure(
+            "clap-native-enabled", *options, "-DDANDRUM_TRIGGER_EDITOR_NATIVE_X11=ON")
+        self.assertEqual(code, 0, output)
+        tests = inventory("clap-native-enabled-inventory", enabled)
+        self.assertIn("trigger-clap-native-prepare", tests,
+                      "native CLAP checks need a Cargo-reported artifact fixture")
+        prepare = tests["trigger-clap-native-prepare"]
+        fixture = enabled / "trigger-clap-native-fixture"
+        for argument in (str(self.source / "scripts/prepare-trigger-clap-native.py"),
+                         "--cargo", "--manifest", "--target-dir", "--resource-dir",
+                         str(enabled / "clap/DandrumTrigger.resources"),
+                         "--output-dir", str(fixture)):
+            self.assertIn(argument, prepare["command"])
+        properties = {prop["name"]: prop["value"] for prop in prepare["properties"]}
+        self.assertIn("trigger-clap-native-compiled", properties["FIXTURES_SETUP"])
+        self.assertEqual(properties["TIMEOUT"], 1200.0)
+        self.assertTrue(properties["RUN_SERIAL"])
+        cases = {
+            "trigger-clap-native-extension":
+                "copied_trigger_editor_exposes_the_actual_clap_gui_extension",
+            "trigger-clap-native-lifecycle":
+                "copied_native_editor_lifecycle_initializes_the_real_react_session_and_preserves_audio",
+            "trigger-clap-native-configuration":
+                "copied_editor_scan_and_configuration_only_do_not_make_code_resident",
+            "trigger-clap-native-loader-identity":
+                "copied_editor_rejects_wrong_loaded_entry_identity_before_gtk_without_state_or_audio_loss",
+            "trigger-clap-native-failed-parent":
+                "copied_editor_failed_native_parent_attempt_retains_only_code_and_preserves_audio",
+        }
+        for name, case in cases.items():
+            with self.subTest(native_case=name):
+                test = tests[name]
+                for argument in (str(fixture / "trigger-gui-test"), "GDK_BACKEND=x11",
+                                 "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=" + str(fixture / "DandrumTrigger.clap"),
+                                 case, "--ignored", "--exact", "--test-threads=1"):
+                    self.assertIn(argument, test["command"])
+                self.assertNotIn("--manifest-path", test["command"])
+                props = {prop["name"]: prop["value"] for prop in test["properties"]}
+                self.assertIn("trigger-clap-native-compiled", props["FIXTURES_REQUIRED"])
+                self.assertEqual(props["TIMEOUT"], 60.0)
+                self.assertTrue(props["RUN_SERIAL"])
+                self.assertIn("running 0 tests", props["FAIL_REGULAR_EXPRESSION"])
+        # The separate developer fixture must not change the maintained product.
+        product_rule = (enabled / "CMakeFiles/dandrum-trigger-clap-product.dir/build.make").read_text()
+        self.assertIn("--features trigger --lib", product_rule)
+        self.assertNotIn("--features trigger-editor", product_rule)
+
     def test_trigger_editor_scaffold_stages_copied_resources_without_host_sources(self):
         editor_input = self.fixture_root / "editor-input"
         editor_input.mkdir()

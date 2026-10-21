@@ -24,6 +24,7 @@ use std::{
     fmt::Write,
     num::NonZeroU64,
     path::PathBuf,
+    rc::Rc,
     sync::atomic::{AtomicU8, Ordering},
 };
 
@@ -42,9 +43,27 @@ impl Shared {
         host.request_callback();
     }
 }
-struct Main<'a> {
+#[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+mod gui;
+#[cfg(all(
+    feature = "trigger-editor",
+    target_os = "linux",
+    not(target_env = "gnu")
+))]
+compile_error!("trigger-editor requires the GNU Linux loader ABI (glibc)");
+
+struct Core {
     controller: RefCell<ParameterController>,
     parked: Cell<Option<RuntimeAudio>>,
+    #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+    resource_root: PathBuf,
+    #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+    plugin_path: PathBuf,
+    #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+    gui: RefCell<gui::EditorState>,
+}
+struct Main<'a> {
+    core: Rc<Core>,
     parameters: Vec<PublicParameter>,
     host: HostMainThreadHandle<'a>,
     shared: &'a Shared,
@@ -75,6 +94,8 @@ impl Plugin for TriggerAdapter {
             .register::<PluginAudioPorts>()
             .register::<PluginNotePorts>()
             .register::<PluginState>();
+        #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+        builder.register::<clack_extensions::gui::PluginGui>();
     }
 }
 pub(super) fn instance<'a>(
@@ -101,20 +122,40 @@ pub(super) fn instance<'a>(
                 .ok_or(PluginError::Message("Trigger plugin has no parent"))?
                 .join("DandrumTrigger.resources");
             let (controller, audio) = ParameterController::open(
-                root,
+                &root,
                 TriggerHostConfiguration {
                     sample_rate_hz: 48000,
                     max_block_frames: 16,
                 },
-                NonZeroU64::new(1).unwrap(),
+                wire_instance_id()?,
                 64,
                 256,
             )
             .map_err(|_| PluginError::Message("Trigger packaged session failed"))?;
             let parameters = controller.parameters().to_vec();
             Ok(Main {
-                controller: RefCell::new(controller),
-                parked: Cell::new(Some(audio)),
+                core: Rc::new(Core {
+                    controller: RefCell::new(controller),
+                    parked: Cell::new(Some(audio)),
+                    #[cfg(all(
+                        feature = "trigger-editor",
+                        target_os = "linux",
+                        target_env = "gnu"
+                    ))]
+                    resource_root: root,
+                    #[cfg(all(
+                        feature = "trigger-editor",
+                        target_os = "linux",
+                        target_env = "gnu"
+                    ))]
+                    plugin_path: path,
+                    #[cfg(all(
+                        feature = "trigger-editor",
+                        target_os = "linux",
+                        target_env = "gnu"
+                    ))]
+                    gui: RefCell::new(gui::EditorState::default()),
+                }),
                 host,
                 shared,
                 parameters,
@@ -146,7 +187,8 @@ impl PluginMainThreadParams for Main<'_> {
         }
     }
     fn get_value(&self, id: ClapId) -> Option<f64> {
-        self.controller
+        self.core
+            .controller
             .try_borrow()
             .ok()?
             .physical_value(id.get().checked_sub(1)? as usize)
@@ -166,9 +208,9 @@ impl PluginMainThreadParams for Main<'_> {
         (value.is_finite() && (p.physical_min..=p.physical_max).contains(&value)).then_some(value)
     }
     fn flush(&self, input: &InputEvents, _: &mut OutputEvents) {
-        let accepted = if let Some(mut audio) = self.parked.take() {
+        let accepted = if let Some(mut audio) = self.core.parked.take() {
             let accepted = flush_parameters(&mut audio, &self.parameters, input);
-            self.parked.set(Some(audio));
+            self.core.parked.set(Some(audio));
             accepted
         } else {
             false
@@ -360,11 +402,13 @@ impl<'a> PluginAudioProcessor<'a, Shared, Main<'a>> for Processor<'a> {
             ));
         }
         let mut audio = main
+            .core
             .parked
             .take()
             .ok_or(PluginError::Message("Trigger endpoint already active"))?;
         let result = (|| {
             let mut controller = main
+                .core
                 .controller
                 .try_borrow_mut()
                 .map_err(|_| PluginError::Message("Trigger main owner busy"))?;
@@ -383,7 +427,7 @@ impl<'a> PluginAudioProcessor<'a, Shared, Main<'a>> for Processor<'a> {
             Ok(())
         })();
         if let Err(error) = result {
-            main.parked.set(Some(audio));
+            main.core.parked.set(Some(audio));
             return Err(error);
         }
         Ok(Self {
@@ -396,7 +440,7 @@ impl<'a> PluginAudioProcessor<'a, Shared, Main<'a>> for Processor<'a> {
         })
     }
     fn deactivate(self, main: &Main<'a>) {
-        main.parked.set(Some(self.audio));
+        main.core.parked.set(Some(self.audio));
     }
     fn reset(&mut self) {
         self.audio.reset();
@@ -459,6 +503,7 @@ impl PluginStateImpl for Main<'_> {
         let mut bytes = Vec::new();
         {
             let controller = self
+                .core
                 .controller
                 .try_borrow()
                 .map_err(|_| PluginError::Message("Trigger main owner busy"))?;
@@ -482,15 +527,16 @@ impl PluginStateImpl for Main<'_> {
         }
         {
             let mut controller = self
+                .core
                 .controller
                 .try_borrow_mut()
                 .map_err(|_| PluginError::Message("Trigger main owner busy"))?;
             controller
                 .load_state(&mut bytes.as_slice())
                 .map_err(|_| PluginError::Message("Invalid Trigger state"))?;
-            if let Some(mut audio) = self.parked.take() {
+            if let Some(mut audio) = self.core.parked.take() {
                 let result = controller.service_quiescent(&mut audio);
-                self.parked.set(Some(audio));
+                self.core.parked.set(Some(audio));
                 result.map_err(|_| {
                     PluginError::Message("Trigger restored endpoint service failed")
                 })?;
@@ -501,4 +547,19 @@ impl PluginStateImpl for Main<'_> {
         }
         Ok(())
     }
+}
+
+// Wire identities are scoped to this loaded factory, not other copied DSOs.
+fn wire_instance_id() -> Result<NonZeroU64, PluginError> {
+    #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+    {
+        use std::sync::atomic::AtomicU64;
+        static NEXT: AtomicU64 = AtomicU64::new(1);
+        let id = NEXT
+            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |id| id.checked_add(1))
+            .map_err(|_| PluginError::Message("Trigger instance identity exhausted"))?;
+        Ok(NonZeroU64::new(id).expect("factory counter starts nonzero and never wraps"))
+    }
+    #[cfg(not(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu")))]
+    Ok(NonZeroU64::new(1).unwrap())
 }

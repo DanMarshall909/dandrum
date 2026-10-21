@@ -179,6 +179,24 @@ invalid batches preserve accepted values and playback position while clearing ou
 The current product is headless; the packaged React assets support the pending
 CLAP GUI integration. The default proof artifact retains its two fixture descriptors.
 
+The default-off Cargo `trigger-editor` feature is a developer lifecycle test
+checkpoint. Parameter reads, gestures and feedback, heartbeat/expiry servicing,
+mapping/status/undo and persistent worker servicing are still unjoined. Its GUI
+is not ready for instrument editing or normal playing. These remain required
+work in the automation and recovery boundaries (G2/G3); the maintained CMake
+product above continues to use the headless `trigger` feature.
+
+For native lifecycle verification, configure the same build with
+`-DDANDRUM_TRIGGER_EDITOR_NATIVE_X11=ON`, build its resource target, and run
+`ctest --test-dir build/engine-only --output-on-failure -R '^trigger-clap-native-'`
+in the Linux GNU/X11 session. This opt-in lane builds a private test fixture,
+selects the library and test executable from Cargo's JSON artifact records,
+copies their exact bytes and resources, then runs each ignored case in a fresh
+process. `trigger-clap-native-fixture/binding.json` records the selected paths
+and hashes. Do not substitute the top-level Cargo library path: a test build can
+report a different library under `release/deps`. Ordinary `cargo test` skips
+these native cases. This fixture adds no editor demo or installed GUI product.
+
 ## Engine Development
 
 The headless engine core is implemented in Rust under `src/rust-engine/`. The `core` module is the frontend-independent
