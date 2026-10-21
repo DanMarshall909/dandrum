@@ -858,3 +858,343 @@ fn failure_and_defer_preserve_gestures_until_successful_publication() {
     let (left, right) = render(&mut audio, 61);
     assert_eq!((left[0], right[0]), (-0.5, -0.5));
 }
+
+struct ServiceScheduler(mpsc::SyncSender<std::thread::ThreadId>);
+impl dandrum_trigger_host::parameters::SessionServiceWake for ServiceScheduler {
+    fn request_service(&self) {
+        self.0.try_send(std::thread::current().id()).unwrap();
+    }
+}
+
+#[test]
+fn instrument_worker_finishes_after_last_editor_detaches_and_only_main_publishes() {
+    let (_package, root) = package();
+    let (mut host, mut audio) = open(&root);
+    let (mut other, mut other_audio) = open(&root);
+    let other_editor = other.attach_editor().unwrap();
+    let (wake_tx, wake_rx) = mpsc::sync_channel(1);
+    host.start_session_worker(std::sync::Arc::new(ServiceScheduler(wake_tx)))
+        .unwrap();
+    let editor = host.attach_editor().unwrap();
+    let command = mapping(&mut host, &editor.attachment_id, 90, "1", "0", 60);
+    assert_eq!(
+        result(host.admit_session_command(&command).unwrap()),
+        json!({"status":"accepted","job_id":"1"})
+    );
+    assert!(
+        host.take_session_preparation().is_none(),
+        "installed worker exclusively owns admitted preparation"
+    );
+    host.detach_editor(&editor.attachment_id).unwrap();
+    let worker_thread = wake_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+    assert_ne!(worker_thread, std::thread::current().id());
+    assert_eq!(host.parameter_state().generation, 1);
+    let (left, right) = render(&mut audio, 36);
+    assert_eq!((left[0], right[0]), (-0.5, -0.5));
+    assert_eq!(render(&mut audio, 60), ([0.; 16], [0.; 16]));
+    let fresh = host.attach_editor().unwrap();
+    let before = snapshot(&mut host, &fresh.attachment_id, 1);
+    assert_eq!(before["connection"]["revision"], "0");
+    assert_eq!(before["connection"]["history"]["undoCount"], 0);
+    assert_eq!(before["connection"]["nextRequestId"], "2");
+    assert_eq!(
+        status(&mut host, &fresh.attachment_id, 2, "1")["state"],
+        "running"
+    );
+    assert_eq!(
+        host.service_session_jobs().unwrap(),
+        SessionJobProgress::Completed
+    );
+    let (left, right) = render(&mut audio, 60);
+    assert_eq!((left[0], right[0]), (-0.5, -0.5));
+    assert_eq!(render(&mut audio, 36), ([0.; 16], [0.; 16]));
+    let after = snapshot(&mut host, &fresh.attachment_id, 3);
+    assert_eq!(after["connection"]["revision"], "1");
+    assert_eq!(after["connection"]["history"]["undoCount"], 1);
+    assert_eq!(after["connection"]["nextRequestId"], "2");
+    assert_eq!(after["document"]["generation"], 2);
+    let outcome = status(&mut host, &fresh.attachment_id, 4, "1");
+    assert_eq!(outcome["state"], "completed");
+    assert_eq!(outcome["revision"], "1");
+    assert_eq!(
+        host.service_session_jobs().unwrap(),
+        SessionJobProgress::Idle
+    );
+    assert!(matches!(wake_rx.try_recv(), Err(mpsc::TryRecvError::Empty)));
+    let independent = snapshot(&mut other, &other_editor.attachment_id, 1);
+    assert_eq!(independent["connection"]["revision"], "0");
+    assert_eq!(independent["connection"]["history"]["undoCount"], 0);
+    let (left, right) = render(&mut other_audio, 36);
+    assert_eq!((left[0], right[0]), (-0.5, -0.5));
+    assert_eq!(render(&mut other_audio, 60), ([0.; 16], [0.; 16]));
+}
+
+#[test]
+fn worker_dispatch_is_unique_and_real_audio_swap_reschedules_a_busy_completion() {
+    use dandrum_instrument_session::SessionError;
+    use dandrum_trigger_host::parameters::SessionServiceWake;
+    let (_package, root) = package();
+    let (mut host, mut audio) = open(&root);
+    let (wake_tx, wake_rx) = mpsc::sync_channel(1);
+    let scheduler = std::sync::Arc::new(ServiceScheduler(wake_tx));
+    host.start_session_worker(scheduler.clone()).unwrap();
+    assert_eq!(
+        host.start_session_worker(scheduler.clone()),
+        Err(ParameterError::SessionWorkerAlreadyStarted)
+    );
+    let editor = host.attach_editor().unwrap();
+    let first = mapping(&mut host, &editor.attachment_id, 1, "1", "0", 60);
+    host.admit_session_command(&first).unwrap();
+    wake_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+    for _ in 0..3 {
+        assert_eq!(
+            result(host.admit_session_command(&first).unwrap())["job_id"],
+            "1"
+        );
+    }
+    let busy = mapping(&mut host, &editor.attachment_id, 2, "2", "0", 62);
+    assert_eq!(
+        host.admit_session_command(&busy),
+        Err(ParameterError::Session(SessionError::Busy))
+    );
+    assert_eq!(
+        snapshot(&mut host, &editor.attachment_id, 3)["connection"]["nextRequestId"],
+        "2"
+    );
+    assert_eq!(
+        host.service_session_jobs().unwrap(),
+        SessionJobProgress::Completed
+    );
+    let second = mapping(&mut host, &editor.attachment_id, 4, "2", "1", 62);
+    host.admit_session_command(&second).unwrap();
+    host.detach_editor(&editor.attachment_id).unwrap();
+    wake_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+    assert_eq!(
+        host.service_session_jobs().unwrap(),
+        SessionJobProgress::Pending
+    );
+    assert_eq!(host.parameter_state().generation, 2);
+    assert!(
+        matches!(wake_rx.try_recv(), Err(mpsc::TryRecvError::Empty)),
+        "Busy must not reschedule itself"
+    );
+    let (mut left, mut right) = ([0.; 16], [0.; 16]);
+    let mut swapped = false;
+    let allocations = allocation_counter::measure(|| {
+        swapped = audio
+            .process_events(
+                &mut left,
+                &mut right,
+                &[TimedEvent {
+                    frame_offset: 0,
+                    event: ControlEvent::NoteOn {
+                        note: 60,
+                        velocity: 100,
+                    },
+                }],
+            )
+            .unwrap()
+            .swapped;
+    });
+    assert_eq!(allocations, allocation_counter::AllocationInfo::default());
+    assert!(swapped);
+    assert_eq!((left[0], right[0]), (-0.5, -0.5));
+    // This models a format facade forwarding the real callback report. It is
+    // not calibration of CLAP request_callback/on_main_thread.
+    scheduler.request_service();
+    assert_eq!(
+        wake_rx.recv_timeout(Duration::from_secs(5)).unwrap(),
+        std::thread::current().id()
+    );
+    assert_eq!(
+        host.service_session_jobs().unwrap(),
+        SessionJobProgress::Completed
+    );
+    assert!(matches!(wake_rx.try_recv(), Err(mpsc::TryRecvError::Empty)));
+    let fresh = host.attach_editor().unwrap();
+    let accepted = snapshot(&mut host, &fresh.attachment_id, 1);
+    assert_eq!(accepted["connection"]["revision"], "2");
+    assert_eq!(accepted["connection"]["nextRequestId"], "3");
+    assert_eq!(accepted["connection"]["history"]["undoCount"], 2);
+    assert_eq!(accepted["document"]["generation"], 3);
+    assert_eq!(
+        status(&mut host, &fresh.attachment_id, 2, "1")["revision"],
+        "1"
+    );
+    assert_eq!(
+        status(&mut host, &fresh.attachment_id, 3, "2")["revision"],
+        "2"
+    );
+    let (left, right) = render(&mut audio, 62);
+    assert_eq!((left[0], right[0]), (-0.5, -0.5));
+    assert_eq!(render(&mut audio, 60), ([0.; 16], [0.; 16]));
+}
+
+#[test]
+fn worker_start_cannot_steal_an_already_admitted_manual_preparation() {
+    let (_package, root) = package();
+    let (mut host, mut audio) = open(&root);
+    host.shutdown_session_worker().unwrap();
+    let editor = host.attach_editor().unwrap();
+    let first = mapping(&mut host, &editor.attachment_id, 1, "1", "0", 60);
+    host.admit_session_command(&first).unwrap();
+    let (wake_tx, _wake_rx) = mpsc::sync_channel(1);
+    assert_eq!(
+        host.start_session_worker(std::sync::Arc::new(ServiceScheduler(wake_tx))),
+        Err(ParameterError::SessionWorkerBusy)
+    );
+    assert_eq!(
+        snapshot(&mut host, &editor.attachment_id, 2)["connection"]["nextRequestId"],
+        "2"
+    );
+    finish_preparation(&mut host);
+    let (left, right) = render(&mut audio, 60);
+    assert_eq!((left[0], right[0]), (-0.5, -0.5));
+}
+
+#[test]
+fn idle_worker_shutdown_is_terminal_idempotent_and_preserves_native_cursor_and_audio() {
+    let (_package, root) = package();
+    let (mut host, mut audio) = open(&root);
+    let (wake_tx, wake_rx) = mpsc::sync_channel(1);
+    host.start_session_worker(std::sync::Arc::new(ServiceScheduler(wake_tx)))
+        .unwrap();
+    let editor = host.attach_editor().unwrap();
+    host.shutdown_session_worker().unwrap();
+    host.shutdown_session_worker().unwrap();
+    assert!(matches!(
+        wake_rx.try_recv(),
+        Err(mpsc::TryRecvError::Disconnected)
+    ));
+    let command = mapping(&mut host, &editor.attachment_id, 1, "1", "0", 60);
+    assert_eq!(
+        host.admit_session_command(&command),
+        Err(ParameterError::SessionWorkerUnavailable)
+    );
+    assert_eq!(
+        host.service_session_jobs(),
+        Err(ParameterError::SessionWorkerUnavailable)
+    );
+    assert!(host.take_session_preparation().is_none());
+    let unchanged = snapshot(&mut host, &editor.attachment_id, 2);
+    assert_eq!(unchanged["connection"]["nextRequestId"], "1");
+    assert_eq!(unchanged["connection"]["revision"], "0");
+    assert_eq!(unchanged["connection"]["history"]["undoCount"], 0);
+    let (left, right) = render(&mut audio, 36);
+    assert_eq!((left[0], right[0]), (-0.5, -0.5));
+    assert_eq!(render(&mut audio, 60), ([0.; 16], [0.; 16]));
+}
+
+// This test-only barrier occupies the public wake after a genuine completion
+// was inserted; it does not inject/pause preparation. Production wakes must
+// remain nonblocking. The bounded barrier lets the test observe join ordering.
+struct OccupiedWake {
+    entered: mpsc::SyncSender<std::thread::ThreadId>,
+    release: std::sync::Mutex<mpsc::Receiver<()>>,
+    destroyed: mpsc::SyncSender<std::thread::ThreadId>,
+}
+impl dandrum_trigger_host::parameters::SessionServiceWake for OccupiedWake {
+    fn request_service(&self) {
+        self.entered.try_send(std::thread::current().id()).unwrap();
+        self.release
+            .lock()
+            .unwrap()
+            .recv_timeout(Duration::from_secs(5))
+            .unwrap();
+    }
+}
+impl Drop for OccupiedWake {
+    fn drop(&mut self) {
+        self.destroyed
+            .try_send(std::thread::current().id())
+            .unwrap();
+    }
+}
+
+#[test]
+fn instrument_shutdown_joins_occupied_completion_wake_before_returning_or_dropping() {
+    let (_package, root) = package();
+    let (mut independent, mut independent_audio) = open(&root);
+    let independent_editor = independent.attach_editor().unwrap();
+    for explicit in [true, false] {
+        let (entered_tx, entered_rx) = mpsc::sync_channel(1);
+        let (release_tx, release_rx) = mpsc::sync_channel(1);
+        let (destroyed_tx, destroyed_rx) = mpsc::sync_channel(1);
+        let (shutdown_tx, shutdown_rx) = mpsc::sync_channel(1);
+        let (joining_tx, joining_rx) = mpsc::sync_channel(1);
+        let (done_tx, done_rx) = mpsc::sync_channel(1);
+        let root = root.clone();
+        let control = std::thread::spawn(move || {
+            // This thread constructs the control owner; the !Send law forbids
+            // moving an already constructed controller to another thread.
+            let (mut host, mut audio) = open(&root);
+            host.start_session_worker(std::sync::Arc::new(OccupiedWake {
+                entered: entered_tx,
+                release: std::sync::Mutex::new(release_rx),
+                destroyed: destroyed_tx,
+            }))
+            .unwrap();
+            let editor = host.attach_editor().unwrap();
+            let command = mapping(&mut host, &editor.attachment_id, 1, "1", "0", 60);
+            host.admit_session_command(&command).unwrap();
+            host.detach_editor(&editor.attachment_id).unwrap();
+            shutdown_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+            let (left, right) = render(&mut audio, 36);
+            assert_eq!((left[0], right[0]), (-0.5, -0.5));
+            assert_eq!(host.parameter_state().generation, 1);
+            joining_tx.send(std::thread::current().id()).unwrap();
+            if explicit {
+                host.shutdown_session_worker().unwrap();
+                assert_eq!(
+                    host.service_session_jobs(),
+                    Err(ParameterError::SessionWorkerUnavailable)
+                );
+                let fresh = host.attach_editor().unwrap();
+                let read = request(
+                    &mut host,
+                    &fresh.attachment_id,
+                    1,
+                    "getInstrumentSessionJobStatus",
+                    json!(["1"]),
+                );
+                assert_eq!(
+                    host.session_job_status(&read),
+                    Err(ParameterError::SessionWorkerUnavailable)
+                );
+                let unchanged = snapshot(&mut host, &fresh.attachment_id, 2);
+                assert_eq!(unchanged["connection"]["revision"], "0");
+                assert_eq!(unchanged["connection"]["nextRequestId"], "2");
+                assert_eq!(unchanged["connection"]["history"]["undoCount"], 0);
+                let (left, right) = render(&mut audio, 36);
+                assert_eq!((left[0], right[0]), (-0.5, -0.5));
+                assert_eq!(render(&mut audio, 60), ([0.; 16], [0.; 16]));
+            }
+            drop(host);
+            done_tx.send(()).unwrap();
+        });
+        let worker_thread = entered_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+        shutdown_tx.send(()).unwrap();
+        let control_thread = joining_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+        assert_ne!(worker_thread, control_thread);
+        assert!(
+            matches!(
+                done_rx.recv_timeout(Duration::from_millis(40)),
+                Err(mpsc::RecvTimeoutError::Timeout)
+            ),
+            "shutdown must not return while the owned worker is in its completion wake"
+        );
+        let (left, right) = render(&mut independent_audio, 36);
+        assert_eq!((left[0], right[0]), (-0.5, -0.5));
+        release_tx.send(()).unwrap();
+        done_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+        assert_eq!(
+            destroyed_rx.try_recv().unwrap(),
+            worker_thread,
+            "worker resources are released before control teardown returns"
+        );
+        control.join().unwrap();
+    }
+    let unchanged = snapshot(&mut independent, &independent_editor.attachment_id, 1);
+    assert_eq!(unchanged["connection"]["revision"], "0");
+    assert_eq!(unchanged["connection"]["history"]["undoCount"], 0);
+}

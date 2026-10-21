@@ -23,6 +23,9 @@ pub enum ParameterError {
     Session(dandrum_instrument_session::SessionError),
     UnknownJob,
     InvalidJob,
+    SessionWorkerUnavailable,
+    SessionWorkerAlreadyStarted,
+    SessionWorkerBusy,
     Runtime(RuntimeError),
     Protocol(ProtocolError),
     InvalidCapacity,
@@ -167,7 +170,56 @@ enum SessionWork {
     Ready(Box<dandrum_instrument_session::PreparedMappingJob>),
 }
 
+/// Request a future instrument-level main/control service opportunity.
+/// Implementations must be nonblocking and nonpanicking, must outlive editors,
+/// and must never call controller service inline. Native adapters also request
+/// service after a real audio `ProcessReport::swapped` restores capacity.
+pub trait SessionServiceWake: Send + Sync {
+    fn request_service(&self);
+}
+
+struct SessionWorker {
+    requests: Option<std::sync::mpsc::SyncSender<SessionPreparation>>,
+    completions: std::sync::mpsc::Receiver<SessionCompletion>,
+    thread: Option<std::thread::JoinHandle<Option<SessionCompletion>>>,
+}
+impl SessionWorker {
+    fn available(&self) -> bool {
+        self.thread
+            .as_ref()
+            .is_some_and(|thread| !thread.is_finished())
+    }
+    fn shutdown(&mut self) -> Result<(), ParameterError> {
+        // Disconnect before joining: the idle worker waits only on this sender.
+        self.requests.take();
+        let result = self.thread.take().map(std::thread::JoinHandle::join);
+        // Join owns undeliverable completions; the channel owns delivered ones.
+        // Both are destroyed on the constructing control thread, after join.
+        drop(self.completions.try_recv());
+        match result {
+            None | Some(Ok(None)) => Ok(()),
+            Some(Ok(Some(_))) | Some(Err(_)) => Err(ParameterError::SessionWorkerUnavailable),
+        }
+    }
+}
+impl Drop for SessionWorker {
+    fn drop(&mut self) {
+        let _ = self.shutdown();
+    }
+}
+
+/// The constructing control thread owns session publication and teardown.
+/// A format facade must construct this owner on its actual host main thread.
+///
+/// ```compile_fail
+/// use dandrum_trigger_host::parameters::ParameterController;
+/// fn move_control_to_worker(controller: ParameterController) {
+///     std::thread::spawn(move || drop(controller));
+/// }
+/// ```
 pub struct ParameterController {
+    control_thread: std::marker::PhantomData<std::rc::Rc<()>>,
+    worker: Option<SessionWorker>,
     session_job: Option<ActiveSessionJob>,
     host: TriggerHost,
     runtime: RuntimeControl,
@@ -182,6 +234,92 @@ pub struct ParameterController {
 }
 
 impl ParameterController {
+    /// Install one persistent preparation worker before admitting structural work.
+    /// Without installation the existing explicit take/submit API remains manual.
+    pub fn start_session_worker(
+        &mut self,
+        wake: std::sync::Arc<dyn SessionServiceWake>,
+    ) -> Result<(), ParameterError> {
+        if self.worker.is_some() {
+            return Err(ParameterError::SessionWorkerAlreadyStarted);
+        }
+        if self.session_job.is_some() {
+            return Err(ParameterError::SessionWorkerBusy);
+        }
+        let (requests, jobs) = std::sync::mpsc::sync_channel::<SessionPreparation>(1);
+        let (results, completions) = std::sync::mpsc::sync_channel(1);
+        let thread = std::thread::Builder::new()
+            .name("trigger-preparation".into())
+            .spawn(move || {
+                struct WakeOnPanic {
+                    results: Option<std::sync::mpsc::SyncSender<SessionCompletion>>,
+                    wake: std::sync::Arc<dyn SessionServiceWake>,
+                }
+                impl Drop for WakeOnPanic {
+                    fn drop(&mut self) {
+                        // The wake may be serviced before JoinHandle reports
+                        // finished. Disconnect first so that service sees failure.
+                        self.results.take();
+                        if std::thread::panicking() {
+                            self.wake.request_service();
+                        }
+                    }
+                }
+                let exit = WakeOnPanic {
+                    results: Some(results),
+                    wake,
+                };
+                while let Ok(job) = jobs.recv() {
+                    let result = exit
+                        .results
+                        .as_ref()
+                        .expect("worker owns sender")
+                        .try_send(job.prepare());
+                    exit.wake.request_service();
+                    if let Err(
+                        std::sync::mpsc::TrySendError::Full(completion)
+                        | std::sync::mpsc::TrySendError::Disconnected(completion),
+                    ) = result
+                    {
+                        // A full/disconnected result slot is fatal, never an
+                        // excuse to overwrite or discard the only completion.
+                        return Some(completion);
+                    }
+                }
+                None
+            })
+            .map_err(|_| ParameterError::SessionWorkerUnavailable)?;
+        self.worker = Some(SessionWorker {
+            requests: Some(requests),
+            completions,
+            thread: Some(thread),
+        });
+        Ok(())
+    }
+
+    /// Stop the installed worker permanently and join it off audio. This is
+    /// idempotent and independent of editor detach; a manual controller has no
+    /// worker to stop. Current preparation may finish, but shutdown publishes
+    /// nothing and does not promise cancellation of blocking resource I/O.
+    pub fn shutdown_session_worker(&mut self) -> Result<(), ParameterError> {
+        match &mut self.worker {
+            Some(worker) => worker.shutdown(),
+            None => Ok(()),
+        }
+    }
+
+    fn check_session_worker(&self) -> Result<(), ParameterError> {
+        if self
+            .worker
+            .as_ref()
+            .is_some_and(|worker| !worker.available())
+        {
+            Err(ParameterError::SessionWorkerUnavailable)
+        } else {
+            Ok(())
+        }
+    }
+
     /// Save accepted YAML and one coherent vector of applied physical values.
     /// This off-audio read never closes callback admission; only the reader may
     /// retry while audio writes. Queued editor values are not yet applied state.
@@ -346,6 +484,8 @@ impl ParameterController {
         let gestures = vec![None; parameters.len()];
         Ok((
             Self {
+                control_thread: std::marker::PhantomData,
+                worker: None,
                 session_job: None,
                 host,
                 runtime,
@@ -498,6 +638,7 @@ impl ParameterController {
             .protocol
             .admitted_context(self.host.session(), request)
             .map_err(ParameterError::Protocol)?;
+        self.check_session_worker()?;
         let (id, admission) = match &request.command {
             EditorCommand::SetZoneKeyRange { identity, intent } => (
                 identity.request_id,
@@ -531,6 +672,23 @@ impl ParameterController {
             }
             MappingAdmission::Pending | MappingAdmission::Completed(_) => {}
         }
+        if self.worker.is_some()
+            && let Some(work) = self.take_queued_preparation()
+        {
+            let worker = self.worker.as_ref().expect("installed worker");
+            if let Err(
+                std::sync::mpsc::TrySendError::Full(work)
+                | std::sync::mpsc::TrySendError::Disconnected(work),
+            ) = worker
+                .requests
+                .as_ref()
+                .expect("live sender")
+                .try_send(work)
+            {
+                self.session_job.as_mut().expect("queued job").work = SessionWork::Queued(work.job);
+                return Err(ParameterError::SessionWorkerUnavailable);
+            }
+        }
         self.protocol
             .encode_reply(
                 self.host.session(),
@@ -541,6 +699,12 @@ impl ParameterController {
             .map_err(ParameterError::Protocol)
     }
     pub fn take_session_preparation(&mut self) -> Option<SessionPreparation> {
+        if self.worker.is_some() {
+            return None;
+        }
+        self.take_queued_preparation()
+    }
+    fn take_queued_preparation(&mut self) -> Option<SessionPreparation> {
         let active = self.session_job.as_mut()?;
         match std::mem::replace(&mut active.work, SessionWork::Preparing) {
             SessionWork::Queued(job) => Some(SessionPreparation {
@@ -571,6 +735,18 @@ impl ParameterController {
     /// A bounded main/control service step. Preparation is performed elsewhere;
     /// returned retired processors are destroyed only here, away from audio.
     pub fn service_session_jobs(&mut self) -> Result<SessionJobProgress, ParameterError> {
+        self.check_session_worker()?;
+        if let Some(worker) = &self.worker {
+            match worker.completions.try_recv() {
+                Ok(completion) => self
+                    .submit_session_completion(completion)
+                    .map_err(|_| ParameterError::InvalidJob)?,
+                Err(std::sync::mpsc::TryRecvError::Empty) => {}
+                Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                    return Err(ParameterError::SessionWorkerUnavailable);
+                }
+            }
+        }
         drop(self.runtime.reclaim());
         let Some(active) = self.session_job.as_ref() else {
             return Ok(SessionJobProgress::Idle);
@@ -619,6 +795,7 @@ impl ParameterController {
             .as_ref()
             .is_some_and(|active| active.request_id == request_id)
         {
+            self.check_session_worker()?;
             serde_json::json!({"request_id":request_id.0.to_string(),"state":"running","revision":context.snapshot.revision.to_string(),"undoCount":context.snapshot.undo_len,"redoCount":context.snapshot.redo_len,"error":""})
         } else {
             let outcome = self

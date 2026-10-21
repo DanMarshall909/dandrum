@@ -1306,3 +1306,47 @@ Task 3.3 and the full beta remain open. Actual native dispatch, attachment clean
 worker wake, notes/heartbeat and joined CLAP acceptance still follow, then VST3,
 standalone, named-DAW and installed offline/native proof. Main remains clean
 68dd655; reusable caches are preserved and mutation is excluded.
+
+
+## Keep instrument preparation alive across editor loss — 21 October 2026
+
+The format-neutral controller can install one persistent preparation worker.
+Structural admission transfers owned work before acknowledging; editor detach
+does not stop it. Capacity-one offaudio channels return completions and only
+control service publishes. Busy retains Ready without a wake loop; the native
+facade must route actual runtime swaps to future service. A zero-sized Rust
+marker prevents moving the controller off its constructing thread. Explicit and
+automatic teardown disconnect, join and destroy results before session/runtime.
+Stopped or unexpectedly terminated workers report unavailable, preserving
+accepted state rather than inventing a native outcome. This does not promise
+arbitrary I/O cancellation or internal panic recovery.
+
+All 107 ordinary tests and two compile-fail doctests pass at the actual default
+debug profile. Full-host LLVM passes 107 tests; formatting and all-target Clippy
+with warnings denied pass. Five new real-thread lifecycle tests assert native
+history/cursors, independent instances, literal signed stereo output, silence
+and callback allocation/deallocation sentinels. Parameters coverage reports
+71/71 summary functions, 660/680 lines and 1043/1082 regions. OS spawn, panic
+notification and safe-ownership invariant paths remain explicitly unexecuted;
+generic instantiations differ from source summaries and no branch claim follows.
+
+The actual unfiltered source-free default-release run passes 107 tests plus two
+compile-fail doctests in 382.727 seconds including LTO setup. Nine executed binary
+hashes, full dependency audit and all 590 before/after input maps bind this proof.
+Web/UI/third_party are absent; the graph contains no Clack/Wry/GTK/WebKit/JUCE.
+The earlier disk-guard interruption ran no tests and remains separate evidence.
+After explicit user approval only the named 23.7 GiB debug cache was removed;
+release/shared/coverage caches and external incremental data were preserved.
+
+[Portable evidence](evidence/trigger-session-worker-2026-10-21/receipt.json)
+retains raw phases, profiles, source snapshots, compiler commands, ownership,
+interruption and successful release proof. The frontend bootstrap publication
+was integrated after verifier handback with both worker payloads unchanged; all
+590 current headless inputs match the executed map. No duplicate fresh run or
+concrete CLAP scheduling follows from that qualified source binding.
+
+Independent completion review passed for the frozen persistent worker source/evidence candidate; normal-hook publication remains.
+Task 3.3 stays open: actual native service, notes/heartbeat/controller, semantic
+detach and joined Wry/CLAP acceptance still follow. Full beta continues through
+VST3, standalone, named-DAW and installed offline/native proof. Main remains
+clean68dd655 and mutation is excluded.

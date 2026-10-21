@@ -1,0 +1,88 @@
+{
+  "source": "/dev/shm/dandrum-beta-20261020/session-worker-sourcefree",
+  "archive": "sourcefree-interrupted-raw.tar.gz",
+  "archive_sha256": "3bb52ed251e413da1987e7704e858ebc26d5a43e1af3929741f5c42bc7edec07",
+  "members": 16,
+  "artifacts": [
+    {
+      "path": "HANDOFF.md",
+      "sha256": "27fc2ac2e3fc96edfe57b22177aa79413262cf1c1669c5e81da75007a928ce9d",
+      "size": 2795
+    },
+    {
+      "path": "actual-compiler-invocations.txt",
+      "sha256": "6a1541aa6267a2ca4f0783f45261fc79aea3d8cbae0f576db37c726f6812192a",
+      "size": 9405
+    },
+    {
+      "path": "evidence-sha256.json",
+      "sha256": "c35cd53f3a6b96069152a9b6d364e014c2f1197894eeefc466a92be9acb383ce",
+      "size": 2265
+    },
+    {
+      "path": "final-process-audit.txt",
+      "sha256": "56805f61716b99f73b08d7fd3d74b480301a0c771e179814dbaad619a9d0d162",
+      "size": 62844
+    },
+    {
+      "path": "fixture-update.json",
+      "sha256": "cbd74f957747df5b8943675c6861b19e1a4c196766a159382d432eb02cae54a9",
+      "size": 1170
+    },
+    {
+      "path": "handback.json",
+      "sha256": "0cf2573ce2fc50a2f7fe473f84068838589aee1ede1d5ee304f4cf8378524c9f",
+      "size": 1028
+    },
+    {
+      "path": "partial-receipt.json",
+      "sha256": "fdca570264bad957c08468eba1015d0d9b0062bb624ac3e719919526353476aa",
+      "size": 97413
+    },
+    {
+      "path": "preimages/src/trigger-host/src/parameters.rs",
+      "sha256": "de43207bc1d90a2faca948a3dd701c99aa4cefd662f43d464071e9d1db1e211d",
+      "size": 33706
+    },
+    {
+      "path": "preimages/src/trigger-host/tests/session_jobs.rs",
+      "sha256": "e61114b2f11316fec1be165dab890db011544980b2c09c6fb7e1fa1ddd8c2323",
+      "size": 28564
+    },
+    {
+      "path": "prior-fixture-verified.json",
+      "sha256": "65a38c3f0d02856ace55e80e0c06e167b20cf4f62cb4163e7d5f3a9119da4a4b",
+      "size": 113393
+    },
+    {
+      "path": "prior-source-manifest.json",
+      "sha256": "96a8169f32ecaa8d1a3909d4e3c2a05968de468e137a917cb9aad4e05eeea35e",
+      "size": 68454
+    },
+    {
+      "path": "release-tests.json",
+      "sha256": "62deef6e7a62e6aca28ce38b80653aad60ccb3d73451a1f4079a2f367d950bcd",
+      "size": 82728
+    },
+    {
+      "path": "release-tests.log",
+      "sha256": "450b994abb462ffd3e162f1007397a6bba82f2573d8978da7026f000bfb925f5",
+      "size": 13803
+    },
+    {
+      "path": "retained-partial-object.json",
+      "sha256": "3123f1f02d2849411bcfe33aa07e0e64627626918891b4d2c170d9d8dde263cc",
+      "size": 244
+    },
+    {
+      "path": "retained-test-binaries-partial.json",
+      "sha256": "1c5a1831be5c23f35726f7d9b0cc308eb93f1988c87cf581bc4f2815260480ab",
+      "size": 5335
+    },
+    {
+      "path": "source-manifest.json",
+      "sha256": "48f22971d8a3051c370c4a176638f7f437308b645f35adb70b44e50563c394ec",
+      "size": 68454
+    }
+  ]
+}

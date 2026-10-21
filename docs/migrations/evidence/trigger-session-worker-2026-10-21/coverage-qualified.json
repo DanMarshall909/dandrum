@@ -1,0 +1,202 @@
+[
+  {
+    "file": "/tmp/dandrum-lanes/protocol/src/trigger-host/src/lib.rs",
+    "summary": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "functions": {
+        "count": 21,
+        "covered": 21,
+        "percent": 100.0
+      },
+      "instantiations": {
+        "count": 69,
+        "covered": 50,
+        "percent": 72.46376811594203
+      },
+      "lines": {
+        "count": 120,
+        "covered": 119,
+        "percent": 99.16666666666667
+      },
+      "regions": {
+        "count": 173,
+        "covered": 171,
+        "notcovered": 2,
+        "percent": 98.84393063583815
+      }
+    },
+    "emitted_records": 69,
+    "distinct_mangled_names": 69
+  },
+  {
+    "file": "/tmp/dandrum-lanes/protocol/src/trigger-host/src/parameters.rs",
+    "summary": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "functions": {
+        "count": 71,
+        "covered": 71,
+        "percent": 100.0
+      },
+      "instantiations": {
+        "count": 168,
+        "covered": 99,
+        "percent": 58.92857142857143
+      },
+      "lines": {
+        "count": 680,
+        "covered": 660,
+        "percent": 97.05882352941178
+      },
+      "regions": {
+        "count": 1082,
+        "covered": 1043,
+        "notcovered": 39,
+        "percent": 96.39556377079482
+      }
+    },
+    "emitted_records": 168,
+    "distinct_mangled_names": 168
+  },
+  {
+    "file": "/tmp/dandrum-lanes/protocol/src/trigger-host/src/protocol.rs",
+    "summary": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "functions": {
+        "count": 24,
+        "covered": 24,
+        "percent": 100.0
+      },
+      "instantiations": {
+        "count": 54,
+        "covered": 31,
+        "percent": 57.407407407407405
+      },
+      "lines": {
+        "count": 362,
+        "covered": 362,
+        "percent": 100.0
+      },
+      "regions": {
+        "count": 516,
+        "covered": 500,
+        "notcovered": 16,
+        "percent": 96.89922480620156
+      }
+    },
+    "emitted_records": 54,
+    "distinct_mangled_names": 54
+  },
+  {
+    "file": "/tmp/dandrum-lanes/protocol/src/trigger-host/src/runtime.rs",
+    "summary": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "functions": {
+        "count": 94,
+        "covered": 94,
+        "percent": 100.0
+      },
+      "instantiations": {
+        "count": 164,
+        "covered": 158,
+        "percent": 96.34146341463415
+      },
+      "lines": {
+        "count": 1157,
+        "covered": 1151,
+        "percent": 99.48141745894556
+      },
+      "regions": {
+        "count": 1859,
+        "covered": 1847,
+        "notcovered": 12,
+        "percent": 99.35449166218397
+      }
+    },
+    "emitted_records": 164,
+    "distinct_mangled_names": 164
+  },
+  {
+    "file": "/tmp/dandrum-lanes/protocol/src/trigger-host/src/state.rs",
+    "summary": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "functions": {
+        "count": 10,
+        "covered": 10,
+        "percent": 100.0
+      },
+      "instantiations": {
+        "count": 24,
+        "covered": 24,
+        "percent": 100.0
+      },
+      "lines": {
+        "count": 105,
+        "covered": 105,
+        "percent": 100.0
+      },
+      "regions": {
+        "count": 177,
+        "covered": 176,
+        "notcovered": 1,
+        "percent": 99.43502824858757
+      }
+    },
+    "emitted_records": 24,
+    "distinct_mangled_names": 24
+  }
+]

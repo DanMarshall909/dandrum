@@ -1,0 +1,11 @@
+{
+  "author_and_release_base": "d2ef616377ce34b446cb0dd1f5d0a3a4bd10c1c8",
+  "current_integrated_base": "ca36647a619034c96bc03f1ab2ffc4e166d356d6",
+  "all_590_current_headless_inputs_match_executed_release_map": true,
+  "source_manifest_sha256": "48f22971d8a3051c370c4a176638f7f437308b645f35adb70b44e50563c394ec",
+  "source_hashes_unchanged": {
+    "src/trigger-host/src/parameters.rs": "c5d6c817940dd1255e74aac3a53094f7162e444c2a003cdd4ab3d0bef5081efb",
+    "src/trigger-host/tests/session_jobs.rs": "95d3be564f52fc38156eb5c015d3299d5ce77fd0cef1424cff1faa0272e8eafa"
+  },
+  "qualification": "Frontend-only bootstrap publication integrated after verifier handback. Two worker author files and exact root-owned worker design section preserved. No affected Rust/Cargo/build/test input changed; ordinary/Clippy/LLVM/release evidence remains source-bound. No fresh duplicate execution claimed."
+}

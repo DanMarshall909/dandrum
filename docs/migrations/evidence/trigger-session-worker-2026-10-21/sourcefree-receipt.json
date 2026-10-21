@@ -1,0 +1,118 @@
+{
+  "exit": 0,
+  "head": "d2ef616377ce34b446cb0dd1f5d0a3a4bd10c1c8",
+  "ordinary_tests": 107,
+  "doctests": 2,
+  "per_target_counts": [
+    15,
+    17,
+    8,
+    14,
+    7,
+    18,
+    14,
+    5,
+    9,
+    2
+  ],
+  "all_590_root_fixture_bytes_unchanged": true,
+  "no_new_or_removed_source_inputs": true,
+  "binaries": [
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/dandrum_trigger_host-7f362fce781ef7bf",
+      "bytes": 12256648,
+      "sha256": "776aacff4e6d4093fd626c76a4211daec06273b26e66c4a8c7235181dad733c3"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/editor_notes-cebfd14604effdb4",
+      "bytes": 12027152,
+      "sha256": "a9ebe5b046c6140d9098175c432fb7bf82700f09561f80ad08e0fd4fafda3354"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/packaged_resources-9a15f26d47438dea",
+      "bytes": 11836352,
+      "sha256": "bbac0e639a25a1a5ee06283893cc888590e7bdc3c683b0e2b08b02cad3fcf836"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/parameters-24211fdc7856d7dc",
+      "bytes": 12150960,
+      "sha256": "6f7d4c831a166c451f20e690fe108db65aa0241076362453e2279d8bd8788be4"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/protocol-0bdaf7ad08adc8f3",
+      "bytes": 11921400,
+      "sha256": "a79a65513efc9086b4766a18fbfe44085daac12afb6c2057cc9ecad04661820b"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/runtime-414a8b417fb50eb7",
+      "bytes": 12108048,
+      "sha256": "ab77d43eae878944db43caa20fdb4efd59fab89c2bc64454558476a7023b3932"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/session_jobs-12083c82a98f6a9a",
+      "bytes": 12556248,
+      "sha256": "24acfd8102f058596750d80da5e31743326e4ed4fa743a1dacdc740fa1bd6ecd"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/snapshot-299d0fd4c3bd05a2",
+      "bytes": 12151320,
+      "sha256": "73a9165ef59401109075b1137e94b15b8911b07e35f30067799a47f4811f73ad"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/state-9de2084105b1e7a8",
+      "bytes": 12285496,
+      "sha256": "79f394bb9a95638022908827a482c50553c94e7847adbba86d660e6b5298c092"
+    }
+  ],
+  "forbidden_dependency_matches": [],
+  "resource_floors_bytes": {
+    "disk": 1073741824,
+    "shm": 268435456,
+    "memory": 4294967296
+  },
+  "final_resources": {
+    "disk": 25531576320,
+    "shm": 1146470400,
+    "memory": 13592739840
+  },
+  "profile": "Actual default optimized release opt3/LTO/codegen1; CARGO_INCREMENTAL0; no instrumentation/profileoverrides",
+  "results": [
+    {
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--release",
+        "--offline",
+        "--locked",
+        "--jobs",
+        "1",
+        "--manifest-path",
+        "/dev/shm/dandrum-beta-20261020/editor-guard-source/build/engine-only-regression/fixture-kwjt48yz/source/src/trigger-host/Cargo.toml",
+        "-vv"
+      ],
+      "exit": 0,
+      "elapsed": 382.72698674499406,
+      "pgid": 471172
+    },
+    {
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "tree",
+        "--offline",
+        "--locked",
+        "--manifest-path",
+        "/dev/shm/dandrum-beta-20261020/editor-guard-source/build/engine-only-regression/fixture-kwjt48yz/source/src/trigger-host/Cargo.toml",
+        "--edges",
+        "normal",
+        "--prefix",
+        "none"
+      ],
+      "exit": 0,
+      "elapsed": 0.251820201985538,
+      "pgid": 478238
+    }
+  ],
+  "limits": "Full unfiltered source-free host Cargo only; not fullCMakeguard/native/browser/CLAP/taskcompletion/beta/publication",
+  "cache_preserved": true,
+  "owned_processes_exited": true
+}

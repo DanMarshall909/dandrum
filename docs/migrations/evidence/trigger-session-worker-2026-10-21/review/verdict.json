@@ -1,0 +1,21 @@
+{
+  "verdict": "PASS",
+  "component": "Persistent instrument preparation worker prerequisite of task 3.3",
+  "manifest_sha256": "cd2194fb540c7a043b0093255deb18720dd018595537cb17cd1738abc856b760",
+  "base": "ca36647a619034c96bc03f1ab2ffc4e166d356d6",
+  "current": "ca36647a619034c96bc03f1ab2ffc4e166d356d6",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "ca36647a619034c96bc03f1ab2ffc4e166d356d6",
+  "integration_base": "ca36647a619034c96bc03f1ab2ffc4e166d356d6",
+  "candidate_paths": 18,
+  "findings": [],
+  "task_3_3_complete": false,
+  "full_beta_complete": false,
+  "limitations": [
+    "OS spawn failure and internal panic paths are inspected, not runtime-executed; no branch coverage claim",
+    "Native wake scheduling, Wry/CLAP and later product acceptance remain outside this component",
+    "Release and ordinary evidence are source-bound to unchanged headless inputs across the frontend-only upstream integration",
+    "Mutation testing is excluded by user instruction",
+    "Publication requires the exact approved metadata envelope, same-reviewer final-candidate addendum, named validations and normal hooks"
+  ]
+}

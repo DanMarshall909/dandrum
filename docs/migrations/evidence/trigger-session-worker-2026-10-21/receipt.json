@@ -1,0 +1,77 @@
+{
+  "component": "Persistent instrument preparation worker",
+  "base": "ca36647a619034c96bc03f1ab2ffc4e166d356d6",
+  "author_and_release_base": "d2ef616377ce34b446cb0dd1f5d0a3a4bd10c1c8",
+  "scope": "Installed worker prerequisite of task 3.3; actual native/CLAP wake and joined frontend remain open",
+  "source_sha256": {
+    "src/trigger-host/src/parameters.rs": "c5d6c817940dd1255e74aac3a53094f7162e444c2a003cdd4ab3d0bef5081efb",
+    "src/trigger-host/tests/session_jobs.rs": "95d3be564f52fc38156eb5c015d3299d5ce77fd0cef1424cff1faa0272e8eafa"
+  },
+  "behavior": [
+    "Automatic owned preparation dispatch before acknowledgement, retained after editor detach",
+    "One worker and capacity-one offaudio request/result channels; main try_send/try_recv only",
+    "Only control service publishes; Ready retained on Busy, actual swapped report models later service without self-wake loop",
+    "Constructing-thread controller affinity, permanent/idempotent instrument-owned shutdown and joined Drop before session/runtime teardown",
+    "Fatal termination reports unavailable and preserves accepted state; disconnect precedes panic wake"
+  ],
+  "tests": {
+    "ordinary": 107,
+    "compile_fail_doctests": 2,
+    "full_host_llvm": 107,
+    "sourcefree_default_release": 107,
+    "sourcefree_doctests": 2,
+    "format": "PASS",
+    "all_target_clippy_Dwarnings": "PASS"
+  },
+  "coverage": {
+    "parameters_summary_functions": "71/71",
+    "parameters_summary_lines": "660/680",
+    "parameters_summary_regions": "1043/1082",
+    "emitted_mangled_records": 168,
+    "covered_mangled_records": 99,
+    "branch_instrumentation": false
+  },
+  "qualifications": [
+    "No concrete CLAP callback or Wry/frontend/controller proof",
+    "Shutdown test occupies genuine completion wake, not arbitrary preparation computation",
+    "OS spawn/internal panic and safe-ownership invariant errors inspected but not executed",
+    "Source-free interrupted attempt ran no tests/audit; partial cached binaries are not current executed evidence",
+    "Original first-loop commentary count37 was incorrect: actual44; later46/48 focused scopes parsed from logs",
+    "Earlier source capture omitted inherited snapshot/lib files; final05 captures all host Rust sources/tests",
+    "No module extracted; no fake executor/panic seam; no arbitrary blocking-I/O cancellation promised"
+  ],
+  "profiles": {
+    "ordinary": "opt0/default debug symbols; assertions/overflow unchanged",
+    "llvm": "opt0/dev-test debug0, assertions/overflow unchanged; no dependency/branch instrumentation claim",
+    "sourcefree": "default optimized release opt3/LTO/codegen1; no coverage/profile overrides"
+  },
+  "archives": [
+    {
+      "source": "/tmp/dandrum-lanes/evidence-session-worker",
+      "archive": "author-raw.tar.gz",
+      "archive_sha256": "116a00b3b07fe60e8410e4444365bdfb3515dc16753f6a41981c8691db8e7543",
+      "members": 425
+    },
+    {
+      "source": "/dev/shm/dandrum-beta-20261020/session-worker-sourcefree",
+      "archive": "sourcefree-interrupted-raw.tar.gz",
+      "archive_sha256": "3bb52ed251e413da1987e7704e858ebc26d5a43e1af3929741f5c42bc7edec07",
+      "members": 16
+    },
+    {
+      "source": "/dev/shm/dandrum-beta-20261020/session-worker-sourcefree-success",
+      "archive": "sourcefree-success-raw.tar.gz",
+      "archive_sha256": "2c188f8a50401d5b435a2150d4449b6bd5856e5f184164d1954bccc4fa4034d4",
+      "members": 19
+    }
+  ],
+  "review": {
+    "status": "PASS",
+    "manifest_sha256": "cd2194fb540c7a043b0093255deb18720dd018595537cb17cd1738abc856b760",
+    "review_sha256": "51a4196d0aeada995e1b484a6927f7fc0282a4fc8680e6d0b152f4005abc84e5",
+    "verdict_sha256": "20b7d5772074df080346dcbfc9d633d720ceb29ea25a6e52402da04253d307af"
+  },
+  "mutation": "Explicitly excluded by user",
+  "task3_3_complete": false,
+  "full_beta_complete": false
+}

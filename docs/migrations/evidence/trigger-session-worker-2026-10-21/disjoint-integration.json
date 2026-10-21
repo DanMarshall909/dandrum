@@ -1,0 +1,14 @@
+{
+  "old_head": "d2ef616377ce34b446cb0dd1f5d0a3a4bd10c1c8",
+  "new_head": "ca36647a619034c96bc03f1ab2ffc4e166d356d6",
+  "frozen_source_hashes_unchanged": {
+    "src/trigger-host/src/parameters.rs": "c5d6c817940dd1255e74aac3a53094f7162e444c2a003cdd4ab3d0bef5081efb",
+    "src/trigger-host/tests/session_jobs.rs": "95d3be564f52fc38156eb5c015d3299d5ce77fd0cef1424cff1faa0272e8eafa"
+  },
+  "root_worker_design_sha256": "7d61fbc99fedc910040baa206efe068dee6e7f399b6da5cd72e990faec3686c1",
+  "old_design_sha256": "ebb5f4924d2c4625d87c29b848f52b7f8dd02b1fcc3fdbdee4ef28e93b4a443a",
+  "new_design_sha256": "e4d87370f3da93794e03d9a9c7600ed0cf9281422043211e4e02ce239de3b2c4",
+  "temporary_exact_base_restoration": true,
+  "no_author_source_restoration": true,
+  "bootstrap_section_published": true
+}
