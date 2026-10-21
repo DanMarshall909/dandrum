@@ -1727,3 +1727,42 @@ fractional-rate validator failure and all later beta products remain open. No
 OpenSpec task checkbox or full-beta closure follows. Independent review and
 normal publication are recorded separately in the live tracker. Main stays
 clean 68dd655; mutation is excluded and reusable caches are preserved.
+
+
+## Native creation-failure cleanup checkpoint — 22 October 2026
+
+The actual copied Trigger product now has an injected WebKit creation-failure
+characterization. A temporary public GTK parent-set emission hook registers IPC
+on the actual Wry UserContentManager before product registration. A known generic
+handler calibrates the same-manager detail-zero callback query, then disconnects
+before the product proceeds. The product rejects parenting, disconnects its own
+handler, disposes the WebView and child, and restores the toplevel baseline. The
+hook is synchronously removed before retry. Production already passed this
+behavior and is unchanged; missing maintained registration has genuine RED/GREEN.
+
+Physical drums.level2, byte-identical saved state, offset3 zero prefix and literal
+stereo PCM [-1, -716/32768] survive rejection, successful retry and final disposal.
+Retry uses the same instrument, created GUI and X11 parent, then mounts unmodified
+React and returns authenticated real-session/parameter data. No public test flag,
+private protocol extension or fabricated browser result is introduced.
+
+[Portable evidence](evidence/trigger-clap-creation-failure-2026-10-22/README.md)
+retains setup qualifications, actual same-manager calibration and final source /
+artifact/profile bindings. Author passes17 native outer cases,5 GUI cases,17 fast
+owner tests, the lower callback-release case, formatting and strict Clippy. Root
+passes25 maintained CTests in28.149s,3 affected configuration guards, linkage and
+strict scoped/all51/spec-coverage checks. Root independently rehashes LLVM tools,
+objects and profiles and regenerates equal coverage data. Actual IPC disconnect
+and failure return execute once, constructor twice, scenario235/235 and signed
+state helper42/42 measured code regions. Unhit generic errors and fixture defenses
+remain explicit; no whole-owner, branch or global callback-quiescence claim.
+
+The prior eight-case headless source-free build remains qualified reuse with76
+matching compiler inputs and one deliberately removed copied-asset limitation;
+it is not a fresh native-editor source-free build or task5.1 closure. Production
+and the React app are unchanged. Continuous lifecycle audio, independently edited
+native instances, OS input and the fractional-rate validator failure remain open,
+alongside all later VST3/standalone/named-DAW/installed beta gates. No task, scenario
+mapping or overall beta closes. Independent review and normal publication are
+recorded separately in the sole live tracker. Main remains clean68dd655; mutation
+is excluded and all reusable caches are retained.

@@ -187,7 +187,9 @@ servicing, mapping after lost acknowledgement and complete view loss, retained
 job status, and the recreated production header's native Undo. Native note
 tests cover authenticated heartbeat renewal and live-attachment expiry while
 host MIDI remains audible. A joined destruction test covers held editor notes,
-open gestures and a fresh attachment without disturbing host MIDI. Continuous
+open gestures and a fresh attachment without disturbing host MIDI. Injected
+WebKit IPC-registration failure now has copied-product cleanup and same-instance
+retry acceptance, retaining nondefault state and signed audio. Continuous
 create/destroy/recreate audio remains open in G3.
 The GUI is not ready for instrument editing or normal playing; the maintained
 CMake product above continues to use the headless `trigger` feature.

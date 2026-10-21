@@ -1,0 +1,271 @@
+{
+  "criterion": "Task3.2 failed/premature parenting: actual copied-DSO WebView IPC-registration collision cleanup and same-instance/same-parent retry preserving physical2 accepted state and signed audio.",
+  "verdict": "Initial characterization PASS on unchanged production; no product RED and no production repair.",
+  "source_scope": {
+    "src/clap-adapter/tests/trigger_parameters.rs": "1ce372b090225c09619547c4bfa3469d928b61b6263a251e27ced33823b35037",
+    "src/clap-adapter/tests/internal/trigger_creation_failure_native.rs": "5bc6bb0a52a819ab15ce7b940f9cc55148c157964effcf66b147502948b22dd8"
+  },
+  "production_unchanged": true,
+  "test_selector": "creation_failure_native::copied_native_ipc_registration_failure_cleans_up_and_retries_preserving_state",
+  "observed": {
+    "hook_total_callback_invocations": 5,
+    "eligible_parented_webviews": 1,
+    "first_ipc_registration": true,
+    "same_actual_manager_sentinel_pending": true,
+    "same_actual_manager_baseline_after_disconnect": false,
+    "public_parenting_rejected": true,
+    "callback_pending_after_rejection": false,
+    "sentinel_messages": 0,
+    "hook_userdata_destroy_notify_count": 1,
+    "weak_failed_view_expired": true,
+    "parent_children_empty_after_rejection": true,
+    "toplevel_count_baseline_restored": true,
+    "nondefault_physical_level": 2,
+    "signed_stereo_onset": -1,
+    "signed_stereo_next_sample": "-716/32768",
+    "signed_checks": "before injection, after rejection, after retry, after final destroy; nonzero onset offset3 and zero prefix",
+    "accepted_saved_state": "byte-identical at every checkpoint",
+    "retry": "same created GUI/plugin instance and same live X11 parent; no destroy/create between rejection and retry",
+    "retry_child_geometry": [
+      0,
+      0,
+      1200,
+      800
+    ],
+    "retry_frontend": "unmodified production React mounted; real authenticated sampler and numeric parameter replies; document revision0/history0; normalized drums.level0.5"
+  },
+  "checks": {
+    "characterization-native": {
+      "exit": 0,
+      "seconds": 1.0186827749712393,
+      "stop_reason": null
+    },
+    "ordinary-native": {
+      "exit": 0,
+      "seconds": 1.0181458889856003,
+      "stop_reason": null
+    },
+    "final-native-regression": {
+      "exit": 0,
+      "seconds": 26.435179886000697,
+      "stop_reason": null
+    },
+    "final-gui-regression": {
+      "exit": 0,
+      "seconds": 3.048622906964738,
+      "stop_reason": null
+    },
+    "owner-fast": {
+      "exit": 0,
+      "seconds": 2.034487812023144,
+      "stop_reason": null
+    },
+    "editor-handler-native": {
+      "exit": 0,
+      "seconds": 1.0186241050250828,
+      "stop_reason": null
+    },
+    "formatting": {
+      "exit": 0,
+      "seconds": 1.0184301090193912,
+      "stop_reason": null
+    },
+    "strict-clippy": {
+      "exit": 0,
+      "seconds": 3.0507117600063793,
+      "stop_reason": null
+    },
+    "final-llvm-native": {
+      "exit": 0,
+      "seconds": 2.035746729001403,
+      "stop_reason": null
+    },
+    "llvm-export": {
+      "exit": 0,
+      "seconds": 1.0194127850118093,
+      "stop_reason": null
+    },
+    "final-normal-restoration": {
+      "exit": 0,
+      "seconds": 1.0182598700048402,
+      "stop_reason": null
+    }
+  },
+  "case_counts": {
+    "final_native_parameter_structural_note_creation_outer": 17,
+    "nested_calibrated_allocator_child": 1,
+    "final_gui_native": 5,
+    "fast_adapter": 13,
+    "fast_editor": 4,
+    "lower_native_handler_release_rollback": 1
+  },
+  "coverage": {
+    "binding": "final-coverage-binding.json",
+    "execution": "final-coverage-execution-binding.json",
+    "focused_source_show": "coverage/focused-show.txt",
+    "native_editor_create_initialized_calls": 2,
+    "native_editor_ipc_disconnect_line131": 1,
+    "native_editor_ipc_error_return_line132": 1,
+    "adapter_set_parent_calls": 2,
+    "adapter_error_cleanup_line288": 1,
+    "new_test_and_scenario_calls": 1,
+    "test_functions": [
+      {
+        "name": "_RNCNCNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_native14observe_parent00B7_",
+        "count": 0,
+        "code_regions": 5,
+        "covered_code_regions": 0,
+        "unexecuted_start_lines": [
+          83,
+          84,
+          85
+        ]
+      },
+      {
+        "name": "_RNCNCNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_native15assert_retained00B7_",
+        "count": 4,
+        "code_regions": 2,
+        "covered_code_regions": 2,
+        "unexecuted_start_lines": []
+      },
+      {
+        "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_native14observe_parent0B5_",
+        "count": 5,
+        "code_regions": 67,
+        "covered_code_regions": 59,
+        "unexecuted_start_lines": [
+          47,
+          48,
+          68,
+          69,
+          73,
+          74,
+          79,
+          80
+        ]
+      },
+      {
+        "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_native15assert_retained0B5_",
+        "count": 4,
+        "code_regions": 4,
+        "covered_code_regions": 4,
+        "unexecuted_start_lines": []
+      },
+      {
+        "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_native25creation_failure_scenario0B5_",
+        "count": 3,
+        "code_regions": 2,
+        "covered_code_regions": 2,
+        "unexecuted_start_lines": []
+      },
+      {
+        "name": "_RNvMNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_nativeNtB2_10ParentHook7install",
+        "count": 1,
+        "code_regions": 26,
+        "covered_code_regions": 23,
+        "unexecuted_start_lines": [
+          128,
+          129,
+          131
+        ]
+      },
+      {
+        "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_native14observe_parent",
+        "count": 5,
+        "code_regions": 11,
+        "covered_code_regions": 10,
+        "unexecuted_start_lines": [
+          92
+        ]
+      },
+      {
+        "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_native15assert_retained",
+        "count": 4,
+        "code_regions": 42,
+        "covered_code_regions": 42,
+        "unexecuted_start_lines": []
+      },
+      {
+        "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_native25creation_failure_scenario",
+        "count": 1,
+        "code_regions": 235,
+        "covered_code_regions": 235,
+        "unexecuted_start_lines": []
+      },
+      {
+        "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_native7pending",
+        "count": 3,
+        "code_regions": 12,
+        "covered_code_regions": 12,
+        "unexecuted_start_lines": []
+      },
+      {
+        "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_native9free_hook",
+        "count": 1,
+        "code_regions": 8,
+        "covered_code_regions": 8,
+        "unexecuted_start_lines": []
+      },
+      {
+        "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_natives_77copied_native_ipc_registration_failure_cleans_up_and_retries_preserving_state",
+        "count": 1,
+        "code_regions": 6,
+        "covered_code_regions": 6,
+        "unexecuted_start_lines": []
+      },
+      {
+        "name": "_RNvXs_NtCsjkduUWRBBt7_18trigger_parameters23creation_failure_nativeNtB4_10ParentHookNtNtNtCs27Vx93FoQ6z_4core3ops4drop4Drop4drop",
+        "count": 1,
+        "code_regions": 4,
+        "covered_code_regions": 4,
+        "unexecuted_start_lines": []
+      }
+    ],
+    "limits": "Focused single-criterion coverage, not full-owner coverage. Fixture defenses for malformed/null input, reentrant borrow, duplicate eligible view, missing manager, registration refusal and caught panic did not execute; sentinel callback intentionally never delivered. Unrelated NativeEditor/facade paths remain outside this measured run. Extracted scenario and shared signed-state helper each have all measured code regions executed."
+  },
+  "refactor": {
+    "production": "No change justified: existing explicit disconnect-before-error and owner destruction already satisfy the genuine injected failure and retry. No useful production extraction found at this bounded unchanged boundary.",
+    "test": "Named scenario replaces dense thread closure for readable setup/calibration/cleanup/retry; reuse existing unchanged render/state/DOM helpers. Keep hook ownership and nondefault signed oracle local to this one boundary; avoid shared fixture API expansion."
+  },
+  "setup_qualifications": [
+    "Initial compile failed solely due incorrect WebKit trait import; corrected before execution.",
+    "Initial revision1 expectation was corrected to the specified unchanged-document revision0 from source contract before first execution, not from a product assertion failure.",
+    "Initial native regression orchestrator expected17 listed cases but discovered18 including nested allocator helper; corrected explicit parent-owned child exclusion, then all17 outer cases executed.",
+    "Initial two compile guards recorded sandbox-namespace PGIDs9/18; their tool sessions exited. All later builds and every native/LLVM run used actual-host process groups and final actual-host audit found no owned workers or builders.",
+    "Shared rule sync remote query unavailable; no shared guidance changes."
+  ],
+  "timing_lane_review": {
+    "new_native_samples_seconds": [
+      1.0186827749712393,
+      1.0181458889856003,
+      0.9689022080274299,
+      1.0182598700048402
+    ],
+    "decision": "Retain explicit ignored native slow lane: genuine WebView/DSO/host event-loop boundary; no timing-driven lane movement.17 fast owner cases complete in2.03s."
+  },
+  "scope_limits": [
+    "Mutation excluded by assignment.",
+    "Monolithic lower real_child test includes a TcpListener CSP probe and was not run under no-server constraint; existing source unchanged, separate5-case copied GUI and lower handler rollback regressions pass.",
+    "No OS input, DAW/device/server/settings changes, continuously running audio, multi-instance new criterion, global framework unloading, full G3/beta/task completion or installed-product readiness claimed.",
+    "Root owns CMake/Python registration, spec/tracker/docs, review, Git and publication."
+  ],
+  "restoration": "final-restoration-audit.json",
+  "retained_outputs": "Evidence root includes raw logs, source snapshots/preimages, exact compiler command captures, source/copy hashes, copied normal binaries/resources and profile exports. Task-owned LLVM ELFs and builds retained in cache-host-snapshot-cov/g3-creation-failure; no cache deletion or relocation.",
+  "handback": {
+    "all_sources_released": [
+      "/tmp/dandrum-lanes/runtime/src/clap-adapter/tests/internal/trigger_creation_failure_native.rs",
+      "/tmp/dandrum-lanes/runtime/src/clap-adapter/tests/trigger_parameters.rs",
+      "approved metadata-only /tmp/dandrum-lanes/runtime/src/trigger-editor/src/native_x11.rs"
+    ],
+    "all_cache_leases_released": [
+      "/tmp/dandrum-lanes/cache-editor-guard",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov"
+    ],
+    "root_cache_runtime_untouched": true,
+    "known_runtime_untracked_cache_1766_preserved": true,
+    "owned_workers_remaining": 0,
+    "builders_remaining": 0,
+    "normal_dso_resources_restored": true,
+    "no_further_work_without_followup": true
+  }
+}

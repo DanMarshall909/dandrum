@@ -1,0 +1,1177 @@
+{
+  "binding_sha256": "9370c267a2631815b2eb4156231c113edab1ad102ece1260a89a89878515bd97",
+  "objects": {
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-creation-failure/dso-final/libdandrum_clap_adapter.so": "3738110026a86cc6c4744bd241fbc244ea454ad4ce866a47882dc38778623e26",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-creation-failure/test/trigger_parameters-8fc57b2ef83fb6e4": "e1193b900b7a6d74a6230e597f9999a79831bdca2b5e01de13d0e24e1621f829"
+  },
+  "profiles": {
+    "/tmp/dandrum-evidence/g3-creation-failure/coverage/12894584750217267763_0-2221063.profraw": "91ceeb11ba7a0905410ce9cd6c88d8db3fe13bd20c7ebe2af764d85789698310",
+    "/tmp/dandrum-evidence/g3-creation-failure/coverage/4531245822684559344_0-2221063.profraw": "ed49e8948d338d716c29d3e3dc8046b58f0236059e57cbbb31715ed469cffec7"
+  },
+  "original_export_sha256": "74d52680157aab54d9c9633f254d1190d11fb03d0a1e5472ca929b8a9e8a9179",
+  "regenerated_export_sha256": "74d52680157aab54d9c9633f254d1190d11fb03d0a1e5472ca929b8a9e8a9179",
+  "commands": [
+    [
+      "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-profdata",
+      "merge",
+      "-sparse",
+      "/tmp/dandrum-evidence/g3-creation-failure/coverage/12894584750217267763_0-2221063.profraw",
+      "/tmp/dandrum-evidence/g3-creation-failure/coverage/4531245822684559344_0-2221063.profraw",
+      "-o",
+      "/tmp/dandrum-evidence/g3-creation-native-fixture/root-final.profdata"
+    ],
+    [
+      "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov",
+      "export",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-creation-failure/dso-final/libdandrum_clap_adapter.so",
+      "--object=/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-creation-failure/test/trigger_parameters-8fc57b2ef83fb6e4",
+      "--instr-profile=/tmp/dandrum-evidence/g3-creation-native-fixture/root-final.profdata"
+    ]
+  ],
+  "exit": [
+    0,
+    0
+  ],
+  "seconds": 0.04675764997955412,
+  "functions": [
+    {
+      "name": "_RINvMs0_NtCs6gDYDuhzVJj_22dandrum_trigger_editor10native_x11NtB6_12NativeEditor18create_initializedNCNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB1J_4Core10set_parents5_0EB1L_",
+      "source": "src/trigger-editor/src/native_x11.rs",
+      "source_sha256": "a2803e24488a04350d951fc2809c7afe2025a191fb38995efe9610181e2aea73",
+      "function_count": 2,
+      "source_regions": 40,
+      "positive_source_regions": 38,
+      "zero_hit_spans": [
+        [
+          97,
+          57,
+          97,
+          58
+        ],
+        [
+          117,
+          10,
+          117,
+          11
+        ]
+      ],
+      "ipc_failure_regions": [
+        [
+          131,
+          13,
+          131,
+          20,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          131,
+          21,
+          131,
+          31,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          131,
+          32,
+          131,
+          39,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          132,
+          20,
+          132,
+          53,
+          1,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "name": "_RNCINvMs0_NtCs6gDYDuhzVJj_22dandrum_trigger_editor10native_x11NtB8_12NativeEditor18create_initializedNCNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB1L_4Core10set_parents5_0E0B1N_",
+      "source": "src/trigger-editor/src/native_x11.rs",
+      "source_sha256": "a2803e24488a04350d951fc2809c7afe2025a191fb38995efe9610181e2aea73",
+      "function_count": 1,
+      "source_regions": 2,
+      "positive_source_regions": 2,
+      "zero_hit_spans": [],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNCINvMs0_NtCs6gDYDuhzVJj_22dandrum_trigger_editor10native_x11NtB8_12NativeEditor18create_initializedNCNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB1L_4Core10set_parents5_0Es0_0B1N_",
+      "source": "src/trigger-editor/src/native_x11.rs",
+      "source_sha256": "a2803e24488a04350d951fc2809c7afe2025a191fb38995efe9610181e2aea73",
+      "function_count": 3,
+      "source_regions": 7,
+      "positive_source_regions": 6,
+      "zero_hit_spans": [
+        [
+          128,
+          13,
+          128,
+          14
+        ]
+      ],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNCINvMs0_NtCs6gDYDuhzVJj_22dandrum_trigger_editor10native_x11NtB8_12NativeEditor18create_initializedNCNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB1L_4Core10set_parents5_0Es_0B1N_",
+      "source": "src/trigger-editor/src/native_x11.rs",
+      "source_sha256": "a2803e24488a04350d951fc2809c7afe2025a191fb38995efe9610181e2aea73",
+      "function_count": 9,
+      "source_regions": 21,
+      "positive_source_regions": 20,
+      "zero_hit_spans": [
+        [
+          108,
+          31,
+          108,
+          62
+        ]
+      ],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNCNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB9_4Core10set_parent0Bb_",
+      "source": "src/clap-adapter/src/trigger/gui.rs",
+      "source_sha256": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+      "function_count": 2,
+      "source_regions": 3,
+      "positive_source_regions": 3,
+      "zero_hit_spans": [],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNCNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB9_4Core10set_parents0_0Bb_",
+      "source": "src/clap-adapter/src/trigger/gui.rs",
+      "source_sha256": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+      "function_count": 0,
+      "source_regions": 1,
+      "positive_source_regions": 0,
+      "zero_hit_spans": [
+        [
+          245,
+          59,
+          245,
+          67
+        ]
+      ],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNCNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB9_4Core10set_parents1_0Bb_",
+      "source": "src/clap-adapter/src/trigger/gui.rs",
+      "source_sha256": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+      "function_count": 0,
+      "source_regions": 1,
+      "positive_source_regions": 0,
+      "zero_hit_spans": [
+        [
+          251,
+          74,
+          251,
+          82
+        ]
+      ],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNCNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB9_4Core10set_parents2_0Bb_",
+      "source": "src/clap-adapter/src/trigger/gui.rs",
+      "source_sha256": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+      "function_count": 0,
+      "source_regions": 1,
+      "positive_source_regions": 0,
+      "zero_hit_spans": [
+        [
+          256,
+          33,
+          256,
+          41
+        ]
+      ],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNCNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB9_4Core10set_parents3_0Bb_",
+      "source": "src/clap-adapter/src/trigger/gui.rs",
+      "source_sha256": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+      "function_count": 0,
+      "source_regions": 1,
+      "positive_source_regions": 0,
+      "zero_hit_spans": [
+        [
+          261,
+          26,
+          261,
+          34
+        ]
+      ],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNCNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB9_4Core10set_parents4_0Bb_",
+      "source": "src/clap-adapter/src/trigger/gui.rs",
+      "source_sha256": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+      "function_count": 0,
+      "source_regions": 1,
+      "positive_source_regions": 0,
+      "zero_hit_spans": [
+        [
+          263,
+          26,
+          263,
+          34
+        ]
+      ],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNCNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB9_4Core10set_parents5_0Bb_",
+      "source": "src/clap-adapter/src/trigger/gui.rs",
+      "source_sha256": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+      "function_count": 3,
+      "source_regions": 8,
+      "positive_source_regions": 7,
+      "zero_hit_spans": [
+        [
+          279,
+          17,
+          279,
+          18
+        ]
+      ],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNCNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB9_4Core10set_parents_0Bb_",
+      "source": "src/clap-adapter/src/trigger/gui.rs",
+      "source_sha256": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+      "function_count": 2,
+      "source_regions": 1,
+      "positive_source_regions": 1,
+      "zero_hit_spans": [],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNCNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB9_4Core18cleanup_attachment0Bb_",
+      "source": "src/clap-adapter/src/trigger/gui.rs",
+      "source_sha256": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+      "function_count": 0,
+      "source_regions": 1,
+      "positive_source_regions": 0,
+      "zero_hit_spans": [
+        [
+          208,
+          75,
+          208,
+          83
+        ]
+      ],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNCNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB9_4Core18cleanup_attachments0_0Bb_",
+      "source": "src/clap-adapter/src/trigger/gui.rs",
+      "source_sha256": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+      "function_count": 0,
+      "source_regions": 1,
+      "positive_source_regions": 0,
+      "zero_hit_spans": [
+        [
+          213,
+          30,
+          213,
+          38
+        ]
+      ],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNCNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB9_4Core18cleanup_attachments_0Bb_",
+      "source": "src/clap-adapter/src/trigger/gui.rs",
+      "source_sha256": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+      "function_count": 0,
+      "source_regions": 1,
+      "positive_source_regions": 0,
+      "zero_hit_spans": [
+        [
+          209,
+          63,
+          209,
+          71
+        ]
+      ],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB7_4Core10set_parent",
+      "source": "src/clap-adapter/src/trigger/gui.rs",
+      "source_sha256": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+      "function_count": 2,
+      "source_regions": 79,
+      "positive_source_regions": 68,
+      "zero_hit_spans": [
+        [
+          243,
+          34,
+          243,
+          35
+        ],
+        [
+          245,
+          70,
+          245,
+          71
+        ],
+        [
+          247,
+          24,
+          247,
+          39
+        ],
+        [
+          250,
+          34,
+          250,
+          35
+        ],
+        [
+          251,
+          85,
+          251,
+          86
+        ],
+        [
+          253,
+          20,
+          253,
+          35
+        ],
+        [
+          255,
+          56,
+          255,
+          57
+        ],
+        [
+          256,
+          44,
+          256,
+          45
+        ],
+        [
+          261,
+          37,
+          261,
+          38
+        ],
+        [
+          263,
+          37,
+          263,
+          38
+        ],
+        [
+          288,
+          42,
+          288,
+          43
+        ]
+      ],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNvMs0_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB7_4Core18cleanup_attachment",
+      "source": "src/clap-adapter/src/trigger/gui.rs",
+      "source_sha256": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+      "function_count": 5,
+      "source_regions": 20,
+      "positive_source_regions": 17,
+      "zero_hit_spans": [
+        [
+          208,
+          86,
+          208,
+          87
+        ],
+        [
+          209,
+          74,
+          209,
+          75
+        ],
+        [
+          213,
+          41,
+          213,
+          42
+        ]
+      ],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNvXs3_NtNtCs1tBDvsIcfi3_20dandrum_clap_adapter7trigger3guiNtB7_4MainNtNtNtCs9M4FlnzaK2r_16clack_extensions3gui6plugin13PluginGuiImpl10set_parent",
+      "source": "src/clap-adapter/src/trigger/gui.rs",
+      "source_sha256": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+      "function_count": 2,
+      "source_regions": 5,
+      "positive_source_regions": 5,
+      "zero_hit_spans": [],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RINvMs0_NtCs6gDYDuhzVJj_22dandrum_trigger_editor10native_x11NtB6_12NativeEditor18create_initializedpEB8_",
+      "source": "src/trigger-editor/src/native_x11.rs",
+      "source_sha256": "a2803e24488a04350d951fc2809c7afe2025a191fb38995efe9610181e2aea73",
+      "function_count": 0,
+      "source_regions": 40,
+      "positive_source_regions": 0,
+      "zero_hit_spans": [
+        [
+          91,
+          5,
+          96,
+          35
+        ],
+        [
+          97,
+          13,
+          97,
+          23
+        ],
+        [
+          97,
+          26,
+          97,
+          49
+        ],
+        [
+          97,
+          50,
+          97,
+          56
+        ],
+        [
+          97,
+          57,
+          97,
+          58
+        ],
+        [
+          98,
+          13,
+          98,
+          20
+        ],
+        [
+          98,
+          23,
+          98,
+          42
+        ],
+        [
+          99,
+          14,
+          99,
+          40
+        ],
+        [
+          99,
+          41,
+          99,
+          62
+        ],
+        [
+          100,
+          14,
+          100,
+          37
+        ],
+        [
+          101,
+          13,
+          101,
+          22
+        ],
+        [
+          101,
+          25,
+          101,
+          62
+        ],
+        [
+          102,
+          13,
+          102,
+          19
+        ],
+        [
+          103,
+          13,
+          103,
+          24
+        ],
+        [
+          104,
+          13,
+          104,
+          20
+        ],
+        [
+          105,
+          13,
+          105,
+          21
+        ],
+        [
+          117,
+          10,
+          117,
+          11
+        ],
+        [
+          118,
+          13,
+          118,
+          20
+        ],
+        [
+          118,
+          23,
+          120,
+          23
+        ],
+        [
+          121,
+          14,
+          121,
+          34
+        ],
+        [
+          122,
+          14,
+          122,
+          20
+        ],
+        [
+          122,
+          21,
+          122,
+          81
+        ],
+        [
+          125,
+          13,
+          125,
+          20
+        ],
+        [
+          125,
+          23,
+          125,
+          30
+        ],
+        [
+          125,
+          31,
+          125,
+          62
+        ],
+        [
+          125,
+          63,
+          125,
+          67
+        ],
+        [
+          130,
+          12,
+          130,
+          59
+        ],
+        [
+          130,
+          13,
+          130,
+          20
+        ],
+        [
+          131,
+          13,
+          131,
+          20
+        ],
+        [
+          131,
+          21,
+          131,
+          31
+        ],
+        [
+          131,
+          32,
+          131,
+          39
+        ],
+        [
+          132,
+          20,
+          132,
+          53
+        ],
+        [
+          133,
+          9,
+          133,
+          10
+        ],
+        [
+          134,
+          9,
+          134,
+          18
+        ],
+        [
+          134,
+          21,
+          134,
+          45
+        ],
+        [
+          135,
+          9,
+          135,
+          29
+        ],
+        [
+          135,
+          30,
+          135,
+          38
+        ],
+        [
+          135,
+          39,
+          135,
+          48
+        ],
+        [
+          136,
+          9,
+          136,
+          18
+        ],
+        [
+          137,
+          5,
+          137,
+          6
+        ]
+      ],
+      "ipc_failure_regions": [
+        [
+          131,
+          13,
+          131,
+          20,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          131,
+          21,
+          131,
+          31,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          131,
+          32,
+          131,
+          39,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          132,
+          20,
+          132,
+          53,
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "name": "_RNCINvMs0_NtCs6gDYDuhzVJj_22dandrum_trigger_editor10native_x11NtB8_12NativeEditor18create_initializedpE0Ba_",
+      "source": "src/trigger-editor/src/native_x11.rs",
+      "source_sha256": "a2803e24488a04350d951fc2809c7afe2025a191fb38995efe9610181e2aea73",
+      "function_count": 0,
+      "source_regions": 2,
+      "positive_source_regions": 0,
+      "zero_hit_spans": [
+        [
+          100,
+          44,
+          100,
+          47
+        ],
+        [
+          100,
+          51,
+          100,
+          60
+        ]
+      ],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNCINvMs0_NtCs6gDYDuhzVJj_22dandrum_trigger_editor10native_x11NtB8_12NativeEditor18create_initializedpEs0_0Ba_",
+      "source": "src/trigger-editor/src/native_x11.rs",
+      "source_sha256": "a2803e24488a04350d951fc2809c7afe2025a191fb38995efe9610181e2aea73",
+      "function_count": 0,
+      "source_regions": 7,
+      "positive_source_regions": 0,
+      "zero_hit_spans": [
+        [
+          125,
+          87,
+          125,
+          88
+        ],
+        [
+          126,
+          25,
+          126,
+          30
+        ],
+        [
+          126,
+          34,
+          126,
+          52
+        ],
+        [
+          126,
+          53,
+          128,
+          14
+        ],
+        [
+          127,
+          17,
+          127,
+          27
+        ],
+        [
+          128,
+          13,
+          128,
+          14
+        ],
+        [
+          129,
+          9,
+          129,
+          10
+        ]
+      ],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNCINvMs0_NtCs6gDYDuhzVJj_22dandrum_trigger_editor10native_x11NtB8_12NativeEditor18create_initializedpEs_0Ba_",
+      "source": "src/trigger-editor/src/native_x11.rs",
+      "source_sha256": "a2803e24488a04350d951fc2809c7afe2025a191fb38995efe9610181e2aea73",
+      "function_count": 0,
+      "source_regions": 21,
+      "positive_source_regions": 0,
+      "zero_hit_spans": [
+        [
+          105,
+          40,
+          105,
+          41
+        ],
+        [
+          106,
+          22,
+          106,
+          28
+        ],
+        [
+          106,
+          30,
+          106,
+          34
+        ],
+        [
+          106,
+          36,
+          106,
+          41
+        ],
+        [
+          106,
+          51,
+          106,
+          57
+        ],
+        [
+          106,
+          51,
+          106,
+          91
+        ],
+        [
+          106,
+          58,
+          106,
+          63
+        ],
+        [
+          107,
+          24,
+          107,
+          29
+        ],
+        [
+          107,
+          34,
+          107,
+          73
+        ],
+        [
+          107,
+          40,
+          107,
+          50
+        ],
+        [
+          108,
+          31,
+          108,
+          62
+        ],
+        [
+          110,
+          17,
+          110,
+          45
+        ],
+        [
+          111,
+          22,
+          111,
+          28
+        ],
+        [
+          111,
+          29,
+          111,
+          35
+        ],
+        [
+          112,
+          22,
+          112,
+          28
+        ],
+        [
+          112,
+          45,
+          112,
+          49
+        ],
+        [
+          113,
+          22,
+          113,
+          28
+        ],
+        [
+          114,
+          22,
+          114,
+          26
+        ],
+        [
+          114,
+          27,
+          114,
+          44
+        ],
+        [
+          115,
+          22,
+          115,
+          28
+        ],
+        [
+          116,
+          13,
+          116,
+          14
+        ]
+      ],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNCNCNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_native14observe_parent00B7_",
+      "source": "src/clap-adapter/tests/internal/trigger_creation_failure_native.rs",
+      "source_sha256": "5bc6bb0a52a819ab15ce7b940f9cc55148c157964effcf66b147502948b22dd8",
+      "function_count": 0,
+      "source_regions": 5,
+      "positive_source_regions": 0,
+      "zero_hit_spans": [
+        [
+          83,
+          82,
+          83,
+          83
+        ],
+        [
+          84,
+          13,
+          84,
+          21
+        ],
+        [
+          84,
+          13,
+          84,
+          59
+        ],
+        [
+          84,
+          22,
+          84,
+          25
+        ],
+        [
+          85,
+          9,
+          85,
+          10
+        ]
+      ],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNCNCNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_native15assert_retained00B7_",
+      "source": "src/clap-adapter/tests/internal/trigger_creation_failure_native.rs",
+      "source_sha256": "5bc6bb0a52a819ab15ce7b940f9cc55148c157964effcf66b147502948b22dd8",
+      "function_count": 4,
+      "source_regions": 2,
+      "positive_source_regions": 2,
+      "zero_hit_spans": [],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_native14observe_parent0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_creation_failure_native.rs",
+      "source_sha256": "5bc6bb0a52a819ab15ce7b940f9cc55148c157964effcf66b147502948b22dd8",
+      "function_count": 5,
+      "source_regions": 67,
+      "positive_source_regions": 59,
+      "zero_hit_spans": [
+        [
+          47,
+          13,
+          47,
+          35
+        ],
+        [
+          48,
+          13,
+          48,
+          19
+        ],
+        [
+          68,
+          13,
+          68,
+          35
+        ],
+        [
+          69,
+          13,
+          69,
+          19
+        ],
+        [
+          73,
+          13,
+          73,
+          35
+        ],
+        [
+          74,
+          13,
+          74,
+          19
+        ],
+        [
+          79,
+          13,
+          79,
+          35
+        ],
+        [
+          80,
+          13,
+          80,
+          19
+        ]
+      ],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_native15assert_retained0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_creation_failure_native.rs",
+      "source_sha256": "5bc6bb0a52a819ab15ce7b940f9cc55148c157964effcf66b147502948b22dd8",
+      "function_count": 4,
+      "source_regions": 4,
+      "positive_source_regions": 4,
+      "zero_hit_spans": [],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_native25creation_failure_scenario0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_creation_failure_native.rs",
+      "source_sha256": "5bc6bb0a52a819ab15ce7b940f9cc55148c157964effcf66b147502948b22dd8",
+      "function_count": 3,
+      "source_regions": 2,
+      "positive_source_regions": 2,
+      "zero_hit_spans": [],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNvMNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_nativeNtB2_10ParentHook7install",
+      "source": "src/clap-adapter/tests/internal/trigger_creation_failure_native.rs",
+      "source_sha256": "5bc6bb0a52a819ab15ce7b940f9cc55148c157964effcf66b147502948b22dd8",
+      "function_count": 1,
+      "source_regions": 26,
+      "positive_source_regions": 23,
+      "zero_hit_spans": [
+        [
+          128,
+          13,
+          130,
+          14
+        ],
+        [
+          129,
+          17,
+          129,
+          21
+        ],
+        [
+          131,
+          13,
+          131,
+          19
+        ]
+      ],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_native14observe_parent",
+      "source": "src/clap-adapter/tests/internal/trigger_creation_failure_native.rs",
+      "source_sha256": "5bc6bb0a52a819ab15ce7b940f9cc55148c157964effcf66b147502948b22dd8",
+      "function_count": 5,
+      "source_regions": 11,
+      "positive_source_regions": 10,
+      "zero_hit_spans": [
+        [
+          92,
+          25,
+          94,
+          6
+        ]
+      ],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_native15assert_retained",
+      "source": "src/clap-adapter/tests/internal/trigger_creation_failure_native.rs",
+      "source_sha256": "5bc6bb0a52a819ab15ce7b940f9cc55148c157964effcf66b147502948b22dd8",
+      "function_count": 4,
+      "source_regions": 42,
+      "positive_source_regions": 42,
+      "zero_hit_spans": [],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_native25creation_failure_scenario",
+      "source": "src/clap-adapter/tests/internal/trigger_creation_failure_native.rs",
+      "source_sha256": "5bc6bb0a52a819ab15ce7b940f9cc55148c157964effcf66b147502948b22dd8",
+      "function_count": 1,
+      "source_regions": 235,
+      "positive_source_regions": 235,
+      "zero_hit_spans": [],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_native7pending",
+      "source": "src/clap-adapter/tests/internal/trigger_creation_failure_native.rs",
+      "source_sha256": "5bc6bb0a52a819ab15ce7b940f9cc55148c157964effcf66b147502948b22dd8",
+      "function_count": 3,
+      "source_regions": 12,
+      "positive_source_regions": 12,
+      "zero_hit_spans": [],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_native9free_hook",
+      "source": "src/clap-adapter/tests/internal/trigger_creation_failure_native.rs",
+      "source_sha256": "5bc6bb0a52a819ab15ce7b940f9cc55148c157964effcf66b147502948b22dd8",
+      "function_count": 1,
+      "source_regions": 8,
+      "positive_source_regions": 8,
+      "zero_hit_spans": [],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters23creation_failure_natives_77copied_native_ipc_registration_failure_cleans_up_and_retries_preserving_state",
+      "source": "src/clap-adapter/tests/internal/trigger_creation_failure_native.rs",
+      "source_sha256": "5bc6bb0a52a819ab15ce7b940f9cc55148c157964effcf66b147502948b22dd8",
+      "function_count": 1,
+      "source_regions": 6,
+      "positive_source_regions": 6,
+      "zero_hit_spans": [],
+      "ipc_failure_regions": []
+    },
+    {
+      "name": "_RNvXs_NtCsjkduUWRBBt7_18trigger_parameters23creation_failure_nativeNtB4_10ParentHookNtNtNtCs27Vx93FoQ6z_4core3ops4drop4Drop4drop",
+      "source": "src/clap-adapter/tests/internal/trigger_creation_failure_native.rs",
+      "source_sha256": "5bc6bb0a52a819ab15ce7b940f9cc55148c157964effcf66b147502948b22dd8",
+      "function_count": 1,
+      "source_regions": 4,
+      "positive_source_regions": 4,
+      "zero_hit_spans": [],
+      "ipc_failure_regions": []
+    }
+  ],
+  "scope": "Independent fresh merge/export from rehashed exact tools,2 actual ELFs and2 raw profiles; parsed export equality. File-identified code regions only, IPC disconnection/failure return executed once and successful retry executes same constructor. Unhit existing generic error/closure and fixture-defense regions disclosed. No branch, whole-owner or universal callback-quiescence claim."
+}

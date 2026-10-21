@@ -1471,3 +1471,6 @@ mod structural_native;
 
 #[path = "internal/trigger_note_native.rs"]
 mod note_native;
+
+#[path = "internal/trigger_creation_failure_native.rs"]
+mod creation_failure_native;

@@ -473,7 +473,7 @@ if(DANDRUM_CLAP_PROOF)
                 state flush ownership
                 timer-required timer-refused timer-delivery timer-rollback
                 source-credits feedback-undo callback-audit invalid-stopped-flush structural-session
-                note-hold note-heartbeat note-expiry note-destroy)
+                note-hold note-heartbeat note-expiry note-destroy creation-failure)
             set(trigger_parameter_cases
                 copied_native_parameter_state_is_an_authenticated_numeric_dto
                 copied_native_parameter_flush_delivers_host_accepted_gestures
@@ -490,7 +490,8 @@ if(DANDRUM_CLAP_PROOF)
                 note_native::copied_native_gated_sample_outlasts_short_fixture_and_releases
                 note_native::copied_native_heartbeat_renews_held_note_past_original_deadline
                 note_native::copied_native_live_attachment_expires_renewed_note_and_preserves_host_voice
-                note_native::copied_native_destroy_releases_held_activity_once_and_reconnects)
+                note_native::copied_native_destroy_releases_held_activity_once_and_reconnects
+                creation_failure_native::copied_native_ipc_registration_failure_cleans_up_and_retries_preserving_state)
             foreach(parameter_name parameter_case IN ZIP_LISTS trigger_parameter_names trigger_parameter_cases)
                 add_test(NAME trigger-clap-native-parameter-${parameter_name}
                     COMMAND ${CMAKE_COMMAND} -E env GDK_BACKEND=x11
