@@ -1,0 +1,102 @@
+{
+  "base": "72c58e0bcf308d5f181cf75f2875f76f3a1a3b4e",
+  "author": "/tmp/dandrum-lanes/runtime",
+  "integration": "/tmp/dandrum-lanes/integration",
+  "source_freeze_sha256": "4b4a452bf4dea8c7efcd2c68d277296f509994181f8a84dcc1f818e03c71f21b",
+  "paths": [
+    {
+      "path": "openspec/changes/add-juce-free-trigger-clap-editor/design.md",
+      "sha256": "9cafe386cb3a8adfd270d081e7a9757c672c2beae8fd817f5020f8b41286bb73",
+      "mode": "0o664",
+      "original_mtime_ns": 1792555933680571166,
+      "assembled_mtime_ns": 1792557765797009879,
+      "reason": "Fresh timestamp ensures reused Cargo detects current copied inputs; content/mode unchanged"
+    },
+    {
+      "path": "src/clap-adapter/Cargo.lock",
+      "sha256": "a02bdefbdd45c107a97314373201f90776a0bc865d30406cb957a04c3b07501e",
+      "mode": "0o664",
+      "original_mtime_ns": 1792556649361349290,
+      "assembled_mtime_ns": 1792557765797009879,
+      "reason": "Fresh timestamp ensures reused Cargo detects current copied inputs; content/mode unchanged"
+    },
+    {
+      "path": "src/clap-adapter/Cargo.toml",
+      "sha256": "1f09674d7a890258e94d7dd4da04aee2240830c027d443ffb5c5c1d8482507c2",
+      "mode": "0o664",
+      "original_mtime_ns": 1792556649217049937,
+      "assembled_mtime_ns": 1792557765797009879,
+      "reason": "Fresh timestamp ensures reused Cargo detects current copied inputs; content/mode unchanged"
+    },
+    {
+      "path": "src/clap-adapter/src/lib.rs",
+      "sha256": "26955a02dd99fa07fa7601072b8cd67aac658c90f7c738ca09d552a153d87ed6",
+      "mode": "0o664",
+      "original_mtime_ns": 1792556036715904063,
+      "assembled_mtime_ns": 1792557765797009879,
+      "reason": "Fresh timestamp ensures reused Cargo detects current copied inputs; content/mode unchanged"
+    },
+    {
+      "path": "src/clap-adapter/src/trigger.rs",
+      "sha256": "d155c46d9f514de812b8ba4e0155bbcadcd3650e18fb59cd217a093e2eeb9ead",
+      "mode": "0o664",
+      "original_mtime_ns": 1792557267523723990,
+      "assembled_mtime_ns": 1792557765797009879,
+      "reason": "Fresh timestamp ensures reused Cargo detects current copied inputs; content/mode unchanged"
+    },
+    {
+      "path": "src/clap-adapter/tests/fixtures/allocator_interpose.c",
+      "sha256": "6b80a560e2eded4276befd2252699c427fcdc7638387975c7c343e41d63c8dc9",
+      "mode": "0o664",
+      "original_mtime_ns": 1792556649207350686,
+      "assembled_mtime_ns": 1792557765797009879,
+      "reason": "Fresh timestamp ensures reused Cargo detects current copied inputs; content/mode unchanged"
+    },
+    {
+      "path": "src/clap-adapter/tests/fixtures/allocator_probe.rs",
+      "sha256": "6ae6c66a02750fea4ed381e2d3088638c6b500eb21bb35b9c131897111a8a11e",
+      "mode": "0o664",
+      "original_mtime_ns": 1792556649208350677,
+      "assembled_mtime_ns": 1792557765797009879,
+      "reason": "Fresh timestamp ensures reused Cargo detects current copied inputs; content/mode unchanged"
+    },
+    {
+      "path": "src/clap-adapter/tests/public_engine_baseline.rs",
+      "sha256": "57749272dafa9eaace07c4d8a0ed95c0a4013c5495df5986ea8763dc4141d5ee",
+      "mode": "0o664",
+      "original_mtime_ns": 1792556060221064391,
+      "assembled_mtime_ns": 1792557765797009879,
+      "reason": "Fresh timestamp ensures reused Cargo detects current copied inputs; content/mode unchanged"
+    },
+    {
+      "path": "src/clap-adapter/tests/trigger_dynamic.rs",
+      "sha256": "3009f36b815571d0b03827cd8453195cf356cd93cd6144a010473be87c0e47c7",
+      "mode": "0o664",
+      "original_mtime_ns": 1792557267612740974,
+      "assembled_mtime_ns": 1792557765797009879,
+      "reason": "Fresh timestamp ensures reused Cargo detects current copied inputs; content/mode unchanged"
+    },
+    {
+      "path": "src/trigger-host/src/parameters.rs",
+      "sha256": "9a432f3beb793eb662bba5943a99448b51b93ae3590888d47ddd2ebfc8b7e624",
+      "mode": "0o664",
+      "original_mtime_ns": 1792555717785798343,
+      "assembled_mtime_ns": 1792557765797009879,
+      "reason": "Fresh timestamp ensures reused Cargo detects current copied inputs; content/mode unchanged"
+    },
+    {
+      "path": "src/trigger-host/tests/parameters.rs",
+      "sha256": "8bcbba34b63edb4e01c7747d7099b23701972f1a78b3f102f792eaae65a455c6",
+      "mode": "0o664",
+      "original_mtime_ns": 1792555717823797998,
+      "assembled_mtime_ns": 1792557765797009879,
+      "reason": "Fresh timestamp ensures reused Cargo detects current copied inputs; content/mode unchanged"
+    }
+  ],
+  "root_owned": {
+    "CMakeLists.txt": "da93d05bb702596feffdda585b403ba3d540f318f76e7bf45282fa69c39fa3e4",
+    "README.md": "ff0d27a6ca11c6798831b4f569b8c09e93d98607da20cf7a375115c0f88648ce",
+    "tests/python/test_engine_only_build.py": "c5d14562343138815428cf1b44d43e7aacc06e014b9b15cfcbe4b4f84c7ec842"
+  },
+  "scope": "Combined headless Trigger source exact author bytes plus root CMake/Python/README and accepted design; no source/evidence deletion, no cache writes"
+}

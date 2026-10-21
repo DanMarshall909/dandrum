@@ -1,0 +1,2041 @@
+{
+  "phases": [
+    "cov-62-final-host",
+    "cov-72-final-adapter"
+  ],
+  "command": [
+    "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov",
+    "export",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/dandrum_trigger_host-74af2808e759a756",
+    "-instr-profile=/tmp/dandrum-lanes/evidence-trigger-clap-product/final.profdata",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/editor_note_controller-93ab342e13195992",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/editor_notes-2f92000a1525ddb2",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/packaged_resources-a0be87d377a13bfa",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/parameter_flush-dac76662096efddf",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/parameters-61a6dfeef9f684b3",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/protocol-17022afda0b69f9d",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/render_reconfiguration-70aa52fa0adb54a2",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/runtime-632a9b9eae97186b",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/runtime_quiescent-904140b1151cb0a0",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/session_jobs-0afee40e9f6fe646",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/snapshot-39b7febe2f533f6e",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/state-d8733cf43751c983",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/dandrum_clap_adapter-d604157fc4a2bcb3",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/clap_dynamic-f4c042cd2ef11c65",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/public_engine_baseline-4c4fef3cdcec18c3",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/trigger_dynamic-684e4511ff308844",
+    "-object",
+    "/tmp/dandrum-lanes/evidence-trigger-clap-product/objects/Trigger-instrumented-final.clap",
+    "-object",
+    "/tmp/dandrum-lanes/evidence-trigger-clap-product/objects/HeadlessProof-instrumented.clap",
+    "/tmp/dandrum-lanes/runtime/src/trigger-host/src/lib.rs",
+    "/tmp/dandrum-lanes/runtime/src/trigger-host/src/parameters.rs",
+    "/tmp/dandrum-lanes/runtime/src/trigger-host/src/protocol.rs",
+    "/tmp/dandrum-lanes/runtime/src/trigger-host/src/runtime.rs",
+    "/tmp/dandrum-lanes/runtime/src/trigger-host/src/state.rs",
+    "/tmp/dandrum-lanes/runtime/src/clap-adapter/src/lib.rs",
+    "/tmp/dandrum-lanes/runtime/src/clap-adapter/src/trigger.rs"
+  ],
+  "source_hashes": {
+    "/tmp/dandrum-lanes/runtime/src/trigger-host/src/lib.rs": "d16daf1630f43184909847e03107d402a8d54f3bf2fe6085a8bfd966c1aa80f9",
+    "/tmp/dandrum-lanes/runtime/src/trigger-host/src/parameters.rs": "9a432f3beb793eb662bba5943a99448b51b93ae3590888d47ddd2ebfc8b7e624",
+    "/tmp/dandrum-lanes/runtime/src/trigger-host/src/protocol.rs": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+    "/tmp/dandrum-lanes/runtime/src/trigger-host/src/runtime.rs": "41cb146824e21aa3c5814885b5561cd00d8152b5390338af25af26bc96f62592",
+    "/tmp/dandrum-lanes/runtime/src/trigger-host/src/state.rs": "9355b2c855998d2306c053d50485eea617103b932c7de7e04aa1929d7719afaf",
+    "/tmp/dandrum-lanes/runtime/src/clap-adapter/src/lib.rs": "26955a02dd99fa07fa7601072b8cd67aac658c90f7c738ca09d552a153d87ed6",
+    "/tmp/dandrum-lanes/runtime/src/clap-adapter/src/trigger.rs": "d155c46d9f514de812b8ba4e0155bbcadcd3650e18fb59cd217a093e2eeb9ead"
+  },
+  "objects": [
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/dandrum_trigger_host-74af2808e759a756",
+      "sha256": "9dedf225f634aab4941f90f2b1ab427c841162ab7d18f2fd93de192d5ef9b1b2",
+      "build_ids": [
+        "8a1b90c365b59e1f85ae18fc2b473f3f73528a24"
+      ],
+      "size": 231199352
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/editor_note_controller-93ab342e13195992",
+      "sha256": "8c7955315ad8e37cfcea959d9089978b766844ca35243059fc9678b3461eff1e",
+      "build_ids": [
+        "31d18817c005c2c3a422310476e84f2e0d488a6b"
+      ],
+      "size": 234298544
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/editor_notes-2f92000a1525ddb2",
+      "sha256": "baa60df7d9e06734b871e53731915227029d790a25896047457e64b7c3d9e51b",
+      "build_ids": [
+        "eb6d1f25e3142eaffb94be370d261ec4992d04e4"
+      ],
+      "size": 231662712
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/packaged_resources-a0be87d377a13bfa",
+      "sha256": "e75eb83a139b457e497dd8f2c1430a0065887f951f564439072e933949249dba",
+      "build_ids": [
+        "0d5702f24e6e95f036107e292b75021fe5146f46"
+      ],
+      "size": 229537152
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/parameter_flush-dac76662096efddf",
+      "sha256": "c7d0a230ca929dc0071b0112104f4f2db620eb585faf211fef0c77832ea1812a",
+      "build_ids": [
+        "88df4701db11f2a7e4b8e0d11be75be721bcb0b9"
+      ],
+      "size": 234601048
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/parameters-61a6dfeef9f684b3",
+      "sha256": "6dfcc76d6fb3dd47ada5e65f506630d3ffa19b561c72c6b6c9c0dc88379d2cde",
+      "build_ids": [
+        "b2a3950c52080509a1a51792f94ae105273b85be"
+      ],
+      "size": 231901744
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/protocol-17022afda0b69f9d",
+      "sha256": "d2bab438e9981dd166f2e69af752fc79ad41f63f5d998d6671860ce09432bdd6",
+      "build_ids": [
+        "ca9b4d4c302833f6e7763c7b20a06f5fc2dc155d"
+      ],
+      "size": 229745344
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/render_reconfiguration-70aa52fa0adb54a2",
+      "sha256": "1cbbfdbe68f68c897f078b5fd4c72ccceb244ea8ae83e547e7c86b056f8285b7",
+      "build_ids": [
+        "f834fcc3033ddc93221897e036012cd9ca42f0de"
+      ],
+      "size": 233607048
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/runtime-632a9b9eae97186b",
+      "sha256": "bb5c58c8b71103539c985cc53af6ae11dbd657fff33d6b1e5c1adba9ae37f89f",
+      "build_ids": [
+        "fdbf53184885d70d26e9deed2beecaf0903b1ec3"
+      ],
+      "size": 231350136
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/runtime_quiescent-904140b1151cb0a0",
+      "sha256": "49496745de92dd10a4e22885caaf6f5795d9e2e210aa9b13cf3d793d51902410",
+      "build_ids": [
+        "45121bcc2e4bf9127233ff017197a63762dd90a4"
+      ],
+      "size": 231300480
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/session_jobs-0afee40e9f6fe646",
+      "sha256": "576dbcbb6f816958fe89db117173a939584903f367cc971d9801ceda273c72ff",
+      "build_ids": [
+        "9586cc58d528fd80b93650c4f196cd27727738ce"
+      ],
+      "size": 233401080
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/snapshot-39b7febe2f533f6e",
+      "sha256": "fb724761c3375b43ae865972c07393a80ab76f1f9ec55de93f265b8de8dadf4b",
+      "build_ids": [
+        "74236693ae5c6a6b91ec2aa6bcb145cc8bde375a"
+      ],
+      "size": 231366168
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/state-d8733cf43751c983",
+      "sha256": "8549073658cb82d9cd0153f3862fde12b3c082522e70a50eabe74c13d074446e",
+      "build_ids": [
+        "b05f22d315150664f05c3d46521c40a21c17f042"
+      ],
+      "size": 233592056
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/dandrum_clap_adapter-d604157fc4a2bcb3",
+      "sha256": "71378b00658e2f5694d9457367fb8bf514ef8a1f93c75d16df300006c9d25339",
+      "build_ids": [
+        "a4f4d48aaff2e540c09d35feb183d04ddcf0584e"
+      ],
+      "size": 14304960
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/clap_dynamic-f4c042cd2ef11c65",
+      "sha256": "a13a950eb7c4c86bddc8932ccd912899fbe94a860e8cfd49224f94bff458cbce",
+      "build_ids": [
+        "6b341f0dca85a284596fb070599e23f92f7e9ac4"
+      ],
+      "size": 78528768
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/public_engine_baseline-4c4fef3cdcec18c3",
+      "sha256": "86f1c49c321d542c4527d96e985ceaf428196d28e5b35561793c29c391fec99f",
+      "build_ids": [
+        "611a3a97ed927c2a4575e898d1e37e989d667e74"
+      ],
+      "size": 76832456
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/trigger_dynamic-684e4511ff308844",
+      "sha256": "ee3d6b2089db03f86f093672b0bf3be71001dec63d6ee6ae842b4d76864bb78b",
+      "build_ids": [
+        "469d855b152b4254458ef3a102318afaaa32655b"
+      ],
+      "size": 4947264
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/objects/Trigger-instrumented-final.clap",
+      "sha256": "59f2859037a468bb0cef62b18850c00d800ed331a06d194d258f5a2e5346d23c",
+      "build_ids": [
+        "806f69fb53c5e61ab6f82cdfea17578dffce4feb"
+      ],
+      "size": 82462168
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/objects/HeadlessProof-instrumented.clap",
+      "sha256": "277522863f945238e682ff670799f8bf48fe06f566df74398089fa10a3a42b5e",
+      "build_ids": [
+        "468b0a0244305bd51ce754eff8b5b0fea3ce5335"
+      ],
+      "size": 80732904
+    }
+  ],
+  "profiles": [
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1034-11959491177231969508_0.profraw",
+      "sha256": "6bc0e0ffd4d04e51c06e230c9694ab1d3f6f8d463e0a989975aec7e3751f355d",
+      "binary_ids": [
+        "8363f7a468e46c0cc1708796560044495c815602"
+      ],
+      "resolved_objects": {
+        "8363f7a468e46c0cc1708796560044495c815602": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-ef87c3f642cd2a5e.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1034-16454098129347547175_0.profraw",
+      "sha256": "3d0e0f2e2667bdcd3d734fa3d85ae119f2e7f6a418813ccb43a62d5606f9322b",
+      "binary_ids": [
+        "7bf1c687d161686ff15bae43b7b850efc1858b87"
+      ],
+      "resolved_objects": {
+        "7bf1c687d161686ff15bae43b7b850efc1858b87": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-1c0acb0cf617e2f0.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1034-7445422415660087432_0.profraw",
+      "sha256": "d2cc3efc54a8b10e24fc6c9e676a33442f450b94bbe56c87c3f0b25030e1e127",
+      "binary_ids": [
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce"
+      ],
+      "resolved_objects": {
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-c6569ea9572ef852.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1034-8992143448984527479_0.profraw",
+      "sha256": "e6fb73025a3562318e0d70ef7421098ad77e7fdbface81d5b340dbebb1a91598",
+      "binary_ids": [
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29"
+      ],
+      "resolved_objects": {
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-94d483477194399d.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1138-11959491177231969508_0.profraw",
+      "sha256": "2912a47d318ab90c4617a0f1a94193cbf50e8e220b202051da254394a605960d",
+      "binary_ids": [
+        "8363f7a468e46c0cc1708796560044495c815602"
+      ],
+      "resolved_objects": {
+        "8363f7a468e46c0cc1708796560044495c815602": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-ef87c3f642cd2a5e.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1138-16454098129347547175_0.profraw",
+      "sha256": "5e9588b21816a0b7817128d46f71a18966bc052404f9e6572b1d618394e8111b",
+      "binary_ids": [
+        "7bf1c687d161686ff15bae43b7b850efc1858b87"
+      ],
+      "resolved_objects": {
+        "7bf1c687d161686ff15bae43b7b850efc1858b87": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-1c0acb0cf617e2f0.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1138-7445422415660087432_0.profraw",
+      "sha256": "ee2f96292eeddc500aecfe2ce5e6de5434dce86563dbdf2cd75eeb23cc100358",
+      "binary_ids": [
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce"
+      ],
+      "resolved_objects": {
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-c6569ea9572ef852.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1138-8992143448984527479_0.profraw",
+      "sha256": "a15329ae3777da178ac4dfdd59cfbdb080d8f8338f6111e80f63e2e4921a1193",
+      "binary_ids": [
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29"
+      ],
+      "resolved_objects": {
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-94d483477194399d.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1218-11959491177231969508_0.profraw",
+      "sha256": "67c5d457ee9742bdde664e080e4153ca1894dfb009a8b7dbbf3be65ef02f9197",
+      "binary_ids": [
+        "8363f7a468e46c0cc1708796560044495c815602"
+      ],
+      "resolved_objects": {
+        "8363f7a468e46c0cc1708796560044495c815602": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-ef87c3f642cd2a5e.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1218-16454098129347547175_0.profraw",
+      "sha256": "cd07518b0c5d29cc3339b96f5098f2fb8c2fcdcd83154c263bfd29b8ac99d85c",
+      "binary_ids": [
+        "7bf1c687d161686ff15bae43b7b850efc1858b87"
+      ],
+      "resolved_objects": {
+        "7bf1c687d161686ff15bae43b7b850efc1858b87": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-1c0acb0cf617e2f0.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1218-7445422415660087432_0.profraw",
+      "sha256": "7015dab59319afe31eff7e8ece0f858bf14457ab4f15e21fb1c4a2abf0cf44f3",
+      "binary_ids": [
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce"
+      ],
+      "resolved_objects": {
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-c6569ea9572ef852.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1218-8992143448984527479_0.profraw",
+      "sha256": "c1141263323f9938ad1861c51053471ab0e0ee9a633220963eb242f34ab78ed2",
+      "binary_ids": [
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29"
+      ],
+      "resolved_objects": {
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-94d483477194399d.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1314-11959491177231969508_0.profraw",
+      "sha256": "eedf9bb24cecd85208e16453a687cb02c6ed9cc67e3b2be89bcd2b0d53eae4e3",
+      "binary_ids": [
+        "8363f7a468e46c0cc1708796560044495c815602"
+      ],
+      "resolved_objects": {
+        "8363f7a468e46c0cc1708796560044495c815602": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-ef87c3f642cd2a5e.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1314-16454098129347547175_0.profraw",
+      "sha256": "4ea914fed36373e3a4e21dce68ab447e6063eeead65a0bd2951876769b8950d5",
+      "binary_ids": [
+        "7bf1c687d161686ff15bae43b7b850efc1858b87"
+      ],
+      "resolved_objects": {
+        "7bf1c687d161686ff15bae43b7b850efc1858b87": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-1c0acb0cf617e2f0.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1314-7445422415660087432_0.profraw",
+      "sha256": "1b976311120194d1997a5509af0837c3b6b6d964db9709a1ff7fc3a27eb75881",
+      "binary_ids": [
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce"
+      ],
+      "resolved_objects": {
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-c6569ea9572ef852.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1314-8992143448984527479_0.profraw",
+      "sha256": "75a55d6e15c74e8e5be82dec16f57eebc78e3f5da63ab2a8e717f46e078f9dfb",
+      "binary_ids": [
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29"
+      ],
+      "resolved_objects": {
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-94d483477194399d.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-149-11959491177231969508_0.profraw",
+      "sha256": "4dbc43c78d1ed3eb7b7ab57f2f584fe258565b84cf29fac01e4bd9fc0d591bb9",
+      "binary_ids": [
+        "8363f7a468e46c0cc1708796560044495c815602"
+      ],
+      "resolved_objects": {
+        "8363f7a468e46c0cc1708796560044495c815602": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-ef87c3f642cd2a5e.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-149-16454098129347547175_0.profraw",
+      "sha256": "0cf289f60e922770cf10d640e9d516165b6fdd3821d973d2f27e98139dc6a49e",
+      "binary_ids": [
+        "7bf1c687d161686ff15bae43b7b850efc1858b87"
+      ],
+      "resolved_objects": {
+        "7bf1c687d161686ff15bae43b7b850efc1858b87": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-1c0acb0cf617e2f0.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-149-7445422415660087432_0.profraw",
+      "sha256": "5f8ee68f25097e446d8d8879dc3d922f3147d7a32c64d59c78f8cfac68c376ff",
+      "binary_ids": [
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce"
+      ],
+      "resolved_objects": {
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-c6569ea9572ef852.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-149-8992143448984527479_0.profraw",
+      "sha256": "9634f8220ea05969b5e6b0a1e9551e70a0b44e129c2d2ad0cde3a38a7dca73cb",
+      "binary_ids": [
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29"
+      ],
+      "resolved_objects": {
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-94d483477194399d.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1500-1945399922022595344_0.profraw",
+      "sha256": "92e01ef341c18424e8c54bcda3785723803c1d5587a867c2144a9478b4c985b6",
+      "binary_ids": [
+        "8a1b90c365b59e1f85ae18fc2b473f3f73528a24"
+      ],
+      "resolved_objects": {
+        "8a1b90c365b59e1f85ae18fc2b473f3f73528a24": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/dandrum_trigger_host-74af2808e759a756"
+        ]
+      },
+      "scope": "owner runtime"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1520-12735708369872127178_0.profraw",
+      "sha256": "0990700306a39afb9250cd3e7834b5de7ddafb8cde4b09e8526302c11450c89c",
+      "binary_ids": [
+        "31d18817c005c2c3a422310476e84f2e0d488a6b"
+      ],
+      "resolved_objects": {
+        "31d18817c005c2c3a422310476e84f2e0d488a6b": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/editor_note_controller-93ab342e13195992"
+        ]
+      },
+      "scope": "owner runtime"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1561-15311778241047029381_0.profraw",
+      "sha256": "f4938b7a400e888909ffc80311520a9a90a51b19cb17a818cab25b152c076a58",
+      "binary_ids": [
+        "eb6d1f25e3142eaffb94be370d261ec4992d04e4"
+      ],
+      "resolved_objects": {
+        "eb6d1f25e3142eaffb94be370d261ec4992d04e4": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/editor_notes-2f92000a1525ddb2"
+        ]
+      },
+      "scope": "owner runtime"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1580-15222689053833448158_0.profraw",
+      "sha256": "6989486c3fba822e19fa9199cedd3c3848cfe1ce4d33fcc50fd379ecc9f6271a",
+      "binary_ids": [
+        "0d5702f24e6e95f036107e292b75021fe5146f46"
+      ],
+      "resolved_objects": {
+        "0d5702f24e6e95f036107e292b75021fe5146f46": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/packaged_resources-a0be87d377a13bfa"
+        ]
+      },
+      "scope": "owner runtime"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1589-3227132269386187609_0.profraw",
+      "sha256": "b050a129b76f91748e33bbc0e35a4df533fffc99b0964a93b8422aaef4f909b7",
+      "binary_ids": [
+        "88df4701db11f2a7e4b8e0d11be75be721bcb0b9"
+      ],
+      "resolved_objects": {
+        "88df4701db11f2a7e4b8e0d11be75be721bcb0b9": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/parameter_flush-dac76662096efddf"
+        ]
+      },
+      "scope": "owner runtime"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1598-13460289799647603915_0.profraw",
+      "sha256": "a9b92f415da19142558283692da0a581fca1506cccee6202e95ea8b755dc7099",
+      "binary_ids": [
+        "b2a3950c52080509a1a51792f94ae105273b85be"
+      ],
+      "resolved_objects": {
+        "b2a3950c52080509a1a51792f94ae105273b85be": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/parameters-61a6dfeef9f684b3"
+        ]
+      },
+      "scope": "owner runtime"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1615-6154580906694104132_0.profraw",
+      "sha256": "1b61c2c1aa1132398035743b38df97c8c4d805b7e1467defc7f4c54f5416f54a",
+      "binary_ids": [
+        "ca9b4d4c302833f6e7763c7b20a06f5fc2dc155d"
+      ],
+      "resolved_objects": {
+        "ca9b4d4c302833f6e7763c7b20a06f5fc2dc155d": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/protocol-17022afda0b69f9d"
+        ]
+      },
+      "scope": "owner runtime"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1623-6499323946093351691_0.profraw",
+      "sha256": "172b33d83c2d17cceb826e0d3d72a15bf5933791b77d355ba3832906c74ce797",
+      "binary_ids": [
+        "f834fcc3033ddc93221897e036012cd9ca42f0de"
+      ],
+      "resolved_objects": {
+        "f834fcc3033ddc93221897e036012cd9ca42f0de": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/render_reconfiguration-70aa52fa0adb54a2"
+        ]
+      },
+      "scope": "owner runtime"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1637-7392689502026227815_0.profraw",
+      "sha256": "f5489b71bf477c0d934cc115ff0b9521462c877c72978b81de1a06c2aa4bdd06",
+      "binary_ids": [
+        "fdbf53184885d70d26e9deed2beecaf0903b1ec3"
+      ],
+      "resolved_objects": {
+        "fdbf53184885d70d26e9deed2beecaf0903b1ec3": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/runtime-632a9b9eae97186b"
+        ]
+      },
+      "scope": "owner runtime"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1659-2706084168321778855_0.profraw",
+      "sha256": "da32aaae11a1ea6ae211ab6c1f54901d5103a5397470fbd2aac8f0fda58cc4b4",
+      "binary_ids": [
+        "45121bcc2e4bf9127233ff017197a63762dd90a4"
+      ],
+      "resolved_objects": {
+        "45121bcc2e4bf9127233ff017197a63762dd90a4": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/runtime_quiescent-904140b1151cb0a0"
+        ]
+      },
+      "scope": "owner runtime"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1668-11975693794372040825_0.profraw",
+      "sha256": "003ecd6a2c65dca5cd3571d20882f23ce31de9967865c4db0a4748024027358b",
+      "binary_ids": [
+        "9586cc58d528fd80b93650c4f196cd27727738ce"
+      ],
+      "resolved_objects": {
+        "9586cc58d528fd80b93650c4f196cd27727738ce": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/session_jobs-0afee40e9f6fe646"
+        ]
+      },
+      "scope": "owner runtime"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1703-6545214378282657719_0.profraw",
+      "sha256": "8285d4e2c4585aab0ebbacec928e571575b3fd7be30c062165d7fee3edeba0c7",
+      "binary_ids": [
+        "74236693ae5c6a6b91ec2aa6bcb145cc8bde375a"
+      ],
+      "resolved_objects": {
+        "74236693ae5c6a6b91ec2aa6bcb145cc8bde375a": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/snapshot-39b7febe2f533f6e"
+        ]
+      },
+      "scope": "owner runtime"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1709-7250317779176775081_0.profraw",
+      "sha256": "355381eaf5f9355c27c977454a140bae08da764d4c9aff7f10244a6870bd101e",
+      "binary_ids": [
+        "b05f22d315150664f05c3d46521c40a21c17f042"
+      ],
+      "resolved_objects": {
+        "b05f22d315150664f05c3d46521c40a21c17f042": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/state-d8733cf43751c983"
+        ]
+      },
+      "scope": "owner runtime"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1721-11959491177231969508_0.profraw",
+      "sha256": "9de8c480a7f0cc55ae53cfb4f741b1c6a2644d84dc5a6ed99b4d1eb0418f5190",
+      "binary_ids": [
+        "8363f7a468e46c0cc1708796560044495c815602"
+      ],
+      "resolved_objects": {
+        "8363f7a468e46c0cc1708796560044495c815602": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-ef87c3f642cd2a5e.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1721-16454098129347547175_0.profraw",
+      "sha256": "80ee996f9e7aaa548f1658558a76fdaa017b7f9bae5514341b841c78207aa265",
+      "binary_ids": [
+        "7bf1c687d161686ff15bae43b7b850efc1858b87"
+      ],
+      "resolved_objects": {
+        "7bf1c687d161686ff15bae43b7b850efc1858b87": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-1c0acb0cf617e2f0.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1721-7445422415660087432_0.profraw",
+      "sha256": "343651992a3add81ebf8e135cc14d82183e55b3cee597830bf0d426124b4bc64",
+      "binary_ids": [
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce"
+      ],
+      "resolved_objects": {
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-c6569ea9572ef852.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1721-8992143448984527479_0.profraw",
+      "sha256": "91c07acfa22098f42d81fc1c02ca0e120c9b3a5d88f7f676015d73cbf05e4907",
+      "binary_ids": [
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29"
+      ],
+      "resolved_objects": {
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-94d483477194399d.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1726-11959491177231969508_0.profraw",
+      "sha256": "59c86c96cefef9f6dcbe25cab74397f74d2fd3159a0b9a24b7097bab2057f405",
+      "binary_ids": [
+        "8363f7a468e46c0cc1708796560044495c815602"
+      ],
+      "resolved_objects": {
+        "8363f7a468e46c0cc1708796560044495c815602": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-ef87c3f642cd2a5e.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1726-16454098129347547175_0.profraw",
+      "sha256": "dc583ee5ce1fed6f0b1d65404f283ce04d399c3333e8e0a898f1e21d94493fef",
+      "binary_ids": [
+        "7bf1c687d161686ff15bae43b7b850efc1858b87"
+      ],
+      "resolved_objects": {
+        "7bf1c687d161686ff15bae43b7b850efc1858b87": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-1c0acb0cf617e2f0.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1726-7445422415660087432_0.profraw",
+      "sha256": "b7786b8b10299268cc6cabbb15d0725514bef9faf3f620f8f24ef499f16176cb",
+      "binary_ids": [
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce"
+      ],
+      "resolved_objects": {
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-c6569ea9572ef852.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1726-8992143448984527479_0.profraw",
+      "sha256": "8988d1c7106ae5a4847e21e5864f209f435e132eb4b3354efe141f5e9d8ad169",
+      "binary_ids": [
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29"
+      ],
+      "resolved_objects": {
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-94d483477194399d.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1727-11959491177231969508_0.profraw",
+      "sha256": "d6900c48278d14a13d8737601dca2ae4382f8503bd08a5750bd9dba3a6f4d331",
+      "binary_ids": [
+        "8363f7a468e46c0cc1708796560044495c815602"
+      ],
+      "resolved_objects": {
+        "8363f7a468e46c0cc1708796560044495c815602": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-ef87c3f642cd2a5e.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1727-16454098129347547175_0.profraw",
+      "sha256": "8fc4e8926aeacdf3e0504204753774bbb7659178cdce7011cb33a3594789a5d3",
+      "binary_ids": [
+        "7bf1c687d161686ff15bae43b7b850efc1858b87"
+      ],
+      "resolved_objects": {
+        "7bf1c687d161686ff15bae43b7b850efc1858b87": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-1c0acb0cf617e2f0.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1727-7445422415660087432_0.profraw",
+      "sha256": "239b8ff4469f8fe31c641d6ae20f719dc1f200fa54cf761d5fee633aa346523a",
+      "binary_ids": [
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce"
+      ],
+      "resolved_objects": {
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-c6569ea9572ef852.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-1727-8992143448984527479_0.profraw",
+      "sha256": "73c5bc9ad8243aa11f85a150df6e5d041b81d25bed9b9015bc5ba688c10b50db",
+      "binary_ids": [
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29"
+      ],
+      "resolved_objects": {
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-94d483477194399d.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-19-11959491177231969508_0.profraw",
+      "sha256": "4fc7fc472889b2fe1d3d1ad1bd0affb053eff9328d3b4b827f9f69721e38e2ea",
+      "binary_ids": [
+        "8363f7a468e46c0cc1708796560044495c815602"
+      ],
+      "resolved_objects": {
+        "8363f7a468e46c0cc1708796560044495c815602": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-ef87c3f642cd2a5e.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-19-16454098129347547175_0.profraw",
+      "sha256": "ba7dbfaa8d81a68fac0700d66ed2f9155e237a0ec6dd2f8b4542afbdb89402c5",
+      "binary_ids": [
+        "7bf1c687d161686ff15bae43b7b850efc1858b87"
+      ],
+      "resolved_objects": {
+        "7bf1c687d161686ff15bae43b7b850efc1858b87": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-1c0acb0cf617e2f0.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-19-7445422415660087432_0.profraw",
+      "sha256": "2949aad645a0d3d51ffebb9073eeebc66fff3d45f9830eea46e6aa32d7dc8e57",
+      "binary_ids": [
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce"
+      ],
+      "resolved_objects": {
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-c6569ea9572ef852.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-19-8992143448984527479_0.profraw",
+      "sha256": "d250e187837117f603e3141450e34f7798877da8517b3473f18b7141f9e7decb",
+      "binary_ids": [
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29"
+      ],
+      "resolved_objects": {
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-94d483477194399d.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-294-11959491177231969508_0.profraw",
+      "sha256": "22022b6765c7843c41d1676761c6072e16f99e0c7b53fed8bda1af6b45f5772e",
+      "binary_ids": [
+        "8363f7a468e46c0cc1708796560044495c815602"
+      ],
+      "resolved_objects": {
+        "8363f7a468e46c0cc1708796560044495c815602": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-ef87c3f642cd2a5e.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-294-16454098129347547175_0.profraw",
+      "sha256": "6581133418ea17a2daf75da38e98896c02889f6017b71c59aeccd5795a273e30",
+      "binary_ids": [
+        "7bf1c687d161686ff15bae43b7b850efc1858b87"
+      ],
+      "resolved_objects": {
+        "7bf1c687d161686ff15bae43b7b850efc1858b87": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-1c0acb0cf617e2f0.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-294-7445422415660087432_0.profraw",
+      "sha256": "d660a883a2127a95eb5ff773ecf970d241b540b0285111f5d7ae9d9273268da2",
+      "binary_ids": [
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce"
+      ],
+      "resolved_objects": {
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-c6569ea9572ef852.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-294-8992143448984527479_0.profraw",
+      "sha256": "3a84bb2dd446a8900f67c8de77618d6ae804e60849b02c86f888bb4df8d5326c",
+      "binary_ids": [
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29"
+      ],
+      "resolved_objects": {
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-94d483477194399d.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-453-11959491177231969508_0.profraw",
+      "sha256": "52eb38cfaf64e67bf3a0ec5ec0d7c38c0c42e04a9004640e825099e6af55222e",
+      "binary_ids": [
+        "8363f7a468e46c0cc1708796560044495c815602"
+      ],
+      "resolved_objects": {
+        "8363f7a468e46c0cc1708796560044495c815602": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-ef87c3f642cd2a5e.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-453-16454098129347547175_0.profraw",
+      "sha256": "28a2b50a641f09476845cd6cb70cad0eb486d7752e539d2aff72709d095279a3",
+      "binary_ids": [
+        "7bf1c687d161686ff15bae43b7b850efc1858b87"
+      ],
+      "resolved_objects": {
+        "7bf1c687d161686ff15bae43b7b850efc1858b87": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-1c0acb0cf617e2f0.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-453-7445422415660087432_0.profraw",
+      "sha256": "914e8ac4fd321c240212acf2b915811aa9b7b1bf8552d3502bd0f8cadff5b2f7",
+      "binary_ids": [
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce"
+      ],
+      "resolved_objects": {
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-c6569ea9572ef852.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-453-8992143448984527479_0.profraw",
+      "sha256": "01307ac2b541139acdc1f3728272d45170ec1700fb9ad9b53bd76a1b9bd6552b",
+      "binary_ids": [
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29"
+      ],
+      "resolved_objects": {
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-94d483477194399d.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-601-11959491177231969508_0.profraw",
+      "sha256": "934a93c9db3a9144dd9bc5efc082861512d554587a874ddce3fed17b0117649c",
+      "binary_ids": [
+        "8363f7a468e46c0cc1708796560044495c815602"
+      ],
+      "resolved_objects": {
+        "8363f7a468e46c0cc1708796560044495c815602": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-ef87c3f642cd2a5e.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-601-16454098129347547175_0.profraw",
+      "sha256": "1a581f4834aa136360e494158c7e568e7c516186df0e2d0e85f8a763c2ee8303",
+      "binary_ids": [
+        "7bf1c687d161686ff15bae43b7b850efc1858b87"
+      ],
+      "resolved_objects": {
+        "7bf1c687d161686ff15bae43b7b850efc1858b87": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-1c0acb0cf617e2f0.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-601-7445422415660087432_0.profraw",
+      "sha256": "af8c4b86735878d7aa0bcacce7bc17d34c5da5f1083d7039694f133334adbe31",
+      "binary_ids": [
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce"
+      ],
+      "resolved_objects": {
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-c6569ea9572ef852.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-601-8992143448984527479_0.profraw",
+      "sha256": "f44b371c8704686f325cc33b2b2a70c0ea13d3cdb4506ceec604ab8ffaba17ae",
+      "binary_ids": [
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29"
+      ],
+      "resolved_objects": {
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-94d483477194399d.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-716-11959491177231969508_0.profraw",
+      "sha256": "6f2da839538942c1b222706eee6044bb07f0fc6d8246650a882646f509c19307",
+      "binary_ids": [
+        "8363f7a468e46c0cc1708796560044495c815602"
+      ],
+      "resolved_objects": {
+        "8363f7a468e46c0cc1708796560044495c815602": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-ef87c3f642cd2a5e.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-716-16454098129347547175_0.profraw",
+      "sha256": "e52350e594c9477b987d037d86413bf8421e5d3a3c299846f3f502523262f716",
+      "binary_ids": [
+        "7bf1c687d161686ff15bae43b7b850efc1858b87"
+      ],
+      "resolved_objects": {
+        "7bf1c687d161686ff15bae43b7b850efc1858b87": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-1c0acb0cf617e2f0.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-716-7445422415660087432_0.profraw",
+      "sha256": "d40793a20b61e582abcaa843c93f3792fc16a0c89de528d1e2cc62133be7e0e9",
+      "binary_ids": [
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce"
+      ],
+      "resolved_objects": {
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-c6569ea9572ef852.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-716-8992143448984527479_0.profraw",
+      "sha256": "840ff84cdf17d5ecd7110259fc75d056bfc591d84695a9023829074e36cb570d",
+      "binary_ids": [
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29"
+      ],
+      "resolved_objects": {
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-94d483477194399d.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-863-11959491177231969508_0.profraw",
+      "sha256": "37b181eeab9e09f84e48d9f509d4499e63cccc51976e40318ae2b1149cb0e6a7",
+      "binary_ids": [
+        "8363f7a468e46c0cc1708796560044495c815602"
+      ],
+      "resolved_objects": {
+        "8363f7a468e46c0cc1708796560044495c815602": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-ef87c3f642cd2a5e.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-863-16454098129347547175_0.profraw",
+      "sha256": "f7c610bc3340579661ddb8e073ed3820d2b1a2ea6929331b2b416307c5bc9457",
+      "binary_ids": [
+        "7bf1c687d161686ff15bae43b7b850efc1858b87"
+      ],
+      "resolved_objects": {
+        "7bf1c687d161686ff15bae43b7b850efc1858b87": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-1c0acb0cf617e2f0.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-863-7445422415660087432_0.profraw",
+      "sha256": "61dc92990358aad49c4ef90532e2156d8c2019242ba3055ea74d0853010e3122",
+      "binary_ids": [
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce"
+      ],
+      "resolved_objects": {
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-c6569ea9572ef852.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-863-8992143448984527479_0.profraw",
+      "sha256": "67feeb72566736fa38607d8a2cb3e5d287f326edf28871bafe18380a01bfa77f",
+      "binary_ids": [
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29"
+      ],
+      "resolved_objects": {
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-94d483477194399d.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-942-11959491177231969508_0.profraw",
+      "sha256": "596f9ff72920eae3013f68d769e8a0421c06d9d93934b25848926d93d81cab2b",
+      "binary_ids": [
+        "8363f7a468e46c0cc1708796560044495c815602"
+      ],
+      "resolved_objects": {
+        "8363f7a468e46c0cc1708796560044495c815602": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-ef87c3f642cd2a5e.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-942-16454098129347547175_0.profraw",
+      "sha256": "be4a883b64f539164765257e486f3b1efa6c8eba41466a444dc8d4cc0fe1a710",
+      "binary_ids": [
+        "7bf1c687d161686ff15bae43b7b850efc1858b87"
+      ],
+      "resolved_objects": {
+        "7bf1c687d161686ff15bae43b7b850efc1858b87": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-1c0acb0cf617e2f0.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-942-7445422415660087432_0.profraw",
+      "sha256": "092281d66b708280782d9badf7f7fc61fa1c135c1066a052e40db1350fde7b8c",
+      "binary_ids": [
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce"
+      ],
+      "resolved_objects": {
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-c6569ea9572ef852.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-62-final-host-942-8992143448984527479_0.profraw",
+      "sha256": "3ebecba46735219b822a6170045abe5a9baa29f3705f85e85abd357f9dc33a9c",
+      "binary_ids": [
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29"
+      ],
+      "resolved_objects": {
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-94d483477194399d.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-1124-11621183512631879272_0.profraw",
+      "sha256": "08862a32a7f8fc4b90ad9bbbf639031f41102061d696d6ca7dc868c1052be20a",
+      "binary_ids": [
+        "611a3a97ed927c2a4575e898d1e37e989d667e74"
+      ],
+      "resolved_objects": {
+        "611a3a97ed927c2a4575e898d1e37e989d667e74": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/public_engine_baseline-4c4fef3cdcec18c3"
+        ]
+      },
+      "scope": "owner runtime"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-1127-10010091417366429954_0.profraw",
+      "sha256": "e747eda5ba3496c82fe86bf5fb07b78642fc46acaa6fd14114b1b448441333cb",
+      "binary_ids": [
+        "806f69fb53c5e61ab6f82cdfea17578dffce4feb"
+      ],
+      "resolved_objects": {
+        "806f69fb53c5e61ab6f82cdfea17578dffce4feb": [
+          "/tmp/dandrum-lanes/evidence-trigger-clap-product/objects/Trigger-instrumented-final.clap"
+        ]
+      },
+      "scope": "owner runtime"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-1127-5599352440069842566_0.profraw",
+      "sha256": "a293c7a5c0aa1172e63d21c9fbb373bd3e239be90c9e157314ade83e82815c70",
+      "binary_ids": [
+        "469d855b152b4254458ef3a102318afaaa32655b"
+      ],
+      "resolved_objects": {
+        "469d855b152b4254458ef3a102318afaaa32655b": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/trigger_dynamic-684e4511ff308844"
+        ]
+      },
+      "scope": "owner runtime"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-1297-10010091417366429954_0.profraw",
+      "sha256": "d29773567e5eb68184f86d184c39547e6aa476546974a5ab386604abac24fe53",
+      "binary_ids": [
+        "806f69fb53c5e61ab6f82cdfea17578dffce4feb"
+      ],
+      "resolved_objects": {
+        "806f69fb53c5e61ab6f82cdfea17578dffce4feb": [
+          "/tmp/dandrum-lanes/evidence-trigger-clap-product/objects/Trigger-instrumented-final.clap"
+        ]
+      },
+      "scope": "owner runtime"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-1297-5599352440069842566_0.profraw",
+      "sha256": "def3728a6fa22b48f8c58901a77b91470b0c070ed4469541db362a7e44bc962f",
+      "binary_ids": [
+        "469d855b152b4254458ef3a102318afaaa32655b"
+      ],
+      "resolved_objects": {
+        "469d855b152b4254458ef3a102318afaaa32655b": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/trigger_dynamic-684e4511ff308844"
+        ]
+      },
+      "scope": "owner runtime"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-1303-10771568761002338309_0.profraw",
+      "sha256": "b467eac8b4091c15b20d78e7165ed925b14911a50bb71ec40a73b8abfcb34162",
+      "binary_ids": [
+        "a835256e49c19ff03e26ecb0b4211765a0814a36"
+      ],
+      "resolved_objects": {
+        "a835256e49c19ff03e26ecb0b4211765a0814a36": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-3a1bb154be8d3bf1.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-1303-14134134270388964034_0.profraw",
+      "sha256": "f5d32fd05e8e72d5916751fc1fe0b5a485d81d6fb97deeb9375bbe5223cdc1d0",
+      "binary_ids": [
+        "5b79a0649fd4da07d16e63928784771a3d857755"
+      ],
+      "resolved_objects": {
+        "5b79a0649fd4da07d16e63928784771a3d857755": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-fa9f4a7c53ceabcf.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-1303-2368174669132235985_0.profraw",
+      "sha256": "18a6db2a341ca450c6abf55ebc30d0bdbb85287e2fb09a2fc926c515288effff",
+      "binary_ids": [
+        "0585e39144fb96c41d92c923b6b2212de926bfc4"
+      ],
+      "resolved_objects": {
+        "0585e39144fb96c41d92c923b6b2212de926bfc4": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-6a9b58d7c88e1ff8.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-1303-8507199970437266363_0.profraw",
+      "sha256": "dd067bd9f479554dc9bf331c11317eb1e08c71f9b94d274f13b16bb2cfedf5c8",
+      "binary_ids": [
+        "cb2d47e1ae8d8ffb697b3b6eb3aaf027bdf9863c"
+      ],
+      "resolved_objects": {
+        "cb2d47e1ae8d8ffb697b3b6eb3aaf027bdf9863c": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-128e7cb82843c8f1.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-21-10771568761002338309_0.profraw",
+      "sha256": "fcb6ea1159f8dceb1fc04b1b2f8da8d1e34434834adea8585f9e91627bb84aa2",
+      "binary_ids": [
+        "a835256e49c19ff03e26ecb0b4211765a0814a36"
+      ],
+      "resolved_objects": {
+        "a835256e49c19ff03e26ecb0b4211765a0814a36": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-3a1bb154be8d3bf1.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-21-14134134270388964034_0.profraw",
+      "sha256": "f8ed4219207c78e1770dc06bfb7055a3d5da332143420ae2ac87ef2609a4d07d",
+      "binary_ids": [
+        "5b79a0649fd4da07d16e63928784771a3d857755"
+      ],
+      "resolved_objects": {
+        "5b79a0649fd4da07d16e63928784771a3d857755": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-fa9f4a7c53ceabcf.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-21-2368174669132235985_0.profraw",
+      "sha256": "d1523d31ff631bb494f3a01af6914b9f7731e2541502d4cdeaae56ff411cf03d",
+      "binary_ids": [
+        "0585e39144fb96c41d92c923b6b2212de926bfc4"
+      ],
+      "resolved_objects": {
+        "0585e39144fb96c41d92c923b6b2212de926bfc4": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-6a9b58d7c88e1ff8.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-21-8507199970437266363_0.profraw",
+      "sha256": "829020fe89a48624700ee4e057d42199ab902e43fd4f8e5b3f79a766c783f36c",
+      "binary_ids": [
+        "cb2d47e1ae8d8ffb697b3b6eb3aaf027bdf9863c"
+      ],
+      "resolved_objects": {
+        "cb2d47e1ae8d8ffb697b3b6eb3aaf027bdf9863c": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-128e7cb82843c8f1.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-213-10771568761002338309_0.profraw",
+      "sha256": "0f3e410547e941ae599c6a160ed0abef87c40a0b07933cdfd2ade2da4bcf0078",
+      "binary_ids": [
+        "a835256e49c19ff03e26ecb0b4211765a0814a36"
+      ],
+      "resolved_objects": {
+        "a835256e49c19ff03e26ecb0b4211765a0814a36": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-3a1bb154be8d3bf1.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-213-14134134270388964034_0.profraw",
+      "sha256": "5182c5c6b557bbc0bd32b4ebaf09f72d336f9d8a59f38ab682bb8acd143d4114",
+      "binary_ids": [
+        "5b79a0649fd4da07d16e63928784771a3d857755"
+      ],
+      "resolved_objects": {
+        "5b79a0649fd4da07d16e63928784771a3d857755": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-fa9f4a7c53ceabcf.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-213-2368174669132235985_0.profraw",
+      "sha256": "2bee49316094ffae3587e82978756baff5c653c16ffd9cf3691b1c615c1468a8",
+      "binary_ids": [
+        "0585e39144fb96c41d92c923b6b2212de926bfc4"
+      ],
+      "resolved_objects": {
+        "0585e39144fb96c41d92c923b6b2212de926bfc4": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-6a9b58d7c88e1ff8.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-213-8507199970437266363_0.profraw",
+      "sha256": "d0ace9f56eea939945240b5351434fde1d30f1c6720419d8390ee84eb681d7bc",
+      "binary_ids": [
+        "cb2d47e1ae8d8ffb697b3b6eb3aaf027bdf9863c"
+      ],
+      "resolved_objects": {
+        "cb2d47e1ae8d8ffb697b3b6eb3aaf027bdf9863c": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-128e7cb82843c8f1.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-669-10771568761002338309_0.profraw",
+      "sha256": "8adec58dd6845a2a2c316c19030e694b735ba37582c4c50683dee842d7fc68be",
+      "binary_ids": [
+        "a835256e49c19ff03e26ecb0b4211765a0814a36"
+      ],
+      "resolved_objects": {
+        "a835256e49c19ff03e26ecb0b4211765a0814a36": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-3a1bb154be8d3bf1.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-669-14134134270388964034_0.profraw",
+      "sha256": "beef8d2d57f784a1788679c00d0dc0fb104767f76d5a444eddd94903b9ea772f",
+      "binary_ids": [
+        "5b79a0649fd4da07d16e63928784771a3d857755"
+      ],
+      "resolved_objects": {
+        "5b79a0649fd4da07d16e63928784771a3d857755": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-fa9f4a7c53ceabcf.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-669-2368174669132235985_0.profraw",
+      "sha256": "8917bdc90d417a92cba9d20858723daf7294705e179ae4f2df326f6f848024af",
+      "binary_ids": [
+        "0585e39144fb96c41d92c923b6b2212de926bfc4"
+      ],
+      "resolved_objects": {
+        "0585e39144fb96c41d92c923b6b2212de926bfc4": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-6a9b58d7c88e1ff8.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-669-8507199970437266363_0.profraw",
+      "sha256": "e0b2c29067801804990a3f47636a57d2734ba32c6bf0838da88972363bd98cee",
+      "binary_ids": [
+        "cb2d47e1ae8d8ffb697b3b6eb3aaf027bdf9863c"
+      ],
+      "resolved_objects": {
+        "cb2d47e1ae8d8ffb697b3b6eb3aaf027bdf9863c": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-128e7cb82843c8f1.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-745-10771568761002338309_0.profraw",
+      "sha256": "86e42d583ff2a16a5729633265b78ab62bb5c2b20cc7750279b707a46fa25562",
+      "binary_ids": [
+        "a835256e49c19ff03e26ecb0b4211765a0814a36"
+      ],
+      "resolved_objects": {
+        "a835256e49c19ff03e26ecb0b4211765a0814a36": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-3a1bb154be8d3bf1.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-745-14134134270388964034_0.profraw",
+      "sha256": "3cd714b5629dfc69853a4f81a7546e1a962d5cc825c947463b05723bca0d7333",
+      "binary_ids": [
+        "5b79a0649fd4da07d16e63928784771a3d857755"
+      ],
+      "resolved_objects": {
+        "5b79a0649fd4da07d16e63928784771a3d857755": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-fa9f4a7c53ceabcf.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-745-2368174669132235985_0.profraw",
+      "sha256": "d29e88c20aff13650d8c3f714c3b48ddc85cc5380ef0fb1e36265d5d0c0162ea",
+      "binary_ids": [
+        "0585e39144fb96c41d92c923b6b2212de926bfc4"
+      ],
+      "resolved_objects": {
+        "0585e39144fb96c41d92c923b6b2212de926bfc4": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-6a9b58d7c88e1ff8.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-745-8507199970437266363_0.profraw",
+      "sha256": "942707002980bf2a4e97835b186bc116fe0ff6801ca99f7673d375b7f010e9ab",
+      "binary_ids": [
+        "cb2d47e1ae8d8ffb697b3b6eb3aaf027bdf9863c"
+      ],
+      "resolved_objects": {
+        "cb2d47e1ae8d8ffb697b3b6eb3aaf027bdf9863c": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-128e7cb82843c8f1.so"
+        ]
+      },
+      "scope": "compiler proc-macro excluded"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-939-668312246159831691_0.profraw",
+      "sha256": "865c893bb992863c0875684f39f467c07bb6e0de52b01382fd9f47662a902171",
+      "binary_ids": [
+        "a4f4d48aaff2e540c09d35feb183d04ddcf0584e"
+      ],
+      "resolved_objects": {
+        "a4f4d48aaff2e540c09d35feb183d04ddcf0584e": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/dandrum_clap_adapter-d604157fc4a2bcb3"
+        ]
+      },
+      "scope": "owner runtime"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-940-10634102396193387162_0.profraw",
+      "sha256": "4dbf6d57af557cde08680964f9823431bc05a7b086a757d31c44285fbb698f83",
+      "binary_ids": [
+        "468b0a0244305bd51ce754eff8b5b0fea3ce5335"
+      ],
+      "resolved_objects": {
+        "468b0a0244305bd51ce754eff8b5b0fea3ce5335": [
+          "/tmp/dandrum-lanes/evidence-trigger-clap-product/objects/HeadlessProof-instrumented.clap"
+        ]
+      },
+      "scope": "owner runtime"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/cov-72-final-adapter-940-13020190872188227731_0.profraw",
+      "sha256": "284959415b85a1d3d1115ddde7ccc4ac9f85e05b968c949929d57ff2e0eeae7f",
+      "binary_ids": [
+        "6b341f0dca85a284596fb070599e23f92f7e9ac4"
+      ],
+      "resolved_objects": {
+        "6b341f0dca85a284596fb070599e23f92f7e9ac4": [
+          "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/clap_dynamic-f4c042cd2ef11c65"
+        ]
+      },
+      "scope": "owner runtime"
+    }
+  ],
+  "compiler_objects": [
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-fa9f4a7c53ceabcf.so",
+      "sha256": "ba3c6fe0f92f0926839d21cc76eb0cc28c60f17060dce589474b7906a65004a4",
+      "build_ids": [
+        "5b79a0649fd4da07d16e63928784771a3d857755"
+      ],
+      "size": 11003320,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libconst_random_macro-e78c029eb50c07b2.so",
+      "sha256": "50dcb498823808bc1c485efa584c63b037631c50de4f7c82309c3096ee5d7b25",
+      "build_ids": [
+        "2911e3eab6985c07608db770e76221336c522c30"
+      ],
+      "size": 5710408,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libconst_random_macro-919b16564c8aa596.so",
+      "sha256": "fa484e5d94f84abe18eedf399c849b5242fa398d45db66c3aca5a5da1c9754a9",
+      "build_ids": [
+        "33433365c8b2c58efc55932456f1dc1bf3d201fc"
+      ],
+      "size": 5485928,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-6258254b54210499.so",
+      "sha256": "aae2991cd54a4f9909e238835827ed738f0eebccc27342af520650b6791707a9",
+      "build_ids": [
+        "ac0dccca2015bce2588dbddec2133489c4f38039"
+      ],
+      "size": 9536104,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libderive_more_impl-fe54987efc66a807.so",
+      "sha256": "c29e2af7db12d106befbac793a54ddc38e379642f4577c6e1e57fcaace12c184",
+      "build_ids": [
+        "4234403df1e5f819dab2e218052232236c677387"
+      ],
+      "size": 9915240,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libdocument_features-e06e9967f6169a59.so",
+      "sha256": "0947c1dfc2f04dd107be4300f87e8c5afcbbb49221a231f6852578b127774904",
+      "build_ids": [
+        "7ca111354dd33871685c89512673174635b5015f"
+      ],
+      "size": 5767136,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libderive_more_impl-8a5d07be9d100a95.so",
+      "sha256": "db010d1a747ff9886a968ab8882ab05c539d0ec6ae12eab1bf8c9e4362e4668c",
+      "build_ids": [
+        "4d11b044630c6644bf54374b7fbc2704dff30b88"
+      ],
+      "size": 9922416,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-ef87c3f642cd2a5e.so",
+      "sha256": "cc389aa0e2ecab27d0f56ffcd1b6c7e85c370a8a07e6029ea34e7d05d1319495",
+      "build_ids": [
+        "8363f7a468e46c0cc1708796560044495c815602"
+      ],
+      "size": 10263976,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libdandrum_clap_adapter.so",
+      "sha256": "0f2e0825d5318e5b61ccf5bc92bfcbcacea8a6d300682e03d6d4725d0be26dc2",
+      "build_ids": [
+        "62e9e98098c44d9bbdff972964b23297002979c9"
+      ],
+      "size": 82523400,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libconst_random_macro-3c0cd548c5bc1701.so",
+      "sha256": "a0d03dd6eea56da8833061123aaac0d89a5f11e9cd5dd71e9ebc63038d13a3ab",
+      "build_ids": [
+        "bd3db56266e4270ba56b1b87fc4df5b2f036bd88"
+      ],
+      "size": 5485928,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-6233bead6161075c.so",
+      "sha256": "827f8a3863072bd7d40aae280bfca952cc3e49004685cd90bf2bc7fba54fe6de",
+      "build_ids": [
+        "d2e74fae7bd0ba93c0d735de084e32f47a084f31"
+      ],
+      "size": 9187024,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-0422e78c193a31a9.so",
+      "sha256": "c3b400bd29a17634cbed0d481f7e06a039269a9750fad686f5582ae6780aad21",
+      "build_ids": [
+        "961cdb09d5828aae0189b1e489425fc944de98ff"
+      ],
+      "size": 9191984,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-c6569ea9572ef852.so",
+      "sha256": "36f4360cfad6e85933780e49e4130f50c79b8ed510222722e0b7dd64cb0ffbd0",
+      "build_ids": [
+        "a88f08e0c8177b21bb2b4400cba2511e86a572ce"
+      ],
+      "size": 7864776,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libconst_random_macro-e2a0d38dd62268e8.so",
+      "sha256": "5f17b8b4d136a7348e1fee1a5b4f995ab7307308b35173f52a1f32c0a0d3373b",
+      "build_ids": [
+        "2e6f613753e088d0d2b2988ee6a7cc49761b45fb"
+      ],
+      "size": 5485472,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libderive_more_impl-6824c9799c03e2b5.so",
+      "sha256": "313984d71e3e6e6fd004b0b3a829e8b193c2142002430209ba66213b7c70a532",
+      "build_ids": [
+        "ff85939cfda212fcd3141d1e0c728c8c39507f72"
+      ],
+      "size": 8340736,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libconst_random_macro-bf5c0328b5d6a06e.so",
+      "sha256": "6c24e202882dd326774eaf756f1b1d06b7aba9f48127372349a1afa8b73227c3",
+      "build_ids": [
+        "de198318eec894255c1f630e769a61c218df113c"
+      ],
+      "size": 5710416,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libstrum_macros-94d483477194399d.so",
+      "sha256": "5a8c393d92feecc78e9c03c6a313bef303f7987e92c822e4a210fd788ad1cd8f",
+      "build_ids": [
+        "7116ac8269bd3278fc1abb46a65f58414e4acf29"
+      ],
+      "size": 11011808,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-128e7cb82843c8f1.so",
+      "sha256": "d204103fd7797c2a27ccf3a9c5e79f7a7578ab6b25e0f31c30d44452c4132596",
+      "build_ids": [
+        "cb2d47e1ae8d8ffb697b3b6eb3aaf027bdf9863c"
+      ],
+      "size": 10259608,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libderive_more_impl-a1df348e83e3b5b0.so",
+      "sha256": "54858a3236e0a10e8a0313557ee0b12e54824a4180015231eb3f0dbdff246eb3",
+      "build_ids": [
+        "a77eaf354e57ac09330acb925402bbf09edf2dcb"
+      ],
+      "size": 8344704,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-baed49ad8a1b0e75.so",
+      "sha256": "99b54ca127d63fdc84ccb4efda97ad61beefbad0288318ee0f7c582ecf2ec838",
+      "build_ids": [
+        "7476eea7933eecb50232c39d87d9b41b99390d70"
+      ],
+      "size": 8669056,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-1c0acb0cf617e2f0.so",
+      "sha256": "c56abebdc058089afefda2eaffa0f11f7c0b299ec1f028eaa82e92ad73e8b464",
+      "build_ids": [
+        "7bf1c687d161686ff15bae43b7b850efc1858b87"
+      ],
+      "size": 9977136,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/librhai_codegen-31d29ae7c8941169.so",
+      "sha256": "dc40db0fe72013cae62d6449a6c58b059a43d585ff4cc25a29acf35c91699326",
+      "build_ids": [
+        "cb545f7533a53ce4395838e51abd84f152e54922"
+      ],
+      "size": 8666896,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-6a9b58d7c88e1ff8.so",
+      "sha256": "ac0cac437d66f10e5ae849ef6570ce9b26796eedbafcaf6175e4c7cfac8829f3",
+      "build_ids": [
+        "0585e39144fb96c41d92c923b6b2212de926bfc4"
+      ],
+      "size": 7864112,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-4631f561fdd700b9.so",
+      "sha256": "af281d9b6ec689d004ef34b1bcd7e4263e779b9e19479a8115e8560537b80b78",
+      "build_ids": [
+        "d32d1e7da1f050343015fe8ef8071095a758bb61"
+      ],
+      "size": 6945016,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libref_cast_impl-5f7f1cc6b9a58ef6.so",
+      "sha256": "e3e8bd83b06bca7298590f167a71aabb64ef940e8091eb8b8bce02e2c19721d3",
+      "build_ids": [
+        "d22d449239b3dd8155808a4f46d4bd73ec3a651c"
+      ],
+      "size": 6944984,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libdocument_features-3e3b80b48d1408bb.so",
+      "sha256": "2af0636539fb8286374bb52c5a297657afb3563f481abecc0371c4c3891ec3fb",
+      "build_ids": [
+        "4398d75b70f9b0631d26ce4c0f32efe0d173c286"
+      ],
+      "size": 6073416,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-994e742682ed7a91.so",
+      "sha256": "a8817bbaaf8e1a0dfc51762c5d318745cb31ad576b6898af12dc4042bd97d0a2",
+      "build_ids": [
+        "89b1d38e260cbbd75bbc81b3f9a5c478d64555c8"
+      ],
+      "size": 8590864,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/libserde_derive-3a1bb154be8d3bf1.so",
+      "sha256": "fa792b8825badccf8be93793751e6f420b0ae285bcfab0852381d96199c9346d",
+      "build_ids": [
+        "a835256e49c19ff03e26ecb0b4211765a0814a36"
+      ],
+      "size": 11435936,
+      "scope": "compiler proc-macro DSO, not an executed owner test"
+    }
+  ],
+  "merged": {
+    "path": "/tmp/dandrum-lanes/evidence-trigger-clap-product/final.profdata",
+    "sha256": "e6614c6cc102af2bcebfd8a6b4939bf4e3f510b851ca92ccbb1bd5f83b533cb5"
+  },
+  "summary": {
+    "/tmp/dandrum-lanes/runtime/src/clap-adapter/src/lib.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 51,
+        "covered": 47,
+        "percent": 92.15686274509804
+      },
+      "instantiations": {
+        "count": 152,
+        "covered": 59,
+        "percent": 38.81578947368421
+      },
+      "lines": {
+        "count": 503,
+        "covered": 443,
+        "percent": 88.07157057654076
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 745,
+        "covered": 666,
+        "notcovered": 79,
+        "percent": 89.39597315436242
+      }
+    },
+    "/tmp/dandrum-lanes/runtime/src/clap-adapter/src/trigger.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 32,
+        "covered": 31,
+        "percent": 96.875
+      },
+      "instantiations": {
+        "count": 64,
+        "covered": 31,
+        "percent": 48.4375
+      },
+      "lines": {
+        "count": 386,
+        "covered": 378,
+        "percent": 97.92746113989638
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 528,
+        "covered": 508,
+        "notcovered": 20,
+        "percent": 96.21212121212122
+      }
+    },
+    "/tmp/dandrum-lanes/runtime/src/trigger-host/src/lib.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 21,
+        "covered": 21,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 115,
+        "covered": 78,
+        "percent": 67.82608695652173
+      },
+      "lines": {
+        "count": 120,
+        "covered": 119,
+        "percent": 99.16666666666667
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 173,
+        "covered": 171,
+        "notcovered": 2,
+        "percent": 98.84393063583815
+      }
+    },
+    "/tmp/dandrum-lanes/runtime/src/trigger-host/src/parameters.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 89,
+        "covered": 89,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 325,
+        "covered": 148,
+        "percent": 45.53846153846154
+      },
+      "lines": {
+        "count": 901,
+        "covered": 880,
+        "percent": 97.669256381798
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 1359,
+        "covered": 1317,
+        "notcovered": 42,
+        "percent": 96.90949227373068
+      }
+    },
+    "/tmp/dandrum-lanes/runtime/src/trigger-host/src/protocol.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 24,
+        "covered": 24,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 84,
+        "covered": 32,
+        "percent": 38.095238095238095
+      },
+      "lines": {
+        "count": 362,
+        "covered": 362,
+        "percent": 100
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 516,
+        "covered": 500,
+        "notcovered": 16,
+        "percent": 96.89922480620154
+      }
+    },
+    "/tmp/dandrum-lanes/runtime/src/trigger-host/src/runtime.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 109,
+        "covered": 109,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 273,
+        "covered": 239,
+        "percent": 87.54578754578755
+      },
+      "lines": {
+        "count": 1372,
+        "covered": 1365,
+        "percent": 99.48979591836735
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 2130,
+        "covered": 2116,
+        "notcovered": 14,
+        "percent": 99.34272300469483
+      }
+    },
+    "/tmp/dandrum-lanes/runtime/src/trigger-host/src/state.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 10,
+        "covered": 10,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 41,
+        "covered": 39,
+        "percent": 95.1219512195122
+      },
+      "lines": {
+        "count": 105,
+        "covered": 105,
+        "percent": 100
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 177,
+        "covered": 176,
+        "notcovered": 1,
+        "percent": 99.43502824858757
+      }
+    }
+  },
+  "raw_count": 101,
+  "object_count": 19,
+  "multiplicity": "Multiple DSO loads/copies and allocator child legitimately emit several profiles for the same object; each raw binary ID is independently resolved, counts need not match."
+}

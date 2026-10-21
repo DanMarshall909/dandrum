@@ -1,0 +1,745 @@
+{
+  "results": [
+    {
+      "test": {
+        "plugin-library": {
+          "test": "query-nonexistent-factory",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 318747
+      }
+    },
+    {
+      "test": {
+        "plugin-library": {
+          "test": "create-id-with-trailing-garbage",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 372516
+      }
+    },
+    {
+      "test": {
+        "plugin-library": {
+          "test": "scan-rtld-now",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 397796
+      }
+    },
+    {
+      "test": {
+        "plugin-library": {
+          "test": "scan-time",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": "The plugin can be scanned in 0 milliseconds."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 327477
+      }
+    },
+    {
+      "test": {
+        "plugin-library": {
+          "test": "preset-discovery-crawl",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'clap.preset-discovery-factory/2' factory."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 301767
+      }
+    },
+    {
+      "test": {
+        "plugin-library": {
+          "test": "preset-discovery-descriptor-consistency",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'clap.preset-discovery-factory/2' factory."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 362617
+      }
+    },
+    {
+      "test": {
+        "plugin-library": {
+          "test": "preset-discovery-load",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'clap.preset-discovery-factory/2' factory."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 299268
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "descriptor-consistency",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 377377
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "features-categories",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 298237
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "features-duplicates",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 336177
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-audio-basic-out-of-place",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 7899376
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-audio-basic-in-place",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 7990345
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-audio-double-out-of-place",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not support 64-bit floating point audio."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 4918584
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-audio-double-in-place",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not support 64-bit floating point audio."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 4911264
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-audio-denormals",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin implements the 'audio-ports' extension but it does not have any input audio ports."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 4935044
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-sleep-constant-mask",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": "The plugin never set the constant flag on any output"
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 8086795
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-sleep-process-status",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": "The plugin never went to sleep during the test."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 8399841
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-note-out-of-place-basic",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 7483801
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-note-inconsistent",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 7435661
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-note-wildcard",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not have any input note ports that support CLAP events"
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 4736816
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-varying-sample-rates",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "failed",
+        "details": "Error while processing with 1234.57hz sample rate\n'clap_plugin::activate()' returned false."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 22501470
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-varying-block-sizes",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 67802306
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-random-block-sizes",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 11854659
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-reset-reactivate",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 7571940
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "layout-audio-ports-activation",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'audio-ports-activation' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 5149232
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "layout-audio-ports-config",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'audio-ports-config' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 4801835
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "layout-configurable-audio-ports",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'configurable-audio-ports' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 4952294
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-set-events",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 10239854
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-set-no-cookies",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 9695319
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-set-wrong-namespace",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 7285302
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-fuzz-basic",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 15257997
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-fuzz-bounds",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 16490646
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-fuzz-sample-accurate",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 8638139
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-fuzz-modulation",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 7457390
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-conversions",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 6341681
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "param-default-values",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 5144832
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "state-invalid-empty",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 5268751
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "state-invalid-random",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 6012814
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "state-reproducibility-basic",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 9339803
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "state-reproducibility-binary",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 9188904
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "state-reproducibility-buffered",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 9033536
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "transport-null",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 7485460
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "transport-fuzz",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 6921816
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "transport-fuzz-sample-accurate",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "success",
+        "details": null
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 7841227
+      }
+    }
+  ]
+}

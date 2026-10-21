@@ -1100,3 +1100,60 @@ fn sequenced_public_writes_and_reset_cancellation_allocate_or_free_nothing_on_au
     let state = controller.parameter_state();
     assert_eq!((state.sequence, state.reset_cancelled), (2, true));
 }
+
+#[test]
+fn public_index_reads_exact_applied_physical_atoms_without_allocating() {
+    let (_package, root) = package();
+    let path = root.join(ADVANCED_DRUM_KIT_DOCUMENT);
+    let yaml = std::fs::read_to_string(&path)
+        .unwrap()
+        .replace("name: drums.level, maps_to: level", "ALIAS_PLACEHOLDER")
+        .replace(
+            "name: drums.pan, maps_to: pan",
+            "name: drums.level, maps_to: level",
+        )
+        .replace("ALIAS_PLACEHOLDER", "name: drums.pan, maps_to: pan");
+    std::fs::write(path, yaml).unwrap();
+    let (mut controller, mut audio) =
+        ParameterController::open(root, configuration(), NonZeroU64::new(1).unwrap(), 4, 8)
+            .unwrap();
+    let level = controller
+        .parameters()
+        .iter()
+        .position(|p| p.id == "drums.level")
+        .unwrap();
+    assert_eq!((level, controller.parameters()[level].root_index), (3, 2));
+    assert_eq!(controller.physical_value(level), Some(1.0));
+    let editor = controller.attach_editor().unwrap();
+    let write = request(
+        &mut controller,
+        &editor.attachment_id,
+        1,
+        "setParameter",
+        json!(["drums.level", 0.125, 1]),
+    );
+    controller.apply(&write).unwrap();
+    assert_eq!(controller.physical_value(level), Some(1.0));
+    audio.flush_parameters(&[]).unwrap();
+    assert_eq!(controller.physical_value(level), Some(0.5));
+    let exact = 0.312_345_678_901_234_5;
+    audio
+        .flush_parameters(&[ControlEvent::Parameter {
+            index: 2,
+            value: exact,
+        }])
+        .unwrap();
+    let measured = allocation_counter::measure(|| {
+        assert_eq!(controller.physical_value(level), Some(exact));
+        assert_eq!(controller.physical_value(23), None);
+        assert_eq!(controller.physical_value(usize::MAX), None);
+    });
+    assert_eq!(
+        (
+            measured.count_total,
+            measured.count_current,
+            measured.bytes_current
+        ),
+        (0, 0, 0)
+    );
+}

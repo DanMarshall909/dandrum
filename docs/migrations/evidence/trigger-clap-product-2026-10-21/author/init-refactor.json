@@ -1,0 +1,7 @@
+{
+  "criterion": "T4.1-VALUES/init",
+  "red": "11-init-red observes PluginNotFound,12 accessor absence is interface-only, not assertion RED",
+  "coverage": "Copied instrumented cdylib initialization and all parameter info/value paths executed; unknown IDs execute None. Core exact physical test runs alias-order mapping and out-of-bounds. Parameter parsing/display and parked audio are forthcoming explicitly bounded consumers, not completed current claim.",
+  "production_refactor": "New feature module separates actual Trigger owner from unchanged fixtures. No extraction. Keep one RefCell core to move matched endpoints later; no scalar duplication.",
+  "test_refactor": "Hardcoded table freezes all alias IDs and physical defaults, intentionally independent of YAML metadata loader. Shared TestHost/build-artifact helper supports subsequent actual-boundary criteria. Init0.08s, accessor0.04s, retained fast boundary feedback."
+}

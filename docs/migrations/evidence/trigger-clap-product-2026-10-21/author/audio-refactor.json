@@ -1,0 +1,7 @@
+{
+  "criterion": "T4.1-AUDIO",
+  "production_refactor": "Separate checked translation and silence helper serve complete batch validation and all writable buffers; this is newfeature code, no extraction. Primary parked Cell avoids controller borrows on deactivate; explicit failedactivation rollback. Covered fixture letchains only lint syntax; equal f32 literal bits recorded.",
+  "test_refactor": "One preallocated atomic recorder for diagnostics; assert only outside callbacks. Existing literal PCM and continuation asserts retained; 5tests0.13s, keep boundary lane. No new helper extraction needed.",
+  "coverage": "Checked translator validglobalparams/MIDInotes and invalidID/NaN/range/PCKN/offset/port/7bit/order/sizebudget executed via copied instrumentedcdylib. Remaining outputlayout and missing-event branches meaningful; add boundary characterization before final. Flush/state not yet claimed.",
+  "limitations": "No allocator proof yet; no arbitraryhost guarantee; diagnostic callback delivery explicit. LLVM phase raw profiles isolated from earlier source."
+}

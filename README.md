@@ -161,6 +161,24 @@ gates. The [dependency receipt](docs/migrations/juce-free-clap-dependencies.json
 provenance and scope; project/distribution licence decisions remain pending. Keep the existing
 JUCE products for comparison. No launchable demo or production cutover is added here.
 
+The opt-in session-backed Trigger product builds beside the proof artifact:
+
+```bash
+npm --prefix web/trigger run build:native
+cmake -S . -B build/engine-only -DDANDRUM_ENGINE_ONLY=ON -DDANDRUM_CLAP_PROOF=ON -DDANDRUM_TRIGGER_CLAP_EDITOR=ON -DDANDRUM_TRIGGER_EDITOR_BUNDLE_DIR="$PWD/web/trigger/dist-native" -DCMAKE_BUILD_TYPE=Release
+cmake --build build/engine-only --target dandrum-trigger-clap-editor --parallel 2
+ctest --test-dir build/engine-only --output-on-failure -R '^(clap-dynamic-host|trigger-clap-dynamic-host|trigger-host-tests|trigger-editor-tests)$'
+```
+
+`DandrumTrigger.clap` adds `org.dandrum.trigger` with the Advanced Drum Kit,
+23 physical host parameters and version-2 Trigger state. Keep its sibling
+`DandrumTrigger.resources` directory beside the plugin when copying it to another
+location. Initialization resolves that explicit directory only. Trigger accepts
+integral sample rates, float32 stereo output and at most 64 input events per block;
+invalid batches preserve accepted values and playback position while clearing output.
+The current product is headless; the packaged React assets support the pending
+CLAP GUI integration. The default proof artifact retains its two fixture descriptors.
+
 ## Engine Development
 
 The headless engine core is implemented in Rust under `src/rust-engine/`. The `core` module is the frontend-independent

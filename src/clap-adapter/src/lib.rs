@@ -19,6 +19,9 @@ use std::fmt::Write;
 use std::io::Read;
 use std::sync::atomic::{AtomicU64, Ordering};
 
+#[cfg(feature = "trigger")]
+mod trigger;
+
 const TB303: &str = include_str!("../../../examples/patches/tb303-acid.yaml");
 const GAIN: &str = include_str!("../fixtures/signed-gain.yaml");
 const EVENT_LIMIT: u32 = 1024;
@@ -109,10 +112,10 @@ impl Shared {
             return;
         }
         for event in input {
-            if let Some(CoreEventSpace::ParamValue(v)) = event.as_core_event() {
-                if let Some(p) = v.param_id().and_then(|id| self.parameter(id)) {
-                    p.value.store(v.value().to_bits(), Ordering::Relaxed);
-                }
+            if let Some(CoreEventSpace::ParamValue(v)) = event.as_core_event()
+                && let Some(p) = v.param_id().and_then(|id| self.parameter(id))
+            {
+                p.value.store(v.value().to_bits(), Ordering::Relaxed);
             }
         }
     }
@@ -189,10 +192,8 @@ impl PluginStateImpl for Main<'_> {
         for (parameter, value) in self.shared.parameters.iter().zip(values) {
             changed |= parameter.value.swap(value.to_bits(), Ordering::Relaxed) != value.to_bits();
         }
-        if changed {
-            if let Some(params) = self.host.get_extension::<HostParams>() {
-                params.rescan(&self.host, ParamRescanFlags::VALUES);
-            }
+        if changed && let Some(params) = self.host.get_extension::<HostParams>() {
+            params.rescan(&self.host, ParamRescanFlags::VALUES);
         }
         Ok(())
     }
@@ -212,11 +213,13 @@ impl Plugin for Adapter {
     }
 }
 struct Factory {
-    descriptors: [PluginDescriptor; 2],
+    descriptors: Vec<PluginDescriptor>,
+    #[cfg(feature = "trigger")]
+    plugin_path: Option<std::path::PathBuf>,
 }
 impl PluginFactoryImpl for Factory {
     fn plugin_count(&self) -> u32 {
-        2
+        self.descriptors.len() as u32
     }
 
     fn plugin_descriptor(&self, index: u32) -> Option<&PluginDescriptor> {
@@ -224,6 +227,16 @@ impl PluginFactoryImpl for Factory {
     }
     fn create_plugin<'a>(&'a self, host: HostInfo<'a>, id: &CStr) -> Option<PluginInstance<'a>> {
         let index = self.descriptors.iter().position(|d| d.id() == Some(id))?;
+        if index > 1 {
+            #[cfg(feature = "trigger")]
+            return Some(trigger::instance(
+                host,
+                &self.descriptors[index],
+                self.plugin_path.clone(),
+            ));
+            #[cfg(not(feature = "trigger"))]
+            return None;
+        }
         let kind = if index == 0 { Kind::Tb303 } else { Kind::Gain };
         Some(PluginInstance::new::<Adapter>(
             host,
@@ -237,11 +250,16 @@ struct ProofEntry {
     factory: PluginFactoryWrapper<Factory>,
 }
 impl Entry for ProofEntry {
-    fn new(_: Option<&CStr>) -> Result<Self, EntryLoadError> {
+    fn new(_plugin_path: Option<&CStr>) -> Result<Self, EntryLoadError> {
         use clack_plugin::plugin::features::*;
         Ok(Self {
             factory: PluginFactoryWrapper::new(Factory {
-                descriptors: [
+                #[cfg(feature = "trigger")]
+                plugin_path: _plugin_path.map(|path| {
+                    use std::os::unix::ffi::OsStrExt;
+                    std::path::PathBuf::from(std::ffi::OsStr::from_bytes(path.to_bytes()))
+                }),
+                descriptors: vec![
                     PluginDescriptor::new(Kind::Tb303.identity(), "Dandrum Experimental TB303")
                         .with_vendor("Dandrum")
                         .with_version("0.1.0")
@@ -253,6 +271,11 @@ impl Entry for ProofEntry {
                     .with_vendor("Dandrum")
                     .with_version("0.1.0")
                     .with_features([AUDIO_EFFECT, STEREO]),
+                    #[cfg(feature = "trigger")]
+                    PluginDescriptor::new("org.dandrum.trigger", "Dandrum Trigger")
+                        .with_vendor("Dandrum")
+                        .with_version("0.1.0")
+                        .with_features([INSTRUMENT, SAMPLER, STEREO]),
                 ],
             }),
         })

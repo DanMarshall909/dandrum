@@ -1,0 +1,201 @@
+[
+  {
+    "label": "trigger-editor",
+    "argv": [
+      "/home/dan/.local/bin/cmake",
+      "-S",
+      "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source",
+      "-B",
+      "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/build/trigger-editor",
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DDANDRUM_ENGINE_ONLY=ON",
+      "-DDANDRUM_CLAP_PROOF=ON",
+      "-DDANDRUM_TRIGGER_CLAP_EDITOR=ON",
+      "-DDANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/editor-input"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit": 0,
+    "seconds": 0.6567318509914912,
+    "log": "trigger-editor.log",
+    "sha256": "7f993e2218cbd1cb7ad28b90023bc5c0aaf560524c742c4e578f1ea8a6b4fbe6"
+  },
+  {
+    "label": "trigger-editor-targets",
+    "argv": [
+      "/home/dan/.local/bin/cmake",
+      "--build",
+      "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/build/trigger-editor",
+      "--target",
+      "help"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit": 0,
+    "seconds": 0.054214083997067064,
+    "log": "trigger-editor-targets.log",
+    "sha256": "afb68cade798884d87a00d94bc801b6189712caf4ba4fbcd6516f7173668766d"
+  },
+  {
+    "label": "trigger-host-test-inventory",
+    "argv": [
+      "/home/dan/.local/bin/ctest",
+      "--test-dir",
+      "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/build/trigger-editor",
+      "--show-only=json-v1"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit": 0,
+    "seconds": 0.008538869995390996,
+    "log": "trigger-host-test-inventory.log",
+    "sha256": "7f801b0a84883da5ca83144c8f3349be965fc8bf14c0ea0cd713da8b890c2cc6"
+  },
+  {
+    "label": "trigger-native-inventory",
+    "argv": [
+      "/home/dan/.local/bin/cmake",
+      "-S",
+      "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source",
+      "-B",
+      "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/build/trigger-native-inventory",
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DDANDRUM_ENGINE_ONLY=ON",
+      "-DDANDRUM_CLAP_PROOF=ON",
+      "-DDANDRUM_TRIGGER_CLAP_EDITOR=ON",
+      "-DDANDRUM_TRIGGER_EDITOR_NATIVE_X11=ON",
+      "-DDANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/editor-input"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit": 0,
+    "seconds": 0.2599435599986464,
+    "log": "trigger-native-inventory.log",
+    "sha256": "27c255f11c34be2d5614ba733364ccd83c86bd77757dc95b6cdd1de22f9452dc"
+  },
+  {
+    "label": "trigger-native-test-inventory",
+    "argv": [
+      "/home/dan/.local/bin/ctest",
+      "--test-dir",
+      "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/build/trigger-native-inventory",
+      "--show-only=json-v1"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit": 0,
+    "seconds": 0.005202442000154406,
+    "log": "trigger-native-test-inventory.log",
+    "sha256": "d5d8ad21b25f425a02d39faad2dab74616bcea660050a3476b21cd7e86e074a2"
+  },
+  {
+    "label": "trigger-editor-build",
+    "argv": [
+      "/home/dan/.local/bin/cmake",
+      "--build",
+      "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/build/trigger-editor",
+      "--target",
+      "dandrum-trigger-clap-editor",
+      "--parallel",
+      "2"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit": 0,
+    "seconds": 112.3325329820218,
+    "log": "trigger-editor-build.log",
+    "sha256": "f01c56f9ef2daa016ee5f7bbd9c0e9bd64547d02b2530ed2a55cf63075f21680"
+  },
+  {
+    "label": "trigger-editor-resource-rebuild",
+    "argv": [
+      "/home/dan/.local/bin/cmake",
+      "--build",
+      "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/build/trigger-editor",
+      "--target",
+      "dandrum-trigger-clap-editor",
+      "--parallel",
+      "2"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit": 0,
+    "seconds": 0.052277932001743466,
+    "log": "trigger-editor-resource-rebuild.log",
+    "sha256": "3b436673ec38c6b22ace9bf9ae3fd57d371238b0b932a3f602e875dcf6180d70"
+  },
+  {
+    "label": "trigger-host-dependencies",
+    "argv": [
+      "cargo",
+      "tree",
+      "--offline",
+      "--locked",
+      "--manifest-path",
+      "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/src/trigger-host/Cargo.toml",
+      "--edges",
+      "normal",
+      "--prefix",
+      "none"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit": 0,
+    "seconds": 0.07290474901674315,
+    "log": "trigger-host-dependencies.log",
+    "sha256": "3532fb721c855e17a15f646145ff146f74166ba649da59786d3759dda893851b"
+  },
+  {
+    "label": "trigger-editor-fixture-runtime",
+    "argv": [
+      "/home/dan/.local/bin/ctest",
+      "--test-dir",
+      "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/build/trigger-editor",
+      "--output-on-failure",
+      "-R",
+      "^(clap-dynamic-host|trigger-clap-dynamic-host|trigger-host-tests|trigger-editor-tests)$"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit": 0,
+    "seconds": 75.0996278639941,
+    "log": "trigger-editor-fixture-runtime.log",
+    "sha256": "ddfe871377d81ea1c7b7e0bf6973b779ecb311d8b09ff5be1829ad00e264f977"
+  },
+  {
+    "label": "trigger-installed-test-binary",
+    "argv": [
+      "cargo",
+      "test",
+      "--locked",
+      "--jobs",
+      "2",
+      "--manifest-path",
+      "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/src/clap-adapter/Cargo.toml",
+      "--target-dir",
+      "/tmp/dandrum-lanes/integration/build/engine-only-regression/cargo-target",
+      "--features",
+      "trigger",
+      "--test",
+      "trigger_dynamic",
+      "--no-run",
+      "--message-format=json"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit": 0,
+    "seconds": 1.190051936020609,
+    "log": "trigger-installed-test-binary.log",
+    "sha256": "48e05b371f1de8551d9dd49f2bb298ce1c17ca4c168e2288657534f999ba6700"
+  },
+  {
+    "label": "trigger-installed-runtime",
+    "argv": [
+      "/home/dan/.local/bin/cmake",
+      "-E",
+      "chdir",
+      "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed",
+      "/home/dan/.local/bin/cmake",
+      "-E",
+      "env",
+      "DANDRUM_TRIGGER_CLAP_PLUGIN_PATH=/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+      "/tmp/dandrum-lanes/integration/build/engine-only-regression/cargo-target/debug/deps/trigger_dynamic-c2f91084e628c730",
+      "--test-threads=1"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit": 0,
+    "seconds": 0.31069157598540187,
+    "log": "trigger-installed-runtime.log",
+    "sha256": "11016e51eebfeed3db3bc0b0c7f9b9eaa6124fec615887713acc7a46cd0cab5e"
+  }
+]

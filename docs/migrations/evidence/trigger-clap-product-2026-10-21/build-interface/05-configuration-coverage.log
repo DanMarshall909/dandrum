@@ -1,0 +1,26 @@
+EEEE
+======================================================================
+ERROR: ClapProofBuildTest (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+AttributeError: module '__main__' has no attribute 'ClapProofBuildTest'
+
+======================================================================
+ERROR: ClapProofBuildTest (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+AttributeError: module '__main__' has no attribute 'ClapProofBuildTest'
+
+======================================================================
+ERROR: ClapProofBuildTest (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+AttributeError: module '__main__' has no attribute 'ClapProofBuildTest'
+
+======================================================================
+ERROR: EngineOnlyBuildTest (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+AttributeError: module '__main__' has no attribute 'EngineOnlyBuildTest'
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.001s
+
+FAILED (errors=4)
+Skipping counts file '/tmp/dandrum-evidence/trigger-clap-cmake/python-trace.count': [Errno 2] No such file or directory: '/tmp/dandrum-evidence/trigger-clap-cmake/python-trace.count'

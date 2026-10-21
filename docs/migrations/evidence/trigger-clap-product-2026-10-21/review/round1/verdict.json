@@ -1,0 +1,33 @@
+{
+  "verdict": "FAIL",
+  "candidate_manifest_sha256": "d9f4f7fb4a00b95f5edb746b7e1bf093d72e69e8c17c57bba80a079a4d3e9648",
+  "paths": 97,
+  "base": "72c58e0bcf308d5f181cf75f2875f76f3a1a3b4e",
+  "current": "72c58e0bcf308d5f181cf75f2875f76f3a1a3b4e",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "72c58e0bcf308d5f181cf75f2875f76f3a1a3b4e",
+  "integration_base": "72c58e0bcf308d5f181cf75f2875f76f3a1a3b4e",
+  "branch": "lane/trigger-integration-20261020",
+  "main": "68dd6553a2f07e71e2fe09ee1d7094d518559937",
+  "findings": [
+    {
+      "id": "F1",
+      "priority": "P2",
+      "file": "docs/migrations/juce-replacement-progress.md",
+      "line": 1568,
+      "title": "Progress prose adds an unaccepted fractional-rate implementation requirement",
+      "required_outcome": "Retain actual validator failure and capability limitation; describe future compatibility disposition as open without mandating unaccepted fractional-rate implementation."
+    }
+  ],
+  "production_code_corrections_identified": false,
+  "task_4_1_checkbox_approved": false,
+  "publication_approved": false,
+  "validator_result": {
+    "success": 33,
+    "skipped": 10,
+    "failed": 1,
+    "excluded": 0
+  },
+  "review_sha256": "ce9de0fb82c97289c1569ea02fa154ae4a5d4652b6b05d192fa4b341c2b87815",
+  "repair": "Root documentation correction, named validation, new complete manifest and whole-packet return to same reviewer; no new fractional implementation or exclusions requested."
+}

@@ -1,0 +1,7 @@
+LD_PRELOAD=/tmp/dandrum-lanes/evidence-trigger-clap-sourcefree/tmp/.tmpFNdInf/allocator_interpose.so DANDRUM_ALLOCATOR_AUDIT_PROBE=/tmp/dandrum-lanes/evidence-trigger-clap-sourcefree/tmp/.tmpFNdInf/allocator_probe.so /tmp/dandrum-lanes/integration/build/engine-only-regression/cargo-target/debug/deps/trigger_dynamic-c2f91084e628c730 --exact allocator_audit_child --ignored --nocapture
+9f68214c803e80ccbe308726f6d2428750a57e497e3ae7dcfc69df175e9a513a  /tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/build/trigger-editor/clap/DandrumTrigger.clap
+6947acaa2787883b1f6ffd1397674a5c0dd18c5f00f4ca2a1e3a734ac3595e7e  /tmp/dandrum-lanes/integration/build/engine-only-regression/cargo-target/debug/deps/trigger_dynamic-c2f91084e628c730
+8bbf08b0f739e9161feafbd51c3b094425753db53e84c3982e75742670d96a3a  /tmp/dandrum-lanes/evidence-trigger-clap-sourcefree/tmp/.tmpFNdInf/allocator_interpose.so
+8a34dc6bbd6059062f8672995ed5b3195cf603b6544ab5f4d0abfe6fdae156bd  /tmp/dandrum-lanes/evidence-trigger-clap-sourcefree/tmp/.tmpFNdInf/allocator_probe.so
+6b80a560e2eded4276befd2252699c427fcdc7638387975c7c343e41d63c8dc9  /tmp/dandrum-lanes/evidence-trigger-clap-sourcefree/tmp/.tmpFNdInf/allocator_interpose.c
+6ae6c66a02750fea4ed381e2d3088638c6b500eb21bb35b9c131897111a8a11e  /tmp/dandrum-lanes/evidence-trigger-clap-sourcefree/tmp/.tmpFNdInf/allocator_probe.rs

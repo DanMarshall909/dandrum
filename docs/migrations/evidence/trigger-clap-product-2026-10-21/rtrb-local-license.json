@@ -1,0 +1,21 @@
+{
+  "source": "/home/dan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rtrb-0.3.2",
+  "package": {
+    "name": "rtrb",
+    "version": "0.3.2",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/mgeier/rtrb"
+  },
+  "files": {
+    "LICENSE-APACHE": {
+      "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+      "bytes": 10847
+    },
+    "LICENSE-MIT": {
+      "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+      "bytes": 1023
+    }
+  },
+  "manifest_sha256": "dc6c0ed4f2db1313d152d97852a168370bc25cb5f01cd1be8b841aace9261048",
+  "qualification": "Already accepted exact host pin; local packaged upstream source audit, not a new dependency adoption or redistribution clearance. Initial tomllib import unavailable on Python3.10; corrected exact manifest field reader, no package mutation."
+}

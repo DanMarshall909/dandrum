@@ -1,0 +1,25 @@
+{
+  "argv": [
+    "python3",
+    "-m",
+    "trace",
+    "--count",
+    "--file",
+    "/tmp/dandrum-evidence/trigger-clap-cmake/python-trace.count",
+    "--coverdir",
+    "/tmp/dandrum-evidence/trigger-clap-cmake/python-trace",
+    "--ignore-dir",
+    "/usr",
+    "tests/python/test_engine_only_build.py",
+    "ClapProofBuildTest.test_trigger_product_build_and_host_check_are_explicit_opt_in",
+    "ClapProofBuildTest.test_clap_rebuilds_when_embedded_engine_resources_change",
+    "ClapProofBuildTest.test_clap_selection_requires_independent_engine_mode",
+    "EngineOnlyBuildTest.test_conflicting_product_options_fail_before_dependency_discovery"
+  ],
+  "cwd": "/tmp/dandrum-lanes/integration",
+  "exit": 0,
+  "seconds": 0.06868029799079522,
+  "log_sha256": "fe73e15690f973712f32c450ccef1388a14b960d4b66ac06df361e0ddb72b6d6",
+  "scope": "Four actual configuration/incremental-plan cases, no Rust builds; standard Python statement counts for tests, not CMake build execution coverage",
+  "classification": "SETUP FAILURE: trace CLI does not provide unittest __main__ class selectors here; printed4errors despite trace exit0, no passing evidence"
+}

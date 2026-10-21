@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(DANDRUM_ENABLE_MUTATION_CTEST "Include the long-running cargo-mutants test in CTest" OFF)
 option(DANDRUM_ENGINE_ONLY "Build only the Rust engine and independent native consumers without JUCE or browser dependencies" OFF)
 option(DANDRUM_CLAP_PROOF "Build the experimental headless CLAP engine proof" OFF)
-option(DANDRUM_TRIGGER_CLAP_EDITOR "Stage the JUCE-free Trigger CLAP editor scaffold" OFF)
+option(DANDRUM_TRIGGER_CLAP_EDITOR "Build the JUCE-free Trigger CLAP product and stage editor resources" OFF)
 option(DANDRUM_TRIGGER_EDITOR_NATIVE_X11 "Enable the real GTK/Wry X11 editor boundary tests" OFF)
 set(DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR "" CACHE PATH "Prebuilt Trigger editor bundle to stage beside the CLAP proof")
 option(DANDRUM_NATIVE_ONLY "Build the plugin with the native JUCE editor and no browser dependencies" OFF)
@@ -316,6 +316,33 @@ if(DANDRUM_CLAP_PROOF)
         VERBATIM)
     add_custom_target(dandrum-clap-proof DEPENDS ${DANDRUM_CLAP_ARTIFACT})
     if(DANDRUM_TRIGGER_CLAP_EDITOR)
+        set(DANDRUM_TRIGGER_CLAP_ARTIFACT ${CMAKE_CURRENT_BINARY_DIR}/clap/DandrumTrigger.clap)
+        add_custom_command(
+            OUTPUT ${DANDRUM_TRIGGER_CLAP_ARTIFACT}
+            COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+                ${CARGO_BIN} build --locked --release --jobs 2
+                --manifest-path ${DANDRUM_CLAP_DIR}/Cargo.toml --features trigger --lib
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${DANDRUM_CLAP_LIBRARY} ${DANDRUM_TRIGGER_CLAP_ARTIFACT}
+            # Both features reuse the warm Cargo directory. The copied default
+            # artifact must finish before this feature can overwrite its library.
+            DEPENDS ${DANDRUM_CLAP_ARTIFACT} ${DANDRUM_CLAP_SOURCES}
+                ${RUST_ENGINE_SOURCES} ${RUST_SESSION_SOURCES} ${RUST_TRIGGER_HOST_SOURCES}
+                ${DANDRUM_CLAP_DIR}/Cargo.toml ${DANDRUM_CLAP_DIR}/Cargo.lock
+                ${RUST_SESSION_DIR}/Cargo.toml ${RUST_SESSION_DIR}/Cargo.lock
+                ${RUST_TRIGGER_HOST_DIR}/Cargo.toml ${RUST_TRIGGER_HOST_DIR}/Cargo.lock
+            COMMENT "Building the session-backed JUCE-free Trigger CLAP product"
+            VERBATIM)
+        add_custom_target(dandrum-trigger-clap-product DEPENDS ${DANDRUM_TRIGGER_CLAP_ARTIFACT})
+        add_test(NAME trigger-clap-dynamic-host
+            COMMAND ${CMAKE_COMMAND} -E env
+                CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+                DANDRUM_TRIGGER_CLAP_PLUGIN_PATH=${DANDRUM_TRIGGER_CLAP_ARTIFACT}
+                ${CARGO_BIN} test --locked --jobs 2
+                --manifest-path ${DANDRUM_CLAP_DIR}/Cargo.toml
+                --features trigger --test trigger_dynamic)
+        set_tests_properties(trigger-clap-dynamic-host PROPERTIES
+            LABELS "trigger-clap-boundary" TIMEOUT 1200)
         set(DANDRUM_TRIGGER_RESOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/clap/DandrumTrigger.resources)
         set(DANDRUM_TRIGGER_RESOURCE_STAMP ${DANDRUM_TRIGGER_RESOURCE_DIR}/.staged)
         add_custom_command(
@@ -341,6 +368,7 @@ if(DANDRUM_CLAP_PROOF)
             COMMENT "Staging copied Trigger editor and instrument resources"
             VERBATIM)
         add_custom_target(dandrum-trigger-resources DEPENDS ${DANDRUM_TRIGGER_RESOURCE_STAMP})
+        add_dependencies(dandrum-trigger-clap-product dandrum-trigger-resources)
         # This lane requires the complete production bundle, including local
         # fonts/notices. The Python source-free build fixture deliberately uses
         # a tiny build-only bundle and separately checks this test's registration.
@@ -367,7 +395,7 @@ if(DANDRUM_CLAP_PROOF)
         endif()
         add_custom_target(dandrum-trigger-clap-editor)
         add_dependencies(dandrum-trigger-clap-editor
-            dandrum-clap-proof dandrum-trigger-host-rust dandrum-trigger-editor-rust dandrum-trigger-resources)
+            dandrum-trigger-clap-product dandrum-trigger-host-rust dandrum-trigger-editor-rust dandrum-trigger-resources)
     endif()
     add_test(NAME clap-dynamic-host
         COMMAND ${CMAKE_COMMAND} -E env

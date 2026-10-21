@@ -142,5 +142,46 @@
     "serde_json_features": [
       "float_roundtrip"
     ]
+  },
+  "trigger_product_increment": {
+    "scope": "Opt-in headless session-backed Trigger projection. Earlier fixture counts, hashes, validator records and pending statements above are historical evidence for their named revisions; this addendum owns the new feature graph. GUI/native/DAW/full beta acceptance remains separate.",
+    "feature": "trigger",
+    "default_features": [],
+    "descriptor_id": "org.dandrum.trigger",
+    "local_production_dependencies": [
+      "dandrum-trigger-host",
+      "dandrum_instrument_session"
+    ],
+    "external_production_addition": {
+      "name": "rtrb",
+      "version": "0.3.2",
+      "checksum": "ad8388ea1a9e0ea807e442e8263a699e7edcb320ecbcd21b4fa8ff859acce3ba",
+      "reason": "Reuses the exact previously accepted format-neutral host pin; added to adapter resolved feature graph.",
+      "license_declaration": "MIT OR Apache-2.0",
+      "license_files": {
+        "LICENSE-APACHE": {
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+          "bytes": 10847
+        },
+        "LICENSE-MIT": {
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+          "bytes": 1023
+        }
+      },
+      "packaged_manifest_sha256": "dc6c0ed4f2db1313d152d97852a168370bc25cb5f01cd1be8b841aace9261048"
+    },
+    "additional_clack_extension_feature": "log",
+    "dev_only_direct_dependencies": [
+      "libloading",
+      "tempfile"
+    ],
+    "lockfile_hashes": {
+      "src/clap-adapter/Cargo.lock": "a02bdefbdd45c107a97314373201f90776a0bc865d30406cb957a04c3b07501e",
+      "src/trigger-host/Cargo.lock": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "src/instrument-session/Cargo.lock": "1537a3dc07c17fb7fe79786d1863b7e9b7e3db328757845fdbe3ffdbb10201eb",
+      "src/rust-engine/Cargo.lock": "7b9868b097cc152c22ff3462ccfd60e822d8a1bb3724a89f43ba526e72ea20d7"
+    },
+    "dependency_direction": "Clack types stay in the adapter. Format-neutral host retains engine/session/serde/rtrb dependencies. No Wry, GTK, WebKit or JUCE dependency is introduced by this headless feature.",
+    "verification": "Current LTO release and copied installed synthetic-host source-free proof pass; ELF NEEDED is libgcc_s/libm/libc/ld-linux. Official Trigger validator33success/10skip/1failure at deliberately unsupported fractional1234.57Hz, no test exclusions; task4.3/5.1 acceptance remains open. Source-bound records: evidence/trigger-clap-product-2026-10-21/receipt.json and sourcefree/release-audit/. Independent review/publication pending."
   }
 }

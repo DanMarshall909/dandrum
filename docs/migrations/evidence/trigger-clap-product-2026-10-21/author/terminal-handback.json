@@ -1,0 +1,31 @@
+{
+  "source_freeze_sha256": "4b4a452bf4dea8c7efcd2c68d277296f509994181f8a84dcc1f818e03c71f21b",
+  "owned_source_bytes_modes_mtimes_verified": true,
+  "all_known_owned_exec_sessions_terminal": true,
+  "running_builders_or_tests_in_available_process_snapshot": [],
+  "process_visibility": "ps in available execution namespace, plus explicit terminal status of every author-owned exec session; root can perform its own host audit.",
+  "both_caches_returned": [
+    "/tmp/dandrum-lanes/cache-runtime",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov"
+  ],
+  "no_further_author_cache_or_source_writes": "effective after explicit parent terminal handback message",
+  "disk_free_bytes": 5752090624,
+  "mem_available_kib": 11914120,
+  "heavy_external_evidence": {
+    "final-profiles.tar.gz": {
+      "bytes": 27344027,
+      "sha256": "4c0c44cc0ad2dd3fa94897798ac364541e90c217baa6958d045f6bb615440ceb"
+    },
+    "full_llvm_export": {
+      "bytes": 71278943,
+      "sha256": "bcdcef9a7463bc888cae014bde89f300afa00be8af81b61da2464c328f889e60"
+    }
+  },
+  "root_pending": [
+    "combined current-release+CMake+source-free acceptance",
+    "official validator/link/resource gates",
+    "fresh independent review",
+    "normal commit/publication",
+    "task4.1 completion only after full product gate"
+  ]
+}

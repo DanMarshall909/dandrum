@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "python3",
+    "tests/python/test_engine_only_build.py",
+    "ClapProofBuildTest.test_trigger_product_build_and_host_check_are_explicit_opt_in"
+  ],
+  "cwd": "/tmp/dandrum-lanes/integration",
+  "exit": 0,
+  "seconds": 0.6626192260009702,
+  "log_sha256": "898103a16457eeaabb6a5a632b5dd9a7e8a3b6a822aa382c04d875d4409f05b1",
+  "scope": "Real configure/target/test interface only; no product build execution yet"
+}

@@ -1,0 +1,195 @@
+{
+  "counts": {
+    "success": 33,
+    "skipped": 10,
+    "failed": 1
+  },
+  "non_success": [
+    {
+      "test": {
+        "plugin-library": {
+          "test": "preset-discovery-crawl",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'clap.preset-discovery-factory/2' factory."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 301767
+      }
+    },
+    {
+      "test": {
+        "plugin-library": {
+          "test": "preset-discovery-descriptor-consistency",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'clap.preset-discovery-factory/2' factory."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 362617
+      }
+    },
+    {
+      "test": {
+        "plugin-library": {
+          "test": "preset-discovery-load",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'clap.preset-discovery-factory/2' factory."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 299268
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-audio-double-out-of-place",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not support 64-bit floating point audio."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 4918584
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-audio-double-in-place",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not support 64-bit floating point audio."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 4911264
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-audio-denormals",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin implements the 'audio-ports' extension but it does not have any input audio ports."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 4935044
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-note-wildcard",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not have any input note ports that support CLAP events"
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 4736816
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "process-varying-sample-rates",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "failed",
+        "details": "Error while processing with 1234.57hz sample rate\n'clap_plugin::activate()' returned false."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 22501470
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "layout-audio-ports-activation",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'audio-ports-activation' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 5149232
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "layout-audio-ports-config",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'audio-ports-config' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 4801835
+      }
+    },
+    {
+      "test": {
+        "plugin-instance": {
+          "test": "layout-configurable-audio-ports",
+          "path": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap",
+          "plugin_id": "org.dandrum.trigger"
+        }
+      },
+      "status": {
+        "code": "skipped",
+        "details": "The plugin does not implement the 'configurable-audio-ports' extension."
+      },
+      "duration": {
+        "secs": 0,
+        "nanos": 4952294
+      }
+    }
+  ],
+  "exclusions": [],
+  "scope": "Full pinned official validator for org.dandrum.trigger. Integer-only accepted configuration deliberately rejects1234.57Hz; retained actual failure, not waived/hidden or marked complete."
+}

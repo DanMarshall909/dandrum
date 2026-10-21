@@ -1,0 +1,66 @@
+{
+  "source_freeze": "source-freeze.json",
+  "binding": "final-coverage-binding.json",
+  "raw_export": "final-owners-coverage.json",
+  "compact_export": "final-owned-export.json",
+  "compact_derivation": "Only owner function entries retained; same original source file entries, counters, summaries and regions. Full llvm export still retained, no counters modified.",
+  "objects": 19,
+  "raw_profiles": 101,
+  "runtime_profiles": 21,
+  "excluded_compiler_profiles": 80,
+  "stderr_empty": true,
+  "trigger_summary": {
+    "branches": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0
+    },
+    "functions": {
+      "count": 32,
+      "covered": 31,
+      "percent": 96.875
+    },
+    "instantiations": {
+      "count": 64,
+      "covered": 31,
+      "percent": 48.4375
+    },
+    "lines": {
+      "count": 386,
+      "covered": 378,
+      "percent": 97.92746113989638
+    },
+    "mcdc": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0
+    },
+    "regions": {
+      "count": 528,
+      "covered": 508,
+      "notcovered": 20,
+      "percent": 96.21212121212122
+    }
+  },
+  "physical_accessor": "Both valid and absent-index regions execute. 6 owning accessor-test calls plus2753 actual adapter lookups; duplicate unexecuted rlib copy is not substituted for DSO evidence.",
+  "defensive_gaps": {
+    "parked_None_in_inactive_flush": "CLAP routes active flush to Processor; inactive sole endpoint is returned on all Result failures and deactivation.",
+    "shorter_than_header": "Clack UnknownEvent requires valid header backing; malformed supported payload is separately exercised without violating that precondition.",
+    "missing_port_or_channel_after_validated_counts": "Safe Clack iterators preserve counts for live host-backed memory; absence after count1/2 is defensive.",
+    "borrow_conflicts": "No foreign host callback crosses a controller borrow; public stream reentry reads and notifications happen outside borrow. No private borrow seam introduced.",
+    "paired_service_failure_after_load": "Only controller-matched endpoint can occupy primary parked slot; public foreign-pair core law remains independently tested, adapter cannot manufacture such pair."
+  },
+  "resource_limits": "disk>=1GiB, MemAvailable>=4GiB, <=2knownownedRustbuilders; output targets/TMPDIR/profiles physical /tmp disk; no new Cargo output cache or cleanup",
+  "cleanup_complexity": "Invalid layout silence O(sum host-provided channel frame lengths), not fixed against arbitrary host counts; CLAP live pointer/backing contract applies.",
+  "no_claims": [
+    "branchcoverage",
+    "blanket100",
+    "fulltask4.1",
+    "release/sourcefreecurrentartifact",
+    "arbitraryhostallocatororcleanupbound",
+    "GUI/native/DAW/fullbeta",
+    "mutation"
+  ]
+}

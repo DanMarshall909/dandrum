@@ -1,0 +1,8 @@
+{
+  "criterion": "T4.1-VALUES/flush",
+  "red": "34 exactphysical default1 vs0.3123456789012345 assertion",
+  "green": "36 all6; instrumented37/38; strictalltargetClippy39",
+  "coverage": "Active and stopped callbacks execute shared checked translation(None) and existing RuntimeAudio.flush_parameters, complete invalid tail rollback, ignored timestamps/unrelated MIDI, exactcurrentatomic.",
+  "production_refactor": "Reuse translator with optional frame policy; central flush helper uses fixed arrays, no Vec, ownership or DSP advance. No extraction from existing implementation. Primary parked slot always restored before callback request.",
+  "test_refactor": "Shared inactive/active helpers keep thread ownership explicit and all observable oracles outside callback;6tests0.12s. No duplicated core FIFO tests: adapter boundary adds concrete translation proof."
+}

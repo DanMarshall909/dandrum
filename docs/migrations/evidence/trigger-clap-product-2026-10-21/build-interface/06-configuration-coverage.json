@@ -1,0 +1,46 @@
+{
+  "source_sha256": "509d8bd32877e50bb07aa708576ae074b1296f78c92d7ceabf4d6cb2a6c5043d",
+  "test_names": [
+    "ClapProofBuildTest.test_trigger_product_build_and_host_check_are_explicit_opt_in",
+    "ClapProofBuildTest.test_clap_rebuilds_when_embedded_engine_resources_change",
+    "ClapProofBuildTest.test_clap_selection_requires_independent_engine_mode",
+    "EngineOnlyBuildTest.test_conflicting_product_options_fail_before_dependency_discovery"
+  ],
+  "testsRun": 4,
+  "successful": true,
+  "seconds": 2.8437841570121236,
+  "scope": "New test executable body statement starts, not whole-file/branch or CMake command execution coverage",
+  "new_method_statement_starts": {
+    "160": 2,
+    "163": 1,
+    "164": 2,
+    "166": 1,
+    "167": 1,
+    "168": 2,
+    "170": 1,
+    "171": 2,
+    "173": 1,
+    "174": 1,
+    "175": 4,
+    "176": 3,
+    "177": 2,
+    "181": 1,
+    "182": 2,
+    "184": 1,
+    "185": 1,
+    "186": 2,
+    "188": 1,
+    "189": 27,
+    "190": 1,
+    "191": 3,
+    "193": 1,
+    "194": 1,
+    "195": 3
+  },
+  "production_CMake_sha256": "da93d05bb702596feffdda585b403ba3d540f318f76e7bf45282fa69c39fa3e4",
+  "refactor": {
+    "production": "Separate opt-in target/test, file dependency serializes default artifact before feature copy. No extraction/new generic build abstraction justified. Actual dual-artifact execution remains final integration.",
+    "test": "One configure-only test proves opt-in target/test interface; existing sourcefree copied-runtime test retains actual binary layer. Small local bundle setup keeps fast case independent of Rust build cost."
+  },
+  "limits": "No Rust builds, native GUI or actual feature cdylib acceptance claimed; final sourcefree/dual-artifact/incremental execution pending."
+}

@@ -1,0 +1,33 @@
+[ 20%] Building the concrete Trigger editor asset boundary
+[ 40%] Staging copied Trigger editor and instrument resources
+[ 40%] Built target dandrum-trigger-resources
+[ 60%] Building the format-neutral Trigger host scaffold
+[ 60%] Built target dandrum-trigger-editor-rust
+[ 80%] Building the experimental JUCE-free CLAP proof
+[ 80%] Built target dandrum-trigger-host-rust
+[100%] Building the session-backed JUCE-free Trigger CLAP product
+[100%] Built target dandrum-trigger-clap-product
+[100%] Built target dandrum-trigger-clap-editor
+warning: failed to connect to jobserver from environment variable `MAKEFLAGS="s -j2 --jobserver-auth=3,4"`: cannot open file descriptor 3 from the jobserver environment variable value: Bad file descriptor (os error 9)
+warning: failed to connect to jobserver from environment variable `MAKEFLAGS="s -j2 --jobserver-auth=3,4"`: cannot open file descriptor 3 from the jobserver environment variable value: Bad file descriptor (os error 9)
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+   Compiling dandrum-trigger-editor v0.1.0 (/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/src/trigger-editor)
+    Blocking waiting for file lock on build directory
+    Finished `release` profile [optimized] target(s) in 0.27s
+warning: failed to connect to jobserver from environment variable `MAKEFLAGS="s -j2 --jobserver-auth=3,4"`: cannot open file descriptor 3 from the jobserver environment variable value: Bad file descriptor (os error 9)
+   Compiling dandrum_engine v0.1.0 (/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/src/rust-engine)
+    Blocking waiting for file lock on build directory
+   Compiling dandrum_instrument_session v0.1.0 (/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/src/instrument-session)
+   Compiling dandrum-trigger-host v0.1.0 (/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/src/trigger-host)
+    Finished `release` profile [optimized] target(s) in 54.90s
+   Compiling dandrum_engine v0.1.0 (/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/src/rust-engine)
+   Compiling clack-extensions v0.2.0 (https://github.com/prokopyl/clack?rev=27ca28391b57a61bad4bb5099288a7bf9247350d#27ca2839)
+   Compiling dandrum_clap_adapter v0.1.0 (/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/src/clap-adapter)
+    Finished `release` profile [optimized] target(s) in 1m 42s
+warning: failed to connect to jobserver from environment variable `MAKEFLAGS="s -j2 --jobserver-auth=3,4"`: cannot open file descriptor 3 from the jobserver environment variable value: Bad file descriptor (os error 9)
+   Compiling dandrum_instrument_session v0.1.0 (/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/src/instrument-session)
+   Compiling rtrb v0.3.2
+   Compiling dandrum-trigger-host v0.1.0 (/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/src/trigger-host)
+   Compiling dandrum_clap_adapter v0.1.0 (/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/src/clap-adapter)
+    Finished `release` profile [optimized] target(s) in 9.09s

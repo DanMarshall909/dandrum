@@ -1,0 +1,36 @@
+{
+  "argv": [
+    "python3",
+    "/tmp/dandrum-lanes/evidence-trigger-clap-sourcefree/execute.py"
+  ],
+  "cwd": "/tmp/dandrum-lanes/integration",
+  "exit": 0,
+  "seconds": 190.5777956630045,
+  "pid_and_pgid": 1231226,
+  "stop_reason": null,
+  "environment": {
+    "PATH": "/home/dan/.local/bin:/home/dan/.cargo/bin:/usr/bin:/bin",
+    "CARGO_NET_OFFLINE": "true",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_BUILD_JOBS": "1",
+    "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/integration/build/engine-only-regression/cargo-target",
+    "CARGO_LLVM_COV_TARGET_DIR": "/tmp/dandrum-lanes/integration/build/engine-only-regression/cargo-target",
+    "CARGO_LLVM_COV_BUILD_DIR": "/tmp/dandrum-lanes/integration/build/engine-only-regression/cargo-target",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0",
+    "TMPDIR": "/tmp/dandrum-lanes/evidence-trigger-clap-sourcefree/tmp",
+    "DANDRUM_TRIGGER_CLAP_AUDIT_EVIDENCE_DIR": "/tmp/dandrum-lanes/evidence-trigger-clap-sourcefree/allocator-audit"
+  },
+  "resource_first": {
+    "disk_free_bytes": 5783523328,
+    "memory_available_bytes": 11024351232
+  },
+  "resource_min": {
+    "disk_free_bytes": 3034443776,
+    "memory_available_bytes": 9370472448
+  },
+  "source_inputs": 599,
+  "source_manifest_sha256": "1ffe80289b9e60ba2b4a8138275f41579743d7d3c781d9f7b8615c4488f4ee33",
+  "log_sha256": "437e7e39e6954541e0a2399007672d3e062e850ce35d6b710ce7b7ef16a1b4f5",
+  "profile_qualification": "Real release product build; debug test/dependency symbols disabled and incremental disabled to bound disk, debug assertions unchanged. Existing target reused; no deletion/new Cargo root. Owning ordinary/LLVM profile evidence separate."
+}

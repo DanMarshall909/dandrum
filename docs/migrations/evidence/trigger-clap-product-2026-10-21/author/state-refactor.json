@@ -1,0 +1,8 @@
+{
+  "criterion": "T4.1-LIFECYCLE/state",
+  "red": "40 missingactualPluginState assertion",
+  "green": "42 all8;43/45 instrumentedDSO;44strictalltargetClippy",
+  "coverage": "V2save/load, active/inactiveownership, invalidstate, boundedoversizeread, IOerror+shortIO observed via actualCLAP. Reentrantforeignstream reads actualgetvalue to reject heldborrow regression. Inactivepairedserviceerror is defensive privateendpoint invariant; no forgedpair/seam.",
+  "production_refactor": "Delegate boundedcodec/atomicpublication to existingcontroller; bufferforeignstreams outsideborrow. No duplicatedstatepolicy or extraction.",
+  "test_refactor": "Small statehelpers preserve actualSDK and literalPCM. Invalidvariants share one retainedauthorityoracle and independentparameter/soundchecks. Test0.12s totals8; no slowerlane move warranted."
+}

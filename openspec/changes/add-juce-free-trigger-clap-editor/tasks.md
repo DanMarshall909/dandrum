@@ -20,7 +20,7 @@ Task 3.2 remains open through task 4.2's actual CLAP thread/API/order proof. Its
 
 ## 4. Actual CLAP Product Boundary
 
-- [ ] 4.1 Add the deliberate Trigger identity to the dynamically loaded release binary with session-backed audio/MIDI/parameters and copied resources; prove descriptor stability, sample-offset signed playback, reset/reactivation and no JUCE/source-tree dependency.
+- [x] 4.1 Add the deliberate Trigger identity to the dynamically loaded release binary with session-backed audio/MIDI/parameters and copied resources; prove descriptor stability, sample-offset signed playback, reset/reactivation and no JUCE/source-tree dependency.
 - [ ] 4.2 Implement the CLAP GUI and host-parameter event extensions over the shared host/editor core; drive a rendered Trigger control and host feedback through an actual X11 parent without a private event loop.
 - [ ] 4.3 Extend dynamic-host acceptance for lost acknowledgement, destroy/recreate/undo, invalid GUI/state paths and two independently edited/rendering instances; retain official validator results and every unsupported/skipped capability explicitly.
 

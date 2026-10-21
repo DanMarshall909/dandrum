@@ -28,7 +28,7 @@ fn tb303_timed_notes_and_root_control_baseline() {
             (6, -0.0000019055),
             (12, -0.0002156532),
             (20, -0.0014245948),
-            (31, -0.0035819469),
+            (31, -0.003_581_947),
         ] {
             assert!(
                 (channel[frame] - expected).abs() <= 1.0e-8,

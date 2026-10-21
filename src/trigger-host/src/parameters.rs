@@ -772,6 +772,12 @@ impl ParameterController {
         ))
     }
 
+    /// Read an applied physical value by public alias index, without normalization.
+    pub fn physical_value(&self, public_index: usize) -> Option<f64> {
+        self.runtime
+            .parameter_value(self.parameters.get(public_index)?.root_index)
+    }
+
     pub fn parameters(&self) -> &[PublicParameter] {
         &self.parameters
     }

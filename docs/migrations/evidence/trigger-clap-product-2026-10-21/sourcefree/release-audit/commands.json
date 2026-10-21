@@ -1,0 +1,21 @@
+[
+  {
+    "label": "validator",
+    "argv": [
+      "/tmp/dandrum-validator-0.4.1-qualified/clap-validator",
+      "validate",
+      "--plugin-id",
+      "org.dandrum.trigger",
+      "--json",
+      "--jobs",
+      "1",
+      "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed",
+    "exit": 1,
+    "seconds": 0.5028474389982875,
+    "stop_reason": null,
+    "stdout_sha256": "42e333c84ae4cd38ec5b09648cebe401a3a91cf4ea497d4f6b0527c4504ebca8",
+    "stderr_sha256": "f852f7790c901c8d2baa579e4396a2916df3dcb2bbcb18b66f2e01b6d737f393"
+  }
+]

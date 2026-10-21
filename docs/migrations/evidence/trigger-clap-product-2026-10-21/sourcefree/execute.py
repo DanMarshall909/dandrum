@@ -1,0 +1,10 @@
+from pathlib import Path
+import importlib.util,sys,unittest,time,json,hashlib,trace,ast,os
+root=Path('/tmp/dandrum-lanes/integration');out=Path('/tmp/dandrum-lanes/evidence-trigger-clap-sourcefree');p=root/'tests/python/test_engine_only_build.py'
+spec=importlib.util.spec_from_file_location('trigger_copied_fixture',p);m=importlib.util.module_from_spec(spec);sys.modules[spec.name]=m;spec.loader.exec_module(m)
+original=m.EngineBuildFixture.command;calls=[]
+def recorded(self,label,args):
+ started=time.monotonic();code,text=original(self,label,args);log=out/(label+'.log');log.write_text(text);r={'label':label,'argv':args,'cwd':os.getcwd(),'exit':code,'seconds':time.monotonic()-started,'log':log.name,'sha256':hashlib.sha256(log.read_bytes()).hexdigest()};calls.append(r);(out/'commands.json').write_text(json.dumps(calls,indent=2)+'\n');return code,text
+m.EngineBuildFixture.command=recorded
+suite=unittest.defaultTestLoader.loadTestsFromNames(['ClapProofBuildTest.test_trigger_editor_scaffold_stages_copied_resources_without_host_sources'],m);t=trace.Trace(count=True,trace=False,ignoredirs=['/usr']);result=t.runfunc(unittest.TextTestRunner(verbosity=2).run,suite)
+counts=t.results().counts;owner=next(n for n in ast.parse(p.read_text()).body if isinstance(n,ast.ClassDef) and n.name=='ClapProofBuildTest');method=next(n for n in owner.body if isinstance(n,ast.FunctionDef) and n.name=='test_trigger_editor_scaffold_stages_copied_resources_without_host_sources');lines=sorted({n.lineno for n in ast.walk(method) if isinstance(n,ast.stmt) and n is not method});c={str(n):counts.get((str(p),n),0) for n in lines};(out/'fixture-statement-counts.json').write_text(json.dumps({'scope':'Owning copied-product test body statement starts, not branch/CMake execution coverage','counts':c},indent=2)+'\n');(out/'fixture.json').write_text(json.dumps({'fixture':str(m.ClapProofBuildTest.fixture_root),'source':str(m.ClapProofBuildTest.source),'cargo_target':str(m.ClapProofBuildTest.cargo_target),'testsRun':result.testsRun,'successful':result.wasSuccessful()},indent=2)+'\n');assert result.wasSuccessful() and result.testsRun==1

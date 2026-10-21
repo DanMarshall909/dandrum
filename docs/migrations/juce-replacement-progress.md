@@ -1557,3 +1557,12 @@ Outbound automation and the actual Trigger CLAP projection remain subsequent
 boundaries. No task checkbox or canonical scenario mapping is completed by this
 component alone. VST3, standalone, named-DAW and offline installed proof remain
 open. Main remains clean at68dd655; reusable caches are preserved.
+
+
+## Actual headless Trigger CLAP product — 21 October 2026
+
+The optional `trigger` feature now projects the persistent format-neutral session into `org.dandrum.trigger`, with 23 physical host parameters, version-2 state, real sample-offset playback and the same owned runtime across reset/reactivation. The default artifact retains its two fixture descriptors. The [boundary evidence](evidence/trigger-clap-product-2026-10-21/README.md) binds source, tests, coverage, copied artifacts, resources, allocator observer and linkage. Component checks pass 149 host/38 adapter executions, strict formatting/Clippy; covered/refactored decisions and test-first chronology limitations are explicit.
+
+The current combined source-free fixture passes in 190.578 seconds with 599 bound inputs: both LTO release artifacts, stable binaries through font-only staging, four selected CTests and actual installed-copy Trigger tests after source patches/editor inputs are removed. Tested callbacks on that optimized plugin allocate/free zero under the independently calibrated DSO observer. Actual ELF dependencies are libgcc_s/libm/libc/the ELF loader, with JUCE source absent from the build fixture. This proves the headless synthetic-host boundary, not native editor, device or named-DAW acceptance.
+
+The official validator records 33 successes/10 capability skips/**one failure**: fractional 1234.57 Hz is rejected by the accepted integral-only Trigger configuration. No validator test is excluded and the failure remains unwaived. Task4.3/5.1 must retain and assess this compatibility limit before final acceptance. Fractional-rate support remains an unselected option; rounding the DSP rate would not establish that support. GUI3.2/3.3/4.2, native lifecycle, named DAW, VST3, standalone and installed offline full-beta products remain open; no overall completion is claimed. Independent review and normal focused publication remain the next gates for this material boundary.

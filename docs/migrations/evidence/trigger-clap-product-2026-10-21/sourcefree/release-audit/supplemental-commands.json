@@ -1,0 +1,56 @@
+[
+  {
+    "label": "dynamic-links",
+    "argv": [
+      "readelf",
+      "-d",
+      "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap"
+    ],
+    "exit": 0,
+    "seconds": 0.011782379995565861,
+    "stdout_sha256": "3f86da4157abd3673054a01314f102ac03e388d5c78f454022d2a91851261a77",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "label": "resolved-links",
+    "argv": [
+      "ldd",
+      "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap"
+    ],
+    "exit": 0,
+    "seconds": 0.009369431994855404,
+    "stdout_sha256": "4739b1aed96091e92e962dd1be97da4ec65cc63934204c28e9a7d5c8455c1231",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "label": "exported-symbols",
+    "argv": [
+      "nm",
+      "-D",
+      "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/installed/DandrumTrigger.clap"
+    ],
+    "exit": 0,
+    "seconds": 0.027934929006733,
+    "stdout_sha256": "6392c00e012e9d1c029b1d9373e638cb67b1736ce96bb3a699db2daeaa371279",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "label": "normal-dependencies",
+    "argv": [
+      "/home/dan/.cargo/bin/cargo",
+      "tree",
+      "--offline",
+      "--locked",
+      "--manifest-path",
+      "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/src/clap-adapter/Cargo.toml",
+      "--features",
+      "trigger",
+      "--edges",
+      "normal"
+    ],
+    "exit": 0,
+    "seconds": 0.10714258800726384,
+    "stdout_sha256": "5c936951c0c5e2d8765652623fb8d1293501d8407c0d5f89a60c1b86421f8cc4",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+]

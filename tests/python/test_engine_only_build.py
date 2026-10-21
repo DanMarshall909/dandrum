@@ -156,6 +156,46 @@ class ClapProofBuildTest(EngineBuildFixture):
         self.assertEqual(code, 0, output)
         self.assertIn("100% tests passed", output)
 
+    def test_trigger_product_build_and_host_check_are_explicit_opt_in(self):
+        disabled, code, output = self.configure(
+            "trigger-product-disabled", "-DDANDRUM_ENGINE_ONLY=ON",
+            "-DDANDRUM_CLAP_PROOF=ON")
+        self.assertEqual(code, 0, output)
+        code, output = self.command("trigger-product-disabled-targets",
+                                   [CMAKE, "--build", str(disabled), "--target", "help"])
+        self.assertEqual(code, 0, output)
+        self.assertNotRegex(output, r"(?m)(?:^|\s)dandrum-trigger-clap-product(?:\s|$)")
+        code, output = self.command("trigger-product-disabled-tests",
+                                   [CTEST, "--test-dir", str(disabled), "--show-only=json-v1"])
+        self.assertEqual(code, 0, output)
+        self.assertNotIn("trigger-clap-dynamic-host",
+                         {test["name"] for test in json.loads(output)["tests"]})
+        bundle = self.fixture_root / "trigger-product-input"
+        bundle.mkdir()
+        for name in ("index.html", "app.js", "app.css"):
+            (bundle / name).write_text("build-interface fixture")
+        enabled, code, output = self.configure(
+            "trigger-product-enabled", "-DDANDRUM_ENGINE_ONLY=ON",
+            "-DDANDRUM_CLAP_PROOF=ON", "-DDANDRUM_TRIGGER_CLAP_EDITOR=ON",
+            "-DDANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=" + str(bundle))
+        self.assertEqual(code, 0, output)
+        code, output = self.command("trigger-product-enabled-targets",
+                                   [CMAKE, "--build", str(enabled), "--target", "help"])
+        self.assertEqual(code, 0, output)
+        self.assertRegex(output, r"(?m)(?:^|\s)dandrum-trigger-clap-product(?:\s|$)")
+        code, output = self.command("trigger-product-enabled-tests",
+                                   [CTEST, "--test-dir", str(enabled), "--show-only=json-v1"])
+        self.assertEqual(code, 0, output)
+        tests = {test["name"]: test for test in json.loads(output)["tests"]}
+        command = tests["trigger-clap-dynamic-host"]["command"]
+        self.assertIn("DANDRUM_TRIGGER_CLAP_PLUGIN_PATH="
+                      + str(enabled / "clap/DandrumTrigger.clap"), command)
+        self.assertIn("trigger", command)
+        self.assertIn("trigger_dynamic", command)
+        self.assertIn("DANDRUM_CLAP_PLUGIN_PATH="
+                      + str(enabled / "clap/DandrumHeadlessProof.clap"),
+                      tests["clap-dynamic-host"]["command"])
+
     def test_trigger_editor_scaffold_stages_copied_resources_without_host_sources(self):
         editor_input = self.fixture_root / "editor-input"
         editor_input.mkdir()
@@ -229,9 +269,13 @@ class ClapProofBuildTest(EngineBuildFixture):
             "trigger-editor-build", [CMAKE, "--build", str(build), "--target",
                                      "dandrum-trigger-clap-editor", "--parallel", "2"])
         self.assertEqual(code, 0, output)
-        artifact = build / "clap/DandrumHeadlessProof.clap"
+        default_artifact = build / "clap/DandrumHeadlessProof.clap"
+        artifact = build / "clap/DandrumTrigger.clap"
         resources = build / "clap/DandrumTrigger.resources"
+        self.assertTrue(default_artifact.is_file())
         self.assertTrue(artifact.is_file())
+        default_binary = default_artifact.read_bytes()
+        trigger_binary = artifact.read_bytes()
         for relative, contents in expected.items():
             copied = resources / relative
             self.assertTrue(copied.is_file(), relative)
@@ -246,6 +290,8 @@ class ClapProofBuildTest(EngineBuildFixture):
         self.assertEqual(code, 0, output)
         self.assertEqual((resources / "editor/fonts/fixture.woff2").read_bytes(), updated_font)
         expected["editor/fonts/fixture.woff2"] = updated_font
+        self.assertEqual(default_artifact.read_bytes(), default_binary)
+        self.assertEqual(artifact.read_bytes(), trigger_binary)
 
         code, output = self.command(
             "trigger-host-dependencies", ["cargo", "tree", "--offline", "--locked",
@@ -260,12 +306,29 @@ class ClapProofBuildTest(EngineBuildFixture):
 
         code, output = self.command(
             "trigger-editor-fixture-runtime", [CTEST, "--test-dir", str(build),
-                "--output-on-failure", "-R", "^(clap-dynamic-host|trigger-host-tests|trigger-editor-tests)$"])
+                "--output-on-failure", "-R",
+                "^(clap-dynamic-host|trigger-clap-dynamic-host|trigger-host-tests|trigger-editor-tests)$"])
         self.assertEqual(code, 0, output)
         self.assertIn("100% tests passed", output)
 
+        # Resolve the already-tested host binary before hiding source assets.
+        # Its installed run below loads only the supplied copied plugin tree.
+        code, output = self.command(
+            "trigger-installed-test-binary", ["cargo", "test", "--locked", "--jobs", "2",
+                "--manifest-path", str(self.source / "src/clap-adapter/Cargo.toml"),
+                "--target-dir", str(self.cargo_target), "--features", "trigger",
+                "--test", "trigger_dynamic", "--no-run", "--message-format=json"])
+        self.assertEqual(code, 0, output)
+        artifacts = [json.loads(line) for line in output.splitlines() if line.startswith("{")]
+        executables = [item["executable"] for item in artifacts
+                       if item.get("reason") == "compiler-artifact"
+                       and item.get("target", {}).get("name") == "trigger_dynamic"
+                       and item.get("executable")]
+        self.assertEqual(len(executables), 1, output)
+
         installed = self.fixture_root / "installed"
         installed.mkdir()
+        shutil.copy2(default_artifact, installed / default_artifact.name)
         shutil.copy2(artifact, installed / artifact.name)
         shutil.copytree(resources, installed / resources.name)
         shutil.rmtree(editor_input)
@@ -274,6 +337,13 @@ class ClapProofBuildTest(EngineBuildFixture):
             copied = installed / resources.name / relative
             self.assertEqual(copied.read_bytes(), contents, relative)
             self.assertNotIn(str(self.source).encode(), copied.read_bytes(), relative)
+        code, output = self.command(
+            "trigger-installed-runtime", [CMAKE, "-E", "chdir", str(installed), CMAKE, "-E", "env",
+                "DANDRUM_TRIGGER_CLAP_PLUGIN_PATH=" + str(installed / artifact.name),
+                executables[0], "--test-threads=1"])
+        self.assertEqual(code, 0, output)
+        self.assertIn("test result: ok.", output)
+        self.assertNotRegex(output, r"test result: ok\. 0 passed;")
 
 
 class ComparisonBuildTest(EngineBuildFixture):

@@ -1,0 +1,80 @@
+{
+  "base": "72c58e0bcf308d5f181cf75f2875f76f3a1a3b4e",
+  "binary": {
+    "DandrumHeadlessProof.clap": {
+      "bytes": 12342184,
+      "sha256": "e8762095ade5cf62a11caa81005464c1c5be61f712fb8c1bbdedde16183332ae"
+    },
+    "DandrumTrigger.clap": {
+      "bytes": 12892160,
+      "sha256": "9f68214c803e80ccbe308726f6d2428750a57e497e3ae7dcfc69df175e9a513a"
+    }
+  },
+  "resources": {
+    "DandrumTrigger.resources/.staged": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "DandrumTrigger.resources/editor/app.css": {
+      "bytes": 29,
+      "sha256": "c5543899cca95740af3ad66942055c2a972836f754911f41af0641aed05b53ec"
+    },
+    "DandrumTrigger.resources/editor/app.js": {
+      "bytes": 37,
+      "sha256": "2f86a4e4d33d5bac6bea0a00c8b117dc9edc4512f61d905d0f0e2613cbc72c55"
+    },
+    "DandrumTrigger.resources/editor/fonts/fixture.woff2": {
+      "bytes": 20,
+      "sha256": "0f408a102d8699aaeb75bf81d4337b175934839f22075ff633fe46a89e442ad3"
+    },
+    "DandrumTrigger.resources/editor/index.html": {
+      "bytes": 36,
+      "sha256": "bcf0ac824b5914a4808e690ec8f047f8aa24a092dd64830b4c52b8434d944b11"
+    },
+    "DandrumTrigger.resources/instrument/advanced-drum-kit.yaml": {
+      "bytes": 6699,
+      "sha256": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008"
+    },
+    "DandrumTrigger.resources/instrument/assets/advanced-drums.wav": {
+      "bytes": 102044,
+      "sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503"
+    }
+  },
+  "elf_needed": [
+    "libgcc_s.so.1",
+    "libm.so.6",
+    "libc.so.6",
+    "ld-linux-x86-64.so.2"
+  ],
+  "source_absence": {
+    "third_party": true,
+    "web": true,
+    "ui": true,
+    "examples/patches": true
+  },
+  "current_source_inputs": 599,
+  "release_profile": {
+    "lto": true,
+    "codegen-units": 1
+  },
+  "sourcefree_receipt": "sourcefree/receipt.json",
+  "allocator_manifest": "sourcefree/allocator-manifest.json",
+  "validator": {
+    "result": "FAIL retained, fractional rate1234.57Hz rejected by accepted integral-only boundary",
+    "counts": {
+      "success": 33,
+      "skipped": 10,
+      "failed": 1
+    },
+    "test_exclusions": [],
+    "evidence": "sourcefree/release-audit/validator-summary.json"
+  },
+  "limits": [
+    "Headless task4.1 component candidate; independent review/publication pending.",
+    "Full validator acceptance remains task4.3/5.1 and full-beta open; no waiver/exclusion.",
+    "Actual GUI/DAW/device/installed final beta acceptance remains open. Copied installed synthetic host proof is narrower.",
+    "Allocator observer calibrated for glibc/Rust DSO routes on selected Linux, not arbitrary hosts or exhaustive schedules.",
+    "Some lifecycle assertions characterize already implemented paths; exact workflow limitation retained in author/HANDOFF.md."
+  ],
+  "large_external_evidence": "Original release binaries, allocator DSOs, all raw profiles/fullLLVM export retained outside Git with source-bound hashes. Compact portable logs/profdata/filteredsource coverage retained here."
+}

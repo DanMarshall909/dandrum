@@ -1,0 +1,19 @@
+Internal ctest changing into directory: /tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/build/trigger-editor
+Test project /tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source/build/trigger-editor
+    Start  1: trigger-host-tests
+1/4 Test  #1: trigger-host-tests ...............   Passed   42.48 sec
+    Start  2: trigger-editor-tests
+2/4 Test  #2: trigger-editor-tests .............   Passed    0.28 sec
+    Start 22: trigger-clap-dynamic-host
+3/4 Test #22: trigger-clap-dynamic-host ........   Passed   30.86 sec
+    Start 24: clap-dynamic-host
+4/4 Test #24: clap-dynamic-host ................   Passed    1.45 sec
+
+100% tests passed, 0 tests failed out of 4
+
+Label Time Summary:
+trigger-clap-boundary    =  30.86 sec*proc (1 test)
+trigger-editor-fast      =   0.28 sec*proc (1 test)
+trigger-host-fast        =  42.48 sec*proc (1 test)
+
+Total Test time (real) =  75.09 sec

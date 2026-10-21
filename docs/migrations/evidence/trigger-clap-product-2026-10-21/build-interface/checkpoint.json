@@ -1,0 +1,17 @@
+{
+  "base": "72c58e0bcf308d5f181cf75f2875f76f3a1a3b4e",
+  "source": {
+    "CMakeLists.txt": {
+      "sha256": "da93d05bb702596feffdda585b403ba3d540f318f76e7bf45282fa69c39fa3e4",
+      "mode": 436
+    },
+    "tests/python/test_engine_only_build.py": {
+      "sha256": "c5d14562343138815428cf1b44d43e7aacc06e014b9b15cfcbe4b4f84c7ec842",
+      "mode": 436
+    }
+  },
+  "interface": "Real missing opt-in target assertion RED03 -> configure/inventoryGREEN04 ->4configuration/incremental-plan cases plus newbody statement coverage06; no Rust cache access",
+  "copied_product_gate": "Extended existing sourcefree fullpipeline afterinterfacecheckpoint to require actualTrigger+default artifacts, stable bytes afterfont-onlyrebuild, distinct CTests, compiled dynamicexe rerun aftersourceexamples/editorinputremoved. Not executed until Rustfeature dependency freezes and caches handed back.",
+  "errors": "Initial obsoletefixturebyte assumption rejected beforeedits; wrong owning unittestclass selectors01/02 are setup-only, notRED. TraceCLI05 printed4errors despiteexit0, explicitly rejected. Actualcorrectedrunner asserts4testsRun andsuccessful. No failedsetup output used as passing evidence.",
+  "limits": "No actualrelease/sourcefree/native acceptance yet; root owns onlyCMake+Python integration worktree, authorRuntime stillownsRust anddevelopmentcaches."
+}

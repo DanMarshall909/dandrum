@@ -1,0 +1,32 @@
+
+Dynamic section at offset 0xa76898 contains 29 entries:
+  Tag        Type                         Name/Value
+ 0x0000000000000001 (NEEDED)             Shared library: [libgcc_s.so.1]
+ 0x0000000000000001 (NEEDED)             Shared library: [libm.so.6]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x0000000000000001 (NEEDED)             Shared library: [ld-linux-x86-64.so.2]
+ 0x000000000000001e (FLAGS)              BIND_NOW
+ 0x000000006ffffffb (FLAGS_1)            Flags: NOW
+ 0x0000000000000007 (RELA)               0x3588
+ 0x0000000000000008 (RELASZ)             510024 (bytes)
+ 0x0000000000000009 (RELAENT)            24 (bytes)
+ 0x000000006ffffff9 (RELACOUNT)          21085
+ 0x0000000000000017 (JMPREL)             0x7fdd0
+ 0x0000000000000002 (PLTRELSZ)           72 (bytes)
+ 0x0000000000000003 (PLTGOT)             0xa7cf60
+ 0x0000000000000014 (PLTREL)             RELA
+ 0x0000000000000006 (SYMTAB)             0x2d0
+ 0x000000000000000b (SYMENT)             24 (bytes)
+ 0x0000000000000005 (STRTAB)             0x20dc
+ 0x000000000000000a (STRSZ)              5286 (bytes)
+ 0x000000006ffffef5 (GNU_HASH)           0x1e08
+ 0x0000000000000019 (INIT_ARRAY)         0xa25478
+ 0x000000000000001b (INIT_ARRAYSZ)       16 (bytes)
+ 0x000000000000001a (FINI_ARRAY)         0xa25470
+ 0x000000000000001c (FINI_ARRAYSZ)       8 (bytes)
+ 0x000000000000000c (INIT)               0x24abe0
+ 0x000000000000000d (FINI)               0x24abfc
+ 0x000000006ffffff0 (VERSYM)             0x1a40
+ 0x000000006ffffffe (VERNEED)            0x1c34
+ 0x000000006fffffff (VERNEEDNUM)         4
+ 0x0000000000000000 (NULL)               0x0

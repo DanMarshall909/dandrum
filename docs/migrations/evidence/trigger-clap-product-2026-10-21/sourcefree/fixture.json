@@ -1,0 +1,7 @@
+{
+  "fixture": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5",
+  "source": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-rs5_emo5/source",
+  "cargo_target": "/tmp/dandrum-lanes/integration/build/engine-only-regression/cargo-target",
+  "testsRun": 1,
+  "successful": true
+}

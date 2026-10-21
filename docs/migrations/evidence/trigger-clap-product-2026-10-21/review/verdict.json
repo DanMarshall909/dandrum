@@ -1,0 +1,52 @@
+{
+  "verdict": "PASS",
+  "candidate_manifest_sha256": "ea48df8ff8a52887d4ef8fbe29d51c411bee2bb68821997cd20549707d7484b6",
+  "paths": 103,
+  "base": "72c58e0bcf308d5f181cf75f2875f76f3a1a3b4e",
+  "current": "72c58e0bcf308d5f181cf75f2875f76f3a1a3b4e",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "72c58e0bcf308d5f181cf75f2875f76f3a1a3b4e",
+  "integration_base": "72c58e0bcf308d5f181cf75f2875f76f3a1a3b4e",
+  "branch": "lane/trigger-integration-20261020",
+  "main": "68dd6553a2f07e71e2fe09ee1d7094d518559937",
+  "findings": [],
+  "resolved_findings": [
+    "F1"
+  ],
+  "review_scope": "Task 4.1 accepted integral-rate headless actual Trigger CLAP product only",
+  "task_4_1_checkbox_approved": true,
+  "publication_approved_with_exact_envelope": true,
+  "final_tree_gate_required_before_hooks": true,
+  "validator_result": {
+    "success": 33,
+    "skipped": 10,
+    "failed": 1,
+    "excluded": 0
+  },
+  "validator_pass_claimed": false,
+  "full_beta_complete": false,
+  "review_sha256": "ce30c65ffc99393f74ccd67d011518df97218e8bd87aebe20fcb018827a44011",
+  "envelope": {
+    "task_path": "openspec/changes/add-juce-free-trigger-clap-editor/tasks.md",
+    "task_mode": "100644",
+    "task_before_sha256": "3eeec83c3fa2eb7a7d3a37e553d3db25d247d0eb278e2c4c86c4818b72c646d8",
+    "task_after_sha256": "dbca4de422f2f17283d1745645f1edb0e8aabafda4c146d8fddd84ab714049c5",
+    "review_copy_path": "docs/migrations/evidence/trigger-clap-product-2026-10-21/review/review.md",
+    "review_copy_mode": "100644",
+    "review_copy_sha256": "ce30c65ffc99393f74ccd67d011518df97218e8bd87aebe20fcb018827a44011",
+    "verdict_copy_path": "docs/migrations/evidence/trigger-clap-product-2026-10-21/review/verdict.json",
+    "verdict_copy_mode": "100644",
+    "verdict_copy_binding": "Exact bytes of this round2 verdict; SHA256 in reviewer handoff (no self-hash cycle).",
+    "other_content_changes_permitted": false,
+    "required_checks": [
+      "openspec validate add-juce-free-trigger-clap-editor --strict",
+      "openspec validate --specs --strict",
+      "scripts/check-spec-coverage",
+      "git diff --cached --check",
+      "git diff --check"
+    ],
+    "required_final_tree_review": "Same reviewer, complete final manifest/tree and result hashes before normal hooks/commit",
+    "publication": "Normal commit/hooks; fetch without integration, require unchanged upstream 72c58e0bcf308d5f181cf75f2875f76f3a1a3b4e; normal explicit push to origin feat/juce-free-host-adapters",
+    "cleanup": null
+  }
+}

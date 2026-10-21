@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "python3",
+    "tests/python/test_engine_only_build.py",
+    "ClapProofBuildTest.test_trigger_product_build_and_host_check_are_explicit_opt_in"
+  ],
+  "cwd": "/tmp/dandrum-lanes/integration",
+  "exit": 1,
+  "seconds": 1.1758233690052293,
+  "log_sha256": "1a7d08373e4b67042c37dbd1736e582b9f0b3ad52e4b9e148f823c7b5f04230a",
+  "classification": "Real missing opt-in product target assertion; no Rust builds; corrected owning class"
+}

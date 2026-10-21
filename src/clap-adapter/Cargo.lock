@@ -239,15 +239,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "dandrum-trigger-host"
+version = "0.1.0"
+dependencies = [
+ "dandrum_engine",
+ "dandrum_instrument_session",
+ "rtrb",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "dandrum_clap_adapter"
 version = "0.1.0"
 dependencies = [
  "clack-extensions",
  "clack-host",
  "clack-plugin",
+ "dandrum-trigger-host",
  "dandrum_engine",
+ "libloading",
  "serde",
  "serde_json",
+ "tempfile",
 ]
 
 [[package]]
@@ -265,6 +279,14 @@ dependencies = [
  "sha2",
  "tempfile",
  "zip",
+]
+
+[[package]]
+name = "dandrum_instrument_session"
+version = "0.1.0"
+dependencies = [
+ "dandrum_engine",
+ "serde_yaml",
 ]
 
 [[package]]
@@ -951,6 +973,12 @@ dependencies = [
  "quote",
  "syn 2.0.118",
 ]
+
+[[package]]
+name = "rtrb"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ad8388ea1a9e0ea807e442e8263a699e7edcb320ecbcd21b4fa8ff859acce3ba"
 
 [[package]]
 name = "rustc_version"

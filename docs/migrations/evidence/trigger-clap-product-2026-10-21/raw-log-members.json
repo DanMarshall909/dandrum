@@ -1,0 +1,31 @@
+{
+  "archive": "raw-logs.tar.gz",
+  "sha256": "7ec82560bb870eb175781d736746a29a4860e607f35a1a317c8fd9f25f3305f1",
+  "members": {
+    "author/final-owners-coverage.txt": {
+      "bytes": 905670,
+      "sha256": "c96c2537fdde2e9cc82ce9c6d0d0007968dc5b25712c8648411b1422eddd243c"
+    },
+    "sourcefree/allocator-audit/allocator-1245044/stdout.log": {
+      "bytes": 344,
+      "sha256": "ca19d79fe66c846431fabf12037c572d89a34ff31d56bb3a0d7f48c48d1c2706"
+    },
+    "sourcefree/allocator-audit/allocator-1245683/stdout.log": {
+      "bytes": 344,
+      "sha256": "ca19d79fe66c846431fabf12037c572d89a34ff31d56bb3a0d7f48c48d1c2706"
+    },
+    "sourcefree/trigger-host-test-inventory.log": {
+      "bytes": 18748,
+      "sha256": "7f801b0a84883da5ca83144c8f3349be965fc8bf14c0ea0cd713da8b890c2cc6"
+    },
+    "sourcefree/trigger-installed-runtime.log": {
+      "bytes": 1753,
+      "sha256": "11016e51eebfeed3db3bc0b0c7f9b9eaa6124fec615887713acc7a46cd0cab5e"
+    },
+    "sourcefree/trigger-native-test-inventory.log": {
+      "bytes": 20795,
+      "sha256": "d5d8ad21b25f425a02d39faad2dab74616bcea660050a3476b21cd7e86e074a2"
+    }
+  },
+  "reason": "Retain exact native tool trailing whitespace/EOF bytes without mutating raw evidence or weakening git diff --check. Original path references resolve as archive member names. All originals also retained in external owner evidence."
+}

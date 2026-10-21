@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "python3",
+    "tests/python/test_engine_only_build.py",
+    "EngineOnlyBuildTest.test_trigger_product_build_and_host_check_are_explicit_opt_in"
+  ],
+  "cwd": "/tmp/dandrum-lanes/integration",
+  "exit": 1,
+  "seconds": 0.12568452500272542,
+  "log_sha256": "c68fa477f70dc82e4d5338282101dcb200af0d4ba2e085639f1db52618c97c8e",
+  "classification": "SETUP ERROR: wrong owning class selector; no behavior test executed; not RED evidence"
+}

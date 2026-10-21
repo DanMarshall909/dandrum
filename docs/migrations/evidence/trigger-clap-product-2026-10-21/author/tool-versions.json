@@ -1,0 +1,6 @@
+{
+  "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)",
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "cargo-llvm-cov": "cargo-llvm-cov 0.8.7",
+  "llvm-profdata": "LLVM (http://llvm.org/):\n  LLVM version 22.1.2-rust-1.96.0-stable\n  Optimized build."
+}

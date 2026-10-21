@@ -1,0 +1,10 @@
+{
+  "current_inputs": {
+    "tests/python/test_engine_only_build.py": "44c2074f4b2c440372a419a028fcff37b78b8bb1800d592cb6ef4a7fe51186da",
+    "CMakeLists.txt": "e3b627179eb529887b33f6cc9c3a39542c1252628134f15b2b638dd9125ecd08"
+  },
+  "accepted_sourcefree_manifest": "/tmp/dandrum-lanes/evidence-runtime-quiescent-sourcefree/source-manifest.json",
+  "manifest_sha256": "c0e8e383a9af857df3ae87190101904a7c8a67d124cf18c247999aae0a3439b6",
+  "scope": "Exact unchanged CMake and buildfixture bytes from accepted sourcefree composite; earlier older-fixture reuse assertion rejected, no production change before corrected binding",
+  "limits": "No CMake line coverage claimed; real configuration/inventory specifies build interface"
+}

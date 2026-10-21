@@ -1,0 +1,6 @@
+{
+  "criterion": "T4.1-DISCOVER",
+  "production_refactor": "Feature-gated Vec descriptor list shares existing factory enumeration. No extraction warranted for three stable descriptors. Trigger create branch pending next criterion; fixture production logic untouched.",
+  "test_refactor": "Separate feature-gated trigger_dynamic suite so default full suite retains two identities. Explicit artifact has no fallback. Discovery functional test <0.01s; retain boundary lane; default21 in0.12s.",
+  "coverage": "Instrumented copied cdylib executed descriptor construction/count/enumeration; detailed show retained, not full adapter coverage claimed."
+}

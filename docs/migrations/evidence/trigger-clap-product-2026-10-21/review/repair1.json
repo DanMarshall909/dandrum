@@ -1,0 +1,22 @@
+{
+  "status": "Applied F1 documentation scope correction only; accepted integral-rate behavior/tests/source and actualvalidator failure unchanged",
+  "edits": [
+    {
+      "path": "docs/migrations/evidence/trigger-clap-product-2026-10-21/README.md",
+      "before_sha256": "e3cd754dc69bda015625209b3908d50bca88ab86b041a8bfd5c953f8f80d4470",
+      "after_sha256": "8a5fc9d2fc56455db8ae54f6413dc563bbcc6fe45cdad5fcd9d4f421dc2edc51",
+      "before": "`fractional-rate-contract.md` distinguishes permitted activation failure from missing validator compatibility; exact fractional preparation/playback is future core work, not a rounding workaround.",
+      "after": "`fractional-rate-contract.md` distinguishes permitted activation failure from missing validator compatibility. Its compatibility disposition remains open under task4.3/5.1. Fractional-rate support remains an unselected option; any later expansion must preserve matching preparation/playback semantics."
+    },
+    {
+      "path": "docs/migrations/juce-replacement-progress.md",
+      "before_sha256": "29c53aac035aa2bd2ddd3710b43e1e8ccf4fbdf8f3e74cc32302b1d5d4489616",
+      "after_sha256": "5fdd1241430e94174beb2a8dc148a197c0de893445f1ceb4006ff2e5a051473f",
+      "before": "Task4.3/5.1 compatibility work must address exact fractional configuration/preparation/playback rather than round its DSP rate.",
+      "after": "Task4.3/5.1 must retain and assess this compatibility limit before final acceptance. Fractional-rate support remains an unselected option; rounding the DSP rate would not establish that support."
+    }
+  ],
+  "round1_manifest_sha256": "d9f4f7fb4a00b95f5edb746b7e1bf093d72e69e8c17c57bba80a079a4d3e9648",
+  "round1_review_sha256": "ce9de0fb82c97289c1569ea02fa154ae4a5d4652b6b05d192fa4b341c2b87815",
+  "round1_candidate_patch_gzip_sha256": "cfcd9c649fd44403aa03b0cf14c4b15d04dcf694409aee25e355e4c3c8d8d5e9"
+}
