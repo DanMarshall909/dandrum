@@ -38,6 +38,14 @@ The main-thread host owns `InstrumentSession`. Activation constructs the next re
 
 Atomics carry scalar parameter values. Bounded single-producer/single-consumer queues carry parameter events, runtime replacements and acknowledgements. No mutex or reference-count destruction is permitted in `process`.
 
+### Service an accepted runtime while its audio endpoint is inactive
+
+Task 4.1 first adds a narrow format-neutral quiescent service operation. The caller must hold exclusive mutable borrows of the matched control and returned audio endpoints, with no audio callback running. Private endpoint identity is checked before any mutation; a foreign pair is rejected with both instances unchanged. This is a boundary between audio blocks while inactive, not a fabricated render call or a second session publication path.
+
+One bounded call reclaims at most one already-retired runtime and adopts at most one already-accepted pending runtime, destroying predecessors on the calling control thread and restoring activation capacity without waiting for a future audio block. Repeated idle service is a no-op and an explicit report distinguishes adoption and reclaimed/destructed count. Running audio retains its capacity-one block-boundary swap and reclamation handoff. Scalar values, settlement/epoch, queued events, configuration and layout remain intact. Adoption follows the same editor-intent law as a real block-boundary swap: held intent may resume on a subsequent actual block, released/cancelled onsets cannot replay, and host arbitration has no new voice-resumption promise.
+
+Public signed-audio, cross-thread ownership and callback/destructor sentinels must prove pending and already-retired paths, foreign-pair failure atomicity, independent instances, repeated idle service, preserved queued scalars/notes and immediate capacity for a second offer without a fake render. No controller, rate/configuration, stopped-flush or native CLAP behavior is claimed by this runtime prerequisite. Those remain subsequent task 4.1 boundaries, and the complete editor/beta tasks stay open.
+
 ### Use a versioned local editor protocol and transport-neutral JavaScript backend
 
 The Trigger native adapter selects a `window.__DANDRUM__` backend contract with an explicit protocol version. The existing JUCE bridge supplies the same contract for comparison builds. The Wry adapter serves the production build and packaged fonts through an application-local scheme and exchanges bounded request/reply/event JSON with monotonically increasing request IDs. Unknown methods, malformed payloads, oversized messages and stale attachment IDs receive explicit errors.

@@ -1,0 +1,26 @@
+{
+  "old": "28caf6ca02861bebdf1a2e09e49c762682ed1cce",
+  "new": "5d332b81adc07117e59f69a528785d194c8da3ff",
+  "preserved_author_sources": [
+    {
+      "path": "src/trigger-host/src/runtime.rs",
+      "sha256": "b7a65c05a715d739b5a5dd4ff40a2f244025088a756f584bdfe99f62f71353b8",
+      "mode": 436,
+      "mtime_ns": 1792544536308457631
+    },
+    {
+      "path": "src/trigger-host/tests/runtime_quiescent.rs",
+      "sha256": "c3d23533215e762663c0eb2706ba4ee58ffe83e54a95b79e62ec58f00de3568f",
+      "mode": 436,
+      "mtime_ns": 1792544666779377432
+    }
+  ],
+  "root_owned_design_composition": {
+    "old_root_design_sha256": "cea2b617a487d67c51efab89410ac05e087635160be451cf93663fe27a93ee5c",
+    "new_root_design_sha256": "924e79f2547aa7c8dc943d1d91070898407dd4deaa8fcda1f8bbc0bfaf5dab99",
+    "accepted_quiescent_section_sha256": "6ee7233cc212df1ae34a0ad60eadbbacdd9d0043f3c46daaf82951ebc8fc1606",
+    "published_note_section_retained": true
+  },
+  "no_author_source_restore_stash_reset": true,
+  "qualification": "After terminal author handback and notes normalpublication. Both runtime source payloads/modes/mtimes preserved; only root-owned design composed. Combined host checks are required before runtime review/publication."
+}

@@ -1,0 +1,82 @@
+{
+  "component": "Paired quiescent runtime adoption and control-thread reclamation",
+  "base": "5d332b81adc07117e59f69a528785d194c8da3ff",
+  "author_base": "28caf6ca02861bebdf1a2e09e49c762682ed1cce",
+  "scope": "Task4.1 runtime prerequisite; no controller/configuration/flush/native product completion",
+  "source_sha256": {
+    "src/trigger-host/src/runtime.rs": "b7a65c05a715d739b5a5dd4ff40a2f244025088a756f584bdfe99f62f71353b8",
+    "src/trigger-host/tests/runtime_quiescent.rs": "c3d23533215e762663c0eb2706ba4ee58ffe83e54a95b79e62ec58f00de3568f"
+  },
+  "behavior": [
+    "Private paired endpoint identity before mutation; foreign rejection preserves both instances",
+    "Exclusive matched borrows reclaim at most one retired and adopt at most one accepted pending runtime, destroying predecessors on caller control thread",
+    "Immediate capacity for a second real Session publication without a fabricated render; idle no-op",
+    "Same held/released/cancelled/reset editor-intent law as running swaps; host-held arbitration preserved",
+    "Existing scalar values, FIFO, feedback, settlement/epoch/configuration/layout untouched"
+  ],
+  "verification": {
+    "new_public_tests": 7,
+    "combined_ordinary_host": 128,
+    "compilefail_docs": 2,
+    "session": 30,
+    "full_LLVM": 128,
+    "sourcefree_default_release": 128,
+    "sourcefree_docs": 2,
+    "format": "PASS",
+    "alltarget_clippy_Dwarnings": "PASS",
+    "sourcefree_scope": "Qualified full-scope composite: original current113 integration tests+2docs and supplemental fresh15unit tests; first stale15unit results excluded"
+  },
+  "coverage": {
+    "new_service_closure_and_helper_regions": "48/48",
+    "runtime_functions": "97/97",
+    "runtime_LLVM_lines": "1180/1186",
+    "runtime_LLVM_regions": "1888/1900",
+    "production_regions": "1007/1008",
+    "distinct_LCOV_DA_coordinates": "1150/1150",
+    "raw_profiles": 11,
+    "executed_binaries": 11,
+    "raw_merge": "byte-identical",
+    "export": "all source paths/segments/functions/regions/integer counters exact; two derived percentages differ <=1.43e-14; Cargo metadata qualified",
+    "branch_or_MCDC_instrumentation": false
+  },
+  "qualifications": [
+    "Public-budget apply_event error propagation at runtime.rs932:78-79 is old unexecuted code; no blanket whole-owner100% claim",
+    "Nonzero UI settlement and restore epoch structurally preserved by inspection only; later controller-owned quiescent service must prove their observable preservation",
+    "Missing-API, actual retirement-count, held-silence and released-tap-replay REDs retained; preservation scenarios are characterization. Python launch and array-type failures are setup/implementation failures, never claimed behavior RED",
+    "Original RAM resource-stopped coverage had no report. Existing disk targets preserve >=1GiB disk and >=4GiB Mem floors; RAM sampled unused for outputs. No cache deletion, relocation or new cache",
+    "Author evidence precedes notes integration; exact two source bytes/modes/mtimes preserved. Fresh combined128 gates and sourcefree release cover published notes",
+    "Sourcefree Cargo-only proof binds592 inputs with590 previous fixture bytes/modes/mtimes unchanged; all11 executed binaries; no full CMake/new native/CLAP/browser/DAW/installed claim",
+    "Original and combined raw profiles/fingerprints are archived before tool-managed invalidation. Later shared-cache object replacement does not change consumption-time hashes",
+    "No new dependency, unsafe code, extracted module, private test seam or engine DSP change",
+    "Initial full release reused old unit binary because copied runtime input mtime preceded prior compilation. Original successful command receipt is not whole-current-source acceptance. Timestamp-only copied-input correction and default-release --lib supplement rebuild current15unit; full128+2 scope retained across composite, no duplicate full-run claim or reusable-cache deletion. Parser summary grouping failure separately retained and repaired from raw logs."
+  ],
+  "archives": [
+    {
+      "source": "/tmp/dandrum-lanes/evidence-runtime-quiescent",
+      "archive": "author-raw.tar.gz",
+      "archive_sha256": "ceec6266fa20c54ce2c616bf64ccddc4d27cc5f41085bb6a8777914c1dc1e5eb",
+      "members": 328
+    },
+    {
+      "source": "/tmp/dandrum-lanes/evidence-runtime-quiescent-combined",
+      "archive": "combined-raw.tar.gz",
+      "archive_sha256": "7168642d6d99c9ff7338fcdb4f6810e2059d2785ca74c7f2459739800791d86e",
+      "members": 119
+    },
+    {
+      "source": "/tmp/dandrum-lanes/evidence-runtime-quiescent-sourcefree",
+      "archive": "sourcefree-raw.tar.gz",
+      "archive_sha256": "550cc2bba70701bfdc347bb54c13693f866d2692e0c0918bbbf6c76f9ce2f628",
+      "members": 39
+    }
+  ],
+  "review": {
+    "status": "PASS",
+    "manifest_sha256": "9239b19ccc5cf258f6cf3fad66d2cdcacead41831c1378fff8d0688d46282487",
+    "review_sha256": "4368757ebc140a9577f8bed26c09b382e2386c019306998516817e92f5c4a2ea",
+    "verdict_sha256": "d2f0a6ad52236266f9b1a091f360df352c30a77ac20e86275e58b8dba7fe5afc"
+  },
+  "mutation": "Explicitly excluded by user",
+  "task4_1_complete": false,
+  "full_beta_complete": false
+}

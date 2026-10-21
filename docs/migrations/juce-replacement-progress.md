@@ -1424,3 +1424,47 @@ Actual native periodic servicing, semantic WebView destruction and joined CLAP
 behavior still follow. Task3.3 and full beta remain open through VST3, standalone,
 namedDAW and installed offline/native proof. Main remains clean68dd655; mutation
 remains excluded.
+
+
+## Service runtime ownership while audio is stopped — 21 October 2026
+
+A matched control/audio pair can now adopt an accepted pending runtime without
+running an audio block. Exclusive mutable borrows prevent concurrent callback use;
+private endpoint identity rejects a foreign pair before either instance changes.
+One bounded call reclaims at most one retired runtime and adopts at most one
+pending runtime, destroying predecessors on the calling control thread and
+restoring capacity immediately. Idle calls do nothing. Held editor intent may
+resume on the next real block; released, cancelled and reset onsets cannot replay.
+The active callback retains its original intent snapshot timing and host arbitration.
+
+Seven public tests cover genuine session publication, signed stereo output,
+foreign instances, actual cross-thread ownership and callback/destructor sentinels,
+editor intent, full event queues, scalar values and feedback. Combined with the
+published note controller, all128 host tests plus2 compile-fail doctests,30 session
+tests, formatting, strict Clippy and full128 LLVM coverage pass. All48 new service
+and extracted-helper regions execute. Runtime LLVM summary is97/97functions,
+1180/1186lines and1888/1900regions; the existing error-forwarding gap remains.
+Nonzero UI settlement and restore epoch remain an explicit observer gap for the
+later controller-owned route, with preservation established by inspection only.
+
+Eleven retained raw profiles reproduce byte-identical merged data; direct LLVM
+export reproduces every integer counter and source region. Tiny derived-percentage
+formatting differences and Cargo-added metadata are documented. Baseline coverage,
+genuine REDs, setup failures and covered refactoring decisions remain retained.
+Source-free default-release proof covers128 tests plus2 doctests, binding592
+inputs and all11 executed test binaries across a qualified composite run. The
+first full command passed, but its15-test unit binary was stale: preserving an
+older source timestamp caused Cargo to reuse the previous build. Those15 results
+are excluded from accepted proof. Advancing only the copied runtime input's
+timestamp forced a fresh unit-target build; its15 tests join the original113
+current-source integration tests and2 doctests. Original receipts and the exact
+freshness audit remain intact. Root source timestamps and all590 other fixture
+inputs are preserved. This is a Cargo boundary proof.
+[Portable evidence](evidence/trigger-runtime-quiescent-2026-10-21/receipt.json)
+contains original, combined and copied-source release evidence.
+
+Independent completion review passed for the frozen quiescent runtime source/evidence candidate; normal-hook publication remains.
+Controller-owned servicing, render reconfiguration, stopped parameter flush and
+actual CLAP/native lifecycle acceptance remain subsequent boundaries. Task4.1 and
+the full beta remain open; VST3, standalone, named DAW and installed offline proof
+are still required. Main remains clean68dd655 and mutation remains excluded.

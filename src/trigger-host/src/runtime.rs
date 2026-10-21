@@ -30,6 +30,7 @@ pub enum RuntimeError {
     QueueFull,
     Busy,
     IncompatibleRuntime,
+    ForeignEndpoints,
     EditorOwnerConflict,
     EditorSequenceExhausted,
 }
@@ -155,6 +156,14 @@ pub struct ProcessReport {
     pub admission_closed: bool,
     pub parameter_updates: usize,
     pub dropped_feedback: usize,
+}
+
+/// Progress made off audio while exclusively borrowing a matched endpoint pair.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct QuiescentReport {
+    pub adopted: bool,
+    /// Number of predecessor runtimes destroyed on the calling control thread.
+    pub reclaimed_runtimes: usize,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -386,6 +395,37 @@ pub fn runtime_handoff(
 }
 
 impl RuntimeControl {
+    /// Adopt an accepted pending runtime while audio ownership is returned to
+    /// control. Reclaim at most one retired runtime and adopt at most one pending
+    /// runtime, destroying predecessors on this calling thread. Both exclusive
+    /// borrows keep this boundary separate from a real callback. A foreign pair
+    /// is rejected before either endpoint is changed.
+    pub fn service_quiescent(
+        &mut self,
+        audio: &mut RuntimeAudio,
+    ) -> Result<QuiescentReport, RuntimeError> {
+        if !Arc::ptr_eq(&self.admission, &audio.admission) {
+            return Err(RuntimeError::ForeignEndpoints);
+        }
+        let mut report = QuiescentReport::default();
+        if let Some(retired) = self.reclaim() {
+            drop(retired);
+            report.reclaimed_runtimes += 1;
+        }
+        if let Ok(next) = audio.state.pending.pop() {
+            let previous = std::mem::replace(&mut audio.state.current, next);
+            let intents: [u64; 128] = std::array::from_fn(|pitch| {
+                audio.state.editor_intent[pitch].load(Ordering::Acquire)
+            });
+            audio.state.adopt_editor_intent(&intents);
+            drop(previous);
+            self.in_flight = false;
+            report.adopted = true;
+            report.reclaimed_runtimes += 1;
+        }
+        Ok(report)
+    }
+
     pub(crate) fn activation_available(&self) -> bool {
         !self.in_flight
     }
@@ -604,8 +644,8 @@ impl RuntimeControl {
         if !self.activation_available() || !self.compatible(&next) {
             return Err(next);
         }
-        // The control-owned in-flight flag is cleared only after retirement;
-        // therefore this slot cannot still hold a previous candidate.
+        // Capacity returns only after a consumed candidate's predecessor is
+        // reclaimed, either through retirement or direct quiescent adoption.
         self.pending
             .write_chunk_uninit(1)
             .expect("idle activation slot")
@@ -614,8 +654,8 @@ impl RuntimeControl {
         Ok(())
     }
 
-    /// Reclamation and destruction belong to the control thread. Until this
-    /// succeeds a second replacement is refused, even after the first swap.
+    /// Return a running callback's retired runtime to the control thread.
+    /// Activation stays busy until reclamation or paired quiescent service.
     pub fn reclaim(&mut self) -> Option<PreparedRuntime> {
         let retired = self.retired.pop().ok()?;
         self.in_flight = false;
@@ -739,6 +779,15 @@ impl RuntimeAudio {
 }
 
 impl AudioState {
+    fn adopt_editor_intent(&mut self, intents: &[u64; 128]) {
+        // Accepted gates belonged to the retired processor. A fresh graph
+        // resumes desired pitches but must not replay a released tap.
+        self.editor_gates.fill(0);
+        for (seen, intent) in self.editor_seen.iter_mut().zip(intents) {
+            *seen = *intent >> 14;
+        }
+    }
+
     /// Panic/reset discards pre-reset queued activity and resets voices/DSP,
     /// while retaining host-owned scalar values and admitted replacements.
     pub fn reset(&mut self) -> ResetReport {
@@ -815,12 +864,7 @@ impl AudioState {
         let intents =
             std::array::from_fn(|pitch| self.editor_intent[pitch].load(Ordering::Acquire));
         if report.swapped {
-            // Accepted gates belonged to the retired processor. A fresh graph
-            // resumes desired pitches but must not replay a released tap.
-            self.editor_gates.fill(0);
-            for (seen, intent) in self.editor_seen.iter_mut().zip(intents) {
-                *seen = intent >> 14;
-            }
+            self.adopt_editor_intent(&intents);
         }
         let mut touched = [false; 128];
         let mut takeover_credit = [false; 128];

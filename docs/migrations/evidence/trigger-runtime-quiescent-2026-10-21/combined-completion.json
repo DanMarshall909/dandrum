@@ -1,0 +1,322 @@
+{
+  "head": "5d332b81adc07117e59f69a528785d194c8da3ff",
+  "source_preservation_checks": [
+    {
+      "path": "src/trigger-host/src/runtime.rs",
+      "sha256": "b7a65c05a715d739b5a5dd4ff40a2f244025088a756f584bdfe99f62f71353b8",
+      "mode": 436,
+      "mtime_ns": 1792544536308457631
+    },
+    {
+      "path": "src/trigger-host/tests/runtime_quiescent.rs",
+      "sha256": "c3d23533215e762663c0eb2706ba4ee58ffe83e54a95b79e62ec58f00de3568f",
+      "mode": 436,
+      "mtime_ns": 1792544666779377432
+    }
+  ],
+  "root_owned_design_unchanged": true,
+  "phases": {
+    "01-format-check": {
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "src/trigger-host/Cargo.toml",
+        "--",
+        "--check"
+      ],
+      "exit": 0,
+      "duration_seconds": 0.5054070680052973,
+      "pid": 694493,
+      "resource_min": {
+        "disk": 21202812928,
+        "ramfs": 884195328,
+        "memory": 12864458752
+      },
+      "head": "5d332b81adc07117e59f69a528785d194c8da3ff"
+    },
+    "02-clippy": {
+      "command": [
+        "cargo",
+        "clippy",
+        "--manifest-path",
+        "src/trigger-host/Cargo.toml",
+        "--offline",
+        "--locked",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit": 0,
+      "duration_seconds": 3.0177549030049704,
+      "pid": 694514,
+      "resource_min": {
+        "disk": 21199085568,
+        "ramfs": 884195328,
+        "memory": 12704993280
+      },
+      "head": "5d332b81adc07117e59f69a528785d194c8da3ff"
+    },
+    "03-full-host": {
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "src/trigger-host/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "exit": 0,
+      "duration_seconds": 13.57356224700925,
+      "pid": 694645,
+      "resource_min": {
+        "disk": 20969869312,
+        "ramfs": 884195328,
+        "memory": 12665057280
+      },
+      "head": "5d332b81adc07117e59f69a528785d194c8da3ff"
+    },
+    "04-session-regression": {
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "src/instrument-session/Cargo.toml",
+        "--offline",
+        "--locked"
+      ],
+      "exit": 0,
+      "duration_seconds": 3.519551316014258,
+      "pid": 696384,
+      "resource_min": {
+        "disk": 20979195904,
+        "ramfs": 884195328,
+        "memory": 12856303616
+      },
+      "head": "5d332b81adc07117e59f69a528785d194c8da3ff"
+    },
+    "05-full-coverage": {
+      "command": [
+        "cargo",
+        "llvm-cov",
+        "--manifest-path",
+        "src/trigger-host/Cargo.toml",
+        "--offline",
+        "--locked",
+        "-vv",
+        "--lcov",
+        "--output-path",
+        "/tmp/dandrum-lanes/evidence-runtime-quiescent-combined/05-full-coverage/host.lcov"
+      ],
+      "exit": 0,
+      "duration_seconds": 47.74781749799149,
+      "pid": 696548,
+      "resource_min": {
+        "disk": 20096516096,
+        "ramfs": 884195328,
+        "memory": 11078529024
+      },
+      "head": "5d332b81adc07117e59f69a528785d194c8da3ff"
+    },
+    "05-json-report": {
+      "command": [
+        "cargo",
+        "llvm-cov",
+        "report",
+        "--manifest-path",
+        "src/trigger-host/Cargo.toml",
+        "--offline",
+        "--locked",
+        "-v",
+        "--json",
+        "--output-path",
+        "/tmp/dandrum-lanes/evidence-runtime-quiescent-combined/05-json-report/host.json"
+      ],
+      "exit": 0,
+      "duration_seconds": 0.5055962269834708,
+      "pid": 699143,
+      "resource_min": {
+        "disk": 20094672896,
+        "ramfs": 884457472,
+        "memory": 12850421760
+      },
+      "head": "5d332b81adc07117e59f69a528785d194c8da3ff"
+    },
+    "07-profile-proof": {
+      "command": [
+        "python3",
+        "/tmp/dandrum-lanes/evidence-runtime-quiescent-combined/prove-profiles.py"
+      ],
+      "exit": 0,
+      "duration_seconds": 2.5158806389954407,
+      "pid": 699212,
+      "resource_min": {
+        "disk": 20091326464,
+        "ramfs": 884457472,
+        "memory": 12690268160
+      },
+      "head": "5d332b81adc07117e59f69a528785d194c8da3ff"
+    }
+  },
+  "manifest_sha256": "3f6d50fbdfcbd61fc270713d6d588cbb7651f9a515d454060ce72a0491b45a12",
+  "profile_proof": {
+    "archive": "/tmp/dandrum-lanes/evidence-runtime-quiescent-combined/05-full-coverage/result-profiles.tar.gz",
+    "archive_sha256": "61afdee0e47bfe108865b655c3462320c22553acadd57c1327ca89a28a19de21",
+    "raw_count": 11,
+    "raw_hashes": {
+      "trigger-host-698883-2549751512261791757_0.profraw": "41d127875b26fcf743b5809c9962298be739ca930cfb40182670d2a7a950de8a",
+      "trigger-host-698902-16925632989862633233_0.profraw": "5d408036f907e7b1a84208ed02367ad31099d99c505d674a07d41c21b774da0f",
+      "trigger-host-698943-14688688188650284677_0.profraw": "11d728ce108c177b5ee4c4309809fbc59b376fdc3e89b90d7d5af1879537b503",
+      "trigger-host-698963-14600139997678422750_0.profraw": "88cc78f6e563a3e24390ba7b205623d36b550268f4d65b89acc7dc503f354f3a",
+      "trigger-host-698972-12836500038872935627_0.profraw": "13fdd2ea926a76506ae2b7c854c8464c504edf21e6eee6c86b97bb4899c56f4d",
+      "trigger-host-698988-11769234397341830984_0.profraw": "d2948f79f2f8bf4503fd592377f525144ee8cf03ce5494225df377c7fa1ef3ba",
+      "trigger-host-698996-6768976044606644327_0.profraw": "c1e374f30e3178d5308a3ca681cee0abebb1c54298951b698cb7a62da9ddb3c8",
+      "trigger-host-699018-16329823398944605215_0.profraw": "da8904bdfc1c89f161b38a3890b1bacd0a6cf798071733f8cefea184409c0436",
+      "trigger-host-699030-16843442823209205841_0.profraw": "b1453bcbc18fe14a09f96c596184f3f50cfccda0d2116d2b8c14f2f6bf566de5",
+      "trigger-host-699066-5917499919065753527_0.profraw": "a96bb0dbdf8ee5c847a2c215b8bdb5629ebbf10e20312c89bd59cb795a6cb47a",
+      "trigger-host-699072-6622099938099060137_0.profraw": "349a11551423f6c7b0e86d2e684a122d358b338f5b4552043e77ed1654f3c50f"
+    },
+    "merge_command": [
+      "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-profdata",
+      "merge",
+      "-sparse",
+      "-f",
+      "/tmp/dandrum-lanes/evidence-runtime-quiescent-combined/07-profile-proof/profile-list.txt",
+      "-o",
+      "/tmp/dandrum-lanes/evidence-runtime-quiescent-combined/07-profile-proof/remerged.profdata"
+    ],
+    "merged_byte_identical": true,
+    "profile_sha256": "e0dcebb4e567b3df820ea612461d098c2825180cd54c502a553f33a4aa41a65a",
+    "objects": {
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/dandrum_trigger_host-01d6e3922b9b3ad5": {
+        "size": 197785080,
+        "sha256": "4a2bc46270f8356743c535a75d4bdb75369468dfd0b09a307f2410bdf0e02335"
+      },
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/editor_note_controller-66b05604889cfb16": {
+        "size": 200859440,
+        "sha256": "b9c483b4154ff1a74103b093f9f56763c71c16ee9b539d4ddfb5d9c0b7bfa5cd"
+      },
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/editor_notes-57ce1b7d7f94df6c": {
+        "size": 198363600,
+        "sha256": "8c4ce5bf263bf70c77d98cc4b04e592a8753daaca84188e0842e6db9524ec091"
+      },
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/packaged_resources-845a37e6d5eafa6f": {
+        "size": 196256456,
+        "sha256": "c558f415b811f96cce057e560a1c5b66bcf922b0836f24146a5974de2c043480"
+      },
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/parameters-b4b0337c8cd646f6": {
+        "size": 198500296,
+        "sha256": "bec0d67475f5ffab06fe191af3b4755fbf54e588d7d7f2d097d95b9a41053dc6"
+      },
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/protocol-a9e4488799b990d7": {
+        "size": 196450312,
+        "sha256": "beb5e97af1bae6e7b3b254bcbda7ca517e1c28d97dd9a818dd45478badf934ab"
+      },
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/runtime-32f72c984a29c4b4": {
+        "size": 198004264,
+        "sha256": "184fcf4d63201528ebddb0386f5747da9026f473ba763bb2297ee5a0ba22e66c"
+      },
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/runtime_quiescent-112221cf9b848dc8": {
+        "size": 197945680,
+        "sha256": "16e7e47bfef9e77d2cf60c7e4b6fd097471cda8dc9764e80892e96dbc4404b01"
+      },
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/session_jobs-c2ece85510129c0c": {
+        "size": 200002824,
+        "sha256": "07d01521adb08dbd82285813a49225f65023c515a6792557f3660d27ee058821"
+      },
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/snapshot-fe59987495c736e1": {
+        "size": 198000240,
+        "sha256": "0945b681c43aeded1ed8b24bee9f24c03fc5b7d509d1a53d4a41c3d14c61f6bf"
+      },
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/state-dd36f706834f1b41": {
+        "size": 200222360,
+        "sha256": "97dc3bdb8abab1b7d9f559b9dc7b7dfef351ead27593feffaeee93632a4570ab"
+      }
+    },
+    "export_command": [
+      "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov",
+      "export",
+      "-format=text",
+      "-instr-profile=/tmp/dandrum-lanes/evidence-runtime-quiescent-combined/07-profile-proof/remerged.profdata",
+      "-object",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/dandrum_trigger_host-01d6e3922b9b3ad5",
+      "-object",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/editor_note_controller-66b05604889cfb16",
+      "-object",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/editor_notes-57ce1b7d7f94df6c",
+      "-object",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/packaged_resources-845a37e6d5eafa6f",
+      "-object",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/parameters-b4b0337c8cd646f6",
+      "-object",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/protocol-a9e4488799b990d7",
+      "-object",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/runtime-32f72c984a29c4b4",
+      "-object",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/runtime_quiescent-112221cf9b848dc8",
+      "-object",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/session_jobs-c2ece85510129c0c",
+      "-object",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/snapshot-fe59987495c736e1",
+      "-object",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/state-dd36f706834f1b41",
+      "-ignore-filename-regex",
+      "/rustc/([0-9a-f]+|[0-9]+\\.[0-9]+\\.[0-9]+)/|^/tmp/dandrum\\-lanes/runtime/src/trigger\\-host(/.*)?/(tests|examples|benches)/|^/tmp/dandrum\\-lanes/runtime/src/trigger\\-host(/.*)?/(tests\\.rs|[0-9a-zA-Z_-]+[_-]tests\\.rs)$|^/tmp/dandrum\\-lanes/cache\\-host\\-snapshot\\-cov($|/)|^/home/dan/\\.cargo/(registry|git)/|^/home/dan/\\.rustup/toolchains($|/)"
+    ],
+    "export_semantics": "All paths, source segments, function records, regions, counters and integer summaries exact. Percentage presentation and cargo_llvm_cov metadata excluded from semantic comparison.",
+    "source_binding": {
+      "src/instrument-session/src/lib.rs": "53e53aea8d381e4ecfa812fd7fc7ed4bf4e5c66dcfd9107f9e7676a4755517fa",
+      "src/instrument-session/src/native_ffi.rs": "cdada47286a2c2f94d45c652a9166b8d9a30870e56fca1111abdcdf5611934b8",
+      "src/trigger-host/Cargo.lock": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+      "src/trigger-host/Cargo.toml": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+      "src/trigger-host/src/lib.rs": "d16daf1630f43184909847e03107d402a8d54f3bf2fe6085a8bfd966c1aa80f9",
+      "src/trigger-host/src/parameters.rs": "37b8e92e6507036084fcb99b9fabe717550d53fe2f36a2f046312e630cc3efea",
+      "src/trigger-host/src/protocol.rs": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+      "src/trigger-host/src/runtime.rs": "b7a65c05a715d739b5a5dd4ff40a2f244025088a756f584bdfe99f62f71353b8",
+      "src/trigger-host/src/state.rs": "9355b2c855998d2306c053d50485eea617103b932c7de7e04aa1929d7719afaf",
+      "src/trigger-host/tests/editor_note_controller.rs": "99b99000f9e35406e87d29325d4f6ae07a6354097a40a94544c7cfff68fbb08e",
+      "src/trigger-host/tests/editor_notes.rs": "669c8d141661eb649eb2a5d83b1d71783cca6e09d15ba8e85093cd0b938f270a",
+      "src/trigger-host/tests/internal/state.rs": "cb51a4d5ea903b21ff954010e7e4c04d989a47b859c6d94ef6d44e4a79e98e35",
+      "src/trigger-host/tests/packaged_resources.rs": "14cf8d062ef37c69434e3e6a5de4ecc8c29381944cbd3ceec2a84d58962d9003",
+      "src/trigger-host/tests/parameters.rs": "7c9d9f52c676a4ab94921f7deee9ef4f5f37a51710e2b5c7f95b1ed076553578",
+      "src/trigger-host/tests/protocol.rs": "6ac729489e479f6457e23ba56be48c0f1ca11b431b6e968abfa27352012a70e0",
+      "src/trigger-host/tests/runtime.rs": "4405fa17093a49776569a817a4891cf6bb68978fdfe4c61c23ed8b376203690a",
+      "src/trigger-host/tests/runtime_quiescent.rs": "c3d23533215e762663c0eb2706ba4ee58ffe83e54a95b79e62ec58f00de3568f",
+      "src/trigger-host/tests/session_jobs.rs": "95d3be564f52fc38156eb5c015d3299d5ce77fd0cef1424cff1faa0272e8eafa",
+      "src/trigger-host/tests/snapshot.rs": "d93cbf1f16216c1413d25027f56d731832b3aad62a20e13603ede69f3179f9be",
+      "src/trigger-host/tests/state.rs": "9e5fd3a116e507fdbf7a35b2edf30d77868bf0f261e9c52c82546e678debf2f6",
+      "src/trigger-host/tests/support/editor_notes.rs": "8eff39ddbb42447a45f58700da84e65f87fc30d0c58ad7dfa8c13939e098ceae"
+    }
+  },
+  "derived_percent_qualification": {
+    "cargo_metadata": {
+      "version": "0.8.7",
+      "manifest_path": "/tmp/dandrum-lanes/runtime/src/trigger-host/Cargo.toml"
+    },
+    "differences": [
+      {
+        "path": "/data/0/files/1/summary/lines/percent",
+        "cargo_reserialized": 97.61051373954602,
+        "direct_llvm_export": 97.61051373954601,
+        "difference": 1.4210854715202004e-14
+      },
+      {
+        "path": "/data/0/files/2/summary/regions/percent",
+        "cargo_reserialized": 96.89922480620156,
+        "direct_llvm_export": 96.89922480620154,
+        "difference": 1.4210854715202004e-14
+      }
+    ],
+    "maximum_absolute_difference": 1.4210854715202004e-14,
+    "all_other_data_exact": true
+  },
+  "limitations": [
+    "No source/index/Git/design changes made by verification followup.",
+    "Nonzero UI settlement and restore epoch remain structurally preserved but unproved through a public controller-owned quiescent route; this is the same explicit observer gap as author packet.",
+    "No controller/rate/configuration/stopped-flush/CLAP/native/reactivation/installed acceptance; task4.1 and beta remain open.",
+    "Original author setup/implementation failures remain disclosed in /tmp/dandrum-lanes/evidence-runtime-quiescent; combined verification has no failing phase.",
+    "Mutation excluded by user. No branch/MC/DC or whole-owner100% claim.",
+    "Earlier raw proof retained unchanged before managed invalidation; no cache cleanup, moves, new targets or RAM output."
+  ]
+}

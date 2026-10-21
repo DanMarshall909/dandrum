@@ -1,0 +1,227 @@
+{
+  "actual_rustc_profile_flags": [
+    "-C codegen-units=1",
+    "-C linker-plugin-lto",
+    "-C opt-level=3"
+  ],
+  "all_failed_ignored_measured_filtered_counts_zero": true,
+  "binary_inventory": "executed-artifact-bindings.json",
+  "cache": "Existing /tmp/dandrum-lanes/cache-editor-guard; preserved without clean/delete/relocation",
+  "cargo_test_command": [
+    "/home/dan/.cargo/bin/cargo",
+    "test",
+    "--release",
+    "--offline",
+    "--locked",
+    "--jobs",
+    "1",
+    "--manifest-path",
+    "/dev/shm/dandrum-beta-20261020/editor-guard-source/build/engine-only-regression/fixture-kwjt48yz/source/src/trigger-host/Cargo.toml",
+    "-vv"
+  ],
+  "cargo_test_cwd": "/dev/shm/dandrum-beta-20261020/editor-guard-source/build/engine-only-regression/fixture-kwjt48yz/source",
+  "cargo_test_elapsed_seconds": 538.8033904499898,
+  "cargo_test_exit": 0,
+  "cargo_tree_command": [
+    "/home/dan/.cargo/bin/cargo",
+    "tree",
+    "--offline",
+    "--locked",
+    "--manifest-path",
+    "/dev/shm/dandrum-beta-20261020/editor-guard-source/build/engine-only-regression/fixture-kwjt48yz/source/src/trigger-host/Cargo.toml",
+    "--edges",
+    "normal",
+    "--prefix",
+    "none"
+  ],
+  "cargo_tree_elapsed_seconds": 0.5024263979867101,
+  "cargo_tree_exit": 0,
+  "compile_fail_doctest_total": 2,
+  "effective_environment": {
+    "CARGO_BUILD_JOBS": "1",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_NET_OFFLINE": "true",
+    "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-editor-guard",
+    "HOME": "/home/dan",
+    "LANG": "en_AU.UTF-8",
+    "LC_ALL": "C.UTF-8",
+    "PATH": "/home/dan/.local/bin:/home/dan/.cargo/bin:/usr/bin:/bin",
+    "TMPDIR": "/tmp/dandrum-lanes/evidence-runtime-quiescent-sourcefree/tmp"
+  },
+  "executed_test_binary_count": 11,
+  "final_resources": {
+    "disk_free_bytes": 19964682240,
+    "memory_available_bytes": 12584169472,
+    "unused_build_output_volume": {
+      "free_bytes": 885907456,
+      "path": "/dev/shm",
+      "used_for_build_output": false
+    }
+  },
+  "fixture_after_run_retained": true,
+  "fixture_inputs_after": 592,
+  "fixture_inputs_before": 591,
+  "forbidden_normal_dependency_matches": [],
+  "head_source_binding": "5d332b81adc07117e59f69a528785d194c8da3ff",
+  "minimum_resources": {
+    "disk_free_bytes": 19934248960,
+    "memory_available_bytes": 10089684992,
+    "unused_build_output_volume_min_free_bytes": 859439104
+  },
+  "ordinary_and_doctest_summaries": [
+    {
+      "elapsed_seconds": 0.09,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s",
+      "measured": 0,
+      "passed": 15,
+      "status": "ok"
+    },
+    {
+      "elapsed_seconds": 0.05,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s",
+      "measured": 0,
+      "passed": 14,
+      "status": "ok"
+    },
+    {
+      "elapsed_seconds": 0.06,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s",
+      "measured": 0,
+      "passed": 17,
+      "status": "ok"
+    },
+    {
+      "elapsed_seconds": 0.01,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+      "measured": 0,
+      "passed": 8,
+      "status": "ok"
+    },
+    {
+      "elapsed_seconds": 0.02,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+      "measured": 0,
+      "passed": 14,
+      "status": "ok"
+    },
+    {
+      "elapsed_seconds": 0.01,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+      "measured": 0,
+      "passed": 7,
+      "status": "ok"
+    },
+    {
+      "elapsed_seconds": 0.02,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+      "measured": 0,
+      "passed": 18,
+      "status": "ok"
+    },
+    {
+      "elapsed_seconds": 0.15,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s",
+      "measured": 0,
+      "passed": 7,
+      "status": "ok"
+    },
+    {
+      "elapsed_seconds": 0.1,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s",
+      "measured": 0,
+      "passed": 14,
+      "status": "ok"
+    },
+    {
+      "elapsed_seconds": 0.01,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+      "measured": 0,
+      "passed": 5,
+      "status": "ok"
+    },
+    {
+      "elapsed_seconds": 0.02,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+      "measured": 0,
+      "passed": 9,
+      "status": "ok"
+    },
+    {
+      "elapsed_seconds": 0.06,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s",
+      "measured": 0,
+      "passed": 2,
+      "status": "ok"
+    }
+  ],
+  "ordinary_test_total": 128,
+  "owned_process_groups": [
+    702874,
+    752347
+  ],
+  "owned_process_survivors": [],
+  "prior_success_evidence_untouched": true,
+  "private_tmpdir": "/tmp/dandrum-lanes/evidence-runtime-quiescent-sourcefree/tmp",
+  "qualification": "Source-free Rust host tests and Rust normal-dependency audit only. No full CMake/native/CLAP/browser/beta/task-completion/publication claim.",
+  "release_profile": "Default release, opt-level 3, LTO enabled, codegen-units 1; incremental disabled; one build job; no instrumentation/profile override",
+  "removed_profile_instrumentation_variable_names": [],
+  "resource_floors_bytes": {
+    "disk_free_bytes": 1073741824,
+    "memory_available_bytes": 4294967296
+  },
+  "root_inputs": 592,
+  "scope": "Full unfiltered source-free default-release Rust host Cargo suite plus normal locked dependency-tree audit",
+  "source_manifest_sha256": "c0e8e383a9af857df3ae87190101904a7c8a67d124cf18c247999aae0a3439b6",
+  "status": "PASS",
+  "test_binary_compiler_binding_gaps": [
+    "/tmp/dandrum-lanes/cache-editor-guard/release/deps/dandrum_trigger_host-7f362fce781ef7bf"
+  ],
+  "test_binary_compiler_provenance_limit": "The default-release Cargo run directly executed all 11 test binaries and retained hashes, Cargo fingerprint files, and dep-info. For dandrum_trigger_host-7f362fce781ef7bf Cargo reused the existing release test executable, so no current-run rustc --test command was emitted for that binary; this is explicitly recorded in executed-artifact-bindings.json. The test suite command itself exited 0.",
+  "tmp_target_same_filesystem": true,
+  "unchanged_fixture_inputs_byte_mode_mtime": 590,
+  "unused_build_output_volume": {
+    "free_bytes": 885907456,
+    "path": "/dev/shm",
+    "used_for_build_output": false
+  },
+  "updated_fixture_inputs": [
+    "src/trigger-host/src/runtime.rs",
+    "src/trigger-host/tests/runtime_quiescent.rs"
+  ]
+}

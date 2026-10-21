@@ -1,0 +1,138 @@
+{
+  "tools": {
+    "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)",
+    "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "cargo-llvm-cov": "cargo-llvm-cov 0.8.7"
+  },
+  "full_package_tests": 128,
+  "doc_tests": 2,
+  "session_tests": 30,
+  "llvm_reported_runtime_summary": {
+    "branches": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0.0
+    },
+    "mcdc": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0.0
+    },
+    "functions": {
+      "count": 97,
+      "covered": 97,
+      "percent": 100.0
+    },
+    "instantiations": {
+      "count": 170,
+      "covered": 162,
+      "percent": 95.29411764705881
+    },
+    "lines": {
+      "count": 1186,
+      "covered": 1180,
+      "percent": 99.49409780775717
+    },
+    "regions": {
+      "count": 1900,
+      "covered": 1888,
+      "notcovered": 12,
+      "percent": 99.36842105263159
+    }
+  },
+  "merged_source_coordinates": {
+    "lines": {
+      "total": 1150,
+      "hit": 1150,
+      "unhit": []
+    },
+    "functions": {
+      "total": 97,
+      "hit": 97
+    },
+    "normal_code_regions": {
+      "total": 1900,
+      "hit": 1896
+    }
+  },
+  "production": {
+    "test_module_starts_at": 1075,
+    "functions": 73,
+    "functions_hit": 73,
+    "regions": 1008,
+    "regions_hit": 1007,
+    "unhit_region_coordinates": [
+      [
+        932,
+        78,
+        932,
+        79
+      ]
+    ]
+  },
+  "new_service_closure_and_extracted_helper": {
+    "regions": 48,
+    "hit": 48,
+    "counts": {
+      "(417, 67, 417, 68)": 1792,
+      "(418, 17, 418, 49)": 1792,
+      "(418, 50, 418, 54)": 1792,
+      "(418, 55, 418, 72)": 1792,
+      "(419, 13, 419, 14)": 1792,
+      "(403, 5, 406, 47)": 30,
+      "(407, 12, 407, 59)": 30,
+      "(407, 13, 407, 24)": 30,
+      "(408, 20, 408, 55)": 4,
+      "(409, 9, 409, 10)": 26,
+      "(410, 13, 410, 23)": 26,
+      "(410, 26, 410, 50)": 26,
+      "(411, 21, 411, 28)": 3,
+      "(411, 32, 411, 46)": 26,
+      "(411, 47, 414, 10)": 3,
+      "(412, 13, 412, 17)": 3,
+      "(414, 9, 414, 10)": 23,
+      "(415, 19, 415, 23)": 14,
+      "(415, 27, 415, 52)": 26,
+      "(416, 17, 416, 25)": 14,
+      "(416, 28, 416, 45)": 14,
+      "(416, 46, 416, 70)": 14,
+      "(416, 72, 416, 76)": 14,
+      "(417, 17, 417, 24)": 14,
+      "(417, 26, 417, 36)": 14,
+      "(417, 39, 417, 58)": 14,
+      "(420, 13, 420, 24)": 14,
+      "(420, 25, 420, 44)": 14,
+      "(420, 45, 420, 53)": 14,
+      "(421, 13, 421, 17)": 14,
+      "(421, 18, 421, 26)": 14,
+      "(422, 13, 422, 35)": 14,
+      "(423, 13, 423, 34)": 14,
+      "(424, 13, 424, 43)": 14,
+      "(425, 9, 425, 10)": 12,
+      "(426, 9, 426, 19)": 26,
+      "(427, 5, 427, 6)": 30,
+      "(782, 5, 782, 60)": 76,
+      "(785, 9, 785, 26)": 76,
+      "(785, 27, 785, 31)": 76,
+      "(786, 14, 786, 18)": 9728,
+      "(786, 20, 786, 26)": 9728,
+      "(786, 31, 786, 47)": 76,
+      "(786, 48, 786, 56)": 76,
+      "(786, 59, 786, 62)": 76,
+      "(786, 63, 786, 70)": 76,
+      "(786, 72, 788, 10)": 9728,
+      "(789, 5, 789, 6)": 76
+    }
+  },
+  "limits": [
+    "No branch or MC/DC instrumentation; no blanket owner100% claim.",
+    "LLVM emitted summary retains unexecuted instantiations and macro/expansion effects; coordinate-merging is explicitly separate.",
+    "Existing apply_event error propagation region at runtime.rs932:78-79 is not executed under valid public event budgets; unchanged code, no invented exclusion.",
+    "Nonzero UI settlement and restore epoch have no public observer/service route in this runtime-only API. Fields are structurally untouched; behavioral proof belongs to later controller route.",
+    "This is format-neutral inactive runtime foundation only: no controller, stopped flush, rate/configuration, CLAP/native/reactivation/install acceptance.",
+    "Mutation explicitly excluded by user.",
+    "Baseline RAM-target guard stop is setup/resource failure without report, not RED or passing evidence. Disk target replacement retains original disk/memory floors and samples unused RAM separately."
+  ]
+}

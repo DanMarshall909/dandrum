@@ -1,0 +1,171 @@
+{
+  "accepted_doctest_summaries": [
+    {
+      "elapsed_seconds": 0.06,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s",
+      "measured": 0,
+      "passed": 2,
+      "status": "ok"
+    }
+  ],
+  "accepted_ordinary_target_summaries": [
+    {
+      "elapsed_seconds": 0.05,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s",
+      "measured": 0,
+      "passed": 14,
+      "status": "ok"
+    },
+    {
+      "elapsed_seconds": 0.06,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s",
+      "measured": 0,
+      "passed": 17,
+      "status": "ok"
+    },
+    {
+      "elapsed_seconds": 0.01,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+      "measured": 0,
+      "passed": 8,
+      "status": "ok"
+    },
+    {
+      "elapsed_seconds": 0.02,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+      "measured": 0,
+      "passed": 14,
+      "status": "ok"
+    },
+    {
+      "elapsed_seconds": 0.01,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+      "measured": 0,
+      "passed": 7,
+      "status": "ok"
+    },
+    {
+      "elapsed_seconds": 0.02,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+      "measured": 0,
+      "passed": 18,
+      "status": "ok"
+    },
+    {
+      "elapsed_seconds": 0.15,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s",
+      "measured": 0,
+      "passed": 7,
+      "status": "ok"
+    },
+    {
+      "elapsed_seconds": 0.1,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s",
+      "measured": 0,
+      "passed": 14,
+      "status": "ok"
+    },
+    {
+      "elapsed_seconds": 0.01,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+      "measured": 0,
+      "passed": 5,
+      "status": "ok"
+    },
+    {
+      "elapsed_seconds": 0.02,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+      "measured": 0,
+      "passed": 9,
+      "status": "ok"
+    },
+    {
+      "elapsed_seconds": 0.08,
+      "failed": 0,
+      "filtered": 0,
+      "ignored": 0,
+      "line": "test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s",
+      "measured": 0,
+      "passed": 15,
+      "status": "ok"
+    }
+  ],
+  "all_accepted_summaries_have_zero_failed_ignored_measured_filtered": true,
+  "binary_inventory": "composite-binary-bindings.json",
+  "compile_fail_doctest_total": 2,
+  "executed_test_binary_count": 11,
+  "fixture_bytes_match_root": true,
+  "fixture_inputs": 592,
+  "fixture_runtime_mode_matches_root": true,
+  "fixture_runtime_mtime_intentionally_differs_from_root": true,
+  "forbidden_normal_dependency_matches": [],
+  "integration_test_count": 113,
+  "minimum_resources_original": {
+    "disk_free_bytes": 19934248960,
+    "memory_available_bytes": 10089684992,
+    "unused_build_output_volume_min_free_bytes": 859439104
+  },
+  "minimum_resources_supplemental": {
+    "disk_free_bytes": 19806154752,
+    "memory_available_bytes": 10673471488,
+    "unused_build_output_volume_min_free_bytes": 885907456
+  },
+  "normal_dependency_audit_exit": 0,
+  "ordinary_test_total": 128,
+  "original_full_release_elapsed_seconds": 538.8033904499898,
+  "original_full_release_gate_exit": 0,
+  "original_full_release_receipt": "receipt.json",
+  "original_gate_source_binding": "INCOMPLETE: stale cached 15-test unit executable excluded; see source-freshness-audit.json",
+  "owned_process_survivors": [],
+  "prior_fixture_unchanged_inputs_byte_mode_mtime": 590,
+  "qualification": "Current-source Rust host tests and Rust normal-dependency audit only. No claim of a single fresh full unfiltered run, full CMake/native/CLAP/browser/DAW/installed readiness.",
+  "resource_floors_bytes": {
+    "disk_free": 1073741824,
+    "memory_available": 4294967296
+  },
+  "root_head": "5d332b81adc07117e59f69a528785d194c8da3ff",
+  "root_inputs": 592,
+  "root_source_manifest_sha256": "c0e8e383a9af857df3ae87190101904a7c8a67d124cf18c247999aae0a3439b6",
+  "root_source_map_unchanged": true,
+  "scope": "Composite source-bound evidence: original full default-release run supplies 10 current integration targets (113 tests) and 2 current doctests; supplemental default-release --lib run supplies 15 current-source unit tests. This is not a fresh full unfiltered Cargo run.",
+  "sourcefree_cache": "Existing /tmp/dandrum-lanes/cache-editor-guard; no cleanup, relocation or cache timestamp edits; Cargo rebuilt after correcting fixture source freshness",
+  "status": "PASS",
+  "supplemental_pre_correction_fixture_unchanged_inputs_byte_mode_mtime": 591,
+  "supplemental_unit_elapsed_seconds": 52.77020413099672,
+  "supplemental_unit_exit": 0,
+  "supplemental_unit_receipt": "fresh-unit/receipt.json",
+  "unit_test_count": 15
+}
