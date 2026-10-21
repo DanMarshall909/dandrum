@@ -1,0 +1,83 @@
+{
+  "source": "/dev/shm/dnb/dist-native",
+  "archive": "native-build-raw.tar.gz",
+  "archive_sha256": "78939756af6e13ee8f39d25953af33f4434fa10c9c9cd0861fec8c94964d3129",
+  "members": 15,
+  "artifacts": [
+    {
+      "path": "app.css",
+      "sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5",
+      "size": 11023
+    },
+    {
+      "path": "app.js",
+      "sha256": "c7d2a4619c31f6037284f830cd58f81f7a23a87d50d659fea108747131cf3677",
+      "size": 812641
+    },
+    {
+      "path": "fonts/.gitattributes",
+      "sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616",
+      "size": 77
+    },
+    {
+      "path": "fonts/3386a05f6ece969e.ttf",
+      "sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160",
+      "size": 112204
+    },
+    {
+      "path": "fonts/6098b66ce7d608dc.ttf",
+      "sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef",
+      "size": 88644
+    },
+    {
+      "path": "fonts/74103fd6d41bc32c.ttf",
+      "sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154",
+      "size": 85776
+    },
+    {
+      "path": "fonts/91c841fdfa8e7b94.ttf",
+      "sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc",
+      "size": 81924
+    },
+    {
+      "path": "fonts/barlow-OFL.txt",
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "size": 4377
+    },
+    {
+      "path": "fonts/barlowsemicondensed-OFL.txt",
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "size": 4377
+    },
+    {
+      "path": "fonts/c15439e7a03af571.ttf",
+      "sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c",
+      "size": 85876
+    },
+    {
+      "path": "fonts/c2b046235fb4c2f8.ttf",
+      "sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9",
+      "size": 83412
+    },
+    {
+      "path": "fonts/cb75439ae401f776.ttf",
+      "sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da",
+      "size": 86708
+    },
+    {
+      "path": "fonts/df54dbfafba61d49.ttf",
+      "sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8",
+      "size": 112160
+    },
+    {
+      "path": "fonts/jetbrainsmono-OFL.txt",
+      "sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d",
+      "size": 4399
+    },
+    {
+      "path": "index.html",
+      "sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26",
+      "size": 326
+    }
+  ]
+}

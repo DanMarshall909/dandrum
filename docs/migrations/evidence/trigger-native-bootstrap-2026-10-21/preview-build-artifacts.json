@@ -1,0 +1,113 @@
+{
+  "source": "/dev/shm/dnb/dist-preview",
+  "archive": "preview-build-raw.tar.gz",
+  "archive_sha256": "966aa5874f380835d9f303116205c77405732a1bda541e0f812b152b7c879b21",
+  "members": 21,
+  "artifacts": [
+    {
+      "path": "assets/catalog-D5WtGZ3f.css",
+      "sha256": "75419d57716ebc8eae5d0c93600b0d95552b4cfe09660ea6ca2aeca0b2614709",
+      "size": 2026
+    },
+    {
+      "path": "assets/catalog-DEB-rez9.js",
+      "sha256": "25caceff6d8f52dd9d7b19a2f686fef668b09e72dfb57ddab9b2abbccf9b3254",
+      "size": 17810
+    },
+    {
+      "path": "assets/design-system-IiESn_cW.js",
+      "sha256": "4279d33f00345e9e7b3f6c2c2d645b01cd15a23ead034a2e33f40f3efbca6b15",
+      "size": 103650
+    },
+    {
+      "path": "assets/react-runtime-BB0E8YcQ.js",
+      "sha256": "a54e5282221bc2821dbf5482427ccf46530e7bcc51b3de67082dc34fcce2e0aa",
+      "size": 322567
+    },
+    {
+      "path": "assets/shell-CSjOVqBn.js",
+      "sha256": "474a3dcb833340fba1bd4b3238efb558698a75dd85d86d26d534cd145a17d1de",
+      "size": 45806
+    },
+    {
+      "path": "assets/styles-CZrjI6Cm.js",
+      "sha256": "6f0a87194520360b8aeddc0d9427ab71a5874080dbb3d9b637e794c3fe9815f3",
+      "size": 348069
+    },
+    {
+      "path": "assets/styles-VRZ06cQx.css",
+      "sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5",
+      "size": 11023
+    },
+    {
+      "path": "catalog.html",
+      "sha256": "f16c1efa2f1d8bbe86e3e6f2eddf1ead648bf04e339787bf42b7dd9261279bfe",
+      "size": 681
+    },
+    {
+      "path": "fonts/.gitattributes",
+      "sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616",
+      "size": 77
+    },
+    {
+      "path": "fonts/3386a05f6ece969e.ttf",
+      "sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160",
+      "size": 112204
+    },
+    {
+      "path": "fonts/6098b66ce7d608dc.ttf",
+      "sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef",
+      "size": 88644
+    },
+    {
+      "path": "fonts/74103fd6d41bc32c.ttf",
+      "sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154",
+      "size": 85776
+    },
+    {
+      "path": "fonts/91c841fdfa8e7b94.ttf",
+      "sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc",
+      "size": 81924
+    },
+    {
+      "path": "fonts/barlow-OFL.txt",
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "size": 4377
+    },
+    {
+      "path": "fonts/barlowsemicondensed-OFL.txt",
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "size": 4377
+    },
+    {
+      "path": "fonts/c15439e7a03af571.ttf",
+      "sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c",
+      "size": 85876
+    },
+    {
+      "path": "fonts/c2b046235fb4c2f8.ttf",
+      "sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9",
+      "size": 83412
+    },
+    {
+      "path": "fonts/cb75439ae401f776.ttf",
+      "sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da",
+      "size": 86708
+    },
+    {
+      "path": "fonts/df54dbfafba61d49.ttf",
+      "sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8",
+      "size": 112160
+    },
+    {
+      "path": "fonts/jetbrainsmono-OFL.txt",
+      "sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d",
+      "size": 4399
+    },
+    {
+      "path": "index.html",
+      "sha256": "79019a7ce0a80b902bb8daefe02bfc8612b86771ff4c055b5dd2cd3cf919e88c",
+      "size": 602
+    }
+  ]
+}

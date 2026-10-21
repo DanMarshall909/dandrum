@@ -1,0 +1,56 @@
+[
+  {
+    "url": "http://127.0.0.1:8426/main.jsx",
+    "transformedSourceSha256": "d521d9bdd1b5ff5009cd87e9dae9d9bf9c3739803667f9d2175b6c59a143068d",
+    "runs": 12,
+    "uncoveredIntervals": [
+      {
+        "start": 454,
+        "end": 488,
+        "snippet": "? __vite__cjsImport1_react.default"
+      },
+      {
+        "start": 2025,
+        "end": 2068,
+        "snippet": "{\n      engine.close();\n      return;\n    }"
+      },
+      {
+        "start": 2253,
+        "end": 2262,
+        "snippet": ": \"empty\""
+      },
+      {
+        "start": 3264,
+        "end": 3387,
+        "snippet": "() => {\n  try {\n    root.unmount();\n  } finally {\n    dispose();\n    window.removeEventListener(\"pagehide\", dispose);\n  }\n}"
+      }
+    ]
+  },
+  {
+    "url": "http://127.0.0.1:8426/engine/native-webview-bootstrap.mjs",
+    "transformedSourceSha256": "9232e3db1706d72f8985bd945aed8753eef69c8c509c35d063ac2cbb628b9a19",
+    "runs": 12,
+    "uncoveredIntervals": [
+      {
+        "start": 442,
+        "end": 474,
+        "snippet": "fail('nativeBootstrapConflict');"
+      },
+      {
+        "start": 784,
+        "end": 809,
+        "snippet": "fail('missingNativeIpc');"
+      },
+      {
+        "start": 821,
+        "end": 1128,
+        "snippet": "{\n    if(scope.__DANDRUM__!==prior.descriptor||instanceId!==prior.instanceId||attachmentId!==prior.attachmentId\n      ||nextRequestId!==prior.nextRequestId||ipc!==prior.ipc||ipc.postMessage!==prior.postMessage)fail('nativeBootstrapConflict');\n    if(prior.closed)fail('closed');\n    return prior.handle;\n  }"
+      },
+      {
+        "start": 1157,
+        "end": 1189,
+        "snippet": "fail('nativeBootstrapConflict');"
+      }
+    ]
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "verdict": "PASS",
+  "initial_manifest_sha256": "3ef3bb94f3741ec9c45bc28483b30aaca0f1081f531050cba6280562e244799c",
+  "base": "d2ef616377ce34b446cb0dd1f5d0a3a4bd10c1c8",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "d2ef616377ce34b446cb0dd1f5d0a3a4bd10c1c8",
+  "candidate_paths": 19,
+  "scope": "Task 3.3 production frontend bootstrap and local browser lifetime prerequisite only",
+  "required_corrections": [],
+  "task3_3_complete": false,
+  "full_beta_complete": false,
+  "same_reviewer_final_precommit_gate": "Required against the entire actual final candidate after the exact five metadata outputs and named validations"
+}

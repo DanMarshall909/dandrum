@@ -1272,3 +1272,37 @@ caches are preserved; mutation is excluded and main remains clean68dd655.
 Independent completion review passed for the frozen native structural-job source/evidence candidate; normal-hook publication remains.
 OpenSpec remains7/14 with3.2/3.3 open; full beta continues through joined CLAP and
 the next VST3, standalone, named-DAW, offline-install and native lifecycle gates.
+
+
+## Bootstrap the native production frontend — 21 October 2026
+
+The production entry synchronously installs the bounded browser broker from
+trusted native metadata before selecting its engine. Its descriptor exposes
+native reply/event delivery and preserves request cursors across repeated live
+installation. Invalid present configuration and ownership conflicts fail visibly.
+Disposal permanently closes that document's broker. Main failure, pagehide and
+HMR use shared ordered cleanup; late initialization failure cannot render after
+disposal. Initialization errors display the real native code when no message is
+supplied. Absent bootstrap retains existing preview and comparison selection.
+
+All 146 Node tests, 12 registered browser tests, checks for 70 authored React
+files and both production builds pass. Four genuine behavior REDs cover entry,
+late-render disposal, removed ownership and code-only rejection. The new module
+has 100% Node V8 line/branch/function coverage. Main's successful initialization
+after disposal, empty patch selection and HMR callback remain unexecuted in the
+browser selection; no whole-main coverage claim follows. The native single app
+bundle retains its ordinary size warning.
+
+[Portable evidence](evidence/trigger-native-bootstrap-2026-10-21/receipt.json)
+preserves raw logs, source snapshots, coverage, both built outputs, resource and
+descendant process ownership. All 590 current headless inputs match published
+d2ef616 release proof (102 ordinary tests plus one compile-fail doctest). This
+is qualified reuse; the retained fixture was subsequently updated for a separate
+unpublished worker candidate and is not claimed physically equal now. No fresh
+whole guard, current native browser/controller or CLAP proof is claimed.
+
+Independent completion review passed for the frozen frontend bootstrap source/evidence candidate; normal-hook publication remains.
+Task 3.3 and the full beta remain open. Actual native dispatch, attachment cleanup,
+worker wake, notes/heartbeat and joined CLAP acceptance still follow, then VST3,
+standalone, named-DAW and installed offline/native proof. Main remains clean
+68dd655; reusable caches are preserved and mutation is excluded.

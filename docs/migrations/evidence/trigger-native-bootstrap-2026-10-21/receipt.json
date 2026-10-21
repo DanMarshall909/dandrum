@@ -1,0 +1,80 @@
+{
+  "component": "Trusted native bootstrap of the production frontend",
+  "scope": "Task3.3 frontend entry/broker lifetime prerequisite only",
+  "base": "d2ef616377ce34b446cb0dd1f5d0a3a4bd10c1c8",
+  "source_hashes": {
+    "web/trigger/main.jsx": "ea5e0f52613d0ad1f7183c8a8e5d36c1556934c9707b1171df997d11188042ac",
+    "web/trigger/engine/native-webview-bootstrap.mjs": "90ff0010b8393c9714eae52654979cd78afb11cd47d98f0bd81898522d0b95bf",
+    "web/trigger/tests/native-webview-bootstrap.test.mjs": "6bdd5fa3077a190d5a52bb6ce6734cccf8fc7a4a255fe635dba3c444ad6239a0",
+    "web/trigger/tests/browser/native-transport.spec.mjs": "36647a1554e5673a82803a0c69fa8d7563907c7c7f12c6e47d738c25b285b260"
+  },
+  "behavior": [
+    "Install existing bounded broker synchronously before engine selection using trusted native metadata and bound Wry IPC receiver",
+    "Expose receiveNativeMessage, retain explicit unavailable capabilities and existing preview/direct/comparison paths when bootstrap absent",
+    "Live idempotence retains cursor and pending calls; changed/removed bootstrap, descriptor or IPC ownership conflicts visibly",
+    "Disposal closes pending/listeners permanently for this document; entry failure/pagehide/HMR share ordered lifetime cleanup",
+    "Late initialization rejection after disposal does not render; native code-only initialization rejection displays its actual code"
+  ],
+  "tests": {
+    "ordinary_node": 146,
+    "new_node_tests": 7,
+    "registered_browser": 12,
+    "type_component_check": "70 authored React files PASS",
+    "preview_build": "PASS",
+    "native_build": "PASS"
+  },
+  "coverage": {
+    "new_module": "100% Node V8 lines/branches/functions",
+    "main_browser_gaps": [
+      "successful initialization resolution after prior disposal",
+      "empty accepted patch selection",
+      "HMR callback",
+      "generated React interop"
+    ],
+    "qualification": "No whole-main/whole-frontend coverage or native/controller/audio assertion claim; authoritative browser union gaps resolve nested ranges per execution"
+  },
+  "tdd": [
+    "Production main ignored bootstrap and rendered silent preview: genuine browser RED then GREEN",
+    "Late initialization rejection after pagehide rendered an alert: genuine RED then GREEN",
+    "Removed bootstrap abandoned previous ownership: genuine Node RED then conflict GREEN",
+    "Actual Rust code-only rejection produced blank suffix: genuine browser RED then message/code fallback GREEN"
+  ],
+  "calibration": "Rust tests/protocol.rs672-675 emits error with code only, no message/method. Message-bearing broker input is separately allowed, not claimed emitted by core. Actual joined Wry/controller replies/events and CLAP remain open.",
+  "archives": [
+    {
+      "source": "/dev/shm/dandrum-beta-20261020/native-bootstrap-evidence",
+      "archive": "author-raw.tar.gz",
+      "archive_sha256": "ef0132a8d2c962c08b8149254a3e07e43445d81debeb7edcdf8ac07369bb0ac8",
+      "members": 110
+    },
+    {
+      "source": "/dev/shm/dnb/dist-preview",
+      "archive": "preview-build-raw.tar.gz",
+      "archive_sha256": "966aa5874f380835d9f303116205c77405732a1bda541e0f812b152b7c879b21",
+      "members": 21
+    },
+    {
+      "source": "/dev/shm/dnb/dist-native",
+      "archive": "native-build-raw.tar.gz",
+      "archive_sha256": "78939756af6e13ee8f39d25953af33f4434fa10c9c9cd0861fec8c94964d3129",
+      "members": 15
+    }
+  ],
+  "sourcefree": "Qualified published102+1 release/dependency proof with all590 current headless inputs unchanged; current separately updated worker fixture is not equated to this base",
+  "limitations": [
+    "New module full coverage does not close disclosed main/HMR browser gaps",
+    "Browser fixtures prove entry/wire binding and lifetime only",
+    "Native single-bundle standard >500kB warning retained",
+    "No semantic native attachment detach or actual audio cleanup claim"
+  ],
+  "review": {
+    "status": "PASS",
+    "manifest_sha256": "3ef3bb94f3741ec9c45bc28483b30aaca0f1081f531050cba6280562e244799c",
+    "review_sha256": "ba5e96f57b6e61ae16e4078830a2d52c27b3911e8bdbbf5baab467037cd05200",
+    "verdict_sha256": "8af1cf526a3be7b5e56c921bdb42e2c0a5c4455051a367c255cf43b33d0e3d1c"
+  },
+  "mutation": "Explicitly excluded by user",
+  "resources": "Owned RAM outputs/evidence retained; final descendant PID/start-time/PGID audit remainingLive empty; no cache deletion",
+  "task3_3_complete": false,
+  "full_beta_complete": false
+}

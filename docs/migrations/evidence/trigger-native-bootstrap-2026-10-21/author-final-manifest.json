@@ -1,0 +1,102 @@
+{
+  "base": "d2ef616377ce34b446cb0dd1f5d0a3a4bd10c1c8",
+  "sourceRoot": "/tmp/dandrum-lanes/frontend",
+  "files": {
+    "web/trigger/main.jsx": "ea5e0f52613d0ad1f7183c8a8e5d36c1556934c9707b1171df997d11188042ac",
+    "web/trigger/engine/native-webview-bootstrap.mjs": "90ff0010b8393c9714eae52654979cd78afb11cd47d98f0bd81898522d0b95bf",
+    "web/trigger/tests/native-webview-bootstrap.test.mjs": "6bdd5fa3077a190d5a52bb6ce6734cccf8fc7a4a255fe635dba3c444ad6239a0",
+    "web/trigger/tests/browser/native-transport.spec.mjs": "36647a1554e5673a82803a0c69fa8d7563907c7c7f12c6e47d738c25b285b260"
+  },
+  "lockSha256": "07d6d015bc9148c1f55f3146f38200f835727c0fc4bbe19cf7a415529ba342d9",
+  "versions": {
+    "node": "v22.19.0",
+    "npm": "10.9.3",
+    "vite": "vite/6.4.4 linux-x64 node-v22.19.0",
+    "playwright": "Version 1.63.0",
+    "chrome": "Google Chrome 152.0.7977.64"
+  },
+  "remainingKnownLive": [],
+  "guards": {
+    "diskBytes": 1073741824,
+    "shmBytes": 268435456,
+    "memoryAvailableBytes": 4294967296,
+    "sampleSeconds": 0.25
+  },
+  "resourceMinimums": {
+    "final-browser-owned-resources.jsonl": {
+      "disk": 1236242432,
+      "shm": 1939795968,
+      "memory": 12263432192
+    },
+    "coverage-browser-resources.jsonl": {
+      "disk": 1461342208,
+      "shm": 2007666688,
+      "memory": 12456493056
+    },
+    "build-native-resources.jsonl": {
+      "disk": 1518964736,
+      "shm": 2124808192,
+      "memory": 14035034112
+    },
+    "build-preview-resources.jsonl": {
+      "disk": 1396760576,
+      "shm": 2125901824,
+      "memory": 13842722816
+    },
+    "full-node-resources.jsonl": {
+      "disk": 1365250048,
+      "shm": 2031738880,
+      "memory": 12649938944
+    },
+    "full-check-resources.jsonl": {
+      "disk": 1365262336,
+      "shm": 2119368704,
+      "memory": 12662951936
+    },
+    "green-final-browser-resources.jsonl": {
+      "disk": 1365204992,
+      "shm": 2050674688,
+      "memory": 12407357440
+    },
+    "red-code-only-resources.jsonl": {
+      "disk": 1369145344,
+      "shm": 2050498560,
+      "memory": 12681404416
+    },
+    "coverage-ownership-resources.jsonl": {
+      "disk": 1371541504,
+      "shm": 2135093248,
+      "memory": 13897949184
+    },
+    "red-removed-bootstrap-resources.jsonl": {
+      "disk": 1374224384,
+      "shm": 2135138304,
+      "memory": 13824163840
+    },
+    "green-lifetime-resources.jsonl": {
+      "disk": 1422950400,
+      "shm": 2028064768,
+      "memory": 12500205568
+    },
+    "red-disposal-resources.jsonl": {
+      "disk": 1400496128,
+      "shm": 2049089536,
+      "memory": 12249063424
+    },
+    "coverage-bootstrap-resources.jsonl": {
+      "disk": 1449607168,
+      "shm": 2133155840,
+      "memory": 13268914176
+    },
+    "green-entry-resources.jsonl": {
+      "disk": 1490792448,
+      "shm": 2026184704,
+      "memory": 12547764224
+    },
+    "red-entry-resources.jsonl": {
+      "disk": 1538564096,
+      "shm": 2036174848,
+      "memory": 12303433728
+    }
+  }
+}

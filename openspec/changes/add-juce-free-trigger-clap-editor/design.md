@@ -80,6 +80,10 @@ Main/control service performs at most one retirement reclamation and one ready c
 
 The take/submit component is followed by an actual bounded worker owned by the persistent instrument host, with startup/shutdown/panic and editor-loss proof. It is not owned by Wry or a format-specific editor. Concrete host servicing must wake both for completed preparation and later runtime capacity after deferral, independently of a destroyed editor's GTK timer. These worker/wake and actual frontend recovery gates remain open until their tests pass; explicit test-driven servicing at the component boundary does not claim automatic product progress or complete task 3.3.
 
+### Install the browser broker from trusted native bootstrap data
+
+The trusted Wry initializer supplies `window.__DANDRUM_NATIVE__` with `protocolVersion: 1`, decimal `instanceId`, `attachmentId` and optional transport `nextRequestId`. Before selecting an engine, the production entry point synchronously installs the existing bounded browser broker using Wry's `window.ipc.postMessage`. It publishes the normal `window.__DANDRUM__` descriptor plus a `receiveNativeMessage` function for trusted native reply/event delivery. The returned local lifetime handle disposes outstanding browser requests/listeners during entry-point failure or disposal. No bootstrap data means the existing silent preview or comparison backend remains selected. Invalid present data, missing IPC or conflicting existing native ownership fails visibly; it never silently falls back to preview. No new protocol methods or controller authority arise from these globals. Browser/Node fixtures prove this installation contract; actual Wry/controller/CLAP calibration remains a separate joined gate.
+
 ### Let CLAP own the parent window, event loop, automation and state boundary
 
 Implement the pinned Clack GUI extension for the Trigger identity only. Creation records a supported X11 configuration; `set_parent` validates and stores the host window; the Wry child is created and destroyed on the CLAP main thread. `show`, `hide`, accepted fixed sizes and failure results follow the host calls without starting a private GTK loop.
