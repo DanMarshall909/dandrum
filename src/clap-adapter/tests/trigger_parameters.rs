@@ -1486,3 +1486,6 @@ mod note_native;
 
 #[path = "internal/trigger_creation_failure_native.rs"]
 mod creation_failure_native;
+
+#[path = "internal/trigger_instances_native.rs"]
+mod instances_native;

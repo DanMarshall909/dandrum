@@ -1,0 +1,839 @@
+{
+  "binding_sha256": "20cb3b2ca383692002dc85158265d198fe2ea7c49ed8960fc6a86d233870525a",
+  "objects": {
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/dso-final/libdandrum_clap_adapter.so": "3738110026a86cc6c4744bd241fbc244ea454ad4ce866a47882dc38778623e26",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-two-native-instances/final-test/trigger_parameters-8fc57b2ef83fb6e4": "9084632aacd42151071c2bad9b1449ff62b96a42b9c27541a79517207bba7291"
+  },
+  "profiles": {
+    "/tmp/dandrum-evidence/g3-two-native-instances/coverage-final/11413624826829876627_0-2317335.profraw": "69226630132bbe5d25a1080e218cda173f3b587399aa359e623c329fc1002464",
+    "/tmp/dandrum-evidence/g3-two-native-instances/coverage-final/12894584750217267763_0-2317335.profraw": "55fa30b4da43c3dc1c9885c859880c647832305887f75452688a055bee4bdac8"
+  },
+  "raw_profile_count": 2,
+  "original_export_sha256": "83767eee869db5a88c890bb102b83ab4484933cb7b8aeae8315da54cf66d9cdf",
+  "regenerated_export_sha256": "83767eee869db5a88c890bb102b83ab4484933cb7b8aeae8315da54cf66d9cdf",
+  "commands": [
+    [
+      "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-profdata",
+      "merge",
+      "-sparse",
+      "/tmp/dandrum-evidence/g3-two-native-instances/coverage-final/11413624826829876627_0-2317335.profraw",
+      "/tmp/dandrum-evidence/g3-two-native-instances/coverage-final/12894584750217267763_0-2317335.profraw",
+      "-o",
+      "/tmp/dandrum-evidence/g3-two-native-fixture/root-final.profdata"
+    ],
+    [
+      "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov",
+      "export",
+      "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-continuous-native-audio/dso-final/libdandrum_clap_adapter.so",
+      "--object=/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-two-native-instances/final-test/trigger_parameters-8fc57b2ef83fb6e4",
+      "--instr-profile=/tmp/dandrum-evidence/g3-two-native-fixture/root-final.profdata"
+    ]
+  ],
+  "exit": [
+    0,
+    0
+  ],
+  "seconds": 0.051533057005144656,
+  "source_summary": {
+    "branches": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0
+    },
+    "functions": {
+      "count": 49,
+      "covered": 46,
+      "percent": 93.87755102040816
+    },
+    "instantiations": {
+      "count": 49,
+      "covered": 46,
+      "percent": 93.87755102040816
+    },
+    "lines": {
+      "count": 762,
+      "covered": 729,
+      "percent": 95.66929133858267
+    },
+    "mcdc": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0
+    },
+    "regions": {
+      "count": 1346,
+      "covered": 1294,
+      "notcovered": 52,
+      "percent": 96.13670133729569
+    }
+  },
+  "functions": [
+    {
+      "name": "_RNCNCNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB6_4Pair2js00B8_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 163,
+      "source_regions": 3,
+      "positive_source_regions": 3,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNCNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB6_4Pair2js0s_0B8_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 0,
+      "source_regions": 2,
+      "positive_source_regions": 0,
+      "zero_hit_spans": [
+        [
+          335,
+          38,
+          335,
+          39
+        ],
+        [
+          335,
+          40,
+          335,
+          49
+        ]
+      ]
+    },
+    {
+      "name": "_RNCNCNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native11worker_loop00B7_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 298,
+      "source_regions": 2,
+      "positive_source_regions": 2,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNCNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native11worker_loop0s0_0B7_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 239616,
+      "source_regions": 3,
+      "positive_source_regions": 3,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNCNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native11worker_loop0s1_0B7_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 239520,
+      "source_regions": 3,
+      "positive_source_regions": 3,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNCNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native11worker_loop0s2_0B7_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 239616,
+      "source_regions": 2,
+      "positive_source_regions": 2,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNCNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native11worker_loop0s3_0B7_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 444,
+      "source_regions": 2,
+      "positive_source_regions": 2,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNCNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native11worker_loop0s_0B7_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 2352,
+      "source_regions": 1,
+      "positive_source_regions": 1,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB4_4Pair12assert_level0B6_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 63,
+      "source_regions": 2,
+      "positive_source_regions": 2,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB4_4Pair2js0B6_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 163,
+      "source_regions": 6,
+      "positive_source_regions": 6,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB4_4Pair5starts_0B6_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 3,
+      "source_regions": 5,
+      "positive_source_regions": 5,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native11worker_loop0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 3,
+      "source_regions": 209,
+      "positive_source_regions": 195,
+      "zero_hit_spans": [
+        [
+          160,
+          17,
+          160,
+          87
+        ],
+        [
+          161,
+          17,
+          161,
+          22
+        ],
+        [
+          232,
+          17,
+          232,
+          25
+        ],
+        [
+          233,
+          17,
+          233,
+          64
+        ],
+        [
+          234,
+          17,
+          234,
+          22
+        ],
+        [
+          237,
+          17,
+          237,
+          94
+        ],
+        [
+          238,
+          17,
+          238,
+          22
+        ],
+        [
+          241,
+          17,
+          241,
+          79
+        ],
+        [
+          242,
+          17,
+          242,
+          22
+        ],
+        [
+          254,
+          25,
+          254,
+          95
+        ],
+        [
+          255,
+          25,
+          255,
+          84
+        ],
+        [
+          255,
+          50,
+          255,
+          55
+        ],
+        [
+          255,
+          57,
+          255,
+          64
+        ],
+        [
+          256,
+          25,
+          256,
+          31
+        ]
+      ]
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native13two_instances0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 2,
+      "source_regions": 3,
+      "positive_source_regions": 3,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native13two_instancess0_0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 1,
+      "source_regions": 291,
+      "positive_source_regions": 290,
+      "zero_hit_spans": [
+        [
+          818,
+          13,
+          818,
+          14
+        ]
+      ]
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native13two_instancess1_0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 2,
+      "source_regions": 3,
+      "positive_source_regions": 3,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native13two_instancess2_0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 0,
+      "source_regions": 3,
+      "positive_source_regions": 0,
+      "zero_hit_spans": [
+        [
+          920,
+          74,
+          920,
+          78
+        ],
+        [
+          920,
+          79,
+          920,
+          84
+        ],
+        [
+          920,
+          85,
+          920,
+          89
+        ]
+      ]
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native13two_instancess3_0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 3,
+      "source_regions": 2,
+      "positive_source_regions": 2,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native13two_instancess4_0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 0,
+      "source_regions": 3,
+      "positive_source_regions": 0,
+      "zero_hit_spans": [
+        [
+          937,
+          27,
+          937,
+          32
+        ],
+        [
+          937,
+          34,
+          937,
+          43
+        ],
+        [
+          937,
+          45,
+          937,
+          55
+        ]
+      ]
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native13two_instancess_0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 2,
+      "source_regions": 4,
+      "positive_source_regions": 4,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native14canonical_kick0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 4,
+      "source_regions": 5,
+      "positive_source_regions": 5,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native14canonical_kicks0_0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 12000,
+      "source_regions": 4,
+      "positive_source_regions": 4,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native14canonical_kicks1_0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 12000,
+      "source_regions": 2,
+      "positive_source_regions": 2,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native14canonical_kicks_0B5_",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 5,
+      "source_regions": 5,
+      "positive_source_regions": 5,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB2_4Pair10edit_level",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 2,
+      "source_regions": 78,
+      "positive_source_regions": 78,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB2_4Pair11wait_blocks",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 12,
+      "source_regions": 12,
+      "positive_source_regions": 12,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB2_4Pair12assert_level",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 21,
+      "source_regions": 28,
+      "positive_source_regions": 28,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB2_4Pair2js",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 163,
+      "source_regions": 24,
+      "positive_source_regions": 24,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB2_4Pair3dom",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 16,
+      "source_regions": 6,
+      "positive_source_regions": 6,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB2_4Pair3job",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 4,
+      "source_regions": 12,
+      "positive_source_regions": 9,
+      "zero_hit_spans": [
+        [
+          557,
+          13,
+          557,
+          14
+        ],
+        [
+          558,
+          13,
+          558,
+          23
+        ],
+        [
+          558,
+          24,
+          558,
+          36
+        ]
+      ]
+    },
+    {
+      "name": "_RNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB2_4Pair4open",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 5,
+      "source_regions": 60,
+      "positive_source_regions": 60,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB2_4Pair4pump",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 1837,
+      "source_regions": 14,
+      "positive_source_regions": 14,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB2_4Pair5close",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 5,
+      "source_regions": 34,
+      "positive_source_regions": 34,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB2_4Pair5probe",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 10,
+      "source_regions": 13,
+      "positive_source_regions": 13,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB2_4Pair5start",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 3,
+      "source_regions": 37,
+      "positive_source_regions": 37,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB2_4Pair6finish",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 3,
+      "source_regions": 39,
+      "positive_source_regions": 38,
+      "zero_hit_spans": [
+        [
+          667,
+          9,
+          667,
+          10
+        ]
+      ]
+    },
+    {
+      "name": "_RNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB2_4Pair6invoke",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 56,
+      "source_regions": 22,
+      "positive_source_regions": 21,
+      "zero_hit_spans": [
+        [
+          363,
+          13,
+          363,
+          14
+        ]
+      ]
+    },
+    {
+      "name": "_RNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB2_4Pair7command",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 14,
+      "source_regions": 40,
+      "positive_source_regions": 40,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB2_4Pair7mapping",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 3,
+      "source_regions": 36,
+      "positive_source_regions": 36,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB2_4Pair8feedback",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 22,
+      "source_regions": 6,
+      "positive_source_regions": 6,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB2_4Pair8snapshot",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 27,
+      "source_regions": 6,
+      "positive_source_regions": 6,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB2_4Pair9b_audible",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 3,
+      "source_regions": 22,
+      "positive_source_regions": 22,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvMNtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB2_4Pair9operation",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 40,
+      "source_regions": 11,
+      "positive_source_regions": 11,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvMs_NtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB4_8Baseline5check",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 11,
+      "source_regions": 29,
+      "positive_source_regions": 29,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvMs_NtCsjkduUWRBBt7_18trigger_parameters16instances_nativeNtB4_8Baseline7capture",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 2,
+      "source_regions": 15,
+      "positive_source_regions": 15,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native10assert_map",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 4,
+      "source_regions": 6,
+      "positive_source_regions": 6,
+      "zero_hit_spans": []
+    },
+    {
+      "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native11worker_loop",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 3,
+      "source_regions": 45,
+      "positive_source_regions": 37,
+      "zero_hit_spans": [
+        [
+          131,
+          13,
+          131,
+          18
+        ],
+        [
+          132,
+          13,
+          132,
+          62
+        ],
+        [
+          133,
+          13,
+          133,
+          30
+        ],
+        [
+          133,
+          31,
+          133,
+          36
+        ],
+        [
+          133,
+          43,
+          133,
+          60
+        ],
+        [
+          134,
+          20,
+          134,
+          61
+        ],
+        [
+          134,
+          21,
+          134,
+          26
+        ],
+        [
+          282,
+          25,
+          284,
+          6
+        ]
+      ]
+    },
+    {
+      "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native13two_instances",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 1,
+      "source_regions": 89,
+      "positive_source_regions": 74,
+      "zero_hit_spans": [
+        [
+          913,
+          20,
+          913,
+          25
+        ],
+        [
+          913,
+          37,
+          915,
+          10
+        ],
+        [
+          914,
+          13,
+          914,
+          27
+        ],
+        [
+          919,
+          17,
+          919,
+          24
+        ],
+        [
+          920,
+          17,
+          920,
+          41
+        ],
+        [
+          921,
+          24,
+          921,
+          29
+        ],
+        [
+          921,
+          33,
+          921,
+          40
+        ],
+        [
+          921,
+          41,
+          923,
+          14
+        ],
+        [
+          922,
+          17,
+          922,
+          31
+        ],
+        [
+          923,
+          13,
+          923,
+          14
+        ],
+        [
+          946,
+          9,
+          946,
+          23
+        ],
+        [
+          946,
+          24,
+          946,
+          27
+        ],
+        [
+          952,
+          16,
+          952,
+          21
+        ],
+        [
+          953,
+          9,
+          953,
+          34
+        ],
+        [
+          953,
+          35,
+          953,
+          40
+        ]
+      ]
+    },
+    {
+      "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters16instances_native14canonical_kick",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 1,
+      "source_regions": 91,
+      "positive_source_regions": 90,
+      "zero_hit_spans": [
+        [
+          42,
+          18,
+          42,
+          20
+        ]
+      ]
+    },
+    {
+      "name": "_RNvNtCsjkduUWRBBt7_18trigger_parameters16instances_natives_68copied_native_two_instances_keep_edits_audio_and_editors_independent",
+      "source": "src/clap-adapter/tests/internal/trigger_instances_native.rs",
+      "source_sha256": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+      "function_count": 1,
+      "source_regions": 6,
+      "positive_source_regions": 6,
+      "zero_hit_spans": []
+    }
+  ],
+  "scope": "Fresh independent warning-free merge/export from verified LLVM tools, two actual ELFs and two raw profiles for one exact final success case. Parsed data equal. Production instrumentation is explicitly reused with unchanged source/compiler/extern bindings; exact final test instrumented anew. Malformed-fixture/worker failure/watchdog/mismatch/cleanup and timing-dependent pending branches remain unhit; no full-owner/branch/hardware claim."
+}

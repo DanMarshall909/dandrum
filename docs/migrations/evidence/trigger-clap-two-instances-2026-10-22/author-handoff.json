@@ -1,0 +1,113 @@
+{
+  "outcome": "Bounded task4.3 two independently edited native instances facet verified; stop for root integration and independent review. No task/beta closure.",
+  "source_base": "d205756b6c61a2813a67920d4d9830e8241daa87",
+  "final_sources": {
+    "src/clap-adapter/tests/internal/trigger_instances_native.rs": "aa586418c0605ef7548cf6cae48a018655275fb93a3468067565743710a5075a",
+    "src/clap-adapter/tests/trigger_parameters.rs": "66eff974299cb0f2b72d877bb6cef57ee9906e1a7af0e64eef86a72d9b9004e6"
+  },
+  "author_scope": "Only new trigger_instances_native.rs and minimal module include in trigger_parameters.rs; production unchanged.",
+  "selector": "instances_native::copied_native_two_instances_keep_edits_audio_and_editors_independent",
+  "ordinary_exact_case": {
+    "case": "instances_native::copied_native_two_instances_keep_edits_audio_and_editors_independent",
+    "command": [
+      "/tmp/dandrum-lanes/cache-editor-guard/release/deps/trigger_parameters-8fc57b2ef83fb6e4",
+      "instances_native::copied_native_two_instances_keep_edits_audio_and_editors_independent",
+      "--exact",
+      "--show-output",
+      "--test-threads=1",
+      "--ignored"
+    ],
+    "exit": 0,
+    "seconds": 9.01620578597067
+  },
+  "criterion_assertions": [
+    "One shared Entry, two factory instances, distinct wire instance identities and separately authenticated live views.",
+    "Strict copied PCM16 mono48k WAV parsing, full12000-frame kick independently derived, literal signed anchors, nondefault A0.5/B2 gains at offsets5/3, complete stereo output and region-end silence.",
+    "Real rendered scalar gestures, each own balanced Begin/Value/End, physical and normalized feedback; no structural journal pollution.",
+    "A36->60->62 with history2; B36->61 with history1; owned request IDs and revision checks; initial setup views reopen from accepted native history.",
+    "A actual production header Undo restores exact earlier A60 YAML and saved bytes, history undo1/redo1, signed60 and silent62.",
+    "B original autonomous worker emits61 every64x256 blocks, never reset/stopped/reconfigured or gated on A phases; every frame independently checked.",
+    "A complete weak/XID-verified GUI replacement preserves state and changes scoped attachment; B full snapshot, DTO, saved bytes, composite view identity and child remain unchanged.",
+    "A worker reset clears live voice, preserves session/scalar, accepts fresh full-wave note; then exclusive stop/join/matches/deactivate/reactivate48k max512 actually renders512 silence and complete fresh waveform.",
+    "Both endpoint returns/deactivations and separate child cleanup; shared Entry last. Fixed budgets, global32 commands, max2000 callbacks per instance across A reactivation, monotonic host frames,10ms pacing and500ms callback watchdog."
+  ],
+  "verification": {
+    "canonical_characterization": "characterize-native.json (0.02s test; unchanged release; preliminary source frozen separately)",
+    "native": "20/20 final-native-regressions.json",
+    "gui": "5/5 final-gui-regressions.json",
+    "fast": "13/13 final-fast-regressions.json",
+    "format": "final-fmt.json exit0",
+    "strict_clippy": "final-clippy.json exit0",
+    "LLVM": "final-llvm-native.json exit0; final-test-coverage-execution-binding.json and coverage-binding.json; exact final test ELF plus hash-verified immutable production instrumentation",
+    "mutation": "Excluded by assignment"
+  },
+  "coverage_scope": "One exact final success case. Reused production DSO/editor instrumentation matches unchanged production source/compiler/extern hashes. Newly compiled exact test ELF/profile hashes and LLVM tools bound. Ordinary DSO restored in finally. No full-owner claim.",
+  "new_test_coverage": {
+    "filename": "/tmp/dandrum-lanes/runtime/src/clap-adapter/tests/internal/trigger_instances_native.rs",
+    "summary": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 49,
+        "covered": 46,
+        "percent": 93.87755102040816
+      },
+      "instantiations": {
+        "count": 49,
+        "covered": 46,
+        "percent": 93.87755102040816
+      },
+      "lines": {
+        "count": 762,
+        "covered": 729,
+        "percent": 95.66929133858267
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 1346,
+        "covered": 1294,
+        "notcovered": 52,
+        "percent": 96.13670133729569
+      }
+    }
+  },
+  "coverage_gaps": [
+    "Unknown WAV chunk and malformed-fixture assertion defenses not exercised by canonical fixture.",
+    "Start/process failure, wrong waveform/unexpected automation/watchdog/budget failure, caught worker panic and cleanup error branches unexecuted in final success coverage.",
+    "Job-pending and Promise-await loop portions are timing-dependent; one measured success run may complete them immediately.",
+    "Earlier setup-timeout revision exercised actual two-worker return/deactivation and view cleanup; it does not make final-source exceptional branches covered."
+  ],
+  "retained_failures": [
+    "joined-build: test harness mutable-borrow compilation error, corrected.",
+    "joined-native: DISPLAY unset in tool environment; joined-native-x11: sandbox EPERM. Assigned explicit environment plus approved native launch resolves setup.",
+    "joined-native-host:20s shared deadline while waiting for stale React header history; native maps and both PCM streams correct. Root-approved setup-only close/reopen reconciles React before B baseline. No behavior RED or production fix claimed."
+  ],
+  "refactor_review": {
+    "production": "No production defect exposed; no production change/extraction warranted.",
+    "tests": "Kept one joined case because B worker/view continuity is the criterion. Local bounded worker/main ownership helpers and receipts keep shared verified helpers untouched; reviewed whole-case command/frame accounting and strengthened Undo exact-state comparison. No new general host framework or duplicate slow test."
+  },
+  "limitations": [
+    "Synthetic paced callbacks, not physical audio-device deadlines or DAW acceptance.",
+    "Foreign permanently blocked calls remain bounded by fresh-process outer60s timeout; no global framework quiescence claim.",
+    "Root owns CMake/Python registration, tracker/spec/docs, integration, independent review and publication."
+  ],
+  "handback": {
+    "sources": "Explicitly returned to root; no further author edits planned.",
+    "ordinary_cache": "/tmp/dandrum-lanes/cache-editor-guard returned idle",
+    "LLVM_cache": "/tmp/dandrum-lanes/cache-host-snapshot-cov returned idle",
+    "active_commands_or_builders": [],
+    "source_resource_main_cache_audit": "final-restoration-audit.json",
+    "known_preserved_runtime_untracked_cache_entries": 1766,
+    "primary_main": "68dd6553a2f07e71e2fe09ee1d7094d518559937",
+    "primary_main_status": ""
+  }
+}

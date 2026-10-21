@@ -1808,3 +1808,46 @@ all51/spec-coverage gates pass without task/spec/map changes. Independently edit
 native instances, OS input, validator limitation and later VST3/standalone/DAW /
 installed beta gates remain open. Review/publication receipts remain in the sole
 tracker; caches and clean main68dd655 are preserved, mutation excluded.
+
+
+## Independently edited native instances — 22 October 2026
+
+One shared copied-release Entry now has an actual two-instance acceptance case.
+A uses level 0.5 and mappings 36→60→62/history2; B uses level 2 and mapping61/history1.
+Real React scalar gestures are independently balanced and do not enter structural
+history. Both setup views reopen from accepted native state before B's final
+baseline. This corrects a retained harness assumption: direct backend mapping
+calls do not perform NativeEngine's React history refresh. No product defect or
+production repair is claimed.
+
+The independently parsed original PCM16 kick supplies a full 12,000-frame stereo
+oracle, literal signed anchors, onset offsets and region-end silence. B's original
+worker subsequently renders note61 every64 blocks without reset or waiting for A.
+A's actual header Undo restores exact earlier YAML/saved bytes, view replacement
+changes only its attachment, worker reset clears its voice, and returned ownership
+permits actual 512-frame reactivation. B's snapshot, feedback, saved bytes, child
+and advancing waveform remain intact after every intervention. Both endpoint
+returns and child-before-parent/Entry cleanup are checked.
+
+[Portable evidence](evidence/trigger-clap-two-instances-2026-10-22/README.md)
+records author20 native/five GUI/13 fast/fmt/strictClippy checks and root28 maintained
+CTests in43.978s, registration RED/GREEN, three guards and five-artifact linkage.
+Root's case observes A549×256 then38×512, B590×256 and no mismatch/failure; maximum
+paced completion gap is below10.75ms. This is synthetic processing, not physical
+device cadence. Command/callback budgets and true operation intervals remain
+explicit; no forced overlap of every short synchronous call is claimed.
+
+Root independently reproduces warning-free LLVM from two bound ELFs/profiles.
+The new test has729/762 lines,1294/1346 regions and46/49 functions executed. Failure,
+malformed-fixture, cleanup and timing-dependent pending defenses remain disclosed.
+Production instrumentation is qualified unchanged-input reuse; final test source
+and ELF are new. Ordinary/Cargo-test/instrumented artifact identities stay separate.
+Indexed source/log archives preserve preliminary failures without mislabeling RED.
+Prior headless source-free evidence remains qualified76-input reuse, not native
+product readiness. Strict active/all51/spec-coverage pass without task/map changes.
+
+This partial4.3 checkpoint closes no task or beta. The lost-ack second-instance
+clause, live-editor invalid-state feedback, maintained native-product/source-free
+wiring, validator assessment and later full-beta formats/devices/DAW/install gates
+remain. Review/publication live in the sole tracker. Main68dd655 and all reusable
+caches are preserved; mutation remains excluded.

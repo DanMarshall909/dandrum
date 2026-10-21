@@ -1,0 +1,277 @@
+{
+  "receipts": [
+    {
+      "side": 0,
+      "first_frame": 0,
+      "blocks": 549,
+      "frames": 140544,
+      "max_duration": "103.989\u00b5s",
+      "max_gap": "10.674038ms",
+      "failure": "None",
+      "mismatch": "None"
+    },
+    {
+      "side": 0,
+      "first_frame": 140544,
+      "blocks": 38,
+      "frames": 19456,
+      "max_duration": "176.108\u00b5s",
+      "max_gap": "10.745717ms",
+      "failure": "None",
+      "mismatch": "None"
+    },
+    {
+      "side": 1,
+      "first_frame": 0,
+      "blocks": 590,
+      "frames": 151040,
+      "max_duration": "118.999\u00b5s",
+      "max_gap": "10.674418ms",
+      "failure": "None",
+      "mismatch": "None"
+    }
+  ],
+  "operations": [
+    [
+      "gui.create",
+      0,
+      5477,
+      5483
+    ],
+    [
+      "gui.set_parent",
+      0,
+      5483,
+      243655
+    ],
+    [
+      "gui.create",
+      1,
+      958691,
+      958693
+    ],
+    [
+      "gui.set_parent",
+      1,
+      958693,
+      962244
+    ],
+    [
+      "gui.destroy",
+      0,
+      1819231,
+      1819744
+    ],
+    [
+      "gui.create",
+      0,
+      1819891,
+      1819892
+    ],
+    [
+      "gui.set_parent",
+      0,
+      1819892,
+      1823116
+    ],
+    [
+      "gui.destroy",
+      1,
+      2388376,
+      2388797
+    ],
+    [
+      "gui.create",
+      1,
+      2388962,
+      2388963
+    ],
+    [
+      "gui.set_parent",
+      1,
+      2388963,
+      2392805
+    ],
+    [
+      "setup complete",
+      0,
+      2943501,
+      2943502
+    ],
+    [
+      "activate",
+      0,
+      2943502,
+      2945726
+    ],
+    [
+      "activate",
+      1,
+      2945772,
+      2948083
+    ],
+    [
+      "command/ack",
+      0,
+      2948121,
+      2958307
+    ],
+    [
+      "command/ack",
+      0,
+      3438567,
+      3448751
+    ],
+    [
+      "command/ack",
+      0,
+      3922417,
+      3932569
+    ],
+    [
+      "command/ack",
+      1,
+      4413549,
+      4423957
+    ],
+    [
+      "command/ack",
+      1,
+      4903072,
+      4913610
+    ],
+    [
+      "command/ack",
+      1,
+      5395646,
+      5406098
+    ],
+    [
+      "command/ack",
+      1,
+      5911508,
+      5916609
+    ],
+    [
+      "header Undo accepted",
+      0,
+      5921744,
+      5975477
+    ],
+    [
+      "command/ack",
+      0,
+      6018700,
+      6028841
+    ],
+    [
+      "command/ack",
+      0,
+      6510531,
+      6520678
+    ],
+    [
+      "gui.destroy",
+      0,
+      7219043,
+      7219577
+    ],
+    [
+      "gui.create",
+      0,
+      7242036,
+      7242037
+    ],
+    [
+      "gui.set_parent",
+      0,
+      7242037,
+      7264357
+    ],
+    [
+      "command/ack",
+      0,
+      7869018,
+      7874087
+    ],
+    [
+      "command/ack",
+      0,
+      7874087,
+      7884231
+    ],
+    [
+      "command/ack",
+      0,
+      7957956,
+      7968102
+    ],
+    [
+      "command/ack",
+      0,
+      8517142,
+      8527540
+    ],
+    [
+      "stop/join",
+      0,
+      8527540,
+      8534888
+    ],
+    [
+      "deactivate",
+      0,
+      8534888,
+      8534894
+    ],
+    [
+      "activate",
+      0,
+      8557280,
+      8558851
+    ],
+    [
+      "command/ack",
+      0,
+      8622948,
+      8633091
+    ],
+    [
+      "gui.destroy",
+      0,
+      8927132,
+      8927516
+    ],
+    [
+      "gui.destroy",
+      1,
+      8944444,
+      8944730
+    ],
+    [
+      "stop/join",
+      0,
+      8945044,
+      8948758
+    ],
+    [
+      "deactivate",
+      0,
+      8948758,
+      8948761
+    ],
+    [
+      "stop/join",
+      1,
+      8948762,
+      8952380
+    ],
+    [
+      "deactivate",
+      1,
+      8952380,
+      8952382
+    ]
+  ],
+  "scope": "Root actual maintained two-instance exact process; measured paced synthetic callback timing, not physical-device deadlines. Actual operation intervals reported without forcing universal short-call overlap."
+}
