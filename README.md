@@ -184,8 +184,10 @@ for native lifecycle and parameter integration. Native parameter tests cover
 reads, balanced host-accepted gestures, host feedback to the rendered control
 and parameter Undo. Structural recovery tests now cover persistent worker
 servicing, mapping after lost acknowledgement and complete view loss, retained
-job status, and the recreated production header's native Undo. Required
-heartbeat/expiry and held-note/gesture destruction remain open in G3.
+job status, and the recreated production header's native Undo. Native note
+tests cover authenticated heartbeat renewal and live-attachment expiry while
+host MIDI remains audible. Held-note/gesture destruction and continuous
+create/destroy/recreate audio remain open in G3.
 The GUI is not ready for instrument editing or normal playing; the maintained
 CMake product above continues to use the headless `trigger` feature.
 

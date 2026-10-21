@@ -82,8 +82,8 @@ fn current_dispatch_preserves_snapshot_notes_admission_and_capability_errors() {
         "accepted"
     );
     assert_eq!(
-        call(&mut controller, &attachment, 4, "noteHeartbeat", json!([]))["error"]["code"],
-        "capabilityUnavailable"
+        call(&mut controller, &attachment, 4, "noteHeartbeat", json!([]))["status"],
+        "accepted"
     );
     assert_eq!(
         call(
@@ -94,6 +94,24 @@ fn current_dispatch_preserves_snapshot_notes_admission_and_capability_errors() {
             json!(["drums.level", 2, 1])
         )["error"]["code"],
         "invalidArguments"
+    );
+    assert_eq!(
+        call(&mut controller, &attachment, 4, "noteHeartbeat", json!([]))["error"]["code"],
+        "duplicateRequest"
+    );
+    assert_eq!(
+        call(&mut controller, &attachment, 6, "noteHeartbeat", json!([1]))["error"]["code"],
+        "invalidArguments"
+    );
+    assert_eq!(
+        call(
+            &mut controller,
+            &attachment,
+            7,
+            "requestSourceWaveform",
+            json!([])
+        )["error"]["code"],
+        "capabilityUnavailable"
     );
     assert_eq!(controller.parameter_state().sequence, 0);
 }

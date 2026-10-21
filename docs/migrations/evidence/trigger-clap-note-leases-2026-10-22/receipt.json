@@ -1,0 +1,50 @@
+{
+  "base": "0dc1f7a9814a238edca21c22b67ca81e411d1994",
+  "scope": "Partial native note renewal and periodic expiry checkpoint; no task or beta closure.",
+  "files": {
+    "README.md": {
+      "sha256": "692d97edb417d7549d9ad07ed548677f109ec7e67ff493f89b6fc1945364dc6e",
+      "bytes": 4341
+    },
+    "author-archive.json": {
+      "sha256": "890388bdc852b50a663621e7515cdbb98a9b4621bf8dc602a8fda2e0b406b0d9",
+      "bytes": 192
+    },
+    "author-handoff.md": {
+      "sha256": "1ad745f57823d6ca30ed50be134628456cdf9baf77d39b57e0f298a0e4fe3d77",
+      "bytes": 8861
+    },
+    "author-raw.tar.gz": {
+      "sha256": "0bd31f4ddfde3c9d35e5386c0fe794ff35acb9cbd3ea063063f918ea7d09513b",
+      "bytes": 913728
+    },
+    "root-actual-cargo-bindings.json": {
+      "sha256": "2f9c520e0bb4f008f4aeb42109090ab05adf80dff0aef8bb09e82ba66c23b0a7",
+      "bytes": 8079
+    },
+    "root-archive.json": {
+      "sha256": "645eaea24523db9d31b58f44be661f790c54ee95935b6065ddbc8bb8f960c74f",
+      "bytes": 189
+    },
+    "root-build-boundary-reuse.json": {
+      "sha256": "5b48ad7b003ced4c99da816910454a606265f868453d4f798de95812a6865dfb",
+      "bytes": 10264
+    },
+    "root-final-coverage-assessment.json": {
+      "sha256": "a330fa7719b3a66a5c683a78073f65f21f92b65c7757d2fa0413c431eb3f2b32",
+      "bytes": 1357
+    },
+    "root-linkage-audit.json": {
+      "sha256": "266d6a202aa122d55b88cf5a454cc1f33a41552f04d63b6caa3f6b72b86b25f2",
+      "bytes": 6520
+    },
+    "root-native-result.json": {
+      "sha256": "e7ac71a6804167a20081f4caa5c50feaf22e8320a49fb0447dca68d285b5d866",
+      "bytes": 2764
+    },
+    "root-raw.tar.gz": {
+      "sha256": "84ca4dc778a3eb5065d3224991313a285395e3e0ead8b007c9e340c8ece8801c",
+      "bytes": 132629
+    }
+  }
+}

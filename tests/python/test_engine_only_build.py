@@ -377,6 +377,12 @@ class ClapProofBuildTest(EngineBuildFixture):
                 "copied_native_invalid_stopped_flush_preserves_uncollected_automation_ownership",
             "trigger-clap-native-parameter-structural-session":
                 "structural_native::copied_native_mapping_survives_lost_reply_and_view_loss",
+            "trigger-clap-native-parameter-note-hold":
+                "note_native::copied_native_gated_sample_outlasts_short_fixture_and_releases",
+            "trigger-clap-native-parameter-note-heartbeat":
+                "note_native::copied_native_heartbeat_renews_held_note_past_original_deadline",
+            "trigger-clap-native-parameter-note-expiry":
+                "note_native::copied_native_live_attachment_expires_renewed_note_and_preserves_host_voice",
         }
         for name, case in parameter_cases.items():
             with self.subTest(parameter_case=name):

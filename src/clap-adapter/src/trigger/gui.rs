@@ -142,6 +142,9 @@ impl Core {
         }
     }
     pub(super) fn service_editor(&self) {
+        if let Ok(mut controller) = self.controller.try_borrow_mut() {
+            let _ = controller.service_editor_notes(Instant::now());
+        }
         self.service_structural_jobs();
         self.service_automation();
         for _ in 0..64 {
@@ -360,7 +363,9 @@ fn dispatch(
                     Err(error) => Err(command_error(error)),
                 }
             }
-            EditorCommand::NoteOn { .. } | EditorCommand::NoteOff { .. } => controller
+            EditorCommand::NoteOn { .. }
+            | EditorCommand::NoteOff { .. }
+            | EditorCommand::NoteHeartbeat => controller
                 .apply_editor_note(&request, Instant::now())
                 .map(|()| serde_json::Value::Null)
                 .map_err(|error| match error {
@@ -374,7 +379,6 @@ fn dispatch(
                 .apply(&request)
                 .map(parameter_reply)
                 .map_err(command_error),
-            _ => Err(ProtocolError::CapabilityUnavailable),
         },
         Ok(Admission::Duplicate { .. }) => Err(ProtocolError::DuplicateRequest),
         Err(ParameterError::Protocol(error)) => Err(error),

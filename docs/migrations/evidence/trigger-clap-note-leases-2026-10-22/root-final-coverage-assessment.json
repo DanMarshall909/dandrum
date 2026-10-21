@@ -1,0 +1,34 @@
+{
+  "source_gui_sha256": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5",
+  "runs": {
+    "final-native": {
+      "elf_sha256": "c01945a5291f7f1df1e6af5ec9851aad61371c1de1f0c154a6227b27763396d9",
+      "export_sha256": "c8e543794a165e3ed4f7c73ded6d7536ecf06cb0ea902f56dc69ea72e1782e78",
+      "profile_files": 3
+    },
+    "final-owner": {
+      "elf_sha256": "aa4e83e197e568794ac4518c38e814f76295988c04750a716711e571d138dad0",
+      "export_sha256": "5a7f06fb98e3ddeac240bcdc296cbc0674e40887d75432114069625235b64d07",
+      "profile_files": 27
+    }
+  },
+  "aggregate": {
+    "periodic_expiry": {
+      "distinct_source_regions": 5,
+      "positive_source_regions": 5,
+      "per_run_positive": {
+        "final-native": 4,
+        "final-owner": 5
+      }
+    },
+    "note_dispatch_call_chain": {
+      "distinct_source_regions": 6,
+      "positive_source_regions": 6,
+      "per_run_positive": {
+        "final-native": 6,
+        "final-owner": 6
+      }
+    }
+  },
+  "qualification": "Independent root rehash and file-identified code-region union from final native+owner runs, before ownership handback; no branch/every-instantiation/wholeGUI or assertion claim. Existing owner busy-borrow assertions supply deferred service path; native signed two-voice/host-release and authenticated retained attachment assert expiry behavior."
+}

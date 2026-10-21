@@ -1645,3 +1645,42 @@ headless; VST3, standalone devices, named DAW and installed offline artifacts
 remain required for the full beta. Independent review and normal-hook publication
 are recorded separately in the live tracker. Mutation stays excluded and all
 reusable caches are preserved.
+
+
+## Native note renewal and expiry checkpoint — 22 October 2026
+
+The developer-only editor now dispatches authenticated heartbeat through the
+existing native note controller. Its existing weak GLib source also calls the
+bounded monotonic expiry service using a nonblocking main-thread borrow. The
+shared typed command match is exhaustive; unsupported optional methods retain
+protocol-level capability errors. No new protocol, dependency or policy owner
+is introduced.
+
+A copied package uses a composed gated sample voice with480000 frames, literal
+signed onset-0.5 and tail-0.125. Every test bounds processed frames below half the
+sample length, excluding natural exhaustion as an expiry oracle. Heartbeat
+renewal is tested after the original deadline with a real unused-pitch NoteOff
+sweep. Separate periodic expiry keeps the actual attachment live and an ordinary
+host MIDI61 voice held: signed output changes from-0.25 to host-only-0.125, then
+to zero on host release. Output is captured before later browser/main callbacks;
+an authenticated snapshot afterward confirms that the attachment still works.
+
+[Portable evidence](evidence/trigger-clap-note-leases-2026-10-22/README.md) retains
+separate heartbeat and periodic-expiry RED/GREEN cycles, setup/calibration limits,
+source snapshots and exact ELF/profile bindings. Author checks pass15 native
+cases,13 adapter owner tests,14 core note tests, formatting and strict Clippy.
+Root independently passes23 maintained native CTests,154 host tests/doctests,
+three affected configuration/development-graph guards, linkage and strict spec
+checks. Final native+owner LLVM executes all5 new periodic-service source regions
+and all6 shared note-dispatch call-chain regions; this is not whole-GUI or branch
+coverage. The prior eight-case headless build evidence is reused with an explicit
+76-input comparison and the deliberately removed copied-asset limitation.
+
+The unmodified production app is driven through authenticated native methods;
+physical keyboard/pointer behavior and uninterrupted lifecycle audio are not
+claimed. Held-note/gesture destruction, creation failure and independent edited
+native instances remain open, as does the fractional-rate validator failure.
+This does not close tasks3.2/3.3/4.2/4.3 or the full beta. VST3, standalone devices,
+named DAW and installed offline artifacts remain required. Independent review
+and normal publication are separate live-tracker receipts. Main stays clean68dd655;
+mutation is excluded and reusable caches are preserved.

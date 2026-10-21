@@ -1468,3 +1468,6 @@ fn parameter_callback_allocator_audit_on_host_thread() {
 
 #[path = "internal/trigger_structural_native.rs"]
 mod structural_native;
+
+#[path = "internal/trigger_note_native.rs"]
+mod note_native;
