@@ -3,9 +3,42 @@ import assert from 'node:assert/strict';
 import {parse,stringify} from 'yaml';
 import {session,connection,backend,yaml} from './native-fixture.mjs';
 import {NativeEngine} from '../engine/native-engine.mjs';
+import {createWebViewTransport} from '../engine/native-webview-transport.mjs';
 import {entityDelta} from '../engine/entity-delta.mjs';
 import {Store} from '../engine/store.mjs';
 const setup=async t=>{const bridge=backend(),engine=new NativeEngine({backend:bridge,pollMs:0,heartbeatMs:0});await engine.initialize();t.after(()=>engine.close());return {engine,bridge};};
+
+test('native command failures preserve their useful message through the webview transport',async t=>{
+  const failures=[
+    ['code-only native rejection',{kind:'reply',error:{code:'capabilityUnavailable'}},'capabilityUnavailable'],
+    ['native rejection message',{kind:'reply',error:{code:'nativeRejected',message:'Parameter is unavailable'}},'Parameter is unavailable'],
+    ['Error thrown while posting',{kind:'throw',error:new Error('IPC unavailable')},'IPC unavailable'],
+    ['string thrown while posting',{kind:'throw',error:'IPC unavailable'},'IPC unavailable'],
+  ];
+  for(const [name,failure,expected] of failures){
+    await t.test(name,async subtest=>{
+      let transport;
+      transport=createWebViewTransport({instanceId:'17',attachmentId:'23',postMessage:raw=>{
+        const request=JSON.parse(raw);
+        if(request.method==='setParameter'){
+          if(failure.kind==='throw')throw failure.error;
+          transport.receive(JSON.stringify({version:1,instanceId:'17',attachmentId:'23',requestId:request.requestId,
+            status:'rejected',error:failure.error}));
+          return;
+        }
+        const result=request.method==='getSamplerSession'?session():true;
+        transport.receive(JSON.stringify({version:1,instanceId:'17',attachmentId:'23',requestId:request.requestId,status:'accepted',result}));
+      }});
+      const engine=new NativeEngine({backend:transport.descriptor.backend,pollMs:0,heartbeatMs:0});
+      subtest.after(()=>{engine.close();transport.dispose();});
+      await engine.initialize();
+      const events=[];engine.on('patch',event=>events.push(event));
+      await assert.rejects(engine.setParam('drums.level',.41),reason=>
+        failure.kind==='reply'?reason.code===failure.error.code:reason===failure.error);
+      assert.deepEqual(events.filter(event=>event.phase==='failed').map(event=>event.message),[expected]);
+    });
+  }
+});
 
 test('native window title follows accepted patch names, undo and external replacement',async t=>{
   const {engine,bridge}=await setup(t),before=engine.getPatch();

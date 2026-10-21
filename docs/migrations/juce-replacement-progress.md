@@ -1350,3 +1350,34 @@ Task 3.3 stays open: actual native service, notes/heartbeat/controller, semantic
 detach and joined Wry/CLAP acceptance still follow. Full beta continues through
 VST3, standalone, named-DAW and installed offline/native proof. Main remains
 clean68dd655 and mutation is excluded.
+
+
+## Present native command rejection codes — 21 October 2026
+
+Production NativeEngine command failures now display the supplied message or
+native error code, including the real code-only rejection shape. Caller rejection
+and existing close/retired-attachment filtering remain. The public transport test
+covers code-only and message replies plus Error and string posting failures.
+The first two cases fail against the former reporter with [object Object]; the
+latter two characterize existing behavior.
+
+All 151 Node tests, 70-file React checks and both bundle builds pass on the actual
+host. The 40-test owner suite reports 100% lines, 82.20% branches and 87.10%
+functions. Baseline coverage was missed before implementation: the exact former
+sources were measured retrospectively, then final bytes restored and full gates
+rerun. This is an explicit workflow gap. Initial sandbox-only nested Node EPERM
+and a namespace-dependent resource sample are preserved with corrections; no
+component guard was changed. Browser tests were not rerun for this presentation
+change. No module extraction was justified for this small existing boundary.
+
+[Portable evidence](evidence/trigger-native-rejection-message-2026-10-21/receipt.json)
+retains original logs, source preimages, corrections and bundle artifacts. All
+590 current headless inputs equal the published worker release map, qualifying
+reuse of its actual 107 ordinary plus two doctest source-free release proof;
+no duplicate fresh run is claimed.
+
+Independent completion review passed for the frozen native rejection presentation source/evidence candidate; normal-hook publication remains.
+Actual native delivery, controller leases, semantic detach and CLAP wiring remain
+open. Task 3.3 and the full beta remain open through VST3, standalone, named DAW,
+installed offline artifacts and native lifecycle proof. Main remains clean68dd655;
+mutation remains excluded.

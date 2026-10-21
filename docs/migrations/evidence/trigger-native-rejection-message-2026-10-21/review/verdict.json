@@ -1,0 +1,17 @@
+{
+  "verdict": "PASS",
+  "initial_manifest_sha256": "daaf39c64635bdffb6f8df8caca7e298dd33564ae9ff372a5f7939682fc3be50",
+  "base": "0645f8ac844f3acdfdca7878c8b89cf1d3a7ddbf",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "0645f8ac844f3acdfdca7878c8b89cf1d3a7ddbf",
+  "candidate_paths": 9,
+  "required_corrections": [],
+  "scope": "NativeEngine command rejection presentation only; task3.3 and full beta remain open",
+  "same_reviewer_final_precommit_gate": "pending actual final tree and named validations",
+  "limitations": [
+    "Retrospective baseline coverage does not restore required pre-change chronology",
+    "Whole-owner branch/function coverage remains incomplete",
+    "Browser/native/controller/CLAP acceptance not rerun or claimed",
+    "Mutation excluded by explicit user instruction"
+  ]
+}

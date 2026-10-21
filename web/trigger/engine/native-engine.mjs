@@ -93,7 +93,14 @@ export class NativeEngine {
   }
   on(event,listener){if(!this.listeners.has(event))this.listeners.set(event,new Set());this.listeners.get(event).add(listener);return()=>this.listeners.get(event)?.delete(listener);}
   emit(event,value){if(!this.closed)for(const listener of this.listeners.get(event)??[])listener(value);}
-  report(error){if(!this.closed)this.emit('patch',{phase:'failed',message:error instanceof Error?error.message:String(error)});}
+  report(error){
+    if(this.closed)return;
+    const message=error instanceof Error?error.message
+      :typeof error?.message==='string'?error.message
+      :typeof error?.code==='string'?error.code
+      :String(error);
+    this.emit('patch',{phase:'failed',message});
+  }
   async publishWindowTitle(){
     if(!this.capabilities.windowTitle)return;
     try{await this.invoke('setTriggerWindowTitle',this.patch.name);}

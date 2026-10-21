@@ -1,0 +1,333 @@
+{
+  "source": "/tmp/dandrum-lanes/evidence-frontend-rejection-message",
+  "archive": "author-raw.tar.gz",
+  "archive_sha256": "0972947690d00cd428b1ef74fa07faa9333b14d6925f081f061bec144a79569f",
+  "members": 65,
+  "artifacts": [
+    {
+      "path": "HANDOFF.md",
+      "sha256": "2b6786dbe562a6ba71eae04bf1fe8f81d9b20872e8270e78ba8b237a13df8beb",
+      "bytes": 7903
+    },
+    {
+      "path": "actual-host-post-check-resource-process.log",
+      "sha256": "e54eab25362b72099da8ebb11ef0bdfae489e7002fdc37b5ee285e0ac1e15fbb",
+      "bytes": 1343
+    },
+    {
+      "path": "actual-host-resource-process.log",
+      "sha256": "af27af7c0699d43427869f897bd20dc70e4a427f89470d2e35a4586f9c25232b",
+      "bytes": 1032
+    },
+    {
+      "path": "baseline-coverage-receipt.txt",
+      "sha256": "693d5d1bfc4b4d5ea0007f2a12e7e1380c4d710045395881cfc0c927121f808a",
+      "bytes": 2921
+    },
+    {
+      "path": "baseline-focused.log",
+      "sha256": "1873caa9d08c936c892942412a1cf147b2496f5b8034c3647099ae3211ad08e5",
+      "bytes": 248
+    },
+    {
+      "path": "baseline-native-engine-coverage-retrospective.log",
+      "sha256": "09227e3c70e7b7703ca84a7f801255317ac8a5e20c06e4268ab90722f77facd8",
+      "bytes": 7097
+    },
+    {
+      "path": "baseline-source/native-engine.mjs",
+      "sha256": "fdb765ac93834b14922d1577475c8d5e2a1078f03fb0fa6fd8a4410f81efec16",
+      "bytes": 20976
+    },
+    {
+      "path": "baseline-source/native-engine.test.mjs",
+      "sha256": "71fd785bce9da4ee62e98e27d809d97232000171249688f4abb78062d16e0be6",
+      "bytes": 33456
+    },
+    {
+      "path": "check-components.log",
+      "sha256": "661843f618a3c6ecc0e767c3063f4bbe50f35601210c63032c3daa0b571873f1",
+      "bytes": 84
+    },
+    {
+      "path": "component-guard.log",
+      "sha256": "6e37cb8a09c49d3c3ad24ec7bc92c2914f3efa2036fc7c58cdf942e407ff2276",
+      "bytes": 908
+    },
+    {
+      "path": "final-full-npm-test-host.log",
+      "sha256": "fd8966c3bf14218cdb858709bf372056c5cab3d1ff0079f100bbb2e06063f5d8",
+      "bytes": 38106
+    },
+    {
+      "path": "final-green-focused-host.log",
+      "sha256": "fb13d06226fbc3e80a91d849b0cb9248c7d6885ef4879788d65415f310acbf28",
+      "bytes": 492
+    },
+    {
+      "path": "final-npm-check-host.log",
+      "sha256": "b0bab331c63867fa869f03aeff4aeef673d6ec90d098c5fd740844478ed683dc",
+      "bytes": 168
+    },
+    {
+      "path": "final-source/native-engine.mjs",
+      "sha256": "73f2f68dedc9cdb6a86e77ae9b3741fb26aab9dea7faf1234fe980cc6b96f4ee",
+      "bytes": 21123
+    },
+    {
+      "path": "final-source/native-engine.test.mjs",
+      "sha256": "50603050a00e0343c73af2efd99f1695316e37033acca148db86c3dda7e078e0",
+      "bytes": 35432
+    },
+    {
+      "path": "full-npm-test-host.log",
+      "sha256": "0abad7f912ec99ca885c0e9d273b2c74c4b56af84549697526251d0c1a52cb0a",
+      "bytes": 38104
+    },
+    {
+      "path": "full-npm-test.log",
+      "sha256": "1db6dc5bc2cfe22b528b2095e4a078cbf2d92ecab801eddbf904a850aabe3b10",
+      "bytes": 3027
+    },
+    {
+      "path": "green-focused.log",
+      "sha256": "c74d1f8fc9b19d3d6b0496edcc6d81d6877cb1be180045e0c522f4d1c8b6d3c2",
+      "bytes": 4353
+    },
+    {
+      "path": "green-host-focused.log",
+      "sha256": "cf12366cd8bd15af3334b63bb143652b0ee1e37d6ff67d79a8dc665a354851ee",
+      "bytes": 491
+    },
+    {
+      "path": "native-build.log",
+      "sha256": "700fa7d31396bd5f4e724855ca5aa02c6e38a4c0bdb341206b2d298b2a238ba4",
+      "bytes": 1103
+    },
+    {
+      "path": "native-build/app.css",
+      "sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5",
+      "bytes": 11023
+    },
+    {
+      "path": "native-build/app.js",
+      "sha256": "4b9ce5a356fea5f22703f9046c77a80ac616c00242348a12fe81f58fe4f760f2",
+      "bytes": 812751
+    },
+    {
+      "path": "native-build/fonts/.gitattributes",
+      "sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616",
+      "bytes": 77
+    },
+    {
+      "path": "native-build/fonts/3386a05f6ece969e.ttf",
+      "sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160",
+      "bytes": 112204
+    },
+    {
+      "path": "native-build/fonts/6098b66ce7d608dc.ttf",
+      "sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef",
+      "bytes": 88644
+    },
+    {
+      "path": "native-build/fonts/74103fd6d41bc32c.ttf",
+      "sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154",
+      "bytes": 85776
+    },
+    {
+      "path": "native-build/fonts/91c841fdfa8e7b94.ttf",
+      "sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc",
+      "bytes": 81924
+    },
+    {
+      "path": "native-build/fonts/barlow-OFL.txt",
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "bytes": 4377
+    },
+    {
+      "path": "native-build/fonts/barlowsemicondensed-OFL.txt",
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "bytes": 4377
+    },
+    {
+      "path": "native-build/fonts/c15439e7a03af571.ttf",
+      "sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c",
+      "bytes": 85876
+    },
+    {
+      "path": "native-build/fonts/c2b046235fb4c2f8.ttf",
+      "sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9",
+      "bytes": 83412
+    },
+    {
+      "path": "native-build/fonts/cb75439ae401f776.ttf",
+      "sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da",
+      "bytes": 86708
+    },
+    {
+      "path": "native-build/fonts/df54dbfafba61d49.ttf",
+      "sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8",
+      "bytes": 112160
+    },
+    {
+      "path": "native-build/fonts/jetbrainsmono-OFL.txt",
+      "sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d",
+      "bytes": 4399
+    },
+    {
+      "path": "native-build/index.html",
+      "sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26",
+      "bytes": 326
+    },
+    {
+      "path": "native-engine-coverage-host.log",
+      "sha256": "3c80c3d7fffe19afc41d397ae6b94d7e514f88b32898b759bbef568db2fffa2e",
+      "bytes": 7715
+    },
+    {
+      "path": "native-engine-coverage.log",
+      "sha256": "fad9c08152f4e75be3d3bae002a10708b571584afa7985f8803a5f4586f6b697",
+      "bytes": 7709
+    },
+    {
+      "path": "npm-check-host.log",
+      "sha256": "b0bab331c63867fa869f03aeff4aeef673d6ec90d098c5fd740844478ed683dc",
+      "bytes": 168
+    },
+    {
+      "path": "npm-check.log",
+      "sha256": "b0bab331c63867fa869f03aeff4aeef673d6ec90d098c5fd740844478ed683dc",
+      "bytes": 168
+    },
+    {
+      "path": "preview-build.log",
+      "sha256": "10225c3ce625efadbc330b5e758070dd2aec3fc5f3d1f2f11f73391333b881fe",
+      "bytes": 1541
+    },
+    {
+      "path": "preview-build/assets/catalog-D5WtGZ3f.css",
+      "sha256": "75419d57716ebc8eae5d0c93600b0d95552b4cfe09660ea6ca2aeca0b2614709",
+      "bytes": 2026
+    },
+    {
+      "path": "preview-build/assets/catalog-DEB-rez9.js",
+      "sha256": "25caceff6d8f52dd9d7b19a2f686fef668b09e72dfb57ddab9b2abbccf9b3254",
+      "bytes": 17810
+    },
+    {
+      "path": "preview-build/assets/design-system-IiESn_cW.js",
+      "sha256": "4279d33f00345e9e7b3f6c2c2d645b01cd15a23ead034a2e33f40f3efbca6b15",
+      "bytes": 103650
+    },
+    {
+      "path": "preview-build/assets/react-runtime-BB0E8YcQ.js",
+      "sha256": "a54e5282221bc2821dbf5482427ccf46530e7bcc51b3de67082dc34fcce2e0aa",
+      "bytes": 322567
+    },
+    {
+      "path": "preview-build/assets/shell-C9pLTr5T.js",
+      "sha256": "d7922c6f222ee18208678efe5c88a2d43764389ef3d7b22371a5fc904831c776",
+      "bytes": 45916
+    },
+    {
+      "path": "preview-build/assets/styles-CZrjI6Cm.js",
+      "sha256": "6f0a87194520360b8aeddc0d9427ab71a5874080dbb3d9b637e794c3fe9815f3",
+      "bytes": 348069
+    },
+    {
+      "path": "preview-build/assets/styles-VRZ06cQx.css",
+      "sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5",
+      "bytes": 11023
+    },
+    {
+      "path": "preview-build/catalog.html",
+      "sha256": "f16c1efa2f1d8bbe86e3e6f2eddf1ead648bf04e339787bf42b7dd9261279bfe",
+      "bytes": 681
+    },
+    {
+      "path": "preview-build/fonts/.gitattributes",
+      "sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616",
+      "bytes": 77
+    },
+    {
+      "path": "preview-build/fonts/3386a05f6ece969e.ttf",
+      "sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160",
+      "bytes": 112204
+    },
+    {
+      "path": "preview-build/fonts/6098b66ce7d608dc.ttf",
+      "sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef",
+      "bytes": 88644
+    },
+    {
+      "path": "preview-build/fonts/74103fd6d41bc32c.ttf",
+      "sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154",
+      "bytes": 85776
+    },
+    {
+      "path": "preview-build/fonts/91c841fdfa8e7b94.ttf",
+      "sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc",
+      "bytes": 81924
+    },
+    {
+      "path": "preview-build/fonts/barlow-OFL.txt",
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "bytes": 4377
+    },
+    {
+      "path": "preview-build/fonts/barlowsemicondensed-OFL.txt",
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "bytes": 4377
+    },
+    {
+      "path": "preview-build/fonts/c15439e7a03af571.ttf",
+      "sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c",
+      "bytes": 85876
+    },
+    {
+      "path": "preview-build/fonts/c2b046235fb4c2f8.ttf",
+      "sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9",
+      "bytes": 83412
+    },
+    {
+      "path": "preview-build/fonts/cb75439ae401f776.ttf",
+      "sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da",
+      "bytes": 86708
+    },
+    {
+      "path": "preview-build/fonts/df54dbfafba61d49.ttf",
+      "sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8",
+      "bytes": 112160
+    },
+    {
+      "path": "preview-build/fonts/jetbrainsmono-OFL.txt",
+      "sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d",
+      "bytes": 4399
+    },
+    {
+      "path": "preview-build/index.html",
+      "sha256": "665823397fb9cf589915dbe585638d2ea7a12cb5331ab77c836d4fa4eb99601d",
+      "bytes": 602
+    },
+    {
+      "path": "red-detail.log",
+      "sha256": "aeb9e54cb55dafd2ca59c6abaa8f1b8f4a05456261c03854de6458260c80c469",
+      "bytes": 287
+    },
+    {
+      "path": "red-host.log",
+      "sha256": "7c068b5583021fa15c4526e814b202e121ae2af3e7f5461da84de3d491d36404",
+      "bytes": 2320
+    },
+    {
+      "path": "red-suite.log",
+      "sha256": "dbada6aaf7682e5428c19130f1bb7ca77bd683d68b52a6aff50b14e302c3ead5",
+      "bytes": 6106
+    },
+    {
+      "path": "red.log",
+      "sha256": "4be02f3a6c8acc17e0d9539a78ecd109d93acccf5bf224d74b2740b9b245f1f6",
+      "bytes": 448
+    }
+  ]
+}

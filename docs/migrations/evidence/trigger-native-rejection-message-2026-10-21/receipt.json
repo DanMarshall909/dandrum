@@ -1,0 +1,45 @@
+{
+  "component": "Production NativeEngine rejection presentation",
+  "base": "0645f8ac844f3acdfdca7878c8b89cf1d3a7ddbf",
+  "author_base": "ca36647a619034c96bc03f1ab2ffc4e166d356d6",
+  "task_scope": "Small task3.3 frontend presentation prerequisite; complete native facade and full beta remain open",
+  "source_sha256": {
+    "web/trigger/engine/native-engine.mjs": "73f2f68dedc9cdb6a86e77ae9b3741fb26aab9dea7faf1234fe980cc6b96f4ee",
+    "web/trigger/tests/native-engine.test.mjs": "50603050a00e0343c73af2efd99f1695316e37033acca148db86c3dda7e078e0"
+  },
+  "behavior": "Current live command failures publish Error.message, string message, string code, or String fallback; caller rejection and closed/stale filtering retained",
+  "tests": {
+    "public_transport_cases": 4,
+    "focused_count_including_parent": 5,
+    "owner_tests": 40,
+    "full_node_tests": 151,
+    "react_files_checked": 70,
+    "preview_build": "PASS",
+    "native_build": "PASS",
+    "browser": "Not rerun; existing selection untouched"
+  },
+  "coverage": {
+    "native_engine_lines": "100%",
+    "native_engine_branches": "82.20%",
+    "native_engine_functions": "87.10%",
+    "retrospective_baseline_branches": "81.32%",
+    "baseline_timing": "Baseline coverage was missed before implementation. Exact HEAD preimages measured retrospectively and final source hashes restored; not represented as chronological TDD baseline."
+  },
+  "qualifications": [
+    "Object code-only and supplied-message cases are genuine old-source behavior RED; Error/string cases characterize existing fallback",
+    "First full suite default-sandbox failure was nested Node spawnSync EPERM. Actual-host direct component and full151 passed; no guard source changed",
+    "Initial sandbox /dev/shm sample was incorrect host headroom; actual-host correction1.1GiB free retained alongside original",
+    "No real native host/frontend/controller integration or rendered-browser acceptance claimed",
+    "Inherited owner coverage gaps remain; no module extracted or production test seam added"
+  ],
+  "archive_members": 65,
+  "review": {
+    "status": "PASS",
+    "manifest_sha256": "daaf39c64635bdffb6f8df8caca7e298dd33564ae9ff372a5f7939682fc3be50",
+    "review_sha256": "80780624cb71b480f39583a8d31c3776ee52256837f49a5c3eea521a7cdf5e1f",
+    "verdict_sha256": "e33699544bdba03e9329960e78c60d14c1ee9ebe6a098ca7b6594bcca74142f6"
+  },
+  "mutation": "Excluded by explicit user direction",
+  "task3_3_complete": false,
+  "full_beta_complete": false
+}
