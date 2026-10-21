@@ -1,0 +1,8 @@
+{
+  "archive": "root-raw.tar.gz",
+  "sha256": "83e713bc804f4c892573364c551557b3dc9d7c8fad87c20f1c832df8f971ca8f",
+  "bytes": 159271,
+  "members": 106,
+  "build_boundary_log_count": 36,
+  "every_member_byte_verified": true
+}

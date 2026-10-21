@@ -1,0 +1,28 @@
+{
+  "ctests": 20,
+  "fast_driver_case": 1,
+  "native_rust_outer_cases": 17,
+  "nested_allocator_child": 1,
+  "expected_source_sha256": {
+    "CMakeLists.txt": "68d279b0d20e833a3e058c9272b1a534deeabc9b665556813367af87bbcd03fc",
+    "README.md": "397aa70708a93c2a4d817f59e7433d9bf5d15c3b49ac50df996a0e5e05841f70",
+    "docs/migrations/juce-free-clap-dependencies.json": "8093c1f05b8761cfddafe45b91ef0b2fd144fc6aa4fdcd5e4532e6fd2abfa43c",
+    "openspec/changes/add-juce-free-trigger-clap-editor/design.md": "ef7c55cda0aabd651adf067607fb66d1202c510b1113526f1d51c96476885a04",
+    "scripts/prepare-trigger-clap-native.py": "ceec5e6493fd8d4cc372c836686ed7967118a9681dd8222c9c0a12d02e0b9360",
+    "tests/python/test_engine_only_build.py": "8d1d94a44aef070fa570f79e1b81e386cb27c6207b4a1d17a68a8bd46900f4ba",
+    "tests/python/test_trigger_native_fixture.py": "f752371314bda9392597714bff532f9999e848cfc6253dc4f39838faa13a7859",
+    "src/clap-adapter/Cargo.toml": "2e536de3d35a1965f59da177b823063c34964d8047e3af37342f8fb9fafea9ef",
+    "src/clap-adapter/Cargo.lock": "34f17a0311ad96eb5a9a3a9e46f5a180bbc8ab53ffa278c98d73d40df4f46d9c",
+    "src/clap-adapter/src/trigger.rs": "14ca55d2f68a4a99e4f27ec785af2b43a66ea659382120f1f96fae9fc6ee6bdb",
+    "src/clap-adapter/src/trigger/gui.rs": "54ff95fa89be316409c9eeee658162af197c05d2e3e37f58bff1d2f4ba123dcd",
+    "src/clap-adapter/src/trigger/automation.rs": "c2f2f6a08d04a862834ffb96244149de55d051c8015477e64857ddec194233ea",
+    "src/clap-adapter/tests/trigger_gui.rs": "4e2e8695c41656ff62b1b62dcf1458967d785a92be319fb17f4fca0d9b73e68a",
+    "src/clap-adapter/tests/trigger_parameters.rs": "773e774bef8a2af5412ce88d2575a047b4beccbbe196bb1b14b59f105fd70b37",
+    "src/clap-adapter/tests/internal/trigger_gui_dispatch.rs": "d00e55e1a3c04898f8c67d9e126a8139ef1075f72aa7242fd754402b8c7a4939",
+    "src/clap-adapter/tests/internal/trigger_timer.rs": "61920b3d1c1d16999e671b0a99aee62789e63be47158cf74d0a1f16f4f768998",
+    "src/trigger-host/src/protocol.rs": "d18bb5e0cd1fa1e9ff304ab3c25a751739765ef04d0297c4c307b99a8feda58e",
+    "src/clap-adapter/tests/internal/trigger_structural_native.rs": "fc40c257dda22e3aa8ecac69f6e55ca0b4cd19657328bb4f87dc199a015368f5"
+  },
+  "bundle_app_sha256": "4b9ce5a356fea5f22703f9046c77a80ac616c00242348a12fe81f58fe4f760f2",
+  "scope": "Actual maintained fixtures and20 CTests, exact Cargo source/copy artifact and full editor/instrument resource hashes. Developer-only structural-service checkpoint; no whole-G3/task/full-beta readiness claim. Existing zero-filter guard calibration is reused; current all-case property assertions are separate configuration evidence."
+}

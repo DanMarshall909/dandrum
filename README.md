@@ -182,8 +182,10 @@ CLAP GUI integration. The default proof artifact retains its two fixture descrip
 The default-off Cargo `trigger-editor` feature is a developer test checkpoint
 for native lifecycle and parameter integration. Native parameter tests cover
 reads, balanced host-accepted gestures, host feedback to the rendered control
-and parameter Undo. Required heartbeat/expiry, mapping/status/native undo and
-persistent worker servicing remain unjoined in the recovery boundary (G3).
+and parameter Undo. Structural recovery tests now cover persistent worker
+servicing, mapping after lost acknowledgement and complete view loss, retained
+job status, and the recreated production header's native Undo. Required
+heartbeat/expiry and held-note/gesture destruction remain open in G3.
 The GUI is not ready for instrument editing or normal playing; the maintained
 CMake product above continues to use the headless `trigger` feature.
 

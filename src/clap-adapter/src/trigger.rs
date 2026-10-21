@@ -146,6 +146,14 @@ pub(super) fn instance<'a>(
                 256,
             )
             .map_err(|_| PluginError::Message("Trigger packaged session failed"))?;
+            #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+            let gui = gui::EditorState::default();
+            #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+            let controller = {
+                let mut controller = controller;
+                gui.start_worker(&mut controller)?;
+                controller
+            };
             let parameters = controller.parameters().to_vec();
             #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
             let (automation, output) = automation::pair();
@@ -182,7 +190,7 @@ pub(super) fn instance<'a>(
                         target_os = "linux",
                         target_env = "gnu"
                     ))]
-                    gui: RefCell::new(gui::EditorState::default()),
+                    gui: RefCell::new(gui),
                 }),
                 host,
                 shared,

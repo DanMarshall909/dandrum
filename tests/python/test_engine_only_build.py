@@ -375,6 +375,8 @@ class ClapProofBuildTest(EngineBuildFixture):
                 "copied_native_parameter_callbacks_allocate_and_destroy_nothing_while_gui_services",
             "trigger-clap-native-parameter-invalid-stopped-flush":
                 "copied_native_invalid_stopped_flush_preserves_uncollected_automation_ownership",
+            "trigger-clap-native-parameter-structural-session":
+                "structural_native::copied_native_mapping_survives_lost_reply_and_view_loss",
         }
         for name, case in parameter_cases.items():
             with self.subTest(parameter_case=name):

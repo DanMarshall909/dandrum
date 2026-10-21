@@ -4,11 +4,23 @@ use clack_extensions::gui::{GuiApiType, GuiConfiguration, GuiSize, PluginGuiImpl
 use clack_plugin::prelude::PluginError;
 use dandrum_trigger_editor::{EditorAssets, NativeEditor};
 use dandrum_trigger_host::{
-    parameters::{ParameterError, ParameterReply, ParameterValue},
+    parameters::{
+        ParameterController, ParameterError, ParameterReply, ParameterValue, SessionJobProgress,
+        SessionServiceWake,
+    },
     protocol::{Admission, EditorCommand, MESSAGE_BYTES_LIMIT, ProtocolError},
 };
 use std::{
-    cell::Cell, ffi::CString, mem::MaybeUninit, os::unix::ffi::OsStrExt, path::Path, rc::Rc,
+    cell::Cell,
+    ffi::CString,
+    mem::MaybeUninit,
+    os::unix::ffi::OsStrExt,
+    path::Path,
+    rc::Rc,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
     time::Instant,
 };
 
@@ -78,12 +90,33 @@ fn ensure_native_code_residency(path: &Path) -> Result<(), PluginError> {
 }
 
 #[derive(Default)]
+struct WorkerWake(AtomicBool);
+impl SessionServiceWake for WorkerWake {
+    fn request_service(&self) {
+        self.0.store(true, Ordering::Release);
+    }
+}
+
+#[derive(Default)]
 pub(super) struct EditorState {
     created: bool,
     attaching: bool,
     attachment: Option<String>,
     child: Option<Rc<NativeEditor>>,
     source: Option<gtk::glib::SourceId>,
+    worker_wake: Arc<WorkerWake>,
+    job_pending: bool,
+}
+
+impl EditorState {
+    pub(super) fn start_worker(
+        &self,
+        controller: &mut ParameterController,
+    ) -> Result<(), PluginError> {
+        controller
+            .start_session_worker(self.worker_wake.clone())
+            .map_err(|_| rejected())
+    }
 }
 
 impl Core {
@@ -109,6 +142,7 @@ impl Core {
         }
     }
     pub(super) fn service_editor(&self) {
+        self.service_structural_jobs();
         self.service_automation();
         for _ in 0..64 {
             let target = {
@@ -143,6 +177,28 @@ impl Core {
             if let (Some((_, child)), Some(event)) = (target, event) {
                 self.deliver(&child, &event);
             }
+        }
+    }
+    fn service_structural_jobs(&self) {
+        let Ok(mut controller) = self.controller.try_borrow_mut() else {
+            return;
+        };
+        let Ok(mut state) = self.gui.try_borrow_mut() else {
+            return;
+        };
+        // Only an endpoint returned by CLAP deactivation may be serviced here.
+        // Active audio owns its endpoint independently and swaps on real blocks.
+        if let Some(mut audio) = self.parked.take() {
+            let _ = controller.service_quiescent(&mut audio);
+            self.parked.set(Some(audio));
+        }
+        if state.worker_wake.0.swap(false, Ordering::AcqRel) || state.job_pending {
+            // A deferred completion remains owned by the controller. Periodic
+            // service retries after audio releases capacity, even without a view.
+            state.job_pending = matches!(
+                controller.service_session_jobs(),
+                Ok(SessionJobProgress::Pending)
+            );
         }
     }
     fn cleanup_attachment(&self) -> Result<(), PluginError> {
@@ -292,6 +348,18 @@ fn dispatch(
     let result = match controller.admit(message) {
         Ok(Admission::New(request)) => match request.command {
             EditorCommand::GetSamplerSession => return controller.sampler_session_reply(&request),
+            EditorCommand::GetInstrumentSessionJobStatus { .. } => {
+                match controller.session_job_status(&request) {
+                    Ok(reply) => return Ok(reply),
+                    Err(error) => Err(command_error(error)),
+                }
+            }
+            EditorCommand::SetZoneKeyRange { .. } | EditorCommand::UndoInstrumentSession { .. } => {
+                match controller.admit_session_command(&request) {
+                    Ok(reply) => return Ok(reply),
+                    Err(error) => Err(command_error(error)),
+                }
+            }
             EditorCommand::NoteOn { .. } | EditorCommand::NoteOff { .. } => controller
                 .apply_editor_note(&request, Instant::now())
                 .map(|()| serde_json::Value::Null)
@@ -305,7 +373,7 @@ fn dispatch(
             | EditorCommand::EndGesture { .. } => controller
                 .apply(&request)
                 .map(parameter_reply)
-                .map_err(parameter_error),
+                .map_err(command_error),
             _ => Err(ProtocolError::CapabilityUnavailable),
         },
         Ok(Admission::Duplicate { .. }) => Err(ProtocolError::DuplicateRequest),
@@ -340,7 +408,7 @@ fn parameter_reply(reply: ParameterReply) -> serde_json::Value {
         }),
     }
 }
-fn parameter_error(error: ParameterError) -> ProtocolError {
+fn command_error(error: ParameterError) -> ProtocolError {
     match error {
         ParameterError::QueueFull => ProtocolError::Busy,
         _ => ProtocolError::CommandRejected,
@@ -350,6 +418,9 @@ fn parameter_error(error: ParameterError) -> ProtocolError {
 impl Drop for Core {
     fn drop(&mut self) {
         self.cancel_service_source();
+        // Close admission and join preparation on the owning main thread before
+        // controller/session/runtime fields can be destroyed.
+        let _ = self.controller.get_mut().shutdown_session_worker();
         let state = self.gui.get_mut();
         state.created = false;
         if let Some(attachment) = state.attachment.take() {

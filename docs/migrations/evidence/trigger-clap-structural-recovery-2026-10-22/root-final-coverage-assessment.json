@@ -1,0 +1,60 @@
+{
+  "source_gui_sha256": "54ff95fa89be316409c9eeee658162af197c05d2e3e37f58bff1d2f4ba123dcd",
+  "runs": {
+    "final-native": {
+      "elf_sha256": "7b148549e8be78103f509c6728ca4fd685c942c9d8420f94d24ae6d433b94867",
+      "export_sha256": "85b5935801bc879712d5f89cfd9cc95783740093c6adccc0750830db4c543735",
+      "profile_files": 1
+    },
+    "final-owner": {
+      "elf_sha256": "1b0ed640a9dbc9b1dee88560f404dc2e990998d491cf4b9da045ebbc94daafb1",
+      "export_sha256": "5aad1f8b6eda9dc96e2d2a4d9323569a8fca2585bc7294da140777bc570d333e",
+      "profile_files": 27
+    }
+  },
+  "aggregate": {
+    "start_worker": {
+      "distinct_source_regions": 7,
+      "positive_source_regions": 6,
+      "zero_source_ranges": [
+        [
+          118,
+          26,
+          118,
+          34
+        ]
+      ]
+    },
+    "structural_service": {
+      "distinct_source_regions": 24,
+      "positive_source_regions": 24,
+      "zero_source_ranges": []
+    },
+    "command_error": {
+      "distinct_source_regions": 5,
+      "positive_source_regions": 5,
+      "zero_source_ranges": []
+    },
+    "status_arm": {
+      "distinct_source_regions": 6,
+      "positive_source_regions": 6,
+      "zero_source_ranges": []
+    },
+    "structural_admission_arm": {
+      "distinct_source_regions": 6,
+      "positive_source_regions": 6,
+      "zero_source_ranges": []
+    },
+    "worker_wake": {
+      "distinct_source_regions": 5,
+      "positive_source_regions": 5,
+      "zero_source_ranges": []
+    },
+    "worker_shutdown": {
+      "distinct_source_regions": 1,
+      "positive_source_regions": 1,
+      "zero_source_ranges": []
+    }
+  },
+  "qualification": "Independently reconstructed code-region execution across exact final native/owner copies. No branch/every-instantiation/whole-GUI claim. Startup OS thread-launch error translation unforced; existing Core Drop attachment fallback not exercised by final selected runs. Behavioral outcomes come from signed routing/history, actual header action, and owner rejection/borrow assertions."
+}

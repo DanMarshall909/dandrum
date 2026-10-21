@@ -1,0 +1,292 @@
+{
+  "base_head": "072c1af49f3a4cc81117887541c70c5f3c3f5633",
+  "source_sha256": {
+    "src/clap-adapter/src/trigger.rs": "14ca55d2f68a4a99e4f27ec785af2b43a66ea659382120f1f96fae9fc6ee6bdb",
+    "src/clap-adapter/src/trigger/gui.rs": "54ff95fa89be316409c9eeee658162af197c05d2e3e37f58bff1d2f4ba123dcd",
+    "src/clap-adapter/tests/internal/trigger_gui_dispatch.rs": "d00e55e1a3c04898f8c67d9e126a8139ef1075f72aa7242fd754402b8c7a4939",
+    "src/clap-adapter/tests/trigger_parameters.rs": "773e774bef8a2af5412ce88d2575a047b4beccbbe196bb1b14b59f105fd70b37",
+    "src/clap-adapter/tests/internal/trigger_structural_native.rs": "fc40c257dda22e3aa8ecac69f6e55ca0b4cd19657328bb4f87dc199a015368f5"
+  },
+  "artifacts": {
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-native-build/trigger_parameters-8fc57b2ef83fb6e4": {
+      "original": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/trigger_parameters-8fc57b2ef83fb6e4",
+      "sha256": "d207969f8cddc38f8b4c02bf38a81fe504a95784c55af35e1768621c8ec3be9e"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-native-build/libdandrum_clap_adapter.so": {
+      "original": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/libdandrum_clap_adapter.so",
+      "sha256": "a32e20c3684b24e951d68621424a97e03cafce49ebe7620ca83bfa99f6b7a127"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/dandrum_clap_adapter-d3acd5a110a4f010": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/dandrum_clap_adapter-d3acd5a110a4f010",
+      "sha256": "1b0ed640a9dbc9b1dee88560f404dc2e990998d491cf4b9da045ebbc94daafb1"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner-instrumented/dandrum_clap_adapter-d3acd5a110a4f010": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/dandrum_clap_adapter-d3acd5a110a4f010",
+      "sha256": "1b0ed640a9dbc9b1dee88560f404dc2e990998d491cf4b9da045ebbc94daafb1"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-native-instrumented/libdandrum_clap_adapter.so": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-native/libdandrum_clap_adapter.so",
+      "sha256": "7b148549e8be78103f509c6728ca4fd685c942c9d8420f94d24ae6d433b94867"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-native/profiles/1969690-8375884758091252218_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-native/profiles/1969690-8375884758091252218_0.profraw",
+      "sha256": "b5d887560481237370f99f131925ecf30ebf9da28086e1d8c1ca80b762f7e9d1"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-native/libdandrum_clap_adapter.so": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-native/libdandrum_clap_adapter.so",
+      "sha256": "7b148549e8be78103f509c6728ca4fd685c942c9d8420f94d24ae6d433b94867"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/10-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/10-13440709618406420391_0.profraw",
+      "sha256": "82f2880690ad0ced59e9c9a5c4a6e8bb34bbc89ba203b56c07f5f3a9d89570f8"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/19-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/19-13440709618406420391_0.profraw",
+      "sha256": "86543755887d22586ddb3dc7d3fbe5e0e07db658e188efc45fff0fc768090dd1"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/9-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/9-13440709618406420391_0.profraw",
+      "sha256": "0e10760e365a5362859502a1e493b12b2fbff4d0d12c4ed319e08f766d95f620"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/41-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/41-13440709618406420391_0.profraw",
+      "sha256": "74b5af8850b6be510f4b9faef40656b6623183ba2640230092022cf0cd819bc4"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/38-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/38-13440709618406420391_0.profraw",
+      "sha256": "6a9964b021c2153f1c6089770c3405c68956ce7cc878f7150445cebd3f41c3fa"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/33-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/33-13440709618406420391_0.profraw",
+      "sha256": "b208b733e34d2ad7998810f9ab29ce60b77916ebebd85d74fc37f6c0a33122d5"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/5-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/5-13440709618406420391_0.profraw",
+      "sha256": "7b1909e8912eda439b7e4cb5691bfec2436e6486d7ff1b5b99d54d450d14a78b"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/35-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/35-13440709618406420391_0.profraw",
+      "sha256": "3a034e1320db0030fae4ce471d1f3c9db02d8074d24c94cac756d48072c427bb"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/15-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/15-13440709618406420391_0.profraw",
+      "sha256": "7bccb1589ec3edd3f02d2a569d3937dead9eba89a56eadc1ed0d7170cff23797"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/22-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/22-13440709618406420391_0.profraw",
+      "sha256": "c305f9864cb323b5617522e94e713f362bc0c4aa97aff85cfffa47dbd59bf6e2"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/7-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/7-13440709618406420391_0.profraw",
+      "sha256": "4c8ebfb69985b1051503d5c64aaf1eb2dffc704298e2e29c6749fdaf78145019"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/45-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/45-13440709618406420391_0.profraw",
+      "sha256": "7f751011267066f58fbe9e3e06eefb58371f025ecb991f5f6bcc40f4712cf2e1"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/12-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/12-13440709618406420391_0.profraw",
+      "sha256": "0bfc6697bc1aaba5783d6b35c331141ee2d0ff295a18fa1d4ca8685a2a69cb8d"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/6-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/6-13440709618406420391_0.profraw",
+      "sha256": "99b1feaf39f297aa8e1f7d5c80088fecc6f3a2bd0afdc8759ca06133285f9239"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/32-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/32-13440709618406420391_0.profraw",
+      "sha256": "ddc8817eacefb204b8e9060588ceaf467b7098558561824e531b8cc7dd3ce707"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/16-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/16-13440709618406420391_0.profraw",
+      "sha256": "f4d92dcb3d2c65348f58e54bf5aba5e4bec726a5932e3d2093b3655fe0bd4858"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/44-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/44-13440709618406420391_0.profraw",
+      "sha256": "ebe54fde9f5f3371901255a005449cfdc7ca59edb1b87a54a4641a2895c2f0d4"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/39-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/39-13440709618406420391_0.profraw",
+      "sha256": "6c68f214d319ae22db421d730b1a889842e8f18522b2e10dbc73cf5c42ebabe3"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/13-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/13-13440709618406420391_0.profraw",
+      "sha256": "2b86ccfb5ad7bf5470d9161692b78cdba5e76b429ea08e884cc1f557ae320573"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/23-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/23-13440709618406420391_0.profraw",
+      "sha256": "d22abbd5acbbf5c26aaec59b0a956c2d683a401cdff52fb004d3b454126244ec"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/29-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/29-13440709618406420391_0.profraw",
+      "sha256": "d25bc7b24d37609266557296cb5cbbb309f4c23dd77df0d37b02567dab90cf46"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/27-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/27-13440709618406420391_0.profraw",
+      "sha256": "ec7aa319a94d0f6f42c22ebd57c0496a09da467f2d64c3afba0348a15d168c8f"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/26-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/26-13440709618406420391_0.profraw",
+      "sha256": "5f5338f3cf7219c93b774059b4c0a9fce567217d1a11dcf6bcfff75117e07480"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/18-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/18-13440709618406420391_0.profraw",
+      "sha256": "bd4c4aa8ba7c9377f8b22c88f4a271e725a27d15bc34acfd298ba9080b4d9f9b"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/30-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/30-13440709618406420391_0.profraw",
+      "sha256": "0addc9c536a3b4cbb63f4b897c0f0bda9a5a5ec0f6c194e5ce8380dac19b8882"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/36-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/36-13440709618406420391_0.profraw",
+      "sha256": "c3de15a3398f92028ac774ef5c487230f514103bd6f45318e37a7d517ed5a151"
+    },
+    "/tmp/dandrum-evidence/g3-structural-service/artifacts/final-owner/profiles/42-13440709618406420391_0.profraw": {
+      "original": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-structural-service/final-owner/profiles/42-13440709618406420391_0.profraw",
+      "sha256": "859f0988ddc3c812928ec05c04c11da3a5a8410c3c3a02629f61d715a0ffa57e"
+    }
+  },
+  "receipts": {
+    "mapping-native-red-x11": {
+      "path": "/tmp/dandrum-evidence/g3-structural-service/mapping-native-red-x11.json",
+      "sha256": "01a0b862eb0a6cfca9002755aaa6d7ecf491b3ae8256271906305b017bc8f241",
+      "exit": 101,
+      "seconds": 3.0537162860273384
+    },
+    "mapping-native-green": {
+      "path": "/tmp/dandrum-evidence/g3-structural-service/mapping-native-green.json",
+      "sha256": "72f0e0b75b9cd7703d2d30eaae9cf1e2bdbaf0f4112af6d820f6ede75e118ba6",
+      "exit": 0,
+      "seconds": 2.0354570579947904
+    },
+    "recovery-native-red": {
+      "path": "/tmp/dandrum-evidence/g3-structural-service/recovery-native-red.json",
+      "sha256": "b5f0259d35d9b400d41c67faae0e9630b21feccbd487d65687c0a97b2d5c157d",
+      "exit": 101,
+      "seconds": 2.036201336013619
+    },
+    "recovery-calibrated-native-green": {
+      "path": "/tmp/dandrum-evidence/g3-structural-service/recovery-calibrated-native-green.json",
+      "sha256": "655f4a7a7ca6f06c7264650cbacfce66f04d85550417eddbca553db2f53c16a5",
+      "exit": 0,
+      "seconds": 2.036983734986279
+    },
+    "undo-native-red": {
+      "path": "/tmp/dandrum-evidence/g3-structural-service/undo-native-red.json",
+      "sha256": "09acbe96e2f53bbe5c02226a757fb07e1b4f028701393a5db91efb5fa72fd3cf",
+      "exit": 101,
+      "seconds": 2.0390756190172397
+    },
+    "undo-native-green": {
+      "path": "/tmp/dandrum-evidence/g3-structural-service/undo-native-green.json",
+      "sha256": "f53dd9f1d70821304885a77405dbe9c387fb68d4e1db6231c6af2faf64d797a5",
+      "exit": 0,
+      "seconds": 2.037401454988867
+    },
+    "final-native-build": {
+      "path": "/tmp/dandrum-evidence/g3-structural-service/final-native-build.json",
+      "sha256": "c0b1b67fb2db3350f1df71829a97864a32d80950a22198c83300453af7960892",
+      "exit": 0,
+      "seconds": 55.29627623199485
+    },
+    "final-native-regression": {
+      "path": "/tmp/dandrum-evidence/g3-structural-service/final-native-regression.json",
+      "sha256": "a7201263818b1a398189e1e3231db14c2be08c907cc202dbcc073686f313da19",
+      "exit": 0,
+      "seconds": 12.217997637984809
+    },
+    "final-owner-build": {
+      "path": "/tmp/dandrum-evidence/g3-structural-service/final-owner-build.json",
+      "sha256": "94a1d76fa54f4ea9d1ed79573a694425b967255ed71feff245bba5f2ceea5b75",
+      "exit": 0,
+      "seconds": 2.0135987689718604
+    },
+    "final-owner-green": {
+      "path": "/tmp/dandrum-evidence/g3-structural-service/final-owner-green.json",
+      "sha256": "becbedfcb66cb2245d8f6243b40848a279d4316668637298cd7c7eece11ea441",
+      "exit": 0,
+      "seconds": 2.0127569569740444
+    },
+    "final-native-instrument-build": {
+      "path": "/tmp/dandrum-evidence/g3-structural-service/final-native-instrument-build.json",
+      "sha256": "8438ed762f685158c19a8e49143911f7e4a99711443fa2dec370e598d99387ef",
+      "exit": 0,
+      "seconds": 5.027226625010371
+    },
+    "final-native-llvm": {
+      "path": "/tmp/dandrum-evidence/g3-structural-service/final-native-llvm.json",
+      "sha256": "6ecb6dc1e413e7881440bfd6a15aca6aa7f9451ba81ea12a350a710b51313b8c",
+      "exit": 0,
+      "seconds": 2.0358024520101026
+    },
+    "final-owner-instrument-build": {
+      "path": "/tmp/dandrum-evidence/g3-structural-service/final-owner-instrument-build.json",
+      "sha256": "e17b2bafcf84ce982479c3982c4cc6487bc22950ea71af452d07c8683a221bba",
+      "exit": 0,
+      "seconds": 3.0179343430208974
+    },
+    "final-owner-llvm": {
+      "path": "/tmp/dandrum-evidence/g3-structural-service/final-owner-llvm.json",
+      "sha256": "6593e6bfb8c7639899f189fd00d979a9d1106c524ff7b967b96dd4b011d25a14",
+      "exit": 0,
+      "seconds": 2.012915475992486
+    },
+    "final-rustfmt": {
+      "path": "/tmp/dandrum-evidence/g3-structural-service/final-rustfmt.json",
+      "sha256": "96c80f65161434e13636f005eef6f805ed176f25721d6163e21a34e7b753baeb",
+      "exit": 0,
+      "seconds": 1.0067037909757346
+    },
+    "final-editor-clippy": {
+      "path": "/tmp/dandrum-evidence/g3-structural-service/final-editor-clippy.json",
+      "sha256": "bf251d69cfb9612339f767168f395d68d8795f5dae2258710ca1b1bebe93f59e",
+      "exit": 0,
+      "seconds": 3.018028071965091
+    },
+    "final-default-clippy": {
+      "path": "/tmp/dandrum-evidence/g3-structural-service/final-default-clippy.json",
+      "sha256": "c30c03738330b59beb43d1d3b5c9eca1ead1ff843fe2c1dbb263d261d220c51e",
+      "exit": 0,
+      "seconds": 1.0073941629962064
+    },
+    "final-plain-trigger-clippy": {
+      "path": "/tmp/dandrum-evidence/g3-structural-service/final-plain-trigger-clippy.json",
+      "sha256": "5d29132c19040840f34d46fe11a87b8bbf0054b14f4f3aedc021d2f5e853299d",
+      "exit": 0,
+      "seconds": 2.007867357984651
+    }
+  },
+  "cache_identity": {
+    "/tmp/dandrum-lanes/cache-editor-guard": {
+      "device": 66309,
+      "inode": 6559361,
+      "apparent_bytes": 9758366657,
+      "preserved": true
+    },
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov": {
+      "device": 66309,
+      "inode": 7733512,
+      "apparent_bytes": 13242047528,
+      "preserved": true
+    },
+    "/tmp/dandrum-lanes/runtime/cache-editor-guard": {
+      "device": 66309,
+      "inode": 6162321,
+      "apparent_bytes": 531739369,
+      "preserved": true
+    }
+  },
+  "test_name": "structural_native::copied_native_mapping_survives_lost_reply_and_view_loss",
+  "normal_installed_dso_sha256": "a32e20c3684b24e951d68621424a97e03cafce49ebe7620ca83bfa99f6b7a127",
+  "production_app_sha256": "4b9ce5a356fea5f22703f9046c77a80ac616c00242348a12fe81f58fe4f760f2",
+  "final_binding_files": {
+    "/tmp/dandrum-evidence/g3-structural-service/final-owner-instrumented-binding.json": "4b1e37af8c18ee6c1b9edab0dae323fc0396cf45394e14b785cc1fb29dee4cc6",
+    "/tmp/dandrum-evidence/g3-structural-service/final-native-instrumented-binding.json": "aef8a36862eda713876ce014db759224bbb28f12ee32d5d60274761da70dd173",
+    "/tmp/dandrum-evidence/g3-structural-service/final-native-build-binding.json": "f52f81ab575b1130e98404f0384940e5421bc56343b69c87869dcbdfeb7c5adb",
+    "/tmp/dandrum-evidence/g3-structural-service/final-native-coverage-binding.json": "f8dd55b2b9ac12b27dbc3a872cde44409fd6750740d24bb77ac81c10f9761833",
+    "/tmp/dandrum-evidence/g3-structural-service/final-owner-binding.json": "39f4451c19629e4f5eb22313eb0bf639d7cf9023d79b2d18a8dd708045858ec6",
+    "/tmp/dandrum-evidence/g3-structural-service/final-owner-coverage-binding.json": "ea32c52015547bd3c21ceb786b429319ac9432148fb83bec6a70819f312380f2"
+  },
+  "coverage_assessment_sha256": "0accbba8ddecc6df0336eb46a34119060776309a74044e7c3a77789db7f3fbba",
+  "ownership_release": "All assigned source paths and both loaned absolute cache roots handed back to root; accidental relative cache unchanged/excluded. No further child writes/builds planned. Root owns Git/registration/tracker/spec/docs/integration.",
+  "process_state": "All launched exec sessions/drivers reaped; no pending child builder or native fixture. Namespace-local process check and root actual-host confirmation separate."
+}

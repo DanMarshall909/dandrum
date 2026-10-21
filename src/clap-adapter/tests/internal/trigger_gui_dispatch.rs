@@ -761,3 +761,45 @@ fn detached_feedback_service_is_bounded_and_defers_busy_owners_without_consuming
     core.service_editor();
     assert!(core.controller.borrow_mut().take_feedback().is_none());
 }
+
+#[test]
+fn mapping_dispatch_rejects_stale_and_stopped_worker_without_changing_history() {
+    let (_package, mut controller, _audio, attachment) = controller(8, 8);
+    let editor = super::EditorState::default();
+    editor.start_worker(&mut controller).unwrap();
+    let mapping =
+        |revision: &str| json!(["19", attachment, "7001", revision, "kit", "kick", 60, 60]);
+    assert_eq!(
+        call(
+            &mut controller,
+            &attachment,
+            1,
+            "setInstrumentZoneKeyRange",
+            mapping("9")
+        )["error"]["code"],
+        "staleRequest"
+    );
+    controller.shutdown_session_worker().unwrap();
+    assert_eq!(
+        call(
+            &mut controller,
+            &attachment,
+            2,
+            "setInstrumentZoneKeyRange",
+            mapping("0")
+        )["error"]["code"],
+        "commandRejected"
+    );
+    let snapshot = call(
+        &mut controller,
+        &attachment,
+        3,
+        "getSamplerSession",
+        json!([]),
+    );
+    assert_eq!(snapshot["result"]["connection"]["revision"], "0");
+    assert_eq!(
+        snapshot["result"]["connection"]["history"],
+        json!({"undoCount":0,"redoCount":0})
+    );
+}

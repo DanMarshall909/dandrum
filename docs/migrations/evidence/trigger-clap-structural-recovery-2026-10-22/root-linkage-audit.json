@@ -1,0 +1,99 @@
+{
+  "scope": "Actual copied native DSO, separately loaded G1 host, and current copied-source default DSO; no installed product or named-DAW claim",
+  "results": [
+    {
+      "label": "native_plugin",
+      "command": [
+        "readelf",
+        "-d",
+        "/tmp/dandrum-evidence/g3-native-fixture/native-build/trigger-clap-parameters-fixture/DandrumTrigger.clap"
+      ],
+      "exit": 0,
+      "artifact_sha256": "a32e20c3684b24e951d68621424a97e03cafce49ebe7620ca83bfa99f6b7a127",
+      "direct_needed": [
+        "0x0000000000000001 (NEEDED)             Shared library: [libgdk-3.so.0]",
+        "0x0000000000000001 (NEEDED)             Shared library: [libgobject-2.0.so.0]",
+        "0x0000000000000001 (NEEDED)             Shared library: [libglib-2.0.so.0]",
+        "0x0000000000000001 (NEEDED)             Shared library: [libwebkit2gtk-4.1.so.0]",
+        "0x0000000000000001 (NEEDED)             Shared library: [libgtk-3.so.0]",
+        "0x0000000000000001 (NEEDED)             Shared library: [libsoup-3.0.so.0]",
+        "0x0000000000000001 (NEEDED)             Shared library: [libgio-2.0.so.0]",
+        "0x0000000000000001 (NEEDED)             Shared library: [libjavascriptcoregtk-4.1.so.0]",
+        "0x0000000000000001 (NEEDED)             Shared library: [libgcc_s.so.1]",
+        "0x0000000000000001 (NEEDED)             Shared library: [libm.so.6]",
+        "0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]",
+        "0x0000000000000001 (NEEDED)             Shared library: [ld-linux-x86-64.so.2]"
+      ],
+      "log": "root-link-native_plugin-0.log"
+    },
+    {
+      "label": "native_plugin",
+      "command": [
+        "ldd",
+        "/tmp/dandrum-evidence/g3-native-fixture/native-build/trigger-clap-parameters-fixture/DandrumTrigger.clap"
+      ],
+      "exit": 0,
+      "artifact_sha256": "a32e20c3684b24e951d68621424a97e03cafce49ebe7620ca83bfa99f6b7a127",
+      "direct_needed": [],
+      "log": "root-link-native_plugin-1.log"
+    },
+    {
+      "label": "g1_host",
+      "command": [
+        "readelf",
+        "-d",
+        "/tmp/dandrum-evidence/g3-native-fixture/native-build/trigger-clap-native-fixture/trigger-gui-test"
+      ],
+      "exit": 0,
+      "artifact_sha256": "256d168af1a1243f50f7d13a479d8772711a5f8240bdb28392b181324239a15c",
+      "direct_needed": [
+        "0x0000000000000001 (NEEDED)             Shared library: [libgobject-2.0.so.0]",
+        "0x0000000000000001 (NEEDED)             Shared library: [libgtk-3.so.0]",
+        "0x0000000000000001 (NEEDED)             Shared library: [libgdk-3.so.0]",
+        "0x0000000000000001 (NEEDED)             Shared library: [libglib-2.0.so.0]",
+        "0x0000000000000001 (NEEDED)             Shared library: [libgcc_s.so.1]",
+        "0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]"
+      ],
+      "log": "root-link-g1_host-0.log"
+    },
+    {
+      "label": "g1_host",
+      "command": [
+        "ldd",
+        "/tmp/dandrum-evidence/g3-native-fixture/native-build/trigger-clap-native-fixture/trigger-gui-test"
+      ],
+      "exit": 0,
+      "artifact_sha256": "256d168af1a1243f50f7d13a479d8772711a5f8240bdb28392b181324239a15c",
+      "direct_needed": [],
+      "log": "root-link-g1_host-1.log"
+    },
+    {
+      "label": "copied_source_default_plugin",
+      "command": [
+        "readelf",
+        "-d",
+        "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-d6_tgfeb/source/build/clap/clap/DandrumHeadlessProof.clap"
+      ],
+      "exit": 0,
+      "artifact_sha256": "76928b2b479c41ddd9f67fb1f402d442b72c069ef6e3ac0efbff917e79f89c32",
+      "direct_needed": [
+        "0x0000000000000001 (NEEDED)             Shared library: [libgcc_s.so.1]",
+        "0x0000000000000001 (NEEDED)             Shared library: [libm.so.6]",
+        "0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]",
+        "0x0000000000000001 (NEEDED)             Shared library: [ld-linux-x86-64.so.2]"
+      ],
+      "log": "root-link-copied_source_default_plugin-0.log"
+    },
+    {
+      "label": "copied_source_default_plugin",
+      "command": [
+        "ldd",
+        "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-d6_tgfeb/source/build/clap/clap/DandrumHeadlessProof.clap"
+      ],
+      "exit": 0,
+      "artifact_sha256": "76928b2b479c41ddd9f67fb1f402d442b72c069ef6e3ac0efbff917e79f89c32",
+      "direct_needed": [],
+      "log": "root-link-copied_source_default_plugin-1.log"
+    }
+  ]
+}

@@ -1610,3 +1610,38 @@ failure remain open. The maintained product is headless and the native GUI remai
 unready for normal instrument editing/playing. Full beta still requires VST3,
 standalone devices, named DAW, fresh-instance round trips and installed offline
 artifacts. Main remains clean68dd655; mutation is excluded and caches are preserved.
+
+
+## Native structural recovery checkpoint — 22 October 2026
+
+The developer-only CLAP editor now starts the existing instrument preparation
+worker once per instance. A shared atomic flag requests bounded main-thread
+service through the existing weak GLib source. Preparation owns its input and
+never borrows the browser; the persistent controller retains deferred completion
+until actual audio blocks release runtime capacity. Final instance destruction
+cancels the service source and joins the worker before dropping session state.
+
+The actual copied-DSO scenario admits mapping MIDI36 to60, withholds the accepted
+reply, destroys the entire WebView before publication, and services completion
+without a view. Reconnection sees revision2 and one undo entry; repeated fresh
+status reads preserve that outcome. The real recreated production header Undo
+then restores revision3 with undo0/redo1. Literal stereo samples are -0.5 at36
+before mapping, -0.5 at60 after mapping, and -0.5 at36 after undo, with the other
+pitch silent. A calibrated getter observer covers only the exercised status and
+stale-request paths; history and PCM independently establish the state outcome.
+
+[Portable evidence](evidence/trigger-clap-structural-recovery-2026-10-22/README.md)
+retains separate genuine mapping, status-recovery and header-Undo RED/GREEN
+cycles, source snapshots, raw logs and LLVM exports. The root also exercised the
+new scenario through the maintained native CTest registration after its own
+missing-registration RED. Source-region execution is distinguished from behavior
+assertions; OS thread-start failure translation remains unforced.
+
+This partial boundary does not close tasks3.2/3.3/4.2/4.3. Native heartbeat/expiry,
+held notes and gestures, creation failure, continuous lifecycle audio and two
+independently edited native instances still require joined acceptance. The
+fractional-rate validator failure remains unwaived. The maintained product stays
+headless; VST3, standalone devices, named DAW and installed offline artifacts
+remain required for the full beta. Independent review and normal-hook publication
+are recorded separately in the live tracker. Mutation stays excluded and all
+reusable caches are preserved.

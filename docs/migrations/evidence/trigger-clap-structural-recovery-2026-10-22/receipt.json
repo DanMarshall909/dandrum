@@ -1,0 +1,50 @@
+{
+  "base": "072c1af49f3a4cc81117887541c70c5f3c3f5633",
+  "scope": "Partial native structural-service checkpoint; no task or beta closure",
+  "files": {
+    "README.md": {
+      "sha256": "b9a7c8244741c30161623278f86aa66a4075925c1c80dda62cb2dfe77e7611b6",
+      "bytes": 7900
+    },
+    "author-archive.json": {
+      "sha256": "ef1f3b40f5c3fb7a02233011ca45f0846e0cdf617edfbc108959710f8b2d1898",
+      "bytes": 561
+    },
+    "author-final-coverage-assessment.json": {
+      "sha256": "0accbba8ddecc6df0336eb46a34119060776309a74044e7c3a77789db7f3fbba",
+      "bytes": 1973
+    },
+    "author-final-handoff-manifest.json": {
+      "sha256": "f6941e4b4829ad1f12fcdc32c91c19f4aac4da1c828d80cf32e88e5f5eba502d",
+      "bytes": 19470
+    },
+    "author-raw.tar.gz": {
+      "sha256": "ea6e6882bd0704d694dda47ee9b2688f9f175c21eb954070f0d7c593611ddc22",
+      "bytes": 934278
+    },
+    "root-actual-cargo-bindings.json": {
+      "sha256": "928f7be76d85fd643b820be370242fc68cb6d4ace4bfb4a338af05ae50dcf70f",
+      "bytes": 8017
+    },
+    "root-archive.json": {
+      "sha256": "b346b1ff754f92c2e8a8e08e64dd7035e581b48ed3e517f1e137762e53fcff0c",
+      "bytes": 224
+    },
+    "root-final-coverage-assessment.json": {
+      "sha256": "b1dda34526a41f80e71ed57c0a5e7e49ce8c8426823d984f694a7efa0d8c90f7",
+      "bytes": 2030
+    },
+    "root-linkage-audit.json": {
+      "sha256": "514ef6bed58aeb1540ef3f5a09a7a4b873f20294ff9242e57f3ee05144c3fb64",
+      "bytes": 4482
+    },
+    "root-native-result.json": {
+      "sha256": "182b389dd07a8f3a6a3e36213ec0cbed2026dc7184c8ff9f85e8fba11927bd0c",
+      "bytes": 2635
+    },
+    "root-raw.tar.gz": {
+      "sha256": "83e713bc804f4c892573364c551557b3dc9d7c8fad87c20f1c832df8f971ca8f",
+      "bytes": 159271
+    }
+  }
+}
