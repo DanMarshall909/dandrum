@@ -1,0 +1,557 @@
+{
+  "functions": {
+    "encode_editor_reply": {
+      "merged_normal_source_regions": 9,
+      "executed_merged_regions": 9,
+      "invocations": 23,
+      "emitted_instantiations": 2,
+      "executed_instantiations": 1,
+      "instantiations": [
+        {
+          "name": "_RNvMs4_NtCsctzDZ1mVhAV_20dandrum_trigger_host10parametersNtB5_19ParameterController19encode_editor_reply",
+          "count": 0
+        },
+        {
+          "name": "_RNvMs4_NtCseovxJKn4IFm_20dandrum_trigger_host10parametersNtB5_19ParameterController19encode_editor_reply",
+          "count": 23
+        }
+      ],
+      "regions": [
+        {
+          "coordinates": [
+            818,
+            5,
+            823,
+            40
+          ],
+          "count": 23
+        },
+        {
+          "coordinates": [
+            824,
+            9,
+            824,
+            22
+          ],
+          "count": 23
+        },
+        {
+          "coordinates": [
+            825,
+            14,
+            825,
+            26
+          ],
+          "count": 23
+        },
+        {
+          "coordinates": [
+            825,
+            27,
+            825,
+            46
+          ],
+          "count": 23
+        },
+        {
+          "coordinates": [
+            825,
+            48,
+            825,
+            61
+          ],
+          "count": 23
+        },
+        {
+          "coordinates": [
+            825,
+            63,
+            825,
+            73
+          ],
+          "count": 23
+        },
+        {
+          "coordinates": [
+            825,
+            75,
+            825,
+            81
+          ],
+          "count": 23
+        },
+        {
+          "coordinates": [
+            826,
+            14,
+            826,
+            21
+          ],
+          "count": 23
+        },
+        {
+          "coordinates": [
+            827,
+            5,
+            827,
+            6
+          ],
+          "count": 23
+        }
+      ]
+    },
+    "encode_editor_event": {
+      "merged_normal_source_regions": 9,
+      "executed_merged_regions": 9,
+      "invocations": 20,
+      "emitted_instantiations": 2,
+      "executed_instantiations": 1,
+      "instantiations": [
+        {
+          "name": "_RNvMs4_NtCsctzDZ1mVhAV_20dandrum_trigger_host10parametersNtB5_19ParameterController19encode_editor_event",
+          "count": 0
+        },
+        {
+          "name": "_RNvMs4_NtCseovxJKn4IFm_20dandrum_trigger_host10parametersNtB5_19ParameterController19encode_editor_event",
+          "count": 20
+        }
+      ],
+      "regions": [
+        {
+          "coordinates": [
+            830,
+            5,
+            835,
+            40
+          ],
+          "count": 20
+        },
+        {
+          "coordinates": [
+            836,
+            9,
+            836,
+            22
+          ],
+          "count": 20
+        },
+        {
+          "coordinates": [
+            837,
+            14,
+            837,
+            26
+          ],
+          "count": 20
+        },
+        {
+          "coordinates": [
+            837,
+            27,
+            837,
+            46
+          ],
+          "count": 20
+        },
+        {
+          "coordinates": [
+            837,
+            48,
+            837,
+            61
+          ],
+          "count": 20
+        },
+        {
+          "coordinates": [
+            837,
+            63,
+            837,
+            68
+          ],
+          "count": 20
+        },
+        {
+          "coordinates": [
+            837,
+            70,
+            837,
+            77
+          ],
+          "count": 20
+        },
+        {
+          "coordinates": [
+            838,
+            14,
+            838,
+            21
+          ],
+          "count": 20
+        },
+        {
+          "coordinates": [
+            839,
+            5,
+            839,
+            6
+          ],
+          "count": 20
+        }
+      ]
+    }
+  },
+  "owner_file_summaries": {
+    "/tmp/dandrum-lanes/runtime/src/trigger-host/src/lib.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 21,
+        "covered": 21,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 94,
+        "covered": 65,
+        "percent": 69.14893617021278
+      },
+      "lines": {
+        "count": 120,
+        "covered": 119,
+        "percent": 99.16666666666667
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 173,
+        "covered": 171,
+        "notcovered": 2,
+        "percent": 98.84393063583815
+      }
+    },
+    "/tmp/dandrum-lanes/runtime/src/trigger-host/src/parameters.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 91,
+        "covered": 91,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 236,
+        "covered": 139,
+        "percent": 58.89830508474576
+      },
+      "lines": {
+        "count": 921,
+        "covered": 900,
+        "percent": 97.71986970684038
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 1377,
+        "covered": 1335,
+        "notcovered": 42,
+        "percent": 96.94989106753813
+      }
+    },
+    "/tmp/dandrum-lanes/runtime/src/trigger-host/src/protocol.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 24,
+        "covered": 24,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 54,
+        "covered": 31,
+        "percent": 57.407407407407405
+      },
+      "lines": {
+        "count": 362,
+        "covered": 362,
+        "percent": 100
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 516,
+        "covered": 501,
+        "notcovered": 15,
+        "percent": 97.09302325581395
+      }
+    },
+    "/tmp/dandrum-lanes/runtime/src/trigger-host/src/runtime.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 109,
+        "covered": 109,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 191,
+        "covered": 177,
+        "percent": 92.67015706806284
+      },
+      "lines": {
+        "count": 1372,
+        "covered": 1365,
+        "percent": 99.48979591836735
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 2130,
+        "covered": 2116,
+        "notcovered": 14,
+        "percent": 99.34272300469483
+      }
+    },
+    "/tmp/dandrum-lanes/runtime/src/trigger-host/src/state.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 10,
+        "covered": 10,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 30,
+        "covered": 30,
+        "percent": 100
+      },
+      "lines": {
+        "count": 105,
+        "covered": 105,
+        "percent": 100
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 177,
+        "covered": 176,
+        "notcovered": 1,
+        "percent": 99.43502824858757
+      }
+    }
+  },
+  "source_freeze_sha256": "8a63b92fc492f78e44451bf79ba3e8470cc4d5c1b329498d99d2dbe196eb6a16",
+  "phases": {
+    "00-baseline": {
+      "exit": 0,
+      "duration_seconds": 1.0062454720027745,
+      "resource_min": {
+        "disk": 5014536192,
+        "memory": 12358811648
+      },
+      "passed": 36,
+      "suite_results": 3
+    },
+    "00-baseline-cov": {
+      "exit": 1,
+      "duration_seconds": 0.5035917360219173,
+      "resource_min": {
+        "disk": 5014294528,
+        "memory": 12420501504
+      },
+      "passed": 0,
+      "suite_results": 0
+    },
+    "00-baseline-cov-supported": {
+      "exit": 0,
+      "duration_seconds": 35.18403092600056,
+      "resource_min": {
+        "disk": 3780763648,
+        "memory": 11344609280
+      },
+      "passed": 36,
+      "suite_results": 3
+    },
+    "01-reply-clippy": {
+      "exit": 0,
+      "duration_seconds": 3.0169921590131707,
+      "resource_min": {
+        "disk": 3753824256,
+        "memory": 12467585024
+      },
+      "passed": 0,
+      "suite_results": 0
+    },
+    "01-reply-cov": {
+      "exit": 0,
+      "duration_seconds": 6.031384350993903,
+      "resource_min": {
+        "disk": 3524632576,
+        "memory": 11834687488
+      },
+      "passed": 2,
+      "suite_results": 1
+    },
+    "01-reply-fmt": {
+      "exit": 0,
+      "duration_seconds": 0.5036501059948932,
+      "resource_min": {
+        "disk": 3755319296,
+        "memory": 12566695936
+      },
+      "passed": 0,
+      "suite_results": 0
+    },
+    "01-reply-green": {
+      "exit": 0,
+      "duration_seconds": 2.011322142992867,
+      "resource_min": {
+        "disk": 3755454464,
+        "memory": 12383944704
+      },
+      "passed": 2,
+      "suite_results": 1
+    },
+    "01-reply-interface-red": {
+      "exit": 101,
+      "duration_seconds": 0.5035017770132981,
+      "resource_min": {
+        "disk": 3958210560,
+        "memory": 12368412672
+      },
+      "passed": 0,
+      "suite_results": 0
+    },
+    "02-event-clippy": {
+      "exit": 0,
+      "duration_seconds": 3.017060718993889,
+      "resource_min": {
+        "disk": 3516698624,
+        "memory": 12262215680
+      },
+      "passed": 0,
+      "suite_results": 0
+    },
+    "02-event-cov": {
+      "exit": 0,
+      "duration_seconds": 5.529857155983336,
+      "resource_min": {
+        "disk": 3473129472,
+        "memory": 11898806272
+      },
+      "passed": 4,
+      "suite_results": 1
+    },
+    "02-event-fmt": {
+      "exit": 0,
+      "duration_seconds": 0.503399729001103,
+      "resource_min": {
+        "disk": 3518468096,
+        "memory": 12398751744
+      },
+      "passed": 0,
+      "suite_results": 0
+    },
+    "02-event-green": {
+      "exit": 0,
+      "duration_seconds": 1.5080802630109247,
+      "resource_min": {
+        "disk": 3518619648,
+        "memory": 12162244608
+      },
+      "passed": 4,
+      "suite_results": 1
+    },
+    "02-event-interface-red": {
+      "exit": 101,
+      "duration_seconds": 0.503326330013806,
+      "resource_min": {
+        "disk": 3521761280,
+        "memory": 12410535936
+      },
+      "passed": 0,
+      "suite_results": 0
+    },
+    "03-full-host": {
+      "exit": 0,
+      "duration_seconds": 12.058561656012898,
+      "resource_min": {
+        "disk": 3472355328,
+        "memory": 12189949952
+      },
+      "passed": 153,
+      "suite_results": 15
+    },
+    "04-full-host-cov": {
+      "exit": 0,
+      "duration_seconds": 21.107913134008413,
+      "resource_min": {
+        "disk": 3458719744,
+        "memory": 11666604032
+      },
+      "passed": 151,
+      "suite_results": 14
+    }
+  },
+  "red": {
+    "01-reply-interface-red": {
+      "method": "encode_editor_reply",
+      "errors": 9,
+      "kind": "expected interface absence compiler RED; no assertion RED claimed"
+    },
+    "02-event-interface-red": {
+      "method": "encode_editor_event",
+      "errors": 14,
+      "kind": "expected interface absence compiler RED; no assertion RED claimed"
+    }
+  },
+  "chronology": "Reply-only RED/GREEN/fmt/Clippy/exactLLVM/refactor record precedes event tests/API; event RED/GREEN/fmt/Clippy/exactLLVM/refactor precedes final full owner gates.",
+  "limits": [
+    "Exact-run LLVM only: 14 actually executed ELFs / 14 fresh raw profiles; retained-cache aggregate exports are not used as evidence.",
+    "Full-host report emits unit-library and integration-library instantiations at the same wrapper source coordinates. One of two emitted instantiations executes per wrapper. Derived logical source-coordinate union executes9/9 each, not a claim that all emitted instantiations execute. Raw per-copy counters/objects remain in exact export/binding.",
+    "Normal region execution is not asserted behavior, branch or MC/DC coverage; explicit numeric wire, structured errors, histories and signed audio assertions provide the relevant behavior checks.",
+    "Full host ordinary151 unit/integration +2 compile-fail doctests; default LLVM run does not instrument doctests.",
+    "No mutation per accepted scope; no native, GUI, device, DAW, full release or full-beta completion claim.",
+    "No new maintained test-lane machinery added. Focused four tests and final whole-owner command are recorded; individual libtest per-test timing unavailable in stable default runner."
+  ],
+  "refactor": "No production extraction: wrappers preserve sole protocol/session authority. Local test helpers only; independent numeric65536 wire oracle refinement passes existing codec and is not called a RED.",
+  "parser_friction": "First final qualifier assumed one emitted function per wrapper and correctly rejected duplicate instantiations. Revised to retain actual instantiations and explicitly merge identical normal source coordinates; no product/test changes."
+}

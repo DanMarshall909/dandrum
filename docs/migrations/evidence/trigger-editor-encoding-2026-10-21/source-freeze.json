@@ -1,0 +1,30 @@
+{
+  "head": "7e96d7b509c1a920fbcbea15270b0af7ad18fd6c",
+  "files": {
+    "src/trigger-host/src/parameters.rs": {
+      "sha256": "48d5d72677fbbca5c5831e3c52dc510761c721e2a630359362507941ec2afcc1",
+      "mode": "0o100664",
+      "mtime_ns": 1792559980883975118,
+      "size": 53590
+    },
+    "src/trigger-host/tests/editor_encoding.rs": {
+      "sha256": "3a3732aacfdba14dcd0c28100e21ae51b856ffe1928455f16f01a4ed6beaf6a0",
+      "mode": "0o100664",
+      "mtime_ns": 1792560003023795433,
+      "size": 13175
+    },
+    "openspec/changes/add-juce-free-trigger-clap-editor/design.md": {
+      "sha256": "ba29c2183937061ffff86162c680df87694da8c290c40da9afe2b813dfa94a27",
+      "mode": "0o100664",
+      "mtime_ns": 1792559571398586584,
+      "size": 42441
+    }
+  },
+  "status": " M openspec/changes/add-juce-free-trigger-clap-editor/design.md\n M src/trigger-host/src/parameters.rs\n?? src/trigger-host/tests/editor_encoding.rs\n",
+  "author_scope": [
+    "src/trigger-host/src/parameters.rs",
+    "src/trigger-host/tests/editor_encoding.rs"
+  ],
+  "production_delta": "24 added lines: two straight protocol/session forwarding operations",
+  "source_frozen": true
+}

@@ -814,6 +814,30 @@ impl ParameterController {
             .map_err(ParameterError::Protocol)
     }
 
+    /// Encode a bounded reply off audio using this controller's live editor authority.
+    pub fn encode_editor_reply(
+        &self,
+        attachment_id: &str,
+        request_id: &str,
+        result: Result<serde_json::Value, ProtocolError>,
+    ) -> Result<String, ParameterError> {
+        self.protocol
+            .encode_reply(self.host.session(), attachment_id, request_id, result)
+            .map_err(ParameterError::Protocol)
+    }
+
+    /// Encode a bounded event off audio with the live editor's retained sequence.
+    pub fn encode_editor_event(
+        &mut self,
+        attachment_id: &str,
+        event: &str,
+        payload: serde_json::Value,
+    ) -> Result<String, ParameterError> {
+        self.protocol
+            .encode_event(self.host.session(), attachment_id, event, payload)
+            .map_err(ParameterError::Protocol)
+    }
+
     /// Project the accepted native session off audio and encode one bounded v1
     /// reply. This read reuses its admitted editor and never changes history.
     pub fn sampler_session_reply(

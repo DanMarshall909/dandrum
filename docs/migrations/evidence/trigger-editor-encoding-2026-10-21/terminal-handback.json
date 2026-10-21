@@ -1,0 +1,29 @@
+{
+  "all_known_exec_sessions_terminal": true,
+  "active_rust_builders": [],
+  "known_sessions": [
+    41454,
+    67391,
+    97400,
+    25787,
+    5828,
+    57960,
+    11311,
+    55640,
+    22186,
+    81018,
+    75061
+  ],
+  "source_unchanged": true,
+  "status": " M openspec/changes/add-juce-free-trigger-clap-editor/design.md\n M src/trigger-host/src/parameters.rs\n?? src/trigger-host/tests/editor_encoding.rs\n",
+  "disk_free": 3435565056,
+  "mem_available": 12345389056,
+  "cache_ownership": "Both cache loans now terminal and ready for explicit root handback; no author Rust processes remain.",
+  "caches": [
+    "/tmp/dandrum-lanes/cache-runtime",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov"
+  ],
+  "preserved_caches": true,
+  "no_deletion_or_move": true,
+  "ramfs": "UNUSED_OUTPUT_VOLUME"
+}
