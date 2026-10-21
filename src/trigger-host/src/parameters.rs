@@ -1272,6 +1272,11 @@ impl ParameterController {
         }
     }
 
+    /// Read pending events in delivery order without acknowledging them.
+    pub fn pending_automation(&self) -> impl Iterator<Item = AutomationEvent> + '_ {
+        self.automation.iter().copied()
+    }
+
     /// A format adapter acknowledges only after its host accepts this event.
     pub fn peek_automation(&self) -> Option<AutomationEvent> {
         self.automation.front().copied()

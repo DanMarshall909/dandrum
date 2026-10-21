@@ -1,0 +1,566 @@
+{
+  "criterion": "Read-only borrowed automation stream preserves FIFO event identity/physical values, queued capacity and explicit host-acceptance acknowledgement boundary.",
+  "supplied_base": "68668a3ffc1a6a65eebc359a66b577f3ee9c4fdb",
+  "changed_path_hashes": {
+    "src/trigger-host/src/parameters.rs": "e124d39bd8acd240624b7580d8c119ecd018adb507046a8e1e82ee9b35c01963",
+    "src/trigger-host/tests/parameters.rs": "4558e55b8e0c129c60f9339a92a92bf65d21c113131df0bafb17dd5f91ac3bef"
+  },
+  "all_relevant_source_hashes": {
+    "src/trigger-host/Cargo.lock": "69185044ca1e4e6c9e7d78477d48a4340b0b9b30383994f6a933faef3d6e6d6b",
+    "src/trigger-host/Cargo.toml": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+    "src/trigger-host/src/state.rs": "9355b2c855998d2306c053d50485eea617103b932c7de7e04aa1929d7719afaf",
+    "src/trigger-host/src/runtime.rs": "41cb146824e21aa3c5814885b5561cd00d8152b5390338af25af26bc96f62592",
+    "src/trigger-host/src/parameters.rs": "e124d39bd8acd240624b7580d8c119ecd018adb507046a8e1e82ee9b35c01963",
+    "src/trigger-host/src/protocol.rs": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+    "src/trigger-host/src/lib.rs": "d16daf1630f43184909847e03107d402a8d54f3bf2fe6085a8bfd966c1aa80f9",
+    "src/trigger-host/tests/session_jobs.rs": "95d3be564f52fc38156eb5c015d3299d5ce77fd0cef1424cff1faa0272e8eafa",
+    "src/trigger-host/tests/snapshot.rs": "d93cbf1f16216c1413d25027f56d731832b3aad62a20e13603ede69f3179f9be",
+    "src/trigger-host/tests/state.rs": "9e5fd3a116e507fdbf7a35b2edf30d77868bf0f261e9c52c82546e678debf2f6",
+    "src/trigger-host/tests/parameter_flush.rs": "96d17783f093b08ca20cbf940ea21b6eb993c0e755b89769f7a2cc350ba6750e",
+    "src/trigger-host/tests/editor_encoding.rs": "3a3732aacfdba14dcd0c28100e21ae51b856ffe1928455f16f01a4ed6beaf6a0",
+    "src/trigger-host/tests/runtime.rs": "4405fa17093a49776569a817a4891cf6bb68978fdfe4c61c23ed8b376203690a",
+    "src/trigger-host/tests/runtime_quiescent.rs": "c3d23533215e762663c0eb2706ba4ee58ffe83e54a95b79e62ec58f00de3568f",
+    "src/trigger-host/tests/packaged_resources.rs": "14cf8d062ef37c69434e3e6a5de4ecc8c29381944cbd3ceec2a84d58962d9003",
+    "src/trigger-host/tests/render_reconfiguration.rs": "f725fcc7d035abad53727a478e386e869cf62a04d4abee3b44ac363a8e77f05e",
+    "src/trigger-host/tests/editor_note_controller.rs": "99b99000f9e35406e87d29325d4f6ae07a6354097a40a94544c7cfff68fbb08e",
+    "src/trigger-host/tests/parameters.rs": "4558e55b8e0c129c60f9339a92a92bf65d21c113131df0bafb17dd5f91ac3bef",
+    "src/trigger-host/tests/protocol.rs": "6ac729489e479f6457e23ba56be48c0f1ca11b431b6e968abfa27352012a70e0",
+    "src/trigger-host/tests/editor_notes.rs": "669c8d141661eb649eb2a5d83b1d71783cca6e09d15ba8e85093cd0b938f270a",
+    "src/trigger-host/tests/internal/state.rs": "cb51a4d5ea903b21ff954010e7e4c04d989a47b859c6d94ef6d44e4a79e98e35",
+    "src/trigger-host/tests/support/editor_notes.rs": "8eff39ddbb42447a45f58700da84e65f87fc30d0c58ad7dfa8c13939e098ceae",
+    "src/instrument-session/Cargo.lock": "1537a3dc07c17fb7fe79786d1863b7e9b7e3db328757845fdbe3ffdbb10201eb",
+    "src/instrument-session/Cargo.toml": "64121a3f75dde57b6a4cc0dcee2a96e4f8cab7ee1b72382f8da60998efba4c44",
+    "src/instrument-session/src/native_ffi.rs": "cdada47286a2c2f94d45c652a9166b8d9a30870e56fca1111abdcdf5611934b8",
+    "src/instrument-session/src/lib.rs": "b010be63d2a6c61e7362e80418acdb53ab35bf15f82d242a3d0c9c4fbd647cf4",
+    "src/instrument-session/tests/session.rs": "a385cda3bb5cbe8db5145f04733cd6a9a214ad64c7621e6b6ed24dac8ae8b28c",
+    "src/instrument-session/tests/render_configuration.rs": "a64598b0cab81da23f0373fddb82ad61e66a00442c8fcf839999734109ae5ffd",
+    "src/instrument-session/tests/internal/revision_limit.rs": "62a48798e7cccdbe4ee86ed6ceb1571d9160e2c4350768a7e0dbd1b5ea3671d4",
+    "src/rust-engine/Cargo.lock": "7b9868b097cc152c22ff3462ccfd60e822d8a1bb3724a89f43ba526e72ea20d7",
+    "src/rust-engine/Cargo.toml": "b854bee281b47373d018c881aa024a67349dd5ed0928b3d05597c12d7c4ce90b",
+    "src/rust-engine/src/synth.rs": "5465d59e4f2e89eff4df50bc5dbced92963e19e458eb92e6396f4c2d7e35fafa",
+    "src/rust-engine/src/decay.rs": "e28c471be6fe7d3dfcfcbec37f02d045487685f540541e8b80061da278ccf014",
+    "src/rust-engine/src/module_package.rs": "a8a32309a55c8cc2d3ea2cba5a74549f5235f1d4bdf1b2791b8fde6f05b39d41",
+    "src/rust-engine/src/instrument_state.rs": "2ee7fe57aa02b0376aac3fef9a0f52eaef9cbb946ccd4eedf45ae8cdf0a89ee0",
+    "src/rust-engine/src/sample.rs": "b1a76a9e0a4451df0b044c0183de0a3eb409112990e3a701cd606cdcd2598931",
+    "src/rust-engine/src/module_library.rs": "72b43190bca73246cf22371f9b3ba6b32248320d2759bf3bc4e0e48a59442e32",
+    "src/rust-engine/src/diagnostics.rs": "ed180887bd017e2153c3882277de0c18b5f4309d8e4572d97d43b843fc1fb5db",
+    "src/rust-engine/src/cli.rs": "5a7164e0934b62d4b955199166b616f826c6b87aca75dadc7b2ced8d4d7749f8",
+    "src/rust-engine/src/sound_analysis.rs": "d6a30207b4a4995d3560df6cdc408ca61893b6b7b0cd78e964496c2ff29a38d4",
+    "src/rust-engine/src/builtins.rs": "54527f81aa9a1fd310682abc606a68f4da618fb090c5d5c0ae214a59e3da1322",
+    "src/rust-engine/src/audio_loading.rs": "9e456cafe2eef0d62da62a4ad60c0c9859c27c74bf88727f4725fa8d8609c25b",
+    "src/rust-engine/src/graph_proposal.rs": "ee6fd5071bdbdf04c1031b791257da0fbee5f578ff9ff5012c28b40cf99825e1",
+    "src/rust-engine/src/drum_voice_authoring_tests.rs": "2475946e7c076ff0d987cacdbc12a8f4635abc5d60453dce521801ab65823802",
+    "src/rust-engine/src/reverb.rs": "8425b768a45e6ee5879a525fd535b4c05740f9708feb0ab354b67d03c63667b5",
+    "src/rust-engine/src/sound_workbench_ffi.rs": "4df6efc058701e396aa10663def42e87ce963104f798e1120ade392cf119344a",
+    "src/rust-engine/src/wav.rs": "6f64c1daf704f3ab3b00765e255d66d28e41dea976cd2d1a622ae479d3dddb00",
+    "src/rust-engine/src/module_reference.rs": "0b9b27584f87cd436633580220ce53d403a4d0baef0a6a8b7c0612419da5b534",
+    "src/rust-engine/src/dynamics_processor.rs": "696e8e34e0afc9b24829eef807ccecee1b4ecd5b27a87f3c023159c09826678c",
+    "src/rust-engine/src/delay_line.rs": "31a59fe2872c358f987f7764b0d83ee8605f1f420d4db74f9edbc6841fb08d6a",
+    "src/rust-engine/src/codex_cli_provider.rs": "d792ddbd82d2f9e5a0c3d03e968a07a1d257c53f0a6325d5969db5af53eb601b",
+    "src/rust-engine/src/kernel.rs": "ed703f8b7a81c45d61f15f7f2fbae0d9fa9d4efe5e1ec323527672d6c05c76d0",
+    "src/rust-engine/src/echo.rs": "46549d0d5c1f4f889f814ec191a910dd5c531786abdb8402296d805577f2b652",
+    "src/rust-engine/src/compiled_patch.rs": "b833af2a1b1cac065eb7e465fd39412fd9d5ce96cda3cb61931f4f515ad75f2d",
+    "src/rust-engine/src/fft.rs": "8158e9c39779b291ac602ab5e0f4203e9e07411bfdc519c0327bd22aa7e99985",
+    "src/rust-engine/src/patch.rs": "177747327e15f9e8f52f7a1947a2d8d1a3b0d0aaed2212bd538c17523403f128",
+    "src/rust-engine/src/graph.rs": "989d2017dadd7026a1f0d01323fe5243b2261ee56c25b8f095bb7fd87b8cf13f",
+    "src/rust-engine/src/graph_module.rs": "495fb45d06d354ffc4449b07d69f84205abfbdc5585a2a0350f515e6f5d3fba6",
+    "src/rust-engine/src/spectral.rs": "b085c9c9b95bfa854d9271ddb02f417048a14231d686eb60309cfb0e8eab1474",
+    "src/rust-engine/src/test_support.rs": "8e5a8646bf8c0ac369c709e5d54ff7b05ffe74b245789dacf978fe1bcfec1548",
+    "src/rust-engine/src/envelope_follower.rs": "a8c2a65fc73f2dab92f1e0e84749df3bed82333270bcceec7099631d741cc31f",
+    "src/rust-engine/src/preparation.rs": "1179b659082e4751e8ef7833dc582900d6da95520c25b22ef1d8ac2079f2f8cf",
+    "src/rust-engine/src/curve_mapper.rs": "318660b92acdecfd06dc68dd526e0cb3de471c6c95a23972a5bab3ee787ca303",
+    "src/rust-engine/src/sound_workbench.rs": "8d3f884f6029d53ea5660efb3269dcb90e4062680cc67d5ca2e2ac15feb9d16c",
+    "src/rust-engine/src/realtime.rs": "1ffd49661612919577954c24a7ac41dd46ac24cfc1d8c7a2a34faa1996d25352",
+    "src/rust-engine/src/crossover.rs": "5e095c51db2f3cd49de3dab6c1b94f4d4c224734d4066f483dd037903fcc51a2",
+    "src/rust-engine/src/core.rs": "75073bd96d63d55e4dcc45569c0dd0436fb41b470a1c20e8009370868b2dd91a",
+    "src/rust-engine/src/voice_allocator.rs": "6c10159344d6f4425d717d35d6bb864582d10fd55d5ee70e8e0f8a25b0463eb6",
+    "src/rust-engine/src/script.rs": "26b4d31fcf4c535412068d746c605e59020eb8c758251bfe9b7f60448236b038",
+    "src/rust-engine/src/oscillator.rs": "b57ac211a13850a98ac6a17e9f831d7906edc0090086f6f13720057f3d2fea99",
+    "src/rust-engine/src/patch_module.rs": "d753466553510dccd6390bbfd1aa7d550d862575b344d76ba437a67be9510670",
+    "src/rust-engine/src/test_allocator.rs": "a608a8b8e995e8ac84ec381ed157e687d5900b9450c3a6ad19a3789e38e6996e",
+    "src/rust-engine/src/sound_matching.rs": "1de6101d1d88f569ca704a77ccfecc9ad9fc453f3d0b74a07adec74b8e1397b2",
+    "src/rust-engine/src/ffi.rs": "ef1b15913cdadf9147d315ae0b4b310ada8e1f6ecbe208add2a180f5d0bebb1e",
+    "src/rust-engine/src/saturator.rs": "546f04fb2ab65be381f8a72e7d422ec6eff7539cd8f0c3cfb255678ae1ae5019",
+    "src/rust-engine/src/lib.rs": "f8039a7317632b9e7b3442f7746f1a9224c5308571cbf2043f25242a667984ac",
+    "src/rust-engine/src/convolution.rs": "9b708658b10699e646cf332082b1af3ce78be0242f22e9438034064e82b401ae",
+    "src/rust-engine/src/bin/dandrum-sound-workbench.rs": "b95c20bd95ea8d07013f6bad08afd065763c6a905314b67872ba800899ff10da",
+    "src/rust-engine/src/bin/dandrum-demo.rs": "1ae883f67e4f2b9042ac7671a10dc230daf65eebb253d2053f7426f8317999cc",
+    "src/rust-engine/src/bin/render-kick.rs": "110bc1b6355bba531492324bca20551cb71d00dde5eefa46ba185359f2695ffe",
+    "src/rust-engine/src/bin/dandrum-cli.rs": "fe346d5a3ce9583d90389450b1e62b95584f28de6b1f791a4b57f7ee9f80ad46",
+    "src/rust-engine/src/bin/dandrum-stepseq.rs": "0687f2bbe2d8b2bf158d897da36a1a73308f260b02b24ac22702dcbeaaaefd34",
+    "src/rust-engine/src/builtins/tests.rs": "522d226350256b0b4d258381bc567fcf73c171b880654907faf199dbe796e4f3",
+    "src/rust-engine/src/builtins/module_kind.rs": "1ca4a2ffb441183dbc8f97b5abc48f53200014dcef9ca58936337535714a2107",
+    "src/rust-engine/src/builtins/module_types.rs": "e7f80502cfc3185668d82ce8762a01180e51511a3f8f45d2d4a79ee0bb25e6d2",
+    "src/rust-engine/src/filter/comb.rs": "a94590de8c95e366a38ef1080104ab871b7f2879ca89fd7326505b2e0c202b9a",
+    "src/rust-engine/src/filter/mod.rs": "7335be4e4fdaac662f1c1d0d49263d4dae7ffaf2176b01e16ef0aa738115bca9",
+    "src/rust-engine/src/filter/tests.rs": "b3a1fee225f4535dd6b1cde31654155ba8d2e0cf69ae814ef746116ccc4a3b78",
+    "src/rust-engine/src/filter/biquad.rs": "3af69f79a3efc4823c106fe74910a6cc7629e8d24fc4d6cce6ca112e3369c061",
+    "src/rust-engine/src/filter/moog.rs": "36017d5c663fdeaf78a012bcf03a51ed8333964507fa8fb945e7cb3f06c00bfe",
+    "src/rust-engine/src/filter/one_pole.rs": "a9b227127b5b081c58ddc5e33bf0eea81eb51458730992b21e184b0d1b8318de",
+    "src/rust-engine/src/graph/tests.rs": "dd815218ff47a42fcd364551a73c712149b398ae2a42ff0f7d197581a0deade9",
+    "src/rust-engine/src/graph/builtin_ports.rs": "95cc0ae020ee86b758a2ed79f67912a6902811878b9baf6c1fcf15e70880cfd7",
+    "src/rust-engine/src/legacy_tests/declarative_parameters_red_tests.rs": "925904fb829f2cf5c7343cf4358588af656bc2df6461dcfcb5df8d78e15cfcd8",
+    "src/rust-engine/src/legacy_tests/declarative_parameters_remaining_red_tests.rs": "d2d3cc34c75842e1340f397c5a123abddb5ac042a1170273d8469f471b63935f",
+    "src/rust-engine/src/legacy_tests/engine_patch_behaviour_tests.rs": "1c380b417b3340eccb408132891200342d0c3d6006c4dcbd463b4aa457bb9262",
+    "src/rust-engine/src/kernel/builtins.rs": "7d7c418cd613d79ca84ca08022163af8a225101203a9280f8c8eebb06e2ebc4d",
+    "src/rust-engine/src/kernel/latency.rs": "b7ac9837e96b373729d37654348b37941d36c90347acfd4a432c2e96c7529721",
+    "src/rust-engine/src/kernel/tests.rs": "ba1fcc81406029d45199dde2586bb0a65f72aa0fc3f917ff6a30ced8956d13b8",
+    "src/rust-engine/src/kernel/flatten.rs": "eed495c18b63ba98bd87a9cd55dc94d7fb6866be9d90a13a23a6f6517f94eca5",
+    "src/rust-engine/src/kernel/document.rs": "563c907e69936e87ce92ff844b9856d4407ddcb64a868d2faef9942235c2ef24",
+    "src/rust-engine/src/kernel/builtins/tests.rs": "e0543690a6c0ab7ece9df6c185a732e7d8b923ae77fa7a9c499f3eda417e0200",
+    "src/rust-engine/src/kernel/flatten/tests.rs": "7acea6723404e1f70672e7a3b53c54a0c2a1806b56c4c6688a0c790f8f27ad4f",
+    "src/rust-engine/src/kernel/latency/tests.rs": "9a8a74a9cda6326ba6d9dc912e1ebf8c13bbf5d1893b430ca821583e63b95732",
+    "src/rust-engine/src/kernel/document/tests.rs": "e90ccfe09de548d7fe7796e45c6239af1c66b44d6552d1b7811abf341fde678f",
+    "src/rust-engine/src/graph_processor/processing.rs": "9c3a981938df15c70e471008a04befd2d91128e16546711a614f8200f802ae11",
+    "src/rust-engine/src/graph_processor/render_plan.rs": "63dee65fb86ff86a861d31ae8d872287aca397d9ac65c696323885d4ef098df4",
+    "src/rust-engine/src/graph_processor/state.rs": "a8150023e7298930b4a5e20131ea2dfb7e1081769d6931d68352f4a41f1a6301",
+    "src/rust-engine/src/graph_processor/mod.rs": "34c10b5bd9accc1d9c6c4e8ae2564921d14dabd26397cf9f4345c217735a0433",
+    "src/rust-engine/src/graph_processor/helpers.rs": "d570262f86c841f4f3cf0a4b463b497b5c57851005b76037e9004bb4eb834b0e",
+    "src/rust-engine/src/graph_processor/tests.rs": "5a17506c44139398dc7845a0077fa7514df9f058acb0ef55a46c830db670be64",
+    "src/rust-engine/src/graph_processor/realtime_graph_processor.rs": "0241d795f703468036164bc31015286d977d0f5598e73553fc340193015d2761",
+    "src/rust-engine/src/graph_processor/audio_arena.rs": "837db21b9d144a0399b89307289a029c8259e73c451680dfb4581e3fee3f4d36",
+    "src/rust-engine/src/graph_processor/polyphony.rs": "38877cffcfcada58684f79632f953dfd3beab5cfc5e0677bbe7656962540aae3",
+    "src/rust-engine/src/graph_processor/offline.rs": "aff78a9fd3e92ca34d2a06a8276d875c7c60fec952f14f46d3b8053f7812b416",
+    "src/rust-engine/src/graph_processor/input_provider.rs": "2846e0d1701e8739b4cd8caf0ddbe26dbadc07dd08a33a5b42ebd617a37351f9",
+    "src/rust-engine/src/graph_processor/realtime_allocation_tests.rs": "4f2dbca7d3a3bbd5371a5923ef2f1236e4623ff63281db83faf8965ceaed6795",
+    "src/rust-engine/src/graph_processor/block.rs": "970db7c8f16771173e047b369b0761d40214e936de2fc283d7f3505c4bfebcc8",
+    "src/rust-engine/src/graph_processor/process_context.rs": "deff137d8f638b29c045bfdf333f0a6626f742885422e314e7ff84b5e751f340",
+    "src/rust-engine/src/graph_processor/event_queue.rs": "d6b56cb3d769895ec85ad812a7c14bd0c3d7fc09ac9c7ea3d5c83d2985542bd3",
+    "src/rust-engine/src/graph_processor/dispatch.rs": "d3cc22b0a43afbe320735383d5f117e2260113d0cc547c61d6406b1215a2b90e",
+    "src/rust-engine/src/graph_processor/outputs.rs": "65b0a3934727347602cd89f3f2a935951520ef1d5864c39d08c9def3dfa1ff12",
+    "src/rust-engine/src/graph_processor/arena_processing.rs": "f0909e4a95f1f9b09ffc8ea4ad89a7897eaab6c66984072a517416bb7fe247f1",
+    "src/rust-engine/tests/runtime_thread_ownership.rs": "363babd6c498b40ad94a5e58247305c8eed3f93e917004be3c0fa7f9b28728af"
+  },
+  "only_changed_relevant_paths": [
+    "src/trigger-host/src/parameters.rs",
+    "src/trigger-host/tests/parameters.rs"
+  ],
+  "baseline": "Prior editor-encoding04-full-host-cov exact receipt: all124 source/manifest/lock hashes identical before source edits; accepted by root. Fresh baseline rerun was a guarded resource/setup stop, not evidence.",
+  "red": {
+    "kind": "Expected absent-interface compiler RED; no assertion RED claimed",
+    "e0599_diagnostics": 7,
+    "warning": "Separate harmless explicit -o/multiple-output adaptation warning; normal strict Cargo Clippy clean."
+  },
+  "regression_composition": "Normal full154 run07 has final production hash and pre-strengthening test hash; final current test-only oracle refactor is rechecked by normal16 parameter tests13 plus fresh16-test LLVM16 and finalfmt11/strictClippy12. No whole-suite rerun after the test-only oracle strengthening is claimed.",
+  "green": {
+    "focused": 1,
+    "normal_host_total": 154,
+    "normal_host_unit_integration": 152,
+    "normal_host_compile_fail_docs": 2,
+    "normal_host_cargo_reported_test_elfs": 14,
+    "llvm_parameter_tests": 16
+  },
+  "coverage": {
+    "changed_method": {
+      "branches": [],
+      "count": 7,
+      "filenames": [
+        "/tmp/dandrum-lanes/runtime/src/trigger-host/src/parameters.rs"
+      ],
+      "mcdc_records": [],
+      "name": "_RNvMs4_NtCseovxJKn4IFm_20dandrum_trigger_host10parametersNtB5_19ParameterController18pending_automation",
+      "regions": [
+        [
+          1276,
+          5,
+          1276,
+          83,
+          7,
+          0,
+          0,
+          0
+        ],
+        [
+          1277,
+          9,
+          1277,
+          24,
+          7,
+          0,
+          0,
+          0
+        ],
+        [
+          1277,
+          25,
+          1277,
+          29,
+          7,
+          0,
+          0,
+          0
+        ],
+        [
+          1277,
+          32,
+          1277,
+          38,
+          7,
+          0,
+          0,
+          0
+        ],
+        [
+          1278,
+          5,
+          1278,
+          6,
+          7,
+          0,
+          0,
+          0
+        ]
+      ]
+    },
+    "normal_regions_executed": 5,
+    "normal_regions_total": 5,
+    "invocations": 7,
+    "raw_profile_count": 1,
+    "actual_elf_count": 1,
+    "production_owner_summaries": {
+      "/tmp/dandrum-lanes/runtime/src/trigger-host/src/lib.rs": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 21,
+          "covered": 13,
+          "percent": 61.904761904761905
+        },
+        "instantiations": {
+          "count": 31,
+          "covered": 16,
+          "percent": 51.61290322580645
+        },
+        "lines": {
+          "count": 120,
+          "covered": 78,
+          "percent": 65
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 173,
+          "covered": 115,
+          "notcovered": 58,
+          "percent": 66.47398843930635
+        }
+      },
+      "/tmp/dandrum-lanes/runtime/src/trigger-host/src/parameters.rs": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 92,
+          "covered": 30,
+          "percent": 32.608695652173914
+        },
+        "instantiations": {
+          "count": 100,
+          "covered": 33,
+          "percent": 33
+        },
+        "lines": {
+          "count": 924,
+          "covered": 284,
+          "percent": 30.735930735930733
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 1382,
+          "covered": 408,
+          "notcovered": 974,
+          "percent": 29.52243125904486
+        }
+      },
+      "/tmp/dandrum-lanes/runtime/src/trigger-host/src/protocol.rs": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 24,
+          "covered": 17,
+          "percent": 70.83333333333334
+        },
+        "instantiations": {
+          "count": 30,
+          "covered": 18,
+          "percent": 60
+        },
+        "lines": {
+          "count": 362,
+          "covered": 204,
+          "percent": 56.353591160220994
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 516,
+          "covered": 237,
+          "notcovered": 279,
+          "percent": 45.93023255813954
+        }
+      },
+      "/tmp/dandrum-lanes/runtime/src/trigger-host/src/runtime.rs": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 82,
+          "covered": 52,
+          "percent": 63.41463414634146
+        },
+        "instantiations": {
+          "count": 82,
+          "covered": 52,
+          "percent": 63.41463414634146
+        },
+        "lines": {
+          "count": 842,
+          "covered": 514,
+          "percent": 61.04513064133017
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 1117,
+          "covered": 677,
+          "notcovered": 440,
+          "percent": 60.60877350044763
+        }
+      },
+      "/tmp/dandrum-lanes/runtime/src/trigger-host/src/state.rs": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 9,
+          "covered": 0,
+          "percent": 0
+        },
+        "instantiations": {
+          "count": 9,
+          "covered": 0,
+          "percent": 0
+        },
+        "lines": {
+          "count": 96,
+          "covered": 0,
+          "percent": 0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 165,
+          "covered": 0,
+          "notcovered": 165,
+          "percent": 0
+        }
+      }
+    },
+    "gap_label": "Existing unexecuted source is visible and outside these16 parameter tests; no reachability, deletion, exclusion, whole-owner100%, branch orMC/DC claim. Full export retained without denominator exclusions."
+  },
+  "phases": {
+    "13-refactor-parameter-tests": {
+      "exit": 0,
+      "duration_seconds": 1.5132592000300065,
+      "resource_min": {
+        "disk": 16309514240,
+        "memory": 13180166144
+      },
+      "stop_reason": null
+    },
+    "15-refactor-llvm-tests-compile": {
+      "exit": 0,
+      "duration_seconds": 0.7546903300099075,
+      "resource_min": {
+        "disk": 16310272000,
+        "memory": 12992311296
+      },
+      "stop_reason": null
+    },
+    "08-llvm-owner-compile": {
+      "exit": 0,
+      "duration_seconds": 0.7540253569604829,
+      "resource_min": {
+        "disk": 16491937792,
+        "memory": 12991184896
+      },
+      "stop_reason": null
+    },
+    "01-interface-red": {
+      "exit": 1,
+      "duration_seconds": 0.25176769495010376,
+      "resource_min": {
+        "disk": 16687898624,
+        "memory": 13247045632
+      },
+      "stop_reason": null
+    },
+    "06-clippy": {
+      "exit": 0,
+      "duration_seconds": 7.543971098028123,
+      "resource_min": {
+        "disk": 16368156672,
+        "memory": 12881305600
+      },
+      "stop_reason": null
+    },
+    "11-refactor-fmt": {
+      "exit": 0,
+      "duration_seconds": 0.507381365983747,
+      "resource_min": {
+        "disk": 16312033280,
+        "memory": 13364207616
+      },
+      "stop_reason": null
+    },
+    "00-baseline-coverage": {
+      "exit": -15,
+      "duration_seconds": 24.635519365023356,
+      "resource_min": {
+        "disk": 1024491520,
+        "memory": 11168186368
+      },
+      "stop_reason": "fixed resource floor"
+    },
+    "05-fmt-check": {
+      "exit": 0,
+      "duration_seconds": 0.5094385490519926,
+      "resource_min": {
+        "disk": 16476487680,
+        "memory": 13287186432
+      },
+      "stop_reason": null
+    },
+    "14-refactor-llvm-owner-compile": {
+      "exit": 0,
+      "duration_seconds": 0.7545611119712703,
+      "resource_min": {
+        "disk": 16313618432,
+        "memory": 13106233344
+      },
+      "stop_reason": null
+    },
+    "16-refactor-llvm-parameter-tests": {
+      "exit": 0,
+      "duration_seconds": 0.2518268969724886,
+      "resource_min": {
+        "disk": 16231538688,
+        "memory": 13212565504
+      },
+      "stop_reason": null
+    },
+    "09-llvm-tests-compile": {
+      "exit": 0,
+      "duration_seconds": 0.7543930329848081,
+      "resource_min": {
+        "disk": 16295694336,
+        "memory": 13073170432
+      },
+      "stop_reason": null
+    },
+    "10-llvm-parameter-tests": {
+      "exit": 0,
+      "duration_seconds": 0.2518197040189989,
+      "resource_min": {
+        "disk": 16327544832,
+        "memory": 13313552384
+      },
+      "stop_reason": null
+    },
+    "02-owner-green-compile": {
+      "exit": 0,
+      "duration_seconds": 1.0064596139709465,
+      "resource_min": {
+        "disk": 16674840576,
+        "memory": 13119156224
+      },
+      "stop_reason": null
+    },
+    "04-focused-green": {
+      "exit": 0,
+      "duration_seconds": 0.2518105239723809,
+      "resource_min": {
+        "disk": 16477093888,
+        "memory": 13398413312
+      },
+      "stop_reason": null
+    },
+    "12-refactor-clippy": {
+      "exit": 0,
+      "duration_seconds": 0.5089991390123032,
+      "resource_min": {
+        "disk": 16309657600,
+        "memory": 13244039168
+      },
+      "stop_reason": null
+    },
+    "03-test-green-compile": {
+      "exit": 0,
+      "duration_seconds": 0.7531382369925268,
+      "resource_min": {
+        "disk": 16477712384,
+        "memory": 13282521088
+      },
+      "stop_reason": null
+    },
+    "07-full-host-tests": {
+      "exit": 0,
+      "duration_seconds": 22.119118333037477,
+      "resource_min": {
+        "disk": 16085794816,
+        "memory": 12856446976
+      },
+      "stop_reason": null
+    }
+  },
+  "refactor": {
+    "production": "No extraction/change: iter().copied() is the smallest borrowing adapter over the sole ledger; no new module.",
+    "tests": "Root review found the initial allocation check measured a warmed traversal. Test-only refactor now measures the first empty read and first populated traversal, with freshfmt/strictClippy/owningtest/LLVM proof; no new assertion RED is invented. Existing package/request and independent manual peek-ack helpers retained. One public scenario owns empty/repeated/partial/ordered/allocation/capacity/acknowledgement/append+reserved-End behavior; no broader helper or adjacent-test rewrites warranted."
+  },
+  "timings": "Focused libtest0.04s; full Cargo154 tests22.12s including compilation; LLVM16 tests0.17s. Stable default libtest gives suite durations, not trustworthy per-test setup/timing; no lane membership changed.",
+  "limits": [
+    "Mutation explicitly excluded; none run.",
+    "No adapterG2, browser/native/GUI/service/heartbeat/mapping-worker integration, release or full-beta completion claimed.",
+    "No spec/task/tracker/Git/index edits; root owns review and publication.",
+    "Direct compiler output-name adaptation warning is harness-only and separately recorded.",
+    "Initial resource stop preserved all caches; later disk headroom recovery was external, no deletion authority inferred."
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "command": [
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/parameters-b4b0337c8cd646f6",
+    "pending_automation_reads_ordered_events_without_acknowledging_or_freeing_capacity",
+    "--exact",
+    "--nocapture"
+  ],
+  "cwd": "/tmp/dandrum-lanes/integration",
+  "exit": 0,
+  "seconds": 0.05055421101860702,
+  "binary_sha256": "323917c3bb0a2ba6f55d9ff4498db9cc8b16f3d93e0bb79c2b6d156226c34341",
+  "changed_path_sha256": {
+    "src/trigger-host/src/parameters.rs": "e124d39bd8acd240624b7580d8c119ecd018adb507046a8e1e82ee9b35c01963",
+    "src/trigger-host/tests/parameters.rs": "4558e55b8e0c129c60f9339a92a92bf65d21c113131df0bafb17dd5f91ac3bef"
+  },
+  "all124_source_hashes_match": true,
+  "archive_members_hash_verified": 95,
+  "checks": [
+    {
+      "command": "openspec validate add-juce-free-trigger-clap-editor --strict",
+      "exit": 0,
+      "output": "Change 'add-juce-free-trigger-clap-editor' is valid\n"
+    },
+    {
+      "command": "openspec validate --specs --strict",
+      "exit": 0,
+      "output": "- Validating...\n\u2713 spec/acceptance-examples\n\u2713 spec/advanced-sampling-options\n\u2713 spec/ai-graph-proposals\n\u2713 spec/built-in-modules\n\u2713 spec/capability-discovery\n\u2713 spec/composite-authoring\n\u2713 spec/control-primitives\n\u2713 spec/delay-line\n\u2713 spec/demo-launcher\n\u2713 spec/drum-kit-patches\n\u2713 spec/drum-machine\n\u2713 spec/drum-voice-authoring\n\u2713 spec/echo\n\u2713 spec/event-routing-primitives\n\u2713 spec/feedback-routing\n\u2713 spec/fft-analysis\n\u2713 spec/filter-module\n\u2713 spec/frequency-splitter\n\u2713 spec/graph-kernel\n\u2713 spec/headless-engine\n\u2713 spec/host-buses\n\u2713 spec/instrument-demo-configuration\n\u2713 spec/instrument-presets\n\u2713 spec/instrument-session\n\u2713 spec/juce-free-clap-proof\n\u2713 spec/juce-free-clap-state\n\u2713 spec/juce-free-engine-build\n\u2713 spec/latency-compensation\n\u2713 spec/midi-drum-loop-demo\n\u2713 spec/modular-routing-graph\n\u2713 spec/module-authoring\n\u2713 spec/module-library\n\u2713 spec/module-packages\n\u2713 spec/plugin-integration\n\u2713 spec/poly-combinator\n\u2713 spec/primitive-decision-framework\n\u2713 spec/react-plugin-efficiency\n\u2713 spec/reverb\n\u2713 spec/rust-engine-architecture\n\u2713 spec/script-modules\n\u2713 spec/sound-design-workflow\n\u2713 spec/sound-lab-ui\n\u2713 spec/spectral-processing\n\u2713 spec/spectral-sound-matching\n\u2713 spec/state-reset\n\u2713 spec/static-parameters\n\u2713 spec/trigger-native-webview\n\u2713 spec/trigger-react-shell\n\u2713 spec/validation-diagnostics\n\u2713 spec/vca-control-routing\n\u2713 spec/yaml-patch-format\nTotals: 51 passed, 0 failed (51 items)\n"
+    },
+    {
+      "command": "scripts/check-spec-coverage",
+      "exit": 0,
+      "output": "\nAcceptance criteria: 618 | mapped-to-tests: 379 | ratchet backlog (todo): 239\nSpec-coverage check passed (with ratchet backlog still to burn down).\n"
+    }
+  ]
+}

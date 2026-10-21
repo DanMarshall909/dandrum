@@ -63,6 +63,119 @@ fn automation(controller: &mut ParameterController) -> Vec<AutomationEvent> {
 }
 
 #[test]
+fn pending_automation_reads_ordered_events_without_acknowledging_or_freeing_capacity() {
+    let (_package, root) = package();
+    let (mut controller, _audio) =
+        ParameterController::open(root, configuration(), NonZeroU64::new(1).unwrap(), 4, 6)
+            .unwrap();
+    let empty_read = allocation_counter::measure(|| {
+        assert_eq!(controller.pending_automation().next(), None);
+    });
+    assert_eq!(empty_read.count_total, 0);
+    let editor = controller.attach_editor().unwrap();
+    let level = controller
+        .parameters()
+        .iter()
+        .position(|parameter| parameter.id == "drums.level")
+        .unwrap();
+    let pan = controller
+        .parameters()
+        .iter()
+        .position(|parameter| parameter.id == "drums.pan")
+        .unwrap();
+    for (id, method, args) in [
+        (1, "setParameter", json!(["drums.level", 0.375, 1])),
+        (2, "beginGesture", json!(["drums.pan", 1])),
+        (3, "setParameter", json!(["drums.pan", 0.25, 1])),
+    ] {
+        let command = request(&mut controller, &editor.attachment_id, id, method, args);
+        controller.apply(&command).unwrap();
+    }
+    let expected = [
+        AutomationEvent::Begin {
+            parameter_index: level,
+        },
+        AutomationEvent::Value {
+            parameter_index: level,
+            value: 1.5,
+        },
+        AutomationEvent::End {
+            parameter_index: level,
+        },
+        AutomationEvent::Begin {
+            parameter_index: pan,
+        },
+        AutomationEvent::Value {
+            parameter_index: pan,
+            value: -0.5,
+        },
+    ];
+    let allocations = allocation_counter::measure(|| {
+        let mut pending = controller.pending_automation();
+        for event in expected {
+            assert_eq!(pending.next(), Some(event));
+        }
+        assert_eq!(pending.next(), None);
+    });
+    assert_eq!(allocations.count_total, 0);
+    assert_eq!(
+        controller.pending_automation().take(2).collect::<Vec<_>>(),
+        expected[..2]
+    );
+    assert_eq!(
+        controller.pending_automation().collect::<Vec<_>>(),
+        expected
+    );
+    assert_eq!(controller.peek_automation(), Some(expected[0]));
+    let blocked = request(
+        &mut controller,
+        &editor.attachment_id,
+        4,
+        "setParameter",
+        json!(["drums.pan", 0.75, 1]),
+    );
+    assert_eq!(controller.apply(&blocked), Err(ParameterError::QueueFull));
+
+    assert!(controller.acknowledge_automation());
+    assert_eq!(controller.peek_automation(), Some(expected[1]));
+    assert_eq!(
+        controller.pending_automation().collect::<Vec<_>>(),
+        expected[1..]
+    );
+    for (id, method, args) in [
+        (5, "setParameter", json!(["drums.pan", 0.75, 1])),
+        (6, "endGesture", json!(["drums.pan", 1])),
+    ] {
+        let command = request(&mut controller, &editor.attachment_id, id, method, args);
+        controller.apply(&command).unwrap();
+    }
+    let mut remaining = expected[1..].to_vec();
+    remaining.extend([
+        AutomationEvent::Value {
+            parameter_index: pan,
+            value: 0.5,
+        },
+        AutomationEvent::End {
+            parameter_index: pan,
+        },
+    ]);
+    assert_eq!(
+        controller.pending_automation().collect::<Vec<_>>(),
+        remaining
+    );
+    let blocked = request(
+        &mut controller,
+        &editor.attachment_id,
+        7,
+        "setParameter",
+        json!(["drums.level", 0.875, 1]),
+    );
+    assert_eq!(controller.apply(&blocked), Err(ParameterError::QueueFull));
+    assert_eq!(automation(&mut controller), remaining);
+    assert_eq!(controller.pending_automation().next(), None);
+}
+
+#[test]
 fn normalized_public_command_emits_balanced_physical_automation_and_real_signed_audio() {
     let (_package, root) = package();
     let (mut controller, mut audio) =
