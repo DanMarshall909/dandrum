@@ -381,17 +381,42 @@ if(DANDRUM_CLAP_PROOF)
         set_tests_properties(trigger-editor-packaged-assets PROPERTIES
             LABELS "trigger-editor-boundary" TIMEOUT 60)
         if(DANDRUM_TRIGGER_EDITOR_NATIVE_X11)
+            # Prepare the native test binary before its bounded runtime checks.
+            add_test(NAME trigger-editor-native-prepare
+                COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+                    ${CARGO_BIN} test --release --locked --jobs 2
+                    --manifest-path ${RUST_TRIGGER_EDITOR_DIR}/Cargo.toml
+                    --features native-x11 --lib --no-run)
+            set_tests_properties(trigger-editor-native-prepare PROPERTIES
+                LABELS "trigger-editor-boundary;native-x11"
+                FIXTURES_SETUP trigger-editor-native-compiled
+                RUN_SERIAL TRUE TIMEOUT 1200)
             add_test(NAME trigger-editor-native-x11
                 COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
                     GDK_BACKEND=x11
                     DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=${DANDRUM_TRIGGER_RESOURCE_DIR}/editor
-                    ${CARGO_BIN} test --locked --jobs 2
+                    ${CARGO_BIN} test --release --locked --jobs 2
                     --manifest-path ${RUST_TRIGGER_EDITOR_DIR}/Cargo.toml
                     --features native-x11 --lib
                     native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent
                     -- --ignored --exact --nocapture --test-threads=1)
-            set_tests_properties(trigger-editor-native-x11 PROPERTIES
-                LABELS "trigger-editor-boundary;native-x11" TIMEOUT 60)
+            add_test(NAME trigger-editor-native-handler-lifetime
+                COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+                    GDK_BACKEND=x11
+                    DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=${DANDRUM_TRIGGER_RESOURCE_DIR}/editor
+                    ${CARGO_BIN} test --release --locked --jobs 2
+                    --manifest-path ${RUST_TRIGGER_EDITOR_DIR}/Cargo.toml
+                    --features native-x11 --lib
+                    native_x11::tests::destroy_releases_application_handlers_while_framework_context_remains
+                    -- --ignored --exact --nocapture --test-threads=1)
+            foreach(native_test IN ITEMS trigger-editor-native-x11 trigger-editor-native-handler-lifetime)
+                set_tests_properties(${native_test} PROPERTIES
+                    LABELS "trigger-editor-boundary;native-x11"
+                    FIXTURES_REQUIRED trigger-editor-native-compiled
+                    RUN_SERIAL TRUE TIMEOUT 60
+                    # libtest succeeds when an exact filter matches no test.
+                    FAIL_REGULAR_EXPRESSION "running 0 tests")
+            endforeach()
         endif()
         add_custom_target(dandrum-trigger-clap-editor)
         add_dependencies(dandrum-trigger-clap-editor

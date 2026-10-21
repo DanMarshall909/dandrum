@@ -1,6 +1,9 @@
 use crate::EditorAssets;
 use gtk::prelude::*;
-use std::borrow::Cow;
+use std::{
+    borrow::Cow,
+    sync::{Arc, Mutex},
+};
 use webkit2gtk::{UserContentManagerExt, WebViewExt};
 use wry::{WebView, WebViewBuilder, WebViewBuilderExtUnix, WebViewExtUnix};
 use x11rb::{
@@ -28,6 +31,21 @@ pub struct NativeEditor {
     view: WebView,
     _window: OwnedWindow,
     ipc: Option<(webkit2gtk::UserContentManager, gtk::glib::SignalHandlerId)>,
+    protocol: Option<OwnedProtocol>,
+}
+
+type ResourceHandler = dyn Fn(wry::WebViewId<'_>, wry::http::Request<Vec<u8>>) -> wry::http::Response<Cow<'static, [u8]>>
+    + Send
+    + Sync;
+
+// WebKit may retain the registered wrapper after the child is destroyed. This
+// guard releases its application handler on both owner drop and build failure.
+struct OwnedProtocol(Arc<Mutex<Option<Box<ResourceHandler>>>>);
+impl Drop for OwnedProtocol {
+    fn drop(&mut self) {
+        let handler = self.0.lock().unwrap().take();
+        drop(handler);
+    }
 }
 
 struct OwnedWindow(gtk::Window);
@@ -79,7 +97,12 @@ impl NativeEditor {
         let connection = Self::parent_connection(parent)?;
         let builder = WebViewBuilder::new()
             .with_initialization_script(initialization_script)
-            .with_custom_protocol("dandrum".into(), move |_, request| {
+            .with_navigation_handler(|uri| uri == ENTRY_URI);
+        let mut owner = Self::build_child_with_owned_protocol(
+            parent,
+            &connection,
+            builder,
+            Box::new(move |_, request| {
                 let (status, mime, bytes) = match assets.serve(&request.uri().to_string()) {
                     Ok(asset) => (200, asset.mime, asset.bytes.to_vec()),
                     Err(_) => (404, "text/plain", Vec::new()),
@@ -90,9 +113,8 @@ impl NativeEditor {
                     .header("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'")
                     .body(Cow::Owned(bytes))
                     .unwrap()
-            });
-        let builder = builder.with_navigation_handler(|uri| uri == ENTRY_URI);
-        let mut owner = Self::build_child(parent, &connection, builder)?;
+            }),
+        )?;
         let manager = owner
             .view
             .webview()
@@ -193,6 +215,29 @@ impl NativeEditor {
         Ok(connection)
     }
 
+    fn build_child_with_owned_protocol(
+        parent: u32,
+        connection: &RustConnection,
+        builder: WebViewBuilder<'_>,
+        handler: Box<ResourceHandler>,
+    ) -> Result<Self, NativeError> {
+        let protocol = OwnedProtocol(Arc::new(Mutex::new(Some(handler))));
+        let shared = protocol.0.clone();
+        let builder = builder.with_custom_protocol("dandrum".into(), move |id, request| {
+            let handler = shared.lock().unwrap();
+            match handler.as_ref() {
+                Some(handler) => handler(id, request),
+                None => wry::http::Response::builder()
+                    .status(404)
+                    .body(Cow::Borrowed(b"" as &[u8]))
+                    .unwrap(),
+            }
+        });
+        let mut owner = Self::build_child(parent, connection, builder)?;
+        owner.protocol = Some(protocol);
+        Ok(owner)
+    }
+
     fn build_child(
         parent: u32,
         connection: &RustConnection,
@@ -223,6 +268,7 @@ impl NativeEditor {
             view,
             _window: window,
             ipc: None,
+            protocol: None,
         };
         connection
             .reparent_window(native.xid() as u32, parent, 0, 0)
@@ -239,6 +285,7 @@ impl Drop for NativeEditor {
             manager.unregister_script_message_handler("ipc");
             manager.disconnect(handler);
         }
+        drop(self.protocol.take());
         // Fields then drop the WebView before OwnedWindow disposes the container.
     }
 }

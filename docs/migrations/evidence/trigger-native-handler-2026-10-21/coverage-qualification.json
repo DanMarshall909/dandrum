@@ -1,0 +1,43 @@
+{
+  "final_summary": {
+    "branches": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0
+    },
+    "functions": {
+      "count": 21,
+      "covered": 19,
+      "percent": 90.47619047619048
+    },
+    "instantiations": {
+      "count": 65,
+      "covered": 54,
+      "percent": 83.07692307692308
+    },
+    "lines": {
+      "count": 200,
+      "covered": 194,
+      "percent": 97
+    },
+    "mcdc": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0
+    },
+    "regions": {
+      "count": 288,
+      "covered": 266,
+      "notcovered": 22,
+      "percent": 92.36111111111111
+    }
+  },
+  "qualification": "Full finalnativeowner194/200reportedlines,266/288regions,19/21functions,54/65instantiations; all36newhelper/wrapper,6guardDrop,3ownerrelease source-coordinate ranges have some positive execution. This is not every-copy/function/branch100; rawexports0branch entries.6lines/platform/IPC/public? defenses remain honestlyqualified. Owner only, uninstrumenteddeps, no G1/plugin/core/browser/allocator/performance proof.",
+  "ordinary_elf_sha256": "cf004a36aa49924ecb86c461e206a8bb1a4341d224a02b662d0b4250382ad64b",
+  "instrumented_elf_sha256": "288e2f74a8a94d9f6490fe9ffbf9288d2c744453df62e2eaaf6728a983f54d1f",
+  "scope": "Existing standalone locked editor graph; exact owner instrumented, dependencies uninstrumented. RED retained-context calibration used earlier combined consumer graph with 17 transitive differences, not equivalent lock. No performance/allocator claim.",
+  "mutation": "Explicitly excluded by user.",
+  "changed_core_coordinates": "36 helper/wrapper, 6 guard Drop, 3 owner-release all have positive execution; not all emitted copies and no branch100 claim."
+}

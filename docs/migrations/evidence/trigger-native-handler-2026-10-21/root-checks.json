@@ -1,0 +1,136 @@
+{
+  "canonical-spec": {
+    "command": [
+      "openspec",
+      "validate",
+      "--specs",
+      "--strict"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit": 0,
+    "seconds": 0.4590609960141592
+  },
+  "native-guard-calibration": {
+    "positive": "two actual exact native tests; fixture prepared automatically",
+    "negative": "Rust exit0 zero tests; CTest exit8 rejects Error regular expression found in output. Regex=[running 0 tests]",
+    "generated_ctest_restored_sha256": "303ea9cc40b74f923ba81f831bfef2d4046ffca57e17622f940850169e0ac045",
+    "runner_qualification": "initial diagnostic parser expected Required vs actual Error wording; actual command and rejection succeeded; no production failure",
+    "bundle_scope": "production React silent-preview library calibration, no G1 acceptance claim"
+  },
+  "red": {
+    "command": [
+      "python3",
+      "tests/python/test_engine_only_build.py",
+      "ClapProofBuildTest.test_native_editor_lifetime_checks_have_prepared_bounded_exact_tests"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "exit": 1,
+    "seconds": 0.9484410340082832,
+    "source_sha256": {
+      "CMakeLists.txt": "da93d05bb702596feffdda585b403ba3d540f318f76e7bf45282fa69c39fa3e4",
+      "tests/python/test_engine_only_build.py": "74efaccc4a098de59ceb0828b8f1f81fcb30808fad4906ea187be899c31a64c9"
+    },
+    "scope": "Configure-only inventory; no Rust/native builds or GUI runtime",
+    "expected": "missing maintained trigger-editor-native-handler-lifetime test; configuration itself succeeds"
+  },
+  "diff-check": {
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit": 0,
+    "seconds": 0.007177918043453246
+  },
+  "native-maintained-runtime": {
+    "command": [
+      "ctest",
+      "--test-dir",
+      "/tmp/dandrum-evidence/native-handler-cmake-registration/native-build",
+      "--verbose",
+      "-R",
+      "^trigger-editor-native-(x11|handler-lifetime)$"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "exit": 0,
+    "seconds": 4.939341065008193,
+    "source_sha256": {
+      "CMakeLists.txt": "edce44bf42bbc410b311a50afcaaaadbe0693b7f8f5f05dc754f803a037e240c",
+      "tests/python/test_engine_only_build.py": "74efaccc4a098de59ceb0828b8f1f81fcb30808fad4906ea187be899c31a64c9",
+      "src/trigger-editor/src/native_x11.rs": "a2803e24488a04350d951fc2809c7afe2025a191fb38995efe9610181e2aea73",
+      "src/trigger-editor/tests/internal/native_x11.rs": "73ce40cf06504dfb596eeb47022aeabefc982c118a753ec82f333dcc26a41e35"
+    }
+  },
+  "spec-coverage": {
+    "command": [
+      "scripts/check-spec-coverage"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit": 0,
+    "seconds": 0.5334014910040423
+  },
+  "scoped-spec": {
+    "command": [
+      "openspec",
+      "validate",
+      "add-juce-free-trigger-clap-editor",
+      "--strict"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit": 0,
+    "seconds": 0.27692075294908136
+  },
+  "native-zero-test-rejected": {
+    "command": [
+      "ctest",
+      "--test-dir",
+      "/tmp/dandrum-evidence/native-handler-cmake-registration/native-build",
+      "--verbose",
+      "-R",
+      "^trigger-editor-native-handler-lifetime$"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "exit": 8,
+    "seconds": 0.2651323610334657,
+    "source_sha256": {
+      "CMakeLists.txt": "edce44bf42bbc410b311a50afcaaaadbe0693b7f8f5f05dc754f803a037e240c",
+      "tests/python/test_engine_only_build.py": "74efaccc4a098de59ceb0828b8f1f81fcb30808fad4906ea187be899c31a64c9",
+      "src/trigger-editor/src/native_x11.rs": "a2803e24488a04350d951fc2809c7afe2025a191fb38995efe9610181e2aea73",
+      "src/trigger-editor/tests/internal/native_x11.rs": "73ce40cf06504dfb596eeb47022aeabefc982c118a753ec82f333dcc26a41e35"
+    }
+  },
+  "source-free": {
+    "command": [
+      "python3",
+      "tests/python/test_engine_only_build.py",
+      "ClapProofBuildTest"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "environment": {
+      "CARGO_PROFILE_DEV_DEBUG": "0",
+      "CARGO_PROFILE_TEST_DEBUG": "0",
+      "CARGO_INCREMENTAL": "0",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "exit": 0,
+    "seconds": 161.8051007289905,
+    "disk_min_bytes": 4361404416,
+    "mem_min_bytes": 9318113280
+  },
+  "green": {
+    "command": [
+      "python3",
+      "tests/python/test_engine_only_build.py",
+      "ClapProofBuildTest.test_native_editor_lifetime_checks_have_prepared_bounded_exact_tests"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime",
+    "exit": 0,
+    "seconds": 0.6268700920045376,
+    "source_sha256": {
+      "CMakeLists.txt": "edce44bf42bbc410b311a50afcaaaadbe0693b7f8f5f05dc754f803a037e240c",
+      "tests/python/test_engine_only_build.py": "74efaccc4a098de59ceb0828b8f1f81fcb30808fad4906ea187be899c31a64c9"
+    },
+    "scope": "Configure-only enabled/disabled native inventory, exact test selection, release buildfixture/runtime60s/zero-test guard"
+  }
+}

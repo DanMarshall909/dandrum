@@ -808,3 +808,243 @@ fn acquisition_errors_leave_no_owned_window(
     assert_eq!(gtk::Window::list_toplevels().len(), baseline);
     assert!(remaining.is_empty());
 }
+
+#[test]
+#[ignore = "exact fresh process: real X11/WebKit application-handler ownership calibration"]
+fn destroy_releases_application_handlers_while_framework_context_remains() {
+    gtk::init().expect("GTK on the host UI thread");
+    let (x, screen) = x11rb::connect(None).unwrap();
+    let parent = x.generate_id().unwrap();
+    x.create_window(
+        COPY_DEPTH_FROM_PARENT,
+        parent,
+        x.setup().roots[screen].root,
+        0,
+        0,
+        1400,
+        900,
+        0,
+        WindowClass::INPUT_OUTPUT,
+        0,
+        &CreateWindowAux::new(),
+    )
+    .unwrap()
+    .check()
+    .unwrap();
+    struct HostParent<'a>(&'a RustConnection, u32);
+    impl Drop for HostParent<'_> {
+        fn drop(&mut self) {
+            self.0.destroy_window(self.1).unwrap().check().unwrap();
+        }
+    }
+    let _parent = HostParent(&x, parent);
+    let package = common::Package::new();
+    for file in common::FILES {
+        package.write(file, b"fixture");
+    }
+    package.write(
+        "index.html",
+        b"<!doctype html><title>owned resources</title>",
+    );
+    let assets = std::sync::Arc::new(EditorAssets::open(package.root()).unwrap());
+    let assets_lifetime = std::sync::Arc::downgrade(&assets);
+    let resource_handler = std::sync::Arc::new(());
+    let resource_lifetime = std::sync::Arc::downgrade(&resource_handler);
+    let navigation_handler = Rc::new(());
+    let navigation_lifetime = Rc::downgrade(&navigation_handler);
+    let served = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let served_count = served.clone();
+    let navigated = Rc::new(Cell::new(0));
+    let navigation_count = navigated.clone();
+    // The owning private constructor must also be used by create_initialized.
+    // The retained WebKit context is genuine framework ownership, not a fake backend.
+    let resource = move |_: wry::WebViewId<'_>,
+                         request: wry::http::Request<Vec<u8>>|
+          -> wry::http::Response<Cow<'static, [u8]>> {
+        let _owned = &resource_handler;
+        let asset = assets.serve(&request.uri().to_string()).unwrap();
+        served_count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        wry::http::Response::builder()
+            .header("Content-Type", asset.mime)
+            .body(Cow::Owned(asset.bytes.to_vec()))
+            .unwrap()
+    };
+    let mut shared_context = wry::WebContext::default();
+    let builder = WebViewBuilder::new_with_web_context(&mut shared_context)
+        .with_navigation_handler(move |uri| {
+            let _owned = &navigation_handler;
+            navigation_count.set(navigation_count.get() + 1);
+            uri == ENTRY_URI
+        });
+    let checked = NativeEditor::parent_connection(parent).unwrap();
+    let owner = NativeEditor::build_child_with_owned_protocol(
+        parent,
+        &checked,
+        builder,
+        Box::new(resource),
+    )
+    .unwrap();
+    let browser = owner.view.webview().downgrade();
+    let context = owner.view.webview().context().unwrap();
+    owner.view.webview().load_uri(ENTRY_URI);
+    let deadline = Instant::now() + Duration::from_secs(15);
+    while (served.load(std::sync::atomic::Ordering::SeqCst) == 0 || navigated.get() == 0)
+        && Instant::now() < deadline
+    {
+        NativeEditor::service().unwrap();
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    assert!(served.load(std::sync::atomic::Ordering::SeqCst) > 0);
+    assert!(navigated.get() > 0);
+    assert!(assets_lifetime.upgrade().is_some());
+    assert!(resource_lifetime.upgrade().is_some());
+    assert!(navigation_lifetime.upgrade().is_some());
+    drop(owner);
+    assert!(
+        browser.upgrade().is_none(),
+        "actual WebKit view finalizes at destroy"
+    );
+    assert!(
+        x.query_tree(parent)
+            .unwrap()
+            .reply()
+            .unwrap()
+            .children
+            .is_empty()
+    );
+    let released = (
+        assets_lifetime.upgrade().is_none(),
+        resource_lifetime.upgrade().is_none(),
+        navigation_lifetime.upgrade().is_none(),
+    );
+    eprintln!(
+        "application release before dispatch: assets/scheme/navigation={released:?}; retained context type={}",
+        context.type_().name()
+    );
+    assert_eq!(
+        released,
+        (true, true, true),
+        "destroy releases actual application handlers/assets even if framework context survives"
+    );
+    // A later framework-owned view reaches the registered wrapper after its
+    // application owner has gone. It must reject the request without invoking
+    // or retaining the released application handler.
+    use webkit2gtk::{URIResponseExt, WebResourceExt};
+    let served_before_late_request = served.load(std::sync::atomic::Ordering::SeqCst);
+    let late = NativeEditor::build_child(
+        parent,
+        &checked,
+        WebViewBuilder::new_with_web_context(&mut shared_context),
+    )
+    .unwrap();
+    let status = Rc::new(Cell::new(None));
+    let observed = status.clone();
+    let signal = late
+        .view
+        .webview()
+        .connect_load_changed(move |view, event| {
+            if event == webkit2gtk::LoadEvent::Finished {
+                observed.set(
+                    view.main_resource()
+                        .and_then(|resource| resource.response())
+                        .map(|response| response.status_code()),
+                );
+            }
+        });
+    late.view.webview().load_uri(ENTRY_URI);
+    let deadline = Instant::now() + Duration::from_secs(15);
+    while status.get().is_none() && Instant::now() < deadline {
+        NativeEditor::service().unwrap();
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    assert_eq!(
+        status.get(),
+        Some(404),
+        "inert framework wrapper rejects a late request"
+    );
+    assert_eq!(
+        served.load(std::sync::atomic::Ordering::SeqCst),
+        served_before_late_request,
+        "late request does not call released application resource handler"
+    );
+    late.view.webview().disconnect(signal);
+    drop(late);
+    assert!(
+        x.query_tree(parent)
+            .unwrap()
+            .reply()
+            .unwrap()
+            .children
+            .is_empty()
+    );
+    drop(context);
+
+    // Retain an actual framework context across a failure AFTER protocol registration.
+    // Parent validation succeeds first; the real X server then rejects reparenting.
+    let doomed = x.generate_id().unwrap();
+    let root = x.setup().roots[screen].root;
+    x.create_window(
+        COPY_DEPTH_FROM_PARENT,
+        doomed,
+        root,
+        0,
+        0,
+        10,
+        10,
+        0,
+        WindowClass::INPUT_OUTPUT,
+        0,
+        &CreateWindowAux::new(),
+    )
+    .unwrap()
+    .check()
+    .unwrap();
+    let checked = NativeEditor::parent_connection(doomed).unwrap();
+    x.destroy_window(doomed).unwrap().check().unwrap();
+    let root_children = x.query_tree(root).unwrap().reply().unwrap().children;
+    let windows = gtk_window_ids();
+    let mut retained = wry::WebContext::default();
+    let assets = std::sync::Arc::new(EditorAssets::open(package.root()).unwrap());
+    let assets_lifetime = std::sync::Arc::downgrade(&assets);
+    let handler = std::sync::Arc::new(());
+    let handler_lifetime = std::sync::Arc::downgrade(&handler);
+    let failed = NativeEditor::build_child_with_owned_protocol(
+        doomed,
+        &checked,
+        WebViewBuilder::new_with_web_context(&mut retained),
+        Box::new(
+            move |_: wry::WebViewId<'_>,
+                  request: wry::http::Request<Vec<u8>>|
+                  -> wry::http::Response<Cow<'static, [u8]>> {
+                let _owned = &handler;
+                let asset = assets.serve(&request.uri().to_string()).unwrap();
+                wry::http::Response::new(Cow::Owned(asset.bytes.to_vec()))
+            },
+        ),
+    );
+    assert!(matches!(failed, Err(NativeError::X11(_))));
+    assert!(
+        retained.is_custom_protocol_registered("dandrum"),
+        "failure follows actual registration in retained framework context"
+    );
+    assert!(
+        assets_lifetime.upgrade().is_none(),
+        "partial construction releases owned assets before returning its error"
+    );
+    assert!(
+        handler_lifetime.upgrade().is_none(),
+        "partial construction releases application handler despite retained context"
+    );
+    assert_eq!(gtk_window_ids(), windows);
+    assert!(
+        x.query_tree(root)
+            .unwrap()
+            .reply()
+            .unwrap()
+            .children
+            .iter()
+            .all(|child| root_children.contains(child)),
+        "partial construction leaves no added child"
+    );
+    drop(retained);
+}

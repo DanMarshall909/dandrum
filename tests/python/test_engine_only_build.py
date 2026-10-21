@@ -196,6 +196,64 @@ class ClapProofBuildTest(EngineBuildFixture):
                       + str(enabled / "clap/DandrumHeadlessProof.clap"),
                       tests["clap-dynamic-host"]["command"])
 
+    def test_native_editor_lifetime_checks_have_prepared_bounded_exact_tests(self):
+        bundle = self.fixture_root / "native-registration-input"
+        bundle.mkdir()
+        for name in ("index.html", "app.js", "app.css"):
+            (bundle / name).write_text("native registration fixture")
+
+        def inventory(label, build):
+            code, output = self.command(label, [CTEST, "--test-dir", str(build),
+                                                "--show-only=json-v1"])
+            self.assertEqual(code, 0, output)
+            return {test["name"]: test for test in json.loads(output)["tests"]}
+
+        options = ("-DDANDRUM_ENGINE_ONLY=ON", "-DDANDRUM_CLAP_PROOF=ON",
+                   "-DDANDRUM_TRIGGER_CLAP_EDITOR=ON",
+                   "-DDANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=" + str(bundle))
+        disabled, code, output = self.configure("native-owner-disabled", *options)
+        self.assertEqual(code, 0, output)
+        disabled_tests = inventory("native-owner-disabled-inventory", disabled)
+        for name in ("trigger-editor-native-prepare", "trigger-editor-native-x11",
+                     "trigger-editor-native-handler-lifetime"):
+            self.assertNotIn(name, disabled_tests)
+
+        enabled, code, output = self.configure(
+            "native-owner-enabled", *options, "-DDANDRUM_TRIGGER_EDITOR_NATIVE_X11=ON")
+        self.assertEqual(code, 0, output)
+        tests = inventory("native-owner-enabled-inventory", enabled)
+        self.assertIn("trigger-editor-native-handler-lifetime", tests,
+                      "native destruction ownership must run in the maintained native lane")
+        prepare = tests["trigger-editor-native-prepare"]
+        preparation = {prop["name"]: prop["value"] for prop in prepare["properties"]}
+        for argument in ("--release", "--locked", "native-x11", "--lib", "--no-run"):
+            self.assertIn(argument, prepare["command"])
+        self.assertNotIn("--ignored", prepare["command"])
+        self.assertIn("trigger-editor-native-compiled", preparation["FIXTURES_SETUP"])
+        self.assertEqual(preparation["TIMEOUT"], 1200.0)
+        self.assertTrue(preparation["RUN_SERIAL"])
+
+        cases = {
+            "trigger-editor-native-x11":
+                "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+            "trigger-editor-native-handler-lifetime":
+                "native_x11::tests::destroy_releases_application_handlers_while_framework_context_remains",
+        }
+        for name, case in cases.items():
+            with self.subTest(native_case=name):
+                test = tests[name]
+                for argument in ("--release", "--locked", "native-x11", "--lib", case,
+                                 "--ignored", "--exact", "--test-threads=1"):
+                    self.assertIn(argument, test["command"])
+                self.assertNotIn("--no-run", test["command"])
+                properties = {prop["name"]: prop["value"] for prop in test["properties"]}
+                self.assertIn("trigger-editor-native-compiled", properties["FIXTURES_REQUIRED"])
+                self.assertEqual(properties["TIMEOUT"], 60.0)
+                self.assertTrue(properties["RUN_SERIAL"])
+                self.assertIn("native-x11", properties["LABELS"])
+                self.assertIn("running 0 tests", properties["FAIL_REGULAR_EXPRESSION"],
+                              "an exact filter matching no test must fail the native gate")
+
     def test_trigger_editor_scaffold_stages_copied_resources_without_host_sources(self):
         editor_input = self.fixture_root / "editor-input"
         editor_input.mkdir()
