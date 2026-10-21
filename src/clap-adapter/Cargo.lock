@@ -417,15 +417,18 @@ dependencies = [
  "clack-extensions",
  "clack-host",
  "clack-plugin",
+ "clap-sys",
  "dandrum-trigger-editor",
  "dandrum-trigger-host",
  "dandrum_engine",
  "gtk",
  "libc",
  "libloading",
+ "rtrb",
  "serde",
  "serde_json",
  "tempfile",
+ "webkit2gtk",
  "x11rb",
 ]
 

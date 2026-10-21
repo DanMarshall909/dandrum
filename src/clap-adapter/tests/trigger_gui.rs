@@ -13,6 +13,25 @@ use std::{
 };
 
 struct GuiHost;
+#[derive(Default)]
+struct TimerHost(std::cell::Cell<Option<clack_extensions::timer::TimerId>>);
+impl MainThreadHandler<'_> for TimerHost {}
+impl clack_extensions::timer::HostTimerImpl for TimerHost {
+    fn register_timer(
+        &self,
+        period_ms: u32,
+    ) -> Result<clack_extensions::timer::TimerId, HostError> {
+        assert_eq!(period_ms, 16);
+        assert!(self.0.get().is_none());
+        let id = clack_extensions::timer::TimerId(1);
+        self.0.set(Some(id));
+        Ok(id)
+    }
+    fn unregister_timer(&self, id: clack_extensions::timer::TimerId) -> Result<(), HostError> {
+        assert_eq!(self.0.take(), Some(id));
+        Ok(())
+    }
+}
 struct Shared(std::sync::atomic::AtomicBool);
 
 impl SharedHandler<'_> for Shared {
@@ -39,11 +58,13 @@ impl HostGuiImpl for Shared {
 
 impl HostHandlers for GuiHost {
     type Shared<'a> = Shared;
-    type MainThread<'a> = ();
+    type MainThread<'a> = TimerHost;
     type AudioProcessor<'a> = ();
 
     fn declare_extensions(builder: &mut clack_host::host::HostExtensions<Self>, _: &Shared) {
-        builder.register::<HostGui>();
+        builder
+            .register::<HostGui>()
+            .register::<clack_extensions::timer::HostTimer>();
     }
 }
 
@@ -65,7 +86,7 @@ fn copied_entry() -> PluginEntry {
 fn instantiate(entry: &PluginEntry) -> PluginInstance<GuiHost> {
     PluginInstance::new(
         |_| Shared(std::sync::atomic::AtomicBool::new(false)),
-        |_| (),
+        |_| TimerHost::default(),
         entry,
         c"org.dandrum.trigger",
         &HostInfo::new("Trigger GUI proof", "Dandrum", "", "0.1").unwrap(),

@@ -44,6 +44,8 @@ impl Shared {
     }
 }
 #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+mod automation;
+#[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
 mod gui;
 #[cfg(all(
     feature = "trigger-editor",
@@ -56,6 +58,10 @@ struct Core {
     controller: RefCell<ParameterController>,
     parked: Cell<Option<RuntimeAudio>>,
     #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+    automation: RefCell<automation::Main>,
+    #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+    parked_output: Cell<Option<automation::Output>>,
+    #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
     resource_root: PathBuf,
     #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
     plugin_path: PathBuf,
@@ -67,9 +73,15 @@ struct Main<'a> {
     parameters: Vec<PublicParameter>,
     host: HostMainThreadHandle<'a>,
     shared: &'a Shared,
+    #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+    timer: gui::TimerRegistration,
+    #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+    creating: Cell<bool>,
 }
 impl<'a> PluginMainThread<'a, Shared> for Main<'a> {
     fn on_main_thread(&self) {
+        #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+        self.service_parameter_delivery();
         let reasons = self.shared.diagnostic.swap(0, Ordering::Relaxed);
         if let Some(log) = self.host.get_extension::<HostLog>() {
             for (bit, message) in [
@@ -95,7 +107,9 @@ impl Plugin for TriggerAdapter {
             .register::<PluginNotePorts>()
             .register::<PluginState>();
         #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
-        builder.register::<clack_extensions::gui::PluginGui>();
+        builder
+            .register::<clack_extensions::gui::PluginGui>()
+            .register::<clack_extensions::timer::PluginTimer>();
     }
 }
 pub(super) fn instance<'a>(
@@ -133,10 +147,24 @@ pub(super) fn instance<'a>(
             )
             .map_err(|_| PluginError::Message("Trigger packaged session failed"))?;
             let parameters = controller.parameters().to_vec();
+            #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+            let (automation, output) = automation::pair();
             Ok(Main {
                 core: Rc::new(Core {
                     controller: RefCell::new(controller),
                     parked: Cell::new(Some(audio)),
+                    #[cfg(all(
+                        feature = "trigger-editor",
+                        target_os = "linux",
+                        target_env = "gnu"
+                    ))]
+                    automation: RefCell::new(automation),
+                    #[cfg(all(
+                        feature = "trigger-editor",
+                        target_os = "linux",
+                        target_env = "gnu"
+                    ))]
+                    parked_output: Cell::new(Some(output)),
                     #[cfg(all(
                         feature = "trigger-editor",
                         target_os = "linux",
@@ -159,6 +187,10 @@ pub(super) fn instance<'a>(
                 host,
                 shared,
                 parameters,
+                #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+                timer: gui::TimerRegistration::default(),
+                #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+                creating: Cell::new(false),
             })
         },
     )
@@ -207,9 +239,17 @@ impl PluginMainThreadParams for Main<'_> {
         let value: f64 = text.to_str().ok()?.parse().ok()?;
         (value.is_finite() && (p.physical_min..=p.physical_max).contains(&value)).then_some(value)
     }
-    fn flush(&self, input: &InputEvents, _: &mut OutputEvents) {
+    fn flush(&self, input: &InputEvents, _output: &mut OutputEvents) {
         let accepted = if let Some(mut audio) = self.core.parked.take() {
             let accepted = flush_parameters(&mut audio, &self.parameters, input);
+            #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+            if accepted {
+                self.core.service_automation();
+                if let Some(mut delivery) = self.core.parked_output.take() {
+                    deliver_automation(&mut delivery, _output);
+                    self.core.parked_output.set(Some(delivery));
+                }
+            }
             self.core.parked.set(Some(audio));
             accepted
         } else {
@@ -375,11 +415,18 @@ struct Processor<'a> {
     host: HostAudioProcessorHandle<'a>,
     shared: &'a Shared,
     scratch: [TimedEvent; EVENT_LIMIT],
+    #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+    automation: automation::Output,
 }
 impl PluginAudioProcessorParams for Processor<'_> {
-    fn flush(&mut self, input: &InputEvents, _: &mut OutputEvents) {
+    fn flush(&mut self, input: &InputEvents, _output: &mut OutputEvents) {
         if !flush_parameters(&mut self.audio, &self.parameters, input) {
             self.shared.reject(&self.host.shared(), 2);
+        } else {
+            #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+            if deliver_automation(&mut self.automation, _output) != 0 {
+                self.host.shared().request_callback();
+            }
         }
     }
 }
@@ -430,7 +477,19 @@ impl<'a> PluginAudioProcessor<'a, Shared, Main<'a>> for Processor<'a> {
             main.core.parked.set(Some(audio));
             return Err(error);
         }
+        #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+        let automation = match main.core.parked_output.take() {
+            Some(output) => output,
+            None => {
+                main.core.parked.set(Some(audio));
+                return Err(PluginError::Message(
+                    "Trigger delivery endpoint already active",
+                ));
+            }
+        };
         Ok(Self {
+            #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+            automation,
             audio,
             parameters: main.parameters.clone(),
             maximum: config.max_frames_count as usize,
@@ -441,6 +500,8 @@ impl<'a> PluginAudioProcessor<'a, Shared, Main<'a>> for Processor<'a> {
     }
     fn deactivate(self, main: &Main<'a>) {
         main.core.parked.set(Some(self.audio));
+        #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+        main.core.parked_output.set(Some(self.automation));
     }
     fn reset(&mut self) {
         self.audio.reset();
@@ -490,6 +551,10 @@ impl<'a> PluginAudioProcessor<'a, Shared, Main<'a>> for Processor<'a> {
         } else {
             false
         };
+        #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+        if accepted && deliver_automation(&mut self.automation, events.output) != 0 {
+            self.host.shared().request_callback();
+        }
         if !accepted {
             silence(&mut audio);
             self.shared.reject(&self.host.shared(), 1);
@@ -562,4 +627,65 @@ fn wire_instance_id() -> Result<NonZeroU64, PluginError> {
     }
     #[cfg(not(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu")))]
     Ok(NonZeroU64::new(1).unwrap())
+}
+
+#[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+impl Core {
+    fn service_automation(&self) {
+        let Ok(mut controller) = self.controller.try_borrow_mut() else {
+            return;
+        };
+        let Ok(mut automation) = self.automation.try_borrow_mut() else {
+            return;
+        };
+        automation.service(&mut controller);
+    }
+}
+#[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+fn deliver_automation(delivery: &mut automation::Output, output: &mut OutputEvents) -> usize {
+    use clack_plugin::events::{
+        Pckn,
+        event_types::{ParamGestureBeginEvent, ParamGestureEndEvent},
+    };
+    use dandrum_trigger_host::parameters::AutomationEvent;
+    delivery.deliver(|event| match event {
+        AutomationEvent::Begin { parameter_index } => output
+            .try_push(ParamGestureBeginEvent::new(
+                0,
+                ClapId::new(parameter_index as u32 + 1),
+            ))
+            .is_ok(),
+        AutomationEvent::Value {
+            parameter_index,
+            value,
+        } => output
+            .try_push(ParamValueEvent::new(
+                0,
+                ClapId::new(parameter_index as u32 + 1),
+                Pckn::match_all(),
+                value,
+            ))
+            .is_ok(),
+        AutomationEvent::End { parameter_index } => output
+            .try_push(ParamGestureEndEvent::new(
+                0,
+                ClapId::new(parameter_index as u32 + 1),
+            ))
+            .is_ok(),
+    })
+}
+
+#[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
+impl Main<'_> {
+    fn service_parameter_delivery(&self) {
+        self.core.service_editor();
+        let pending = self
+            .core
+            .automation
+            .try_borrow()
+            .is_ok_and(|mirror| mirror.pending());
+        if pending && let Some(params) = self.host.get_extension::<HostParams>() {
+            params.request_flush(&self.host.shared());
+        }
+    }
 }

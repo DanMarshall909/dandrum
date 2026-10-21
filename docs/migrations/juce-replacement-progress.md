@@ -1573,3 +1573,40 @@ The official validator records 33 successes/10 capability skips/**one failure**:
 Two off-audio controller methods now forward reply/event encoding through the existing private protocol and owned session. They preserve one live attachment namespace and event counter, canonical identities, explicit rejection and the 65,536-byte output bound. Four public packaged-controller tests cover exact wire envelopes, independent attachment counters, failed-encode sequencing, detach/reconnect and unchanged history/parameters/signed audio. Reply-first and event-second interface-absence REDs precede their respective implementation and verification checkpoints.
 
 The [portable evidence](evidence/trigger-editor-encoding-2026-10-21/README.md) retains all phase logs/source snapshots, 153 passing ordinary host tests (including two compile-fail doctests), strict formatting/Clippy and exact-run full-host LLVM (151 tests; 14 executed ELFs/14 fresh profiles). Each wrapper executes all nine logical normal source regions; emitted uncalled unit-library copies and existing owner gaps are explicit. No new release, source-free, browser, native or DAW acceptance is inferred. Actual GUI payload/error projection, instance identity, service/lifecycle and automation joins remain next; tasks 3.2/3.3/4.2 and the full beta remain open at 8/14. Independent review and normal publication remain pending for this prerequisite.
+
+
+## Native parameter delivery and feedback — 21 October 2026
+
+The developer-only G2 source now joins numeric parameter state, gestures and
+host feedback to the actual React editor. A capacity64 SPSC mirror preserves
+rejected heads and acknowledges the persistent ledger only after host acceptance
+and main-side credit collection. The consumer travels with returned audio ownership.
+Main owns a required16ms HostTimer registration with rollback/retry cleanup; a
+weak10ms GLib source survives view destruction and services bounded credits and
+feedback without a private GTK loop or browser access from audio.
+
+Real Voice control changes emit balanced CLAP ID3/time0 B/V/E and known signed
+PCM. Host physical2 at frame1 preserves frame0 at the old gain, changes the actual
+DOM through an authenticated event at the same UI watermark, and leaves structural
+history unchanged. Actual parameter Undo restores physical1. A native RED exposed
+credit collection before invalid stopped-flush validation; the covered correction
+preserves Busy/state/value and permits collection on a later valid flush.
+
+[Portable evidence](evidence/trigger-clap-parameters-2026-10-21/README.md) records
+16 native cases,12 exact owner units,154 host tests/doctests,8 copied-source CLAP
+build-boundary tests and19 maintained native CTests. The actual DSO allocator audit
+calibrates positive Rust allocation/free observations then measures0/0 during
+explicit GUI-service overlap and post-DOM continued rendering. Source-region
+aggregation, raw LLVM/generic gaps, Serde mapping limits, initial sandbox denial
+and earlier setup-versus-RED chronology remain explicit. Direct dependency links
+reuse pinned packages; default/plain development graphs remain native-free and
+actual ELF/loader graphs contain no JUCE.
+
+This is a pre-publication verification checkpoint; independent review and normal
+hooks/publication have separate receipts in the live tracker. Tasks3.2/3.3/4.2,
+G3 heartbeat/expiry/worker/mapping/status/native undo, continuous lifecycle/audio,
+full independent-instance acceptance and the unwaived fractional-rate validator
+failure remain open. The maintained product is headless and the native GUI remains
+unready for normal instrument editing/playing. Full beta still requires VST3,
+standalone devices, named DAW, fresh-instance round trips and installed offline
+artifacts. Main remains clean68dd655; mutation is excluded and caches are preserved.

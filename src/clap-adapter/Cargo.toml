@@ -12,9 +12,10 @@ default = []
 trigger = ["dep:dandrum_trigger_host"]
 # Developer-only lifecycle tests; required editor services are still unjoined.
 # The CMake Trigger product remains headless; see README.md.
-trigger-editor = ["trigger", "dep:dandrum_trigger_editor", "dep:gtk", "dep:x11rb", "dep:libc", "clack-extensions/gui"]
+trigger-editor = ["trigger", "dep:dandrum_trigger_editor", "dep:gtk", "dep:x11rb", "dep:libc", "dep:webkit2gtk", "dep:rtrb", "clack-extensions/gui", "clack-extensions/timer"]
 
 [dependencies]
+rtrb = { version = "=0.3.2", optional = true }
 dandrum_trigger_host = { package = "dandrum-trigger-host", path = "../trigger-host", optional = true }
 dandrum_engine = { path = "../rust-engine" }
 clack-plugin = { git = "https://github.com/prokopyl/clack", rev = "27ca28391b57a61bad4bb5099288a7bf9247350d" }
@@ -27,11 +28,13 @@ serde_json = { version = "1", features = ["float_roundtrip"] }
 dandrum_trigger_editor = { package = "dandrum-trigger-editor", path = "../trigger-editor", features = ["native-x11"], optional = true }
 gtk = { version = "=0.18.2", optional = true }
 x11rb = { version = "=0.13.2", default-features = false, optional = true }
+webkit2gtk = { version = "=2.0.2", optional = true }
 
 [target.'cfg(all(target_os = "linux", target_env = "gnu"))'.dependencies]
 libc = { version = "=0.2.186", optional = true }
 
 [dev-dependencies]
+clap-sys = "=0.5.0"
 libloading = "0.8"
 tempfile = "3"
 clack-host = { git = "https://github.com/prokopyl/clack", rev = "27ca28391b57a61bad4bb5099288a7bf9247350d", default-features = false, features = ["libloading"] }

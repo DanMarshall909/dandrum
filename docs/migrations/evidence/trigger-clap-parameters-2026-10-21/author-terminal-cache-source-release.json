@@ -1,0 +1,38 @@
+{
+  "time_unix_ns": 1792586543375138589,
+  "maintained_sources_frozen": true,
+  "source_manifest_sha256": "31034d0398f7ef7fc12f4e5c99ce42354d9f1c1dff5d335ba6aeefbfbda122ef",
+  "builders": [],
+  "cache_loans": [
+    {
+      "path": "/tmp/dandrum-lanes/cache-editor-guard",
+      "realpath": "/tmp/dandrum-lanes/cache-editor-guard",
+      "device": 66309,
+      "inode": 6559361,
+      "bytes": 6081169561,
+      "loan_returned_idle": true
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov",
+      "realpath": "/tmp/dandrum-lanes/cache-host-snapshot-cov",
+      "device": 66309,
+      "inode": 7733512,
+      "bytes": 13098961210,
+      "loan_returned_idle": true
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-runtime",
+      "realpath": "/tmp/dandrum-lanes/cache-runtime",
+      "device": 66309,
+      "inode": 6602101,
+      "bytes": 20392359982,
+      "loan_returned_idle": true
+    }
+  ],
+  "disk_free_bytes": 25245839360,
+  "MemTotal": 33567412224,
+  "MemAvailable": 12166606848,
+  "all_author_exec_sessions_complete": true,
+  "no_more_builder_or_maintained_source_work": "Only read-only evidence curation/report after this terminal release. Root owns subsequent CTest/review/publication.",
+  "accidental_target": "/tmp/dandrum-lanes/runtime/cache-editor-guard remains preserved idle/excluded; no deletion authorized/performed."
+}

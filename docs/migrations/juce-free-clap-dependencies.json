@@ -183,5 +183,75 @@
     },
     "dependency_direction": "Clack types stay in the adapter. Format-neutral host retains engine/session/serde/rtrb dependencies. No Wry, GTK, WebKit or JUCE dependency is introduced by this headless feature.",
     "verification": "Current LTO release and copied installed synthetic-host source-free proof pass; ELF NEEDED is libgcc_s/libm/libc/ld-linux. Official Trigger validator33success/10skip/1failure at deliberately unsupported fractional1234.57Hz, no test exclusions; task4.3/5.1 acceptance remains open. Source-bound records: evidence/trigger-clap-product-2026-10-21/receipt.json and sourcefree/release-audit/. Independent review/publication pending."
+  },
+  "trigger_editor_parameter_increment": {
+    "scope": "Developer-only G2 parameter-delivery source. Existing G1 native lifetime proof and headless product remain separate. Full GUI/recovery, DAW and beta acceptance stay open.",
+    "features": {
+      "production_extension_addition": "clack-extensions/timer",
+      "default": [],
+      "maintained_CMake_product": "trigger (headless)",
+      "native_test_feature": "trigger-editor"
+    },
+    "direct_edges": [
+      {
+        "name": "rtrb",
+        "version": "0.3.2",
+        "checksum": "ad8388ea1a9e0ea807e442e8263a699e7edcb320ecbcd21b4fa8ff859acce3ba",
+        "role": "Optional trigger-editor production mirror; same pinned package as format-neutral host",
+        "license_declaration": "MIT OR Apache-2.0",
+        "packaged_manifest_sha256": "dc6c0ed4f2db1313d152d97852a168370bc25cb5f01cd1be8b841aace9261048",
+        "license_files": {
+          "LICENSE-MIT": {
+            "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+            "bytes": 1023
+          },
+          "LICENSE-APACHE": {
+            "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+            "bytes": 10847
+          }
+        }
+      },
+      {
+        "name": "webkit2gtk",
+        "version": "2.0.2",
+        "checksum": "a1027150013530fb2eaf806408df88461ae4815a45c541c8975e61d6f2fc4793",
+        "role": "Optional Linux trigger-editor direct binding for actual native test observation; enables no v2_40 feature",
+        "license_declaration": "MIT",
+        "packaged_manifest_sha256": "f22fa00693fc7db89921417b8fd9bfac08cae8b4649f0f942055996b3194e47d",
+        "license_files": {
+          "LICENSE": {
+            "sha256": "3f39c032be4639be635da96d77c4d0f4393c3595a164450ffd86f3d17701ec10",
+            "bytes": 1201
+          }
+        }
+      },
+      {
+        "name": "clap-sys",
+        "version": "0.5.0",
+        "checksum": "a76abbdb2907f6fd97fb6bc0b7be96b77d328f2dd9669d1075cc03369ed22154",
+        "role": "Test-only direct dependency for standard typed CLAP GUI reentrancy fixture",
+        "license_declaration": "MIT/Apache-2.0",
+        "packaged_manifest_sha256": "3c6cfa3611e44b68bff2d58e5754c72f8a5b7b6a96671f81b837ed83fb47a8c7",
+        "license_files": {
+          "LICENSE-MIT": {
+            "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+            "bytes": 1023
+          },
+          "LICENSE-APACHE": {
+            "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+            "bytes": 11358
+          }
+        }
+      }
+    ],
+    "resolved_package_identity_change": {
+      "base": "954c549732537b95203e4b2a71c9bfeff2f2bb9a",
+      "added": [],
+      "removed": [],
+      "comparison": "Unique name/version/source identities in Cargo.lock; direct edges change, resolved package versions/sources do not."
+    },
+    "adapter_lockfile_sha256": "34f17a0311ad96eb5a9a3a9e46f5a180bbc8ab53ffa278c98d73d40df4f46d9c",
+    "dependency_boundary": "Default and plain Trigger normal/build/dev graphs exclude GTK/WebKit/Wry/JUCE; the maintained offline Cargo-tree regression test owns this check. The format-neutral trigger-host crate gains no native or format dependency.",
+    "license_limit": "Cached package manifest declarations and exact license bytes are provenance; they do not replace the installed product redistribution audit."
   }
 }

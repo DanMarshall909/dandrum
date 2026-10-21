@@ -19,7 +19,7 @@ class FixtureError(Exception):
     """The requested native test fixture cannot be bound unambiguously."""
 
 
-def select_artifacts(stdout):
+def select_artifacts(stdout, test_target):
     libraries = []
     tests = []
     for line in stdout.splitlines():
@@ -35,10 +35,10 @@ def select_artifacts(stdout):
                 and record.get('profile', {}).get('test') is False):
             libraries.extend((filename, record) for filename in record.get('filenames', [])
                              if filename.endswith('.so'))
-        if (target.get('name') == 'trigger_gui' and 'test' in target.get('kind', [])
+        if (target.get('name') == test_target and 'test' in target.get('kind', [])
                 and record.get('executable')):
             tests.append((record['executable'], record))
-    for rule, candidates in [('production-cdylib', libraries), ('trigger-gui-test', tests)]:
+    for rule, candidates in [('production-cdylib', libraries), (test_target.replace('_', '-') + '-test', tests)]:
         if len(candidates) != 1:
             raise FixtureError(f'{rule}: expected exactly one reported artifact; found {len(candidates)}')
     return {'plugin': libraries[0], 'test': tests[0]}
@@ -79,7 +79,7 @@ def prepare(args):
     manifest = args.manifest.absolute()
     command = [str(args.cargo), 'test', '--release', '--locked', '--jobs', '2',
                '--manifest-path', str(manifest), '--features', 'trigger-editor',
-               '--test', 'trigger_gui', '--no-run', '--message-format=json']
+               '--test', args.test_target, '--no-run', '--message-format=json']
     invocation = {'command': command, 'cwd': str(manifest.parent), 'exit_status': None}
     invocation_path = evidence / 'invocation.json'
     invocation_path.write_text(json.dumps(invocation, indent=2) + '\n')
@@ -92,9 +92,9 @@ def prepare(args):
     invocation_path.write_text(json.dumps(invocation, indent=2) + '\n')
     if result.returncode != 0:
         raise FixtureError(f'cargo-exit-status: {result.returncode}; evidence: {evidence}')
-    artifacts = select_artifacts((evidence / 'cargo.stdout.log').read_text(errors='replace'))
+    artifacts = select_artifacts((evidence / 'cargo.stdout.log').read_text(errors='replace'), args.test_target)
     binding = {'schema_version': 1, 'owner': OWNER, **invocation, 'artifacts': {}}
-    for name, destination in [('plugin', 'DandrumTrigger.clap'), ('test', 'trigger-gui-test')]:
+    for name, destination in [('plugin', 'DandrumTrigger.clap'), ('test', args.test_target.replace('_', '-') + '-test')]:
         reported_path, record = artifacts[name]
         source = Path(reported_path)
         digest = sha256(source)
@@ -118,6 +118,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     for option in ['cargo', 'manifest', 'target-dir', 'resource-dir', 'output-dir']:
         parser.add_argument('--' + option, type=Path, required=True)
+    parser.add_argument('--test-target', choices=['trigger_gui', 'trigger_parameters'], default='trigger_gui')
     args = parser.parse_args(argv)
     try:
         prepare(args)

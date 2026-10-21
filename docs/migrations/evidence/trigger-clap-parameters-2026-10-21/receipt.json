@@ -1,0 +1,338 @@
+{
+  "schema_version": 1,
+  "scope": "Verified developer-only native parameter integration, not full editor/beta completion. Evidence captured before independent completion review and normal-hook publication; existing tracker owns live status.",
+  "base": "954c549732537b95203e4b2a71c9bfeff2f2bb9a",
+  "source_integration": {
+    "source": "/tmp/dandrum-lanes/runtime",
+    "destination": "/tmp/dandrum-lanes/integration",
+    "base": "954c549732537b95203e4b2a71c9bfeff2f2bb9a",
+    "files": [
+      {
+        "path": "CMakeLists.txt",
+        "before_sha256": "4aa894a8e7ac6a0738d4ad49580039b73b9453f88f75eec1758c3749905112fa",
+        "sha256": "afa8bc44620a30639c7f70f03534ba1b968cff746a1f1fe0d2c6cbbf7998fc3d",
+        "mode": "0o664"
+      },
+      {
+        "path": "README.md",
+        "before_sha256": "1688065e79d84d735a4123f3433f74b5af2ff49ef115b835e652957abc62afa8",
+        "sha256": "397aa70708a93c2a4d817f59e7433d9bf5d15c3b49ac50df996a0e5e05841f70",
+        "mode": "0o664"
+      },
+      {
+        "path": "docs/migrations/juce-free-clap-dependencies.json",
+        "before_sha256": "9a087a8f7c64a1312d583be73087b8c74620f3d0318ad3ddab3c2d2283873b08",
+        "sha256": "8093c1f05b8761cfddafe45b91ef0b2fd144fc6aa4fdcd5e4532e6fd2abfa43c",
+        "mode": "0o664"
+      },
+      {
+        "path": "openspec/changes/add-juce-free-trigger-clap-editor/design.md",
+        "before_sha256": "f4999d24c3903c6e46cd9c591f22e66354e2dca9e1ff2911a03513c9a44fcd53",
+        "sha256": "ef7c55cda0aabd651adf067607fb66d1202c510b1113526f1d51c96476885a04",
+        "mode": "0o664"
+      },
+      {
+        "path": "scripts/prepare-trigger-clap-native.py",
+        "before_sha256": "cb60cb1c85537dae750ace87d39325d38b9eff3f239e05a937c4cc26d36dc810",
+        "sha256": "ceec5e6493fd8d4cc372c836686ed7967118a9681dd8222c9c0a12d02e0b9360",
+        "mode": "0o664"
+      },
+      {
+        "path": "src/clap-adapter/Cargo.lock",
+        "before_sha256": "672e0946f3e9197100ca2419caf45fd7494013b5d6570ec1cb408403a6aaefe5",
+        "sha256": "34f17a0311ad96eb5a9a3a9e46f5a180bbc8ab53ffa278c98d73d40df4f46d9c",
+        "mode": "0o664"
+      },
+      {
+        "path": "src/clap-adapter/Cargo.toml",
+        "before_sha256": "345bb98d0799fdccfe0edac749aa283e5ab4e9300a1a2153129528f9a68774e7",
+        "sha256": "2e536de3d35a1965f59da177b823063c34964d8047e3af37342f8fb9fafea9ef",
+        "mode": "0o664"
+      },
+      {
+        "path": "src/clap-adapter/src/trigger.rs",
+        "before_sha256": "fa4a9822e3ae6c08b36916699b9a77b6df5e057058991021db0c78f5db890a96",
+        "sha256": "58e466a35576829a797021fb73f8c2de9efc3c01135e6005cdb78ba55316e7cd",
+        "mode": "0o664"
+      },
+      {
+        "path": "src/clap-adapter/src/trigger/automation.rs",
+        "before_sha256": null,
+        "sha256": "c2f2f6a08d04a862834ffb96244149de55d051c8015477e64857ddec194233ea",
+        "mode": "0o664"
+      },
+      {
+        "path": "src/clap-adapter/src/trigger/gui.rs",
+        "before_sha256": "f56eade8a07ecf0af3122af8b6fcd1f82139f43b12294899cc44ceb2ee0ce94d",
+        "sha256": "d49197a6cd735d7632145022f052d83204233f55991d20815767184d225ea34b",
+        "mode": "0o664"
+      },
+      {
+        "path": "src/clap-adapter/tests/internal/trigger_gui_dispatch.rs",
+        "before_sha256": null,
+        "sha256": "d41aa6729d9a89ad9c285c0f135f666f92a5486468df3ce5b1eec127cfc48d7f",
+        "mode": "0o664"
+      },
+      {
+        "path": "src/clap-adapter/tests/internal/trigger_timer.rs",
+        "before_sha256": null,
+        "sha256": "61920b3d1c1d16999e671b0a99aee62789e63be47158cf74d0a1f16f4f768998",
+        "mode": "0o664"
+      },
+      {
+        "path": "src/clap-adapter/tests/trigger_gui.rs",
+        "before_sha256": "11b32f1c74004397e1b6799ff004e1687f5f10557c33cfd83814c864e6ff69b1",
+        "sha256": "4e2e8695c41656ff62b1b62dcf1458967d785a92be319fb17f4fca0d9b73e68a",
+        "mode": "0o664"
+      },
+      {
+        "path": "src/clap-adapter/tests/trigger_parameters.rs",
+        "before_sha256": null,
+        "sha256": "bd06e2e2800520e520cc4ab4fee561475609d42566546db892ffafb41a007856",
+        "mode": "0o664"
+      },
+      {
+        "path": "src/trigger-host/src/protocol.rs",
+        "before_sha256": "2e320c4bd01072aeb79b542c5bfcde4e5c6a753cdc8c95aec2dbedeae383f08e",
+        "sha256": "d18bb5e0cd1fa1e9ff304ab3c25a751739765ef04d0297c4c307b99a8feda58e",
+        "mode": "0o664"
+      },
+      {
+        "path": "tests/python/test_engine_only_build.py",
+        "before_sha256": "0fd12850dac38eea58314fa013b9d79ac7932b9135a03dac98f226c0e24857fa",
+        "sha256": "a0fe6ecbd16031a331faab65c682f5af8ba3d1194db23f1d11c361fcf137d60a",
+        "mode": "0o664"
+      },
+      {
+        "path": "tests/python/test_trigger_native_fixture.py",
+        "before_sha256": "1fecaaa3efdd29eacee86686ebd4b7adfbd8df5de7a8105ae8375b06a6d4b2b6",
+        "sha256": "f752371314bda9392597714bff532f9999e848cfc6253dc4f39838faa13a7859",
+        "mode": "0o664"
+      }
+    ],
+    "excluded": [
+      "Runtime/cache-editor-guard accidental reusable target",
+      "all targets/caches/binaries/raw profiles",
+      "author evidence (not yet curated)",
+      "main checkout"
+    ]
+  },
+  "checks": {
+    "author": "author-handoff.md",
+    "native_ctests": {
+      "passed": 19,
+      "resource_and_artifact_binding": {
+        "ctests": 19,
+        "fast_driver_case": 1,
+        "native_rust_outer_cases": 16,
+        "nested_allocator_child": 1,
+        "expected_source_sha256": {
+          "CMakeLists.txt": "afa8bc44620a30639c7f70f03534ba1b968cff746a1f1fe0d2c6cbbf7998fc3d",
+          "README.md": "397aa70708a93c2a4d817f59e7433d9bf5d15c3b49ac50df996a0e5e05841f70",
+          "docs/migrations/juce-free-clap-dependencies.json": "8093c1f05b8761cfddafe45b91ef0b2fd144fc6aa4fdcd5e4532e6fd2abfa43c",
+          "openspec/changes/add-juce-free-trigger-clap-editor/design.md": "ef7c55cda0aabd651adf067607fb66d1202c510b1113526f1d51c96476885a04",
+          "scripts/prepare-trigger-clap-native.py": "ceec5e6493fd8d4cc372c836686ed7967118a9681dd8222c9c0a12d02e0b9360",
+          "tests/python/test_engine_only_build.py": "a0fe6ecbd16031a331faab65c682f5af8ba3d1194db23f1d11c361fcf137d60a",
+          "tests/python/test_trigger_native_fixture.py": "f752371314bda9392597714bff532f9999e848cfc6253dc4f39838faa13a7859",
+          "src/clap-adapter/Cargo.toml": "2e536de3d35a1965f59da177b823063c34964d8047e3af37342f8fb9fafea9ef",
+          "src/clap-adapter/Cargo.lock": "34f17a0311ad96eb5a9a3a9e46f5a180bbc8ab53ffa278c98d73d40df4f46d9c",
+          "src/clap-adapter/src/trigger.rs": "58e466a35576829a797021fb73f8c2de9efc3c01135e6005cdb78ba55316e7cd",
+          "src/clap-adapter/src/trigger/gui.rs": "d49197a6cd735d7632145022f052d83204233f55991d20815767184d225ea34b",
+          "src/clap-adapter/src/trigger/automation.rs": "c2f2f6a08d04a862834ffb96244149de55d051c8015477e64857ddec194233ea",
+          "src/clap-adapter/tests/trigger_gui.rs": "4e2e8695c41656ff62b1b62dcf1458967d785a92be319fb17f4fca0d9b73e68a",
+          "src/clap-adapter/tests/trigger_parameters.rs": "bd06e2e2800520e520cc4ab4fee561475609d42566546db892ffafb41a007856",
+          "src/clap-adapter/tests/internal/trigger_gui_dispatch.rs": "d41aa6729d9a89ad9c285c0f135f666f92a5486468df3ce5b1eec127cfc48d7f",
+          "src/clap-adapter/tests/internal/trigger_timer.rs": "61920b3d1c1d16999e671b0a99aee62789e63be47158cf74d0a1f16f4f768998",
+          "src/trigger-host/src/protocol.rs": "d18bb5e0cd1fa1e9ff304ab3c25a751739765ef04d0297c4c307b99a8feda58e"
+        },
+        "bundle_app_sha256": "4b9ce5a356fea5f22703f9046c77a80ac616c00242348a12fe81f58fe4f760f2",
+        "scope": "Actual maintained fixtures and19 CTests, exact Cargo source/copy artifact and full editor/instrument resource hashes. No G3/full-beta readiness claim. Existing zero-filter guard calibration is reused; current all-case property assertions are separate configuration evidence.",
+        "sandbox_setup_attempt": {
+          "path": "sandbox-denied",
+          "ctests": 19,
+          "passed": 7,
+          "failed_before_X11_behavior": 12,
+          "cause": "default execution sandbox denies inherited X11 connections",
+          "scope": "setup only; identical maintained source rerun with authorized native desktop access passes19/19"
+        }
+      },
+      "sandbox_attempt": "root-raw.tar.gz:sandbox-denied (setup only)"
+    },
+    "host_tests": {
+      "passed": 154,
+      "failed": 0,
+      "ignored": 0,
+      "seconds": 54.776863592036534,
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--manifest-path",
+        "src/trigger-host/Cargo.toml",
+        "--locked",
+        "--jobs",
+        "1"
+      ]
+    },
+    "maintained_build_boundary": {
+      "passed": 8,
+      "seconds": 270.42660977796186,
+      "command": [
+        "python3",
+        "/tmp/dandrum-evidence/g2-native-fixture/run-build-boundary-shared-cache.py"
+      ],
+      "cache_override": {
+        "maintained_suite": "ClapProofBuildTest",
+        "source_fixture": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-yp_lj3bp/source",
+        "preserved_original_cache": "/tmp/dandrum-lanes/integration/build/engine-only-regression/cargo-target",
+        "actual_shared_target": "/tmp/dandrum-lanes/cache-runtime",
+        "scope": "Same maintained tests and copied source without third_party/web/ui; only task-owned output cache redirected to the returned existing warm cache to preserve reusable dependencies."
+      },
+      "minimum_disk_free_bytes": 13435330560,
+      "minimum_memory_available_bytes": 10603192320
+    },
+    "strict_scoped_and_canonical_specs": {
+      "passed": 51,
+      "change": "add-juce-free-trigger-clap-editor"
+    },
+    "spec_coverage": {
+      "scenarios": 618,
+      "mapped": 379,
+      "ratchet_backlog": 239,
+      "task_checkboxes_changed": false
+    },
+    "actual_linkage": {
+      "scope": "Actual maintained native plugin and separately loaded G1 host; actual default plugin produced by current copied-source guard. ELF/loader evidence, no installed release or named-DAW claim.",
+      "results": [
+        {
+          "label": "native_plugin",
+          "command": [
+            "readelf",
+            "-d",
+            "/tmp/dandrum-evidence/g2-native-fixture/native-build/trigger-clap-parameters-fixture/DandrumTrigger.clap"
+          ],
+          "exit": 0,
+          "artifact_sha256": "7b75a9d5eb22ae0126edc993be342b24432b289d124d6282f0fe11df8ae58e4d",
+          "direct_needed": [
+            " 0x0000000000000001 (NEEDED)             Shared library: [libgdk-3.so.0]",
+            " 0x0000000000000001 (NEEDED)             Shared library: [libgobject-2.0.so.0]",
+            " 0x0000000000000001 (NEEDED)             Shared library: [libglib-2.0.so.0]",
+            " 0x0000000000000001 (NEEDED)             Shared library: [libwebkit2gtk-4.1.so.0]",
+            " 0x0000000000000001 (NEEDED)             Shared library: [libgtk-3.so.0]",
+            " 0x0000000000000001 (NEEDED)             Shared library: [libsoup-3.0.so.0]",
+            " 0x0000000000000001 (NEEDED)             Shared library: [libgio-2.0.so.0]",
+            " 0x0000000000000001 (NEEDED)             Shared library: [libjavascriptcoregtk-4.1.so.0]",
+            " 0x0000000000000001 (NEEDED)             Shared library: [libgcc_s.so.1]",
+            " 0x0000000000000001 (NEEDED)             Shared library: [libm.so.6]",
+            " 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]",
+            " 0x0000000000000001 (NEEDED)             Shared library: [ld-linux-x86-64.so.2]"
+          ],
+          "log": "root-link-native_plugin-0.log"
+        },
+        {
+          "label": "native_plugin",
+          "command": [
+            "ldd",
+            "/tmp/dandrum-evidence/g2-native-fixture/native-build/trigger-clap-parameters-fixture/DandrumTrigger.clap"
+          ],
+          "exit": 0,
+          "artifact_sha256": "7b75a9d5eb22ae0126edc993be342b24432b289d124d6282f0fe11df8ae58e4d",
+          "direct_needed": [],
+          "log": "root-link-native_plugin-1.log"
+        },
+        {
+          "label": "g1_host",
+          "command": [
+            "readelf",
+            "-d",
+            "/tmp/dandrum-evidence/g2-native-fixture/native-build/trigger-clap-native-fixture/trigger-gui-test"
+          ],
+          "exit": 0,
+          "artifact_sha256": "256d168af1a1243f50f7d13a479d8772711a5f8240bdb28392b181324239a15c",
+          "direct_needed": [
+            " 0x0000000000000001 (NEEDED)             Shared library: [libgobject-2.0.so.0]",
+            " 0x0000000000000001 (NEEDED)             Shared library: [libgtk-3.so.0]",
+            " 0x0000000000000001 (NEEDED)             Shared library: [libgdk-3.so.0]",
+            " 0x0000000000000001 (NEEDED)             Shared library: [libglib-2.0.so.0]",
+            " 0x0000000000000001 (NEEDED)             Shared library: [libgcc_s.so.1]",
+            " 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]"
+          ],
+          "log": "root-link-g1_host-0.log"
+        },
+        {
+          "label": "copied_source_default_plugin",
+          "command": [
+            "readelf",
+            "-d",
+            "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-yp_lj3bp/source/build/clap/clap/DandrumHeadlessProof.clap"
+          ],
+          "exit": 0,
+          "artifact_sha256": "0dc0cbcc58c6bfd8560907b83d1911a6f42f63fbaad08e00ee899c91b52f6905",
+          "direct_needed": [
+            " 0x0000000000000001 (NEEDED)             Shared library: [libgcc_s.so.1]",
+            " 0x0000000000000001 (NEEDED)             Shared library: [libm.so.6]",
+            " 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]",
+            " 0x0000000000000001 (NEEDED)             Shared library: [ld-linux-x86-64.so.2]"
+          ],
+          "log": "root-link-copied_source_default_plugin-0.log"
+        },
+        {
+          "label": "copied_source_default_plugin",
+          "command": [
+            "ldd",
+            "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-yp_lj3bp/source/build/clap/clap/DandrumHeadlessProof.clap"
+          ],
+          "exit": 0,
+          "artifact_sha256": "0dc0cbcc58c6bfd8560907b83d1911a6f42f63fbaad08e00ee899c91b52f6905",
+          "direct_needed": [],
+          "log": "root-link-copied_source_default_plugin-1.log"
+        }
+      ]
+    }
+  },
+  "coverage_qualifications": {
+    "automation_aggregate_source_regions": "62/62; raw61/62regions54/55lines retained",
+    "feedback_aggregate_source_regions": "53/53",
+    "weak_upgrade_fallback": "unhit under final cancellation invariant",
+    "host_serializer": "exact source-bound generated enum declarations have no distinct mapping; behavior directly asserted; partial full-protocol75.14%lines/66.47%regions",
+    "branches": "unmeasured; no whole-GUI/every-instantiation100% claim"
+  },
+  "archives": {
+    "author-archive.json": {
+      "archive": "author-raw.tar.gz",
+      "sha256": "0b6560c7ca4b2128e56e7d64fe87b6200b36e6900e25b744eaab47b0a1bb4f32",
+      "bytes": 1859887,
+      "raw_text_files": 627,
+      "source_states": 116,
+      "unique_source_objects": 92,
+      "members": 720,
+      "roundtrip": "Every member read back and byte-compared; no extraction into repository source.",
+      "exclusions": [
+        "installed ELF and probe libraries",
+        "raw coverage profiles and compiler caches",
+        "accidental Runtime/cache-editor-guard",
+        "repeated source snapshots (deduplicated objects retained instead)"
+      ]
+    },
+    "root-archive.json": {
+      "archive": "root-raw.tar.gz",
+      "sha256": "8a76b1560d07e603161b6cf993c9cd8d51202179f5a8d0a1ba93028f0ae87fd6",
+      "bytes": 158803,
+      "members": 139,
+      "build_boundary_log_count": 36,
+      "every_member_byte_verified": true
+    }
+  },
+  "open_gates": [
+    "G3 heartbeat/expiry/worker/mapping/status/native undo",
+    "pointer behavior and continuous GUI destroy/recreate with audio",
+    "complete independently edited native instances",
+    "unwaived fractional-rate validator failure",
+    "VST3, standalone devices, named DAW, installed offline and remaining full-beta acceptance"
+  ],
+  "preservation": {
+    "main": "clean68dd6553a2f07e71e2fe09ee1d7094d518559937",
+    "mutation": "excluded",
+    "caches": "preserved; explicit author handback received",
+    "accidental_target": "Runtime/cache-editor-guard preserved idle/excluded from source and archives"
+  }
+}

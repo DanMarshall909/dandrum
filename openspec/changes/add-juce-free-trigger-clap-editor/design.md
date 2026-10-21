@@ -250,3 +250,36 @@ failed preparation must preserve the previous fixture. Run each ignored native
 case in its own bounded process and fail exact filters that execute zero tests.
 This test fixture is separate from the headless product and adds no release
 readiness claim.
+
+### Wake parameter delivery through a main-owned host timer
+
+The interactive `trigger-editor` projection requires successful CLAP HostTimer
+registration at its first supported GUI `create`, after cheap configuration and
+ordering checks. Missing or refused registration rejects creation atomically.
+Main owns the registration before further fallible work and retains it across
+hide and complete view destruction. Use a 16 ms requested period; the host may
+adjust or withhold dispatch. A registering/disabled/live state prevents duplicate
+or reentrant registration. Failed rollback/removal retains disabled cleanup
+ownership for retry where possible; never report failed cancellation as success.
+Final host/plugin-object lifetime obligations remain explicit. Default and plain
+Trigger retain their existing headless contracts.
+
+Keep the borrowed host handle in Main. Real timer, main-callback, GUI destruction
+and parameter entrypoints may request a flush only after Core borrows end.
+WebView/GLib callbacks capture no host borrow. Once native initialization is
+admitted and GTK is initialized, install one view-independent, Weak-Core GLib
+source with a 10 ms interval for bounded control-side service. Configuration-only
+use installs no such source. Hide/destroy retains it; instrument teardown disables
+delivery, cancels it once and removes the host timer before releasing owners.
+Introduce the persistent worker only with its structural-job acceptance tests.
+No private GTK loop or call to `NativeEditor::service` is added to the plugin.
+
+Timer registration and flush requests do not imply event acceptance or eventual
+progress in suspended/closed hosts. Preserve pending ledger prefixes and reserved
+Ends until actual host output success credits are collected. Tests must dispatch
+real registered IDs, withhold ticks, reject output heads and observe retries,
+bounded attempts, hidden/destroyed-view ownership and final removal. The retained
+Qtractor closed/inactive limitations remain separate from synthetic host proof.
+Required heartbeat/expiry, mapping/recovery/undo, unmodified production loading
+and concurrent GUI/audio acceptance remain owning gates; this scheduling choice
+does not mark any of them complete.

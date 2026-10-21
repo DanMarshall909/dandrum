@@ -92,7 +92,7 @@ class TriggerNativeFixtureTest(unittest.TestCase):
             filenames=[str(self.executable)], executable=str(self.executable))
         self.records = [self.library_record, self.test_record]
 
-    def run_driver(self, records=None, status=0, cli=False):
+    def run_driver(self, records=None, status=0, cli=False, extra_args=()):
         stdout = 'Cargo non-JSON progress\n' + '\n'.join(
             json.dumps(record) for record in (self.records if records is None else records)) + '\n'
         self.scenario.write_text(json.dumps({'stdout': stdout, 'stderr': 'retained cargo stderr\n',
@@ -103,7 +103,7 @@ class TriggerNativeFixtureTest(unittest.TestCase):
             argv = [
                 '--cargo', str(self.cargo), '--manifest', str(self.manifest),
                 '--target-dir', str(self.target), '--resource-dir', str(self.resources),
-                '--output-dir', str(self.output)]
+                '--output-dir', str(self.output), *extra_args]
             if cli:
                 with patch.object(sys, 'argv', [str(DRIVER), *argv]), self.assertRaises(SystemExit) as exited:
                     runpy.run_path(str(DRIVER), run_name='__main__')
@@ -151,6 +151,27 @@ class TriggerNativeFixtureTest(unittest.TestCase):
             self.assertEqual(artifact, {'source': str(source), 'copy': destination,
                                         'source_sha256': digest, 'copy_sha256': digest,
                                         'compiler_artifact': record})
+
+    def test_explicit_parameter_target_selects_its_reported_executable(self):
+        parameters = copy.deepcopy(self.test_record)
+        executable = self.executable.with_name('trigger_parameters-0123456789abcdef')
+        executable.write_bytes(b'actual parameter test executable')
+        executable.chmod(0o751)
+        parameters['target']['name'] = 'trigger_parameters'
+        parameters['target']['src_path'] = str(self.manifest.parent / 'tests/trigger_parameters.rs')
+        parameters['filenames'] = [str(executable)]
+        parameters['executable'] = str(executable)
+        result, error, _ = self.run_driver(
+            [*self.records, parameters], cli=True,
+            extra_args=['--test-target', 'trigger_parameters'])
+        self.assertEqual((result, error), (0, ''))
+        self.assertEqual((self.output / 'trigger-parameters-test').read_bytes(), executable.read_bytes())
+        self.assertFalse((self.output / 'trigger-gui-test').exists())
+        invocation = json.loads(self.invocation.read_text())
+        self.assertEqual(invocation['argv'][invocation['argv'].index('--test') + 1], 'trigger_parameters')
+        binding = json.loads((self.output / 'binding.json').read_text())
+        self.assertEqual(binding['artifacts']['test']['source'], str(executable))
+        self.assertEqual(binding['artifacts']['test']['compiler_artifact'], parameters)
 
     def test_missing_or_ambiguous_reported_artifacts_are_named_failures(self):
         no_so = copy.deepcopy(self.library_record)

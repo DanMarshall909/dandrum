@@ -1,0 +1,16 @@
+{
+  "archive": "author-raw.tar.gz",
+  "sha256": "0b6560c7ca4b2128e56e7d64fe87b6200b36e6900e25b744eaab47b0a1bb4f32",
+  "bytes": 1859887,
+  "raw_text_files": 627,
+  "source_states": 116,
+  "unique_source_objects": 92,
+  "members": 720,
+  "roundtrip": "Every member read back and byte-compared; no extraction into repository source.",
+  "exclusions": [
+    "installed ELF and probe libraries",
+    "raw coverage profiles and compiler caches",
+    "accidental Runtime/cache-editor-guard",
+    "repeated source snapshots (deduplicated objects retained instead)"
+  ]
+}

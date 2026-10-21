@@ -4,11 +4,12 @@ use clack_extensions::gui::{GuiApiType, GuiConfiguration, GuiSize, PluginGuiImpl
 use clack_plugin::prelude::PluginError;
 use dandrum_trigger_editor::{EditorAssets, NativeEditor};
 use dandrum_trigger_host::{
-    parameters::ParameterError,
+    parameters::{ParameterError, ParameterReply, ParameterValue},
     protocol::{Admission, EditorCommand, MESSAGE_BYTES_LIMIT, ProtocolError},
 };
 use std::{
-    ffi::CString, mem::MaybeUninit, os::unix::ffi::OsStrExt, path::Path, rc::Rc, time::Instant,
+    cell::Cell, ffi::CString, mem::MaybeUninit, os::unix::ffi::OsStrExt, path::Path, rc::Rc,
+    time::Instant,
 };
 
 const SIZE: GuiSize = GuiSize {
@@ -82,9 +83,68 @@ pub(super) struct EditorState {
     attaching: bool,
     attachment: Option<String>,
     child: Option<Rc<NativeEditor>>,
+    source: Option<gtk::glib::SourceId>,
 }
 
 impl Core {
+    fn ensure_service_source(self: &Rc<Self>) {
+        if self.gui.borrow().source.is_some() {
+            return;
+        }
+        let weak = Rc::downgrade(self);
+        let source =
+            gtk::glib::timeout_add_local(std::time::Duration::from_millis(10), move || {
+                let Some(core) = weak.upgrade() else {
+                    return gtk::glib::ControlFlow::Break;
+                };
+                core.service_editor();
+                gtk::glib::ControlFlow::Continue
+            });
+        self.gui.borrow_mut().source = Some(source);
+    }
+    fn cancel_service_source(&self) {
+        let source = self.gui.borrow_mut().source.take();
+        if let Some(source) = source {
+            source.remove();
+        }
+    }
+    pub(super) fn service_editor(&self) {
+        self.service_automation();
+        for _ in 0..64 {
+            let target = {
+                let Ok(state) = self.gui.try_borrow() else {
+                    return;
+                };
+                if state.created {
+                    state
+                        .attachment
+                        .as_ref()
+                        .zip(state.child.as_ref())
+                        .map(|(attachment, child)| (attachment.clone(), Rc::clone(child)))
+                } else {
+                    None
+                }
+            };
+            let event = {
+                let Ok(mut controller) = self.controller.try_borrow_mut() else {
+                    return;
+                };
+                let Some(feedback) = controller.take_feedback() else {
+                    return;
+                };
+                target.as_ref().and_then(|(attachment, _)| {
+                    controller.encode_editor_event(attachment, "parameterStateChanged", serde_json::json!({
+                        "generation": feedback.generation, "sequence": feedback.sequence,
+                        "reset_cancelled": feedback.reset_cancelled, "frame_offset": feedback.frame_offset,
+                        "parameters": parameter_values(feedback.parameters),
+                    })).ok()
+                })
+            };
+            if let (Some((_, child)), Some(event)) = (target, event) {
+                self.deliver(&child, &event);
+            }
+        }
+    }
     fn cleanup_attachment(&self) -> Result<(), PluginError> {
         let mut controller = self.controller.try_borrow_mut().map_err(|_| rejected())?;
         let mut state = self.gui.try_borrow_mut().map_err(|_| rejected())?;
@@ -135,6 +195,7 @@ impl Core {
         }
         ensure_native_code_residency(&self.plugin_path)?;
         gtk::init().map_err(|_| rejected())?;
+        self.ensure_service_source();
         let connection = self
             .controller
             .try_borrow_mut()
@@ -207,31 +268,7 @@ impl Core {
             let Ok(mut controller) = self.controller.try_borrow_mut() else {
                 return;
             };
-            let result = match controller.admit(message) {
-                Ok(Admission::New(request)) => match request.command {
-                    EditorCommand::GetSamplerSession => {
-                        let Ok(reply) = controller.sampler_session_reply(&request) else {
-                            return;
-                        };
-                        drop(controller);
-                        self.deliver(&child, &reply);
-                        return;
-                    }
-                    EditorCommand::NoteOn { .. } | EditorCommand::NoteOff { .. } => controller
-                        .apply_editor_note(&request, Instant::now())
-                        .map(|()| serde_json::Value::Null)
-                        .map_err(|error| match error {
-                            ParameterError::Protocol(error) => error,
-                            _ => ProtocolError::InvalidArguments,
-                        }),
-                    _ => Err(ProtocolError::CapabilityUnavailable),
-                },
-                // No reply cache: never execute a duplicate again or invent success.
-                Ok(Admission::Duplicate { .. }) => Err(ProtocolError::ConflictingRequest),
-                Err(ParameterError::Protocol(error)) => Err(error),
-                Err(_) => Err(ProtocolError::InvalidArguments),
-            };
-            controller.encode_editor_reply(attachment, request_id, result)
+            dispatch(&mut controller, attachment, request_id, message)
         };
         if let Ok(reply) = reply {
             self.deliver(&child, &reply);
@@ -246,8 +283,73 @@ impl Core {
         let _ = child.evaluate_script(&script);
     }
 }
+fn dispatch(
+    controller: &mut dandrum_trigger_host::parameters::ParameterController,
+    attachment: &str,
+    request_id: &str,
+    message: &str,
+) -> Result<String, ParameterError> {
+    let result = match controller.admit(message) {
+        Ok(Admission::New(request)) => match request.command {
+            EditorCommand::GetSamplerSession => return controller.sampler_session_reply(&request),
+            EditorCommand::NoteOn { .. } | EditorCommand::NoteOff { .. } => controller
+                .apply_editor_note(&request, Instant::now())
+                .map(|()| serde_json::Value::Null)
+                .map_err(|error| match error {
+                    ParameterError::Protocol(error) => error,
+                    _ => ProtocolError::InvalidArguments,
+                }),
+            EditorCommand::GetParameterState
+            | EditorCommand::BeginGesture { .. }
+            | EditorCommand::SetParameter { .. }
+            | EditorCommand::EndGesture { .. } => controller
+                .apply(&request)
+                .map(parameter_reply)
+                .map_err(parameter_error),
+            _ => Err(ProtocolError::CapabilityUnavailable),
+        },
+        Ok(Admission::Duplicate { .. }) => Err(ProtocolError::DuplicateRequest),
+        Err(ParameterError::Protocol(error)) => Err(error),
+        Err(_) => Err(ProtocolError::InvalidArguments),
+    };
+    controller.encode_editor_reply(attachment, request_id, result)
+}
+
+fn parameter_values(parameters: Vec<ParameterValue>) -> serde_json::Value {
+    parameters
+        .into_iter()
+        .map(|parameter| {
+            serde_json::json!({
+                "id": parameter.id, "name": parameter.name, "value": parameter.value,
+            })
+        })
+        .collect()
+}
+fn parameter_reply(reply: ParameterReply) -> serde_json::Value {
+    match reply {
+        ParameterReply::Accepted {
+            generation,
+            sequence,
+        } => serde_json::json!({
+            "status": "accepted", "generation": generation, "sequence": sequence,
+        }),
+        ParameterReply::State(state) => serde_json::json!({
+            "generation": state.generation, "sequence": state.sequence,
+            "reset_cancelled": state.reset_cancelled,
+            "parameters": parameter_values(state.parameters),
+        }),
+    }
+}
+fn parameter_error(error: ParameterError) -> ProtocolError {
+    match error {
+        ParameterError::QueueFull => ProtocolError::Busy,
+        _ => ProtocolError::CommandRejected,
+    }
+}
+
 impl Drop for Core {
     fn drop(&mut self) {
+        self.cancel_service_source();
         let state = self.gui.get_mut();
         state.created = false;
         if let Some(attachment) = state.attachment.take() {
@@ -258,7 +360,11 @@ impl Drop for Core {
 }
 impl Drop for Main<'_> {
     fn drop(&mut self) {
+        self.creating.set(false);
+        self.timer.disable();
+        self.core.cancel_service_source();
         self.core.destroy_editor();
+        let _ = self.timer.remove(|id| self.remove_host_timer(id));
     }
 }
 impl PluginGuiImpl for Main<'_> {
@@ -275,15 +381,53 @@ impl PluginGuiImpl for Main<'_> {
         if !self.is_api_supported(configuration) {
             return Err(rejected());
         }
-        let mut state = self.core.gui.try_borrow_mut().map_err(|_| rejected())?;
-        if state.created {
+        {
+            let state = self.core.gui.try_borrow().map_err(|_| rejected())?;
+            if state.created || self.creating.get() {
+                return Err(rejected());
+            }
+            self.creating.set(true);
+        }
+        let newly_registered = match self.timer.prepare(
+            || {
+                self.host
+                    .get_extension::<clack_extensions::timer::HostTimer>()
+                    .ok_or_else(rejected)?
+                    .register_timer(&self.host, 16)
+                    .map_err(|_| rejected())
+            },
+            |id| self.remove_host_timer(id),
+        ) {
+            Ok(newly_registered) => newly_registered,
+            Err(error) => {
+                self.creating.set(false);
+                return Err(error);
+            }
+        };
+        let committed = if let Ok(mut state) = self.core.gui.try_borrow_mut() {
+            if self.creating.replace(false) && !state.created {
+                state.created = true;
+                true
+            } else {
+                false
+            }
+        } else {
+            false
+        };
+        if !committed {
+            self.creating.set(false);
+            if newly_registered {
+                let _ = self.timer.remove(|id| self.remove_host_timer(id));
+            }
             return Err(rejected());
         }
-        state.created = true;
-        Ok(())
+        self.timer.enable()
     }
+
     fn destroy(&self) {
+        self.creating.set(false);
         self.core.destroy_editor();
+        self.service_parameter_delivery();
     }
     fn set_scale(&self, _: f64) -> Result<(), PluginError> {
         Err(rejected())
@@ -312,5 +456,104 @@ impl PluginGuiImpl for Main<'_> {
             .child()?
             .set_visible(false)
             .map_err(|_| rejected())
+    }
+}
+
+#[cfg(test)]
+#[path = "../../tests/internal/trigger_gui_dispatch.rs"]
+mod dispatch_tests;
+
+#[cfg(test)]
+#[path = "../../tests/internal/trigger_timer.rs"]
+mod timer_tests;
+
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+enum TimerState {
+    #[default]
+    Empty,
+    Registering,
+    Disabled(clack_extensions::timer::TimerId),
+    Live(clack_extensions::timer::TimerId),
+    Removing(clack_extensions::timer::TimerId),
+}
+#[derive(Default)]
+pub(super) struct TimerRegistration(Cell<TimerState>);
+impl TimerRegistration {
+    fn prepare(
+        &self,
+        register: impl FnOnce() -> Result<clack_extensions::timer::TimerId, PluginError>,
+        unregister: impl FnOnce(clack_extensions::timer::TimerId) -> Result<(), PluginError>,
+    ) -> Result<bool, PluginError> {
+        match self.0.get() {
+            TimerState::Live(_) => return Ok(false),
+            TimerState::Disabled(_) => self.remove(unregister)?,
+            TimerState::Empty => {}
+            TimerState::Registering | TimerState::Removing(_) => return Err(rejected()),
+        }
+        self.0.set(TimerState::Registering);
+        match register() {
+            Ok(id) => {
+                self.0.set(TimerState::Disabled(id));
+                Ok(true)
+            }
+            Err(error) => {
+                self.0.set(TimerState::Empty);
+                Err(error)
+            }
+        }
+    }
+    fn enable(&self) -> Result<(), PluginError> {
+        match self.0.get() {
+            TimerState::Disabled(id) | TimerState::Live(id) => {
+                self.0.set(TimerState::Live(id));
+                Ok(())
+            }
+            _ => Err(rejected()),
+        }
+    }
+    fn disable(&self) {
+        if let TimerState::Live(id) = self.0.get() {
+            self.0.set(TimerState::Disabled(id));
+        }
+    }
+    fn is_live(&self, id: clack_extensions::timer::TimerId) -> bool {
+        self.0.get() == TimerState::Live(id)
+    }
+    fn remove(
+        &self,
+        unregister: impl FnOnce(clack_extensions::timer::TimerId) -> Result<(), PluginError>,
+    ) -> Result<(), PluginError> {
+        let id = match self.0.get() {
+            TimerState::Empty => return Ok(()),
+            TimerState::Disabled(id) | TimerState::Live(id) => id,
+            TimerState::Registering | TimerState::Removing(_) => return Err(rejected()),
+        };
+        self.0.set(TimerState::Removing(id));
+        match unregister(id) {
+            Ok(()) => {
+                self.0.set(TimerState::Empty);
+                Ok(())
+            }
+            Err(error) => {
+                self.0.set(TimerState::Disabled(id));
+                Err(error)
+            }
+        }
+    }
+}
+impl Main<'_> {
+    fn remove_host_timer(&self, id: clack_extensions::timer::TimerId) -> Result<(), PluginError> {
+        self.host
+            .get_extension::<clack_extensions::timer::HostTimer>()
+            .ok_or_else(rejected)?
+            .unregister_timer(&self.host, id)
+            .map_err(|_| rejected())
+    }
+}
+impl clack_extensions::timer::PluginTimerImpl for Main<'_> {
+    fn on_timer(&self, id: clack_extensions::timer::TimerId) {
+        if self.timer.is_live(id) {
+            self.service_parameter_delivery();
+        }
     }
 }

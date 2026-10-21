@@ -104,6 +104,26 @@ class EngineOnlyBuildTest(EngineBuildFixture):
 
 
 class ClapProofBuildTest(EngineBuildFixture):
+    def test_headless_clap_development_dependencies_exclude_native_editor(self):
+        # Dev dependencies are compiled by Cargo tests even if a test source is
+        # feature-gated; inspect the complete development graph for both modes.
+        for mode, features in (("default", []), ("trigger", ["--features", "trigger"])):
+            with self.subTest(mode=mode):
+                code, output = self.command(
+                    "clap-" + mode + "-development-dependencies",
+                    ["cargo", "tree", "--offline", "--locked", "--manifest-path",
+                     str(self.source / "src/clap-adapter/Cargo.toml"),
+                     "--edges", "normal,build,dev", "--prefix", "none", *features])
+                self.assertEqual(code, 0, output)
+                names = {line.split()[0].lower()
+                         for line in output.splitlines() if line.strip()}
+                self.assertIn("dandrum_clap_adapter", names)
+                native = sorted(name for name in names
+                                if any(part in name for part in
+                                       ("wry", "webkit", "gtk", "gdk", "juce")))
+                self.assertEqual(native, [],
+                                 mode + " headless development graph includes native editor dependencies")
+
     def test_clap_selection_requires_independent_engine_mode(self):
         _, code, output = self.configure("clap-needs-engine-mode", "-DDANDRUM_CLAP_PROOF=ON")
         self.assertNotEqual(code, 0, output)
@@ -271,8 +291,11 @@ class ClapProofBuildTest(EngineBuildFixture):
 
         disabled, code, output = self.configure("clap-native-disabled", *options)
         self.assertEqual(code, 0, output)
-        self.assertNotIn("trigger-clap-native-prepare",
-                         inventory("clap-native-disabled-inventory", disabled))
+        disabled_tests = inventory("clap-native-disabled-inventory", disabled)
+        self.assertNotIn("trigger-clap-native-prepare", disabled_tests)
+        self.assertNotIn("trigger-clap-native-parameters-prepare", disabled_tests)
+        self.assertFalse(any(name.startswith("trigger-clap-native-parameter-")
+                             for name in disabled_tests))
         enabled, code, output = self.configure(
             "clap-native-enabled", *options, "-DDANDRUM_TRIGGER_EDITOR_NATIVE_X11=ON")
         self.assertEqual(code, 0, output)
@@ -319,6 +342,53 @@ class ClapProofBuildTest(EngineBuildFixture):
         product_rule = (enabled / "CMakeFiles/dandrum-trigger-clap-product.dir/build.make").read_text()
         self.assertIn("--features trigger --lib", product_rule)
         self.assertNotIn("--features trigger-editor", product_rule)
+        self.assertIn("trigger-clap-native-parameters-prepare", tests,
+                      "parameter IPC needs its separately reported native test executable")
+        parameter_fixture = enabled / "trigger-clap-parameters-fixture"
+        prepare = tests["trigger-clap-native-parameters-prepare"]
+        for argument in ("--test-target", "trigger_parameters", "--output-dir", str(parameter_fixture)):
+            self.assertIn(argument, prepare["command"])
+        props = {prop["name"]: prop["value"] for prop in prepare["properties"]}
+        self.assertIn("trigger-clap-parameters-compiled", props["FIXTURES_SETUP"])
+        self.assertTrue(props["RUN_SERIAL"])
+        self.assertEqual(props["TIMEOUT"], 1200.0)
+        parameter_cases = {
+            "trigger-clap-native-parameter-state":
+                "copied_native_parameter_state_is_an_authenticated_numeric_dto",
+            "trigger-clap-native-parameter-flush":
+                "copied_native_parameter_flush_delivers_host_accepted_gestures",
+            "trigger-clap-native-parameter-ownership":
+                "copied_native_automation_survives_rejected_output_activation_failures_and_audio_return",
+            "trigger-clap-native-parameter-timer-required":
+                "copied_native_gui_requires_host_timer",
+            "trigger-clap-native-parameter-timer-refused":
+                "copied_native_gui_rejects_refused_host_timer",
+            "trigger-clap-native-parameter-timer-delivery":
+                "copied_native_host_timer_delivers_a_later_rendered_parameter_edit",
+            "trigger-clap-native-parameter-timer-rollback":
+                "copied_native_timer_rollback_retains_disabled_cleanup_and_retries",
+            "trigger-clap-native-parameter-source-credits":
+                "copied_native_view_independent_source_collects_accepted_automation_credits",
+            "trigger-clap-native-parameter-feedback-undo":
+                "copied_native_host_feedback_updates_rendered_control_without_polling_or_undo_pollution",
+            "trigger-clap-native-parameter-callback-audit":
+                "copied_native_parameter_callbacks_allocate_and_destroy_nothing_while_gui_services",
+            "trigger-clap-native-parameter-invalid-stopped-flush":
+                "copied_native_invalid_stopped_flush_preserves_uncollected_automation_ownership",
+        }
+        for name, case in parameter_cases.items():
+            with self.subTest(parameter_case=name):
+                self.assertIn(name, tests, "parameter behavior needs an exact native process")
+                test = tests[name]
+                for argument in (str(parameter_fixture / "trigger-parameters-test"),
+                                 "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=" + str(parameter_fixture / "DandrumTrigger.clap"),
+                                 case, "--ignored", "--exact", "--test-threads=1"):
+                    self.assertIn(argument, test["command"])
+                props = {prop["name"]: prop["value"] for prop in test["properties"]}
+                self.assertIn("trigger-clap-parameters-compiled", props["FIXTURES_REQUIRED"])
+                self.assertTrue(props["RUN_SERIAL"])
+                self.assertEqual(props["TIMEOUT"], 60.0)
+                self.assertIn("running 0 tests", props["FAIL_REGULAR_EXPRESSION"])
 
     def test_trigger_editor_scaffold_stages_copied_resources_without_host_sources(self):
         editor_input = self.fixture_root / "editor-input"

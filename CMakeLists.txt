@@ -454,6 +454,49 @@ if(DANDRUM_CLAP_PROOF)
                     RUN_SERIAL TRUE TIMEOUT 60
                     FAIL_REGULAR_EXPRESSION "running 0 tests")
             endforeach()
+            # Public WebKit evaluation lives in a separate test executable so
+            # the G1 loader fixture keeps its independent no-WebKit-host oracle.
+            set(DANDRUM_TRIGGER_PARAMETERS_FIXTURE ${CMAKE_CURRENT_BINARY_DIR}/trigger-clap-parameters-fixture)
+            add_test(NAME trigger-clap-native-parameters-prepare
+                COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/scripts/prepare-trigger-clap-native.py
+                    --cargo ${CARGO_BIN}
+                    --manifest ${DANDRUM_CLAP_DIR}/Cargo.toml
+                    --target-dir ${CMAKE_CURRENT_BINARY_DIR}/rust-target
+                    --resource-dir ${DANDRUM_TRIGGER_RESOURCE_DIR}
+                    --output-dir ${DANDRUM_TRIGGER_PARAMETERS_FIXTURE}
+                    --test-target trigger_parameters)
+            set_tests_properties(trigger-clap-native-parameters-prepare PROPERTIES
+                LABELS "trigger-clap-boundary;native-x11"
+                FIXTURES_SETUP trigger-clap-parameters-compiled
+                RUN_SERIAL TRUE TIMEOUT 1200)
+            set(trigger_parameter_names
+                state flush ownership
+                timer-required timer-refused timer-delivery timer-rollback
+                source-credits feedback-undo callback-audit invalid-stopped-flush)
+            set(trigger_parameter_cases
+                copied_native_parameter_state_is_an_authenticated_numeric_dto
+                copied_native_parameter_flush_delivers_host_accepted_gestures
+                copied_native_automation_survives_rejected_output_activation_failures_and_audio_return
+                copied_native_gui_requires_host_timer
+                copied_native_gui_rejects_refused_host_timer
+                copied_native_host_timer_delivers_a_later_rendered_parameter_edit
+                copied_native_timer_rollback_retains_disabled_cleanup_and_retries
+                copied_native_view_independent_source_collects_accepted_automation_credits
+                copied_native_host_feedback_updates_rendered_control_without_polling_or_undo_pollution
+                copied_native_parameter_callbacks_allocate_and_destroy_nothing_while_gui_services
+                copied_native_invalid_stopped_flush_preserves_uncollected_automation_ownership)
+            foreach(parameter_name parameter_case IN ZIP_LISTS trigger_parameter_names trigger_parameter_cases)
+                add_test(NAME trigger-clap-native-parameter-${parameter_name}
+                    COMMAND ${CMAKE_COMMAND} -E env GDK_BACKEND=x11
+                        DANDRUM_TRIGGER_GUI_PLUGIN_PATH=${DANDRUM_TRIGGER_PARAMETERS_FIXTURE}/DandrumTrigger.clap
+                        ${DANDRUM_TRIGGER_PARAMETERS_FIXTURE}/trigger-parameters-test
+                        ${parameter_case} --ignored --exact --nocapture --test-threads=1)
+                set_tests_properties(trigger-clap-native-parameter-${parameter_name} PROPERTIES
+                    LABELS "trigger-clap-boundary;native-x11"
+                    FIXTURES_REQUIRED trigger-clap-parameters-compiled
+                    RUN_SERIAL TRUE TIMEOUT 60
+                    FAIL_REGULAR_EXPRESSION "running 0 tests")
+            endforeach()
         endif()
         add_custom_target(dandrum-trigger-clap-editor)
         add_dependencies(dandrum-trigger-clap-editor
