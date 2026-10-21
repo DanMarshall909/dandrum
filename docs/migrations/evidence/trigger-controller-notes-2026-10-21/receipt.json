@@ -1,0 +1,78 @@
+{
+  "component": "Authenticated controller notes and native leases",
+  "base": "28caf6ca02861bebdf1a2e09e49c762682ed1cce",
+  "author_base": "0645f8ac844f3acdfdca7878c8b89cf1d3a7ddbf",
+  "source_sha256": {
+    "src/trigger-host/src/parameters.rs": "37b8e92e6507036084fcb99b9fabe717550d53fe2f36a2f046312e630cc3efea",
+    "src/trigger-host/tests/editor_note_controller.rs": "99b99000f9e35406e87d29325d4f6ae07a6354097a40a94544c7cfff68fbb08e"
+  },
+  "scope": "Task3.3 format-neutral controller prerequisite; concrete native periodic service and semantic WebView destruction remain unproved",
+  "behavior": [
+    "Sealed admitted note authority, fixed128press/16attachment policy and terminal ordered transport watermarks",
+    "Current-generation onset, original press-generation release, owner protection, admitted positivevelocity clamp/round to MIDI1..127",
+    "Native monotonic2s lease, exactdeadline expiry and lateheartbeat/reset no revival",
+    "Expiry/detach cancel held and unheard released intent independently of ordinary queue capacity; hostvoice preserved",
+    "Mapping/undo and failed/deferred work retain press generation; real worker survives expiry/detach",
+    "Successful restore clears presses/activity while preserving valid attachment watermarks; invalid/Busy restores retain audio; no note state serialized"
+  ],
+  "tests": {
+    "new_maintained_controller_tests": 14,
+    "ordinary_host": 121,
+    "compilefail_docs": 2,
+    "full_host_LLVM": 121,
+    "sourcefree_default_release": 121,
+    "sourcefree_docs": 2,
+    "fmt": "PASS",
+    "alltarget_clippy_Dwarnings": "PASS"
+  },
+  "coverage": {
+    "parameters_functions": "84/84",
+    "parameters_lines": "817/837",
+    "parameters_regions": "1245/1285",
+    "emitted_instantiations": "117/202 covered",
+    "branch_instrumentation": false,
+    "raw_profiles": 10,
+    "executed_test_binaries": 10,
+    "profdata_reconstruction": "byte-identical",
+    "export_reconstruction": "allpaths/segments/expansions/functions/integercounters exact; three derivedpercent roundings<=1.5e-14 and cargo metadata qualified"
+  },
+  "qualifications": [
+    "Existing20uncovered owner lines remain; new runtimeOn sequence-exhaustion error forwarding unexecuted. It may follow trusted expiry/service-time advancement but cannot accept/renew; no blanketallErrpreservesallpolicy claim",
+    "Initial calibration/noncloneable/wire-name fixture compilation/setup errors retained as setup failures, not invented behaviorRED; genuine missingAPI/replay/lease/restore/stalegeneration/threeownerconflict REDs retained",
+    "Mapping/lifecycle/worker composition cases characterize already implemented policy and are not fake REDs",
+    "Author full26 was resource-stopped with NOREPORT;27disk fullPASS retained. No cache deletion/relocation/floor lowering. SharedRAM sampled unused; all retry outputs/TMPDIR disk",
+    "Author27 omitted binary hashes; root fresh19.10s frozen run supplies complete raw/binary/verboseinstrument/export binding. Prefix and JSON-percent postprocessing corrections preserved without altering rawreceipt or rerunning passing tests",
+    "No new module/executor/private runtime testseam; tests refactored from1039lines to typedpublic envelopes while retaining distinct contract scenarios",
+    "Author evidence reused across disjoint web-only upstream integration with exactbytes/modes/mtimes preserved; no duplicate ordinary/Clippyexecution claim",
+    "No actual Wry/CLAP scheduling, destruction, browser consumption, DAW or installed acceptance claimed"
+  ],
+  "archives": [
+    {
+      "source": "/tmp/dandrum-lanes/evidence-controller-notes",
+      "archive": "author-raw.tar.gz",
+      "archive_sha256": "04ff4435cd7a16633f8ea33d2c7fca0e9b00f252eb17abf879d26431df36195a",
+      "members": 348
+    },
+    {
+      "source": "/tmp/dandrum-evidence/controller-notes-review/final-coverage",
+      "archive": "final-coverage-raw.tar.gz",
+      "archive_sha256": "b2cf1967925c14ba60f319aa5ad637c71b38fc1e92c2561620646b9dc8d26348",
+      "members": 44
+    },
+    {
+      "source": "/tmp/dandrum-lanes/evidence-controller-notes-sourcefree",
+      "archive": "sourcefree-raw.tar.gz",
+      "archive_sha256": "90368930e9e1802af91a2275aae3fa838bab9ca56848319fa23e9e3ec1470047",
+      "members": 24
+    }
+  ],
+  "review": {
+    "status": "PASS",
+    "manifest_sha256": "9eac204a928e8d7f8c453e4fac67a740a82e01bd9f57b41a2fc493476658c6b2",
+    "review_sha256": "1c67fd59c6a6c5971be77ad180b9a87e6f26f3522ecb20a6534d326b629fe1c8",
+    "verdict_sha256": "5406b43cbf5a94a0ce324dce6454fa0f7f2257a525368f93e3805d00ee1a7ca8"
+  },
+  "mutation": "Explicitly excluded by user",
+  "task3_3_complete": false,
+  "full_beta_complete": false
+}

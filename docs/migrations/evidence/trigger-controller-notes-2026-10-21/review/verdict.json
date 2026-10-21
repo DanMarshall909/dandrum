@@ -1,0 +1,17 @@
+{
+  "verdict": "PASS",
+  "scope": "Task 3.3 format-neutral authenticated controller note lifetime component only",
+  "base": "28caf6ca02861bebdf1a2e09e49c762682ed1cce",
+  "upstream_ref": "origin/feat/juce-free-host-adapters",
+  "upstream": "28caf6ca02861bebdf1a2e09e49c762682ed1cce",
+  "initial_manifest_sha256": "9eac204a928e8d7f8c453e4fac67a740a82e01bd9f57b41a2fc493476658c6b2",
+  "candidate_paths": 18,
+  "initial_full_tree": "8ce077073f0d5754bde7feaf6c03dd03e07abef5",
+  "review_sha256": "1c67fd59c6a6c5971be77ad180b9a87e6f26f3522ecb20a6534d326b629fe1c8",
+  "actionable_findings": [],
+  "task3_3_complete": false,
+  "full_beta_complete": false,
+  "same_reviewer_final_precommit_gate": "Required named envelope step before hooks; actual 20-path candidate and validation results must match exact approved metadata outputs",
+  "reviewer_executed_builds_or_tests": false,
+  "mutation": "Excluded by user direction"
+}

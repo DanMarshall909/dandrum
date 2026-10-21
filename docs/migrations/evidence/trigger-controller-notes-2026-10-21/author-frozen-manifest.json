@@ -1,0 +1,84 @@
+{
+  "base_head": "0645f8ac844f3acdfdca7878c8b89cf1d3a7ddbf",
+  "status": " M openspec/changes/add-juce-free-trigger-clap-editor/design.md\n M src/trigger-host/src/parameters.rs\n?? src/trigger-host/tests/editor_note_controller.rs\n",
+  "source": {
+    "src/trigger-host/src/parameters.rs": {
+      "sha256": "37b8e92e6507036084fcb99b9fabe717550d53fe2f36a2f046312e630cc3efea",
+      "mode": "0o664"
+    },
+    "src/trigger-host/tests/editor_note_controller.rs": {
+      "sha256": "99b99000f9e35406e87d29325d4f6ae07a6354097a40a94544c7cfff68fbb08e",
+      "mode": "0o664"
+    }
+  },
+  "ordinary": {
+    "tests": 121,
+    "docs": 2,
+    "receipt": "25-frozen-ordinary/receipt.json"
+  },
+  "full_coverage": {
+    "status": "PASS_DISK_OUTPUT_FILESYSTEM",
+    "tests": 121,
+    "receipt": "27-disk-frozen-coverage/receipt.json",
+    "report": "27-frozen.json",
+    "parameters_summary": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "functions": {
+        "count": 84,
+        "covered": 84,
+        "percent": 100.0
+      },
+      "instantiations": {
+        "count": 202,
+        "covered": 117,
+        "percent": 57.920792079207914
+      },
+      "lines": {
+        "count": 837,
+        "covered": 817,
+        "percent": 97.61051373954602
+      },
+      "regions": {
+        "count": 1285,
+        "covered": 1245,
+        "notcovered": 40,
+        "percent": 96.88715953307393
+      }
+    },
+    "new_policy_uncovered_segments": [
+      [
+        523,
+        54
+      ]
+    ],
+    "qualification": "RuntimeOn error-forwarding remains uncovered after sealed range/recorded-owner preflight; sequence exhaustion is impractical via public component fixture. It may follow trusted expiry/service-time advancement but cannot accept a new press or renew activity. No blanket all-Err-preserves-all-policy claim. Existing20uncovered owner lines remain."
+  },
+  "focused_coverage": {
+    "status": "PASS",
+    "tests": 14,
+    "report": "23-conflict.json",
+    "qualification": "All new note-policy lines except runtimeOn error forwarding after public preflight; remaining sequence exhaustion is impractical via public calls, no private test seam"
+  },
+  "clippy_receipt": "24-final-clippy/receipt.json",
+  "mutation": "Excluded by user direction",
+  "native_facade": "Not claimed; task3.3 and beta remain open",
+  "processes": "All owned run.py/cargo/rustc/llvm-cov jobs terminal; actual-host post27 verification recorded separately.",
+  "cache_ownership": "Assigned ordinary cache-protocol and LLVM cache-host-snapshot-cov preserved and idle; no cache deletion or relocation",
+  "previous_stopped_coverage": {
+    "receipt": "26-frozen-coverage/receipt.json",
+    "status": "RESOURCE_STOPPED_NO_REPORT",
+    "cause": "Original global /dev/shm guard;135745536bytes below256MiB; no report"
+  },
+  "process_receipt": "post27-process-resource.json"
+}

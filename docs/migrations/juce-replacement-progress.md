@@ -1381,3 +1381,46 @@ Actual native delivery, controller leases, semantic detach and CLAP wiring remai
 open. Task 3.3 and the full beta remain open through VST3, standalone, named DAW,
 installed offline artifacts and native lifecycle proof. Main remains clean68dd655;
 mutation remains excluded.
+
+
+## Authenticate controller notes and expire native activity — 21 October 2026
+
+The format-neutral controller dispatches existing admitted note commands using
+sealed authority, original press generations and fixed128pitch/16attachment
+metadata. Ordered terminal request watermarks survive expiry and accepted state
+restore, preventing retained note replay. Native monotonic two-second leases
+cancel held notes and unheard taps, even with a full ordinary event queue;
+late heartbeat and reset cannot revive a note. Mapping/undo preserves the press
+generation. Accepted restore clears activity; failed/Busy restore preserves it.
+The instrument preparation worker continues after expiry and editor detach.
+
+Fourteen maintained public tests exercise sustained signed gated samples, real
+mapping/undo, all128pitch deferred cleanup, independent instances and actual
+separate audio threads with allocation/deallocation sentinel negative controls.
+All121ordinary plus2compilefaildocs, formatting and strict all-target Clippy
+pass. Full-host LLVM passes121tests; parameters84/84summaryfunctions,817/837lines,
+1245/1285regions. Existing gaps and runtime sequence-exhaustion error forwarding
+remain explicitly qualified. The latter may follow trusted expiry service, but
+cannot accept a new press or renew activity; not every error preserves every
+native lease field. No branch instrumentation or blanket coverage claim follows.
+
+A resource-stopped full coverage attempt produced no report and remains separate.
+The identical disk-output retry passed. No reusable cache was deleted or moved;
+resource checks bind actual output volumes. A fresh frozen-source coverage run
+retains ten raw profiles, merged profile and ten executed binary hashes. Raw
+merge reconstructs exactly; exported integer counters and code regions match.
+Tool-added metadata and tiny derived-percentage serialization differences are
+recorded alongside the original postprocessing failures, not behavior REDs.
+
+The actual unfiltered source-free default-release proof passes121ordinary plus
+two compilefaildocs with all591root/fixture inputs bound,589original fixture
+inputs unchanged and no web/ui/third_party tree. Full dependencies and executed
+binary evidence remain separate from native/editor acceptance.
+[Portable evidence](evidence/trigger-controller-notes-2026-10-21/receipt.json)
+retains all raw phases, sources, refactor decisions, source integration and proof.
+
+Independent completion review passed for the frozen controller note lifetime source/evidence candidate; normal-hook publication remains.
+Actual native periodic servicing, semantic WebView destruction and joined CLAP
+behavior still follow. Task3.3 and full beta remain open through VST3, standalone,
+namedDAW and installed offline/native proof. Main remains clean68dd655; mutation
+remains excluded.

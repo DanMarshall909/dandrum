@@ -1,0 +1,40 @@
+{
+  "old": "0645f8ac844f3acdfdca7878c8b89cf1d3a7ddbf",
+  "new": "28caf6ca02861bebdf1a2e09e49c762682ed1cce",
+  "incoming_disjoint_paths": [
+    "docs/migrations/evidence/trigger-native-rejection-message-2026-10-21/SHA256SUMS",
+    "docs/migrations/evidence/trigger-native-rejection-message-2026-10-21/author-artifacts.json",
+    "docs/migrations/evidence/trigger-native-rejection-message-2026-10-21/author-handoff.md",
+    "docs/migrations/evidence/trigger-native-rejection-message-2026-10-21/author-raw.tar.gz",
+    "docs/migrations/evidence/trigger-native-rejection-message-2026-10-21/receipt.json",
+    "docs/migrations/evidence/trigger-native-rejection-message-2026-10-21/review/review.md",
+    "docs/migrations/evidence/trigger-native-rejection-message-2026-10-21/review/verdict.json",
+    "docs/migrations/evidence/trigger-native-rejection-message-2026-10-21/sourcefree-reuse.json",
+    "docs/migrations/juce-replacement-progress.md",
+    "web/trigger/engine/native-engine.mjs",
+    "web/trigger/tests/native-engine.test.mjs"
+  ],
+  "preserved": [
+    {
+      "path": "openspec/changes/add-juce-free-trigger-clap-editor/design.md",
+      "sha256": "1c2902a7df5e061677c632e5d704f5c7967a671fc624ed69edaafdf08cf7d000",
+      "mode": "0o664",
+      "mtime_ns": 1792542463697262416
+    },
+    {
+      "path": "src/trigger-host/src/parameters.rs",
+      "sha256": "37b8e92e6507036084fcb99b9fabe717550d53fe2f36a2f046312e630cc3efea",
+      "mode": "0o664",
+      "mtime_ns": 1792543539288090803
+    },
+    {
+      "path": "src/trigger-host/tests/editor_note_controller.rs",
+      "sha256": "99b99000f9e35406e87d29325d4f6ae07a6354097a40a94544c7cfff68fbb08e",
+      "mode": "0o664",
+      "mtime_ns": 1792543520222435364
+    }
+  ],
+  "bytes_modes_mtimes_preserved": true,
+  "no_stash_reset_restore": true,
+  "qualification": "After author full verification handback; web-only publication does not change any author Rust/Cargo/test input. Execution evidence remains qualified source-bound reuse, not new duplicate runs."
+}

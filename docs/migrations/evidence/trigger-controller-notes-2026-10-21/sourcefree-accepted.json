@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "ordinary_tests": 121,
+  "doctests": 2,
+  "source_inputs": 591,
+  "unchanged_fixture_inputs": 589,
+  "release_elapsed_seconds": 552.9219613909954,
+  "actual_direct_executed_binaries": 10,
+  "receipt_sha256": "d06f95992e25e32eed52207398314df7dc4111f02feed131a6a3e9d7c3f936dc",
+  "source_manifest_sha256": "99e926b162ad42ed618dfbace0fb6984814fe4ac85b65a427e8c924c859f2527",
+  "source_verification_sha256": "29ba590cebd3ace17818d879434fa544454df1cd12bc197f6e55335cdf6dfe7f",
+  "qualification": "Source-free Rust host and Rust normal-dependency audit only. No full CMake/native/CLAP/browser/beta/task-completion/publication claim."
+}

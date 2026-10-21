@@ -1,0 +1,128 @@
+{
+  "source": "/tmp/dandrum-lanes/evidence-controller-notes-sourcefree",
+  "archive": "sourcefree-raw.tar.gz",
+  "archive_sha256": "90368930e9e1802af91a2275aae3fa838bab9ca56848319fa23e9e3ec1470047",
+  "members": 24,
+  "artifacts": [
+    {
+      "path": "HANDOFF.md",
+      "sha256": "2f41d833b1cd4524c203ac18572105c27b8f9202146812b42dde0fce34026dca",
+      "bytes": 3372
+    },
+    {
+      "path": "artifact-inventory.json",
+      "sha256": "4b90c81f4726e682b3847658f1c9fabf27f5e3bb095496bb0108bc49671a5c2d",
+      "bytes": 4308
+    },
+    {
+      "path": "dependencies-run.json",
+      "sha256": "ee7450b7bcea72f6e10eacc90b1aa6e7d4cc94ed2a152c0483234ae516ce73cd",
+      "bytes": 1794
+    },
+    {
+      "path": "dependencies.log",
+      "sha256": "77d2b3c90c58395f0afa032c9d2ee6a8cfac70e47ada1681e89e3927f444f605",
+      "bytes": 4674
+    },
+    {
+      "path": "executed-artifact-bindings.json",
+      "sha256": "be4197b60a8f4d718c84022de262cd8563d7aa55ffd5120c97e19ede62b49def",
+      "bytes": 97754
+    },
+    {
+      "path": "final-process-cache-source-audit.json",
+      "sha256": "3a5d8b6dcbb0fe91818fd33dd90e59b8564a44aa534890abc3183f16cf55e3cb",
+      "bytes": 1008
+    },
+    {
+      "path": "finalize.py",
+      "sha256": "e540ff3edb3fccf7038484f19ef2fb868b9e3da203ad579b20e57068570adf63",
+      "bytes": 10848
+    },
+    {
+      "path": "fixture-after-map.json",
+      "sha256": "7ff2320b25f7353061400e7c613f335211a7b6a60166b947f1ec67d4145f8c46",
+      "bytes": 126003
+    },
+    {
+      "path": "fixture-before-map.json",
+      "sha256": "ad41ab0e68f94423d7e84f9706746252e0e1400fc725ae54aabfd74cf4403c8f",
+      "bytes": 125783
+    },
+    {
+      "path": "fixture-prebuild-map.json",
+      "sha256": "7ff2320b25f7353061400e7c613f335211a7b6a60166b947f1ec67d4145f8c46",
+      "bytes": 126003
+    },
+    {
+      "path": "fixture-update-preimages.json",
+      "sha256": "1ddae71756a0b4150429405fa138a39ea7024d549ead8d4feb59634522782d85",
+      "bytes": 1250
+    },
+    {
+      "path": "fixture-update-receipt.json",
+      "sha256": "57886f78f99a055b9068547f0527d999811582206eb615da333d2bce4256d4b2",
+      "bytes": 1189
+    },
+    {
+      "path": "invocation.json",
+      "sha256": "8f9abf8792fe22d92cfb59520677f67e3130c9fb5c4c2d8282292a7220475c8f",
+      "bytes": 2435
+    },
+    {
+      "path": "preimages/src/trigger-host/src/parameters.rs",
+      "sha256": "c5d6c817940dd1255e74aac3a53094f7162e444c2a003cdd4ab3d0bef5081efb",
+      "bytes": 40864
+    },
+    {
+      "path": "prior-cache-binding-reference.json",
+      "sha256": "a3d8abdb7ee1253f8470b442d8a9329441687daa6089ad0c837b3c2a280fafed",
+      "bytes": 2560
+    },
+    {
+      "path": "receipt.json",
+      "sha256": "d06f95992e25e32eed52207398314df7dc4111f02feed131a6a3e9d7c3f936dc",
+      "bytes": 3795
+    },
+    {
+      "path": "release-tests-run.json",
+      "sha256": "4792b054945bc51bd9cdcbb686e65fc8cf8067bf9f7a5660a50e9d2943699ac1",
+      "bytes": 316555
+    },
+    {
+      "path": "release-tests.log",
+      "sha256": "4036b61479f50ce0dece69f614ff173b56147ead5c9d8f1edb0010900c0c2b6e",
+      "bytes": 56612
+    },
+    {
+      "path": "root-after-map.json",
+      "sha256": "1c0a7c2f881bfb2b30f1ef233c85b4ab30bfae2f92397f072e30fb82e61870f0",
+      "bytes": 126003
+    },
+    {
+      "path": "root-before-map.json",
+      "sha256": "1c0a7c2f881bfb2b30f1ef233c85b4ab30bfae2f92397f072e30fb82e61870f0",
+      "bytes": 126003
+    },
+    {
+      "path": "run_gate.py",
+      "sha256": "608bdd4d201b81101c558606a816eaa626a4c48435870ea5d4aaabdfe52d6a3c",
+      "bytes": 12016
+    },
+    {
+      "path": "source-manifest.json",
+      "sha256": "99e926b162ad42ed618dfbace0fb6984814fe4ac85b65a427e8c924c859f2527",
+      "bytes": 68576
+    },
+    {
+      "path": "source-verification.json",
+      "sha256": "29ba590cebd3ace17818d879434fa544454df1cd12bc197f6e55335cdf6dfe7f",
+      "bytes": 1150
+    },
+    {
+      "path": "tool-versions.json",
+      "sha256": "5429e2af4cd7743cda15308598c35e9577a60f63ec6042f71107512cd68180a9",
+      "bytes": 1183
+    }
+  ]
+}

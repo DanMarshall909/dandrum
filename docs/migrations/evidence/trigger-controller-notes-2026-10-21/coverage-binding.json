@@ -1,0 +1,169 @@
+{
+  "raw_run_receipt_sha256": "9565e816da82bd8e7da525a5f56f98c0f7de4a82368ad4324f710ae671546d08",
+  "ordinary_tests": 121,
+  "per_target_counts": [
+    15,
+    14,
+    17,
+    8,
+    14,
+    7,
+    18,
+    14,
+    5,
+    9
+  ],
+  "doctests": "2authorordinary compilefaildocs; LLVMlib/tests excludes docs",
+  "binary_hashes": {
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/dandrum_trigger_host-5bb3139f63793802": {
+      "sha256": "6e3eda4b6e542b21be1d2f24b2ff4a5a8c83251ea03fdbd21a8664d0d6c998ae",
+      "bytes": 197701352
+    },
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/editor_note_controller-3f8da52db97b6ef5": {
+      "sha256": "6224e98cba09aeceebdc7dfa4c7f6de3aeaeb10db63711d6c48ce5e5dc04188d",
+      "bytes": 200773552
+    },
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/editor_notes-6c8e076a9243a5dc": {
+      "sha256": "50a9ef94f0e85cb62776bff6892015ffbda8df476b956efe5583b6a09409bfd5",
+      "bytes": 198278272
+    },
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/packaged_resources-dd7db7bcb2a7675a": {
+      "sha256": "3c5ccfde8fb99540fef2201fdd801042588a26f8caf51f31d5f641ec1a5832fb",
+      "bytes": 196171120
+    },
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/parameters-4ad46e42f318c2e3": {
+      "sha256": "081a1a3212ed770aabe6c0e84eec2c4658fa11b914b2ae0213c3496d347bc37f",
+      "bytes": 198414360
+    },
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/protocol-1b914db9be45bef2": {
+      "sha256": "44de4a459639be86be7ad64cd0155769eb03a16b2c7089364b9575956b8c23ec",
+      "bytes": 196361120
+    },
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/runtime-069472fee657aaba": {
+      "sha256": "bfdb827cd6988a7bb0362bad8e2fd243f21bbf3acdc8f6addc825ea82bcfae39",
+      "bytes": 197919088
+    },
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/session_jobs-ed51db0fb77be119": {
+      "sha256": "e4c9bdf95456d861e299e18126fcc3d06add36c758db254c49ed750a0a0d3fc6",
+      "bytes": 199917000
+    },
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/snapshot-9286664a3f513d4b": {
+      "sha256": "51a939c97e2a949a5c3555acd2d5bdc974f44655ea788d04efe9b1b5a762686d",
+      "bytes": 197914400
+    },
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/state-e3fb86835eed41b6": {
+      "sha256": "716d8cf36e075ba1feb6a76ae676d53fe43a061d13f3ca8b2b892c8cbd94bf98",
+      "bytes": 200136488
+    }
+  },
+  "actual_child_profile_pattern": "trigger-host-%p-%m.profraw",
+  "tool_metadata": {
+    "version": "0.8.7",
+    "manifest_path": "/tmp/dandrum-lanes/protocol/src/trigger-host/Cargo.toml"
+  },
+  "raw_profiles_retained": 10,
+  "merged_profile_retained": true,
+  "raw_profile_inventory_sha256": "dfdad573c5d461f30d347886d3651f0bdbea5ad285dce712ae3f30d74a7c7cad",
+  "profiles_archive_sha256": "db9d7074b22f7a66a6b6a867b016b5704768b3b091ec5fc0ef732ef6e970b70e",
+  "reconstructed_profdata_matches_exactly": true,
+  "all_export_paths_segments_expansions_functions_integer_counters_match_exactly": true,
+  "derived_percent_rounding_differences": [
+    {
+      "path": "/data/0/files/1/summary/lines/percent",
+      "cargo_reserialized": 97.61051373954602,
+      "direct_llvm_export": 97.61051373954601,
+      "difference": 1.4210854715202004e-14
+    },
+    {
+      "path": "/data/0/files/2/summary/regions/percent",
+      "cargo_reserialized": 96.89922480620156,
+      "direct_llvm_export": 96.89922480620154,
+      "difference": 1.4210854715202004e-14
+    },
+    {
+      "path": "/data/0/totals/regions/percent",
+      "cargo_reserialized": 98.2294264339152,
+      "direct_llvm_export": 98.22942643391521,
+      "difference": -1.4210854715202004e-14
+    }
+  ],
+  "original_profdata_merge_argv": [
+    "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-profdata",
+    "merge",
+    "-sparse",
+    "-f",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/trigger-host-profraw-list",
+    "-o",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/trigger-host.profdata"
+  ],
+  "original_llvm_export_argv": [
+    "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov",
+    "export",
+    "-format=text",
+    "-instr-profile=/tmp/dandrum-lanes/cache-host-snapshot-cov/trigger-host.profdata",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/dandrum_trigger_host-5bb3139f63793802",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/editor_note_controller-3f8da52db97b6ef5",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/editor_notes-6c8e076a9243a5dc",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/packaged_resources-dd7db7bcb2a7675a",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/parameters-4ad46e42f318c2e3",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/protocol-1b914db9be45bef2",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/runtime-069472fee657aaba",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/session_jobs-ed51db0fb77be119",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/snapshot-9286664a3f513d4b",
+    "-object",
+    "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/state-e3fb86835eed41b6",
+    "-ignore-filename-regex",
+    "/rustc/([0-9a-f]+|[0-9]+\\.[0-9]+\\.[0-9]+)/|^/tmp/dandrum\\-lanes/protocol/src/trigger\\-host(/.*)?/(tests|examples|benches)/|^/tmp/dandrum\\-lanes/protocol/src/trigger\\-host(/.*)?/(tests\\.rs|[0-9a-zA-Z_-]+[_-]tests\\.rs)$|^/tmp/dandrum\\-lanes/cache\\-host\\-snapshot\\-cov($|/)|^/home/dan/\\.cargo/(registry|git)/|^/home/dan/\\.rustup/toolchains($|/)"
+  ],
+  "parameters_summary": {
+    "branches": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0.0
+    },
+    "mcdc": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0.0
+    },
+    "functions": {
+      "count": 84,
+      "covered": 84,
+      "percent": 100.0
+    },
+    "instantiations": {
+      "count": 202,
+      "covered": 117,
+      "percent": 57.920792079207914
+    },
+    "lines": {
+      "count": 837,
+      "covered": 817,
+      "percent": 97.61051373954602
+    },
+    "regions": {
+      "count": 1285,
+      "covered": 1245,
+      "notcovered": 40,
+      "percent": 96.88715953307393
+    }
+  },
+  "source_unchanged": true,
+  "qualifications": [
+    "First postprocessing assumed requestedprofileprefix; actual cargo-llvm-cov overrides to trigger-host, retained verbose child env proves it",
+    "Second postprocessing expected identical JSON. Cargo adds metadata and reserializes derivedpercent floats with lastdigit rounding. Actual profdata exact; all semantic data/counters exact, only recorded percent differences<=1e-12",
+    "Original raw receipt/log/profiles/reconstructed outputs/helpers preserved. Neither postprocessing failure is a behaviorRED or failing coverageexecution. No further test rerun needed.",
+    "Original author27 omitted binary hashes; fresh19.10s frozen-source121 run supplies raw/executed10binary/verboseinstrument/export binding"
+  ]
+}

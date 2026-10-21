@@ -38,6 +38,9 @@ pub enum ParameterError {
     GestureAlreadyActive,
     GestureConflict,
     GestureNotActive,
+    EditorNoteConflict,
+    ReplayedEditorNote,
+    BackwardEditorNoteTime,
 }
 
 /// JavaScript-facing counters must be exact integers, including their next value.
@@ -208,6 +211,26 @@ impl Drop for SessionWorker {
     }
 }
 
+enum EditorNoteCommand {
+    On {
+        note: u8,
+        velocity: f64,
+        generation: u64,
+    },
+    Off {
+        note: u8,
+        generation: u64,
+    },
+    Heartbeat,
+}
+
+#[derive(Clone, Copy)]
+struct EditorNoteAttachment {
+    owner: NonZeroU64,
+    watermark: u64,
+    activity: Option<std::time::Instant>,
+}
+
 /// The constructing control thread owns session publication and teardown.
 /// A format facade must construct this owner on its actual host main thread.
 ///
@@ -231,6 +254,10 @@ pub struct ParameterController {
     automation_capacity: usize,
     gestures: Vec<Option<u64>>,
     reserved_ends: usize,
+    editor_presses: [Option<(NonZeroU64, u64)>; 128],
+    editor_note_service_time: Option<std::time::Instant>,
+    editor_note_attachments:
+        [Option<EditorNoteAttachment>; dandrum_instrument_session::ATTACHMENT_LIMIT],
 }
 
 impl ParameterController {
@@ -385,6 +412,12 @@ impl ParameterController {
                 CommitError::Session(error) => StateError::Session(error),
                 CommitError::Activation(error) => StateError::Runtime(error),
             })?;
+        // Runtime restore has atomically retired old intent. Keep each still
+        // valid attachment's dispatch watermark, but no old press or lease.
+        self.editor_presses.fill(None);
+        for record in self.editor_note_attachments.iter_mut().flatten() {
+            record.activity = None;
+        }
         self.generation = generation;
         self.admitted_sequence = 0;
         Ok(())
@@ -397,8 +430,164 @@ impl ParameterController {
             .parse::<u64>()
             .expect("protocol validated the retired attachment identity");
         self.end_gestures(Some(owner));
+        self.clear_editor_notes(NonZeroU64::new(owner).expect("attachment is nonzero"));
+        for record in &mut self.editor_note_attachments {
+            if record.is_some_and(|record| record.owner.get() == owner) {
+                *record = None;
+            }
+        }
         Ok(())
     }
+    fn clear_editor_notes(&mut self, owner: NonZeroU64) {
+        self.runtime.detach_editor_notes(owner);
+        for press in &mut self.editor_presses {
+            if press.is_some_and(|(held, _)| held == owner) {
+                *press = None;
+            }
+        }
+    }
+
+    /// Dispatch authenticated native editor intent off audio. Releases use the
+    /// generation recorded at onset, rather than the current graph generation.
+    /// Dispatch admitted notes in transport order with a native monotonic time.
+    /// Semantic rejection consumes that request ID; retry requires a fresh ID.
+    /// An unknown release is an idempotent no-op. The wire has no physical press
+    /// nonce, so repeated presses within one generation cannot be distinguished.
+    pub fn apply_editor_note(
+        &mut self,
+        request: &AdmittedRequest,
+        now: std::time::Instant,
+    ) -> Result<(), ParameterError> {
+        let context = self
+            .protocol
+            .admitted_context(self.host.session(), request)
+            .map_err(ParameterError::Protocol)?;
+        let owner = NonZeroU64::new(context.attachment_id).expect("live attachment is nonzero");
+        let command = match request.command {
+            EditorCommand::NoteOn {
+                note,
+                velocity,
+                generation,
+            } => EditorNoteCommand::On {
+                note,
+                velocity,
+                generation,
+            },
+            EditorCommand::NoteOff { note, generation } => {
+                EditorNoteCommand::Off { note, generation }
+            }
+            EditorCommand::NoteHeartbeat => EditorNoteCommand::Heartbeat,
+            _ => return Err(ParameterError::UnsupportedCommand),
+        };
+        let record = self
+            .editor_note_attachments
+            .iter_mut()
+            .flatten()
+            .find(|record| record.owner == owner)
+            .expect("live attachment owns note dispatch record");
+        if request.request_id <= record.watermark {
+            return Err(ParameterError::ReplayedEditorNote);
+        }
+        // Terminal even when semantic dispatch fails. Authentication failures
+        // above cannot consume a genuine request's dispatch authority.
+        record.watermark = request.request_id;
+        match command {
+            EditorNoteCommand::On { generation, .. } if generation != self.generation => {
+                return Err(ParameterError::StaleGeneration);
+            }
+            EditorNoteCommand::On { note, .. }
+                if self.editor_presses[usize::from(note)]
+                    .is_some_and(|(held, _)| held != owner) =>
+            {
+                return Err(ParameterError::Runtime(RuntimeError::EditorOwnerConflict));
+            }
+            EditorNoteCommand::Off { note, generation }
+                if self.editor_presses[usize::from(note)]
+                    .is_some_and(|press| press != (owner, generation)) =>
+            {
+                return Err(ParameterError::EditorNoteConflict);
+            }
+            _ => {}
+        }
+        self.service_editor_notes(now)?;
+        let mut renew = false;
+        match command {
+            EditorNoteCommand::On {
+                note,
+                velocity,
+                generation,
+            } => {
+                let velocity = (velocity.clamp(1.0 / 127.0, 1.0) * 127.0).round() as u8;
+                self.runtime
+                    .editor_note_on(owner, note, velocity)
+                    .map_err(ParameterError::Runtime)?;
+                self.editor_presses[usize::from(note)] = Some((owner, generation));
+                renew = true;
+            }
+            EditorNoteCommand::Off { note, .. } => {
+                if self.editor_presses[usize::from(note)].is_some() {
+                    // The sealed range and matching press owner were checked
+                    // above; exclusive control ownership prevents a competing
+                    // publisher between that validation and this release.
+                    self.runtime
+                        .editor_note_off(owner, note)
+                        .expect("validated pitch release belongs to its recorded owner");
+                    self.editor_presses[usize::from(note)] = None;
+                    renew = true;
+                }
+            }
+            EditorNoteCommand::Heartbeat => {}
+        }
+        let record = self
+            .editor_note_attachments
+            .iter_mut()
+            .flatten()
+            .find(|record| record.owner == owner)
+            .expect("live dispatch record");
+        if renew
+            || matches!(request.command, EditorCommand::NoteHeartbeat) && record.activity.is_some()
+        {
+            record.activity = Some(now);
+        }
+        Ok(())
+    }
+
+    /// Expire native note leases independently of browser or audio progress.
+    /// One pass visits at most the native attachment limit and never queues work.
+    /// Returns the number of expired leases (including unheard released taps).
+    /// Backward time rejects without changing policy. The format owner must
+    /// service this independently of browser visibility and audio callbacks.
+    pub fn service_editor_notes(
+        &mut self,
+        now: std::time::Instant,
+    ) -> Result<usize, ParameterError> {
+        if self
+            .editor_note_service_time
+            .is_some_and(|previous| now.checked_duration_since(previous).is_none())
+        {
+            return Err(ParameterError::BackwardEditorNoteTime);
+        }
+        self.editor_note_service_time = Some(now);
+        let mut expired = 0;
+        for index in 0..self.editor_note_attachments.len() {
+            let Some(record) = self.editor_note_attachments[index] else {
+                continue;
+            };
+            if record.activity.is_some_and(|activity| {
+                now.checked_duration_since(activity)
+                    .is_some_and(|age| age >= std::time::Duration::from_secs(2))
+            }) {
+                self.clear_editor_notes(record.owner);
+                self.editor_note_attachments[index]
+                    .as_mut()
+                    .expect("existing record")
+                    .activity = None;
+                expired += 1;
+            }
+        }
+        Ok(expired)
+    }
+
     fn end_gestures(&mut self, owner: Option<u64>) {
         for (index, gesture) in self.gestures.iter_mut().enumerate() {
             if gesture.is_some() && owner.is_none_or(|owner| *gesture == Some(owner)) {
@@ -493,6 +682,9 @@ impl ParameterController {
                 parameters,
                 gestures,
                 reserved_ends: 0,
+                editor_presses: [None; 128],
+                editor_note_service_time: None,
+                editor_note_attachments: [None; dandrum_instrument_session::ATTACHMENT_LIMIT],
                 generation: document_generation(0)?,
                 admitted_sequence: 0,
                 automation: VecDeque::with_capacity(automation_capacity),
@@ -509,9 +701,28 @@ impl ParameterController {
         self.host.session()
     }
     pub fn attach_editor(&mut self) -> Result<EditorConnection, ParameterError> {
-        self.protocol
+        let connection = self
+            .protocol
             .attach(self.host.session_mut())
-            .map_err(ParameterError::Protocol)
+            .map_err(ParameterError::Protocol)?;
+        let owner = NonZeroU64::new(
+            connection
+                .attachment_id
+                .parse()
+                .expect("native attachment identity"),
+        )
+        .expect("nonzero attachment");
+        let slot = self
+            .editor_note_attachments
+            .iter_mut()
+            .find(|slot| slot.is_none())
+            .expect("same native attachment limit");
+        *slot = Some(EditorNoteAttachment {
+            owner,
+            watermark: 0,
+            activity: None,
+        });
+        Ok(connection)
     }
     pub fn admit(&mut self, message: &str) -> Result<Admission, ParameterError> {
         self.protocol
