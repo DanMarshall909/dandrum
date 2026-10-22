@@ -955,7 +955,8 @@ fn copied_native_host_feedback_updates_rendered_control_without_polling_or_undo_
         gui.create(&plugin.plugin_handle(), GuiConfiguration { api_type: GuiApiType::X11, is_floating: false }).unwrap();
         unsafe { gui.set_parent(&plugin.plugin_handle(), Window::from_x11_handle(parent.id.into())) }.unwrap();
         gui.show(&plugin.plugin_handle()).unwrap();
-        let browser = weak_browser_in_child(parent.children()[0]).upgrade().unwrap().downcast::<webkit2gtk::WebView>().unwrap();
+        let child = parent.children()[0];
+        let browser = weak_browser_in_child(child).upgrade().unwrap().downcast::<webkit2gtk::WebView>().unwrap();
         wait_dom(&mut plugin, &browser, "document.querySelector('[data-testid=trigger-editor]')");
         type_level(&mut plugin, &browser, "0.5");
         wait_dom(&mut plugin, &browser, "document.querySelector('[data-knob=\"drums.level\"] [role=slider]').getAttribute('aria-valuenow')==='0.125'");
@@ -963,14 +964,99 @@ fn copied_native_host_feedback_updates_rendered_control_without_polling_or_undo_
         let mut edit = Recorder::new(64);
         params.flush(&mut plugin.inactive_plugin_handle().unwrap(), &InputEvents::empty(), &mut OutputEvents::from_buffer(&mut edit));
         assert_eq!(&edit.accepted[..edit.len], &[Some(Recorded::Begin(3)), Some(Recorded::Value(3, 0.5)), Some(Recorded::End(3))]);
+        let mut settled = Recorder::new(64);
+        params.flush(&mut plugin.inactive_plugin_handle().unwrap(), &InputEvents::empty(), &mut OutputEvents::from_buffer(&mut settled));
+        assert_eq!(settled.attempts, 0, "accepted editor credits are collected before state rejection probes");
+        assert_eq!(settled.len, 0);
         let state = invoke(&mut plugin, &browser, "window.__DANDRUM__.backend.getNativeFunction('getParameterState')()");
         assert_eq!(state["result"]["sequence"], 1);
         let history = invoke(&mut plugin, &browser, "window.__DANDRUM__.backend.getNativeFunction('getSamplerSession')()")["result"]["connection"]["history"].clone();
         assert_eq!(history, serde_json::json!({"undoCount":0,"redoCount":0}));
+        let session = invoke(&mut plugin, &browser, "window.__DANDRUM__.backend.getNativeFunction('getSamplerSession')()")["result"].clone();
+        let accepted_parameters = state["result"].clone();
+        assert_eq!(accepted_parameters["generation"], 1);
+        assert_eq!(accepted_parameters["parameters"].as_array().unwrap().iter().find(|p| p["id"] == "drums.level").unwrap()["value"], 0.125);
+        assert_eq!(params.get_value(&plugin.plugin_handle(), ClapId::new(3)), Some(0.5));
+        let accepted_bytes = saved_state(&mut plugin);
+        let bootstrap = javascript(&mut plugin, &browser, "JSON.stringify([window.__DANDRUM_NATIVE__.instanceId,window.__DANDRUM_NATIVE__.attachmentId])");
+        let accepted_child = parent.children();
+        assert_eq!(accepted_child, [child], "the actual WebKit child is stable before invalid state loads");
         wait_dom(&mut plugin, &browser, "document.querySelector('header button[aria-label=\"Undo Change drums.level (Ctrl+Z)\"]:not(:disabled)')");
-        // Observe existing transport entrypoints without replacing production assets or consumers.
-        javascript(&mut plugin, &browser, r#"(()=>{window.__G2_EVENTS__=[];window.__G2_CALLS__=[];const surface=window.__DANDRUM__,receive=surface.receiveNativeMessage,get=surface.backend.getNativeFunction;surface.receiveNativeMessage=message=>{const result=receive(message),frame=JSON.parse(message);if(frame.event==='parameterStateChanged')window.__G2_EVENTS__.push({...frame,consumption:result});return result;};surface.backend.getNativeFunction=method=>(...args)=>{window.__G2_CALLS__.push(method);return get(method)(...args);};return 'observing';})()"#);
+
+        // Join accepted state rollback to this same live production view and audio
+        // endpoint. Existing owner/DSO tests separately cover format categories.
+        let mut invalids: Vec<(&str, Vec<u8>)> = Vec::new();
+        let wire: serde_json::Value = serde_json::from_slice(&accepted_bytes).unwrap();
+        let mut bad = wire.clone();
+        bad["version"] = 1.into();
+        invalids.push(("foreign version", serde_json::to_vec(&bad).unwrap()));
+        let mut bad = wire.clone();
+        bad["resource"] = "foreign.resource".into();
+        invalids.push(("unknown resource", serde_json::to_vec(&bad).unwrap()));
+        let mut bad = wire.clone();
+        let parameters = bad["parameters"].as_array_mut().unwrap();
+        let duplicate = parameters[0].clone();
+        parameters[22] = duplicate;
+        invalids.push(("duplicate parameter", serde_json::to_vec(&bad).unwrap()));
+        let mut bad = wire.clone();
+        bad["parameters"][22]["value"] = 2.0.into();
+        invalids.push(("out-of-range parameter", serde_json::to_vec(&bad).unwrap()));
+        invalids.push(("malformed JSON", b"{".to_vec()));
+        invalids.push(("oversized state", vec![b' '; 65_537]));
+        invalids.push(("truncated state", accepted_bytes[..accepted_bytes.len() / 2].to_vec()));
+
+        let original_document = wire["document"].as_str().unwrap().to_owned();
+        let changed_document = original_document.replacen("key_range: [36, 36]", "key_range: [60, 60]", 1);
+        assert_ne!(changed_document, original_document, "late semantic candidate changes the accepted note mapping");
+        let mut late = wire.clone();
+        late["document"] = changed_document.into();
+        let parameters = late["parameters"].as_array_mut().unwrap();
+        let level = parameters.iter_mut().find(|p| p["id"] == "drums.level").unwrap();
+        assert_ne!(level["value"], 2.0, "candidate begins from accepted physical value");
+        level["value"] = 2.0.into();
+        assert_eq!(level["value"], 2.0, "candidate changes an earlier allowed field");
+        let last = parameters.last_mut().unwrap();
+        assert_ne!(last["id"], "drums.level");
+        last["value"] = 2.0.into();
+        invalids.push(("late semantic invalidity after changed mapping and level", serde_json::to_vec(&late).unwrap()));
+
         let mut audio = start_audio(&mut plugin);
+        let rejected = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            for (case, bytes) in &invalids {
+                let load = {
+                    let handle = plugin.plugin_handle();
+                    let native_state = handle.get_extension::<clack_extensions::state::PluginState>().unwrap();
+                    native_state.load(&handle, &mut bytes.as_slice())
+                };
+                assert!(load.is_err(), "CLAP state load must reject {case}");
+                assert_eq!(saved_state(&mut plugin), accepted_bytes, "rejected {case} cannot publish saved state");
+                assert_eq!(params.get_value(&plugin.plugin_handle(), ClapId::new(3)), Some(0.5), "rejected {case} retains physical public value");
+                assert_eq!(invoke(&mut plugin, &browser, "window.__DANDRUM__.backend.getNativeFunction('getParameterState')()")["result"], accepted_parameters, "rejected {case} retains public parameter DTO/feedback watermark");
+                assert_eq!(invoke(&mut plugin, &browser, "window.__DANDRUM__.backend.getNativeFunction('getSamplerSession')()")["result"], session, "rejected {case} retains accepted session snapshot/history");
+                assert_eq!(javascript(&mut plugin, &browser, "JSON.stringify([window.__DANDRUM_NATIVE__.instanceId,window.__DANDRUM_NATIVE__.attachmentId])"), bootstrap, "rejected {case} keeps the same authenticated attachment");
+                assert_eq!(parent.children(), accepted_child, "rejected {case} leaves actual X11 child mounted");
+                assert_eq!(javascript(&mut plugin, &browser, "String(Boolean(document.querySelector('[data-testid=trigger-editor]')))"), "true", "rejected {case} leaves production editor live");
+            }
+            // Reset/install transport observers only after every explicit baseline
+            // and rejection read, so those reads cannot contaminate the no-poll oracle.
+            javascript(&mut plugin, &browser, r#"(()=>{window.__G2_EVENTS__=[];window.__G2_CALLS__=[];const surface=window.__DANDRUM__,receive=surface.receiveNativeMessage,get=surface.backend.getNativeFunction;surface.receiveNativeMessage=message=>{const result=receive(message),frame=JSON.parse(message);if(frame.event==='parameterStateChanged')window.__G2_EVENTS__.push({...frame,consumption:result});return result;};surface.backend.getNativeFunction=method=>(...args)=>{window.__G2_CALLS__.push(method);return get(method)(...args);};return 'observing';})()"#);
+        }));
+        if let Err(payload) = rejected {
+            let audio_cleanup = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                return_audio(&mut plugin, audio);
+            }));
+            let gui_cleanup = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                gui.destroy(&plugin.plugin_handle());
+            }));
+            drop(browser);
+            if audio_cleanup.is_err() {
+                eprintln!("cleanup after rejected-state assertion: audio endpoint return panicked");
+            }
+            if gui_cleanup.is_err() {
+                eprintln!("cleanup after rejected-state assertion: GUI destroy panicked");
+            }
+            std::panic::resume_unwind(payload);
+        }
         let mut events = EventBuffer::new();
         events.push(&MidiEvent::new(0, 0, [0x90, 36, 100]));
         events.push(&ParamValueEvent::new(1, ClapId::new(3), Pckn::match_all(), 2.0));
@@ -1022,6 +1108,8 @@ fn copied_native_host_feedback_updates_rendered_control_without_polling_or_undo_
         return_audio(&mut plugin, audio);
         for channel in pcm { assert_eq!(&channel[..3], &[0.0;3]); assert_eq!(&channel[3..5], &[-0.5, -358.0 / 32768.0]); }
         assert_eq!(output.attempts, 0);
+        assert_eq!(parent.children(), accepted_child, "the actual X11 child remains the original view after host feedback and Undo");
+        assert_eq!(javascript(&mut plugin, &browser, "JSON.stringify([window.__DANDRUM_NATIVE__.instanceId,window.__DANDRUM_NATIVE__.attachmentId])"), bootstrap, "host feedback and Undo retain the original authenticated attachment");
         gui.destroy(&plugin.plugin_handle()); drop(browser);
     }).join().expect("host feedback and parameter undo host completed");
 }

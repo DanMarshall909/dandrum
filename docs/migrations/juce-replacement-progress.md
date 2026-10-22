@@ -1876,3 +1876,16 @@ feedback after invalid state, maintained GUI product/source-free wiring, validat
 assessment and later VST3/standalone/DAW/installed/native beta gates remain open.
 Source and cache ownership is back with root for independent review/publication;
 main68dd655 and1766 cache entries are preserved, mutation excluded.
+
+### Invalid state with the original live feedback view (2026-10-22)
+
+The existing copied native feedback/Undo case now rejects eight state candidates
+while retaining the same active audio endpoint, production WebKit child, accepted
+session/saved bytes, physical control and feedback identity. Subsequent actual
+offset1 host feedback and rendered parameter Undo preserve signed PCM and
+structural history. Root28 native and13 fast checks, strict lint/spec gates and
+fresh focused test instrumentation pass. Unexecuted assertion-failure cleanup
+and parent-file coverage scope remain explicit. This test-only partial4.3
+checkpoint closes no task or overall beta gate. Source/artifact/raw evidence:
+[evidence](evidence/trigger-clap-invalid-live-feedback-2026-10-22/README.md).
+Maintained GUI product/source-free proof and validator assessment remain next.

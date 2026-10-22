@@ -1,0 +1,2869 @@
+{
+  "summary": {
+    "branches": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0
+    },
+    "functions": {
+      "count": 104,
+      "covered": 43,
+      "percent": 41.34615384615385
+    },
+    "instantiations": {
+      "count": 109,
+      "covered": 43,
+      "percent": 39.44954128440367
+    },
+    "lines": {
+      "count": 1264,
+      "covered": 472,
+      "percent": 37.34177215189873
+    },
+    "mcdc": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0
+    },
+    "regions": {
+      "count": 2526,
+      "covered": 912,
+      "notcovered": 1614,
+      "percent": 36.104513064133016
+    }
+  },
+  "source_sha256": "9cf57d3cace4db2b44679d93fb55845c4acef541ff375a26d2ea56458ff917b6",
+  "native_execution_binding_sha256": "e8c563931cc6c77bb72a1a50218502d50d1ed29943e52032291aeb2c6733972c",
+  "compiler_binding_sha256": "386ef357e8ff7f7cd0566257edfc6691416b98599ad7ef39d0d842a86ed16dc8",
+  "test_elf": {
+    "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-invalid-root-final-test/trigger_parameters-8fc57b2ef83fb6e4",
+    "sha256": "a704989a658c03891e2f44893c771f3e361586d5987a2cf398135321d429b7d9"
+  },
+  "profiles": {
+    "/tmp/dandrum-evidence/g3-invalid-native-fixture/root-final-profiles/2556894-11413711758055320979_0.profraw": {
+      "sha256": "42c076ac3d8e009411cc862e920ef4b67de7beab18045f88df17d6eb14836543",
+      "size": 24296
+    }
+  },
+  "tools": {
+    "llvm-profdata": {
+      "path": "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-profdata",
+      "sha256": "0a7a1ad6ec3c5af6eb594009d949e470ad57c8f5dd5e1c1d8731babf9407251d",
+      "version": "LLVM (http://llvm.org/):\n  LLVM version 22.1.2-rust-1.96.0-stable\n  Optimized build."
+    },
+    "llvm-cov": {
+      "path": "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov",
+      "sha256": "db3a5f91495e98fa6e4ce9e2fd6f890f35ddeb17966fb10fe2fab332497388f6",
+      "version": "LLVM (http://llvm.org/):\n  LLVM version 22.1.2-rust-1.96.0-stable\n  Optimized build."
+    }
+  },
+  "commands": [
+    {
+      "command": [
+        "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-profdata",
+        "merge",
+        "-sparse",
+        "/tmp/dandrum-evidence/g3-invalid-native-fixture/root-final-profiles/2556894-11413711758055320979_0.profraw",
+        "-o",
+        "/tmp/dandrum-evidence/g3-invalid-native-fixture/root-final.profdata"
+      ],
+      "exit": 0,
+      "seconds": 0.011025013984180987,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov",
+        "export",
+        "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-invalid-root-final-test/trigger_parameters-8fc57b2ef83fb6e4",
+        "-instr-profile=/tmp/dandrum-evidence/g3-invalid-native-fixture/root-final.profdata",
+        "/tmp/dandrum-lanes/runtime/src/clap-adapter/tests/trigger_parameters.rs"
+      ],
+      "exit": 0,
+      "seconds": 0.016533311048988253,
+      "stdout_sha256": "70ef4a3927ff7d90e97efeb1a10744316fe74d396a6c739445a0794d22906d70",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov",
+        "show",
+        "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-invalid-root-final-test/trigger_parameters-8fc57b2ef83fb6e4",
+        "-instr-profile=/tmp/dandrum-evidence/g3-invalid-native-fixture/root-final.profdata",
+        "-show-line-counts-or-regions",
+        "/tmp/dandrum-lanes/runtime/src/clap-adapter/tests/trigger_parameters.rs"
+      ],
+      "exit": 0,
+      "seconds": 0.0073744290275499225,
+      "stdout_sha256": "dee788194bbfd4c819b896b8c22826ef1af2b54f813ceec1ab3f2d023c393069",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "unexecuted_functions": [
+    "_RINvMs9_CsjkduUWRBBt7_18trigger_parametersNtB6_5Audit7measureINtNtCs27Vx93FoQ6z_4core6result6ResultNtNtCsfevk0M3L1t3_12clack_common7process13ProcessStatusNtNtNtCshFi77PTWjbV_10clack_host6plugin5error19PluginInstanceErrorENCNCNCNvB6_49parameter_callback_allocator_audit_on_host_thread00s0_0EB6_",
+    "_RINvMs9_CsjkduUWRBBt7_18trigger_parametersNtB6_5Audit7measureINtNtCs27Vx93FoQ6z_4core6result6ResultNtNtCsfevk0M3L1t3_12clack_common7process13ProcessStatusNtNtNtCshFi77PTWjbV_10clack_host6plugin5error19PluginInstanceErrorENCNCNvNtB6_11note_native17continuous_worker0s_0EB6_",
+    "_RINvMs9_CsjkduUWRBBt7_18trigger_parametersNtB6_5Audit7measureOhNCNvB6_25calibrated_callback_audit0EB6_",
+    "_RINvMs9_CsjkduUWRBBt7_18trigger_parametersNtB6_5Audit7measureuNCNCNCNvB6_49parameter_callback_allocator_audit_on_host_thread000EB6_",
+    "_RINvMs9_CsjkduUWRBBt7_18trigger_parametersNtB6_5Audit7measureuNCNvB6_25calibrated_callback_audits0_0EB6_",
+    "_RINvMs9_CsjkduUWRBBt7_18trigger_parametersNtB6_5Audit7measureuNCNvB6_25calibrated_callback_audits_0EB6_",
+    "_RNCNCNCNCNvCsjkduUWRBBt7_18trigger_parameterss_86copied_native_automation_survives_rejected_output_activation_failures_and_audio_return0s_000B9_",
+    "_RNCNCNCNvCsjkduUWRBBt7_18trigger_parameters49parameter_callback_allocator_audit_on_host_thread000B7_",
+    "_RNCNCNCNvCsjkduUWRBBt7_18trigger_parameters49parameter_callback_allocator_audit_on_host_thread00s0_0B7_",
+    "_RNCNCNCNvCsjkduUWRBBt7_18trigger_parameters49parameter_callback_allocator_audit_on_host_thread00s_0B7_",
+    "_RNCNCNCNvCsjkduUWRBBt7_18trigger_parameterss_86copied_native_automation_survives_rejected_output_activation_failures_and_audio_return0s_00B7_",
+    "_RNCNCNvCsjkduUWRBBt7_18trigger_parameters10javascript0s_0B5_",
+    "_RNCNCNvCsjkduUWRBBt7_18trigger_parameters11flush_audio00B5_",
+    "_RNCNCNvCsjkduUWRBBt7_18trigger_parameters49parameter_callback_allocator_audit_on_host_thread00B5_",
+    "_RNCNCNvCsjkduUWRBBt7_18trigger_parameters49parameter_callback_allocator_audit_on_host_thread0s_0B5_",
+    "_RNCNCNvCsjkduUWRBBt7_18trigger_parameterss_61copied_native_parameter_state_is_an_authenticated_numeric_dto00B5_",
+    "_RNCNCNvCsjkduUWRBBt7_18trigger_parameterss_65copied_native_host_timer_delivers_a_later_rendered_parameter_edit00B5_",
+    "_RNCNCNvCsjkduUWRBBt7_18trigger_parameterss_65copied_native_host_timer_delivers_a_later_rendered_parameter_edit0s0_0B5_",
+    "_RNCNCNvCsjkduUWRBBt7_18trigger_parameterss_65copied_native_host_timer_delivers_a_later_rendered_parameter_edit0s1_0B5_",
+    "_RNCNCNvCsjkduUWRBBt7_18trigger_parameterss_65copied_native_host_timer_delivers_a_later_rendered_parameter_edit0s2_0B5_",
+    "_RNCNCNvCsjkduUWRBBt7_18trigger_parameterss_65copied_native_host_timer_delivers_a_later_rendered_parameter_edit0s_0B5_",
+    "_RNCNCNvCsjkduUWRBBt7_18trigger_parameterss_86copied_native_automation_survives_rejected_output_activation_failures_and_audio_return0s_0B5_",
+    "_RNCNCNvCsjkduUWRBBt7_18trigger_parameterss_86copied_native_host_feedback_updates_rendered_control_without_polling_or_undo_pollution0s0_0B5_",
+    "_RNCNCNvCsjkduUWRBBt7_18trigger_parameterss_86copied_native_host_feedback_updates_rendered_control_without_polling_or_undo_pollution0s1_0B5_",
+    "_RNCNvCsjkduUWRBBt7_18trigger_parameters11flush_audio0B3_",
+    "_RNCNvCsjkduUWRBBt7_18trigger_parameters25calibrated_callback_audit0B3_",
+    "_RNCNvCsjkduUWRBBt7_18trigger_parameters25calibrated_callback_audits_0B3_",
+    "_RNCNvCsjkduUWRBBt7_18trigger_parameters25run_allocator_audit_child0B3_",
+    "_RNCNvCsjkduUWRBBt7_18trigger_parameters49parameter_callback_allocator_audit_on_host_thread0B3_",
+    "_RNCNvCsjkduUWRBBt7_18trigger_parameterss_61copied_native_parameter_flush_delivers_host_accepted_gestures0B3_",
+    "_RNCNvCsjkduUWRBBt7_18trigger_parameterss_61copied_native_parameter_state_is_an_authenticated_numeric_dto0B3_",
+    "_RNCNvCsjkduUWRBBt7_18trigger_parameterss_65copied_native_host_timer_delivers_a_later_rendered_parameter_edit0B3_",
+    "_RNCNvCsjkduUWRBBt7_18trigger_parameterss_65copied_native_timer_rollback_retains_disabled_cleanup_and_retries0B3_",
+    "_RNCNvCsjkduUWRBBt7_18trigger_parameterss_74copied_native_view_independent_source_collects_accepted_automation_credits0B3_",
+    "_RNCNvCsjkduUWRBBt7_18trigger_parameterss_78copied_native_invalid_stopped_flush_preserves_uncollected_automation_ownership0B3_",
+    "_RNCNvCsjkduUWRBBt7_18trigger_parameterss_86copied_native_automation_survives_rejected_output_activation_failures_and_audio_return0B3_",
+    "_RNvCsjkduUWRBBt7_18trigger_parameters11flush_audio",
+    "_RNvCsjkduUWRBBt7_18trigger_parameters13require_timer",
+    "_RNvCsjkduUWRBBt7_18trigger_parameters15seed_half_level",
+    "_RNvCsjkduUWRBBt7_18trigger_parameters25calibrated_callback_audit",
+    "_RNvCsjkduUWRBBt7_18trigger_parameters25run_allocator_audit_child",
+    "_RNvCsjkduUWRBBt7_18trigger_parameters27assert_preserved_half_level",
+    "_RNvCsjkduUWRBBt7_18trigger_parameters49parameter_callback_allocator_audit_on_host_thread",
+    "_RNvCsjkduUWRBBt7_18trigger_parameterss_37copied_native_gui_requires_host_timer",
+    "_RNvCsjkduUWRBBt7_18trigger_parameterss_44copied_native_gui_rejects_refused_host_timer",
+    "_RNvCsjkduUWRBBt7_18trigger_parameterss_47native_parameter_callback_allocator_audit_child",
+    "_RNvCsjkduUWRBBt7_18trigger_parameterss_61copied_native_parameter_flush_delivers_host_accepted_gestures",
+    "_RNvCsjkduUWRBBt7_18trigger_parameterss_61copied_native_parameter_state_is_an_authenticated_numeric_dto",
+    "_RNvCsjkduUWRBBt7_18trigger_parameterss_65copied_native_host_timer_delivers_a_later_rendered_parameter_edit",
+    "_RNvCsjkduUWRBBt7_18trigger_parameterss_65copied_native_timer_rollback_retains_disabled_cleanup_and_retries",
+    "_RNvCsjkduUWRBBt7_18trigger_parameterss_74copied_native_view_independent_source_collects_accepted_automation_credits",
+    "_RNvCsjkduUWRBBt7_18trigger_parameterss_78copied_native_invalid_stopped_flush_preserves_uncollected_automation_ownership",
+    "_RNvCsjkduUWRBBt7_18trigger_parameterss_81copied_native_parameter_callbacks_allocate_and_destroy_nothing_while_gui_services",
+    "_RNvCsjkduUWRBBt7_18trigger_parameterss_86copied_native_automation_survives_rejected_output_activation_failures_and_audio_return",
+    "_RNvXNvCsjkduUWRBBt7_18trigger_parameters49parameter_callback_allocator_audit_on_host_threadNtB2_4StopNtNtNtCs27Vx93FoQ6z_4core3ops4drop4Drop4drop",
+    "_RNvXs0_CsjkduUWRBBt7_18trigger_parametersNtB5_6SharedNtNtNtCskTlEUva1jJ8_16clack_extensions6params4host20HostParamsImplShared13request_flush",
+    "_RNvXs1_CsjkduUWRBBt7_18trigger_parametersNtB5_8HostMainNtNtNtCskTlEUva1jJ8_16clack_extensions6params4host24HostParamsImplMainThread5clear",
+    "_RNvXs1_CsjkduUWRBBt7_18trigger_parametersNtB5_8HostMainNtNtNtCskTlEUva1jJ8_16clack_extensions6params4host24HostParamsImplMainThread6rescan",
+    "_RNvXs2_CsjkduUWRBBt7_18trigger_parametersNtB5_6SharedNtNtCshFi77PTWjbV_10clack_host4host13SharedHandler15request_process",
+    "_RNvXs2_CsjkduUWRBBt7_18trigger_parametersNtB5_6SharedNtNtCshFi77PTWjbV_10clack_host4host13SharedHandler15request_restart",
+    "_RNvXs2_CsjkduUWRBBt7_18trigger_parametersNtB5_6SharedNtNtCshFi77PTWjbV_10clack_host4host13SharedHandler16request_callback",
+    "_RNvXs3_CsjkduUWRBBt7_18trigger_parametersNtB5_6SharedNtNtNtCskTlEUva1jJ8_16clack_extensions3gui4host11HostGuiImpl12request_hide",
+    "_RNvXs3_CsjkduUWRBBt7_18trigger_parametersNtB5_6SharedNtNtNtCskTlEUva1jJ8_16clack_extensions3gui4host11HostGuiImpl12request_show",
+    "_RNvXs3_CsjkduUWRBBt7_18trigger_parametersNtB5_6SharedNtNtNtCskTlEUva1jJ8_16clack_extensions3gui4host11HostGuiImpl14request_resize",
+    "_RNvXs3_CsjkduUWRBBt7_18trigger_parametersNtB5_6SharedNtNtNtCskTlEUva1jJ8_16clack_extensions3gui4host11HostGuiImpl20resize_hints_changed",
+    "_RNvXs3_CsjkduUWRBBt7_18trigger_parametersNtB5_6SharedNtNtNtCskTlEUva1jJ8_16clack_extensions3gui4host11HostGuiImpl6closed"
+  ],
+  "zero_hit_segment_source": [
+    {
+      "line": 36,
+      "text": "                return Err(HostError::Message(\"test host refuses timer\"));"
+    },
+    {
+      "line": 44,
+      "text": "        if let Some(callback) = on_register {"
+    },
+    {
+      "line": 54,
+      "text": "            ledger.refuse_removals -= 1;"
+    },
+    {
+      "line": 55,
+      "text": "            return Err(HostError::Message(\"test host refuses removal\"));"
+    },
+    {
+      "line": 61,
+      "text": "            .ok_or(HostError::Message(\"unknown host timer\"))?;"
+    },
+    {
+      "line": 67,
+      "text": "    fn request_flush(&self) {"
+    },
+    {
+      "line": 68,
+      "text": "        self.flush_requests"
+    },
+    {
+      "line": 69,
+      "text": "            .fetch_add(1, std::sync::atomic::Ordering::Release);"
+    },
+    {
+      "line": 70,
+      "text": "    }"
+    },
+    {
+      "line": 73,
+      "text": "    fn rescan(&self, _: clack_extensions::params::ParamRescanFlags) {}"
+    },
+    {
+      "line": 74,
+      "text": "    fn clear(&self, _: ClapId, _: clack_extensions::params::ParamClearFlags) {"
+    },
+    {
+      "line": 75,
+      "text": "        panic!(\"test surface identities stay fixed\");"
+    },
+    {
+      "line": 80,
+      "text": "    fn request_restart(&self) {}"
+    },
+    {
+      "line": 81,
+      "text": "    fn request_process(&self) {}"
+    },
+    {
+      "line": 82,
+      "text": "    fn request_callback(&self) {"
+    },
+    {
+      "line": 83,
+      "text": "        self.callback"
+    },
+    {
+      "line": 84,
+      "text": "            .store(true, std::sync::atomic::Ordering::Release);"
+    },
+    {
+      "line": 85,
+      "text": "    }"
+    },
+    {
+      "line": 89,
+      "text": "    fn resize_hints_changed(&self) {}"
+    },
+    {
+      "line": 90,
+      "text": "    fn request_resize(&self, _: GuiSize) -> Result<(), HostError> {"
+    },
+    {
+      "line": 91,
+      "text": "        Err(HostError::Message(\"the host owns the fixed parent size\"))"
+    },
+    {
+      "line": 92,
+      "text": "    }"
+    },
+    {
+      "line": 93,
+      "text": "    fn request_show(&self) -> Result<(), HostError> {"
+    },
+    {
+      "line": 94,
+      "text": "        Err(HostError::Message(\"the host controls visibility\"))"
+    },
+    {
+      "line": 95,
+      "text": "    }"
+    },
+    {
+      "line": 96,
+      "text": "    fn request_hide(&self) -> Result<(), HostError> {"
+    },
+    {
+      "line": 97,
+      "text": "        Err(HostError::Message(\"the host controls visibility\"))"
+    },
+    {
+      "line": 98,
+      "text": "    }"
+    },
+    {
+      "line": 99,
+      "text": "    fn closed(&self, _: bool) {}"
+    },
+    {
+      "line": 113,
+      "text": "        }"
+    },
+    {
+      "line": 245,
+      "text": "        }"
+    },
+    {
+      "line": 255,
+      "text": "        }"
+    },
+    {
+      "line": 282,
+      "text": "    {"
+    },
+    {
+      "line": 297,
+      "text": "                .map_err(|e| e.to_string()),"
+    },
+    {
+      "line": 315,
+      "text": "fn copied_native_parameter_state_is_an_authenticated_numeric_dto() {"
+    },
+    {
+      "line": 316,
+      "text": "    std::thread::spawn(|| {"
+    },
+    {
+      "line": 317,
+      "text": "        let parent = Parent::new();"
+    },
+    {
+      "line": 318,
+      "text": "        let mut plugin = copied_plugin();"
+    },
+    {
+      "line": 319,
+      "text": "        let gui = plugin.plugin_handle().get_extension::<PluginGui>().unwrap();"
+    },
+    {
+      "line": 320,
+      "text": "        gui.create(&plugin.plugin_handle(), GuiConfiguration { api_type: GuiApiType::X11, is_floating: false }).unwrap();"
+    },
+    {
+      "line": 321,
+      "text": "        unsafe { gui.set_parent(&plugin.plugin_handle(), Window::from_x11_handle(parent.id.into())) }.unwrap();"
+    },
+    {
+      "line": 322,
+      "text": "        gui.show(&plugin.plugin_handle()).unwrap();"
+    },
+    {
+      "line": 323,
+      "text": "        let object = weak_browser_in_child(parent.children()[0]).upgrade().unwrap();"
+    },
+    {
+      "line": 324,
+      "text": "        let browser = object.downcast::<webkit2gtk::WebView>().expect(\"actual production WebKitWebView\");"
+    },
+    {
+      "line": 325,
+      "text": "        let deadline = Instant::now() + Duration::from_secs(15);"
+    },
+    {
+      "line": 327,
+      "text": "            let ready = javascript(&mut plugin, &browser, \"String(Boolean(document.querySelector('[data-testid=trigger-editor]')))\" );"
+    },
+    {
+      "line": 328,
+      "text": "            if ready == \"true\" { break; }"
+    },
+    {
+      "line": 329,
+      "text": "            assert!(Instant::now() < deadline, \"production React did not mount\");"
+    },
+    {
+      "line": 330,
+      "text": "            std::thread::sleep(Duration::from_millis(10));"
+    },
+    {
+      "line": 332,
+      "text": "        javascript(&mut plugin, &browser, r#\"window.__G2_RESULT__=null;window.__DANDRUM__.backend.getNativeFunction('getParameterState')().then(result=>window.__G2_RESULT__={status:'accepted',result},error=>window.__G2_RESULT__={status:'rejected',code:error.code});'started'\"#);"
+    },
+    {
+      "line": 333,
+      "text": "        let result = loop {"
+    },
+    {
+      "line": 334,
+      "text": "            let value = javascript(&mut plugin, &browser, \"JSON.stringify(window.__G2_RESULT__)\");"
+    },
+    {
+      "line": 335,
+      "text": "            if value != \"null\" { break serde_json::from_str::<serde_json::Value>(&value).unwrap(); }"
+    },
+    {
+      "line": 336,
+      "text": "            assert!(Instant::now() < deadline, \"actual native getParameterState Promise did not settle\");"
+    },
+    {
+      "line": 338,
+      "text": "        eprintln!(\"actual authenticated native parameter reply: {result}\");"
+    },
+    {
+      "line": 340,
+      "text": "        gui.destroy(&plugin.plugin_handle());"
+    },
+    {
+      "line": 341,
+      "text": "        drop(browser);"
+    },
+    {
+      "line": 342,
+      "text": "        assert_eq!(result[\"status\"], \"accepted\", \"G2: real parameter read must be dispatched; actual={result}\");"
+    },
+    {
+      "line": 343,
+      "text": "        assert_eq!(result[\"result\"][\"generation\"], 1);"
+    },
+    {
+      "line": 344,
+      "text": "        assert_eq!(result[\"result\"][\"sequence\"], 0);"
+    },
+    {
+      "line": 345,
+      "text": "        let values = result[\"result\"][\"parameters\"].as_array().unwrap();"
+    },
+    {
+      "line": 346,
+      "text": "        assert_eq!(values.len(), 23);"
+    },
+    {
+      "line": 347,
+      "text": "        let level = values.iter().find(|p| p[\"id\"] == \"drums.level\").unwrap();"
+    },
+    {
+      "line": 348,
+      "text": "        assert_eq!(level, &serde_json::json!({\"id\":\"drums.level\",\"name\":\"drums.level\",\"value\":0.25}));"
+    },
+    {
+      "line": 349,
+      "text": "    }).join().expect(\"parameter host thread completed\");"
+    },
+    {
+      "line": 350,
+      "text": "}"
+    },
+    {
+      "line": 385,
+      "text": "            return Err(TryPushError::new());"
+    },
+    {
+      "line": 400,
+      "text": "            return Err(TryPushError::new());"
+    },
+    {
+      "line": 425,
+      "text": "        }"
+    },
+    {
+      "line": 426,
+      "text": "        assert!("
+    },
+    {
+      "line": 427,
+      "text": "            Instant::now() < deadline,"
+    },
+    {
+      "line": 434,
+      "text": "fn copied_native_parameter_flush_delivers_host_accepted_gestures() {"
+    },
+    {
+      "line": 435,
+      "text": "    std::thread::spawn(|| {"
+    },
+    {
+      "line": 436,
+      "text": "        let parent = Parent::new();"
+    },
+    {
+      "line": 437,
+      "text": "        let mut plugin = copied_plugin();"
+    },
+    {
+      "line": 438,
+      "text": "        let gui = plugin.plugin_handle().get_extension::<PluginGui>().unwrap();"
+    },
+    {
+      "line": 439,
+      "text": "        gui.create("
+    },
+    {
+      "line": 440,
+      "text": "            &plugin.plugin_handle(),"
+    },
+    {
+      "line": 441,
+      "text": "            GuiConfiguration {"
+    },
+    {
+      "line": 446,
+      "text": "        .unwrap();"
+    },
+    {
+      "line": 448,
+      "text": "            gui.set_parent("
+    },
+    {
+      "line": 449,
+      "text": "                &plugin.plugin_handle(),"
+    },
+    {
+      "line": 450,
+      "text": "                Window::from_x11_handle(parent.id.into()),"
+    },
+    {
+      "line": 453,
+      "text": "        .unwrap();"
+    },
+    {
+      "line": 454,
+      "text": "        gui.show(&plugin.plugin_handle()).unwrap();"
+    },
+    {
+      "line": 455,
+      "text": "        let browser = weak_browser_in_child(parent.children()[0])"
+    },
+    {
+      "line": 456,
+      "text": "            .upgrade()"
+    },
+    {
+      "line": 457,
+      "text": "            .unwrap()"
+    },
+    {
+      "line": 458,
+      "text": "            .downcast::<webkit2gtk::WebView>()"
+    },
+    {
+      "line": 459,
+      "text": "            .unwrap();"
+    },
+    {
+      "line": 460,
+      "text": "        let deadline = Instant::now() + Duration::from_secs(15);"
+    },
+    {
+      "line": 461,
+      "text": "        while javascript("
+    },
+    {
+      "line": 462,
+      "text": "            &mut plugin,"
+    },
+    {
+      "line": 467,
+      "text": "            assert!(Instant::now() < deadline, \"production React did not mount\");"
+    },
+    {
+      "line": 469,
+      "text": "        let reply = invoke("
+    },
+    {
+      "line": 470,
+      "text": "            &mut plugin,"
+    },
+    {
+      "line": 471,
+      "text": "            &browser,"
+    },
+    {
+      "line": 472,
+      "text": "            \"window.__DANDRUM__.backend.getNativeFunction('setParameter')('drums.level',0.125,1)\","
+    },
+    {
+      "line": 474,
+      "text": "        assert_eq!(reply[\"status\"], \"accepted\");"
+    },
+    {
+      "line": 475,
+      "text": "        assert_eq!("
+    },
+    {
+      "line": 476,
+      "text": "            reply[\"result\"],"
+    },
+    {
+      "line": 477,
+      "text": "            serde_json::json!({\"status\":\"accepted\",\"generation\":1,\"sequence\":1})"
+    },
+    {
+      "line": 479,
+      "text": "        let params = plugin"
+    },
+    {
+      "line": 482,
+      "text": "            .unwrap();"
+    },
+    {
+      "line": 483,
+      "text": "        let mut output = Recorder::new(64);"
+    },
+    {
+      "line": 484,
+      "text": "        params.flush("
+    },
+    {
+      "line": 485,
+      "text": "            &mut plugin.inactive_plugin_handle().unwrap(),"
+    },
+    {
+      "line": 486,
+      "text": "            &InputEvents::empty(),"
+    },
+    {
+      "line": 487,
+      "text": "            &mut OutputEvents::from_buffer(&mut output),"
+    },
+    {
+      "line": 489,
+      "text": "        let physical = params.get_value(&plugin.plugin_handle(), ClapId::new(3));"
+    },
+    {
+      "line": 490,
+      "text": "        gui.destroy(&plugin.plugin_handle());"
+    },
+    {
+      "line": 491,
+      "text": "        drop(browser);"
+    },
+    {
+      "line": 492,
+      "text": "        assert_eq!("
+    },
+    {
+      "line": 497,
+      "text": "        assert_eq!("
+    },
+    {
+      "line": 498,
+      "text": "            &output.accepted[..output.len],"
+    },
+    {
+      "line": 506,
+      "text": "    })"
+    },
+    {
+      "line": 507,
+      "text": "    .join()"
+    },
+    {
+      "line": 508,
+      "text": "    .expect(\"parameter output host thread completed\");"
+    },
+    {
+      "line": 509,
+      "text": "}"
+    },
+    {
+      "line": 537,
+      "text": "fn flush_audio("
+    },
+    {
+      "line": 542,
+      "text": "    std::thread::scope(|scope| {"
+    },
+    {
+      "line": 543,
+      "text": "        scope"
+    },
+    {
+      "line": 544,
+      "text": "            .spawn(|| {"
+    },
+    {
+      "line": 545,
+      "text": "                let mut handle = audio.plugin_handle();"
+    },
+    {
+      "line": 546,
+      "text": "                let params = handle.get_extension::<PluginParams>().unwrap();"
+    },
+    {
+      "line": 547,
+      "text": "                params.flush_active("
+    },
+    {
+      "line": 548,
+      "text": "                    &mut handle,"
+    },
+    {
+      "line": 549,
+      "text": "                    &input.as_input(),"
+    },
+    {
+      "line": 550,
+      "text": "                    &mut OutputEvents::from_buffer(output),"
+    },
+    {
+      "line": 552,
+      "text": "            })"
+    },
+    {
+      "line": 553,
+      "text": "            .join()"
+    },
+    {
+      "line": 554,
+      "text": "            .unwrap()"
+    },
+    {
+      "line": 555,
+      "text": "    });"
+    },
+    {
+      "line": 556,
+      "text": "}"
+    },
+    {
+      "line": 560,
+      "text": "fn copied_native_automation_survives_rejected_output_activation_failures_and_audio_return() {"
+    },
+    {
+      "line": 561,
+      "text": "    std::thread::spawn(||{"
+    },
+    {
+      "line": 562,
+      "text": "        let parent=Parent::new();let mut plugin=copied_plugin();"
+    },
+    {
+      "line": 563,
+      "text": "        let gui=plugin.plugin_handle().get_extension::<PluginGui>().unwrap();"
+    },
+    {
+      "line": 564,
+      "text": "        gui.create(&plugin.plugin_handle(),GuiConfiguration{api_type:GuiApiType::X11,is_floating:false}).unwrap();"
+    },
+    {
+      "line": 565,
+      "text": "        unsafe{gui.set_parent(&plugin.plugin_handle(),Window::from_x11_handle(parent.id.into()))}.unwrap();gui.show(&plugin.plugin_handle()).unwrap();"
+    },
+    {
+      "line": 566,
+      "text": "        let browser=weak_browser_in_child(parent.children()[0]).upgrade().unwrap().downcast::<webkit2gtk::WebView>().unwrap();"
+    },
+    {
+      "line": 567,
+      "text": "        let deadline=Instant::now()+Duration::from_secs(15);"
+    },
+    {
+      "line": 568,
+      "text": "        while javascript(&mut plugin,&browser,\"String(Boolean(document.querySelector('[data-testid=trigger-editor]')))\")!=\"true\" {assert!(Instant::now()<deadline);}"
+    },
+    {
+      "line": 569,
+      "text": "        assert_eq!(invoke(&mut plugin,&browser,\"window.__DANDRUM__.backend.getNativeFunction('setParameter')('drums.level',0.375,1)\")[\"status\"],\"accepted\");"
+    },
+    {
+      "line": 570,
+      "text": "        plugin.call_on_main_thread_callback(); // Legal main-side staging, no fake callback or private control seam."
+    },
+    {
+      "line": 571,
+      "text": "        let params=plugin.plugin_handle().get_extension::<PluginParams>().unwrap();"
+    },
+    {
+      "line": 572,
+      "text": "        assert!(plugin.activate(|_,_|(),PluginAudioConfiguration{sample_rate:f64::NAN,min_frames_count:1,max_frames_count:16}).is_err());"
+    },
+    {
+      "line": 575,
+      "text": "        let sample=artifact().parent().unwrap().join(\"DandrumTrigger.resources\").join(dandrum_trigger_host::ADVANCED_DRUM_KIT_SAMPLE);"
+    },
+    {
+      "line": 576,
+      "text": "        let retained=sample.with_extension(\"wav.g2-retained\");std::fs::rename(&sample,&retained).unwrap();"
+    },
+    {
+      "line": 577,
+      "text": "        let failed=plugin.activate(|_,_|(),PluginAudioConfiguration{sample_rate:44100.0,min_frames_count:1,max_frames_count:16});"
+    },
+    {
+      "line": 578,
+      "text": "        std::fs::rename(&retained,&sample).unwrap();"
+    },
+    {
+      "line": 579,
+      "text": "        if let Ok(stopped)=failed {plugin.deactivate(stopped);panic!(\"missing resource must reject changed-rate activation\");}"
+    },
+    {
+      "line": 580,
+      "text": "        let mut audio=start_audio(&mut plugin);"
+    },
+    {
+      "line": 581,
+      "text": "        let mut malformed=EventBuffer::new();malformed.push(&ParamValueEvent::new(0,ClapId::new(24),Pckn::match_all(),0.5));"
+    },
+    {
+      "line": 582,
+      "text": "        let mut invalid_output=Recorder::new(64);flush_audio(&mut audio,&malformed,&mut invalid_output);"
+    },
+    {
+      "line": 583,
+      "text": "        assert_eq!(invalid_output.attempts,0,\"invalid input cannot partially publish queued output\");assert_eq!(params.get_value(&plugin.plugin_handle(),ClapId::new(3)),Some(1.0));"
+    },
+    {
+      "line": 584,
+      "text": "        let mut first=Recorder::new(1);flush_audio(&mut audio,&EventBuffer::new(),&mut first);"
+    },
+    {
+      "line": 585,
+      "text": "        assert_eq!(&first.accepted[..first.len],&[Some(Recorded::Begin(3))]);assert_eq!(first.attempts,2,\"rejected value stops callback immediately\");"
+    },
+    {
+      "line": 586,
+      "text": "        return_audio(&mut plugin,audio);"
+    },
+    {
+      "line": 588,
+      "text": "        let mut audio=start_audio(&mut plugin);let mut rest=Recorder::new(64);flush_audio(&mut audio,&EventBuffer::new(),&mut rest);"
+    },
+    {
+      "line": 589,
+      "text": "        assert_eq!(&rest.accepted[..rest.len],&[Some(Recorded::Value(3,1.5)),Some(Recorded::End(3))]);"
+    },
+    {
+      "line": 590,
+      "text": "        return_audio(&mut plugin,audio);plugin.call_on_main_thread_callback();"
+    },
+    {
+      "line": 591,
+      "text": "        assert_eq!(params.get_value(&plugin.plugin_handle(),ClapId::new(3)),Some(1.5));"
+    },
+    {
+      "line": 592,
+      "text": "        assert_eq!(invoke(&mut plugin,&browser,\"window.__DANDRUM__.backend.getNativeFunction('setParameter')('drums.level',0.125,1)\")[\"result\"][\"sequence\"],2);"
+    },
+    {
+      "line": 593,
+      "text": "        plugin.call_on_main_thread_callback();let mut audio=start_audio(&mut plugin);"
+    },
+    {
+      "line": 594,
+      "text": "        let mut notes=EventBuffer::new();notes.push(&MidiEvent::new(3,0,[0x90,36,100]));"
+    },
+    {
+      "line": 595,
+      "text": "        let mut output=Recorder::new(64);let mut pcm=[[123.0f32;16];2];"
+    },
+    {
+      "line": 596,
+      "text": "        std::thread::scope(|scope|scope.spawn(||{"
+    },
+    {
+      "line": 597,
+      "text": "            let mut input_ports=AudioPorts::with_capacity(0,0);let input=input_ports.with_input_buffers(std::iter::empty::<AudioPortBuffer<[InputChannel<'_,f32>;0],[InputChannel<'_,f64>;0]>>());"
+    },
+    {
+      "line": 598,
+      "text": "            let mut output_ports=AudioPorts::with_capacity(2,1);let mut buffers=output_ports.with_output_buffers([AudioPortBuffer{latency:0,channels:AudioPortBufferType::f32_output_only(pcm.iter_mut().map(|channel|channel.as_mut_slice()))}]);"
+    },
+    {
+      "line": 599,
+      "text": "            audio.process(&input,&mut buffers,&notes.as_input(),&mut OutputEvents::from_buffer(&mut output),None,None).unwrap();"
+    },
+    {
+      "line": 600,
+      "text": "        }).join().unwrap());"
+    },
+    {
+      "line": 601,
+      "text": "        return_audio(&mut plugin,audio);gui.destroy(&plugin.plugin_handle());drop(browser);"
+    },
+    {
+      "line": 602,
+      "text": "        assert_eq!(&output.accepted[..output.len],&[Some(Recorded::Begin(3)),Some(Recorded::Value(3,0.5)),Some(Recorded::End(3))]);"
+    },
+    {
+      "line": 603,
+      "text": "        for channel in pcm {assert_eq!(&channel[..3],&[0.0;3]);assert_eq!(&channel[3..5],&[-0.25,-179.0/32768.0]);}"
+    },
+    {
+      "line": 604,
+      "text": "    }).join().expect(\"native automation ownership host completed\");"
+    },
+    {
+      "line": 605,
+      "text": "}"
+    },
+    {
+      "line": 617,
+      "text": "fn seed_half_level(plugin: &mut PluginInstance<GuiHost>) -> Vec<u8> {"
+    },
+    {
+      "line": 618,
+      "text": "    let params = plugin"
+    },
+    {
+      "line": 621,
+      "text": "        .unwrap();"
+    },
+    {
+      "line": 622,
+      "text": "    let mut input = EventBuffer::new();"
+    },
+    {
+      "line": 623,
+      "text": "    input.push(&ParamValueEvent::new("
+    },
+    {
+      "line": 629,
+      "text": "    let mut output = Recorder::new(64);"
+    },
+    {
+      "line": 630,
+      "text": "    params.flush("
+    },
+    {
+      "line": 631,
+      "text": "        &mut plugin.inactive_plugin_handle().unwrap(),"
+    },
+    {
+      "line": 632,
+      "text": "        &input.as_input(),"
+    },
+    {
+      "line": 633,
+      "text": "        &mut OutputEvents::from_buffer(&mut output),"
+    },
+    {
+      "line": 635,
+      "text": "    assert_eq!("
+    },
+    {
+      "line": 639,
+      "text": "    assert_eq!("
+    },
+    {
+      "line": 640,
+      "text": "        params.get_value(&plugin.plugin_handle(), ClapId::new(3)),"
+    },
+    {
+      "line": 643,
+      "text": "    saved_state(plugin)"
+    },
+    {
+      "line": 644,
+      "text": "}"
+    },
+    {
+      "line": 681,
+      "text": "fn assert_preserved_half_level(plugin: &mut PluginInstance<GuiHost>, before: &[u8]) {"
+    },
+    {
+      "line": 682,
+      "text": "    assert_eq!(saved_state(plugin), before);"
+    },
+    {
+      "line": 683,
+      "text": "    let params = plugin"
+    },
+    {
+      "line": 686,
+      "text": "        .unwrap();"
+    },
+    {
+      "line": 687,
+      "text": "    assert_eq!("
+    },
+    {
+      "line": 688,
+      "text": "        params.get_value(&plugin.plugin_handle(), ClapId::new(3)),"
+    },
+    {
+      "line": 691,
+      "text": "    let mut audio = start_audio(plugin);"
+    },
+    {
+      "line": 692,
+      "text": "    let mut events = EventBuffer::new();"
+    },
+    {
+      "line": 693,
+      "text": "    events.push(&MidiEvent::new(3, 0, [0x90, 36, 100]));"
+    },
+    {
+      "line": 694,
+      "text": "    let mut output = Recorder::new(64);"
+    },
+    {
+      "line": 695,
+      "text": "    let pcm = render_audio(&mut audio, &events, &mut output);"
+    },
+    {
+      "line": 696,
+      "text": "    return_audio(plugin, audio);"
+    },
+    {
+      "line": 697,
+      "text": "    for channel in pcm {"
+    },
+    {
+      "line": 698,
+      "text": "        assert_eq!(&channel[..3], &[0.0; 3]);"
+    },
+    {
+      "line": 699,
+      "text": "        assert_eq!(&channel[3..5], &[-0.25, -179.0 / 32768.0]);"
+    },
+    {
+      "line": 701,
+      "text": "    assert_eq!(output.attempts, 0);"
+    },
+    {
+      "line": 702,
+      "text": "    assert_eq!(saved_state(plugin), before);"
+    },
+    {
+      "line": 703,
+      "text": "}"
+    },
+    {
+      "line": 704,
+      "text": "fn require_timer(available: bool, refused: bool) {"
+    },
+    {
+      "line": 705,
+      "text": "    let ledger = Rc::new(RefCell::new(TimerLedger {"
+    },
+    {
+      "line": 709,
+      "text": "    let mut plugin = instantiate_options(&copied_entry(), available, Rc::clone(&ledger));"
+    },
+    {
+      "line": 710,
+      "text": "    let before = seed_half_level(&mut plugin);"
+    },
+    {
+      "line": 711,
+      "text": "    let gui = plugin.plugin_handle().get_extension::<PluginGui>().unwrap();"
+    },
+    {
+      "line": 712,
+      "text": "    let result = gui.create("
+    },
+    {
+      "line": 713,
+      "text": "        &plugin.plugin_handle(),"
+    },
+    {
+      "line": 714,
+      "text": "        GuiConfiguration {"
+    },
+    {
+      "line": 719,
+      "text": "    gui.destroy(&plugin.plugin_handle());"
+    },
+    {
+      "line": 720,
+      "text": "    assert_preserved_half_level(&mut plugin, &before);"
+    },
+    {
+      "line": 721,
+      "text": "    drop(plugin);"
+    },
+    {
+      "line": 722,
+      "text": "    assert!("
+    },
+    {
+      "line": 723,
+      "text": "        result.is_err(),"
+    },
+    {
+      "line": 726,
+      "text": "    assert!(ledger.borrow().live.is_empty());"
+    },
+    {
+      "line": 727,
+      "text": "}"
+    },
+    {
+      "line": 730,
+      "text": "fn copied_native_gui_requires_host_timer() {"
+    },
+    {
+      "line": 731,
+      "text": "    require_timer(false, false);"
+    },
+    {
+      "line": 732,
+      "text": "}"
+    },
+    {
+      "line": 735,
+      "text": "fn copied_native_gui_rejects_refused_host_timer() {"
+    },
+    {
+      "line": 736,
+      "text": "    require_timer(true, true);"
+    },
+    {
+      "line": 737,
+      "text": "}"
+    },
+    {
+      "line": 790,
+      "text": "fn copied_native_host_timer_delivers_a_later_rendered_parameter_edit() {"
+    },
+    {
+      "line": 791,
+      "text": "    std::thread::spawn(||{"
+    },
+    {
+      "line": 792,
+      "text": "        let parent=Parent::new();let ledger=Rc::new(RefCell::new(TimerLedger::default()));"
+    },
+    {
+      "line": 793,
+      "text": "        let mut plugin=instantiate_options(&copied_entry(),true,Rc::clone(&ledger));"
+    },
+    {
+      "line": 794,
+      "text": "        let gui=plugin.plugin_handle().get_extension::<PluginGui>().unwrap();"
+    },
+    {
+      "line": 795,
+      "text": "        gui.create(&plugin.plugin_handle(),GuiConfiguration{api_type:GuiApiType::X11,is_floating:false}).unwrap();"
+    },
+    {
+      "line": 796,
+      "text": "        unsafe{gui.set_parent(&plugin.plugin_handle(),Window::from_x11_handle(parent.id.into()))}.unwrap();gui.show(&plugin.plugin_handle()).unwrap();"
+    },
+    {
+      "line": 797,
+      "text": "        let browser=weak_browser_in_child(parent.children()[0]).upgrade().unwrap().downcast::<webkit2gtk::WebView>().unwrap();"
+    },
+    {
+      "line": 798,
+      "text": "        wait_dom(&mut plugin,&browser,\"document.querySelector('[data-testid=trigger-editor]')\");"
+    },
+    {
+      "line": 799,
+      "text": "        type_level(&mut plugin,&browser,\"0.5\");"
+    },
+    {
+      "line": 800,
+      "text": "        wait_dom(&mut plugin,&browser,\"document.querySelector('[data-knob=\\\"drums.level\\\"] [role=slider]').getAttribute('aria-valuenow')==='0.125'\");"
+    },
+    {
+      "line": 801,
+      "text": "        let params=plugin.plugin_handle().get_extension::<PluginParams>().unwrap();"
+    },
+    {
+      "line": 802,
+      "text": "        assert_eq!(params.get_value(&plugin.plugin_handle(),ClapId::new(3)),Some(1.0),\"withheld timer/flush does not settle scalar\");"
+    },
+    {
+      "line": 803,
+      "text": "        assert_eq!(plugin.access_shared_handler(|host|host.flush_requests.load(std::sync::atomic::Ordering::Acquire)),0,\"DOM/GLib callbacks cannot call a borrowed host\");"
+    },
+    {
+      "line": 804,
+      "text": "        let registered=ledger.borrow().live.clone();"
+    },
+    {
+      "line": 805,
+      "text": "        assert_eq!(registered.len(),1,\"G2: real supported create must own one registered host timer after later DOM edit\");"
+    },
+    {
+      "line": 806,
+      "text": "        let timer=plugin.plugin_handle().get_extension::<clack_extensions::timer::PluginTimer>().expect(\"G2: real PluginTimer callback\");"
+    },
+    {
+      "line": 807,
+      "text": "        timer.on_timer(&plugin.plugin_handle(),clack_extensions::timer::TimerId(999));"
+    },
+    {
+      "line": 808,
+      "text": "        assert_eq!(plugin.access_shared_handler(|host|host.flush_requests.load(std::sync::atomic::Ordering::Acquire)),0,\"unknown ticks do not request a flush\");"
+    },
+    {
+      "line": 809,
+      "text": "        timer.on_timer(&plugin.plugin_handle(),registered[0]);"
+    },
+    {
+      "line": 810,
+      "text": "        assert!(plugin.access_shared_handler(|host|host.flush_requests.load(std::sync::atomic::Ordering::Acquire))>0,\"actual matching tick requests a stopped flush\");"
+    },
+    {
+      "line": 812,
+      "text": "        assert_eq!(params.get_value(&plugin.plugin_handle(),ClapId::new(3)),Some(1.0));"
+    },
+    {
+      "line": 813,
+      "text": "        let mut output=Recorder::new(64);"
+    },
+    {
+      "line": 814,
+      "text": "        params.flush(&mut plugin.inactive_plugin_handle().unwrap(),&InputEvents::empty(),&mut OutputEvents::from_buffer(&mut output));"
+    },
+    {
+      "line": 815,
+      "text": "        assert_eq!(&output.accepted[..output.len],&[Some(Recorded::Begin(3)),Some(Recorded::Value(3,0.5)),Some(Recorded::End(3))]);"
+    },
+    {
+      "line": 816,
+      "text": "        assert_eq!(params.get_value(&plugin.plugin_handle(),ClapId::new(3)),Some(0.5));"
+    },
+    {
+      "line": 817,
+      "text": "        let notified=plugin.access_shared_handler(|host|host.flush_requests.load(std::sync::atomic::Ordering::Acquire));"
+    },
+    {
+      "line": 818,
+      "text": "        timer.on_timer(&plugin.plugin_handle(),registered[0]);timer.on_timer(&plugin.plugin_handle(),registered[0]);"
+    },
+    {
+      "line": 819,
+      "text": "        assert_eq!(plugin.access_shared_handler(|host|host.flush_requests.load(std::sync::atomic::Ordering::Acquire)),notified,\"collected empty mirror does not request redundant flushes\");"
+    },
+    {
+      "line": 820,
+      "text": "        gui.hide(&plugin.plugin_handle()).unwrap();assert_eq!(ledger.borrow().live,registered);"
+    },
+    {
+      "line": 821,
+      "text": "        gui.destroy(&plugin.plugin_handle());drop(browser);assert_eq!(ledger.borrow().live,registered,\"destroying view retains instrument timer\");"
+    },
+    {
+      "line": 822,
+      "text": "        drop(plugin);assert!(ledger.borrow().live.is_empty());assert_eq!(ledger.borrow().removals,registered,\"final owner removes once\");"
+    },
+    {
+      "line": 823,
+      "text": "    }).join().expect(\"real timer parameter host completed\");"
+    },
+    {
+      "line": 824,
+      "text": "}"
+    },
+    {
+      "line": 828,
+      "text": "fn copied_native_timer_rollback_retains_disabled_cleanup_and_retries() {"
+    },
+    {
+      "line": 829,
+      "text": "    let ledger = Rc::new(RefCell::new(TimerLedger {"
+    },
+    {
+      "line": 833,
+      "text": "    let mut plugin = instantiate_options(&copied_entry(), true, Rc::clone(&ledger));"
+    },
+    {
+      "line": 834,
+      "text": "    let before = seed_half_level(&mut plugin);"
+    },
+    {
+      "line": 835,
+      "text": "    let gui = plugin.plugin_handle().get_extension::<PluginGui>().unwrap();"
+    },
+    {
+      "line": 836,
+      "text": "    let nested_accepted = Rc::new(std::cell::Cell::new(None));"
+    },
+    {
+      "line": 837,
+      "text": "    let observed = Rc::clone(&nested_accepted);"
+    },
+    {
+      "line": 838,
+      "text": "    let raw = plugin.plugin_handle().as_raw_ptr();"
+    },
+    {
+      "line": 842,
+      "text": "    let extension ="
+    },
+    {
+      "line": 843,
+      "text": "        unsafe { ((*raw).get_extension.unwrap())(raw, clap_sys::ext::gui::CLAP_EXT_GUI.as_ptr()) }"
+    },
+    {
+      "line": 845,
+      "text": "    assert!(!extension.is_null());"
+    },
+    {
+      "line": 846,
+      "text": "    let create = unsafe { (*extension).create.unwrap() };"
+    },
+    {
+      "line": 847,
+      "text": "    let destroy = unsafe { (*extension).destroy.unwrap() };"
+    },
+    {
+      "line": 848,
+      "text": "    ledger.borrow_mut().on_register = Some(Box::new(move || unsafe {"
+    },
+    {
+      "line": 849,
+      "text": "        observed.set(Some(create("
+    },
+    {
+      "line": 850,
+      "text": "            raw,"
+    },
+    {
+      "line": 854,
+      "text": "        destroy(raw);"
+    },
+    {
+      "line": 855,
+      "text": "    }));"
+    },
+    {
+      "line": 856,
+      "text": "    let embedded = GuiConfiguration {"
+    },
+    {
+      "line": 860,
+      "text": "    let rolled_back = gui.create(&plugin.plugin_handle(), embedded);"
+    },
+    {
+      "line": 861,
+      "text": "    drop(ledger.borrow_mut().on_register.take()); // No stored raw pointer survives the synchronous registration scope."
+    },
+    {
+      "line": 862,
+      "text": "    assert!("
+    },
+    {
+      "line": 863,
+      "text": "        rolled_back.is_err(),"
+    },
+    {
+      "line": 866,
+      "text": "    assert_eq!("
+    },
+    {
+      "line": 867,
+      "text": "        nested_accepted.get(),"
+    },
+    {
+      "line": 871,
+      "text": "    assert_eq!(gui.get_size(&plugin.plugin_handle()), None);"
+    },
+    {
+      "line": 872,
+      "text": "    assert_eq!("
+    },
+    {
+      "line": 873,
+      "text": "        ledger.borrow().live,"
+    },
+    {
+      "line": 877,
+      "text": "    assert_eq!("
+    },
+    {
+      "line": 878,
+      "text": "        ledger.borrow().removals,"
+    },
+    {
+      "line": 881,
+      "text": "    gui.create(&plugin.plugin_handle(), embedded).unwrap();"
+    },
+    {
+      "line": 882,
+      "text": "    assert!(gui.create(&plugin.plugin_handle(), embedded).is_err());"
+    },
+    {
+      "line": 883,
+      "text": "    gui.destroy(&plugin.plugin_handle());"
+    },
+    {
+      "line": 884,
+      "text": "    gui.create(&plugin.plugin_handle(), embedded).unwrap();"
+    },
+    {
+      "line": 885,
+      "text": "    gui.destroy(&plugin.plugin_handle());"
+    },
+    {
+      "line": 886,
+      "text": "    assert_eq!("
+    },
+    {
+      "line": 887,
+      "text": "        ledger.borrow().registrations,"
+    },
+    {
+      "line": 893,
+      "text": "    assert_eq!(ledger.borrow().live, [clack_extensions::timer::TimerId(72)]);"
+    },
+    {
+      "line": 894,
+      "text": "    assert_preserved_half_level(&mut plugin, &before);"
+    },
+    {
+      "line": 895,
+      "text": "    drop(plugin);"
+    },
+    {
+      "line": 896,
+      "text": "    assert!(ledger.borrow().live.is_empty());"
+    },
+    {
+      "line": 897,
+      "text": "    assert_eq!("
+    },
+    {
+      "line": 898,
+      "text": "        ledger.borrow().removals,"
+    },
+    {
+      "line": 905,
+      "text": "}"
+    },
+    {
+      "line": 909,
+      "text": "fn copied_native_view_independent_source_collects_accepted_automation_credits() {"
+    },
+    {
+      "line": 910,
+      "text": "    std::thread::spawn(|| {"
+    },
+    {
+      "line": 911,
+      "text": "        let parent = Parent::new();"
+    },
+    {
+      "line": 912,
+      "text": "        let mut plugin = copied_plugin();"
+    },
+    {
+      "line": 913,
+      "text": "        let before = saved_state(&mut plugin);"
+    },
+    {
+      "line": 914,
+      "text": "        let gui = plugin.plugin_handle().get_extension::<PluginGui>().unwrap();"
+    },
+    {
+      "line": 915,
+      "text": "        gui.create(&plugin.plugin_handle(), GuiConfiguration { api_type: GuiApiType::X11, is_floating: false }).unwrap();"
+    },
+    {
+      "line": 916,
+      "text": "        unsafe { gui.set_parent(&plugin.plugin_handle(), Window::from_x11_handle(parent.id.into())) }.unwrap();"
+    },
+    {
+      "line": 917,
+      "text": "        gui.show(&plugin.plugin_handle()).unwrap();"
+    },
+    {
+      "line": 918,
+      "text": "        let browser = weak_browser_in_child(parent.children()[0]).upgrade().unwrap().downcast::<webkit2gtk::WebView>().unwrap();"
+    },
+    {
+      "line": 919,
+      "text": "        wait_dom(&mut plugin, &browser, \"document.querySelector('[data-testid=trigger-editor]')\");"
+    },
+    {
+      "line": 920,
+      "text": "        type_level(&mut plugin, &browser, \"0.5\");"
+    },
+    {
+      "line": 921,
+      "text": "        wait_dom(&mut plugin, &browser, \"document.querySelector('[data-knob=\\\"drums.level\\\"] [role=slider]').getAttribute('aria-valuenow')==='0.125'\");"
+    },
+    {
+      "line": 922,
+      "text": "        gui.destroy(&plugin.plugin_handle());"
+    },
+    {
+      "line": 923,
+      "text": "        drop(browser);"
+    },
+    {
+      "line": 925,
+      "text": "        let params = plugin.plugin_handle().get_extension::<PluginParams>().unwrap();"
+    },
+    {
+      "line": 926,
+      "text": "        let mut output = Recorder::new(64);"
+    },
+    {
+      "line": 927,
+      "text": "        params.flush(&mut plugin.inactive_plugin_handle().unwrap(), &InputEvents::empty(), &mut OutputEvents::from_buffer(&mut output));"
+    },
+    {
+      "line": 928,
+      "text": "        assert_eq!(&output.accepted[..output.len], &[Some(Recorded::Begin(3)), Some(Recorded::Value(3, 0.5)), Some(Recorded::End(3))]);"
+    },
+    {
+      "line": 929,
+      "text": "        let handle = plugin.plugin_handle();"
+    },
+    {
+      "line": 930,
+      "text": "        let state = handle.get_extension::<clack_extensions::state::PluginState>().unwrap();"
+    },
+    {
+      "line": 931,
+      "text": "        assert!(state.load(&handle, &mut before.as_slice()).is_err(), \"accepted but uncollected credits still own the automation ledger\");"
+    },
+    {
+      "line": 933,
+      "text": "        let context = gtk::glib::MainContext::default();"
+    },
+    {
+      "line": 934,
+      "text": "        let deadline = Instant::now() + Duration::from_millis(100);"
+    },
+    {
+      "line": 935,
+      "text": "        while Instant::now() < deadline {"
+    },
+    {
+      "line": 936,
+      "text": "            for _ in 0..64 {"
+    },
+    {
+      "line": 937,
+      "text": "                if !context.pending() { break; }"
+    },
+    {
+      "line": 938,
+      "text": "                context.iteration(false);"
+    },
+    {
+      "line": 940,
+      "text": "            std::thread::sleep(Duration::from_millis(2));"
+    },
+    {
+      "line": 942,
+      "text": "        let restored = state.load(&handle, &mut before.as_slice());"
+    },
+    {
+      "line": 943,
+      "text": "        drop(plugin);"
+    },
+    {
+      "line": 944,
+      "text": "        assert!(restored.is_ok(), \"G2: view-independent GLib service must collect accepted credits without host timer/main callbacks: {restored:?}\");"
+    },
+    {
+      "line": 945,
+      "text": "    }).join().expect(\"view-independent service host completed\");"
+    },
+    {
+      "line": 946,
+      "text": "}"
+    },
+    {
+      "line": 1044,
+      "text": "        if let Err(payload) = rejected {"
+    },
+    {
+      "line": 1045,
+      "text": "            let audio_cleanup = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {"
+    },
+    {
+      "line": 1046,
+      "text": "                return_audio(&mut plugin, audio);"
+    },
+    {
+      "line": 1047,
+      "text": "            }));"
+    },
+    {
+      "line": 1048,
+      "text": "            let gui_cleanup = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {"
+    },
+    {
+      "line": 1049,
+      "text": "                gui.destroy(&plugin.plugin_handle());"
+    },
+    {
+      "line": 1050,
+      "text": "            }));"
+    },
+    {
+      "line": 1051,
+      "text": "            drop(browser);"
+    },
+    {
+      "line": 1052,
+      "text": "            if audio_cleanup.is_err() {"
+    },
+    {
+      "line": 1054,
+      "text": "            }"
+    },
+    {
+      "line": 1055,
+      "text": "            if gui_cleanup.is_err() {"
+    },
+    {
+      "line": 1057,
+      "text": "            }"
+    },
+    {
+      "line": 1058,
+      "text": "            std::panic::resume_unwind(payload);"
+    },
+    {
+      "line": 1073,
+      "text": "            gui.destroy(&plugin.plugin_handle());"
+    },
+    {
+      "line": 1074,
+      "text": "            drop(browser);"
+    },
+    {
+      "line": 1075,
+      "text": "            assert_eq!(displayed, \"0.5\", \"G2: real host feedback must update the actual rendered control through an authenticated event\");"
+    },
+    {
+      "line": 1076,
+      "text": "            unreachable!();"
+    },
+    {
+      "line": 1119,
+      "text": "fn copied_native_invalid_stopped_flush_preserves_uncollected_automation_ownership() {"
+    },
+    {
+      "line": 1120,
+      "text": "    std::thread::spawn(|| {"
+    },
+    {
+      "line": 1121,
+      "text": "        let parent = Parent::new();"
+    },
+    {
+      "line": 1122,
+      "text": "        let mut plugin = copied_plugin();"
+    },
+    {
+      "line": 1123,
+      "text": "        let initial = saved_state(&mut plugin);"
+    },
+    {
+      "line": 1124,
+      "text": "        let gui = plugin.plugin_handle().get_extension::<PluginGui>().unwrap();"
+    },
+    {
+      "line": 1125,
+      "text": "        gui.create(&plugin.plugin_handle(), GuiConfiguration { api_type: GuiApiType::X11, is_floating: false }).unwrap();"
+    },
+    {
+      "line": 1126,
+      "text": "        unsafe { gui.set_parent(&plugin.plugin_handle(), Window::from_x11_handle(parent.id.into())) }.unwrap();"
+    },
+    {
+      "line": 1127,
+      "text": "        gui.show(&plugin.plugin_handle()).unwrap();"
+    },
+    {
+      "line": 1128,
+      "text": "        let browser = weak_browser_in_child(parent.children()[0]).upgrade().unwrap().downcast::<webkit2gtk::WebView>().unwrap();"
+    },
+    {
+      "line": 1129,
+      "text": "        wait_dom(&mut plugin, &browser, \"document.querySelector('[data-testid=trigger-editor]')\");"
+    },
+    {
+      "line": 1130,
+      "text": "        type_level(&mut plugin, &browser, \"0.5\");"
+    },
+    {
+      "line": 1131,
+      "text": "        wait_dom(&mut plugin, &browser, \"document.querySelector('[data-knob=\\\"drums.level\\\"] [role=slider]').getAttribute('aria-valuenow')==='0.125'\");"
+    },
+    {
+      "line": 1132,
+      "text": "        gui.destroy(&plugin.plugin_handle()); drop(browser);"
+    },
+    {
+      "line": 1133,
+      "text": "        let params = plugin.plugin_handle().get_extension::<PluginParams>().unwrap();"
+    },
+    {
+      "line": 1134,
+      "text": "        let mut accepted = Recorder::new(64);"
+    },
+    {
+      "line": 1135,
+      "text": "        params.flush(&mut plugin.inactive_plugin_handle().unwrap(), &InputEvents::empty(), &mut OutputEvents::from_buffer(&mut accepted));"
+    },
+    {
+      "line": 1136,
+      "text": "        assert_eq!(&accepted.accepted[..accepted.len], &[Some(Recorded::Begin(3)), Some(Recorded::Value(3, 0.5)), Some(Recorded::End(3))]);"
+    },
+    {
+      "line": 1137,
+      "text": "        let settled = saved_state(&mut plugin);"
+    },
+    {
+      "line": 1138,
+      "text": "        let handle = plugin.plugin_handle();"
+    },
+    {
+      "line": 1139,
+      "text": "        let state = handle.get_extension::<clack_extensions::state::PluginState>().unwrap();"
+    },
+    {
+      "line": 1140,
+      "text": "        assert!(state.load(&handle, &mut initial.as_slice()).is_err());"
+    },
+    {
+      "line": 1142,
+      "text": "        let mut invalid = EventBuffer::new();"
+    },
+    {
+      "line": 1143,
+      "text": "        invalid.push(&ParamValueEvent::new(0, ClapId::new(24), Pckn::match_all(), 0.25));"
+    },
+    {
+      "line": 1144,
+      "text": "        let mut rejected = Recorder::new(64);"
+    },
+    {
+      "line": 1145,
+      "text": "        params.flush(&mut plugin.inactive_plugin_handle().unwrap(), &invalid.as_input(), &mut OutputEvents::from_buffer(&mut rejected));"
+    },
+    {
+      "line": 1146,
+      "text": "        assert_eq!(rejected.attempts, 0);"
+    },
+    {
+      "line": 1147,
+      "text": "        assert!(state.load(&plugin.plugin_handle(), &mut initial.as_slice()).is_err(), \"G2: rejected complete input validation must not collect prior accepted credits or release automation ownership\");"
+    },
+    {
+      "line": 1148,
+      "text": "        assert_eq!(params.get_value(&plugin.plugin_handle(), ClapId::new(3)), Some(0.5));"
+    },
+    {
+      "line": 1149,
+      "text": "        assert_eq!(saved_state(&mut plugin), settled);"
+    },
+    {
+      "line": 1150,
+      "text": "        let mut valid = Recorder::new(64);"
+    },
+    {
+      "line": 1151,
+      "text": "        params.flush(&mut plugin.inactive_plugin_handle().unwrap(), &InputEvents::empty(), &mut OutputEvents::from_buffer(&mut valid));"
+    },
+    {
+      "line": 1152,
+      "text": "        assert_eq!(valid.attempts, 0);"
+    },
+    {
+      "line": 1153,
+      "text": "        assert!(state.load(&plugin.plugin_handle(), &mut initial.as_slice()).is_ok(), \"later valid stopped service collects exact accepted credits\");"
+    },
+    {
+      "line": 1154,
+      "text": "        assert_eq!(params.get_value(&plugin.plugin_handle(), ClapId::new(3)), Some(1.0));"
+    },
+    {
+      "line": 1155,
+      "text": "    }).join().expect(\"invalid stopped ownership host completed\");"
+    },
+    {
+      "line": 1156,
+      "text": "}"
+    },
+    {
+      "line": 1160,
+      "text": "fn copied_native_parameter_callbacks_allocate_and_destroy_nothing_while_gui_services() {"
+    },
+    {
+      "line": 1161,
+      "text": "    run_allocator_audit_child(\"native_parameter_callback_allocator_audit_child\");"
+    },
+    {
+      "line": 1162,
+      "text": "}"
+    },
+    {
+      "line": 1164,
+      "text": "fn run_allocator_audit_child(name: &str) {"
+    },
+    {
+      "line": 1165,
+      "text": "    let directory = tempfile::tempdir().unwrap();"
+    },
+    {
+      "line": 1166,
+      "text": "    let interposer = directory.path().join(\"allocator_interpose.c\");"
+    },
+    {
+      "line": 1167,
+      "text": "    let probe = directory.path().join(\"allocator_probe.rs\");"
+    },
+    {
+      "line": 1168,
+      "text": "    let library = directory.path().join(\"allocator_interpose.so\");"
+    },
+    {
+      "line": 1169,
+      "text": "    let rust_library = directory.path().join(\"allocator_probe.so\");"
+    },
+    {
+      "line": 1170,
+      "text": "    std::fs::write(&interposer, include_str!(\"fixtures/allocator_interpose.c\")).unwrap();"
+    },
+    {
+      "line": 1171,
+      "text": "    std::fs::write(&probe, include_str!(\"fixtures/allocator_probe.rs\")).unwrap();"
+    },
+    {
+      "line": 1172,
+      "text": "    let output = std::process::Command::new(\"cc\")"
+    },
+    {
+      "line": 1173,
+      "text": "        .args(["
+    },
+    {
+      "line": 1174,
+      "text": "            \"-shared\", \"-fPIC\", \"-std=c11\", \"-O2\", \"-Wall\", \"-Wextra\", \"-Werror\","
+    },
+    {
+      "line": 1179,
+      "text": "        .output()"
+    },
+    {
+      "line": 1180,
+      "text": "        .unwrap();"
+    },
+    {
+      "line": 1181,
+      "text": "    let compiler_stderr = String::from_utf8_lossy(&output.stderr);"
+    },
+    {
+      "line": 1182,
+      "text": "    assert!("
+    },
+    {
+      "line": 1183,
+      "text": "        output.status.success(),"
+    },
+    {
+      "line": 1186,
+      "text": "    let output = std::process::Command::new(\"rustc\")"
+    },
+    {
+      "line": 1187,
+      "text": "        .args([\"--edition=2024\", \"--crate-type=cdylib\", \"-Copt-level=1\"])"
+    },
+    {
+      "line": 1191,
+      "text": "        .output()"
+    },
+    {
+      "line": 1192,
+      "text": "        .unwrap();"
+    },
+    {
+      "line": 1193,
+      "text": "    let compiler_stderr = String::from_utf8_lossy(&output.stderr);"
+    },
+    {
+      "line": 1194,
+      "text": "    assert!("
+    },
+    {
+      "line": 1195,
+      "text": "        output.status.success(),"
+    },
+    {
+      "line": 1198,
+      "text": "    let executable = std::env::current_exe().unwrap();"
+    },
+    {
+      "line": 1199,
+      "text": "    let listing = std::process::Command::new(&executable)"
+    },
+    {
+      "line": 1201,
+      "text": "        .output()"
+    },
+    {
+      "line": 1202,
+      "text": "        .unwrap();"
+    },
+    {
+      "line": 1203,
+      "text": "    assert!(listing.status.success());"
+    },
+    {
+      "line": 1204,
+      "text": "    assert!("
+    },
+    {
+      "line": 1205,
+      "text": "        String::from_utf8_lossy(&listing.stdout)"
+    },
+    {
+      "line": 1207,
+      "text": "            .any(|line| line == format!(\"{name}: test\"))"
+    },
+    {
+      "line": 1209,
+      "text": "    let hashes = std::process::Command::new(\"sha256sum\")"
+    },
+    {
+      "line": 1210,
+      "text": "        .args(["
+    },
+    {
+      "line": 1211,
+      "text": "            artifact(),"
+    },
+    {
+      "line": 1212,
+      "text": "            executable.clone(),"
+    },
+    {
+      "line": 1213,
+      "text": "            library.clone(),"
+    },
+    {
+      "line": 1214,
+      "text": "            rust_library.clone(),"
+    },
+    {
+      "line": 1218,
+      "text": "        .output()"
+    },
+    {
+      "line": 1219,
+      "text": "        .unwrap();"
+    },
+    {
+      "line": 1220,
+      "text": "    assert!(hashes.status.success());"
+    },
+    {
+      "line": 1221,
+      "text": "    println!("
+    },
+    {
+      "line": 1224,
+      "text": "    println!("
+    },
+    {
+      "line": 1226,
+      "text": "        library.display(),"
+    },
+    {
+      "line": 1227,
+      "text": "        rust_library.display(),"
+    },
+    {
+      "line": 1228,
+      "text": "        executable.display(),"
+    },
+    {
+      "line": 1229,
+      "text": "        String::from_utf8_lossy(&hashes.stdout)"
+    },
+    {
+      "line": 1231,
+      "text": "    let output = std::process::Command::new(&executable)"
+    },
+    {
+      "line": 1232,
+      "text": "        .args(["
+    },
+    {
+      "line": 1234,
+      "text": "            name,"
+    },
+    {
+      "line": 1235,
+      "text": "            \"--ignored\","
+    },
+    {
+      "line": 1242,
+      "text": "        .output()"
+    },
+    {
+      "line": 1243,
+      "text": "        .unwrap();"
+    },
+    {
+      "line": 1244,
+      "text": "    let stdout = String::from_utf8_lossy(&output.stdout);"
+    },
+    {
+      "line": 1245,
+      "text": "    println!(\"{stdout}\");"
+    },
+    {
+      "line": 1246,
+      "text": "    eprintln!(\"{}\", String::from_utf8_lossy(&output.stderr));"
+    },
+    {
+      "line": 1247,
+      "text": "    assert!("
+    },
+    {
+      "line": 1248,
+      "text": "        output.status.success(),"
+    },
+    {
+      "line": 1251,
+      "text": "    assert!("
+    },
+    {
+      "line": 1252,
+      "text": "        stdout.contains(\"running 1 test\")"
+    },
+    {
+      "line": 1253,
+      "text": "            && stdout.contains(&format!(\"test {name} ... ok\"))"
+    },
+    {
+      "line": 1254,
+      "text": "            && stdout.contains(\"test result: ok. 1 passed; 0 failed;\"),"
+    },
+    {
+      "line": 1257,
+      "text": "}"
+    },
+    {
+      "line": 1261,
+      "text": "fn native_parameter_callback_allocator_audit_child() {"
+    },
+    {
+      "line": 1262,
+      "text": "    std::thread::spawn(parameter_callback_allocator_audit_on_host_thread)"
+    },
+    {
+      "line": 1263,
+      "text": "        .join()"
+    },
+    {
+      "line": 1264,
+      "text": "        .expect(\"calibrated GUI/audio audit host completed\");"
+    },
+    {
+      "line": 1265,
+      "text": "}"
+    },
+    {
+      "line": 1275,
+      "text": "    fn measure<T>(&self, callback: impl FnOnce() -> T) -> (T, (u64, u64)) {"
+    },
+    {
+      "line": 1276,
+      "text": "        unsafe {"
+    },
+    {
+      "line": 1279,
+      "text": "        let result = callback();"
+    },
+    {
+      "line": 1280,
+      "text": "        let (mut allocations, mut deallocations) = (0, 0);"
+    },
+    {
+      "line": 1281,
+      "text": "        unsafe {"
+    },
+    {
+      "line": 1282,
+      "text": "            (self.end)(&mut allocations, &mut deallocations);"
+    },
+    {
+      "line": 1284,
+      "text": "        (result, (allocations, deallocations))"
+    },
+    {
+      "line": 1285,
+      "text": "    }"
+    },
+    {
+      "line": 1288,
+      "text": "fn calibrated_callback_audit() -> (Audit, libloading::Library) {"
+    },
+    {
+      "line": 1290,
+      "text": "    let global = libloading::os::unix::Library::this();"
+    },
+    {
+      "line": 1291,
+      "text": "    let audit = unsafe {"
+    },
+    {
+      "line": 1292,
+      "text": "        Audit {"
+    },
+    {
+      "line": 1293,
+      "text": "            begin: *global.get::<Begin>(b\"dandrum_audit_begin\\0\").unwrap(),"
+    },
+    {
+      "line": 1294,
+      "text": "            end: *global.get::<End>(b\"dandrum_audit_end\\0\").unwrap(),"
+    },
+    {
+      "line": 1297,
+      "text": "    let probe = unsafe {"
+    },
+    {
+      "line": 1298,
+      "text": "        libloading::Library::new(std::env::var_os(\"DANDRUM_ALLOCATOR_AUDIT_PROBE\").unwrap())"
+    },
+    {
+      "line": 1300,
+      "text": "    .unwrap();"
+    },
+    {
+      "line": 1301,
+      "text": "    let allocate = unsafe {"
+    },
+    {
+      "line": 1302,
+      "text": "        *probe"
+    },
+    {
+      "line": 1303,
+      "text": "            .get::<unsafe extern \"C\" fn() -> *mut u8>(b\"probe_allocate\\0\")"
+    },
+    {
+      "line": 1306,
+      "text": "    let deallocate = unsafe {"
+    },
+    {
+      "line": 1307,
+      "text": "        *probe"
+    },
+    {
+      "line": 1308,
+      "text": "            .get::<unsafe extern \"C\" fn(*mut u8)>(b\"probe_deallocate\\0\")"
+    },
+    {
+      "line": 1311,
+      "text": "    let old = unsafe { allocate() };"
+    },
+    {
+      "line": 1312,
+      "text": "    assert!(!old.is_null());"
+    },
+    {
+      "line": 1313,
+      "text": "    let (fresh, allocation) = audit.measure(|| unsafe { allocate() });"
+    },
+    {
+      "line": 1314,
+      "text": "    assert!(!fresh.is_null());"
+    },
+    {
+      "line": 1315,
+      "text": "    assert!(allocation.0 > 0);"
+    },
+    {
+      "line": 1316,
+      "text": "    assert_eq!(allocation.1, 0);"
+    },
+    {
+      "line": 1317,
+      "text": "    let (_, destruction) = audit.measure(|| unsafe { deallocate(old) });"
+    },
+    {
+      "line": 1318,
+      "text": "    assert_eq!(destruction.0, 0);"
+    },
+    {
+      "line": 1319,
+      "text": "    assert!(destruction.1 > 0);"
+    },
+    {
+      "line": 1320,
+      "text": "    unsafe {"
+    },
+    {
+      "line": 1323,
+      "text": "    assert_eq!(audit.measure(|| ()).1, (0, 0));"
+    },
+    {
+      "line": 1324,
+      "text": "    eprintln!("
+    },
+    {
+      "line": 1327,
+      "text": "    (audit, probe)"
+    },
+    {
+      "line": 1328,
+      "text": "}"
+    },
+    {
+      "line": 1330,
+      "text": "fn parameter_callback_allocator_audit_on_host_thread() {"
+    },
+    {
+      "line": 1335,
+      "text": "    let (audit, _probe) = calibrated_callback_audit();"
+    },
+    {
+      "line": 1336,
+      "text": "    let parent = Parent::new();"
+    },
+    {
+      "line": 1337,
+      "text": "    let mut plugin = copied_plugin();"
+    },
+    {
+      "line": 1338,
+      "text": "    let gui = plugin.plugin_handle().get_extension::<PluginGui>().unwrap();"
+    },
+    {
+      "line": 1339,
+      "text": "    gui.create("
+    },
+    {
+      "line": 1340,
+      "text": "        &plugin.plugin_handle(),"
+    },
+    {
+      "line": 1341,
+      "text": "        GuiConfiguration {"
+    },
+    {
+      "line": 1346,
+      "text": "    .unwrap();"
+    },
+    {
+      "line": 1348,
+      "text": "        gui.set_parent("
+    },
+    {
+      "line": 1349,
+      "text": "            &plugin.plugin_handle(),"
+    },
+    {
+      "line": 1350,
+      "text": "            Window::from_x11_handle(parent.id.into()),"
+    },
+    {
+      "line": 1353,
+      "text": "    .unwrap();"
+    },
+    {
+      "line": 1354,
+      "text": "    gui.show(&plugin.plugin_handle()).unwrap();"
+    },
+    {
+      "line": 1355,
+      "text": "    let browser = weak_browser_in_child(parent.children()[0])"
+    },
+    {
+      "line": 1356,
+      "text": "        .upgrade()"
+    },
+    {
+      "line": 1357,
+      "text": "        .unwrap()"
+    },
+    {
+      "line": 1358,
+      "text": "        .downcast::<webkit2gtk::WebView>()"
+    },
+    {
+      "line": 1359,
+      "text": "        .unwrap();"
+    },
+    {
+      "line": 1360,
+      "text": "    wait_dom("
+    },
+    {
+      "line": 1361,
+      "text": "        &mut plugin,"
+    },
+    {
+      "line": 1362,
+      "text": "        &browser,"
+    },
+    {
+      "line": 1363,
+      "text": "        \"document.querySelector('[data-testid=trigger-editor]')\","
+    },
+    {
+      "line": 1365,
+      "text": "    type_level(&mut plugin, &browser, \"0.5\");"
+    },
+    {
+      "line": 1366,
+      "text": "    wait_dom("
+    },
+    {
+      "line": 1367,
+      "text": "        &mut plugin,"
+    },
+    {
+      "line": 1368,
+      "text": "        &browser,"
+    },
+    {
+      "line": 1369,
+      "text": "        \"document.querySelector('[data-knob=\\\"drums.level\\\"] [role=slider]').getAttribute('aria-valuenow')==='0.125'\","
+    },
+    {
+      "line": 1371,
+      "text": "    let timer = plugin"
+    },
+    {
+      "line": 1374,
+      "text": "        .unwrap();"
+    },
+    {
+      "line": 1375,
+      "text": "    timer.on_timer("
+    },
+    {
+      "line": 1376,
+      "text": "        &plugin.plugin_handle(),"
+    },
+    {
+      "line": 1377,
+      "text": "        clack_extensions::timer::TimerId(71),"
+    },
+    {
+      "line": 1379,
+      "text": "    let mut audio = start_audio(&mut plugin);"
+    },
+    {
+      "line": 1380,
+      "text": "    let ready = Arc::new(AtomicBool::new(false));"
+    },
+    {
+      "line": 1381,
+      "text": "    let go = Arc::new(AtomicBool::new(false));"
+    },
+    {
+      "line": 1382,
+      "text": "    let stop = Arc::new(AtomicBool::new(false));"
+    },
+    {
+      "line": 1383,
+      "text": "    let servicing = Arc::new(AtomicBool::new(false));"
+    },
+    {
+      "line": 1384,
+      "text": "    let overlap = Arc::new(AtomicUsize::new(0));"
+    },
+    {
+      "line": 1385,
+      "text": "    let callbacks = Arc::new(AtomicUsize::new(0));"
+    },
+    {
+      "line": 1388,
+      "text": "        fn drop(&mut self) {"
+    },
+    {
+      "line": 1389,
+      "text": "            self.0.store(true, Ordering::Release);"
+    },
+    {
+      "line": 1390,
+      "text": "        }"
+    },
+    {
+      "line": 1392,
+      "text": "    let (audio, recorded, flush_count, process_count, iterations, first_pcm, browser_progress) ="
+    },
+    {
+      "line": 1393,
+      "text": "        std::thread::scope(|scope| {"
+    },
+    {
+      "line": 1394,
+      "text": "            let _stop_on_exit = Stop(Arc::clone(&stop));"
+    },
+    {
+      "line": 1396,
+      "text": "                ready_audio,"
+    },
+    {
+      "line": 1397,
+      "text": "                go_audio,"
+    },
+    {
+      "line": 1398,
+      "text": "                stop_audio,"
+    },
+    {
+      "line": 1399,
+      "text": "                servicing_audio,"
+    },
+    {
+      "line": 1400,
+      "text": "                overlap_audio,"
+    },
+    {
+      "line": 1401,
+      "text": "                callbacks_audio,"
+    },
+    {
+      "line": 1402,
+      "text": "            ) = ("
+    },
+    {
+      "line": 1403,
+      "text": "                Arc::clone(&ready),"
+    },
+    {
+      "line": 1404,
+      "text": "                Arc::clone(&go),"
+    },
+    {
+      "line": 1405,
+      "text": "                Arc::clone(&stop),"
+    },
+    {
+      "line": 1406,
+      "text": "                Arc::clone(&servicing),"
+    },
+    {
+      "line": 1407,
+      "text": "                Arc::clone(&overlap),"
+    },
+    {
+      "line": 1410,
+      "text": "            let worker = scope.spawn(move || {"
+    },
+    {
+      "line": 1411,
+      "text": "                let mut recorded = Recorder::new(1);"
+    },
+    {
+      "line": 1412,
+      "text": "                let mut handle = audio.plugin_handle();"
+    },
+    {
+      "line": 1413,
+      "text": "                let params = handle.get_extension::<PluginParams>().unwrap();"
+    },
+    {
+      "line": 1414,
+      "text": "                let (_, flush_count) = audit.measure(|| {"
+    },
+    {
+      "line": 1415,
+      "text": "                    params.flush_active("
+    },
+    {
+      "line": 1416,
+      "text": "                        &mut handle,"
+    },
+    {
+      "line": 1417,
+      "text": "                        &InputEvents::empty(),"
+    },
+    {
+      "line": 1418,
+      "text": "                        &mut OutputEvents::from_buffer(&mut recorded),"
+    },
+    {
+      "line": 1420,
+      "text": "                });"
+    },
+    {
+      "line": 1421,
+      "text": "                assert_eq!(recorded.len, 1);"
+    },
+    {
+      "line": 1422,
+      "text": "                assert_eq!(recorded.attempts, 2);"
+    },
+    {
+      "line": 1423,
+      "text": "                recorded.remaining = 64;"
+    },
+    {
+      "line": 1424,
+      "text": "                ready_audio.store(true, Ordering::Release);"
+    },
+    {
+      "line": 1425,
+      "text": "                while !go_audio.load(Ordering::Acquire) && !stop_audio.load(Ordering::Acquire) {"
+    },
+    {
+      "line": 1428,
+      "text": "                let mut inputs = AudioPorts::with_capacity(0, 0);"
+    },
+    {
+      "line": 1429,
+      "text": "                let input = inputs.with_input_buffers(std::iter::empty::<"
+    },
+    {
+      "line": 1432,
+      "text": "                let mut ports = AudioPorts::with_capacity(2, 1);"
+    },
+    {
+      "line": 1433,
+      "text": "                let mut pcm = [[123.0f32; 16]; 2];"
+    },
+    {
+      "line": 1434,
+      "text": "                let mut first_pcm = pcm;"
+    },
+    {
+      "line": 1435,
+      "text": "                let mut note = EventBuffer::new();"
+    },
+    {
+      "line": 1436,
+      "text": "                note.push(&MidiEvent::new(3, 0, [0x90, 36, 100]));"
+    },
+    {
+      "line": 1437,
+      "text": "                let mut iterations = 0;"
+    },
+    {
+      "line": 1438,
+      "text": "                let mut process_count = (0, 0);"
+    },
+    {
+      "line": 1439,
+      "text": "                while !stop_audio.load(Ordering::Acquire) && iterations < 100_000 {"
+    },
+    {
+      "line": 1440,
+      "text": "                    let input_events = if iterations == 0 {"
+    },
+    {
+      "line": 1441,
+      "text": "                        note.as_input()"
+    },
+    {
+      "line": 1443,
+      "text": "                        InputEvents::empty()"
+    },
+    {
+      "line": 1445,
+      "text": "                    recorded.attempts = 0;"
+    },
+    {
+      "line": 1446,
+      "text": "                    let during_service = servicing_audio.load(Ordering::Acquire);"
+    },
+    {
+      "line": 1447,
+      "text": "                    let (status, count) = {"
+    },
+    {
+      "line": 1448,
+      "text": "                        let mut output = ports.with_output_buffers([AudioPortBuffer {"
+    },
+    {
+      "line": 1450,
+      "text": "                            channels: AudioPortBufferType::f32_output_only("
+    },
+    {
+      "line": 1451,
+      "text": "                                pcm.iter_mut().map(|channel| channel.as_mut_slice()),"
+    },
+    {
+      "line": 1454,
+      "text": "                        audit.measure(|| {"
+    },
+    {
+      "line": 1455,
+      "text": "                            audio.process("
+    },
+    {
+      "line": 1456,
+      "text": "                                &input,"
+    },
+    {
+      "line": 1457,
+      "text": "                                &mut output,"
+    },
+    {
+      "line": 1458,
+      "text": "                                &input_events,"
+    },
+    {
+      "line": 1459,
+      "text": "                                &mut OutputEvents::from_buffer(&mut recorded),"
+    },
+    {
+      "line": 1460,
+      "text": "                                None,"
+    },
+    {
+      "line": 1461,
+      "text": "                                None,"
+    },
+    {
+      "line": 1463,
+      "text": "                        })"
+    },
+    {
+      "line": 1465,
+      "text": "                    assert_eq!("
+    },
+    {
+      "line": 1466,
+      "text": "                        status.unwrap(),"
+    },
+    {
+      "line": 1469,
+      "text": "                    process_count.0 += count.0;"
+    },
+    {
+      "line": 1470,
+      "text": "                    process_count.1 += count.1;"
+    },
+    {
+      "line": 1471,
+      "text": "                    if during_service && servicing_audio.load(Ordering::Acquire) {"
+    },
+    {
+      "line": 1472,
+      "text": "                        overlap_audio.fetch_add(1, Ordering::Release);"
+    },
+    {
+      "line": 1473,
+      "text": "                    }"
+    },
+    {
+      "line": 1474,
+      "text": "                    if iterations == 0 {"
+    },
+    {
+      "line": 1476,
+      "text": "                    }"
+    },
+    {
+      "line": 1477,
+      "text": "                    iterations += 1;"
+    },
+    {
+      "line": 1478,
+      "text": "                    callbacks_audio.fetch_add(1, Ordering::Release);"
+    },
+    {
+      "line": 1480,
+      "text": "                ("
+    },
+    {
+      "line": 1481,
+      "text": "                    audio,"
+    },
+    {
+      "line": 1482,
+      "text": "                    recorded,"
+    },
+    {
+      "line": 1483,
+      "text": "                    flush_count,"
+    },
+    {
+      "line": 1484,
+      "text": "                    process_count,"
+    },
+    {
+      "line": 1488,
+      "text": "            });"
+    },
+    {
+      "line": 1489,
+      "text": "            let deadline = Instant::now() + Duration::from_secs(3);"
+    },
+    {
+      "line": 1490,
+      "text": "            while !ready.load(Ordering::Acquire) {"
+    },
+    {
+      "line": 1491,
+      "text": "                assert!("
+    },
+    {
+      "line": 1492,
+      "text": "                    Instant::now() < deadline,"
+    },
+    {
+      "line": 1495,
+      "text": "                std::thread::sleep(Duration::from_millis(1));"
+    },
+    {
+      "line": 1497,
+      "text": "            let (go_main, servicing_main, overlap_main) = ("
+    },
+    {
+      "line": 1498,
+      "text": "                Arc::clone(&go),"
+    },
+    {
+      "line": 1499,
+      "text": "                Arc::clone(&servicing),"
+    },
+    {
+      "line": 1502,
+      "text": "            gtk::glib::idle_add_local_once(move || {"
+    },
+    {
+      "line": 1503,
+      "text": "                servicing_main.store(true, Ordering::Release);"
+    },
+    {
+      "line": 1504,
+      "text": "                go_main.store(true, Ordering::Release);"
+    },
+    {
+      "line": 1505,
+      "text": "                let deadline = Instant::now() + Duration::from_secs(3);"
+    },
+    {
+      "line": 1506,
+      "text": "                while overlap_main.load(Ordering::Acquire) == 0 && Instant::now() < deadline {"
+    },
+    {
+      "line": 1509,
+      "text": "                servicing_main.store(false, Ordering::Release);"
+    },
+    {
+      "line": 1510,
+      "text": "            });"
+    },
+    {
+      "line": 1511,
+      "text": "            let displayed = javascript("
+    },
+    {
+      "line": 1512,
+      "text": "                &mut plugin,"
+    },
+    {
+      "line": 1513,
+      "text": "                &browser,"
+    },
+    {
+      "line": 1514,
+      "text": "                \"document.querySelector('[data-knob=\\\"drums.level\\\"] [role=slider]').getAttribute('aria-valuenow')\","
+    },
+    {
+      "line": 1516,
+      "text": "            assert_eq!(displayed, \"0.125\");"
+    },
+    {
+      "line": 1517,
+      "text": "            let before = callbacks.load(Ordering::Acquire);"
+    },
+    {
+      "line": 1518,
+      "text": "            let deadline = Instant::now() + Duration::from_millis(30);"
+    },
+    {
+      "line": 1519,
+      "text": "            while Instant::now() < deadline {"
+    },
+    {
+      "line": 1520,
+      "text": "                dispatch_context(&mut plugin);"
+    },
+    {
+      "line": 1523,
+      "text": "            let after = callbacks.load(Ordering::Acquire);"
+    },
+    {
+      "line": 1524,
+      "text": "            stop.store(true, Ordering::Release);"
+    },
+    {
+      "line": 1525,
+      "text": "            let (audio, recorded, flush_count, process_count, iterations, first_pcm) ="
+    },
+    {
+      "line": 1526,
+      "text": "                worker.join().unwrap();"
+    },
+    {
+      "line": 1527,
+      "text": "            ("
+    },
+    {
+      "line": 1528,
+      "text": "                audio,"
+    },
+    {
+      "line": 1529,
+      "text": "                recorded,"
+    },
+    {
+      "line": 1530,
+      "text": "                flush_count,"
+    },
+    {
+      "line": 1531,
+      "text": "                process_count,"
+    },
+    {
+      "line": 1532,
+      "text": "                iterations,"
+    },
+    {
+      "line": 1533,
+      "text": "                first_pcm,"
+    },
+    {
+      "line": 1536,
+      "text": "        });"
+    },
+    {
+      "line": 1537,
+      "text": "    return_audio(&mut plugin, audio);"
+    },
+    {
+      "line": 1538,
+      "text": "    assert_eq!("
+    },
+    {
+      "line": 1543,
+      "text": "    assert_eq!("
+    },
+    {
+      "line": 1548,
+      "text": "    assert!(iterations > 0 && browser_progress > 0 && overlap.load(Ordering::Acquire) > 0);"
+    },
+    {
+      "line": 1549,
+      "text": "    assert_eq!("
+    },
+    {
+      "line": 1550,
+      "text": "        &recorded.accepted[..recorded.len],"
+    },
+    {
+      "line": 1557,
+      "text": "    for channel in first_pcm {"
+    },
+    {
+      "line": 1558,
+      "text": "        assert_eq!(&channel[..3], &[0.0; 3]);"
+    },
+    {
+      "line": 1559,
+      "text": "        assert_eq!(&channel[3..5], &[-0.25, -179.0 / 32768.0]);"
+    },
+    {
+      "line": 1561,
+      "text": "    gui.destroy(&plugin.plugin_handle());"
+    },
+    {
+      "line": 1562,
+      "text": "    drop(browser);"
+    },
+    {
+      "line": 1563,
+      "text": "    println!("
+    },
+    {
+      "line": 1565,
+      "text": "        overlap.load(Ordering::Acquire)"
+    },
+    {
+      "line": 1567,
+      "text": "}"
+    }
+  ],
+  "scope": "Fresh root final-source manual test instrumentation, normal copied DSO, exact one native case, one new profile only. Test coverage, no production/full-owner/branch claim. Earlier author report omission and debug direct-export diagnostic retained separately.",
+  "assertions": "Eight invalid state candidates retain exact bytes, session, parameter DTO, physical value and live child/attachment; same audio endpoint then accepts offset-1 feedback and actual parameter Undo with signed PCM. Whole parent-file totals include many unrelated unexecuted tests; exact changed-function attribution is assessed separately. Unexecuted panic cleanup remains a measurement limit.",
+  "refactor": {
+    "production": "No production change or new extraction; no production refactor required.",
+    "test": "Existing exact feedback scenario extended; table-driven invalid candidates share assertions. No extraction or new framework; panic cleanup tries audio and GUI independently then resumes original failure."
+  }
+}

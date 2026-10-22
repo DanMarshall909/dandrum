@@ -1,0 +1,120 @@
+{
+  "artifacts": [
+    {
+      "path": "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/trigger-clap-native-fixture/DandrumTrigger.clap",
+      "sha256": "e9200fbb0bdc714e6f6d3950aefea03b1025302a328374b31310a45e745b0741",
+      "commands": [
+        {
+          "command": [
+            "readelf",
+            "-d",
+            "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/trigger-clap-native-fixture/DandrumTrigger.clap"
+          ],
+          "exit": 0,
+          "seconds": 0.001884662953671068
+        },
+        {
+          "command": [
+            "ldd",
+            "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/trigger-clap-native-fixture/DandrumTrigger.clap"
+          ],
+          "exit": 0,
+          "seconds": 0.07538057398051023
+        }
+      ]
+    },
+    {
+      "path": "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/trigger-clap-native-fixture/trigger-gui-test",
+      "sha256": "256d168af1a1243f50f7d13a479d8772711a5f8240bdb28392b181324239a15c",
+      "commands": [
+        {
+          "command": [
+            "readelf",
+            "-d",
+            "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/trigger-clap-native-fixture/trigger-gui-test"
+          ],
+          "exit": 0,
+          "seconds": 0.0012155980220995843
+        },
+        {
+          "command": [
+            "ldd",
+            "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/trigger-clap-native-fixture/trigger-gui-test"
+          ],
+          "exit": 0,
+          "seconds": 0.07267780101392418
+        }
+      ]
+    },
+    {
+      "path": "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/trigger-clap-parameters-fixture/DandrumTrigger.clap",
+      "sha256": "e9200fbb0bdc714e6f6d3950aefea03b1025302a328374b31310a45e745b0741",
+      "commands": [
+        {
+          "command": [
+            "readelf",
+            "-d",
+            "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/trigger-clap-parameters-fixture/DandrumTrigger.clap"
+          ],
+          "exit": 0,
+          "seconds": 0.0013937969924882054
+        },
+        {
+          "command": [
+            "ldd",
+            "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/trigger-clap-parameters-fixture/DandrumTrigger.clap"
+          ],
+          "exit": 0,
+          "seconds": 0.07413798599736765
+        }
+      ]
+    },
+    {
+      "path": "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/trigger-clap-parameters-fixture/trigger-parameters-test",
+      "sha256": "bf762ef233d147e0b2faa9cd365b8af2c60d9b6e1fa768c7821413633fa6bdb2",
+      "commands": [
+        {
+          "command": [
+            "readelf",
+            "-d",
+            "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/trigger-clap-parameters-fixture/trigger-parameters-test"
+          ],
+          "exit": 0,
+          "seconds": 0.0013261080021038651
+        },
+        {
+          "command": [
+            "ldd",
+            "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/trigger-clap-parameters-fixture/trigger-parameters-test"
+          ],
+          "exit": 0,
+          "seconds": 0.07358551101060584
+        }
+      ]
+    },
+    {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-invalid-root-final-test/trigger_parameters-8fc57b2ef83fb6e4",
+      "sha256": "a704989a658c03891e2f44893c771f3e361586d5987a2cf398135321d429b7d9",
+      "commands": [
+        {
+          "command": [
+            "readelf",
+            "-d",
+            "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-invalid-root-final-test/trigger_parameters-8fc57b2ef83fb6e4"
+          ],
+          "exit": 0,
+          "seconds": 0.0012550079845823348
+        },
+        {
+          "command": [
+            "ldd",
+            "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-invalid-root-final-test/trigger_parameters-8fc57b2ef83fb6e4"
+          ],
+          "exit": 0,
+          "seconds": 0.07401146797928959
+        }
+      ]
+    }
+  ],
+  "scope": "Actual copied native fixtures and fresh instrumented test; no unresolved loader dependency or JUCE dynamic linkage. Not installed/source-free/full-beta proof."
+}
