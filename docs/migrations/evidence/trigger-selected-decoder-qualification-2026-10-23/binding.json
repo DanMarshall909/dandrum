@@ -1,0 +1,14 @@
+{
+  "base": "983ce4b3e1bb66bd63fc3b3dda635843b559d17a",
+  "scope": "Task5.1 TIDY only: existing decoder resource measurements and one test-only characterization correction. No production behavior/API/catalog/protocol/chooser/selected-sample acceptance or task/scenario closure.",
+  "source": "src/rust-engine/src/audio_loading.rs",
+  "source_sha256": "54d6373619344630310b67d9182db2a359cb5fa12fb76451b0cf96f7b3a99ed4",
+  "production_prefix_unchanged": true,
+  "characterization": "Complete valid outer header now reaches existing malformed data-chunk bound check; exact existing error is asserted. Baseline guard line124 hit0, focused current hit1. Existing10decoder tests PASS, formatPASS; GREEN characterization, not claimed behaviorRED.",
+  "measurements": "64MiB PCM16 mono33554410frames and stereo16777205frames; signedfirst/last andrate/framecount checksPASS.4process peakRSS264180\u2013264252KiB (about258MiB),debugdecode3.50\u20134.14seconds. Filemode real public engine ResourceResolver; bytesmode unchanged private decoder source compiled into one-off probe with encodedbytesretained.",
+  "memory_limits": "Initial16files/64MiBasset/256MiBaggregate are accepted candidate budgets; decoded-frame/byte/count/in-flight/retirement policies remain to settle. No catalog peak, universal bound or accepted final decoded limit claim.",
+  "checks": "FocusedLLVM executes corrected guard and added test assertions. Older aggregate/test-only helper gaps retained. StrictengineClippy FAIL129baseline; exact330all-target diagnostics unchanged, no newidentity or suppression. Normal1090-test/strictcoverage hooks and independent review/publication remain subsequent gates.",
+  "resources": "Physical reusable targets/jobs1,8GiB disk/MemAvailable guards. All probe WAVs/workspaces owned scratch removed after verified guardian closure; rawprofiles and source/tool/commands retained. Initial private-API compiler failure and unsupportedreport--lib option are setup failures, notRED or coverage.",
+  "readiness": "Read-only report identifies that a meaningful selected-content RED requires a defined trusted-native ingress plus bounded admission/status contract, and real decoded consumer. Existing decoded immutability is alreadyGREEN; preserve packaged-resource re-preparation rejection. No interface chosen/implemented by this packet.",
+  "mutation": "Excluded; none run or injected."
+}

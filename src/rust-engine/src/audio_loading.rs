@@ -353,8 +353,14 @@ mod tests {
         let mut valid = Vec::new();
         write_wav_stereo_i16(&mut valid, 48_000, &[0.25], &[0.25]).unwrap();
 
-        let mut malformed_chunk = b"RIFF\0\0\0\0WAVEdata\x64\0\0\0".to_vec();
-        malformed_chunk.resize(24, 0);
+        // Keep a complete valid header so rejection reaches the chunk-length
+        // check, rather than the earlier short-file check.
+        let mut malformed_chunk = valid.clone();
+        malformed_chunk[40..44].copy_from_slice(&100_u32.to_le_bytes());
+        assert_eq!(
+            decode_pcm_wav(&malformed_chunk, 48_000).unwrap_err(),
+            "unsupported format; malformed WAV chunk"
+        );
         let mut float_format = valid.clone();
         float_format[20..22].copy_from_slice(&3_u16.to_le_bytes());
         let mut zero_channels = valid.clone();
@@ -370,7 +376,7 @@ mod tests {
             "unsupported format; malformed fmt chunk"
         );
 
-        for bytes in [malformed_chunk, float_format, incomplete_frame] {
+        for bytes in [float_format, incomplete_frame] {
             assert!(
                 decode_pcm_wav(&bytes, 48_000)
                     .expect_err("invalid WAV structure should fail")
