@@ -1851,3 +1851,28 @@ clause, live-editor invalid-state feedback, maintained native-product/source-fre
 wiring, validator assessment and later full-beta formats/devices/DAW/install gates
 remain. Review/publication live in the sole tracker. Main68dd655 and all reusable
 caches are preserved; mutation remains excluded.
+
+
+## Lost-ack recovery preserves a second native instance — 22 October 2026
+
+The existing structural acceptance now creates two instruments from one copied
+Entry. A retains withheld mapping acknowledgement, complete editor loss,
+view-independent publication, exactly-once retained recovery and actual header
+Undo. Seven discrete checkpoints preserve B's same view/authority, full snapshot,
+feedback, history and saved bytes, literal MIDI36 stereo-0.5 and MIDI60 silence.
+B probes own and return their endpoints; uninterrupted B audio is not claimed.
+
+[Portable evidence](evidence/trigger-clap-lost-ack-independence-2026-10-22/README.md)
+records root28 maintained CTests in101.035s including preparation,13 fast tests,
+formatting/strictClippy, actual ELF linkage and strict active/all51/spec coverage.
+Root fresh instrumentation and a new exact native run independently execute
+358/402 test lines,597/665 regions and13/15 functions. Exceptional cleanup and
+pending/timeout paths remain explicit limits. The author's omitted-test/zero
+coverage report and TMPDIR failure are retained distinctly; fresh root evidence
+resolves the coverage report gap. No production repair or artificial RED is claimed.
+
+This partial4.3 checkpoint closes no task or beta. No specs/maps change. Live-editor
+feedback after invalid state, maintained GUI product/source-free wiring, validator
+assessment and later VST3/standalone/DAW/installed/native beta gates remain open.
+Source and cache ownership is back with root for independent review/publication;
+main68dd655 and1766 cache entries are preserved, mutation excluded.

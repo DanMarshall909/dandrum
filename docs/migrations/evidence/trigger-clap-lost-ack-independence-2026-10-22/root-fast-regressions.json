@@ -1,0 +1,200 @@
+{
+  "artifact": {
+    "reason": "compiler-artifact",
+    "package_id": "path+file:///tmp/dandrum-lanes/runtime/src/clap-adapter#dandrum_clap_adapter@0.1.0",
+    "manifest_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+    "target": {
+      "kind": [
+        "cdylib",
+        "rlib"
+      ],
+      "crate_types": [
+        "cdylib",
+        "rlib"
+      ],
+      "name": "dandrum_clap_adapter",
+      "src_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/src/lib.rs",
+      "edition": "2024",
+      "doc": true,
+      "doctest": true,
+      "test": true
+    },
+    "profile": {
+      "opt_level": "3",
+      "debuginfo": 0,
+      "debug_assertions": false,
+      "overflow_checks": false,
+      "test": true
+    },
+    "features": [
+      "default",
+      "trigger",
+      "trigger-editor"
+    ],
+    "filenames": [
+      "/tmp/dandrum-lanes/cache-editor-guard/release/deps/dandrum_clap_adapter-8632cc0c677b0ea7"
+    ],
+    "executable": "/tmp/dandrum-lanes/cache-editor-guard/release/deps/dandrum_clap_adapter-8632cc0c677b0ea7",
+    "fresh": false
+  },
+  "elf_sha256": "0eb515dedcf48514866d17dc1aa6d21129b92d15510db16a7a3c0f802a5ec44b",
+  "qualified_reuse": "Unchanged prior compiled library test ELF, same source and compiler inputs at published95d06dff; new executions on root current copied DSO. No newly compiled library claim.",
+  "cases": [
+    {
+      "case": "trigger::gui::dispatch_tests::current_dispatch_preserves_snapshot_notes_admission_and_capability_errors",
+      "command": [
+        "/tmp/dandrum-lanes/cache-editor-guard/release/deps/dandrum_clap_adapter-8632cc0c677b0ea7",
+        "trigger::gui::dispatch_tests::current_dispatch_preserves_snapshot_notes_admission_and_capability_errors",
+        "--exact",
+        "--show-output",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 0.032544164976570755
+    },
+    {
+      "case": "trigger::gui::dispatch_tests::detached_feedback_service_is_bounded_and_defers_busy_owners_without_consuming",
+      "command": [
+        "/tmp/dandrum-lanes/cache-editor-guard/release/deps/dandrum_clap_adapter-8632cc0c677b0ea7",
+        "trigger::gui::dispatch_tests::detached_feedback_service_is_bounded_and_defers_busy_owners_without_consuming",
+        "--exact",
+        "--show-output",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 0.034249718009959906
+    },
+    {
+      "case": "trigger::gui::dispatch_tests::empty_output_calls_no_host_and_real_clap_output_projects_global_physical_values",
+      "command": [
+        "/tmp/dandrum-lanes/cache-editor-guard/release/deps/dandrum_clap_adapter-8632cc0c677b0ea7",
+        "trigger::gui::dispatch_tests::empty_output_calls_no_host_and_real_clap_output_projects_global_physical_values",
+        "--exact",
+        "--show-output",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 0.031045281037222594
+    },
+    {
+      "case": "trigger::gui::dispatch_tests::foreign_gesture_and_runtime_capacity_reject_without_partial_parameter_publication",
+      "command": [
+        "/tmp/dandrum-lanes/cache-editor-guard/release/deps/dandrum_clap_adapter-8632cc0c677b0ea7",
+        "trigger::gui::dispatch_tests::foreign_gesture_and_runtime_capacity_reject_without_partial_parameter_publication",
+        "--exact",
+        "--show-output",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 0.030807673989329487
+    },
+    {
+      "case": "trigger::gui::dispatch_tests::mapping_dispatch_rejects_stale_and_stopped_worker_without_changing_history",
+      "command": [
+        "/tmp/dandrum-lanes/cache-editor-guard/release/deps/dandrum_clap_adapter-8632cc0c677b0ea7",
+        "trigger::gui::dispatch_tests::mapping_dispatch_rejects_stale_and_stopped_worker_without_changing_history",
+        "--exact",
+        "--show-output",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 0.03275322401896119
+    },
+    {
+      "case": "trigger::gui::dispatch_tests::output_callback_attempt_budget_includes_concurrent_refill",
+      "command": [
+        "/tmp/dandrum-lanes/cache-editor-guard/release/deps/dandrum_clap_adapter-8632cc0c677b0ea7",
+        "trigger::gui::dispatch_tests::output_callback_attempt_budget_includes_concurrent_refill",
+        "--exact",
+        "--show-output",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 0.03162056504515931
+    },
+    {
+      "case": "trigger::gui::dispatch_tests::output_mirror_acknowledges_only_host_accepted_prefix_and_retries_the_rejected_head",
+      "command": [
+        "/tmp/dandrum-lanes/cache-editor-guard/release/deps/dandrum_clap_adapter-8632cc0c677b0ea7",
+        "trigger::gui::dispatch_tests::output_mirror_acknowledges_only_host_accepted_prefix_and_retries_the_rejected_head",
+        "--exact",
+        "--show-output",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 0.032546596019528806
+    },
+    {
+      "case": "trigger::gui::dispatch_tests::output_mirror_stages_more_than_capacity_and_detach_ends_without_overtaking",
+      "command": [
+        "/tmp/dandrum-lanes/cache-editor-guard/release/deps/dandrum_clap_adapter-8632cc0c677b0ea7",
+        "trigger::gui::dispatch_tests::output_mirror_stages_more_than_capacity_and_detach_ends_without_overtaking",
+        "--exact",
+        "--show-output",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 0.03129084897227585
+    },
+    {
+      "case": "trigger::gui::dispatch_tests::parameter_dispatch_reports_terminal_busy_duplicate_and_existing_admission_errors",
+      "command": [
+        "/tmp/dandrum-lanes/cache-editor-guard/release/deps/dandrum_clap_adapter-8632cc0c677b0ea7",
+        "trigger::gui::dispatch_tests::parameter_dispatch_reports_terminal_busy_duplicate_and_existing_admission_errors",
+        "--exact",
+        "--show-output",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 0.030184649978764355
+    },
+    {
+      "case": "trigger::gui::dispatch_tests::real_parameter_dispatch_preserves_admission_settlement_and_ordered_gestures",
+      "command": [
+        "/tmp/dandrum-lanes/cache-editor-guard/release/deps/dandrum_clap_adapter-8632cc0c677b0ea7",
+        "trigger::gui::dispatch_tests::real_parameter_dispatch_preserves_admission_settlement_and_ordered_gestures",
+        "--exact",
+        "--show-output",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 0.03193064301740378
+    },
+    {
+      "case": "trigger::gui::dispatch_tests::two_live_mirrors_keep_refused_heads_and_accepted_credits_independent",
+      "command": [
+        "/tmp/dandrum-lanes/cache-editor-guard/release/deps/dandrum_clap_adapter-8632cc0c677b0ea7",
+        "trigger::gui::dispatch_tests::two_live_mirrors_keep_refused_heads_and_accepted_credits_independent",
+        "--exact",
+        "--show-output",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 0.034079439006745815
+    },
+    {
+      "case": "trigger::gui::dispatch_tests::view_independent_service_has_one_weak_source_and_final_cancellation",
+      "command": [
+        "/tmp/dandrum-lanes/cache-editor-guard/release/deps/dandrum_clap_adapter-8632cc0c677b0ea7",
+        "trigger::gui::dispatch_tests::view_independent_service_has_one_weak_source_and_final_cancellation",
+        "--exact",
+        "--show-output",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 0.05062423396157101
+    },
+    {
+      "case": "trigger::gui::timer_tests::registration_owns_disabled_tokens_across_failed_rollback_and_retries_without_duplicate_registration",
+      "command": [
+        "/tmp/dandrum-lanes/cache-editor-guard/release/deps/dandrum_clap_adapter-8632cc0c677b0ea7",
+        "trigger::gui::timer_tests::registration_owns_disabled_tokens_across_failed_rollback_and_retries_without_duplicate_registration",
+        "--exact",
+        "--show-output",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 0.025091764982789755
+    }
+  ]
+}

@@ -1,0 +1,277 @@
+{
+  "summary": {
+    "branches": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0
+    },
+    "functions": {
+      "count": 15,
+      "covered": 13,
+      "percent": 86.66666666666667
+    },
+    "instantiations": {
+      "count": 15,
+      "covered": 13,
+      "percent": 86.66666666666667
+    },
+    "lines": {
+      "count": 402,
+      "covered": 358,
+      "percent": 89.05472636815921
+    },
+    "mcdc": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0
+    },
+    "regions": {
+      "count": 665,
+      "covered": 597,
+      "notcovered": 68,
+      "percent": 89.77443609022556
+    }
+  },
+  "source_sha256": "ef7ef8211b53bc386ec43ccc9d6be4e0035d93fe8120ab412f2affc145c95204",
+  "native_execution_binding_sha256": "7326cffd8e5c60caccac6f4a3c5fd66aadf96bb1ee0d3b9eb20bdf8782cf9138",
+  "compiler_binding_sha256": "856f67a297d3dee2ef6d9468afe9e4a7e679315f8cc148d34ae55f56018be70b",
+  "test_elf": {
+    "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-lost-ack-root-final-test/trigger_parameters-8fc57b2ef83fb6e4",
+    "sha256": "c6b230c23a52e9063fb405947628776b337a39848d83c60c56e7694061a15237"
+  },
+  "profiles": {
+    "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/root-final-profiles/2473057-11413684239120870803_0.profraw": {
+      "sha256": "4f90ec722c34858e57463b07f9544f480c2ba1537d4fdda9537f44540c961eab",
+      "size": 23720
+    }
+  },
+  "tools": {
+    "llvm-profdata": {
+      "path": "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-profdata",
+      "sha256": "0a7a1ad6ec3c5af6eb594009d949e470ad57c8f5dd5e1c1d8731babf9407251d",
+      "version": "LLVM (http://llvm.org/):\n  LLVM version 22.1.2-rust-1.96.0-stable\n  Optimized build."
+    },
+    "llvm-cov": {
+      "path": "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov",
+      "sha256": "db3a5f91495e98fa6e4ce9e2fd6f890f35ddeb17966fb10fe2fab332497388f6",
+      "version": "LLVM (http://llvm.org/):\n  LLVM version 22.1.2-rust-1.96.0-stable\n  Optimized build."
+    }
+  },
+  "commands": [
+    {
+      "command": [
+        "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-profdata",
+        "merge",
+        "-sparse",
+        "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/root-final-profiles/2473057-11413684239120870803_0.profraw",
+        "-o",
+        "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/root-final.profdata"
+      ],
+      "exit": 0,
+      "seconds": 0.005879138014279306,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov",
+        "export",
+        "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-lost-ack-root-final-test/trigger_parameters-8fc57b2ef83fb6e4",
+        "-instr-profile=/tmp/dandrum-evidence/g3-lost-ack-native-fixture/root-final.profdata",
+        "/tmp/dandrum-lanes/runtime/src/clap-adapter/tests/internal/trigger_structural_native.rs"
+      ],
+      "exit": 0,
+      "seconds": 0.01305072201648727,
+      "stdout_sha256": "fb7e13af72036c3766fe092f6eddbc83c073cce5693fc6a105465141272e72fc",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov",
+        "show",
+        "/tmp/dandrum-lanes/cache-host-snapshot-cov/g3-lost-ack-root-final-test/trigger_parameters-8fc57b2ef83fb6e4",
+        "-instr-profile=/tmp/dandrum-evidence/g3-lost-ack-native-fixture/root-final.profdata",
+        "-show-line-counts-or-regions",
+        "/tmp/dandrum-lanes/runtime/src/clap-adapter/tests/internal/trigger_structural_native.rs"
+      ],
+      "exit": 0,
+      "seconds": 0.006945926987100393,
+      "stdout_sha256": "f74027507a86ee10892e4b3ea9068561d33d0731de6d4721ebf5f988082973fe",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "unexecuted_functions": [
+    "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters17structural_native26native_structural_scenarios0_0B5_",
+    "_RNCNvNtCsjkduUWRBBt7_18trigger_parameters17structural_native26native_structural_scenarios_0B5_"
+  ],
+  "zero_hit_segment_source": [
+    {
+      "line": 146,
+      "text": "        if let Err(payload) = probes {"
+    },
+    {
+      "line": 147,
+      "text": "            std::panic::resume_unwind(payload);"
+    },
+    {
+      "line": 239,
+      "text": "            }"
+    },
+    {
+      "line": 240,
+      "text": "            assert!("
+    },
+    {
+      "line": 241,
+      "text": "                Instant::now() < deadline,"
+    },
+    {
+      "line": 264,
+      "text": "            return_audio(&mut plugin, audio_a.take().unwrap());"
+    },
+    {
+      "line": 265,
+      "text": "            assert_eq!("
+    },
+    {
+      "line": 266,
+      "text": "                admission[\"status\"], \"accepted\","
+    },
+    {
+      "line": 269,
+      "text": "            unreachable!();"
+    },
+    {
+      "line": 324,
+      "text": "                gui.destroy(&plugin.plugin_handle());"
+    },
+    {
+      "line": 325,
+      "text": "                drop(browser_a.take());"
+    },
+    {
+      "line": 326,
+      "text": "                assert_eq!("
+    },
+    {
+      "line": 327,
+      "text": "                    recovery[\"status\"], \"accepted\","
+    },
+    {
+      "line": 330,
+      "text": "                unreachable!();"
+    },
+    {
+      "line": 406,
+      "text": "            }"
+    },
+    {
+      "line": 407,
+      "text": "            assert!("
+    },
+    {
+      "line": 408,
+      "text": "                Instant::now() < deadline,"
+    },
+    {
+      "line": 413,
+      "text": "            gui.destroy(&plugin.plugin_handle());"
+    },
+    {
+      "line": 414,
+      "text": "            drop(browser_a.take());"
+    },
+    {
+      "line": 415,
+      "text": "            assert_eq!("
+    },
+    {
+      "line": 416,
+      "text": "                undo[\"status\"], \"accepted\","
+    },
+    {
+      "line": 419,
+      "text": "            unreachable!();"
+    },
+    {
+      "line": 479,
+      "text": "    if let Some(audio) = audio_a.take()"
+    },
+    {
+      "line": 480,
+      "text": "        && std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {"
+    },
+    {
+      "line": 481,
+      "text": "            return_audio(&mut plugin, audio)"
+    },
+    {
+      "line": 482,
+      "text": "        }))"
+    },
+    {
+      "line": 483,
+      "text": "        .is_err()"
+    },
+    {
+      "line": 484,
+      "text": "    {"
+    },
+    {
+      "line": 492,
+      "text": "            && std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {"
+    },
+    {
+      "line": 493,
+      "text": "                plugin"
+    },
+    {
+      "line": 497,
+      "text": "                    .destroy(&plugin.plugin_handle());"
+    },
+    {
+      "line": 498,
+      "text": "                drop(browser.take());"
+    },
+    {
+      "line": 499,
+      "text": "                assert!(parent.children().is_empty());"
+    },
+    {
+      "line": 500,
+      "text": "            }))"
+    },
+    {
+      "line": 501,
+      "text": "            .is_err()"
+    },
+    {
+      "line": 503,
+      "text": "            cleanup_errors.push(if side == \"A\" { \"A GUI\" } else { \"B GUI\" });"
+    },
+    {
+      "line": 506,
+      "text": "    if let Err(payload) = outcome {"
+    },
+    {
+      "line": 507,
+      "text": "        if !cleanup_errors.is_empty() {"
+    },
+    {
+      "line": 509,
+      "text": "        }"
+    },
+    {
+      "line": 510,
+      "text": "        std::panic::resume_unwind(payload);"
+    }
+  ],
+  "scope": "Fresh root final-source manual test instrumentation, normal copied DSO, exact one native case, one new profile only. Test coverage, no production/full-owner/branch claim. Earlier author report omission and debug direct-export diagnostic retained separately.",
+  "assertions": "All seven B baseline checkpoints execute capture/check/feedback and literal signed36/silent60 probes. A original lostack/capacity-one/recovery/realUndo assertions retained. Unexecuted panic cleanup/failure/timeout or timing-pending paths remain disclosed; success does not prove exceptional cleanup.",
+  "refactor": {
+    "production": "No production change or new extraction; no production refactor required.",
+    "test": "B baseline groups accepted snapshot/feedback/save/child/composite ownership; repeated discrete checks share one helper. Existing scenario retained rather than new broad framework/module. Recoverable panic ownership tracked with Options; unexecuted cleanup defenses remain measured limits."
+  }
+}

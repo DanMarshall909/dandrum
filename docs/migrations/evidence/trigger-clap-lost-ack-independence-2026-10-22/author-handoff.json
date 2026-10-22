@@ -1,0 +1,298 @@
+{
+  "assignment_sha256": "e0a5a463f5b6b8eba724f13b52e43fd66b1e56b9a8a3c5e7addf4ad829591ecc",
+  "source": "/tmp/dandrum-lanes/runtime/src/clap-adapter/tests/internal/trigger_structural_native.rs",
+  "source_sha256_at_handoff": "ef7ef8211b53bc386ec43ccc9d6be4e0035d93fe8120ab412f2affc145c95204",
+  "final_source_copy_sha256": "ef7ef8211b53bc386ec43ccc9d6be4e0035d93fe8120ab412f2affc145c95204",
+  "source_before_sha256": "fc40c257dda22e3aa8ecac69f6e55ca0b4cd19657328bb4f87dc199a015368f5",
+  "final_diff_sha256": "86bf05549d0642d283f97831c69bbef4c5f337f834005672e9cc72867810851f",
+  "source_scope": "single assigned Rust test source only; no production, registration, spec, task, tracker, or Git edits",
+  "exact_registered_test": {
+    "ctest": "trigger-clap-native-parameter-structural-session",
+    "rust_test": "structural_native::copied_native_mapping_survives_lost_reply_and_view_loss",
+    "log": "exact-structural-ctest.log",
+    "result": "PASS; 1 exact ignored test ran; 0 failed (setup also passed)",
+    "artifact_binding": {
+      "schema_version": 1,
+      "owner": "prepare-trigger-clap-native.py",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--release",
+        "--locked",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+        "--features",
+        "trigger-editor",
+        "--test",
+        "trigger_parameters",
+        "--no-run",
+        "--message-format=json"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime/src/clap-adapter",
+      "exit_status": 0,
+      "artifacts": {
+        "plugin": {
+          "source": "/tmp/dandrum-evidence/g3-two-native-fixture/native-build/rust-target/release/deps/libdandrum_clap_adapter.so",
+          "copy": "DandrumTrigger.clap",
+          "source_sha256": "e9200fbb0bdc714e6f6d3950aefea03b1025302a328374b31310a45e745b0741",
+          "copy_sha256": "e9200fbb0bdc714e6f6d3950aefea03b1025302a328374b31310a45e745b0741",
+          "compiler_artifact": {
+            "reason": "compiler-artifact",
+            "package_id": "path+file:///tmp/dandrum-lanes/runtime/src/clap-adapter#dandrum_clap_adapter@0.1.0",
+            "manifest_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+            "target": {
+              "kind": [
+                "cdylib",
+                "rlib"
+              ],
+              "crate_types": [
+                "cdylib",
+                "rlib"
+              ],
+              "name": "dandrum_clap_adapter",
+              "src_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/src/lib.rs",
+              "edition": "2024",
+              "doc": true,
+              "doctest": true,
+              "test": true
+            },
+            "profile": {
+              "opt_level": "3",
+              "debuginfo": 0,
+              "debug_assertions": false,
+              "overflow_checks": false,
+              "test": false
+            },
+            "features": [
+              "default",
+              "trigger",
+              "trigger-editor"
+            ],
+            "filenames": [
+              "/tmp/dandrum-evidence/g3-two-native-fixture/native-build/rust-target/release/deps/libdandrum_clap_adapter.so",
+              "/tmp/dandrum-evidence/g3-two-native-fixture/native-build/rust-target/release/deps/libdandrum_clap_adapter.rlib"
+            ],
+            "executable": null,
+            "fresh": true
+          }
+        },
+        "test": {
+          "source": "/tmp/dandrum-evidence/g3-two-native-fixture/native-build/rust-target/release/deps/trigger_parameters-8fc57b2ef83fb6e4",
+          "copy": "trigger-parameters-test",
+          "source_sha256": "5c4b9d499e4143f52082c27f5194f50274ed5872bcafecc20bea0e476719289b",
+          "copy_sha256": "5c4b9d499e4143f52082c27f5194f50274ed5872bcafecc20bea0e476719289b",
+          "compiler_artifact": {
+            "reason": "compiler-artifact",
+            "package_id": "path+file:///tmp/dandrum-lanes/runtime/src/clap-adapter#dandrum_clap_adapter@0.1.0",
+            "manifest_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+            "target": {
+              "kind": [
+                "test"
+              ],
+              "crate_types": [
+                "bin"
+              ],
+              "name": "trigger_parameters",
+              "src_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/tests/trigger_parameters.rs",
+              "edition": "2024",
+              "doc": false,
+              "doctest": false,
+              "test": true
+            },
+            "profile": {
+              "opt_level": "3",
+              "debuginfo": 0,
+              "debug_assertions": false,
+              "overflow_checks": false,
+              "test": true
+            },
+            "features": [
+              "default",
+              "trigger",
+              "trigger-editor"
+            ],
+            "filenames": [
+              "/tmp/dandrum-evidence/g3-two-native-fixture/native-build/rust-target/release/deps/trigger_parameters-8fc57b2ef83fb6e4"
+            ],
+            "executable": "/tmp/dandrum-evidence/g3-two-native-fixture/native-build/rust-target/release/deps/trigger_parameters-8fc57b2ef83fb6e4",
+            "fresh": true
+          }
+        }
+      }
+    }
+  },
+  "maintained_native_lane": {
+    "command": [
+      "ctest",
+      "--test-dir",
+      "/tmp/dandrum-evidence/g3-two-native-fixture/native-build",
+      "--verbose",
+      "-R",
+      "^trigger-clap-native-"
+    ],
+    "environment": {
+      "DISPLAY": ":10.0",
+      "GDK_BACKEND": "x11",
+      "XAUTHORITY": "/home/dan/.Xauthority",
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_BUILD_JOBS": "1",
+      "TMPDIR": "/tmp/dandrum-evidence/g3-lost-ack-second-instance/tmp"
+    },
+    "result": "retry PASS 28/28, total 45.14 sec per CTest output; source was unchanged during retry and is the handoff source hash",
+    "log": "native-lane-ctest-retry.log",
+    "initial_run": "native-lane-ctest.log: 26/28; two allocator child tests failed before test body because TMPDIR task directory had not yet been created. Created it, reran, and all passed. Maintained fixture preparer hardcodes Cargo --jobs 2; CARGO_BUILD_JOBS=1 does not override that argument."
+  },
+  "format": {
+    "command": [
+      "rustfmt",
+      "--edition",
+      "2024",
+      "--check",
+      "/tmp/dandrum-lanes/runtime/src/clap-adapter/tests/internal/trigger_structural_native.rs"
+    ],
+    "exit": 0,
+    "elapsed_ns": 24350917,
+    "logs": [
+      "rustfmt.stdout.log",
+      "rustfmt.stderr.log"
+    ]
+  },
+  "strict_clippy": {
+    "command": [
+      "cargo",
+      "clippy",
+      "--locked",
+      "--all-targets",
+      "--features",
+      "trigger-editor",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime/src/clap-adapter",
+    "env": {
+      "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-editor-guard",
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_BUILD_JOBS": "1"
+    },
+    "exit": 0,
+    "elapsed_ns": 228282869,
+    "logs": [
+      "strict-clippy.stdout.log",
+      "strict-clippy.stderr.log"
+    ]
+  },
+  "llvm_attempt": {
+    "command": [
+      "cargo",
+      "llvm-cov",
+      "--locked",
+      "--no-clean",
+      "--features",
+      "trigger-editor",
+      "--test",
+      "trigger_parameters",
+      "--json",
+      "--output-path",
+      "/tmp/dandrum-evidence/g3-lost-ack-second-instance/focused-llvm-coverage-green.json",
+      "--",
+      "--ignored",
+      "--exact",
+      "structural_native::copied_native_mapping_survives_lost_reply_and_view_loss",
+      "--nocapture",
+      "--test-threads=1"
+    ],
+    "env": {
+      "CARGO_TARGET_DIR": "/tmp/dandrum-lanes/cache-host-snapshot-cov",
+      "CARGO_LLVM_COV_TARGET_DIR": "/tmp/dandrum-lanes/cache-host-snapshot-cov",
+      "CARGO_LLVM_COV_BUILD_DIR": "/tmp/dandrum-lanes/cache-host-snapshot-cov",
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_BUILD_JOBS": "1",
+      "TMPDIR": "/tmp/dandrum-evidence/g3-lost-ack-second-instance/tmp",
+      "DISPLAY": ":10.0",
+      "GDK_BACKEND": "x11",
+      "XAUTHORITY": "/home/dan/.Xauthority",
+      "DANDRUM_TRIGGER_GUI_PLUGIN_PATH": "/tmp/dandrum-evidence/g3-two-native-fixture/native-build/trigger-clap-parameters-fixture/DandrumTrigger.clap"
+    },
+    "successful_execution": "exact one ignored test passed in 2.31 sec test-body time; elevated X11 access",
+    "test_elf": {
+      "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/debug/deps/trigger_parameters-b91b6ce88c5fb42f",
+      "sha256": "10afc355bceb071c96b8022f6f8259c2cb227210a6978a22a3fb77c50256e43e"
+    },
+    "normal_copied_dso": {
+      "path": "/tmp/dandrum-evidence/g3-two-native-fixture/native-build/trigger-clap-parameters-fixture/DandrumTrigger.clap",
+      "sha256": "e9200fbb0bdc714e6f6d3950aefea03b1025302a328374b31310a45e745b0741"
+    },
+    "profiles": [
+      {
+        "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/clap-adapter-2452823-5060714996686640529_0.profraw",
+        "sha256": "c61a597bced47a6fc7860d6ae4ef17a3d1a82a8b0a934232c48d59acfaeeb33f",
+        "size": 25336
+      },
+      {
+        "path": "/tmp/dandrum-lanes/cache-host-snapshot-cov/clap-adapter-3895-5060714996686640529_0.profraw",
+        "sha256": "45742bb6823a4eb6edde259f6b479fc4967828f1252ff5025dcd3708757c515f",
+        "size": 25336
+      }
+    ],
+    "cargo_llvm_cov_version": "0.8.7",
+    "llvm_tools": {
+      "llvm-profdata": {
+        "path": "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-profdata",
+        "sha256": "0a7a1ad6ec3c5af6eb594009d949e470ad57c8f5dd5e1c1d8731babf9407251d",
+        "version": "LLVM (http://llvm.org/):\n  LLVM version 22.1.2-rust-1.96.0-stable\n  Optimized build."
+      },
+      "llvm-cov": {
+        "path": "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov",
+        "sha256": "db3a5f91495e98fa6e4ce9e2fd6f890f35ddeb17966fb10fe2fab332497388f6",
+        "version": "LLVM (http://llvm.org/):\n  LLVM version 22.1.2-rust-1.96.0-stable\n  Optimized build."
+      }
+    },
+    "coverage_limit": "Report JSON contains 70 library files and zero totals; it omits tests/internal/trigger_structural_native.rs. This pass is executable boundary evidence, not changed-test coverage. Preserve ELF and raw profile paths for root follow-up; no manual merge/export was done."
+  },
+  "copied_resources": {
+    "directory": "/tmp/dandrum-evidence/g3-two-native-fixture/native-build/trigger-clap-parameters-fixture/DandrumTrigger.resources",
+    "file_count": 18,
+    "sha256": {
+      ".staged": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "editor/app.css": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5",
+      "editor/app.js": "4b9ce5a356fea5f22703f9046c77a80ac616c00242348a12fe81f58fe4f760f2",
+      "editor/fonts/.gitattributes": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616",
+      "editor/fonts/3386a05f6ece969e.ttf": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160",
+      "editor/fonts/6098b66ce7d608dc.ttf": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef",
+      "editor/fonts/74103fd6d41bc32c.ttf": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154",
+      "editor/fonts/91c841fdfa8e7b94.ttf": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc",
+      "editor/fonts/barlow-OFL.txt": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "editor/fonts/barlowsemicondensed-OFL.txt": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "editor/fonts/c15439e7a03af571.ttf": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c",
+      "editor/fonts/c2b046235fb4c2f8.ttf": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9",
+      "editor/fonts/cb75439ae401f776.ttf": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da",
+      "editor/fonts/df54dbfafba61d49.ttf": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8",
+      "editor/fonts/jetbrainsmono-OFL.txt": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d",
+      "editor/index.html": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26",
+      "instrument/advanced-drum-kit.yaml": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008",
+      "instrument/assets/advanced-drums.wav": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503"
+    },
+    "react_app_js_sha256": "4b9ce5a356fea5f22703f9046c77a80ac616c00242348a12fe81f58fe4f760f2"
+  },
+  "evidence_logs": {
+    "exact-structural-ctest.log": "992821fb3d47b591886101a96b90e90e9bd498827f5436b28a2e9ad06003313e",
+    "native-lane-ctest.log": "9cefce47ee9c4ad5f2d6beb463192cb481a1b71c001f2027ae2fabc4818e8cea",
+    "native-lane-ctest-retry.log": "20dfaeb78bd1de01b6b4ef83314dc3d33a356d0f14dc67d465753c93d21bd9c6",
+    "focused-llvm.stdout.log": "8a3278a560eda5efd9db3601718b3e86d5ff168a3ff8b238ba01bc6e7e5b5d6e",
+    "focused-llvm.stderr.log": "0f4c39da0e21bd1e9383fbadb7ab85631379a3918ffd78b141fb3d5eb282c8b6",
+    "focused-llvm-coverage-green.json": "28c110bca78b7de960db0a67136ab41c96d1a68d257b16898ba6cd4da69bdeab",
+    "strict-clippy.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "strict-clippy.stderr.log": "299f16a2c523be18fef769975d2df00e0505521db047540feea3a74b94666887",
+    "rustfmt.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "rustfmt.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "ownership": {
+    "ordinary_cache": "/tmp/dandrum-lanes/cache-editor-guard",
+    "llvm_cache": "/tmp/dandrum-lanes/cache-host-snapshot-cov",
+    "excluded_runtime_preserved_cache": "/tmp/dandrum-lanes/runtime/cache-editor-guard",
+    "excluded_cache_touched": false
+  }
+}
