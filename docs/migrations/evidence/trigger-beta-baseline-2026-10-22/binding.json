@@ -1,0 +1,24 @@
+{
+  "base": "eeb91149aaa7235fac4657484baf56371e485670",
+  "task": "add-juce-free-trigger-beta-products1.1",
+  "scope": "Read-only baseline/qualification inventory, no new product behavior or dependency adoption",
+  "raw_sha256": "1bc3877cbf9b5999ea8388f6c4987e5b023bc841362b8888cf1aeb6a925dfa4d",
+  "raw_members": 40,
+  "current_source_sha256": {
+    "src/trigger-host/src/protocol.rs": "d18bb5e0cd1fa1e9ff304ab3c25a751739765ef04d0297c4c307b99a8feda58e",
+    "src/trigger-host/src/runtime.rs": "41cb146824e21aa3c5814885b5561cd00d8152b5390338af25af26bc96f62592",
+    "src/trigger-host/src/state.rs": "9355b2c855998d2306c053d50485eea617103b932c7de7e04aa1929d7719afaf",
+    "src/trigger-host/Cargo.toml": "a3422c6bb0b6f026b6efc21425e011c8ccca19de230287d423e759286ccc9937",
+    ".githooks/pre-push": "3085271367c3169f17c91478860a09cd6b2f0cc803319b57bc78797fa750d2d8",
+    ".githooks/pre-commit": "32a983155028314f516b3d4c60475a8eefbbec6bfd5ef974b941851c47cca985",
+    "scripts/check-rust-coverage.py": "8adb4563c65d684fab90e81de8c6f0814a1222b5e650114102cc520a523f1e4f",
+    ".ai-rules.json": "49a78322b641a817d37a4169249a1dc7737272e729d8566539258482630d690e"
+  },
+  "unqualified": [
+    "VST3/standalone products and actual SDK/compiler build",
+    "native selected-sample publication and portable state",
+    "native/DAW acceptance of new products",
+    "proposed16-file64MiB256MiB catalog budgets and decoded bounds, to calibrate beforetask5.1"
+  ],
+  "mutation": "excluded; hook characterization uses fakeCargo only; actualchanged-engine pre-push still needs1.2policy repair"
+}

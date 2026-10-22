@@ -1,6 +1,6 @@
 ## 1. Qualification And Verification Ownership
 
-- [ ] 1.1 Record the published CLAP baseline, current spec/owner evidence, compiler/SDK/device/DAW availability, licences, disk/target sizes and measured resource/transport budgets; distinguish verified facts from candidate support.
+- [x] 1.1 Record the published CLAP baseline, current spec/owner evidence, compiler/SDK/device/DAW availability, licences, disk/target sizes and measured resource/transport budgets; distinguish verified facts from candidate support.
 - [ ] 1.2 Specify and implement the maintained normal-hook policy for the recorded mutation exclusion before changed-engine publication, preserving ordinary tests/strict coverage and proving the intended changed-file behavior without bypassing hooks.
 - [ ] 1.3 Specify and verify owned disposable-run cleanup after success, failure, cancellation and recovery, retaining compact evidence/reusable caches and proving exact worker/path ownership and bytes reclaimed.
 - [ ] 1.4 Qualify one actual pinned VST3 candidate/compiler/source layout with loader, identity/resource, public parameter, signed PCM and fresh-state probes; record adopt/repair/replace disposition and required native/stopped-service gaps before dependent integration.
