@@ -15,7 +15,7 @@ class EngineBuildFixtureCleanupTest(unittest.TestCase):
             with self.subTest(outcome=outcome), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 (root / "CMakeLists.txt").write_text("# minimal source snapshot\n")
-                for name in ("src", "tests", "examples", "schema", "scripts", "spikes"):
+                for name in (".githooks", "src", "tests", "examples", "schema", "scripts", "spikes"):
                     (root / name).mkdir()
                     (root / name / "input.txt").write_text(name)
                 work = root / "build/engine-only-regression"
@@ -54,6 +54,43 @@ class EngineBuildFixtureCleanupTest(unittest.TestCase):
                                  "completed or failed source snapshots must be removed")
                 self.assertEqual(sentinel.read_bytes(), b"compiled dependency sentinel")
                 self.assertEqual(log.read_bytes(), b"raw command evidence")
+
+
+    def test_supervised_snapshot_uses_owned_scratch_and_keeps_cache_and_logs_external(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "CMakeLists.txt").write_text("# source-free fixture\n")
+            for name in (".githooks", "src", "tests", "examples", "schema", "scripts", "spikes"):
+                (root / name).mkdir()
+                (root / name / "input.txt").write_text(name)
+            scratch = root / "owned-run-scratch"
+            scratch.mkdir()
+            work = root / "build/engine-only-regression"
+            cache = work / "cargo-target"
+            cache.mkdir(parents=True)
+            (cache / "sentinel").write_bytes(b"retained compiled dependency")
+            (work / "retained.log").write_bytes(b"retained command log")
+
+            class Probe(fixture.EngineBuildFixture):
+                def test_probe(self):
+                    snapshots = list(scratch.glob("fixture-*/source"))
+                    self.assertEqual(len(snapshots), 1,
+                                     "the supervisor must own the active source snapshot")
+                    self.assertEqual((snapshots[0] / "src/input.txt").read_text(), "src")
+                    self.assertEqual((snapshots[0] / ".githooks/input.txt").read_text(), ".githooks",
+                                     "registered hook checks need their authored hook in the snapshot")
+                    self.assertEqual(self.cargo_target, cache)
+                    (snapshots[0] / "shared-target").symlink_to(cache, target_is_directory=True)
+
+            result = unittest.TestResult()
+            with patch.object(fixture, "ROOT", root), patch.dict(
+                    fixture.os.environ, {"DANDRUM_VERIFICATION_SCRATCH": str(scratch)}):
+                unittest.defaultTestLoader.loadTestsFromTestCase(Probe).run(result)
+            self.assertTrue(result.wasSuccessful(), result.failures + result.errors)
+            self.assertEqual(result.testsRun, 1)
+            self.assertEqual(list(scratch.iterdir()), [])
+            self.assertEqual((cache / "sentinel").read_bytes(), b"retained compiled dependency")
+            self.assertEqual((work / "retained.log").read_bytes(), b"retained command log")
 
 
 if __name__ == "__main__":

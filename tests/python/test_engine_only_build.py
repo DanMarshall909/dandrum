@@ -21,14 +21,17 @@ class EngineBuildFixture(unittest.TestCase):
         cls.work = ROOT / "build" / "engine-only-regression"
         cls.work.mkdir(parents=True, exist_ok=True)
         # Fresh snapshots cannot retain removed source files or discovery caches.
-        cls.fixture_root = Path(tempfile.mkdtemp(prefix="fixture-", dir=cls.work))
+        # A supervisor owns crash-recoverable snapshots; reusable targets and
+        # command logs remain in work, outside that disposable scratch tree.
+        snapshot_parent = os.environ.get("DANDRUM_VERIFICATION_SCRATCH", cls.work)
+        cls.fixture_root = Path(tempfile.mkdtemp(prefix="fixture-", dir=snapshot_parent))
         cls.addClassCleanup(shutil.rmtree, cls.fixture_root)
         cls.source = cls.fixture_root / "source"
         cls.source.mkdir()
         cls.cargo_target = cls.work / "cargo-target"
         cls.cargo_target.mkdir(exist_ok=True)
         shutil.copy2(ROOT / "CMakeLists.txt", cls.source / "CMakeLists.txt")
-        for name in ("src", "tests", "examples", "schema", "scripts", "spikes"):
+        for name in (".githooks", "src", "tests", "examples", "schema", "scripts", "spikes"):
             shutil.copytree(ROOT / name, cls.source / name, ignore=shutil.ignore_patterns("target", "build", "__pycache__"))
         assert not (cls.source / "third_party").exists()
         assert not (cls.source / "web").exists()

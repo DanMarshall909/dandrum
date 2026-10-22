@@ -4,7 +4,7 @@ Scope revision, 22 October 2026: the first beta is CLAP-only. Existing task iden
 
 - [x] 1.1 Record the published CLAP baseline, current spec/owner evidence, compiler/SDK/device/DAW availability, licences, disk/target sizes and measured resource/transport budgets; distinguish verified facts from candidate support.
 - [x] 1.2 Specify and implement the maintained normal-hook policy for the recorded mutation exclusion before changed-engine publication, preserving ordinary tests/strict coverage and proving the intended changed-file behavior without bypassing hooks.
-- [ ] 1.3 Specify and verify owned disposable-run cleanup after success, failure, cancellation and recovery, retaining compact evidence/reusable caches and proving exact worker/path ownership and bytes reclaimed.
+- [x] 1.3 Specify and verify owned disposable-run cleanup after success, failure, cancellation and recovery, retaining compact evidence/reusable caches and proving exact worker/path ownership and bytes reclaimed.
 
 Root owns integration/Git/tracker/shared caches. Preserve the task 1.3 cleanup runner/tests already in progress and their RED/GREEN evidence; they have not been submitted for independent completion review. Independent ready work may use existing isolated lanes with explicit handback and one heavy build at a time. Every behavior change follows RED/GREEN/focused coverage/refactor, normal checks, independent material-boundary review and focused publication. Mutation remains excluded.
 

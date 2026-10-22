@@ -304,6 +304,19 @@ add_test(NAME engine-build-fixture-cleanup
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_engine_build_fixture_cleanup.py)
 set_tests_properties(engine-build-fixture-cleanup PROPERTIES LABELS "fast" TIMEOUT 30)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_test(NAME owned-verification-fast
+        COMMAND python3 -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_owned_verification.py
+            OwnedVerificationTest)
+    add_test(NAME owned-verification-slow
+        COMMAND python3 -B ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_owned_verification.py
+            OwnedVerificationRetryTest)
+    set_tests_properties(owned-verification-fast owned-verification-slow PROPERTIES
+        RUN_SERIAL TRUE TIMEOUT 90 FAIL_REGULAR_EXPRESSION "Ran 0 tests")
+    set_tests_properties(owned-verification-fast PROPERTIES LABELS "fast;process-boundary")
+    set_tests_properties(owned-verification-slow PROPERTIES LABELS "slow;process-boundary")
+endif()
+
 if(DANDRUM_CLAP_PROOF)
     add_test(NAME trigger-clap-native-fixture-driver
         COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_trigger_native_fixture.py)

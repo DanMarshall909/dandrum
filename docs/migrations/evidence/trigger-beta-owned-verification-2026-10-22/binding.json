@@ -1,0 +1,17 @@
+{
+  "base": "e7354ec1bcba0c10e6336f44f07edcbe85b374c6",
+  "scope": "Task1.3 owned verification output lifecycle only; CLAP beta remains open; no Rust/product/VST3/standalone implementation.",
+  "sources": {
+    "CMakeLists.txt": "fce4defe97a41811d3561aefd638b20ae829248df240f71aee170a7cdeea1c2e",
+    "docs/migrations/trigger-beta-verification.md": "0bb659fdbc9aeb7b96547b78a6dd3a204649bb2075e4a7b7677fd7275d8597da",
+    "scripts/run-owned-verification.py": "448e99db3d786e029adc88a6317949b352adda44b19df70f9f19f19caf39e951",
+    "tests/python/test_owned_verification.py": "13bf5cd5e96801d75e73956e4584206f60cce9109ae48fb9c3a24542420b6dab",
+    "tests/python/test_engine_build_fixture_cleanup.py": "4f9bf59820a2bd40ca6e78c56b6c2ac47589b26925c3dcc4e568ec1afd9ad329",
+    "tests/python/test_engine_only_build.py": "e08801ca37f2bada2ba91ec4d0d76bb13f5c4f8312cca910ca765dff47da9b52"
+  },
+  "checks": "completion-checks.json in raw archive",
+  "coverage": "completion-coverage.json in raw archive, 314/334 AST statement starts executed; not 100% or branch proof",
+  "mutation": "Explicitly excluded; unchanged normal hooks still required.",
+  "validator": "Existing official CLAP 33 success /10 skip /1 FAIL at1234.5678Hz remains unwaived.",
+  "remaining_before_adoption": "Independent completion review and exact normal-hook publication."
+}
