@@ -1544,7 +1544,7 @@ struct SamplePlayerStepExecutor {
     region: crate::kernel::document::SampleRegion,
     mode: String,
     interpolation: crate::compiled_patch::SampleInterpolation,
-    playback_rate_scale: f32,
+    playback_rate_scale: f64,
     position: f64,
     active: bool,
 }
@@ -1552,7 +1552,7 @@ struct SamplePlayerStepExecutor {
 struct SampleSlicerStepExecutor {
     sample: Option<crate::compiled_patch::SampleResourceHandle>,
     slices: Box<[crate::kernel::document::SampleSlice]>,
-    playback_rate_scale: f32,
+    playback_rate_scale: f64,
     selected_slice: usize,
     position: f64,
     active: bool,
@@ -1642,7 +1642,7 @@ struct SampleMapPlayerStepExecutor {
     initial_seed: u64,
     rng_state: u64,
     selected_zone: Option<usize>,
-    selected_pitch_ratio: f32,
+    selected_pitch_ratio: f64,
     position: f64,
     active: bool,
     queued_choices: Vec<Option<usize>>,

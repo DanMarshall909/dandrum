@@ -27,6 +27,7 @@ use crate::module_reference::MacroRoots;
 #[cfg(test)]
 use crate::patch::{self, ParameterValue, PatchDocument};
 use crate::patch::{PresetDocument, RenderSettings};
+use crate::render_settings::{RealtimeRenderSettings, SampleRate};
 use crate::sample::LoadedSample;
 #[cfg(test)]
 use crate::sample::{self, PreparedSamplerAssets, SampleLoadError};
@@ -34,18 +35,29 @@ use crate::sample::{self, PreparedSamplerAssets, SampleLoadError};
 const KERNEL_COMPENSATION_EDGE_PREFIX: &str = "compensation::edge::";
 const KERNEL_COMPENSATION_ROOT_PREFIX: &str = "compensation::root::";
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct PreparationContext {
     document_root: PathBuf,
-    sample_rate_hz: u32,
+    sample_rate_hz: f64,
     macro_roots: MacroRoots,
 }
+
+// Both constructors admit only finite clocks (legacy zero is rejected by preparation).
+impl Eq for PreparationContext {}
 
 impl PreparationContext {
     pub fn new(document_root: impl Into<PathBuf>, sample_rate_hz: u32) -> Self {
         Self {
             document_root: document_root.into(),
-            sample_rate_hz,
+            sample_rate_hz: f64::from(sample_rate_hz),
+            macro_roots: MacroRoots::new(),
+        }
+    }
+
+    pub fn new_realtime(document_root: impl Into<PathBuf>, sample_rate: SampleRate) -> Self {
+        Self {
+            document_root: document_root.into(),
+            sample_rate_hz: sample_rate.hz(),
             macro_roots: MacroRoots::new(),
         }
     }
@@ -59,7 +71,7 @@ impl PreparationContext {
         &self.document_root
     }
 
-    pub fn sample_rate_hz(&self) -> u32 {
+    pub fn sample_rate_hz(&self) -> f64 {
         self.sample_rate_hz
     }
 
@@ -100,7 +112,7 @@ impl ResolvedResource {
 
 pub struct ResourceResolver<'a> {
     context: &'a PreparationContext,
-    loaded: BTreeMap<(PathBuf, u32, bool), Arc<LoadedSample>>,
+    loaded: BTreeMap<(PathBuf, u64, bool), Arc<LoadedSample>>,
 }
 
 impl<'a> ResourceResolver<'a> {
@@ -161,18 +173,27 @@ impl<'a> ResourceResolver<'a> {
 
         let key = (
             canonical_path.clone(),
-            self.context.sample_rate_hz(),
+            self.context.sample_rate_hz().to_bits(),
             require_matching_rate,
         );
         let sample = if let Some(sample) = self.loaded.get(&key) {
             Arc::clone(sample)
         } else {
-            let loaded = if require_matching_rate {
-                crate::audio_loading::load_pcm_wav(&canonical_path, self.context.sample_rate_hz())
-            } else {
-                crate::audio_loading::load_pcm_wav_any_rate(&canonical_path)
-            }
-            .map_err(|message| resource_load_failed(reference, &canonical_path, message))?;
+            let loaded = crate::audio_loading::load_pcm_wav_any_rate(&canonical_path)
+                .and_then(|loaded| {
+                    if require_matching_rate
+                        && f64::from(loaded.sample_rate_hz()) != self.context.sample_rate_hz()
+                    {
+                        Err(format!(
+                            "sample-rate mismatch: asset is {} Hz, render is {} Hz",
+                            loaded.sample_rate_hz(),
+                            self.context.sample_rate_hz()
+                        ))
+                    } else {
+                        Ok(loaded)
+                    }
+                })
+                .map_err(|message| resource_load_failed(reference, &canonical_path, message))?;
             let sample = Arc::new(LoadedSample::from_loaded_audio(loaded));
             self.loaded.insert(key, Arc::clone(&sample));
             sample
@@ -699,6 +720,26 @@ pub fn prepare_kernel_patch_with_context(
     )
 }
 
+/// Prepare with one exact validated host clock; integer authored input remains separate.
+pub fn prepare_kernel_patch_realtime_with_context(
+    patch: &KernelPatch,
+    render_settings: &RealtimeRenderSettings,
+    context: &PreparationContext,
+) -> Result<PreparedKernelInstrument, KernelPreparationError> {
+    validate_sample_declarations(patch.sample_assets())?;
+    validate_sample_module_options(patch)?;
+    let buses = default_kernel_output_buses(patch.root());
+    prepare_kernel_graph_with_buses_realtime_internal(
+        patch.root(),
+        patch.registry(),
+        render_settings,
+        &buses,
+        Some(context),
+        false,
+        Some(patch.sample_assets()),
+    )
+}
+
 fn sample_preparation_error(
     code: &'static str,
     message: impl Into<String>,
@@ -1182,6 +1223,40 @@ fn prepare_kernel_graph_with_buses_internal(
     bind_event_outputs: bool,
     authored_assets: Option<&SampleAssets>,
 ) -> Result<PreparedKernelInstrument, KernelPreparationError> {
+    let settings = RealtimeRenderSettings::try_from(render_settings).map_err(|error| {
+        sample_preparation_error(
+            diagnostics::error_codes::VALIDATION_INVALID_VALUE,
+            error.to_string(),
+        )
+    })?;
+    prepare_kernel_graph_with_buses_realtime_internal(
+        root,
+        registry,
+        &settings,
+        host_buses,
+        context,
+        bind_event_outputs,
+        authored_assets,
+    )
+}
+
+fn prepare_kernel_graph_with_buses_realtime_internal(
+    root: &GraphDefinition,
+    registry: &DefinitionRegistry,
+    render_settings: &RealtimeRenderSettings,
+    host_buses: &HostBuses,
+    context: Option<&PreparationContext>,
+    bind_event_outputs: bool,
+    authored_assets: Option<&SampleAssets>,
+) -> Result<PreparedKernelInstrument, KernelPreparationError> {
+    if context
+        .is_some_and(|context| context.sample_rate_hz() != render_settings.sample_rate_hz.hz())
+    {
+        return Err(sample_preparation_error(
+            diagnostics::error_codes::VALIDATION_INVALID_VALUE,
+            "preparation context sample rate does not match render configuration",
+        ));
+    }
     let (resolved_root, mut resolved_registry, package_assets) = match context {
         Some(context) => resolve_external_definitions(root, registry, context)?,
         None => (root.clone(), registry.clone(), SampleAssets::default()),
@@ -1488,7 +1563,7 @@ fn resolve_flattened_resources(
 fn compile_poly_regions(
     flattened: &FlattenedGraph,
     registry: &mut DefinitionRegistry,
-    render_settings: &RenderSettings,
+    render_settings: &RealtimeRenderSettings,
     resource_resolver: Option<&mut ResourceResolver<'_>>,
     parent: &CompiledPatch,
     sample_assets: &PreparedSampleAssets,
@@ -1510,7 +1585,7 @@ fn compile_poly_regions(
 fn compile_poly_regions_with_path(
     flattened: &FlattenedGraph,
     registry: &mut DefinitionRegistry,
-    render_settings: &RenderSettings,
+    render_settings: &RealtimeRenderSettings,
     mut resource_resolver: Option<&mut ResourceResolver<'_>>,
     parent: &CompiledPatch,
     sample_assets: &PreparedSampleAssets,
@@ -1824,7 +1899,7 @@ fn lower_kernel_graph(
     latency_plan: &LatencyPlan,
     resources: &BTreeMap<String, CompiledResourceHandles>,
     sample_assets: &PreparedSampleAssets,
-    host_sample_rate_hz: u32,
+    host_sample_rate_hz: SampleRate,
 ) -> Result<LoweredKernelGraph, KernelPreparationError> {
     use crate::graph::builtin_ports;
 
@@ -1942,8 +2017,8 @@ fn lower_kernel_graph(
                 region: region.clone(),
                 mode: mode.to_string(),
                 interpolation,
-                playback_rate_scale: source.sample().sample_rate_hz() as f32
-                    / host_sample_rate_hz as f32,
+                playback_rate_scale: f64::from(source.sample().sample_rate_hz())
+                    / host_sample_rate_hz.hz(),
             };
         }
         if kind == ModuleKind::SampleSlicer {
@@ -1982,8 +2057,8 @@ fn lower_kernel_graph(
             ));
             data.construction = CompiledConstruction::SampleSlicer {
                 slices: source.declaration().slices.clone().into_boxed_slice(),
-                playback_rate_scale: source.sample().sample_rate_hz() as f32
-                    / host_sample_rate_hz as f32,
+                playback_rate_scale: f64::from(source.sample().sample_rate_hz())
+                    / host_sample_rate_hz.hz(),
             };
         }
         if kind == ModuleKind::SampleMapPlayer {
@@ -2073,8 +2148,8 @@ fn lower_kernel_graph(
                         pitch_ratio: 2.0_f64
                             .powf(zone.declaration().pitch_semitones.unwrap_or(0.0) / 12.0)
                             as f32,
-                        playback_rate_scale: source.sample().sample_rate_hz() as f32
-                            / host_sample_rate_hz as f32,
+                        playback_rate_scale: f64::from(source.sample().sample_rate_hz())
+                            / host_sample_rate_hz.hz(),
                         fade_in_frames: (region.fade_in_ms.unwrap_or(0.0)
                             * f64::from(source.sample().sample_rate_hz())
                             / 1000.0)
@@ -4975,7 +5050,7 @@ connections:
         let library_root = root.join("library");
         let context = PreparationContext::new(&root, 48_000)
             .with_macro_roots(MacroRoots::new().with_root(LIB_MACRO, &library_root));
-        assert_eq!(context.sample_rate_hz(), 48_000);
+        assert_eq!(context.sample_rate_hz(), 48_000.0);
         assert_eq!(
             context.macro_roots().root(LIB_MACRO),
             Some(library_root.as_path())
@@ -5181,6 +5256,33 @@ connections:
             error.errors().next().unwrap().error_code(),
             diagnostics::error_codes::KERNEL_RESOURCE_LOAD_FAILED
         );
+        crate::wav::write_wav_stereo_i16(
+            fs::File::create(&wrong_rate).unwrap(),
+            48_000,
+            &[0.25],
+            &[0.25],
+        )
+        .unwrap();
+        let reference = ResourceRef::new(
+            ResourceKind::Sample,
+            "wrong-rate.wav",
+            ResourceOrigin::Document,
+        );
+        ResourceResolver::new(&context)
+            .resolve(&reference)
+            .expect("the resource matches the exact integer clock");
+        for hz in [48_000.5, 48_000.000_001] {
+            let precise = PreparationContext::new_realtime(&root, SampleRate::new(hz).unwrap());
+            let failure = ResourceResolver::new(&precise)
+                .resolve(&reference)
+                .expect_err("strict resources cannot round a fractional host clock");
+            let diagnostic = failure.errors().next().unwrap();
+            assert_eq!(
+                diagnostic.error_code(),
+                diagnostics::error_codes::KERNEL_RESOURCE_LOAD_FAILED
+            );
+            assert!(diagnostic.message().contains(&hz.to_string()));
+        }
     }
 
     #[cfg(unix)]
@@ -5348,8 +5450,12 @@ values:
         assert_eq!(prepared.graph().modules().len(), 1);
         assert_eq!(prepared.compiled_patch().nodes().len(), 1);
         assert_eq!(
-            prepared.compiled_patch().render_settings().sample_rate_hz,
-            48_000
+            prepared
+                .compiled_patch()
+                .render_settings()
+                .sample_rate_hz
+                .hz(),
+            48_000.0
         );
         assert_eq!(prepared.sampler_assets(), &PreparedSamplerAssets::empty());
         assert_eq!(prepared.diagnostics().messages(), &["prepared".to_string()]);

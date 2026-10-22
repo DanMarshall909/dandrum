@@ -33,7 +33,9 @@ use crate::kernel::StaticValue;
 use crate::kernel::document::{SampleRegion, SampleSlice};
 use crate::kernel::flatten::FlattenedGraph;
 use crate::oscillator::Waveform;
+#[cfg(test)]
 use crate::patch::RenderSettings;
+use crate::render_settings::RealtimeRenderSettings;
 use crate::sample::LoadedSample;
 #[cfg(test)]
 use crate::sample::PreparedSamplerAssets;
@@ -55,7 +57,7 @@ pub struct CompiledPatch {
     audio_output_index: Option<usize>,
     module_output_buffer_layout: Vec<CompiledModuleBufferLayout>,
     total_output_buffer_count: usize,
-    render_settings: RenderSettings,
+    render_settings: RealtimeRenderSettings,
     parameter_slots: Vec<ParameterSlot>,
     root_bus_plan: RootBusPlan,
     poly_regions: Vec<CompiledPolyRegion>,
@@ -257,11 +259,11 @@ pub enum CompiledConstruction {
         region: SampleRegion,
         mode: String,
         interpolation: SampleInterpolation,
-        playback_rate_scale: f32,
+        playback_rate_scale: f64,
     },
     SampleSlicer {
         slices: Box<[SampleSlice]>,
-        playback_rate_scale: f32,
+        playback_rate_scale: f64,
     },
     SampleMapPlayer {
         zones: Box<[CompiledSampleZone]>,
@@ -352,7 +354,7 @@ pub struct CompiledSampleZone {
     pub gain: f32,
     pub pan: f32,
     pub pitch_ratio: f32,
-    pub playback_rate_scale: f32,
+    pub playback_rate_scale: f64,
     pub fade_in_frames: usize,
     pub fade_out_frames: usize,
 }
@@ -1052,12 +1054,18 @@ pub fn compile(
             ))
         })
         .collect::<Result<BTreeMap<_, _>, _>>()?;
-    compile_internal(graph, render_settings, &node_data, None, true)
+    let settings = RealtimeRenderSettings::try_from(render_settings).map_err(|_| {
+        CompileError::InvalidConstructionData {
+            module_id: "render".to_string(),
+            parameter_name: "sample_rate_hz".to_string(),
+        }
+    })?;
+    compile_internal(graph, &settings, &node_data, None, true)
 }
 
 pub(crate) fn compile_with_node_data(
     graph: &Graph,
-    render_settings: &RenderSettings,
+    render_settings: &RealtimeRenderSettings,
     node_data: &BTreeMap<String, CompiledNodeData>,
     root_outputs: &BTreeMap<String, crate::kernel::PortRef>,
 ) -> Result<CompiledPatch, CompileError> {
@@ -1073,7 +1081,7 @@ pub(crate) fn compile_with_node_data(
 
 fn compile_internal(
     graph: &Graph,
-    render_settings: &RenderSettings,
+    render_settings: &RealtimeRenderSettings,
     supplied_node_data: &BTreeMap<String, CompiledNodeData>,
     root_outputs: Option<&BTreeMap<String, crate::kernel::PortRef>>,
     #[cfg(test)] legacy_scope: bool,
@@ -1432,7 +1440,7 @@ impl CompiledPatch {
         self.total_output_buffer_count
     }
 
-    pub fn render_settings(&self) -> &RenderSettings {
+    pub fn render_settings(&self) -> &RealtimeRenderSettings {
         &self.render_settings
     }
 
@@ -1784,9 +1792,13 @@ mod tests {
             .expect("oscillator construction should compile"),
         )]);
 
-        let compiled =
-            compile_with_node_data(&graph, &render_settings(), &node_data, &BTreeMap::new())
-                .expect("kernel graph should compile");
+        let compiled = compile_with_node_data(
+            &graph,
+            &RealtimeRenderSettings::try_from(&render_settings()).unwrap(),
+            &node_data,
+            &BTreeMap::new(),
+        )
+        .expect("kernel graph should compile");
 
         assert_eq!(compiled.execution_order(), &[0]);
         assert_eq!(compiled.global_node_indices(), &[0]);

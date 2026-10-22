@@ -79,8 +79,12 @@ impl PreparedRuntime {
     ) -> Result<Self, RuntimeError> {
         if configuration.sample_rate_hz == 0
             || !(1..=MAX_BLOCK_FRAMES).contains(&configuration.max_block_frames)
-            || prepared.compiled_patch().render_settings().sample_rate_hz
-                != configuration.sample_rate_hz
+            || prepared
+                .compiled_patch()
+                .render_settings()
+                .sample_rate_hz
+                .hz()
+                != f64::from(configuration.sample_rate_hz)
             || prepared
                 .compiled_patch()
                 .render_settings()

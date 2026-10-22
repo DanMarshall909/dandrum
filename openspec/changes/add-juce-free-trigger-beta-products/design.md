@@ -63,6 +63,8 @@ Introduce an explicit validated realtime sample-rate representation retaining th
 
 Prove signed sample timing with an independent source waveform/rate oracle, failed-reconfiguration rollback, independent instances and the actual official-validator case. Keep device-negotiated rates separate from requested-but-unavailable device formats. Do not cast away precision merely to make activation succeed.
 
+The engine implementation preserves integer `RenderSettings` inputs/serialization and integer C ABI entrypoints. Those inputs adapt to a common `RealtimeRenderSettings` containing a private validated `SampleRate` in the supported domain `1..=u32::MAX` Hz. Compiled roots and poly children store that one effective configuration; preparation contexts must agree exactly, including distinctions below f32 precision. WAV/source metadata stays integer and strict matching-rate resources reject a fractional mismatch explicitly. Source/host division and sample cursors retain f64 precision; audio sample values and musical control values remain f32. Session/controller/CLAP connection and actual validator acceptance remain separate required proof boundaries.
+
 ### Treat actual native CLAP and DAW behavior as release gates
 
 Use the production bundle and actual X11 input/parent lifecycle, not browser method calls alone, for selected-file and control flows. Verify destruction/recreation with continuing native audio, retained edits/history and exactly-once note/gesture cleanup. Preserve separate synthetic-host and physical/native evidence levels.

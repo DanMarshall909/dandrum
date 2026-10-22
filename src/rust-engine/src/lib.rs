@@ -43,6 +43,7 @@ pub mod module_library;
 pub mod module_package;
 pub mod module_reference;
 pub mod patch;
+pub mod render_settings;
 pub(crate) mod sample;
 pub use sample::PreparedSamplerAssets;
 pub mod script;

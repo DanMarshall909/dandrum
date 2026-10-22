@@ -34,7 +34,9 @@ impl RenderFixture {
             patch.root(),
             patch.registry(),
             &settings,
-            &HostBuses::new().with_input("input", 2).with_output("master", 2),
+            &HostBuses::new()
+                .with_input("input", 2)
+                .with_output("master", 2),
         )
         .expect("stereo gain/filter graph prepares");
         let runtime = RealtimeGraphProcessor::from_compiled_patch(
@@ -55,7 +57,8 @@ impl RenderFixture {
 
     fn render(&mut self) {
         assert_eq!(
-            self.runtime.render_root_buses(&self.inputs, &mut self.outputs),
+            self.runtime
+                .render_root_buses(&self.inputs, &mut self.outputs),
             FRAMES
         );
     }

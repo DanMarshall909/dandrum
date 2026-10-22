@@ -1,0 +1,33 @@
+{
+  "base": "c112ed1024fb12c30319cfb57789d044ff5597ce",
+  "scope": "Engine preparation/sample-clock foundation within task2.1; task remains unchecked. No session/controller/CLAP fractional activation, official-validator fix, fractional handoff/native/DAW/release completion claim.",
+  "sources": {
+    "coverage-allowlist.txt": "a66fbac50bcfe93f0ac6f8d1a997e1735ca5c11f3abd19df71787da8549815f8",
+    "openspec/changes/add-juce-free-trigger-beta-products/design.md": "8d0a2f8a73ffad48421e2088a7e1da112a04fc11260daadac50503901fb3613c",
+    "src/rust-engine/src/compiled_patch.rs": "a18c58b82bab1b50a834361452b2591992756e57e21f281481220af664a728d4",
+    "src/rust-engine/src/graph_processor/arena_processing.rs": "b6a24d4141206dd4897a606f963cc097fde3abff7929b7470bbe43d95cb6e327",
+    "src/rust-engine/src/graph_processor/offline.rs": "eab9e844c506efaebc9db2e632c36aa125ad62b5eb01c6b13505ec9b8f1620e0",
+    "src/rust-engine/src/graph_processor/realtime_graph_processor.rs": "9718bf5045b41900d3edeafccc090722cdee4634181d36cc5a0591f108c76e1a",
+    "src/rust-engine/src/graph_processor/state.rs": "401d2ac7113cebd4c36157b0fea82fcaa2f3f1940a8746b6d757c6ae309c2561",
+    "src/rust-engine/src/kernel/document/tests.rs": "bf8979f198de82149900d0940aa0b9421ddb2bbbc1c83aeffd8e0425c3497a71",
+    "src/rust-engine/src/lib.rs": "cc1665312216803b3e67ae23998671b4805c0592a90b8e4373aadd924763a1d6",
+    "src/rust-engine/src/preparation.rs": "d9a4ed2312a1fb908811486388e9d23509f3db4a0db1c5e8da4af5d8207120eb",
+    "src/rust-engine/src/render_settings.rs": "6b0ae52bb031f7769a49a2109e89a63086f23e387f60ff244fb77fe18cc01592",
+    "src/rust-engine/tests/runtime_thread_ownership.rs": "0c27b6a7db6166a5720776d9651e0fef21bf0a4f761c95ed1d6d5097292f82d6",
+    "src/trigger-host/src/runtime.rs": "99733601a6eb9ec51f5f566dc160162bf82e60509faf9b67859af6e0248ca8ca"
+  },
+  "current_checks": {
+    "engine_unit_tests": 1090,
+    "engine_all_targets": "All integration/doc targets pass; see final-engine-all-targets-run logs.",
+    "host_tests": 159,
+    "host_clippy_warnings_denied": "PASS",
+    "engine_clippy_warnings_denied": "FAIL129 baseline library diagnostics; complete323 warnings reconciled, no new lint issue, no suppression.",
+    "new_module_coverage": "4/4functions,17/17lines,24/24regions; no annotated zero-hit added production line across the final full run. Not branch coverage.",
+    "openspec": "Selected+all52strict pass;631scenarios/392mapped/239backlog unchanged.",
+    "mutation": "Explicitly excluded; no mutation job.",
+    "official_CLAP_validator": "Existing33success/10skip/1FAIL1234.5678Hz unwaived; CLAP policy unchanged."
+  },
+  "red_limits": "Initial admission API absence records exact compiler diagnostics/test hash but its unformatted test preimage was not captured. Behavioral waveform, context-conflict and later source snapshots are complete; earlier setup errors are retained and are not behavior RED.",
+  "source_replay": "portable-source-replay.json and content-addressed blobs in raw archive",
+  "excluded_external_binary_archive": "before-admission-llvm.tar.gz remains external only; no compiled target directory/binary is committed."
+}

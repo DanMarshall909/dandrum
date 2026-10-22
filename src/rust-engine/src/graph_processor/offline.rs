@@ -67,7 +67,7 @@ pub fn render_kernel_offline_named_with_inputs(
     }
     let mut processor = RealtimeGraphProcessor::from_compiled_patch(
         compiled.clone(),
-        settings.sample_rate_hz as f32,
+        settings.sample_rate_hz.hz() as f32,
         sampler_assets,
         settings.block_size_frames as usize,
     );
@@ -139,7 +139,7 @@ pub fn render_offline_compiled(
     sampler_assets: &PreparedSamplerAssets,
 ) -> (Vec<f32>, Vec<f32>) {
     let settings = compiled.render_settings();
-    let sample_rate = settings.sample_rate_hz as f32;
+    let sample_rate = settings.sample_rate_hz.hz() as f32;
 
     let midi_idx = compiled.midi_input_index();
     let out_idx = compiled.audio_output_index();

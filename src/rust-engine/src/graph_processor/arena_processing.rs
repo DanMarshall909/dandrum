@@ -128,7 +128,7 @@ pub(super) fn process_sample_player_state(
     region: &SampleRegion,
     mode: &str,
     interpolation: SampleInterpolation,
-    playback_rate_scale: f32,
+    playback_rate_scale: f64,
     position: &mut f64,
     active: &mut bool,
     context: &mut ProcessContext<'_>,
@@ -229,9 +229,9 @@ pub(super) fn process_sample_player_state(
                     1.0
                 };
                 *position += if region.reverse {
-                    -f64::from(ratio * playback_rate_scale)
+                    -f64::from(ratio) * playback_rate_scale
                 } else {
-                    f64::from(ratio * playback_rate_scale)
+                    f64::from(ratio) * playback_rate_scale
                 };
                 if let Some(loop_settings) = loop_settings {
                     if region.reverse && *position < loop_settings.start_frame as f64 {
@@ -323,7 +323,7 @@ fn sample_region_boundary_gain(
 pub(super) fn process_sample_slicer_state(
     sample: &Option<crate::compiled_patch::SampleResourceHandle>,
     slices: &[SampleSlice],
-    playback_rate_scale: f32,
+    playback_rate_scale: f64,
     selected_slice: &mut usize,
     position: &mut f64,
     active: &mut bool,
@@ -358,13 +358,11 @@ pub(super) fn process_sample_slicer_state(
                 let fraction = (*position - base as f64) as f32;
                 let value = frames[base] + fraction * (frames[(base + 1).min(last)] - frames[base]);
                 let ratio = context.input_sample(1, frame, 1.0);
-                *position += f64::from(
-                    if ratio.is_finite() {
-                        ratio.clamp(0.125, 8.0)
-                    } else {
-                        1.0
-                    } * playback_rate_scale,
-                );
+                *position += f64::from(if ratio.is_finite() {
+                    ratio.clamp(0.125, 8.0)
+                } else {
+                    1.0
+                }) * playback_rate_scale;
                 if *position >= slice.end_frame as f64 {
                     *active = false;
                 }
@@ -429,7 +427,7 @@ pub(super) fn process_sample_map_player_state(
     rng_state: &mut u64,
     queued_choices: Option<&[Option<usize>]>,
     selected_zone: &mut Option<usize>,
-    selected_pitch_ratio: &mut f32,
+    selected_pitch_ratio: &mut f64,
     position: &mut f64,
     active: &mut bool,
     context: &mut ProcessContext<'_>,
@@ -477,8 +475,8 @@ pub(super) fn process_sample_map_player_state(
                     let root_ratio = region.root_note.map_or(1.0, |root| {
                         2.0_f32.powf((f32::from(note) - f32::from(root)) / 12.0)
                     });
-                    *selected_pitch_ratio =
-                        zones[index].pitch_ratio * root_ratio * zones[index].playback_rate_scale;
+                    *selected_pitch_ratio = f64::from(zones[index].pitch_ratio * root_ratio)
+                        * zones[index].playback_rate_scale;
                     let start_offset = context.input_sample(1, frame, 0.0)
                         + sample_map_group_control(context, &zones[index], frame, 1, 0.0);
                     let start_offset = if start_offset.is_finite() {
@@ -529,12 +527,8 @@ pub(super) fn process_sample_map_player_state(
                 } else {
                     1.0
                 };
-                let ratio = musical_pitch * *selected_pitch_ratio;
-                *position += if region.reverse {
-                    -f64::from(ratio)
-                } else {
-                    f64::from(ratio)
-                };
+                let ratio = f64::from(musical_pitch) * *selected_pitch_ratio;
+                *position += if region.reverse { -ratio } else { ratio };
                 if *position < region.start_frame as f64 || *position >= region.end_frame as f64 {
                     *active = false;
                 }

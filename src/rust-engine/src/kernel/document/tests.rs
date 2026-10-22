@@ -22,6 +22,336 @@ use crate::script::ScriptEvent;
 use super::{load_kernel_definition_str, load_kernel_patch_file, load_kernel_patch_str};
 
 #[test]
+fn realtime_clock_admission_retains_exact_supported_rates_and_legacy_settings() {
+    use crate::render_settings::{RealtimeRenderSettings, SampleRate};
+
+    for hz in [1.0, 1_234.567_8, 48_000.5, f64::from(u32::MAX)] {
+        let rate = SampleRate::new(hz).expect("supported realtime clock");
+        assert_eq!(rate.hz(), hz);
+    }
+    let first = SampleRate::new(48_000.0).unwrap();
+    let nearby = SampleRate::new(48_000.000_001).unwrap();
+    assert_eq!(first.hz() as f32, nearby.hz() as f32);
+    assert_ne!(
+        first, nearby,
+        "configuration identity must retain the f64 clock"
+    );
+
+    let legacy = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 31,
+        duration_frames: 1_017,
+    };
+    let realtime = RealtimeRenderSettings::try_from(&legacy).unwrap();
+    assert_eq!(realtime.sample_rate_hz, first);
+    assert_eq!(realtime.block_size_frames, 31);
+    assert_eq!(realtime.duration_frames, 1_017);
+    assert_eq!(
+        serde_json::to_value(&legacy).unwrap()["sample_rate_hz"],
+        48_000
+    );
+}
+
+#[test]
+fn realtime_clock_admission_rejects_invalid_values_before_preparation() {
+    use crate::render_settings::{RealtimeRenderSettings, SampleRate};
+
+    for hz in [
+        f64::NAN,
+        f64::INFINITY,
+        f64::NEG_INFINITY,
+        -48_000.0,
+        -0.0,
+        0.0,
+        0.5,
+        f64::from(u32::MAX) + 0.5,
+    ] {
+        let error = SampleRate::new(hz).expect_err("unsupported clock must be rejected");
+        assert!(error.to_string().contains("sample rate"));
+    }
+    let zero = RenderSettings {
+        sample_rate_hz: 0,
+        block_size_frames: 31,
+        duration_frames: 1_017,
+    };
+    assert!(RealtimeRenderSettings::try_from(&zero).is_err());
+}
+
+#[test]
+fn kernel_preparation_rejects_zero_clock_before_building_a_runtime() {
+    let patch = load_kernel_patch_str(
+        r#"
+ports:
+  - { name: master, direction: output, signal: audio, channels: 1, maps_from: source.out }
+modules:
+  - { id: source, type: control_to_audio, defaults: { in: -0.5 } }
+"#,
+    )
+    .expect("signed constant patch");
+    let valid = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+    let valid_prepared = crate::preparation::prepare_kernel_patch(&patch, &valid)
+        .expect("the same graph prepares at a supported integer clock");
+    let zero = RenderSettings {
+        sample_rate_hz: 0,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+    let error = crate::preparation::prepare_kernel_patch(&patch, &zero)
+        .expect_err("a zero clock cannot enter an accepted prepared instrument");
+    assert!(error.diagnostics().errors().any(|diagnostic| {
+        diagnostic.error_code() == error_codes::VALIDATION_INVALID_VALUE
+            && diagnostic.message().contains("sample rate")
+    }));
+    let compile_error = crate::compiled_patch::compile(valid_prepared.graph(), &zero)
+        .expect_err("legacy compilation also requires an admitted clock");
+    assert!(
+        compile_error
+            .to_diagnostic()
+            .message()
+            .contains("render.sample_rate_hz")
+    );
+}
+
+#[test]
+fn fractional_clocks_keep_signed_cursor_and_duration_for_each_sample_player() {
+    use crate::preparation::prepare_kernel_patch_realtime_with_context;
+    use crate::render_settings::{RealtimeRenderSettings, SampleRate};
+
+    let directory = tempfile::tempdir().expect("owned sample root");
+    // Every negative value has an exact PCM16 representation. The nonconstant
+    // ramp exposes truncated low-rate interpolation as well as duration drift.
+    let values: Vec<f32> = (0..1_024)
+        .map(|frame| -0.75 + frame as f32 / 4_096.0)
+        .collect();
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hit.wav")).unwrap(),
+        48_000,
+        &values,
+        &values,
+    )
+    .unwrap();
+    for (kind, construction, event_input) in [
+        (
+            "sample_player",
+            "source: hit, region: body, channels: 1",
+            "trigger",
+        ),
+        (
+            "sample_slicer",
+            "source: hit, slice_table: hit, channels: 1",
+            "trigger",
+        ),
+        (
+            "sample_map_player",
+            "sample_map: kit, max_voices: 1, channels: 1",
+            "note",
+        ),
+    ] {
+        let yaml = format!(
+            r#"
+metadata: {{ name: precise_sample_clock }}
+assets:
+  sample_sources:
+    - id: hit
+      path: hit.wav
+      regions: [{{ id: body, start_frame: 0, end_frame: 1024 }}]
+      slices: [{{ id: whole, start_frame: 0, end_frame: 1024 }}]
+  sample_maps:
+    - id: kit
+      zones: [{{ region: hit.body, key_range: [36, 36], velocity_range: [1, 127] }}]
+ports:
+  - {{ name: master, direction: output, signal: audio, channels: 1, maps_from: player.audio }}
+modules:
+  - {{ id: midi, type: midi_input }}
+  - {{ id: player, type: {kind}, static: {{ {construction} }} }}
+connections:
+  - {{ from: midi.events, to: player.{event_input} }}
+"#
+        );
+        let patch = load_kernel_patch_str(&yaml).expect("sample player fixture loads");
+        for hz in [48_000.0, 1_234.567_8, 48_000.5, 48_000.000_001] {
+            let rate = SampleRate::new(hz).unwrap();
+            let settings = RealtimeRenderSettings {
+                sample_rate_hz: rate,
+                block_size_frames: 64,
+                duration_frames: 1_026,
+            };
+            let context = PreparationContext::new_realtime(directory.path(), rate);
+            let prepared = prepare_kernel_patch_realtime_with_context(&patch, &settings, &context)
+                .expect("supported precise sample clock prepares");
+            assert_eq!(context.sample_rate_hz(), hz);
+            assert_eq!(prepared.compiled_patch().render_settings(), &settings);
+            assert_eq!(
+                prepared.sample_assets().sources()[0]
+                    .sample()
+                    .sample_rate_hz(),
+                48_000
+            );
+            let rendered = render_kernel_offline_named(
+                &prepared,
+                vec![TimedInputEvent::new(
+                    0,
+                    ScriptEvent::NoteOn {
+                        note: 36,
+                        velocity: 100,
+                    },
+                )],
+                &PreparedSamplerAssets::empty(),
+            )
+            .expect("precise sample clock renders");
+            let audio = &rendered[0].1[0];
+            assert_eq!(audio[0], -0.75, "{kind} at {hz}");
+            let sounding_frames = (1_024.0 * hz / 48_000.0).ceil() as usize;
+            assert_ne!(
+                audio[sounding_frames - 1],
+                0.0,
+                "last sounding frame: {kind} at {hz}"
+            );
+            if hz >= 48_000.0 {
+                assert_eq!(
+                    audio[sounding_frames - 1],
+                    values[1_023],
+                    "held final source frame: {kind} at {hz}"
+                );
+            }
+            assert_eq!(
+                audio[sounding_frames], 0.0,
+                "first silent frame: {kind} at {hz}"
+            );
+            for (frame, actual) in audio.iter().copied().enumerate() {
+                let position = frame as f64 * 48_000.0 / hz;
+                let expected = if position < 1_024.0 {
+                    (-0.75 + position.min(1_023.0) / 4_096.0) as f32
+                } else {
+                    0.0
+                };
+                assert!(
+                    (actual - expected).abs() <= 0.000_000_2,
+                    "{kind} at {hz}, frame {frame}: {actual} != {expected}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn sample_slicer_nonfinite_pitch_keeps_signed_default_playback() {
+    let directory = tempfile::tempdir().unwrap();
+    let values = [-0.5, -0.25, -0.125, -0.0625];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hit.wav")).unwrap(),
+        48_000,
+        &values,
+        &values,
+    )
+    .unwrap();
+    let patch = load_kernel_patch_str(
+        r#"
+assets:
+  sample_sources:
+    - id: hit
+      path: hit.wav
+      slices: [{ id: whole, start_frame: 0, end_frame: 4 }]
+ports:
+  - { name: master, direction: output, signal: audio, channels: 1, maps_from: slicer.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: slicer, type: sample_slicer, static: { source: hit, slice_table: hit, channels: 1 } }
+connections:
+  - { from: midi.events, to: slicer.trigger }
+"#,
+    )
+    .unwrap();
+    let prepared = prepare_kernel_patch_with_context(
+        &patch,
+        &RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 4,
+            duration_frames: 4,
+        },
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .unwrap();
+    for invalid in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+        let mut runtime = RealtimeGraphProcessor::from_compiled_patch(
+            prepared.compiled_patch().clone(),
+            48_000.0,
+            &PreparedSamplerAssets::empty(),
+            4,
+        );
+        let pitch = runtime
+            .parameter_slot_index("slicer", "pitch_ratio")
+            .unwrap();
+        let mut output = vec![vec![vec![0.0; 4]]];
+        assert!(runtime.set_parameter_slot(pitch, 2.0));
+        runtime.note_on(60, 100);
+        assert_eq!(runtime.render_root_outputs(&mut output), 4);
+        assert_eq!(
+            output[0][0],
+            [-0.5, -0.125, 0.0, 0.0],
+            "finite pitch control witness"
+        );
+        runtime.reset();
+        assert!(runtime.set_parameter_slot(pitch, 2.0));
+        let allocations = crate::test_allocator::count_current_thread_allocations(|| {
+            assert!(runtime.set_parameter_slot(pitch, invalid));
+            runtime.note_on(60, 100);
+            assert_eq!(runtime.render_root_outputs(&mut output), 4);
+        });
+        assert_eq!(allocations, 0);
+        assert_eq!(
+            output[0][0], values,
+            "nonfinite pitch uses the natural rate"
+        );
+    }
+}
+
+#[test]
+fn precise_preparation_rejects_conflicting_context_clocks() {
+    use crate::preparation::prepare_kernel_patch_realtime_with_context;
+    use crate::render_settings::{RealtimeRenderSettings, SampleRate};
+    let patch = load_kernel_patch_str(
+        r#"
+ports:
+  - { name: master, direction: output, signal: audio, channels: 1, maps_from: source.out }
+modules:
+  - { id: source, type: control_to_audio, defaults: { in: -0.5 } }
+"#,
+    )
+    .unwrap();
+    for (requested, context_hz) in [(48_000.000_001, 48_000.0), (1_234.567_8, 1_234.0)] {
+        let settings = RealtimeRenderSettings {
+            sample_rate_hz: SampleRate::new(requested).unwrap(),
+            block_size_frames: 4,
+            duration_frames: 4,
+        };
+        let context = PreparationContext::new_realtime(".", SampleRate::new(context_hz).unwrap());
+        let error = prepare_kernel_patch_realtime_with_context(&patch, &settings, &context)
+            .expect_err("a conflicting context cannot supply a second clock");
+        assert!(error.diagnostics().errors().any(|diagnostic| {
+            diagnostic.error_code() == error_codes::VALIDATION_INVALID_VALUE
+                && diagnostic.message().contains("context sample rate")
+        }));
+    }
+    let integer = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 4,
+        duration_frames: 4,
+    };
+    let context = PreparationContext::new(".", 44_100);
+    let error = prepare_kernel_patch_with_context(&patch, &integer, &context)
+        .expect_err("integer callers also share the one effective clock");
+    assert!(error.diagnostics().errors().any(|diagnostic| {
+        diagnostic.error_code() == error_codes::VALIDATION_INVALID_VALUE
+            && diagnostic.message().contains("context sample rate")
+    }));
+}
+
+#[test]
 fn bundled_advanced_sampling_examples_prepare_and_emit_signed_stereo_hits() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     for (name, note, first_sample) in [
