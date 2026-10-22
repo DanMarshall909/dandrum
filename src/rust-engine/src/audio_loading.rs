@@ -94,7 +94,11 @@ pub fn load_pcm_wav(path: &Path, expected_sample_rate_hz: u32) -> Result<LoadedA
 
 pub fn load_pcm_wav_any_rate(path: &Path) -> Result<LoadedAudio, String> {
     let bytes = fs::read(path).map_err(|error| format!("failed to read file: {error}"))?;
-    decode_pcm_wav_with_expected_rate(&bytes, None)
+    decode_pcm_wav_any_rate(&bytes)
+}
+
+pub(crate) fn decode_pcm_wav_any_rate(bytes: &[u8]) -> Result<LoadedAudio, String> {
+    decode_pcm_wav_with_expected_rate(bytes, None)
 }
 
 pub fn decode_pcm_wav(bytes: &[u8], expected_sample_rate_hz: u32) -> Result<LoadedAudio, String> {

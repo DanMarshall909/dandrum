@@ -329,3 +329,49 @@ fn invalid_legacy_clock_and_busy_precise_preparation_preserve_the_session() {
     );
     assert_audio(&session, 48_000.5, 60, true);
 }
+
+#[test]
+fn admitted_selected_content_survives_real_session_reconfiguration_after_source_loss() {
+    use dandrum_engine::sample_snapshot::SampleSnapshot;
+    use std::sync::Arc;
+    let fixture = Fixture::new();
+    let root = fixture.0.path().to_owned();
+    let snapshot =
+        Arc::new(SampleSnapshot::decode(std::fs::read(root.join("hit.wav")).unwrap()).unwrap());
+    let yaml = PATCH.replace(
+        "path: hit.wav",
+        &format!("path: {}", snapshot.resource_id()),
+    );
+    let mut session = InstrumentSession::new_realtime_for_planar_host(
+        &yaml,
+        PreparationContext::new_realtime(&root, SampleRate::new(48_000.0).unwrap())
+            .with_selected_samples([snapshot]),
+        settings(48_000.0),
+        HostBuses::new().with_output("master", 2),
+    )
+    .unwrap();
+    fixture.0.close().unwrap();
+    assert!(!root.exists(), "original WAV and authoring root are gone");
+    let before = session.owner_snapshot();
+    assert_audio(&session, 48_000.0, 36, true);
+    for hz in [44_100.5, 1_234.567_8] {
+        let candidate = session
+            .prepare_realtime_render_configuration_owned(
+                settings(hz),
+                HostBuses::new().with_output("master", 2),
+            )
+            .expect("session reconfiguration retains admitted selected authority");
+        let accepted = session
+            .commit_render_configuration(candidate, &mut AcceptPublication)
+            .unwrap();
+        assert_eq!(
+            accepted, before,
+            "render configuration preserves authoring state"
+        );
+        assert_eq!(session.owner_snapshot(), before);
+        // Existing independent linear PCM/time oracle checks every rendered frame,
+        // both channels, precise clock, note mapping, and the sample's exact end.
+        assert_audio(&session, hz, 36, true);
+        assert_audio(&session, hz, 60, false);
+    }
+}

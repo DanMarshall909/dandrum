@@ -8,6 +8,7 @@
 pub mod parameters;
 pub mod protocol;
 pub mod runtime;
+pub mod samples;
 pub mod state;
 
 use dandrum_engine::graph::PortDirection;
@@ -168,6 +169,7 @@ impl PackagedResources {
 pub struct TriggerHost {
     resources: PackagedResources,
     session: InstrumentSession,
+    sample_catalog: samples::SampleCatalog,
 }
 
 impl TriggerHost {
@@ -203,7 +205,11 @@ impl TriggerHost {
             settings,
             buses,
         )?;
-        Ok(Self { resources, session })
+        Ok(Self {
+            resources,
+            session,
+            sample_catalog: samples::SampleCatalog::default(),
+        })
     }
 
     pub fn resource_root(&self) -> &Path {

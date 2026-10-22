@@ -15,6 +15,9 @@ use crate::{TriggerHost, TriggerHostConfiguration};
 use dandrum_engine::kernel::document::load_kernel_patch_str;
 use std::{collections::VecDeque, num::NonZeroU64, path::Path};
 
+mod selection;
+pub use selection::NativeSelectionPermit;
+
 pub const MAX_AUTOMATION_EVENTS: usize = 1_024;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -188,10 +191,26 @@ pub trait SessionServiceWake: Send + Sync {
     fn request_service(&self);
 }
 
+enum WorkerRequest {
+    Mapping(SessionPreparation),
+    Selection(selection::Preparation),
+}
+enum WorkerCompletion {
+    Mapping(SessionCompletion),
+    Selection(selection::Completion),
+}
+impl WorkerRequest {
+    fn prepare(self) -> WorkerCompletion {
+        match self {
+            Self::Mapping(work) => WorkerCompletion::Mapping(work.prepare()),
+            Self::Selection(work) => WorkerCompletion::Selection(work.prepare()),
+        }
+    }
+}
 struct SessionWorker {
-    requests: Option<std::sync::mpsc::SyncSender<SessionPreparation>>,
-    completions: std::sync::mpsc::Receiver<SessionCompletion>,
-    thread: Option<std::thread::JoinHandle<Option<SessionCompletion>>>,
+    requests: Option<std::sync::mpsc::SyncSender<WorkerRequest>>,
+    completions: std::sync::mpsc::Receiver<WorkerCompletion>,
+    thread: Option<std::thread::JoinHandle<Option<WorkerCompletion>>>,
 }
 impl SessionWorker {
     fn available(&self) -> bool {
@@ -251,6 +270,7 @@ pub struct ParameterController {
     control_thread: std::marker::PhantomData<std::rc::Rc<()>>,
     worker: Option<SessionWorker>,
     session_job: Option<ActiveSessionJob>,
+    selections: selection::Selections,
     host: TriggerHost,
     runtime: RuntimeControl,
     protocol: EditorProtocol,
@@ -280,13 +300,13 @@ impl ParameterController {
         if self.session_job.is_some() {
             return Err(ParameterError::SessionWorkerBusy);
         }
-        let (requests, jobs) = std::sync::mpsc::sync_channel::<SessionPreparation>(1);
+        let (requests, jobs) = std::sync::mpsc::sync_channel::<WorkerRequest>(1);
         let (results, completions) = std::sync::mpsc::sync_channel(1);
         let thread = std::thread::Builder::new()
             .name("trigger-preparation".into())
             .spawn(move || {
                 struct WakeOnPanic {
-                    results: Option<std::sync::mpsc::SyncSender<SessionCompletion>>,
+                    results: Option<std::sync::mpsc::SyncSender<WorkerCompletion>>,
                     wake: std::sync::Arc<dyn SessionServiceWake>,
                 }
                 impl Drop for WakeOnPanic {
@@ -336,10 +356,12 @@ impl ParameterController {
     /// worker to stop. Current preparation may finish, but shutdown publishes
     /// nothing and does not promise cancellation of blocking resource I/O.
     pub fn shutdown_session_worker(&mut self) -> Result<(), ParameterError> {
-        match &mut self.worker {
+        let result = match &mut self.worker {
             Some(worker) => worker.shutdown(),
             None => Ok(()),
-        }
+        };
+        self.selections.stop_worker();
+        result
     }
 
     fn check_session_worker(&self) -> Result<(), ParameterError> {
@@ -436,6 +458,7 @@ impl ParameterController {
         let owner = attachment_id
             .parse::<u64>()
             .expect("protocol validated the retired attachment identity");
+        self.selections.detach(owner);
         self.end_gestures(Some(owner));
         self.clear_editor_notes(NonZeroU64::new(owner).expect("attachment is nonzero"));
         for record in &mut self.editor_note_attachments {
@@ -752,6 +775,7 @@ impl ParameterController {
                 control_thread: std::marker::PhantomData,
                 worker: None,
                 session_job: None,
+                selections: selection::Selections::default(),
                 host,
                 runtime,
                 protocol: EditorProtocol::new(instance_id),
@@ -928,6 +952,7 @@ impl ParameterController {
             .map_err(ParameterError::Protocol)?;
         let result = json!({"yaml":snapshot.yaml,
             "sourcePath":source_path,
+            "sampleSelections":self.selections.summaries(),
             "document":{"generation":state.generation,"instrumentId":patch.instrument().map(|identity| identity.id.as_str()).unwrap_or(""),
                 "parameters":parameters,"sources":sources,"maps":maps},
             "connection":{"version":CONNECTION_CONTRACT_VERSION,"instanceId":instance_id,
@@ -956,6 +981,9 @@ impl ParameterController {
             .admitted_context(self.host.session(), request)
             .map_err(ParameterError::Protocol)?;
         self.check_session_worker()?;
+        if self.selections.busy() {
+            return Err(ParameterError::SessionWorkerBusy);
+        }
         let (id, admission) = match &request.command {
             EditorCommand::SetZoneKeyRange { identity, intent } => (
                 identity.request_id,
@@ -1000,8 +1028,11 @@ impl ParameterController {
                 .requests
                 .as_ref()
                 .expect("live sender")
-                .try_send(work)
+                .try_send(WorkerRequest::Mapping(work))
             {
+                let WorkerRequest::Mapping(work) = work else {
+                    unreachable!("try_send returns the submitted mapping request")
+                };
                 self.session_job.as_mut().expect("queued job").work = SessionWork::Queued(work.job);
                 return Err(ParameterError::SessionWorkerUnavailable);
             }
@@ -1053,11 +1084,16 @@ impl ParameterController {
     /// returned retired processors are destroyed only here, away from audio.
     pub fn service_session_jobs(&mut self) -> Result<SessionJobProgress, ParameterError> {
         self.check_session_worker()?;
+        let mut selection_completed = false;
         if let Some(worker) = &self.worker {
             match worker.completions.try_recv() {
-                Ok(completion) => self
+                Ok(WorkerCompletion::Mapping(completion)) => self
                     .submit_session_completion(completion)
                     .map_err(|_| ParameterError::InvalidJob)?,
+                Ok(WorkerCompletion::Selection(completion)) => {
+                    self.complete_selected_job(completion)?;
+                    selection_completed = true;
+                }
                 Err(std::sync::mpsc::TryRecvError::Empty) => {}
                 Err(std::sync::mpsc::TryRecvError::Disconnected) => {
                     return Err(ParameterError::SessionWorkerUnavailable);
@@ -1066,7 +1102,13 @@ impl ParameterController {
         }
         drop(self.runtime.reclaim());
         let Some(active) = self.session_job.as_ref() else {
-            return Ok(SessionJobProgress::Idle);
+            return Ok(if self.selections.preparing() {
+                SessionJobProgress::Pending
+            } else if selection_completed {
+                SessionJobProgress::Completed
+            } else {
+                SessionJobProgress::Idle
+            });
         };
         if !matches!(active.work, SessionWork::Ready(_)) || !self.runtime.activation_available() {
             return Ok(SessionJobProgress::Pending);

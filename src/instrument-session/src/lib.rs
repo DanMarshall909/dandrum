@@ -216,7 +216,7 @@ pub struct MappingJob {
     request: MappingRequest,
     action: HistoryAction,
     yaml: String,
-    context: PreparationContext,
+    context: Box<PreparationContext>,
     settings: RealtimeRenderSettings,
     host_buses: Option<Box<HostBuses>>,
 }
@@ -408,7 +408,7 @@ impl InstrumentSession {
             request: request.clone(),
             action,
             yaml: self.accepted.yaml.clone(),
-            context: self.context.clone(),
+            context: Box::new(self.context.clone()),
             settings: self.settings.clone(),
             host_buses: self.host_buses.clone().map(Box::new),
         };
@@ -580,9 +580,10 @@ impl InstrumentSession {
         host_buses: HostBuses,
     ) -> Result<PreparedRenderConfiguration, SessionError> {
         self.ensure_idle()?;
-        let context =
-            PreparationContext::new_realtime(self.context.document_root(), settings.sample_rate_hz)
-                .with_macro_roots(self.context.macro_roots().clone());
+        let context = self
+            .context
+            .clone()
+            .with_sample_rate(settings.sample_rate_hz);
         let prepared =
             Self::prepare_document(&self.accepted.yaml, &context, &settings, Some(&host_buses))?;
         Ok(PreparedRenderConfiguration {

@@ -46,6 +46,7 @@ pub enum ProtocolError {
     StaleAttachment,
     InvalidArguments,
     CapabilityUnavailable,
+    UnknownSelection,
     Busy,
     CommandRejected,
     DuplicateRequest,
@@ -121,6 +122,13 @@ impl EditorProtocol {
 #[derive(Clone, Debug, PartialEq)]
 pub enum EditorCommand {
     GetSamplerSession,
+    ChooseSamplerFiles,
+    GetSamplerSelectionStatus {
+        selection_id: u64,
+    },
+    ReleaseSamplerSelection {
+        selection_id: u64,
+    },
     GetParameterState,
     SetZoneKeyRange {
         identity: SessionCommandIdentity,
@@ -257,14 +265,24 @@ fn decimal(text: &str, zero: bool) -> Result<u64, ProtocolError> {
 fn parse_command(method: &str, args: serde_json::Value) -> Result<EditorCommand, ProtocolError> {
     use EditorCommand::*;
     Ok(match method {
-        "getSamplerSession" | "getParameterState" | "noteHeartbeat" => {
+        "getSamplerSession" | "getParameterState" | "noteHeartbeat" | "chooseSamplerFiles" => {
             if args != serde_json::json!([]) {
                 return Err(ProtocolError::InvalidArguments);
             }
             match method {
                 "getSamplerSession" => GetSamplerSession,
                 "getParameterState" => GetParameterState,
+                "chooseSamplerFiles" => ChooseSamplerFiles,
                 _ => NoteHeartbeat,
+            }
+        }
+        "getSamplerSelectionStatus" | "releaseSamplerSelection" => {
+            let (selection,): (String,) = arguments(args)?;
+            let selection_id = decimal(&selection, false)?;
+            if method == "getSamplerSelectionStatus" {
+                GetSamplerSelectionStatus { selection_id }
+            } else {
+                ReleaseSamplerSelection { selection_id }
             }
         }
         "setInstrumentZoneKeyRange" => {

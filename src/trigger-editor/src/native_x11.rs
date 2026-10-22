@@ -2,6 +2,9 @@ use crate::EditorAssets;
 use gtk::prelude::*;
 use std::{
     borrow::Cow,
+    cell::RefCell,
+    path::PathBuf,
+    rc::Rc,
     sync::{Arc, Mutex},
 };
 use webkit2gtk::{UserContentManagerExt, WebViewExt};
@@ -32,6 +35,31 @@ pub struct NativeEditor {
     _window: OwnedWindow,
     ipc: Option<(webkit2gtk::UserContentManager, gtk::glib::SignalHandlerId)>,
     protocol: Option<OwnedProtocol>,
+}
+
+type SelectionCallback = Box<dyn FnOnce(Option<Vec<PathBuf>>)>;
+
+/// A disposable main-thread dialog; dropping it revokes its callback first.
+pub struct NativeFileSelection {
+    callback: Rc<RefCell<Option<SelectionCallback>>>,
+    dialog: gtk::FileChooserDialog,
+    handler: Option<gtk::glib::SignalHandlerId>,
+    // Dispose with the same callback-first, synchronized window owner as Wry.
+    _window: OwnedWindow,
+}
+impl NativeFileSelection {
+    pub fn is_pending(&self) -> bool {
+        self.callback.borrow().is_some()
+    }
+}
+impl Drop for NativeFileSelection {
+    fn drop(&mut self) {
+        self.callback.borrow_mut().take();
+        if let Some(handler) = self.handler.take() {
+            self.dialog.disconnect(handler);
+        }
+        self.dialog.hide();
+    }
 }
 
 type ResourceHandler = dyn Fn(wry::WebViewId<'_>, wry::http::Request<Vec<u8>>) -> wry::http::Response<Cow<'static, [u8]>>
@@ -75,6 +103,45 @@ impl Drop for OwnedWindow {
 impl NativeEditor {
     pub const WIDTH: u16 = 1200;
     pub const HEIGHT: u16 = 800;
+
+    /// Open a local native chooser without entering a private or nested loop.
+    /// This callback conveys paths only to the trusted native adapter, never IPC.
+    pub fn choose_sample_files(
+        &self,
+        callback: impl FnOnce(Option<Vec<PathBuf>>) + 'static,
+    ) -> Result<NativeFileSelection, NativeError> {
+        Self::check_thread()?;
+        let dialog = gtk::FileChooserDialog::with_buttons(
+            Some("Choose Trigger samples"),
+            Some(&self._window.0),
+            gtk::FileChooserAction::Open,
+            &[
+                ("Cancel", gtk::ResponseType::Cancel),
+                ("Open", gtk::ResponseType::Accept),
+            ],
+        );
+        dialog.set_modal(true);
+        dialog.set_select_multiple(true);
+        dialog.set_local_only(true);
+        let callback: Rc<RefCell<Option<SelectionCallback>>> =
+            Rc::new(RefCell::new(Some(Box::new(callback))));
+        let response_callback = Rc::clone(&callback);
+        let handler = dialog.connect_response(move |dialog, response| {
+            let callback = response_callback.borrow_mut().take();
+            if let Some(callback) = callback {
+                let files = (response == gtk::ResponseType::Accept).then(|| dialog.filenames());
+                callback(files);
+            }
+        });
+        let selection = NativeFileSelection {
+            callback,
+            _window: OwnedWindow(dialog.clone().upcast()),
+            dialog,
+            handler: Some(handler),
+        };
+        selection.dialog.show_all();
+        Ok(selection)
+    }
 
     /// Create an initially hidden fixed-size child after the caller initializes
     /// GTK on its UI thread. The caller supplies subsequent host-driven ticks.

@@ -14,6 +14,8 @@ pub struct LoadedSample {
     frames: Vec<f32>,
     source_pcm: Option<Vec<i16>>,
     content_revision: [u8; 32],
+    // Every shared prepared/FFI sample also pins its encoded ownership charge.
+    pub(crate) encoded_snapshot: Option<std::sync::Arc<[u8]>>,
 }
 
 pub const MAX_WAVEFORM_BUCKETS: usize = 4096;
@@ -115,11 +117,20 @@ impl LoadedSample {
             frames: audio.frames,
             source_pcm: audio.source_pcm,
             content_revision: audio.content_revision,
+            encoded_snapshot: None,
         }
     }
 
     pub fn sample_rate_hz(&self) -> u32 {
         self.sample_rate_hz
+    }
+
+    pub(crate) fn decoded_capacity_bytes(&self) -> usize {
+        self.frames.capacity() * std::mem::size_of::<f32>()
+            + self
+                .source_pcm
+                .as_ref()
+                .map_or(0, |pcm| pcm.capacity() * std::mem::size_of::<i16>())
     }
 
     pub fn source_channel_count(&self) -> u16 {

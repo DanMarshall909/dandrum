@@ -28,6 +28,8 @@ pub mod compiled_patch;
 
 pub mod preparation;
 
+pub mod sample_snapshot;
+
 pub mod graph_processor;
 
 pub(crate) mod builtins;

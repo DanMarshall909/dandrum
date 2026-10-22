@@ -48,6 +48,63 @@ use dandrum_trigger_host::protocol::{
     Admission, EditorCommand, MESSAGE_BYTES_LIMIT, ProtocolError,
 };
 use serde_json::json;
+
+#[test]
+fn native_selection_commands_use_existing_bounds_without_browser_file_authority() {
+    let mut session = session();
+    let mut protocol = protocol();
+    let connection = protocol.attach(&mut session).unwrap();
+    for (index, (method, args)) in [
+        ("chooseSamplerFiles", json!([])),
+        ("getSamplerSelectionStatus", json!(["1"])),
+        ("releaseSamplerSelection", json!(["1"])),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let frame = message(
+            &connection.attachment_id,
+            &(index + 1).to_string(),
+            method,
+            args,
+        );
+        let admitted = protocol.admit(&session, &frame);
+        assert!(
+            matches!(admitted, Ok(Admission::New(_))),
+            "bounded native selection method {method} must be admitted: {admitted:?}"
+        );
+        assert!(matches!(
+            protocol.admit(&session, &frame),
+            Ok(Admission::Duplicate { .. })
+        ));
+    }
+    for (method, args) in [
+        ("chooseSamplerFiles", json!(["/tmp/browser-selected.wav"])),
+        ("chooseSamplerFiles", json!([{"sampleRateHz":48000}])),
+        ("getSamplerSelectionStatus", json!([1])),
+        ("getSamplerSelectionStatus", json!(["01"])),
+        ("getSamplerSelectionStatus", json!(["0"])),
+        ("releaseSamplerSelection", json!(["18446744073709551616"])),
+    ] {
+        let frame = message(&connection.attachment_id, "4", method, args);
+        assert!(matches!(
+            protocol.admit(&session, &frame),
+            Err(ProtocolError::InvalidArguments)
+        ));
+    }
+    let mut wrong_version: serde_json::Value = serde_json::from_str(&message(
+        &connection.attachment_id,
+        "4",
+        "chooseSamplerFiles",
+        json!([]),
+    ))
+    .unwrap();
+    wrong_version["version"] = json!(2);
+    assert!(matches!(
+        protocol.admit(&session, &wrong_version.to_string()),
+        Err(ProtocolError::UnsupportedVersion)
+    ));
+}
 fn message(attachment: &str, request: &str, method: &str, args: serde_json::Value) -> String {
     json!({"version":1,"attachmentId":attachment,"requestId":request,"method":method,"args":args})
         .to_string()

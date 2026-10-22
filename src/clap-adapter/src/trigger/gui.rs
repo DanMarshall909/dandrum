@@ -2,20 +2,21 @@
 use super::{Core, Main};
 use clack_extensions::gui::{GuiApiType, GuiConfiguration, GuiSize, PluginGuiImpl, Window};
 use clack_plugin::prelude::PluginError;
-use dandrum_trigger_editor::{EditorAssets, NativeEditor};
+use dandrum_trigger_editor::{EditorAssets, NativeEditor, NativeFileSelection};
 use dandrum_trigger_host::{
     parameters::{
-        ParameterController, ParameterError, ParameterReply, ParameterValue, SessionJobProgress,
-        SessionServiceWake,
+        NativeSelectionPermit, ParameterController, ParameterError, ParameterReply, ParameterValue,
+        SessionJobProgress, SessionServiceWake,
     },
     protocol::{Admission, EditorCommand, MESSAGE_BYTES_LIMIT, ProtocolError},
+    samples::{NativeSampleFile, SampleError},
 };
 use std::{
     cell::Cell,
     ffi::CString,
     mem::MaybeUninit,
     os::unix::ffi::OsStrExt,
-    path::Path,
+    path::{Path, PathBuf},
     rc::Rc,
     sync::{
         Arc,
@@ -97,12 +98,20 @@ impl SessionServiceWake for WorkerWake {
     }
 }
 
+struct SelectionResponse {
+    attachment: String,
+    permit: Rc<NativeSelectionPermit>,
+    files: Result<Option<Vec<PathBuf>>, SampleError>,
+}
+
 #[derive(Default)]
 pub(super) struct EditorState {
     created: bool,
     attaching: bool,
     attachment: Option<String>,
     child: Option<Rc<NativeEditor>>,
+    selection_dialog: Option<NativeFileSelection>,
+    selection_response: Option<SelectionResponse>,
     source: Option<gtk::glib::SourceId>,
     worker_wake: Arc<WorkerWake>,
     job_pending: bool,
@@ -142,6 +151,7 @@ impl Core {
         }
     }
     pub(super) fn service_editor(&self) {
+        self.service_native_selection();
         if let Ok(mut controller) = self.controller.try_borrow_mut() {
             let _ = controller.service_editor_notes(Instant::now());
         }
@@ -182,6 +192,73 @@ impl Core {
             }
         }
     }
+    fn stage_native_selection(
+        &self,
+        attachment: &str,
+        permit: Rc<NativeSelectionPermit>,
+        files: Option<Vec<PathBuf>>,
+    ) {
+        let dialog = {
+            let Ok(mut state) = self.gui.try_borrow_mut() else {
+                return;
+            };
+            if !state.created || state.attachment.as_deref() != Some(attachment) {
+                return;
+            }
+            let files = match files {
+                Some(files) if files.is_empty() || files.len() > 16 => Err(SampleError::FileCount),
+                files => Ok(files),
+            };
+            state.selection_response = Some(SelectionResponse {
+                attachment: attachment.to_owned(),
+                permit,
+                files,
+            });
+            state.selection_dialog.take()
+        };
+        drop(dialog);
+    }
+    fn service_native_selection(&self) {
+        let response = {
+            let Ok(mut state) = self.gui.try_borrow_mut() else {
+                return;
+            };
+            let Some(response) = state.selection_response.take() else {
+                return;
+            };
+            if !state.created || state.attachment.as_deref() != Some(&response.attachment) {
+                return;
+            }
+            response
+        };
+        let Ok(mut controller) = self.controller.try_borrow_mut() else {
+            if let Ok(mut state) = self.gui.try_borrow_mut() {
+                state.selection_response = Some(response);
+            }
+            return;
+        };
+        match response.files {
+            Ok(None) => {
+                let _ = controller.cancel_sample_selection(&response.permit);
+            }
+            Err(error) => {
+                let _ = controller.fail_sample_selection(&response.permit, error);
+            }
+            Ok(Some(paths)) => match native_sample_files(paths) {
+                Ok(files) => {
+                    if controller
+                        .admit_selected_files(&response.permit, files)
+                        .is_ok()
+                    {
+                        self.gui.borrow_mut().job_pending = true;
+                    }
+                }
+                Err(error) => {
+                    let _ = controller.fail_sample_selection(&response.permit, error);
+                }
+            },
+        }
+    }
     fn service_structural_jobs(&self) {
         let Ok(mut controller) = self.controller.try_borrow_mut() else {
             return;
@@ -216,12 +293,18 @@ impl Core {
     }
     fn destroy_editor(&self) {
         // Invalidate callback authority before any foreign browser teardown.
-        let child = {
+        let (child, dialog, response) = {
             let mut state = self.gui.borrow_mut();
             state.created = false;
             state.attaching = false;
-            state.child.take()
+            (
+                state.child.take(),
+                state.selection_dialog.take(),
+                state.selection_response.take(),
+            )
         };
+        drop(dialog);
+        drop(response);
         // A reentrant borrow conflict retains the attachment for the next create;
         // the invalidated view cannot dispatch it. Final Core drop owns it directly.
         let _ = self.cleanup_attachment();
@@ -290,7 +373,7 @@ impl Core {
             }
         }
     }
-    fn receive(&self, attachment: &str, message: &str) {
+    fn receive(self: &Rc<Self>, attachment: &str, message: &str) {
         if message.len() > MESSAGE_BYTES_LIMIT {
             return;
         }
@@ -323,6 +406,10 @@ impl Core {
         {
             return;
         }
+        if frame["method"].as_str() == Some("chooseSamplerFiles") {
+            self.choose_native_files(attachment, request_id, message, &child);
+            return;
+        }
         let reply = {
             let Ok(mut controller) = self.controller.try_borrow_mut() else {
                 return;
@@ -331,6 +418,82 @@ impl Core {
         };
         if let Ok(reply) = reply {
             self.deliver(&child, &reply);
+        }
+    }
+    fn choose_native_files(
+        self: &Rc<Self>,
+        attachment: &str,
+        request_id: &str,
+        message: &str,
+        child: &NativeEditor,
+    ) {
+        let attempt = {
+            let Ok(mut controller) = self.controller.try_borrow_mut() else {
+                return;
+            };
+            let result = match controller.admit(message) {
+                Ok(Admission::New(request)) => controller.begin_sample_selection(&request),
+                Ok(Admission::Duplicate { .. }) => {
+                    Err(ParameterError::Protocol(ProtocolError::DuplicateRequest))
+                }
+                Err(error) => Err(error),
+            };
+            result.map_err(|error| {
+                let code = match error {
+                    ParameterError::Protocol(code) => code,
+                    other => command_error(other),
+                };
+                controller.encode_editor_reply(attachment, request_id, Err(code))
+            })
+        };
+        let (permit, reply) = match attempt {
+            Ok(value) => value,
+            Err(reply) => {
+                if let Ok(reply) = reply {
+                    self.deliver(child, &reply);
+                }
+                return;
+            }
+        };
+        let permit = Rc::new(permit);
+        let callback_permit = Rc::clone(&permit);
+        let weak = Rc::downgrade(self);
+        let callback_attachment = attachment.to_owned();
+        match child.choose_sample_files(move |files| {
+            if let Some(core) = weak.upgrade() {
+                core.stage_native_selection(&callback_attachment, callback_permit, files);
+            }
+        }) {
+            Ok(dialog) => {
+                let live = {
+                    let mut state = self.gui.borrow_mut();
+                    let live = state.created && state.attachment.as_deref() == Some(attachment);
+                    if live && dialog.is_pending() {
+                        state.selection_dialog = Some(dialog);
+                    }
+                    live
+                };
+                if live {
+                    self.deliver(child, &reply);
+                }
+            }
+            Err(_) => {
+                let reply = {
+                    let Ok(mut controller) = self.controller.try_borrow_mut() else {
+                        return;
+                    };
+                    let _ =
+                        controller.fail_sample_selection(&permit, SampleError::NativeUnavailable);
+                    controller.encode_editor_reply(
+                        attachment,
+                        request_id,
+                        Err(ProtocolError::CommandRejected),
+                    )
+                };
+                if let Ok(reply) = reply {
+                    self.deliver(child, &reply);
+                }
+            }
         }
     }
     fn deliver(&self, child: &NativeEditor, reply: &str) {
@@ -342,6 +505,28 @@ impl Core {
         let _ = child.evaluate_script(&script);
     }
 }
+fn native_sample_files(paths: Vec<PathBuf>) -> Result<Vec<NativeSampleFile>, SampleError> {
+    use std::os::unix::fs::OpenOptionsExt;
+    if paths.is_empty() || paths.len() > 16 {
+        return Err(SampleError::FileCount);
+    }
+    paths
+        .into_iter()
+        .map(|path| {
+            let name = path
+                .file_name()
+                .ok_or(SampleError::InvalidName)?
+                .to_string_lossy()
+                .into_owned();
+            let file = std::fs::OpenOptions::new()
+                .read(true)
+                .custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW | libc::O_CLOEXEC)
+                .open(path)
+                .map_err(|_| SampleError::InvalidFile)?;
+            NativeSampleFile::new(name, file)
+        })
+        .collect()
+}
 fn dispatch(
     controller: &mut dandrum_trigger_host::parameters::ParameterController,
     attachment: &str,
@@ -351,6 +536,11 @@ fn dispatch(
     let result = match controller.admit(message) {
         Ok(Admission::New(request)) => match request.command {
             EditorCommand::GetSamplerSession => return controller.sampler_session_reply(&request),
+            EditorCommand::GetSamplerSelectionStatus { .. }
+            | EditorCommand::ReleaseSamplerSelection { .. } => {
+                return controller.sample_selection_reply(&request);
+            }
+            EditorCommand::ChooseSamplerFiles => Err(ProtocolError::CapabilityUnavailable),
             EditorCommand::GetInstrumentSessionJobStatus { .. } => {
                 match controller.session_job_status(&request) {
                     Ok(reply) => return Ok(reply),
@@ -414,7 +604,7 @@ fn parameter_reply(reply: ParameterReply) -> serde_json::Value {
 }
 fn command_error(error: ParameterError) -> ProtocolError {
     match error {
-        ParameterError::QueueFull => ProtocolError::Busy,
+        ParameterError::QueueFull | ParameterError::SessionWorkerBusy => ProtocolError::Busy,
         _ => ProtocolError::CommandRejected,
     }
 }
@@ -422,6 +612,10 @@ fn command_error(error: ParameterError) -> ProtocolError {
 impl Drop for Core {
     fn drop(&mut self) {
         self.cancel_service_source();
+        let state = self.gui.get_mut();
+        state.created = false;
+        drop(state.selection_dialog.take());
+        drop(state.selection_response.take());
         // Close admission and join preparation on the owning main thread before
         // controller/session/runtime fields can be destroyed.
         let _ = self.controller.get_mut().shutdown_session_worker();

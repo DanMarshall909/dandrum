@@ -408,6 +408,8 @@ class ClapProofBuildTest(EngineBuildFixture):
                 "note_native::copied_native_continuous_audio_survives_view_replacement",
             "trigger-clap-native-parameter-continuous-audio-audit":
                 "note_native::copied_native_continuous_audio_callbacks_allocate_and_deallocate_nothing",
+            "trigger-clap-native-parameter-selected-snapshot":
+                "selection_native::copied_native_selection_retains_real_metadata_across_source_and_editor_loss",
         }
         for name, case in parameter_cases.items():
             with self.subTest(parameter_case=name):

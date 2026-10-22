@@ -40,6 +40,7 @@ pub struct PreparationContext {
     document_root: PathBuf,
     sample_rate_hz: f64,
     macro_roots: MacroRoots,
+    selected_samples: BTreeMap<PathBuf, Arc<crate::sample_snapshot::SampleSnapshot>>,
 }
 
 // Both constructors admit only finite clocks (legacy zero is rejected by preparation).
@@ -51,6 +52,7 @@ impl PreparationContext {
             document_root: document_root.into(),
             sample_rate_hz: f64::from(sample_rate_hz),
             macro_roots: MacroRoots::new(),
+            selected_samples: BTreeMap::new(),
         }
     }
 
@@ -59,11 +61,28 @@ impl PreparationContext {
             document_root: document_root.into(),
             sample_rate_hz: sample_rate.hz(),
             macro_roots: MacroRoots::new(),
+            selected_samples: BTreeMap::new(),
         }
     }
 
     pub fn with_macro_roots(mut self, macro_roots: MacroRoots) -> Self {
         self.macro_roots = macro_roots;
+        self
+    }
+
+    pub fn with_selected_samples(
+        mut self,
+        samples: impl IntoIterator<Item = Arc<crate::sample_snapshot::SampleSnapshot>>,
+    ) -> Self {
+        self.selected_samples = samples
+            .into_iter()
+            .map(|sample| (PathBuf::from(sample.resource_id()), sample))
+            .collect();
+        self
+    }
+
+    pub fn with_sample_rate(mut self, sample_rate: SampleRate) -> Self {
+        self.sample_rate_hz = sample_rate.hz();
         self
     }
 
@@ -148,6 +167,53 @@ impl<'a> ResourceResolver<'a> {
             return Err(resource_path_escape(reference, None));
         }
 
+        if matches!(reference.origin(), ResourceOrigin::Document)
+            && is_selected_reference(reference.path())
+        {
+            let snapshot = self
+                .context
+                .selected_samples
+                .get(reference.path())
+                .ok_or_else(|| {
+                    resource_load_failed(
+                        reference,
+                        reference.path(),
+                        "selected sample authority is unavailable",
+                    )
+                })?;
+            if reference.kind() != ResourceKind::Sample {
+                return Err(resource_load_failed(
+                    reference,
+                    reference.path(),
+                    "selected content is a sample",
+                ));
+            }
+            if require_matching_rate
+                && f64::from(snapshot.sample().sample_rate_hz()) != self.context.sample_rate_hz()
+            {
+                return Err(resource_load_failed(
+                    reference,
+                    reference.path(),
+                    "selected sample rate does not match render rate",
+                ));
+            }
+            let key = (
+                reference.path().to_owned(),
+                self.context.sample_rate_hz().to_bits(),
+                require_matching_rate,
+            );
+            let sample = Arc::clone(
+                self.loaded
+                    .entry(key)
+                    .or_insert_with(|| snapshot.shared_sample()),
+            );
+            return Ok(ResolvedResource {
+                kind: reference.kind(),
+                canonical_path: reference.path().to_owned(),
+                sample,
+            });
+        }
+
         let origin_root = match reference.origin() {
             ResourceOrigin::Document => self.context.document_root(),
             ResourceOrigin::Package(root) => root,
@@ -205,6 +271,18 @@ impl<'a> ResourceResolver<'a> {
             sample,
         })
     }
+}
+
+fn is_selected_reference(path: &Path) -> bool {
+    path.to_str()
+        .and_then(|path| path.strip_prefix("selected/"))
+        .and_then(|name| name.strip_suffix(".wav"))
+        .is_some_and(|hash| {
+            hash.len() == 64
+                && hash
+                    .bytes()
+                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        })
 }
 
 fn resource_path_escape(

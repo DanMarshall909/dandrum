@@ -41,6 +41,8 @@ Use content identities and canonical resource-relative references. The frontend 
 
 Initial resource budgets to qualify before the first import implementation are 16 files per selection,64 MiB per encoded asset and256 MiB aggregate retained encoded content per instance, with bounded decoded frames, source/region counts and document/manifest sizes. Measure peak memory before fixing decoded limits. Report exact public limits; oversize rejection preserves the accepted instrument. Original path deletion/replacement cannot alter already admitted bytes.
 
+The measured decoder qualification and the first selected-resource contract are recorded in `selected-samples.md`. Implement the task 5.1 foundation together with only the selected-resource admission/status portion of 5.2 and the necessary trusted chooser ingress from 5.4. Keep all three checkboxes open until their complete criteria pass. This dependency slice must start with an executable copied-product chooser/result RED, not a missing-API compiler failure or a parser-only success.
+
 A global mutable cache or serialized absolute path would be smaller but would not establish fresh offline sample restoration or reliable cleanup ownership. Reusing immutable decoded engine handles is appropriate; duplicating whole build caches or retaining every transient sample stage is not.
 
 ### Publish interactive patch edits through native history

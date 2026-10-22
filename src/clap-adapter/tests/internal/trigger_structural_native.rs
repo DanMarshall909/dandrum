@@ -1,6 +1,9 @@
 use super::*;
 
-fn open_view(plugin: &mut PluginInstance<GuiHost>, parent: &Parent) -> webkit2gtk::WebView {
+pub(super) fn open_view(
+    plugin: &mut PluginInstance<GuiHost>,
+    parent: &Parent,
+) -> webkit2gtk::WebView {
     let gui = plugin.plugin_handle().get_extension::<PluginGui>().unwrap();
     gui.create(
         &plugin.plugin_handle(),
@@ -30,7 +33,7 @@ fn open_view(plugin: &mut PluginInstance<GuiHost>, parent: &Parent) -> webkit2gt
     );
     browser
 }
-fn snapshot(
+pub(super) fn snapshot(
     plugin: &mut PluginInstance<GuiHost>,
     browser: &webkit2gtk::WebView,
 ) -> serde_json::Value {

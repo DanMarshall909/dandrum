@@ -1640,3 +1640,6 @@ mod creation_failure_native;
 
 #[path = "internal/trigger_instances_native.rs"]
 mod instances_native;
+
+#[path = "internal/trigger_selection_native.rs"]
+mod selection_native;

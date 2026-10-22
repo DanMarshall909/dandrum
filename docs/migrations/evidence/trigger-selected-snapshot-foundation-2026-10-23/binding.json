@@ -1,0 +1,178 @@
+{
+  "base": "2ea523c47c3022c4bf72a5500130083bb6d0bc42",
+  "scope": "Task 5.1 foundation plus only selected-resource admission/status from 5.2 and trusted chooser ingress from 5.4; no task/scenario closure or beta readiness claim.",
+  "current_source": [
+    {
+      "path": "CMakeLists.txt",
+      "status": "M ",
+      "mode": "0o664",
+      "sha256": "9f9066def24f85137ea0a83eddc7a274a99c24d9290ef9a8adb9155f8dda4077"
+    },
+    {
+      "path": "openspec/changes/add-juce-free-trigger-beta-products/design.md",
+      "status": "M ",
+      "mode": "0o664",
+      "sha256": "34d7df2a5f81f91b2961529443b5dc6cd68973f8a2aec7ad6e457a17a7134eeb"
+    },
+    {
+      "path": "openspec/changes/add-juce-free-trigger-beta-products/selected-samples.md",
+      "status": "A ",
+      "mode": "0o664",
+      "sha256": "2ac178b4b32cd0add4902c3bfcd73c8289a2ecc56fa92e7d0cb300801c392552"
+    },
+    {
+      "path": "src/clap-adapter/src/trigger/gui.rs",
+      "status": "M ",
+      "mode": "0o664",
+      "sha256": "cd8e932e17cfa917c1403db4864d78ae0fe32b187cc5489a57c8ac450b11393f"
+    },
+    {
+      "path": "src/clap-adapter/tests/internal/trigger_gui_dispatch.rs",
+      "status": "M ",
+      "mode": "0o664",
+      "sha256": "3584f6121f6c39403d93578f69167789219d13950dd586c79fdf853eef4d5184"
+    },
+    {
+      "path": "src/clap-adapter/tests/internal/trigger_selection_native.rs",
+      "status": "A ",
+      "mode": "0o664",
+      "sha256": "cffae139202e4cbdaae06a2177148e42de72b1f343ef24b80be7fcf80dc88e42"
+    },
+    {
+      "path": "src/clap-adapter/tests/internal/trigger_structural_native.rs",
+      "status": "M ",
+      "mode": "0o664",
+      "sha256": "de4de1d1248011720c288dc910a1c14902075ea3ac33426d84c4510a45d60650"
+    },
+    {
+      "path": "src/clap-adapter/tests/trigger_parameters.rs",
+      "status": "M ",
+      "mode": "0o664",
+      "sha256": "59d3e16b831eb626f91d206c56ee38ebc383103419c1948b6c48ca53561b3677"
+    },
+    {
+      "path": "src/instrument-session/src/lib.rs",
+      "status": "M ",
+      "mode": "0o664",
+      "sha256": "b75fdb1735b979d4b1d8b4a069532eccf44e7cab43f29edfdfe9e68ddce8ebe5"
+    },
+    {
+      "path": "src/instrument-session/tests/precise_clocks.rs",
+      "status": "M ",
+      "mode": "0o664",
+      "sha256": "6d1ac13204b28ad2fa6f8fa4d057ef24bcfb0f8f045f5d58bbcf5d29e20667e0"
+    },
+    {
+      "path": "src/rust-engine/src/audio_loading.rs",
+      "status": "M ",
+      "mode": "0o664",
+      "sha256": "87a0547ead2016d8d7beb790a1dffe4002d77ee70dfb750352f893f0d306b1b1"
+    },
+    {
+      "path": "src/rust-engine/src/lib.rs",
+      "status": "M ",
+      "mode": "0o664",
+      "sha256": "58b15324ba3d1983fc838dab88f0044f8523a119f395a09642595495aaef75d4"
+    },
+    {
+      "path": "src/rust-engine/src/preparation.rs",
+      "status": "M ",
+      "mode": "0o664",
+      "sha256": "e80edf0ee28a419f1088f3b87114ed7cd6ed7fd4d5848c3121a340cc60fed18d"
+    },
+    {
+      "path": "src/rust-engine/src/sample.rs",
+      "status": "M ",
+      "mode": "0o664",
+      "sha256": "aba1f89d254b11610b1a4df9b771a4625df5f962df09fdfeeef53217aa50cd9d"
+    },
+    {
+      "path": "src/rust-engine/src/sample_snapshot.rs",
+      "status": "A ",
+      "mode": "0o664",
+      "sha256": "8e66e22de5313ae3b5aa1e5660ecb090f8dec8bf1c1f2ab2e56eb50706d9854b"
+    },
+    {
+      "path": "src/rust-engine/tests/selected_snapshot.rs",
+      "status": "A ",
+      "mode": "0o664",
+      "sha256": "d8c562d5e406d239048abfb353b9840c4bc4a2f5c43fdc195ac4f3346e540c42"
+    },
+    {
+      "path": "src/trigger-editor/src/lib.rs",
+      "status": "M ",
+      "mode": "0o664",
+      "sha256": "3505b470cb2ac25fc7632c047f617ced41a2a068aeab4f711804a69bc5120358"
+    },
+    {
+      "path": "src/trigger-editor/src/native_x11.rs",
+      "status": "M ",
+      "mode": "0o664",
+      "sha256": "4c4f7ae930c8251bdd00b81a7c999eb2b01db05f2a2dce013f90892743e50911"
+    },
+    {
+      "path": "src/trigger-host/src/lib.rs",
+      "status": "M ",
+      "mode": "0o664",
+      "sha256": "2d6991a7ae2edc2d3a21216478005221e622c0e5003c1aab1fc77f6b2f3f85ce"
+    },
+    {
+      "path": "src/trigger-host/src/parameters.rs",
+      "status": "M ",
+      "mode": "0o664",
+      "sha256": "a48620805deb14bb38ccce0961a1b5079ff582d0eeed6d9bcfc5cf61e11a4a0e"
+    },
+    {
+      "path": "src/trigger-host/src/parameters/selection.rs",
+      "status": "A ",
+      "mode": "0o664",
+      "sha256": "c5bdfa4c8d57e75b6555bf9ca7270a480a1d8ebed38ebcc809420331aae9ab72"
+    },
+    {
+      "path": "src/trigger-host/src/protocol.rs",
+      "status": "M ",
+      "mode": "0o664",
+      "sha256": "4bc648ba8240c19dc7983f5aa614813b8fd862894090f5ff45a9d10ae5888375"
+    },
+    {
+      "path": "src/trigger-host/src/samples.rs",
+      "status": "A ",
+      "mode": "0o664",
+      "sha256": "c116b9927495f7ee2d525b39fd4cd948d64dae7e201128392aa78f708578c065"
+    },
+    {
+      "path": "src/trigger-host/tests/internal/selected_samples.rs",
+      "status": "A ",
+      "mode": "0o664",
+      "sha256": "ad497d936d0203086de2f011fee217e81b851019c0ad68be3fda5644180f6382"
+    },
+    {
+      "path": "src/trigger-host/tests/protocol.rs",
+      "status": "M ",
+      "mode": "0o664",
+      "sha256": "763b322412a0728f5a0ac85c7cccf339a35144ff05f8fa256e1c6b58e59954e4"
+    },
+    {
+      "path": "src/trigger-host/tests/selected_admission.rs",
+      "status": "A ",
+      "mode": "0o664",
+      "sha256": "90b6e031cdc8aeed9ed93fe4357edfd7ae090ab7fd5e7f27c8f130e7c9f0dbe8"
+    },
+    {
+      "path": "tests/python/test_engine_only_build.py",
+      "status": "M ",
+      "mode": "0o664",
+      "sha256": "fb05ef0328092c95aa9d0614b9d8dc7071d1b8823ed136b23b18e5c59acaa397"
+    }
+  ],
+  "source_replay": "raw.tar.gz:portable-source-replay.json",
+  "external_binary_replays": "raw.tar.gz:external-replay-artifacts.json",
+  "red": "native-chooser-red-corrected: actual copied prechange CLAP/React returned capabilityUnavailable after literal signed PCM, before production edits. Missing-API compilation and incorrect selector/display setup failures are not RED.",
+  "limits": "16 files, 64 MiB encoded/file, 256 MiB encoded + 512 MiB decoded live union, 256 unique resources, one shared worker/chooser, 32 terminal outcomes; explicit failures and immutable real metadata/content identities.",
+  "validator": "Current copied release: 34 successes / 10 skips / zero failures; unfiltered official validator and fresh production React bundle.",
+  "strict_lint": "Session, host, native editor and GUI adapter strict Clippy PASS. Engine strict Clippy FAIL129 baseline errors; all330 all-target diagnostic occurrences exactly unchanged. No suppression.",
+  "coverage": "Snapshot 13/13 functions,75/75 lines,95/95 regions. Final catalog19/19 functions,186/187 lines,223/224 regions; selection27/27 functions,251/258 lines,321/339 regions. Fresh actual native local-owner mappings/assertions retained; no branch coverage claim. Gaps and instrumentation setup failures explicit.",
+  "mutation": "Excluded; none run or injected.",
+  "resources": "Disk-backed targets, one heavy job,8GiB disk/RAM guards; exact per-run scratch cleanup; all reusable caches/raw profiles preserved. Four max-catalog probes at about834MiB peak debug RSS and640MiB generated WAV cleanup. Old33 never-reused source fixtures archived then cleaned,912MiB removed,about845MiB net recovered; no caches deleted.",
+  "pending": "Full-patch publication, production import/mapping/history/Undo, portable state, installed source-hidden/offline proof, physical input/callback acceptance and named DAW remain in active tasks. VST3/standalone deferred."
+}
