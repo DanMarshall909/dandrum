@@ -26,7 +26,7 @@ fn fixture() -> (tempfile::TempDir, ParameterController, RuntimeAudio) {
     let (controller, audio) = ParameterController::open(
         root,
         TriggerHostConfiguration {
-            sample_rate_hz: 48_000,
+            sample_rate_hz: crate::SampleRate::new(48_000.0).unwrap(),
             max_block_frames: 16,
         },
         NonZeroU64::new(1).unwrap(),
@@ -86,7 +86,7 @@ fn rejected_native_state_preserves_nonempty_real_history_and_successful_external
             PreparedRuntime::new(
                 controller.host.session().prepared(),
                 TriggerHostConfiguration {
-                    sample_rate_hz: 48_000,
+                    sample_rate_hz: crate::SampleRate::new(48_000.0).unwrap(),
                     max_block_frames: 16,
                 },
             )

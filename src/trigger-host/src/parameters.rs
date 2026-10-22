@@ -642,9 +642,7 @@ impl ParameterController {
         self.runtime
             .validate_endpoint(audio)
             .map_err(ParameterError::Runtime)?;
-        if configuration.sample_rate_hz == 0
-            || !(1..=crate::runtime::MAX_BLOCK_FRAMES).contains(&configuration.max_block_frames)
-        {
+        if !(1..=crate::runtime::MAX_BLOCK_FRAMES).contains(&configuration.max_block_frames) {
             return Err(ParameterError::Runtime(RuntimeError::InvalidConfiguration));
         }
         if self.session_job.is_some() || !self.runtime.activation_available() {
@@ -654,8 +652,8 @@ impl ParameterController {
             return Ok(ReconfigurationReport::Unchanged);
         }
         use dandrum_engine::graph::PortDirection;
-        use dandrum_engine::patch::RenderSettings;
         use dandrum_engine::preparation::HostBuses;
+        use dandrum_engine::render_settings::RealtimeRenderSettings;
         use dandrum_instrument_session::CommitError;
         // Accepted root metadata names the same planar buses as its document.
         // The unchanged accepted YAML retains the already validated aliases;
@@ -670,7 +668,7 @@ impl ParameterController {
                 PortDirection::Input => buses.with_input(port.name(), 1),
                 PortDirection::Output => buses.with_output(port.name(), 2),
             });
-        let settings = RenderSettings {
+        let settings = RealtimeRenderSettings {
             sample_rate_hz: configuration.sample_rate_hz,
             block_size_frames: configuration.max_block_frames,
             duration_frames: u64::from(configuration.max_block_frames),
@@ -678,7 +676,7 @@ impl ParameterController {
         let candidate = self
             .host
             .session()
-            .prepare_render_configuration_owned(settings, buses)
+            .prepare_realtime_render_configuration_owned(settings, buses)
             .map_err(ParameterError::Session)?;
         self.host
             .session_mut()

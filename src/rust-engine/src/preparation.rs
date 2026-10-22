@@ -1214,6 +1214,26 @@ pub fn prepare_kernel_patch_for_planar_host_with_context(
     )
 }
 
+/// Prepare the planar host layout with one admitted, unrounded realtime clock.
+pub fn prepare_kernel_patch_realtime_for_planar_host_with_context(
+    patch: &KernelPatch,
+    render_settings: &RealtimeRenderSettings,
+    host_buses: &HostBuses,
+    context: &PreparationContext,
+) -> Result<PreparedKernelInstrument, KernelPreparationError> {
+    validate_sample_declarations(patch.sample_assets())?;
+    validate_sample_module_options(patch)?;
+    prepare_kernel_graph_with_buses_realtime_internal(
+        patch.root(),
+        patch.registry(),
+        render_settings,
+        host_buses,
+        Some(context),
+        true,
+        Some(patch.sample_assets()),
+    )
+}
+
 fn prepare_kernel_graph_with_buses_internal(
     root: &GraphDefinition,
     registry: &DefinitionRegistry,

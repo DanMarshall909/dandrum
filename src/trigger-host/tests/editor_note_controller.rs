@@ -76,7 +76,7 @@ connections:
         let (controller, audio) = ParameterController::open(
             self.directory.path(),
             TriggerHostConfiguration {
-                sample_rate_hz: 48000,
+                sample_rate_hz: dandrum_trigger_host::SampleRate::new(48000.0).unwrap(),
                 max_block_frames: 16,
             },
             NonZeroU64::new(1).unwrap(),

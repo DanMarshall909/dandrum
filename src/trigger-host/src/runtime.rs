@@ -77,14 +77,9 @@ impl PreparedRuntime {
         prepared: &PreparedKernelInstrument,
         configuration: TriggerHostConfiguration,
     ) -> Result<Self, RuntimeError> {
-        if configuration.sample_rate_hz == 0
-            || !(1..=MAX_BLOCK_FRAMES).contains(&configuration.max_block_frames)
-            || prepared
-                .compiled_patch()
-                .render_settings()
-                .sample_rate_hz
-                .hz()
-                != f64::from(configuration.sample_rate_hz)
+        if !(1..=MAX_BLOCK_FRAMES).contains(&configuration.max_block_frames)
+            || prepared.compiled_patch().render_settings().sample_rate_hz
+                != configuration.sample_rate_hz
             || prepared
                 .compiled_patch()
                 .render_settings()
@@ -130,7 +125,7 @@ impl PreparedRuntime {
         let mut processor = Processor {
             graph: RealtimeGraphProcessor::from_compiled_patch(
                 prepared.compiled_patch().clone(),
-                configuration.sample_rate_hz as f32,
+                configuration.sample_rate_hz.hz() as f32,
                 &PreparedSamplerAssets::empty(),
                 frames,
             ),
@@ -1281,7 +1276,7 @@ mod admission_tests {
             },
         );
         let config = TriggerHostConfiguration {
-            sample_rate_hz: 48_000,
+            sample_rate_hz: crate::SampleRate::new(48_000.0).unwrap(),
             max_block_frames: 16,
         };
         let mut session = dandrum_instrument_session::InstrumentSession::new_for_planar_host(
@@ -1483,7 +1478,7 @@ mod admission_tests {
         let prepared = PreparedRuntime::new(
             session.prepared(),
             TriggerHostConfiguration {
-                sample_rate_hz: 48_000,
+                sample_rate_hz: crate::SampleRate::new(48_000.0).unwrap(),
                 max_block_frames: 16,
             },
         )

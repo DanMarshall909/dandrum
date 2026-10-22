@@ -4,8 +4,10 @@ use dandrum_engine::kernel::document::load_kernel_patch_str;
 use dandrum_engine::patch::RenderSettings;
 use dandrum_engine::preparation::{
     HostBuses, PreparationContext, PreparedKernelInstrument,
-    prepare_kernel_patch_for_planar_host_with_context, prepare_kernel_patch_with_context,
+    prepare_kernel_patch_realtime_for_planar_host_with_context,
+    prepare_kernel_patch_realtime_with_context,
 };
+use dandrum_engine::render_settings::RealtimeRenderSettings;
 use std::{
     collections::VecDeque,
     fmt,
@@ -203,7 +205,7 @@ pub struct PreparedDocumentReplacement {
 pub struct PreparedRenderConfiguration {
     prepared: PreparedKernelInstrument,
     context: PreparationContext,
-    settings: RenderSettings,
+    settings: RealtimeRenderSettings,
     host_buses: HostBuses,
     owner: SessionIdentity,
     base_revision: u64,
@@ -215,7 +217,7 @@ pub struct MappingJob {
     action: HistoryAction,
     yaml: String,
     context: PreparationContext,
-    settings: RenderSettings,
+    settings: RealtimeRenderSettings,
     host_buses: Option<Box<HostBuses>>,
 }
 
@@ -275,7 +277,7 @@ pub struct InstrumentSession {
     identity: SessionIdentity,
     attachments: Vec<Weak<()>>,
     context: PreparationContext,
-    settings: RenderSettings,
+    settings: RealtimeRenderSettings,
     host_buses: Option<HostBuses>,
     pending: Option<PendingRequest>,
     outcomes: VecDeque<RetainedOutcome>,
@@ -566,8 +568,20 @@ impl InstrumentSession {
         host_buses: HostBuses,
     ) -> Result<PreparedRenderConfiguration, SessionError> {
         self.ensure_idle()?;
+        let settings = RealtimeRenderSettings::try_from(&settings)
+            .map_err(|error| SessionError::PreparationFailed(error.to_string()))?;
+        self.prepare_realtime_render_configuration_owned(settings, host_buses)
+    }
+
+    /// Prepare a precise host clock without borrowing a disposable editor.
+    pub fn prepare_realtime_render_configuration_owned(
+        &self,
+        settings: RealtimeRenderSettings,
+        host_buses: HostBuses,
+    ) -> Result<PreparedRenderConfiguration, SessionError> {
+        self.ensure_idle()?;
         let context =
-            PreparationContext::new(self.context.document_root(), settings.sample_rate_hz)
+            PreparationContext::new_realtime(self.context.document_root(), settings.sample_rate_hz)
                 .with_macro_roots(self.context.macro_roots().clone());
         let prepared =
             Self::prepare_document(&self.accepted.yaml, &context, &settings, Some(&host_buses))?;
@@ -804,7 +818,7 @@ impl InstrumentSession {
     fn prepare_mapping_document(
         accepted_yaml: &str,
         context: &PreparationContext,
-        settings: &RenderSettings,
+        settings: &RealtimeRenderSettings,
         host_buses: Option<&HostBuses>,
         owner: SessionIdentity,
         base_revision: u64,
@@ -876,10 +890,31 @@ impl InstrumentSession {
         Self::new_with_optional_host_buses(yaml, context, settings, Some(host_buses))
     }
 
+    /// The precise configuration also owns subsequent mapping/history preparation.
+    pub fn new_realtime_for_planar_host(
+        yaml: &str,
+        context: PreparationContext,
+        settings: RealtimeRenderSettings,
+        host_buses: HostBuses,
+    ) -> Result<Self, SessionError> {
+        Self::new_realtime_with_optional_host_buses(yaml, context, settings, Some(host_buses))
+    }
+
     fn new_with_optional_host_buses(
         yaml: &str,
         context: PreparationContext,
         settings: RenderSettings,
+        host_buses: Option<HostBuses>,
+    ) -> Result<Self, SessionError> {
+        let settings = RealtimeRenderSettings::try_from(&settings)
+            .map_err(|error| SessionError::PreparationFailed(error.to_string()))?;
+        Self::new_realtime_with_optional_host_buses(yaml, context, settings, host_buses)
+    }
+
+    fn new_realtime_with_optional_host_buses(
+        yaml: &str,
+        context: PreparationContext,
+        settings: RealtimeRenderSettings,
         host_buses: Option<HostBuses>,
     ) -> Result<Self, SessionError> {
         let prepared = Self::prepare_document(yaml, &context, &settings, host_buses.as_ref())?;
@@ -951,16 +986,16 @@ impl InstrumentSession {
     fn prepare_document(
         yaml: &str,
         context: &PreparationContext,
-        settings: &RenderSettings,
+        settings: &RealtimeRenderSettings,
         host_buses: Option<&HostBuses>,
     ) -> Result<PreparedKernelInstrument, SessionError> {
         let patch = load_kernel_patch_str(yaml)
             .map_err(|error| SessionError::InvalidDocument(error.to_string()))?;
         host_buses
             .map_or_else(
-                || prepare_kernel_patch_with_context(&patch, settings, context),
+                || prepare_kernel_patch_realtime_with_context(&patch, settings, context),
                 |buses| {
-                    prepare_kernel_patch_for_planar_host_with_context(
+                    prepare_kernel_patch_realtime_for_planar_host_with_context(
                         &patch, settings, buses, context,
                     )
                 },

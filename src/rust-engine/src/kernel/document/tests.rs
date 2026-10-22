@@ -118,7 +118,10 @@ modules:
 
 #[test]
 fn fractional_clocks_keep_signed_cursor_and_duration_for_each_sample_player() {
-    use crate::preparation::prepare_kernel_patch_realtime_with_context;
+    use crate::preparation::{
+        HostBuses, prepare_kernel_patch_realtime_for_planar_host_with_context,
+        prepare_kernel_patch_realtime_with_context,
+    };
     use crate::render_settings::{RealtimeRenderSettings, SampleRate};
 
     let directory = tempfile::tempdir().expect("owned sample root");
@@ -181,58 +184,68 @@ connections:
                 duration_frames: 1_026,
             };
             let context = PreparationContext::new_realtime(directory.path(), rate);
-            let prepared = prepare_kernel_patch_realtime_with_context(&patch, &settings, &context)
-                .expect("supported precise sample clock prepares");
-            assert_eq!(context.sample_rate_hz(), hz);
-            assert_eq!(prepared.compiled_patch().render_settings(), &settings);
-            assert_eq!(
-                prepared.sample_assets().sources()[0]
-                    .sample()
-                    .sample_rate_hz(),
-                48_000
-            );
-            let rendered = render_kernel_offline_named(
-                &prepared,
-                vec![TimedInputEvent::new(
-                    0,
-                    ScriptEvent::NoteOn {
-                        note: 36,
-                        velocity: 100,
-                    },
-                )],
-                &PreparedSamplerAssets::empty(),
-            )
-            .expect("precise sample clock renders");
-            let audio = &rendered[0].1[0];
-            assert_eq!(audio[0], -0.75, "{kind} at {hz}");
-            let sounding_frames = (1_024.0 * hz / 48_000.0).ceil() as usize;
-            assert_ne!(
-                audio[sounding_frames - 1],
-                0.0,
-                "last sounding frame: {kind} at {hz}"
-            );
-            if hz >= 48_000.0 {
+            for prepared in [
+                prepare_kernel_patch_realtime_with_context(&patch, &settings, &context)
+                    .expect("supported precise sample clock prepares"),
+                prepare_kernel_patch_realtime_for_planar_host_with_context(
+                    &patch,
+                    &settings,
+                    &HostBuses::new().with_output("master", 1),
+                    &context,
+                )
+                .expect("planar host retains the same exact clock and sample timing"),
+            ] {
+                assert_eq!(context.sample_rate_hz(), hz);
+                assert_eq!(prepared.compiled_patch().render_settings(), &settings);
                 assert_eq!(
+                    prepared.sample_assets().sources()[0]
+                        .sample()
+                        .sample_rate_hz(),
+                    48_000
+                );
+                let rendered = render_kernel_offline_named(
+                    &prepared,
+                    vec![TimedInputEvent::new(
+                        0,
+                        ScriptEvent::NoteOn {
+                            note: 36,
+                            velocity: 100,
+                        },
+                    )],
+                    &PreparedSamplerAssets::empty(),
+                )
+                .expect("precise sample clock renders");
+                let audio = &rendered[0].1[0];
+                assert_eq!(audio[0], -0.75, "{kind} at {hz}");
+                let sounding_frames = (1_024.0 * hz / 48_000.0).ceil() as usize;
+                assert_ne!(
                     audio[sounding_frames - 1],
-                    values[1_023],
-                    "held final source frame: {kind} at {hz}"
+                    0.0,
+                    "last sounding frame: {kind} at {hz}"
                 );
-            }
-            assert_eq!(
-                audio[sounding_frames], 0.0,
-                "first silent frame: {kind} at {hz}"
-            );
-            for (frame, actual) in audio.iter().copied().enumerate() {
-                let position = frame as f64 * 48_000.0 / hz;
-                let expected = if position < 1_024.0 {
-                    (-0.75 + position.min(1_023.0) / 4_096.0) as f32
-                } else {
-                    0.0
-                };
-                assert!(
-                    (actual - expected).abs() <= 0.000_000_2,
-                    "{kind} at {hz}, frame {frame}: {actual} != {expected}"
+                if hz >= 48_000.0 {
+                    assert_eq!(
+                        audio[sounding_frames - 1],
+                        values[1_023],
+                        "held final source frame: {kind} at {hz}"
+                    );
+                }
+                assert_eq!(
+                    audio[sounding_frames], 0.0,
+                    "first silent frame: {kind} at {hz}"
                 );
+                for (frame, actual) in audio.iter().copied().enumerate() {
+                    let position = frame as f64 * 48_000.0 / hz;
+                    let expected = if position < 1_024.0 {
+                        (-0.75 + position.min(1_023.0) / 4_096.0) as f32
+                    } else {
+                        0.0
+                    };
+                    assert!(
+                        (actual - expected).abs() <= 0.000_000_2,
+                        "{kind} at {hz}, frame {frame}: {actual} != {expected}"
+                    );
+                }
             }
         }
     }

@@ -36,7 +36,7 @@ impl Package {
         ParameterController::open(
             self.0.path(),
             TriggerHostConfiguration {
-                sample_rate_hz: 48_000,
+                sample_rate_hz: dandrum_trigger_host::SampleRate::new(48_000.0).unwrap(),
                 max_block_frames: 16,
             },
             NonZeroU64::new(instance).unwrap(),

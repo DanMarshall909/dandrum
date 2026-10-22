@@ -29,7 +29,7 @@ fn controller(
     let (mut controller, audio) = ParameterController::open(
         root,
         TriggerHostConfiguration {
-            sample_rate_hz: 48000,
+            sample_rate_hz: dandrum_trigger_host::SampleRate::new(48_000.0).unwrap(),
             max_block_frames: if events > 64 { (events * 2) as u32 } else { 16 },
         },
         NonZeroU64::new(19).unwrap(),

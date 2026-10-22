@@ -6,12 +6,12 @@ Scope revision, 22 October 2026: the first beta is CLAP-only. Existing task iden
 - [x] 1.2 Specify and implement the maintained normal-hook policy for the recorded mutation exclusion before changed-engine publication, preserving ordinary tests/strict coverage and proving the intended changed-file behavior without bypassing hooks.
 - [x] 1.3 Specify and verify owned disposable-run cleanup after success, failure, cancellation and recovery, retaining compact evidence/reusable caches and proving exact worker/path ownership and bytes reclaimed.
 
-Root owns integration/Git/tracker/shared caches. Preserve the task 1.3 cleanup runner/tests already in progress and their RED/GREEN evidence; they have not been submitted for independent completion review. Independent ready work may use existing isolated lanes with explicit handback and one heavy build at a time. Every behavior change follows RED/GREEN/focused coverage/refactor, normal checks, independent material-boundary review and focused publication. Mutation remains excluded.
+Root owns integration/Git/tracker/shared caches. Task 1.3's cleanup runner/tests and RED/GREEN evidence passed independent review and were normally published at `c112ed10`; preserve that verified boundary and its reusable caches. Independent ready work may use existing isolated lanes with explicit handback and one heavy build at a time. Every behavior change follows RED/GREEN/focused coverage/refactor, normal checks, independent material-boundary review and focused publication. Mutation remains excluded.
 
 ## 2. Precise Format-Neutral Host Clocks
 
-- [ ] 2.1 Specify and implement precise supported realtime clock/configuration/preparation behavior, preserving integer support and proving fractional sample timing, independent instances and off-audio replacement/reclamation through real engine owners.
-- [ ] 2.2 Connect precise clocks through session/controller/CLAP reconfiguration; prove invalid-candidate rollback, existing state/parameter behavior and the exact formerly failing official fractional-rate case without rounding or exclusions.
+- [x] 2.1 Specify and implement precise supported realtime clock/configuration/preparation behavior, preserving integer support and proving fractional sample timing, independent instances and off-audio replacement/reclamation through real engine owners.
+- [x] 2.2 Connect precise clocks through session/controller/CLAP reconfiguration; prove invalid-candidate rollback, existing state/parameter behavior and the exact formerly failing official fractional-rate case without rounding or exclusions.
 
 ## 5. Selected Samples And Interactive Patch Publication
 

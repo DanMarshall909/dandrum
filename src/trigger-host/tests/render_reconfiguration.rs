@@ -9,9 +9,9 @@ use dandrum_trigger_host::{
 use serde_json::{Value, json};
 use std::{num::NonZeroU64, path::Path};
 
-fn configuration(rate: u32, frames: u32) -> TriggerHostConfiguration {
+fn configuration(rate: f64, frames: u32) -> TriggerHostConfiguration {
     TriggerHostConfiguration {
-        sample_rate_hz: rate,
+        sample_rate_hz: dandrum_trigger_host::SampleRate::new(rate).unwrap(),
         max_block_frames: frames,
     }
 }
@@ -146,7 +146,7 @@ fn render<const N: usize>(audio: &mut RuntimeAudio, events: &[TimedEvent]) -> ([
 fn paired_controller_service_preserves_nonzero_restore_epoch_and_ui_settlement_without_servicing_jobs()
  {
     let fixture = Fixture::new();
-    let (mut host, mut audio) = fixture.open(configuration(48_000, 16), 4);
+    let (mut host, mut audio) = fixture.open(configuration(48_000.0, 16), 4);
     let mut editor = Editor::attach(&mut host);
     let mut saved = Vec::new();
     host.save_state(&mut saved).unwrap();
@@ -255,7 +255,7 @@ fn paired_controller_service_preserves_nonzero_restore_epoch_and_ui_settlement_w
             sequence: 3
         }
     );
-    let (mut foreign, mut foreign_audio) = fixture.open(configuration(48_000, 16), 4);
+    let (mut foreign, mut foreign_audio) = fixture.open(configuration(48_000.0, 16), 4);
     assert_eq!(
         host.service_quiescent(&mut foreign_audio),
         Err(ParameterError::Runtime(RuntimeError::ForeignEndpoints))
@@ -270,8 +270,8 @@ fn paired_controller_service_preserves_nonzero_restore_epoch_and_ui_settlement_w
 #[test]
 fn foreign_identity_and_invalid_bounds_precede_busy_without_consuming_structural_work() {
     let fixture = Fixture::new();
-    let (mut host, mut audio) = fixture.open(configuration(48_000, 16), 4);
-    let (mut other, mut other_audio) = fixture.open(configuration(48_000, 16), 4);
+    let (mut host, mut audio) = fixture.open(configuration(48_000.0, 16), 4);
+    let (mut other, mut other_audio) = fixture.open(configuration(48_000.0, 16), 4);
     assert_eq!(
         render::<2>(&mut other_audio, &[on(36, 0)]).0,
         [-0.5, -358.0 / 32768.0]
@@ -279,11 +279,7 @@ fn foreign_identity_and_invalid_bounds_precede_busy_without_consuming_structural
     let mut editor = Editor::attach(&mut host);
     editor.map(&mut host, 60);
     let before = host.session().owner_snapshot();
-    for invalid in [
-        configuration(0, 16),
-        configuration(48_000, 0),
-        configuration(48_000, 16_385),
-    ] {
+    for invalid in [configuration(48_000.0, 0), configuration(48_000.0, 16_385)] {
         assert_eq!(
             host.reconfigure_quiescent(&mut other_audio, invalid),
             Err(ParameterError::Runtime(RuntimeError::ForeignEndpoints))
@@ -294,7 +290,7 @@ fn foreign_identity_and_invalid_bounds_precede_busy_without_consuming_structural
         );
     }
     assert_eq!(
-        other.reconfigure_quiescent(&mut audio, configuration(44_100, 32)),
+        other.reconfigure_quiescent(&mut audio, configuration(44_100.0, 32)),
         Err(ParameterError::Runtime(RuntimeError::ForeignEndpoints))
     );
     assert_eq!(host.session().owner_snapshot(), before);
@@ -314,7 +310,7 @@ fn foreign_identity_and_invalid_bounds_precede_busy_without_consuming_structural
 #[test]
 fn structural_and_runtime_ownership_busy_requires_separate_service_even_for_equal_configuration() {
     let fixture = Fixture::new();
-    let config = configuration(48_000, 16);
+    let config = configuration(48_000.0, 16);
     let (mut host, mut audio) = fixture.open(config, 4);
     let mut editor = Editor::attach(&mut host);
     editor.map(&mut host, 60);
@@ -368,7 +364,7 @@ fn structural_and_runtime_ownership_busy_requires_separate_service_even_for_equa
 #[test]
 fn equal_configuration_continues_real_dsp_without_resource_io_allocation_or_destruction() {
     let fixture = Fixture::new();
-    let config = configuration(48_000, 16);
+    let config = configuration(48_000.0, 16);
     let (mut host, mut audio) = fixture.open(config, 4);
     let before = host.session().owner_snapshot();
     let first = render::<2>(&mut audio, &[on(36, 0)]);
@@ -448,7 +444,7 @@ fn changed_configuration_publishes_session_and_runtime_together_preserving_histo
  {
     use dandrum_trigger_host::parameters::ReconfigurationReport;
     let fixture = Fixture::new();
-    let (mut host, mut audio) = fixture.open(configuration(48_000, 16), 4);
+    let (mut host, mut audio) = fixture.open(configuration(48_000.0, 16), 4);
     let mut editor = Editor::attach(&mut host);
     let mut saved = Vec::new();
     host.save_state(&mut saved).unwrap();
@@ -518,7 +514,7 @@ fn changed_configuration_publishes_session_and_runtime_together_preserving_histo
         (2, true, 0.125)
     );
     let outbound = host.peek_automation();
-    let target = configuration(44_100, 32);
+    let target = configuration(44_100.0, 32);
     assert_eq!(
         host.reconfigure_quiescent(&mut audio, target).unwrap(),
         ReconfigurationReport::Changed
@@ -608,7 +604,7 @@ fn changed_configuration_publishes_session_and_runtime_together_preserving_histo
 #[test]
 fn retained_event_capacity_rejects_shrink_before_commit_and_keeps_old_dsp_and_queued_value() {
     let fixture = Fixture::new();
-    let (mut host, mut audio) = fixture.open(configuration(48_000, 130), 65);
+    let (mut host, mut audio) = fixture.open(configuration(48_000.0, 130), 65);
     let mut editor = Editor::attach(&mut host);
     assert_eq!(
         render::<2>(&mut audio, &[on(36, 0)]).0,
@@ -620,7 +616,7 @@ fn retained_event_capacity_rejects_shrink_before_commit_and_keeps_old_dsp_and_qu
     let outbound = host.peek_automation();
     for frames in [128, 16] {
         assert_eq!(
-            host.reconfigure_quiescent(&mut audio, configuration(44_100, frames)),
+            host.reconfigure_quiescent(&mut audio, configuration(44_100.0, frames)),
             Err(ParameterError::Runtime(RuntimeError::InvalidConfiguration))
         );
         assert_eq!(host.session().owner_snapshot(), before);
@@ -642,7 +638,7 @@ fn retained_event_capacity_rejects_shrink_before_commit_and_keeps_old_dsp_and_qu
 fn missing_or_corrupt_resources_leave_the_loaded_runtime_and_configuration_accepted() {
     for corrupt in [false, true] {
         let fixture = Fixture::new();
-        let (mut host, mut audio) = fixture.open(configuration(48_000, 16), 4);
+        let (mut host, mut audio) = fixture.open(configuration(48_000.0, 16), 4);
         let before = host.session().owner_snapshot();
         let values = host.parameter_state();
         assert_eq!(
@@ -656,7 +652,7 @@ fn missing_or_corrupt_resources_leave_the_loaded_runtime_and_configuration_accep
             std::fs::remove_file(&sample).unwrap();
         }
         assert!(matches!(
-            host.reconfigure_quiescent(&mut audio, configuration(44_100, 32)),
+            host.reconfigure_quiescent(&mut audio, configuration(44_100.0, 32)),
             Err(ParameterError::Session(
                 dandrum_instrument_session::SessionError::PreparationFailed(_)
             ))
@@ -668,7 +664,7 @@ fn missing_or_corrupt_resources_leave_the_loaded_runtime_and_configuration_accep
             [1554.0 / 32768.0, 4137.0 / 32768.0]
         );
         assert_eq!(
-            host.reconfigure_quiescent(&mut audio, configuration(48_000, 16))
+            host.reconfigure_quiescent(&mut audio, configuration(48_000.0, 16))
                 .unwrap(),
             dandrum_trigger_host::parameters::ReconfigurationReport::Unchanged
         );
@@ -741,7 +737,7 @@ fn changed_configuration_resumes_only_live_editor_intent_and_retains_press_gener
     let now = std::time::Instant::now();
     for disposition in ["held", "released", "detached", "reset"] {
         let fixture = Fixture::gated();
-        let (mut host, mut audio) = fixture.open(configuration(48_000, 16), 4);
+        let (mut host, mut audio) = fixture.open(configuration(48_000.0, 16), 4);
         let mut editor = Editor::attach(&mut host);
         let onset = editor.command(&mut host, "noteOn", json!([60, 1.0, 1]));
         host.apply_editor_note(&onset, now).unwrap();
@@ -759,7 +755,7 @@ fn changed_configuration_resumes_only_live_editor_intent_and_retains_press_gener
             _ => (),
         }
         assert_eq!(
-            host.reconfigure_quiescent(&mut audio, configuration(48_000, 32))
+            host.reconfigure_quiescent(&mut audio, configuration(48_000.0, 32))
                 .unwrap(),
             dandrum_trigger_host::parameters::ReconfigurationReport::Changed
         );
@@ -818,7 +814,7 @@ fn changed_configuration_resumes_only_live_editor_intent_and_retains_press_gener
 fn returned_audio_configuration_preserves_host_pitch_arbitration_and_destroys_old_owners_on_control()
  {
     let fixture = Fixture::gated();
-    let (mut host, audio) = fixture.open(configuration(48_000, 16), 4);
+    let (mut host, audio) = fixture.open(configuration(48_000.0, 16), 4);
     let (mut audio, original) = std::thread::spawn(move || {
         let mut audio = audio;
         let rendered = render::<16>(&mut audio, &[on(60, 3)]);
@@ -837,7 +833,7 @@ fn returned_audio_configuration_preserves_host_pitch_arbitration_and_destroys_ol
         .unwrap();
     let mut result = None;
     let ownership = allocation_counter::measure(|| {
-        result = Some(host.reconfigure_quiescent(&mut audio, configuration(44_100, 16)));
+        result = Some(host.reconfigure_quiescent(&mut audio, configuration(44_100.0, 16)));
     });
     assert_eq!(
         result.unwrap().unwrap(),
@@ -886,7 +882,7 @@ fn completed_worker_result_remains_busy_and_publishes_once_only_through_separate
         }
     }
     let fixture = Fixture::new();
-    let (mut host, mut audio) = fixture.open(configuration(48_000, 16), 4);
+    let (mut host, mut audio) = fixture.open(configuration(48_000.0, 16), 4);
     let (sender, receiver) = std::sync::mpsc::sync_channel(1);
     host.start_session_worker(std::sync::Arc::new(Wake(sender)))
         .unwrap();
@@ -900,7 +896,7 @@ fn completed_worker_result_remains_busy_and_publishes_once_only_through_separate
     );
     let before = host.session().owner_snapshot();
     let values = host.parameter_state();
-    let target = configuration(44_100, 32);
+    let target = configuration(44_100.0, 32);
     assert_eq!(
         host.reconfigure_quiescent(&mut audio, target),
         Err(ParameterError::Runtime(RuntimeError::Busy))
@@ -932,4 +928,132 @@ fn completed_worker_result_remains_busy_and_publishes_once_only_through_separate
         SessionJobProgress::Idle
     );
     host.shutdown_session_worker().unwrap();
+}
+
+#[test]
+fn fractional_reconfiguration_keeps_exact_identity_values_history_and_failure_rollback() {
+    use dandrum_trigger_host::parameters::ReconfigurationReport;
+    let fixture = Fixture::new();
+    let (mut host, mut audio) = fixture.open(configuration(48_000.0, 64), 4);
+    let (other, mut other_audio) = fixture.open(configuration(44_100.0, 64), 4);
+    let other_before = other.session().owner_snapshot();
+    let mut editor = Editor::attach(&mut host);
+    assert!(matches!(
+        editor.set(&mut host, "drums.level", 0.125),
+        ParameterReply::Accepted { .. }
+    ));
+    automation(&mut host);
+    render::<1>(&mut audio, &[]);
+    editor.map(&mut host, 60);
+    finish(&mut host, &mut audio);
+    let accepted = host.session().owner_snapshot();
+    assert_eq!(accepted.undo_len, 1);
+    let values = host.parameter_state();
+    assert_eq!(host.physical_value(2), Some(0.5));
+    for hz in [
+        1_234.567_8,
+        48_000.5,
+        48_000.000_001,
+        48_000.0,
+        48_000.000_001,
+    ] {
+        let config = configuration(hz, 64);
+        assert_eq!(
+            host.reconfigure_quiescent(&mut audio, config).unwrap(),
+            ReconfigurationReport::Changed
+        );
+        assert_eq!(
+            host.session()
+                .prepared()
+                .compiled_patch()
+                .render_settings()
+                .sample_rate_hz,
+            config.sample_rate_hz
+        );
+        assert_eq!(host.session().owner_snapshot(), accepted);
+        assert_eq!(host.parameter_state(), values);
+        assert_eq!(host.physical_value(2), Some(0.5));
+        assert_eq!(render::<1>(&mut audio, &[on(60, 0)]), ([-0.25], [-0.25]));
+        assert_eq!(
+            host.reconfigure_quiescent(&mut audio, config).unwrap(),
+            ReconfigurationReport::Unchanged
+        );
+        assert_eq!(other.session().owner_snapshot(), other_before);
+        assert_eq!(
+            other
+                .session()
+                .prepared()
+                .compiled_patch()
+                .render_settings()
+                .sample_rate_hz
+                .hz(),
+            44_100.0
+        );
+    }
+    editor.history(&mut host, "undoInstrumentSession");
+    finish(&mut host, &mut audio);
+    assert_eq!(host.session().owner_snapshot().redo_len, 1);
+    assert_eq!(host.physical_value(2), Some(0.5));
+    assert_eq!(render::<1>(&mut audio, &[on(36, 0)]), ([-0.25], [-0.25]));
+    editor.map(&mut host, 60);
+    finish(&mut host, &mut audio);
+    let accepted = host.session().owner_snapshot();
+    let values = host.parameter_state();
+    assert_eq!((accepted.undo_len, accepted.redo_len), (1, 0));
+    assert_eq!(
+        host.session()
+            .prepared()
+            .compiled_patch()
+            .render_settings()
+            .sample_rate_hz
+            .hz(),
+        48_000.000_001
+    );
+    let mut state = Vec::new();
+    host.save_state(&mut state).unwrap();
+    let (mut fresh, mut fresh_audio) = fixture.open(configuration(1_234.567_8, 64), 4);
+    fresh.load_state(&mut state.as_slice()).unwrap();
+    assert!(fresh.service_quiescent(&mut fresh_audio).unwrap().adopted);
+    assert_eq!(
+        fresh
+            .session()
+            .prepared()
+            .compiled_patch()
+            .render_settings()
+            .sample_rate_hz
+            .hz(),
+        1_234.567_8
+    );
+    assert_eq!(fresh.physical_value(2), Some(0.5));
+    assert_eq!(
+        render::<1>(&mut fresh_audio, &[on(60, 0)]),
+        ([-0.25], [-0.25])
+    );
+    std::fs::remove_file(fixture.0.path().join(ADVANCED_DRUM_KIT_SAMPLE)).unwrap();
+    assert!(matches!(
+        host.reconfigure_quiescent(&mut audio, configuration(48_000.25, 64)),
+        Err(ParameterError::Session(
+            dandrum_instrument_session::SessionError::PreparationFailed(_)
+        ))
+    ));
+    assert_eq!(host.session().owner_snapshot(), accepted);
+    assert_eq!(host.parameter_state(), values);
+    assert_eq!(
+        host.session()
+            .prepared()
+            .compiled_patch()
+            .render_settings()
+            .sample_rate_hz
+            .hz(),
+        48_000.000_001
+    );
+    let reset = allocation_counter::measure(|| {
+        assert!(!audio.reset().admission_closed);
+    });
+    assert_eq!(reset, allocation_counter::AllocationInfo::default());
+    assert_eq!(render::<1>(&mut audio, &[on(60, 0)]), ([-0.25], [-0.25]));
+    assert_eq!(
+        render::<1>(&mut other_audio, &[on(36, 0)]),
+        ([-0.5], [-0.5])
+    );
 }

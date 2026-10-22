@@ -32,7 +32,7 @@ fn open(root: &std::path::Path) -> (ParameterController, RuntimeAudio) {
     ParameterController::open(
         root,
         TriggerHostConfiguration {
-            sample_rate_hz: 48000,
+            sample_rate_hz: dandrum_trigger_host::SampleRate::new(48000.0).unwrap(),
             max_block_frames: 16,
         },
         NonZeroU64::new(9007199254740993).unwrap(),

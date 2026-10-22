@@ -11,7 +11,7 @@ use std::path::PathBuf;
 
 fn configuration() -> TriggerHostConfiguration {
     TriggerHostConfiguration {
-        sample_rate_hz: 48_000,
+        sample_rate_hz: dandrum_trigger_host::SampleRate::new(48_000.0).unwrap(),
         max_block_frames: 16,
     }
 }
@@ -44,13 +44,13 @@ fn planar_session_at(yaml: &str, configuration: TriggerHostConfiguration) -> Ins
             PortDirection::Output => buses.with_output(port.name(), *channels as usize),
         };
     }
-    InstrumentSession::new_for_planar_host(
+    InstrumentSession::new_realtime_for_planar_host(
         yaml,
-        PreparationContext::new(
+        PreparationContext::new_realtime(
             repository.join("examples/patches"),
             configuration.sample_rate_hz,
         ),
-        RenderSettings {
+        dandrum_engine::render_settings::RealtimeRenderSettings {
             sample_rate_hz: configuration.sample_rate_hz,
             block_size_frames: configuration.max_block_frames,
             duration_frames: u64::from(configuration.max_block_frames),
@@ -91,23 +91,19 @@ fn invalid_configuration_or_foreign_layout_cannot_replace_the_running_runtime() 
     let session = session(36);
     for configuration in [
         TriggerHostConfiguration {
-            sample_rate_hz: 0,
-            max_block_frames: 16,
-        },
-        TriggerHostConfiguration {
-            sample_rate_hz: 48_000,
+            sample_rate_hz: dandrum_trigger_host::SampleRate::new(48_000.0).unwrap(),
             max_block_frames: 0,
         },
         TriggerHostConfiguration {
-            sample_rate_hz: 48_000,
+            sample_rate_hz: dandrum_trigger_host::SampleRate::new(48_000.0).unwrap(),
             max_block_frames: 16_385,
         },
         TriggerHostConfiguration {
-            sample_rate_hz: 44_100,
+            sample_rate_hz: dandrum_trigger_host::SampleRate::new(44_100.0).unwrap(),
             max_block_frames: 16,
         },
         TriggerHostConfiguration {
-            sample_rate_hz: 48_000,
+            sample_rate_hz: dandrum_trigger_host::SampleRate::new(48_000.0).unwrap(),
             max_block_frames: 8,
         },
     ] {
@@ -118,7 +114,7 @@ fn invalid_configuration_or_foreign_layout_cannot_replace_the_running_runtime() 
     }
     let (mut control, _audio) = runtime_handoff(prepared(36), 4).unwrap();
     let changed_configuration = TriggerHostConfiguration {
-        sample_rate_hz: 44_100,
+        sample_rate_hz: dandrum_trigger_host::SampleRate::new(44_100.0).unwrap(),
         max_block_frames: 16,
     };
     let changed_session = planar_session_at(

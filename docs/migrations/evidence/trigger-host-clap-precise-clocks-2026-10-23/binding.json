@@ -1,0 +1,70 @@
+{
+  "base": "35137fa64659eed41fcf4e53c746fb9b09a0c4c0",
+  "scope": "Coherent beta tasks2.1/2.2: precise persistent session, format-neutral host/runtime/controller and actual CLAP clocks. First beta CLAP-only; later selected samples/portable state/native/installed/DAW gates remain open. No VST3/standalone implementation.",
+  "sources": {
+    "src/clap-adapter/src/trigger.rs": "350af655df6641e5df0786deb9780a67fcc165a9204e7a773ca848b11869b6ce",
+    "src/clap-adapter/tests/internal/trigger_gui_dispatch.rs": "e8533aca510de9464c9e3846d04a409fe4234db3b6a4c6e2ed3dcb48e3ffaad5",
+    "src/clap-adapter/tests/trigger_dynamic.rs": "0e8a3a047d8b6480bf28fafa38398a38ae6e3a29a77ad14a7b2007d843d00430",
+    "src/instrument-session/src/lib.rs": "9b6107f2cec89662cd0b41d3783477d9acb3d6270ebaa0d3d875bdefeea7e5da",
+    "src/instrument-session/tests/precise_clocks.rs": "d65f5b77919b9a4a8ab0525412f4d242a40ab4be9c7d96c83c05423acca7fec1",
+    "src/rust-engine/src/kernel/document/tests.rs": "705c3ee3d950c3df27c071a61cd8e7c0ba6b285daede320757bca758fc7797c3",
+    "src/rust-engine/src/preparation.rs": "4a91ad75be9282aa4e0ce863eb7a33f4f8964132a5f2d685f3e77e95eb160144",
+    "src/trigger-host/src/lib.rs": "30dcf58843ad960e55aa462a4a9ad8a5d39f8a1fa6bdfe3ce0b85d791af8d849",
+    "src/trigger-host/src/parameters.rs": "5ba5561b5cd6349ab3ce248e524c20c90ffeb469628ea5e11bf3912b688bc70c",
+    "src/trigger-host/src/runtime.rs": "3f426f6847c4adca575c0dbd182fa7bd070fe49769db1628da51815b7c675a7e",
+    "src/trigger-host/tests/editor_encoding.rs": "d9cedde7b41de27731058bab561161a031f781f109592509bc152513c301affd",
+    "src/trigger-host/tests/editor_note_controller.rs": "01c743fc4720beedff841519a0491052f090cf31e77bbb674051784a8293c5ba",
+    "src/trigger-host/tests/internal/state.rs": "126bf7e21f3ae5a12a85a31a09bbeb1805edeb3fb8f0f8a5bcbe59bc917a74d4",
+    "src/trigger-host/tests/packaged_resources.rs": "6db1a4f80c887218b39431fd3cebb986a0d0bfb911e1239859629cde52f5b685",
+    "src/trigger-host/tests/parameter_flush.rs": "0d9d5f6ccb94760c226252cdf5602aa6d628dc2618ffc7489584b478064fa5e4",
+    "src/trigger-host/tests/parameters.rs": "16e89e9820896251d02183e061e9d481ba3c128b1cdefa6557dd03fc77504671",
+    "src/trigger-host/tests/precise_runtime.rs": "43e16e6ecb730a26583200f0aa3f72016500106fc2aff9e22ed27390605ee701",
+    "src/trigger-host/tests/render_reconfiguration.rs": "8c30788e1aa52100102970b0ede6b2cdbdb13b8a13b0b7018d3f6f1cb20c26ec",
+    "src/trigger-host/tests/runtime.rs": "45473022756c8abf9678b842689f81e13a980b8e1be51e61da400dc3ee01b306",
+    "src/trigger-host/tests/runtime_quiescent.rs": "7b7ebbe5314bb4d892c20a08f47ba3735cc4d6f8568b5711331a770b33fc393c",
+    "src/trigger-host/tests/session_jobs.rs": "975d846c6f4a91a4d9c54625ec4ed2f3909d28fb6c7a842e22bb49b5351a4848",
+    "src/trigger-host/tests/snapshot.rs": "4c56e3692f2f2340145d579637a5a695449013d3f64a1ecd8010af6b4129f30a",
+    "src/trigger-host/tests/state.rs": "038e8ccfc17dbb1ef74f9767cf43af95bf59b2a4c74d28ff874cd0484935274c",
+    "src/trigger-host/tests/support/editor_notes.rs": "7f5ffabe325c1baaadcad7bf9a3cfc5e47277c8c3d8db93c13f4dced0d0ac813"
+  },
+  "tdd": "Prior session-only candidate FAILF1 preserved in prior-session-review. Missing APIs were compiler evidence, not behavior RED. The expanded public CLAP test first completed48k signed control then rejected1234.5678 activation before host/runtime/controller/adapter changes; same test now passes. No numeric fault/mutation or waiver. Fresh whole-candidate review required.",
+  "checks": {
+    "session": "Current36 tests PASS; prior strictSessionClippy and49added-planar/session annotated-line proof bind unchanged session/engine sources in the adjacent phase packet.",
+    "host": "All162 cases PASS including compile-fail docs. StrictHostClippy PASS. All17 new production annotated lines plus2 inline-test fixture lines execute. Older aggregate gaps explicit.",
+    "clap": "17 ordinary dynamic cases plus nested calibrated allocator child PASS on headless and instrumented GUI-enabled copied DSOs;13fast native-config owner cases PASS. Strictall-target trigger-editor Clippy PASS. All6 new annotated clock lines execute in actual DSO; trigger.rs measures37/39functions471/512lines599/655regions in this bounded dynamic-only run, not full owner/native coverage.",
+    "official_validator": "Pinned0.4.1 binary, unfiltered org.dandrum.trigger, GUI-enabled release+fresh production bundle:34success10skipped0fail, actual process-varying-sample-rates PASS. Skip reasons and invalid-input diagnostics retained.",
+    "engine": "Unchanged supporting engine sources retain1090unit+integration/doc1097positive PASS from adjacent packet; normal commit/push gates rerun. StrictClippy stillFAIL129baseline diagnostics; no suppression/newidentity, evidence retained adjacent packet.",
+    "specs": "Selected/all52 strict and631scenarios392mapped239backlog pass; only2.1/2.2 checkboxes earned by current checks, no canonical synchronization/full-beta completion.",
+    "mutation": "Excluded; no job.",
+    "resources": "Existing physical caches, jobs1 serial checks and8GiB disk/MemAvailable monitoring. Native scripts explicitly record cache-editor-guard override; outer supervisor default target receipt remains cache-runtime. Owned scratch removed after worker closure; rawprofiles retained."
+  },
+  "limits": [
+    "Historical API-only RED gap and no fresh pre-edit session-owner LLVM measurement remain explicit; pre-owner host LLVM measured.",
+    "Session publication stand-ins are domain contracts only; concrete fractional handoff/reclamation/reset/independence are separately exercised through RuntimeAudio on workers with callback allocation/deallocation sentinels.",
+    "No new physical cadence, X11 input/lifecycle, selected-sample, installed-source-hidden, DAW or full-beta acceptance claim.",
+    "Version1 native protocol still has Undo but no Redo method; its unsupported Redo setup failure was corrected to Undo+normalmapping, later native Redo remains a separate task.",
+    "External replay DSOs and release archive are hashed but excluded from Git; portable source replay and raw profile/log evidence remain in this packet."
+  ],
+  "external_binaries": {
+    "red-baseline-product.tar.gz": {
+      "sha256": "ad594d6710c7e2be0e107288593864935e3468fda0cfe97c058f0fa952a1b8d6",
+      "bytes": 15073350,
+      "retention": "External replay/LLVM object only, excluded from Git evidence archive."
+    },
+    "native-release-product.tar.gz": {
+      "sha256": "c944559a9a7417fd88719617ba744bd10499d09efd69d54fd8a4894a17474dfc",
+      "bytes": 5785853,
+      "retention": "External replay/LLVM object only, excluded from Git evidence archive."
+    },
+    "adapter-clock-instrumented.so": {
+      "sha256": "7bea34c5421bbd723295854c245b214e803c34f7b8d56ff06fcb400460c2e9ec",
+      "bytes": 13957080,
+      "retention": "External replay/LLVM object only, excluded from Git evidence archive."
+    },
+    "/tmp/dandrum-lanes/cache-editor-guard/release/deps/trigger_dynamic-bf1c62b12148ce33": {
+      "sha256": "d1926ce3cf15614b0c9277c08a17687d119a08f2eaafb556db1d1ed573cedf15",
+      "bytes": 1862784,
+      "retention": "Reusable current-source test executable, no copied Cargo target."
+    }
+  }
+}

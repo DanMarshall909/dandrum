@@ -100,7 +100,7 @@ connections:
         PreparedRuntime::new(
             self.session.prepared(),
             TriggerHostConfiguration {
-                sample_rate_hz: 48_000,
+                sample_rate_hz: dandrum_engine::render_settings::SampleRate::new(48_000.0).unwrap(),
                 max_block_frames: FRAMES as u32,
             },
         )

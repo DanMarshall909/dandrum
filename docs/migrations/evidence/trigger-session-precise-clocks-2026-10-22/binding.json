@@ -1,0 +1,22 @@
+{
+  "base": "35137fa64659eed41fcf4e53c746fb9b09a0c4c0",
+  "scope": "Precise persistent-session/planar preparation foundation supporting tasks2.1/2.2; both remain unchecked. No fractional TriggerHost/controller/CLAP acceptance or runtime handoff/native/DAW/release completion claim.",
+  "sources": {
+    "src/instrument-session/src/lib.rs": "9b6107f2cec89662cd0b41d3783477d9acb3d6270ebaa0d3d875bdefeea7e5da",
+    "src/instrument-session/tests/precise_clocks.rs": "d65f5b77919b9a4a8ab0525412f4d242a40ab4be9c7d96c83c05423acca7fec1",
+    "src/rust-engine/src/preparation.rs": "4a91ad75be9282aa4e0ce863eb7a33f4f8964132a5f2d685f3e77e95eb160144",
+    "src/rust-engine/src/kernel/document/tests.rs": "705c3ee3d950c3df27c071a61cd8e7c0ba6b285daede320757bca758fc7797c3"
+  },
+  "checks": {
+    "session": "36 tests pass; strict warnings-denied Clippy PASS.",
+    "engine": "1090 unit + maintained integration/doc targets pass (1097 positive cases total). Strict Clippy FAIL129 baseline library diagnostics; complete diagnostics reconciled in clippy-assessment.json, seven bin messages duplicated under --all-targets, no new identities.",
+    "host": "159 tests including compile-fail docs pass; strict warnings-denied Clippy PASS.",
+    "coverage": "New planar path and session behavior measured separately. All49 annotated added production lines execute; sessionlib69/69functions702/706lines856/863regions. No branch/full callback/concurrency claim; native FFI old gaps retained.",
+    "specs": "Selected/all52strict and631scenario/392mapped/239backlog map pass unchanged.",
+    "official_CLAP_validator": "Existing33success/10skip/1FAIL1234.5678Hz unchanged and unwaived.",
+    "mutation": "Excluded, no job."
+  },
+  "tdd_limits": "New constructor/planar/reconfiguration API absence is retained compiler contract evidence, not executed behavioral RED. Initial wrong test-only import is setup failure. Zero/BUSY case characterizes retained rejection policy. All test/source preimages and numerical GREEN assertions are retained. No fresh pre-edit session-owner LLVM measurement was recorded in this slice; adjacent tests were inspected and retained, and current-source owner coverage is now explicit.",
+  "source_replay": "portable-source-replay.json + base + content-addressed blobs; complete raw source snapshots remain external.",
+  "refactor": "Common realtime settings own session/candidates/jobs; thin integer adapters preserve legacy inputs/C ABI. Covered fixture extracted in same test file. No new dependencies/module/framework."
+}

@@ -770,7 +770,7 @@ fn persistent_endpoints_survive_failed_and_equal_reactivation_then_reconfigure_i
         (f64::INFINITY, 1, 16),
         (0.0, 1, 16),
         (-1.0, 1, 16),
-        (48000.5, 1, 16),
+        (0.5, 1, 16),
         (f64::from(u32::MAX) + 1.0, 1, 16),
         (48000.0, 0, 16),
         (48000.0, 17, 16),
@@ -1526,4 +1526,90 @@ fn optional_host_extensions_and_noncore_events_are_honest_and_unusable_entry_pat
         )
         .is_err()
     );
+}
+
+#[test]
+fn supported_fractional_clocks_activate_and_keep_exact_signed_sample_timing() {
+    let (directory, path) = copied_product();
+    let resources = directory.path().join("DandrumTrigger.resources/instrument");
+    let document_path = resources.join("advanced-drum-kit.yaml");
+    let document = std::fs::read_to_string(&document_path).unwrap();
+    let original = "id: kick, start_frame: 0, end_frame: 12000";
+    assert!(
+        document.contains(original),
+        "known real kit region is the fixture control"
+    );
+    std::fs::write(
+        &document_path,
+        document.replace(original, "id: kick, start_frame: 0, end_frame: 1024"),
+    )
+    .unwrap();
+    // Retain valid source bounds for the entire real kit and its public surface.
+    // Only the kick region is shortened; its distinct ramp is exact PCM16.
+    let mut values = vec![0.0; 51_000];
+    for (frame, value) in values[..1_024].iter_mut().enumerate() {
+        *value = -0.75 + frame as f32 / 4_096.0;
+    }
+    dandrum_engine::wav::write_wav_stereo_i16(
+        std::fs::File::create(resources.join("assets/advanced-drums.wav")).unwrap(),
+        48_000,
+        &values,
+        &values,
+    )
+    .unwrap();
+    let mut plugin = load_at(&path).expect("actual Trigger initializes the valid controlled kit");
+    for hz in [48_000.0, 1_234.567_8, 48_000.5, 48_000.000_001] {
+        let stopped = plugin
+            .activate(
+                |_, _| (),
+                PluginAudioConfiguration {
+                    sample_rate: hz,
+                    min_frames_count: 1,
+                    max_frames_count: 64,
+                },
+            )
+            .unwrap_or_else(|error| panic!("supported {hz} Hz must activate: {error}"));
+        let mut processor = std::thread::spawn(move || stopped.start_processing().unwrap())
+            .join()
+            .unwrap();
+        let mut output = [Vec::with_capacity(1_026), Vec::with_capacity(1_026)];
+        while output[0].len() < 1_026 {
+            let frames = (1_026 - output[0].len()).min(64);
+            let events = if output[0].is_empty() {
+                note(0, 36)
+            } else {
+                EventBuffer::new()
+            };
+            let rendered = block(&mut processor, frames, &events, false);
+            for (target, plane) in output.iter_mut().zip(rendered) {
+                target.extend(plane);
+            }
+        }
+        for channel in &output {
+            assert_eq!(channel[0], -0.75, "literal signed PCM at {hz} Hz");
+            for (frame, &actual) in channel.iter().enumerate() {
+                let position = frame as f64 * 48_000.0 / hz;
+                let expected = if position < 1_024.0 {
+                    (-0.75 + position.min(1_023.0) / 4_096.0) as f32
+                } else {
+                    0.0
+                };
+                assert!(
+                    (actual - expected).abs() <= 0.000_000_2,
+                    "{hz} Hz frame {frame}: {actual} != {expected}"
+                );
+            }
+            let sounding_frames = (1_024.0 * hz / 48_000.0).ceil() as usize;
+            assert_ne!(
+                channel[sounding_frames - 1],
+                0.0,
+                "last sounding frame at {hz} Hz"
+            );
+            assert_eq!(
+                channel[sounding_frames], 0.0,
+                "first silent frame at {hz} Hz"
+            );
+        }
+        deactivate(&mut plugin, processor);
+    }
 }

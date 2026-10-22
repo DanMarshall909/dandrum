@@ -12,8 +12,9 @@ pub mod state;
 
 use dandrum_engine::graph::PortDirection;
 use dandrum_engine::kernel::document::load_kernel_patch_str;
-use dandrum_engine::patch::RenderSettings;
 use dandrum_engine::preparation::{HostBuses, PreparationContext};
+use dandrum_engine::render_settings::RealtimeRenderSettings;
+pub use dandrum_engine::render_settings::SampleRate;
 use dandrum_instrument_session::{Attachment, PreparedDocumentReplacement, SessionError};
 use std::fmt;
 use std::path::{Path, PathBuf};
@@ -25,7 +26,7 @@ pub const ADVANCED_DRUM_KIT_SAMPLE: &str = "instrument/assets/advanced-drums.wav
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct TriggerHostConfiguration {
-    pub sample_rate_hz: u32,
+    pub sample_rate_hz: SampleRate,
     pub max_block_frames: u32,
 }
 
@@ -175,13 +176,15 @@ impl TriggerHost {
         configuration: TriggerHostConfiguration,
     ) -> Result<Self, TriggerHostError> {
         let resources = PackagedResources::open(resource_root)?;
-        let settings = RenderSettings {
+        let settings = RealtimeRenderSettings {
             sample_rate_hz: configuration.sample_rate_hz,
             block_size_frames: configuration.max_block_frames,
             duration_frames: u64::from(configuration.max_block_frames),
         };
-        let context =
-            PreparationContext::new(resources.instrument_root(), configuration.sample_rate_hz);
+        let context = PreparationContext::new_realtime(
+            resources.instrument_root(),
+            configuration.sample_rate_hz,
+        );
         let patch = load_kernel_patch_str(resources.document())
             .map_err(|error| SessionError::InvalidDocument(error.to_string()))?;
         // The Trigger host supplies mono controls and stereo output. Preparation
@@ -194,8 +197,12 @@ impl TriggerHost {
                 PortDirection::Input => buses.with_input(port.name(), 1),
                 PortDirection::Output => buses.with_output(port.name(), 2),
             });
-        let session =
-            InstrumentSession::new_for_planar_host(resources.document(), context, settings, buses)?;
+        let session = InstrumentSession::new_realtime_for_planar_host(
+            resources.document(),
+            context,
+            settings,
+            buses,
+        )?;
         Ok(Self { resources, session })
     }
 

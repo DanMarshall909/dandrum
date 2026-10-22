@@ -13,7 +13,7 @@ use clack_plugin::events::{
 use clack_plugin::stream::{InputStream, OutputStream};
 use clack_plugin::{host::HostInfo, plugin::PluginInstance, prelude::*};
 use dandrum_trigger_host::{
-    TriggerHostConfiguration,
+    SampleRate, TriggerHostConfiguration,
     parameters::{ParameterController, PublicParameter},
     runtime::{ControlEvent, RuntimeAudio, TimedEvent},
 };
@@ -138,7 +138,8 @@ pub(super) fn instance<'a>(
             let (controller, audio) = ParameterController::open(
                 &root,
                 TriggerHostConfiguration {
-                    sample_rate_hz: 48000,
+                    sample_rate_hz: SampleRate::new(48_000.0)
+                        .expect("fixed supported initial clock"),
                     max_block_frames: 16,
                 },
                 wire_instance_id()?,
@@ -445,10 +446,9 @@ impl<'a> PluginAudioProcessor<'a, Shared, Main<'a>> for Processor<'a> {
         shared: &'a Shared,
         config: PluginAudioConfiguration,
     ) -> Result<Self, PluginError> {
-        if !config.sample_rate.is_finite()
-            || config.sample_rate.fract() != 0.0
-            || !(1.0..=f64::from(u32::MAX)).contains(&config.sample_rate)
-            || config.min_frames_count == 0
+        let sample_rate = SampleRate::new(config.sample_rate)
+            .map_err(|_| PluginError::Message("Unsupported Trigger audio configuration"))?;
+        if config.min_frames_count == 0
             || config.max_frames_count < config.min_frames_count
             || config.max_frames_count > 16384
         {
@@ -474,7 +474,7 @@ impl<'a> PluginAudioProcessor<'a, Shared, Main<'a>> for Processor<'a> {
                 .reconfigure_quiescent(
                     &mut audio,
                     TriggerHostConfiguration {
-                        sample_rate_hz: config.sample_rate as u32,
+                        sample_rate_hz: sample_rate,
                         max_block_frames: config.max_frames_count,
                     },
                 )
