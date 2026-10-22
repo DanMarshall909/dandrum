@@ -10,8 +10,8 @@ crate-type = ["cdylib", "rlib"]
 [features]
 default = []
 trigger = ["dep:dandrum_trigger_host"]
-# Developer-only lifecycle tests; required editor services are still unjoined.
-# The CMake Trigger product remains headless; see README.md.
+# Optional GNU Linux/X11 editor used by the opt-in CMake Trigger product.
+# Default proof and plain trigger retain their headless contracts.
 trigger-editor = ["trigger", "dep:dandrum_trigger_editor", "dep:gtk", "dep:x11rb", "dep:libc", "dep:webkit2gtk", "dep:rtrb", "clack-extensions/gui", "clack-extensions/timer"]
 
 [dependencies]

@@ -1,0 +1,132 @@
+{
+  "measured_new_scope_lines": [
+    {
+      "source_line": 1347,
+      "count": 2,
+      "annotation": " 1347|      2|    let has_gui = plugin"
+    },
+    {
+      "source_line": 1348,
+      "count": 2,
+      "annotation": " 1348|      2|        .plugin_handle()"
+    },
+    {
+      "source_line": 1349,
+      "count": 2,
+      "annotation": " 1349|      2|        .get_extension::<clack_extensions::gui::PluginGui>()"
+    },
+    {
+      "source_line": 1350,
+      "count": 2,
+      "annotation": " 1350|      2|        .is_some();"
+    },
+    {
+      "source_line": 1351,
+      "count": 2,
+      "annotation": " 1351|      2|    let (_, main_count) = audit.measure(|| plugin.call_on_main_thread_callback());"
+    },
+    {
+      "source_line": 1352,
+      "count": 2,
+      "annotation": " 1352|      2|    if !has_gui {"
+    },
+    {
+      "source_line": 1353,
+      "count": 1,
+      "annotation": " 1353|      1|        assert_eq!("
+    },
+    {
+      "source_line": 1354,
+      "count": null,
+      "annotation": " 1354|       |            main_count,"
+    },
+    {
+      "source_line": 1355,
+      "count": null,
+      "annotation": " 1355|       |            (0, 0),"
+    },
+    {
+      "source_line": 1356,
+      "count": null,
+      "annotation": " 1356|       |            \"headless static diagnostic through preallocated host recorder\""
+    },
+    {
+      "source_line": 1357,
+      "count": null,
+      "annotation": " 1357|       |        );"
+    },
+    {
+      "source_line": 1358,
+      "count": 1,
+      "annotation": " 1358|      1|    }"
+    },
+    {
+      "source_line": 1359,
+      "count": null,
+      "annotation": " 1359|       |    // GUI control service runs off audio and may allocate; the callback counts"
+    },
+    {
+      "source_line": 1360,
+      "count": null,
+      "annotation": " 1360|       |    // above remain zero for both products, and exact diagnostics are checked below."
+    },
+    {
+      "source_line": 1361,
+      "count": 2,
+      "annotation": " 1361|      2|    println!(\"main-thread service: gui={has_gui}, allocations/deallocations={main_count:?}\");"
+    },
+    {
+      "source_line": 1362,
+      "count": 2,
+      "annotation": " 1362|      2|    plugin.access_shared_handler(|h| {"
+    },
+    {
+      "source_line": 1363,
+      "count": 2,
+      "annotation": " 1363|      2|        assert_eq!(h.logs.load(std::sync::atomic::Ordering::Relaxed), 3)"
+    },
+    {
+      "source_line": 1364,
+      "count": 2,
+      "annotation": " 1364|      2|    });"
+    }
+  ],
+  "file_totals": {
+    "branches": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0
+    },
+    "functions": {
+      "count": 92,
+      "covered": 35,
+      "percent": 38.04347826086957
+    },
+    "instantiations": {
+      "count": 114,
+      "covered": 45,
+      "percent": 39.473684210526315
+    },
+    "lines": {
+      "count": 1220,
+      "covered": 367,
+      "percent": 30.08196721311475
+    },
+    "mcdc": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0
+    },
+    "regions": {
+      "count": 2023,
+      "covered": 536,
+      "notcovered": 1487,
+      "percent": 26.495304003954523
+    }
+  },
+  "limits": "Instrumented test target only; unrelated test functions intentionally not selected; no whole-owner production or branch coverage claim. Both public GUI capability outcomes observed in real parent/child audit stdout; five audio callback and stopped-flush allocation/deallocation assertions remain unconditional.",
+  "production_reuse": "All production Rust .rs and manifests/locks unchanged from independently published32e76817 except Cargo.toml comments. Native owning CTests29 current seam PASS; previously accepted source-bound production LLVM unchanged. No new production Rust coverage claim.",
+  "refactoring": "Removed obsolete reported-library preparer mode and consolidated duplicate failure tests; test-only capability distinction needs no extraction. No new module; mutation excluded."
+}

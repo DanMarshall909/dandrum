@@ -1,0 +1,147 @@
+{
+  "product_sha256": "309e9006a4e41c616b46e41e889e9400507349b20eaf1d0e39ecfde0409b905a",
+  "installed_sha256": {
+    "DandrumTrigger.clap": "309e9006a4e41c616b46e41e889e9400507349b20eaf1d0e39ecfde0409b905a",
+    "DandrumTrigger.resources/.staged": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "DandrumTrigger.resources/editor/app.css": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5",
+    "DandrumTrigger.resources/editor/app.js": "4b9ce5a356fea5f22703f9046c77a80ac616c00242348a12fe81f58fe4f760f2",
+    "DandrumTrigger.resources/editor/fonts/.gitattributes": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616",
+    "DandrumTrigger.resources/editor/fonts/3386a05f6ece969e.ttf": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160",
+    "DandrumTrigger.resources/editor/fonts/6098b66ce7d608dc.ttf": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef",
+    "DandrumTrigger.resources/editor/fonts/74103fd6d41bc32c.ttf": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154",
+    "DandrumTrigger.resources/editor/fonts/91c841fdfa8e7b94.ttf": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc",
+    "DandrumTrigger.resources/editor/fonts/barlow-OFL.txt": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+    "DandrumTrigger.resources/editor/fonts/barlowsemicondensed-OFL.txt": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+    "DandrumTrigger.resources/editor/fonts/c15439e7a03af571.ttf": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c",
+    "DandrumTrigger.resources/editor/fonts/c2b046235fb4c2f8.ttf": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9",
+    "DandrumTrigger.resources/editor/fonts/cb75439ae401f776.ttf": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da",
+    "DandrumTrigger.resources/editor/fonts/df54dbfafba61d49.ttf": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8",
+    "DandrumTrigger.resources/editor/fonts/jetbrainsmono-OFL.txt": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d",
+    "DandrumTrigger.resources/editor/index.html": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26",
+    "DandrumTrigger.resources/instrument/advanced-drum-kit.yaml": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008",
+    "DandrumTrigger.resources/instrument/assets/advanced-drums.wav": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503"
+  },
+  "ordinary_test_sha256": "bf762ef233d147e0b2faa9cd365b8af2c60d9b6e1fa768c7821413633fa6bdb2",
+  "ordinary_test_binding": {
+    "source": "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/rust-target/release/deps/trigger_parameters-8fc57b2ef83fb6e4",
+    "copy": "trigger-parameters-test",
+    "source_sha256": "bf762ef233d147e0b2faa9cd365b8af2c60d9b6e1fa768c7821413633fa6bdb2",
+    "copy_sha256": "bf762ef233d147e0b2faa9cd365b8af2c60d9b6e1fa768c7821413633fa6bdb2",
+    "compiler_artifact": {
+      "reason": "compiler-artifact",
+      "package_id": "path+file:///tmp/dandrum-lanes/runtime/src/clap-adapter#dandrum_clap_adapter@0.1.0",
+      "manifest_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+      "target": {
+        "kind": [
+          "test"
+        ],
+        "crate_types": [
+          "bin"
+        ],
+        "name": "trigger_parameters",
+        "src_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/tests/trigger_parameters.rs",
+        "edition": "2024",
+        "doc": false,
+        "doctest": false,
+        "test": true
+      },
+      "profile": {
+        "opt_level": "3",
+        "debuginfo": 0,
+        "debug_assertions": false,
+        "overflow_checks": false,
+        "test": true
+      },
+      "features": [
+        "default",
+        "trigger",
+        "trigger-editor"
+      ],
+      "filenames": [
+        "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/rust-target/release/deps/trigger_parameters-8fc57b2ef83fb6e4"
+      ],
+      "executable": "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/rust-target/release/deps/trigger_parameters-8fc57b2ef83fb6e4",
+      "fresh": false
+    }
+  },
+  "source_inputs_sha256": "900b8c2e171499c3e79b82f1a8d311ee98e2011b384fc9f0d118ff373d36628e",
+  "production_bundle": {
+    "app.css": {
+      "sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5",
+      "bytes": 11023
+    },
+    "app.js": {
+      "sha256": "4b9ce5a356fea5f22703f9046c77a80ac616c00242348a12fe81f58fe4f760f2",
+      "bytes": 812751
+    },
+    "fonts/.gitattributes": {
+      "sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616",
+      "bytes": 77
+    },
+    "fonts/3386a05f6ece969e.ttf": {
+      "sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160",
+      "bytes": 112204
+    },
+    "fonts/6098b66ce7d608dc.ttf": {
+      "sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef",
+      "bytes": 88644
+    },
+    "fonts/74103fd6d41bc32c.ttf": {
+      "sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154",
+      "bytes": 85776
+    },
+    "fonts/91c841fdfa8e7b94.ttf": {
+      "sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc",
+      "bytes": 81924
+    },
+    "fonts/barlow-OFL.txt": {
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "bytes": 4377
+    },
+    "fonts/barlowsemicondensed-OFL.txt": {
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "bytes": 4377
+    },
+    "fonts/c15439e7a03af571.ttf": {
+      "sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c",
+      "bytes": 85876
+    },
+    "fonts/c2b046235fb4c2f8.ttf": {
+      "sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9",
+      "bytes": 83412
+    },
+    "fonts/cb75439ae401f776.ttf": {
+      "sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da",
+      "bytes": 86708
+    },
+    "fonts/df54dbfafba61d49.ttf": {
+      "sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8",
+      "bytes": 112160
+    },
+    "fonts/jetbrainsmono-OFL.txt": {
+      "sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d",
+      "bytes": 4399
+    },
+    "index.html": {
+      "sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26",
+      "bytes": 326
+    }
+  },
+  "cache": "/tmp/dandrum-lanes/cache-runtime",
+  "compile_absent": [
+    "third_party",
+    "web",
+    "ui",
+    "Node discovery"
+  ],
+  "namespace_hidden": [
+    "/tmp/dandrum-lanes/integration",
+    "/home/dan/code/dandrum",
+    "/tmp/dandrum-lanes/runtime",
+    "/tmp/dandrum-evidence/maintained-gui-product-root/sourcefree-production/source",
+    "/tmp/dandrum-evidence/maintained-gui-product-root/sourcefree-production/editor-input",
+    "/tmp/dandrum-lanes/evidence-trigger-native-gui/current-native-build"
+  ],
+  "network_namespace_unshared": true,
+  "scope": "Fresh maintained GUI product from copied source without JUCE/web/ui, real external production bundle, exact copied installed artifact. Two native synthetic-host cases with conventional source paths unavailable and network namespace isolated. Not a physical device/DAW/release-package or whole-beta claim."
+}

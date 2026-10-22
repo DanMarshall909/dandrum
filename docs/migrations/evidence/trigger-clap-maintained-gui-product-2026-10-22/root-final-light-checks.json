@@ -1,0 +1,53 @@
+[
+  {
+    "command": [
+      "/home/dan/.cargo/bin/cargo",
+      "fmt",
+      "--manifest-path",
+      "src/clap-adapter/Cargo.toml",
+      "--",
+      "--check"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit": 0,
+    "seconds": 0.16938526200829074,
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "command": [
+      "openspec",
+      "validate",
+      "add-juce-free-trigger-clap-editor",
+      "--strict"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit": 0,
+    "seconds": 0.8918026069877669,
+    "stdout_sha256": "5352a5e2d09f9c1ac8811fd82eba9aecca7aa1a6478e8aba7e4adc6601d35aaf",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "command": [
+      "openspec",
+      "validate",
+      "--specs",
+      "--strict"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit": 0,
+    "seconds": 0.2904978650039993,
+    "stdout_sha256": "3c5ada7cb28e7ffbc5714792bd6e7c28a784d53c845aa8b7d13360e489272978",
+    "stderr_sha256": "5bc31df123a2e521acdd2c0d9477b367feec506471a91065d0a6b32c09089ed5"
+  },
+  {
+    "command": [
+      "scripts/check-spec-coverage"
+    ],
+    "cwd": "/tmp/dandrum-lanes/integration",
+    "exit": 0,
+    "seconds": 0.10993712401250377,
+    "stdout_sha256": "7b987bed9e7c0af4a070e394a1138ec1a71f2179a37a058cb0c00c3288e3b084",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+]

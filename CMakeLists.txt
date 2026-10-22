@@ -325,16 +325,18 @@ if(DANDRUM_CLAP_PROOF)
             OUTPUT ${DANDRUM_TRIGGER_CLAP_ARTIFACT}
             COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
                 ${CARGO_BIN} build --locked --release --jobs 2
-                --manifest-path ${DANDRUM_CLAP_DIR}/Cargo.toml --features trigger --lib
+                --manifest-path ${DANDRUM_CLAP_DIR}/Cargo.toml --features trigger-editor --lib
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 ${DANDRUM_CLAP_LIBRARY} ${DANDRUM_TRIGGER_CLAP_ARTIFACT}
             # Both features reuse the warm Cargo directory. The copied default
             # artifact must finish before this feature can overwrite its library.
             DEPENDS ${DANDRUM_CLAP_ARTIFACT} ${DANDRUM_CLAP_SOURCES}
                 ${RUST_ENGINE_SOURCES} ${RUST_SESSION_SOURCES} ${RUST_TRIGGER_HOST_SOURCES}
+                ${RUST_TRIGGER_EDITOR_SOURCES}
                 ${DANDRUM_CLAP_DIR}/Cargo.toml ${DANDRUM_CLAP_DIR}/Cargo.lock
                 ${RUST_SESSION_DIR}/Cargo.toml ${RUST_SESSION_DIR}/Cargo.lock
                 ${RUST_TRIGGER_HOST_DIR}/Cargo.toml ${RUST_TRIGGER_HOST_DIR}/Cargo.lock
+                ${RUST_TRIGGER_EDITOR_DIR}/Cargo.toml ${RUST_TRIGGER_EDITOR_DIR}/Cargo.lock
             COMMENT "Building the session-backed JUCE-free Trigger CLAP product"
             VERBATIM)
         add_custom_target(dandrum-trigger-clap-product DEPENDS ${DANDRUM_TRIGGER_CLAP_ARTIFACT})
@@ -421,8 +423,17 @@ if(DANDRUM_CLAP_PROOF)
                     # libtest succeeds when an exact filter matches no test.
                     FAIL_REGULAR_EXPRESSION "running 0 tests")
             endforeach()
-            # Private developer lifecycle fixture, separate from the headless
-            # product. Select Cargo's reported artifacts, never convenience paths.
+            # CTest does not build custom-target dependencies itself. Build the
+            # maintained GUI product once before either private fixture copies it.
+            add_test(NAME trigger-clap-native-product-build
+                COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}
+                    --target dandrum-trigger-clap-product --parallel 1)
+            set_tests_properties(trigger-clap-native-product-build PROPERTIES
+                LABELS "trigger-clap-boundary;native-x11"
+                FIXTURES_SETUP trigger-clap-product-built
+                RUN_SERIAL TRUE TIMEOUT 1200)
+            # Tests may alter their private sidecars. Copy the exact product,
+            # then select only the requested test executable from Cargo records.
             set(DANDRUM_TRIGGER_NATIVE_FIXTURE ${CMAKE_CURRENT_BINARY_DIR}/trigger-clap-native-fixture)
             add_test(NAME trigger-clap-native-prepare
                 COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/scripts/prepare-trigger-clap-native.py
@@ -430,10 +441,12 @@ if(DANDRUM_CLAP_PROOF)
                     --manifest ${DANDRUM_CLAP_DIR}/Cargo.toml
                     --target-dir ${CMAKE_CURRENT_BINARY_DIR}/rust-target
                     --resource-dir ${DANDRUM_TRIGGER_RESOURCE_DIR}
+                    --product ${DANDRUM_TRIGGER_CLAP_ARTIFACT}
                     --output-dir ${DANDRUM_TRIGGER_NATIVE_FIXTURE})
             set_tests_properties(trigger-clap-native-prepare PROPERTIES
                 LABELS "trigger-clap-boundary;native-x11"
                 FIXTURES_SETUP trigger-clap-native-compiled
+                FIXTURES_REQUIRED trigger-clap-product-built
                 RUN_SERIAL TRUE TIMEOUT 1200)
             set(trigger_native_names extension lifecycle configuration loader-identity failed-parent)
             set(trigger_native_cases
@@ -463,11 +476,13 @@ if(DANDRUM_CLAP_PROOF)
                     --manifest ${DANDRUM_CLAP_DIR}/Cargo.toml
                     --target-dir ${CMAKE_CURRENT_BINARY_DIR}/rust-target
                     --resource-dir ${DANDRUM_TRIGGER_RESOURCE_DIR}
+                    --product ${DANDRUM_TRIGGER_CLAP_ARTIFACT}
                     --output-dir ${DANDRUM_TRIGGER_PARAMETERS_FIXTURE}
                     --test-target trigger_parameters)
             set_tests_properties(trigger-clap-native-parameters-prepare PROPERTIES
                 LABELS "trigger-clap-boundary;native-x11"
                 FIXTURES_SETUP trigger-clap-parameters-compiled
+                FIXTURES_REQUIRED trigger-clap-product-built
                 RUN_SERIAL TRUE TIMEOUT 1200)
             set(trigger_parameter_names
                 state flush ownership

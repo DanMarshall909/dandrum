@@ -1,0 +1,24 @@
+{
+  "source": "/tmp/dandrum-lanes/integration/src/clap-adapter/tests/trigger_dynamic.rs",
+  "source_sha256": "84ce4a3322c71a80619b6cc22b58ac03a5b16e24fc4e0bef4d7d0b8328132937",
+  "test": "/tmp/dandrum-lanes/cache-runtime/release/deps/trigger_dynamic-e1645e451632354d",
+  "test_sha256": "115ae14ed44265936d8950c7588ab8bee8e92f8f37e37f875ca7d8199887c739",
+  "products": {
+    "headless": {
+      "path": "/tmp/dandrum-evidence/maintained-gui-product-root/scope-headless-product/DandrumTrigger.clap",
+      "sha256": "bc2830ffacfe7e6acd373d2af89389cbe8974956611af29631af40a6364dfdc7"
+    },
+    "gui": {
+      "path": "/tmp/dandrum-evidence/maintained-gui-product-root/sourcefree-production/installed/DandrumTrigger.clap",
+      "sha256": "309e9006a4e41c616b46e41e889e9400507349b20eaf1d0e39ecfde0409b905a"
+    }
+  },
+  "profiles": {
+    "gui-14128361890609041448_0-2849544.profraw": "468f1e3dcb1acdb2dc9fd98ba4861b514c7ee37746a0602e5cb63b38763c6b8a",
+    "gui-14128361890609041448_0-2849592.profraw": "5cb25d33cf2d81b2253a2e322b3f295fdbd1d572f84f0b1adab7c898546a0299",
+    "headless-14128361890609041448_0-2849477.profraw": "a5bc3c4685b4dc768d5620f4d348de61b0d0befc57e157f516fb4737c32dbe2b",
+    "headless-14128361890609041448_0-2849538.profraw": "abe06f9416b4523e126ae0852082655af3624c54365b7b59a5dfa106bdb40b5d"
+  },
+  "merged_profile_sha256": "86e98db4af538b0ca5087326665d511abf45a83dc397366dd5504cedb920a5cb",
+  "scope": "Instrumented maintained dynamic test target only, both actual plain-trigger and fresh installed GUI products; new main-thread capability distinction, unchanged DSO callback sentinels. Not production/whole-owner coverage."
+}

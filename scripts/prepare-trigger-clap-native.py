@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare a native test fixture from Cargo's actual compiler-artifact records."""
+"""Bind a prebuilt product and Cargo-reported test into a private native fixture."""
 import argparse
 import hashlib
 import json
@@ -19,8 +19,7 @@ class FixtureError(Exception):
     """The requested native test fixture cannot be bound unambiguously."""
 
 
-def select_artifacts(stdout, test_target):
-    libraries = []
+def select_test(stdout, test_target):
     tests = []
     for line in stdout.splitlines():
         try:
@@ -30,18 +29,13 @@ def select_artifacts(stdout, test_target):
         if not isinstance(record, dict) or record.get('reason') != 'compiler-artifact':
             continue
         target = record.get('target', {})
-        if (target.get('name') == 'dandrum_clap_adapter'
-                and 'cdylib' in target.get('crate_types', [])
-                and record.get('profile', {}).get('test') is False):
-            libraries.extend((filename, record) for filename in record.get('filenames', [])
-                             if filename.endswith('.so'))
         if (target.get('name') == test_target and 'test' in target.get('kind', [])
                 and record.get('executable')):
             tests.append((record['executable'], record))
-    for rule, candidates in [('production-cdylib', libraries), (test_target.replace('_', '-') + '-test', tests)]:
-        if len(candidates) != 1:
-            raise FixtureError(f'{rule}: expected exactly one reported artifact; found {len(candidates)}')
-    return {'plugin': libraries[0], 'test': tests[0]}
+    if len(tests) != 1:
+        raise FixtureError(f'{test_target.replace("_", "-")}-test: '
+                           f'expected exactly one reported artifact; found {len(tests)}')
+    return tests[0]
 
 
 def sha256(path):
@@ -92,11 +86,15 @@ def prepare(args):
     invocation_path.write_text(json.dumps(invocation, indent=2) + '\n')
     if result.returncode != 0:
         raise FixtureError(f'cargo-exit-status: {result.returncode}; evidence: {evidence}')
-    artifacts = select_artifacts((evidence / 'cargo.stdout.log').read_text(errors='replace'), args.test_target)
+    executable, record = select_test(
+        (evidence / 'cargo.stdout.log').read_text(errors='replace'), args.test_target)
+    artifacts = {'plugin': (str(args.product.absolute()), None), 'test': (executable, record)}
     binding = {'schema_version': 1, 'owner': OWNER, **invocation, 'artifacts': {}}
     for name, destination in [('plugin', 'DandrumTrigger.clap'), ('test', args.test_target.replace('_', '-') + '-test')]:
         reported_path, record = artifacts[name]
         source = Path(reported_path)
+        if not source.is_file():
+            raise FixtureError(f'artifact-source: {name}: not a regular file: {source}')
         digest = sha256(source)
         copied = stage / destination
         shutil.copy2(source, copied)
@@ -105,9 +103,26 @@ def prepare(args):
             raise FixtureError(f'artifact-copy-hash: {name}: copied bytes differ from {reported_path}')
         binding['artifacts'][name] = {
             'source': reported_path, 'copy': destination, 'source_sha256': digest,
-            'copy_sha256': copied_digest, 'compiler_artifact': record,
+            'copy_sha256': copied_digest,
         }
-    shutil.copytree(args.resource_dir, stage / 'DandrumTrigger.resources')
+        if name == 'plugin':
+            binding['artifacts'][name]['provenance'] = 'prebuilt-product'
+        else:
+            binding['artifacts'][name]['compiler_artifact'] = record
+    resource_source = args.resource_dir.absolute()
+    resource_copy = stage / 'DandrumTrigger.resources'
+    resource_hashes = {path.relative_to(resource_source).as_posix(): sha256(path)
+                       for path in sorted(resource_source.rglob('*')) if path.is_file()}
+    shutil.copytree(resource_source, resource_copy)
+    copied_hashes = {path.relative_to(resource_copy).as_posix(): sha256(path)
+                     for path in sorted(resource_copy.rglob('*')) if path.is_file()}
+    if copied_hashes != resource_hashes:
+        raise FixtureError('resource-copy-hash: copied resource files differ from input tree')
+    binding['resources'] = {
+        'source': str(resource_source), 'copy': resource_copy.name,
+        'files': [{'path': relative, 'source_sha256': digest, 'copy_sha256': copied_hashes[relative]}
+                  for relative, digest in sorted(resource_hashes.items())],
+    }
     (stage / 'binding.json').write_text(json.dumps(binding, indent=2) + '\n')
     alias = stage.with_name(stage.name + '-alias')
     alias.symlink_to(stage.name, target_is_directory=True)
@@ -116,7 +131,7 @@ def prepare(args):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    for option in ['cargo', 'manifest', 'target-dir', 'resource-dir', 'output-dir']:
+    for option in ['cargo', 'manifest', 'target-dir', 'resource-dir', 'output-dir', 'product']:
         parser.add_argument('--' + option, type=Path, required=True)
     parser.add_argument('--test-target', choices=['trigger_gui', 'trigger_parameters'], default='trigger_gui')
     args = parser.parse_args(argv)

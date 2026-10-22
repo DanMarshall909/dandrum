@@ -1,0 +1,25 @@
+[
+  {
+    "source": "/dev/shm/dandrum-beta-20261020",
+    "preserved": "/tmp/dandrum-lanes/ram-cache-preserved-20261022",
+    "logical_file_bytes": 16384455084,
+    "entries": 35558,
+    "manifest_sha256": "0f24e5807ad6f16ed5b5031b2a1a7c90f1d61d494ad58a2dae35481b6b1ef589",
+    "hardlink_groups": 2008,
+    "seconds": 13.376368596975226,
+    "shm_available_after_release": 16769228800,
+    "verified": "Complete root-relative content/type/mode/uid/gid/mtime/symlink/hardlink equality on preserved resolved tree. Round0 validated both source and copy before release, then its logical-alias root lstat check failed because directory became symlink. No product or data failure claimed."
+  },
+  {
+    "source": "/dev/shm/dnb",
+    "preserved": "/tmp/dandrum-lanes/ram-bootstrap-preserved-20261022",
+    "logical_file_bytes": 11889451,
+    "entries": 874,
+    "manifest_sha256": "44908ff03089a7cd9ad27da679ea38b2c0508a07688de82a037d35b88b5ebe7f",
+    "hardlink_groups": 0,
+    "seconds": 0.5589399310410954,
+    "shm_available_before_release": 16769228800,
+    "shm_available_after_release": 16783167488,
+    "verified": "Full content/type/mode/uid/gid/mtime/symlink/hardlink equality before original removal; logical alias retained; no live consumers."
+  }
+]

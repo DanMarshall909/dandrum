@@ -1,0 +1,14 @@
+{
+  "base": "32e76817c445b7b4aeced731ce1682c1a68c503e",
+  "author_manifest_sha256": "a907ebbe21e76672e5c5d67a167adae3685a5256780f98dda470ace35719b3e7",
+  "verified_author_files": 5032,
+  "verified_author_bytes": 45563767,
+  "source_sha256": {
+    "CMakeLists.txt": "59d3efbbdbb895fdfa562f99b8226f57d27bda33697b4b801ae11163abd1b56c",
+    "scripts/prepare-trigger-clap-native.py": "445c05dac66fc9c58d72eeac2f30fa585c3ace8a77841a3af0aed34f8ab27044",
+    "tests/python/test_trigger_native_fixture.py": "4768b00e92c4044660307e6b956f5c135254e476ada4e6875adfe8ca37cd61fc",
+    "tests/python/test_engine_only_build.py": "8f68a8f2bc993cf49f297b5861dea8b976bc7a06c5f821018cfb04347d709483"
+  },
+  "cache_regular_files_preserved": 1766,
+  "author_source_cache_build_release": "Explicit handback acknowledged; root sole owner; no builders active"
+}

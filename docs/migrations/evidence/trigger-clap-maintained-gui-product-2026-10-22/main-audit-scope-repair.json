@@ -1,0 +1,6 @@
+{
+  "red_receipt_sha256": "8caaa0a1900edd0f83f2d6bb5e289b083297dc77a632975491923aeeb29441f6",
+  "changed_path": "src/clap-adapter/tests/trigger_dynamic.rs",
+  "source_sha256": "84ce4a3322c71a80619b6cc22b58ac03a5b16e24fc4e0bef4d7d0b8328132937",
+  "scope": "Test-only capability-bound main control service allocation assertion; five audio callback and stopped flush zero-allocation assertions unchanged; exact static diagnostics remain unconditional."
+}

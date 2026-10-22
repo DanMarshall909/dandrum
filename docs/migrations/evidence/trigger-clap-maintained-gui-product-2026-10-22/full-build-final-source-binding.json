@@ -1,0 +1,12 @@
+{
+  "source_fixture": "/tmp/dandrum-lanes/integration/build/engine-only-regression/fixture-8xm_hohj/source",
+  "source_paths_absent": [
+    "third_party",
+    "web",
+    "ui"
+  ],
+  "source_inputs_sha256": "e1fa79f887b1f2fc7c1ece04bedb925410d76690bc11a138192747e5ac58ce51",
+  "mutable_worklogs_preserved": 52,
+  "receipt_sha256": "f91f9ff116437c4c2fc995f0b9acbb761c572a607ca54aa6a62a23ceeb26912f",
+  "scope": "Complete maintained ClapProofBuildTest nine methods PASS after test-only GUI-main allocation scope correction. All bound production/test sources unchanged during run."
+}

@@ -42,6 +42,10 @@ class TriggerNativeFixtureTest(unittest.TestCase):
         self.plugin.parent.mkdir(parents=True)
         self.plugin.write_bytes(b'actual deps cdylib\x00\xff')
         self.plugin.chmod(0o754)
+        self.product = self.root / 'maintained/DandrumTrigger.clap'
+        self.product.parent.mkdir()
+        self.product.write_bytes(b'explicit maintained GUI product\x00\xfe')
+        self.product.chmod(0o750)
         self.stale = self.target / 'release/libdandrum_clap_adapter.so'
         self.stale.write_bytes(b'STALE convenience library')
         self.executable = self.plugin.parent / 'trigger_gui-38f819efb15c476e'
@@ -103,7 +107,7 @@ class TriggerNativeFixtureTest(unittest.TestCase):
             argv = [
                 '--cargo', str(self.cargo), '--manifest', str(self.manifest),
                 '--target-dir', str(self.target), '--resource-dir', str(self.resources),
-                '--output-dir', str(self.output), *extra_args]
+                '--output-dir', str(self.output), '--product', str(self.product), *extra_args]
             if cli:
                 with patch.object(sys, 'argv', [str(DRIVER), *argv]), self.assertRaises(SystemExit) as exited:
                     runpy.run_path(str(DRIVER), run_name='__main__')
@@ -112,8 +116,8 @@ class TriggerNativeFixtureTest(unittest.TestCase):
                 result = self.driver.main(argv)
         return result, stderr.getvalue(), stdout
 
-    def test_reported_deps_library_and_test_are_copied_with_exact_binding(self):
-        # A libtest and an rlib-only record with the same name are not production cdylibs.
+    def test_prebuilt_product_and_reported_test_are_copied_with_exact_binding(self):
+        # DSO/libtest/rlib records cannot supply or redirect the prebuilt product.
         libtest = copy.deepcopy(self.library_record)
         libtest['profile']['test'] = True
         rlib = copy.deepcopy(self.library_record)
@@ -123,7 +127,7 @@ class TriggerNativeFixtureTest(unittest.TestCase):
         result, error, raw_stdout = self.run_driver([[], diagnostic, libtest, rlib, *self.records], cli=True)
         self.assertEqual((result, error), (0, ''))
         self.assertTrue(self.output.is_symlink())
-        for name, original in [('DandrumTrigger.clap', self.plugin), ('trigger-gui-test', self.executable)]:
+        for name, original in [('DandrumTrigger.clap', self.product), ('trigger-gui-test', self.executable)]:
             copied = self.output / name
             self.assertEqual(copied.read_bytes(), original.read_bytes())
             self.assertEqual(stat.S_IMODE(copied.stat().st_mode), stat.S_IMODE(original.stat().st_mode))
@@ -144,13 +148,30 @@ class TriggerNativeFixtureTest(unittest.TestCase):
         binding = json.loads((self.output / 'binding.json').read_text())
         self.assertEqual(binding['command'], command)
         for key, source, record, destination in [
-            ('plugin', self.plugin, self.library_record, 'DandrumTrigger.clap'),
+            ('plugin', self.product, None, 'DandrumTrigger.clap'),
             ('test', self.executable, self.test_record, 'trigger-gui-test')]:
             artifact = binding['artifacts'][key]
             digest = hashlib.sha256(source.read_bytes()).hexdigest()
-            self.assertEqual(artifact, {'source': str(source), 'copy': destination,
-                                        'source_sha256': digest, 'copy_sha256': digest,
-                                        'compiler_artifact': record})
+            expected = {'source': str(source), 'copy': destination,
+                        'source_sha256': digest, 'copy_sha256': digest}
+            if record is None:
+                expected['provenance'] = 'prebuilt-product'
+            else:
+                expected['compiler_artifact'] = record
+            self.assertEqual(artifact, expected)
+
+    def test_resources_are_bound_by_sorted_relative_file_hashes_and_are_private(self):
+        (self.resources / 'alpha.txt').write_bytes(b'first resource')
+        self.assertEqual(self.run_driver()[0], 0)
+        binding = json.loads((self.output / 'binding.json').read_text())
+        expected = []
+        for relative in ['alpha.txt', 'nested/ui.bin']:
+            digest = hashlib.sha256((self.resources / relative).read_bytes()).hexdigest()
+            expected.append({'path': relative, 'source_sha256': digest, 'copy_sha256': digest})
+        self.assertEqual(binding['resources'], {'source': str(self.resources),
+                                               'copy': 'DandrumTrigger.resources', 'files': expected})
+        (self.output / 'DandrumTrigger.resources/alpha.txt').write_bytes(b'test-only changes')
+        self.assertEqual((self.resources / 'alpha.txt').read_bytes(), b'first resource')
 
     def test_explicit_parameter_target_selects_its_reported_executable(self):
         parameters = copy.deepcopy(self.test_record)
@@ -173,25 +194,23 @@ class TriggerNativeFixtureTest(unittest.TestCase):
         self.assertEqual(binding['artifacts']['test']['source'], str(executable))
         self.assertEqual(binding['artifacts']['test']['compiler_artifact'], parameters)
 
-    def test_missing_or_ambiguous_reported_artifacts_are_named_failures(self):
-        no_so = copy.deepcopy(self.library_record)
-        no_so['filenames'] = [str(self.plugin.with_suffix('.rlib'))]
+    def test_only_the_requested_test_must_be_uniquely_reported(self):
         no_executable = copy.deepcopy(self.test_record)
         no_executable['executable'] = None
-        cases = [
-            ([self.test_record], 'production-cdylib'),
-            ([no_so, self.test_record], 'production-cdylib'),
-            ([self.library_record, self.library_record, self.test_record], 'production-cdylib'),
-            ([self.library_record], 'trigger-gui-test'),
-            ([self.library_record, no_executable], 'trigger-gui-test'),
-            ([self.library_record, self.test_record, self.test_record], 'trigger-gui-test'),
-        ]
-        for records, diagnostic in cases:
-            with self.subTest(diagnostic=diagnostic, records=records):
+        self.plugin.unlink()  # Even nonexistent reported DSOs are irrelevant.
+        for records in ([self.test_record],
+                        [self.library_record, self.library_record, self.test_record]):
+            with self.subTest(records=records):
+                result, error, _ = self.run_driver(records)
+                self.assertEqual((result, error), (0, ''))
+                self.assertEqual((self.output / 'DandrumTrigger.clap').read_bytes(),
+                                 self.product.read_bytes())
+        for records in ([], [self.library_record], [no_executable],
+                        [self.test_record, self.test_record]):
+            with self.subTest(records=records):
                 result, error, _ = self.run_driver(records)
                 self.assertNotEqual(result, 0)
-                self.assertIn(diagnostic, error)
-                self.assertFalse(self.output.exists())
+                self.assertIn('trigger-gui-test', error)
 
     def test_nonzero_cargo_retains_raw_evidence_and_refuses_plausible_artifacts(self):
         result, error, raw_stdout = self.run_driver(status=23)
@@ -211,38 +230,79 @@ class TriggerNativeFixtureTest(unittest.TestCase):
         previous = self.output.resolve()
         previous_binding = (previous / 'binding.json').read_bytes()
         previous_plugin = (previous / 'DandrumTrigger.clap').read_bytes()
-        self.plugin.write_bytes(b'next actual deps library')
+        self.product.write_bytes(b'next maintained product')
         (self.resources / 'next.bin').write_bytes(b'next resource')
         self.assertEqual(self.run_driver()[0], 0)
         self.assertNotEqual(self.output.resolve(), previous)
         self.assertEqual((previous / 'binding.json').read_bytes(), previous_binding)
         self.assertEqual((previous / 'DandrumTrigger.clap').read_bytes(), previous_plugin)
-        self.assertEqual((self.output / 'DandrumTrigger.clap').read_bytes(), b'next actual deps library')
+        self.assertEqual((self.output / 'DandrumTrigger.clap').read_bytes(), b'next maintained product')
         self.assertEqual((self.output / 'DandrumTrigger.resources/next.bin').read_bytes(), b'next resource')
         self.assertEqual(len(list(self.root.glob('.trigger-clap-native-fixture-*'))), 2)
 
-    def test_failed_prepare_keeps_the_accepted_binding(self):
+    def test_every_preparation_failure_keeps_all_prior_accepted_bytes(self):
         self.assertEqual(self.run_driver()[0], 0)
         accepted = self.output.resolve()
-        binding = (accepted / 'binding.json').read_bytes()
-        for records, status in [([], 0), (self.records, 17)]:
-            result, _, _ = self.run_driver(records, status)
+        prior = {p.relative_to(accepted).as_posix(): p.read_bytes()
+                 for p in accepted.rglob('*') if p.is_file()}
+
+        def preserves_failure(diagnostic, **options):
+            result, error, _ = self.run_driver(**options)
             self.assertNotEqual(result, 0)
+            self.assertIn(diagnostic, error)
             self.assertEqual(self.output.resolve(), accepted)
-            self.assertEqual((accepted / 'binding.json').read_bytes(), binding)
-        # A reported path that is missing must not fall back to the stale convenience path.
-        self.plugin.unlink()
-        result, error, _ = self.run_driver()
-        self.assertNotEqual(result, 0)
-        self.assertIn(str(self.plugin), error)
-        self.assertEqual(self.output.resolve(), accepted)
-        self.plugin.write_bytes(b'restored actual library')
-        self.resources.rename(self.resources.with_name('parked-resources'))
-        result, error, _ = self.run_driver()
-        self.assertNotEqual(result, 0)
-        self.assertIn(str(self.resources), error)
-        self.assertEqual(self.output.resolve(), accepted)
-        self.assertEqual((accepted / 'binding.json').read_bytes(), binding)
+            self.assertEqual({p.relative_to(accepted).as_posix(): p.read_bytes()
+                              for p in accepted.rglob('*') if p.is_file()}, prior)
+
+        preserves_failure('cargo-exit-status: 27', status=27)
+        preserves_failure('trigger-gui-test', records=[])
+        preserves_failure('trigger-gui-test', records=[self.test_record, self.test_record])
+        self.executable.unlink()
+        preserves_failure(str(self.executable))
+        self.executable.mkdir()
+        preserves_failure(str(self.executable))
+        self.executable.rmdir()
+        self.executable.write_bytes(b'restored requested test')
+        self.product.unlink()
+        preserves_failure(str(self.product))
+        self.product.mkdir()
+        preserves_failure(str(self.product))
+        self.product.rmdir()
+        self.product.write_bytes(b'restored product')
+        parked = self.resources.with_name('parked-resources')
+        self.resources.rename(parked)
+        preserves_failure(str(self.resources))
+        parked.rename(self.resources)
+        copy_file = self.driver.shutil.copy2
+        for name, diagnostic in [('DandrumTrigger.clap', 'plugin'),
+                                 ('trigger-gui-test', 'test')]:
+            def corrupt(source, destination, **kwargs):
+                result = copy_file(source, destination, **kwargs)
+                if Path(destination).name == name:
+                    Path(destination).write_bytes(b'corrupted artifact')
+                return result
+            with patch.object(self.driver.shutil, 'copy2', side_effect=corrupt):
+                preserves_failure('artifact-copy-hash: ' + diagnostic)
+        with patch.object(self.driver.shutil, 'copy2', side_effect=OSError('injected artifact copy failure')):
+            preserves_failure('injected artifact copy failure')
+        copy_tree = self.driver.shutil.copytree
+
+        def corrupt_resources(source, destination, *args, **kwargs):
+            result = copy_tree(source, destination, *args, **kwargs)
+            if Path(source) == self.resources:
+                (Path(destination) / 'nested/ui.bin').write_bytes(b'wrong resource copy')
+            return result
+
+        with patch.object(self.driver.shutil, 'copytree', side_effect=corrupt_resources):
+            preserves_failure('resource-copy-hash')
+        with patch.object(self.driver.shutil, 'copytree', side_effect=OSError('injected resource copy failure')):
+            preserves_failure('injected resource copy failure')
+        with patch.object(self.driver.os, 'replace', side_effect=OSError('injected alias publication failure')):
+            preserves_failure('injected alias publication failure')
+        self.assertEqual(self.run_driver()[0], 0)
+        self.assertNotEqual(self.output.resolve(), accepted)
+        self.assertEqual({p.relative_to(accepted).as_posix(): p.read_bytes()
+                          for p in accepted.rglob('*') if p.is_file()}, prior)
 
     def test_existing_directory_file_or_unowned_alias_is_refused_without_cargo(self):
         directory = self.root / 'existing-directory'
@@ -262,7 +322,12 @@ class TriggerNativeFixtureTest(unittest.TestCase):
         (malformed / 'binding.json').write_text('not JSON')
         malformed_alias = self.root / 'malformed-alias'
         malformed_alias.symlink_to(malformed.name)
-        for output in [directory, regular, alias, dangling, malformed_alias]:
+        wrong_schema = self.root / '.trigger-clap-native-fixture-wrong-schema'
+        wrong_schema.mkdir()
+        (wrong_schema / 'binding.json').write_text(json.dumps({'owner': self.driver.OWNER, 'schema_version': 2}))
+        wrong_schema_alias = self.root / 'wrong-schema-alias'
+        wrong_schema_alias.symlink_to(wrong_schema.name)
+        for output in [directory, regular, alias, dangling, malformed_alias, wrong_schema_alias]:
             with self.subTest(output=output):
                 self.output = output
                 result, error, _ = self.run_driver()
@@ -273,23 +338,6 @@ class TriggerNativeFixtureTest(unittest.TestCase):
         self.assertEqual(regular.read_bytes(), b'preserve regular file')
         self.assertEqual(alias.resolve(), foreign)
         self.assertEqual(os.readlink(dangling), 'missing-stage')
-
-    def test_copy_that_changes_the_bound_bytes_is_not_published(self):
-        copy_file = self.driver.shutil.copy2
-
-        def corrupted_copy(source, destination, **kwargs):
-            result = copy_file(source, destination, **kwargs)
-            if Path(destination).name == 'DandrumTrigger.clap':
-                Path(destination).write_bytes(b'wrong copied plugin')
-            return result
-
-        with patch.object(self.driver.shutil, 'copy2', side_effect=corrupted_copy):
-            result, error, _ = self.run_driver()
-        self.assertNotEqual(result, 0)
-        self.assertIn('artifact-copy-hash: plugin', error)
-        self.assertFalse(self.output.exists())
-
-
 
 if __name__ == '__main__':
     unittest.main()

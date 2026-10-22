@@ -176,40 +176,42 @@ ctest --test-dir build/engine-only --output-on-failure -R '^(clap-dynamic-host|t
 location. Initialization resolves that explicit directory only. Trigger accepts
 integral sample rates, float32 stereo output and at most 64 input events per block;
 invalid batches preserve accepted values and playback position while clearing output.
-The current product is headless; the packaged React assets support the pending
-CLAP GUI integration. The default proof artifact retains its two fixture descriptors.
+The opt-in product includes the production React editor on the selected GNU Linux
+x86_64 X11 platform with WebKitGTK 2.50.4. It requires a host-owned X11 parent and
+event loop plus the CLAP timer extension. The editor is fixed at1200×800; unsupported
+window APIs, sizes and optional services are rejected explicitly. The default proof
+artifact retains its two fixture descriptors, and plain Cargo `trigger` stays headless.
 
-The default-off Cargo `trigger-editor` feature is a developer test checkpoint
-for native lifecycle and parameter integration. Native parameter tests cover
-reads, balanced host-accepted gestures, host feedback to the rendered control
-and parameter Undo. Structural recovery tests now cover persistent worker
-servicing, mapping after lost acknowledgement and complete view loss, retained
-job status, and the recreated production header's native Undo. Native note
-tests cover authenticated heartbeat renewal and live-attachment expiry while
-host MIDI remains audible. A joined destruction test covers held editor notes,
-open gestures and a fresh attachment without disturbing host MIDI. Injected
-WebKit IPC-registration failure now has copied-product cleanup and same-instance
-retry acceptance, retaining nondefault state and signed audio. Continuous
-synthetic-host tests now preserve signed audio and accepted mapping/history across
-view replacement, with calibrated callback allocation/deallocation checks. Two
-independently edited instances now retain distinct mapping, control, history and
-signed audio through one instance's Undo, editor replacement and reset/reactivation.
-Native OS input and remaining recovery/state acceptance remain open in G3.
-The GUI is not ready for instrument editing or normal playing; the maintained
-CMake product above continues to use the headless `trigger` feature.
+The optional Cargo `trigger-editor` feature joins native parameter reads, balanced
+host-accepted gestures, nonzero-offset feedback and parameter Undo to the persistent
+session. Mapping jobs survive lost acknowledgement and complete view loss; a recreated
+production editor recovers the accepted result and native Undo history. Native tests
+cover heartbeat/expiry, held note/gesture destruction, creation failure/retry,
+continuous signed callback audio across view replacement, invalid state with the same
+live editor, and two independently edited/rendering instances. These are synthetic-host
+checks. Sample import and other unimplemented editing/measurement services remain
+explicitly unavailable. VST3, standalone devices, physical input, named-DAW acceptance
+and installed release packaging remain beta gates.
 
-For native lifecycle verification, configure the same build with
-`-DDANDRUM_TRIGGER_EDITOR_NATIVE_X11=ON`, build its resource target, and run
+Native initialization retains this plugin artifact and its linked native libraries
+in memory until the host process exits, so framework cleanup code remains valid.
+Instrument, audio, worker and view ownership still end at their respective lifecycle
+boundaries; this policy does not promise per-artifact code-memory reclamation.
+
+For native verification, configure the same build with
+`-DDANDRUM_TRIGGER_EDITOR_NATIVE_X11=ON`, then run
 `ctest --test-dir build/engine-only --output-on-failure -R '^trigger-clap-native-'`
-in the Linux GNU/X11 session. This opt-in lane builds a private test fixture,
-selects the library and test executable from Cargo's JSON artifact records,
-copies their exact bytes and resources, then runs each ignored case in a fresh
-process. `trigger-clap-native-fixture/binding.json` records the lifecycle artifacts;
-`trigger-clap-parameters-fixture/binding.json` records the separate parameter test
-executable and plugin. Each binding includes selected paths and hashes.
-Do not substitute the top-level Cargo library path: a test build can
-report a different library under `release/deps`. Ordinary `cargo test` skips
-these native cases. This fixture adds no editor demo or installed GUI product.
+in the Linux GNU/X11 session. Its shared CTest setup builds the maintained graphical
+product before either private fixture preparation. Each fixture copies that explicit
+product and its complete resource tree; Cargo JSON uniquely selects only the requested
+test executable. Tests may modify their private sidecars. The product binding is marked
+`prebuilt-product`, with source/copy hashes; only the test carries its Cargo compiler
+record. Resource bindings record sorted relative-file hashes.
+`trigger-clap-native-fixture/binding.json` and
+`trigger-clap-parameters-fixture/binding.json` retain these separate identities.
+A Cargo-test library can differ from the maintained product and is never a fallback.
+Each ignored native case runs in a bounded fresh process; ordinary `cargo test` skips
+these cases. This increment adds no editor demo or installed release package.
 
 ## Engine Development
 

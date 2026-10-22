@@ -274,7 +274,7 @@ class ClapProofBuildTest(EngineBuildFixture):
                 self.assertIn("running 0 tests", properties["FAIL_REGULAR_EXPRESSION"],
                               "an exact filter matching no test must fail the native gate")
 
-    def test_private_clap_native_fixture_uses_reported_artifacts_and_exact_processes(self):
+    def test_private_clap_native_fixture_binds_maintained_product_and_exact_processes(self):
         bundle = self.fixture_root / "clap-native-registration-input"
         bundle.mkdir()
         for name in ("index.html", "app.js", "app.css"):
@@ -301,16 +301,26 @@ class ClapProofBuildTest(EngineBuildFixture):
         self.assertEqual(code, 0, output)
         tests = inventory("clap-native-enabled-inventory", enabled)
         self.assertIn("trigger-clap-native-prepare", tests,
-                      "native CLAP checks need a Cargo-reported artifact fixture")
+                      "native CLAP checks need an exact maintained product fixture")
         prepare = tests["trigger-clap-native-prepare"]
         fixture = enabled / "trigger-clap-native-fixture"
         for argument in (str(self.source / "scripts/prepare-trigger-clap-native.py"),
                          "--cargo", "--manifest", "--target-dir", "--resource-dir",
+                         "--product", str(enabled / "clap/DandrumTrigger.clap"),
                          str(enabled / "clap/DandrumTrigger.resources"),
                          "--output-dir", str(fixture)):
             self.assertIn(argument, prepare["command"])
         properties = {prop["name"]: prop["value"] for prop in prepare["properties"]}
         self.assertIn("trigger-clap-native-compiled", properties["FIXTURES_SETUP"])
+        self.assertIn("trigger-clap-product-built", properties["FIXTURES_REQUIRED"])
+        product_build = tests["trigger-clap-native-product-build"]
+        self.assertEqual(product_build["command"],
+                         [CMAKE, "--build", str(enabled), "--target",
+                          "dandrum-trigger-clap-product", "--parallel", "1"])
+        product_props = {prop["name"]: prop["value"] for prop in product_build["properties"]}
+        self.assertIn("trigger-clap-product-built", product_props["FIXTURES_SETUP"])
+        self.assertTrue(product_props["RUN_SERIAL"])
+        self.assertEqual(product_props["TIMEOUT"], 1200.0)
         self.assertEqual(properties["TIMEOUT"], 1200.0)
         self.assertTrue(properties["RUN_SERIAL"])
         cases = {
@@ -338,18 +348,19 @@ class ClapProofBuildTest(EngineBuildFixture):
                 self.assertEqual(props["TIMEOUT"], 60.0)
                 self.assertTrue(props["RUN_SERIAL"])
                 self.assertIn("running 0 tests", props["FAIL_REGULAR_EXPRESSION"])
-        # The separate developer fixture must not change the maintained product.
+        # Both private fixtures use the maintained GUI product.
         product_rule = (enabled / "CMakeFiles/dandrum-trigger-clap-product.dir/build.make").read_text()
-        self.assertIn("--features trigger --lib", product_rule)
-        self.assertNotIn("--features trigger-editor", product_rule)
+        self.assertIn("--features trigger-editor --lib", product_rule)
         self.assertIn("trigger-clap-native-parameters-prepare", tests,
                       "parameter IPC needs its separately reported native test executable")
         parameter_fixture = enabled / "trigger-clap-parameters-fixture"
         prepare = tests["trigger-clap-native-parameters-prepare"]
-        for argument in ("--test-target", "trigger_parameters", "--output-dir", str(parameter_fixture)):
+        for argument in ("--test-target", "trigger_parameters", "--output-dir", str(parameter_fixture),
+                         "--product", str(enabled / "clap/DandrumTrigger.clap")):
             self.assertIn(argument, prepare["command"])
         props = {prop["name"]: prop["value"] for prop in prepare["properties"]}
         self.assertIn("trigger-clap-parameters-compiled", props["FIXTURES_SETUP"])
+        self.assertIn("trigger-clap-product-built", props["FIXTURES_REQUIRED"])
         self.assertTrue(props["RUN_SERIAL"])
         self.assertEqual(props["TIMEOUT"], 1200.0)
         parameter_cases = {
@@ -407,6 +418,52 @@ class ClapProofBuildTest(EngineBuildFixture):
                 self.assertTrue(props["RUN_SERIAL"])
                 self.assertEqual(props["TIMEOUT"], 60.0)
                 self.assertIn("running 0 tests", props["FAIL_REGULAR_EXPRESSION"])
+
+    def test_gui_product_rebuilds_for_editor_code_but_only_restages_assets(self):
+        bundle = self.fixture_root / "gui-product-incremental-input"
+        (bundle / "fonts").mkdir(parents=True)
+        for relative in ("index.html", "app.js", "app.css", "fonts/test.ttf"):
+            (bundle / relative).write_text("incremental input")
+        build, code, output = self.configure(
+            "gui-product-incremental", "-G", "Unix Makefiles",
+            "-DDANDRUM_ENGINE_ONLY=ON", "-DDANDRUM_CLAP_PROOF=ON",
+            "-DDANDRUM_TRIGGER_CLAP_EDITOR=ON",
+            "-DDANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=" + str(bundle))
+        self.assertEqual(code, 0, output)
+        clap = build / "clap"
+        clap.mkdir()
+        for name in ("DandrumHeadlessProof.clap", "DandrumTrigger.clap"):
+            (clap / name).touch()
+        resources = clap / "DandrumTrigger.resources"
+        resources.mkdir()
+        (resources / ".staged").touch()
+        command = [CMAKE, "--build", str(build), "--target",
+                   "dandrum-trigger-clap-product", "--", "--dry-run"]
+        code, output = self.command("gui-product-current-plan", command)
+        self.assertEqual(code, 0, output)
+        self.assertNotIn("cargo build", output)
+        for resource, rebuild in [
+            *((source, True) for source in sorted(
+                (self.source / "src/trigger-editor/src").rglob("*.rs"))),
+            (self.source / "src/trigger-editor/Cargo.toml", True),
+            (self.source / "src/trigger-editor/Cargo.lock", True),
+            (bundle / "app.js", False), (bundle / "fonts/test.ttf", False),
+            (self.source / "examples/patches/assets/advanced-drums.wav", False),
+        ]:
+            with self.subTest(resource=resource, rebuild=rebuild):
+                previous = resource.stat()
+                newer = (clap / "DandrumTrigger.clap").stat().st_mtime_ns + 2_000_000_000
+                os.utime(resource, ns=(previous.st_atime_ns, newer))
+                try:
+                    code, output = self.command("gui-product-plan-" + resource.name, command)
+                    self.assertEqual(code, 0, output)
+                    if rebuild:
+                        self.assertIn("--features trigger-editor --lib", output)
+                    else:
+                        self.assertNotIn("cargo build", output)
+                        self.assertIn("copy_directory", output)
+                finally:
+                    os.utime(resource, ns=(previous.st_atime_ns, previous.st_mtime_ns))
 
     def test_trigger_editor_scaffold_stages_copied_resources_without_host_sources(self):
         editor_input = self.fixture_root / "editor-input"

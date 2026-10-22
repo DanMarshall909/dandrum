@@ -1,0 +1,340 @@
+{
+  "trigger-clap-native-fixture": {
+    "schema_version": 1,
+    "owner": "prepare-trigger-clap-native.py",
+    "command": [
+      "/home/dan/.cargo/bin/cargo",
+      "test",
+      "--release",
+      "--locked",
+      "--jobs",
+      "2",
+      "--manifest-path",
+      "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+      "--features",
+      "trigger-editor",
+      "--test",
+      "trigger_gui",
+      "--no-run",
+      "--message-format=json"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime/src/clap-adapter",
+    "exit_status": 0,
+    "artifacts": {
+      "plugin": {
+        "source": "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/clap/DandrumTrigger.clap",
+        "copy": "DandrumTrigger.clap",
+        "source_sha256": "17251daa8ecbcc4ec3da600e04056e2338426926c0a274ebb84b70e72e810df3",
+        "copy_sha256": "17251daa8ecbcc4ec3da600e04056e2338426926c0a274ebb84b70e72e810df3",
+        "provenance": "prebuilt-product"
+      },
+      "test": {
+        "source": "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/rust-target/release/deps/trigger_gui-fa37e3dc64994625",
+        "copy": "trigger-gui-test",
+        "source_sha256": "256d168af1a1243f50f7d13a479d8772711a5f8240bdb28392b181324239a15c",
+        "copy_sha256": "256d168af1a1243f50f7d13a479d8772711a5f8240bdb28392b181324239a15c",
+        "compiler_artifact": {
+          "reason": "compiler-artifact",
+          "package_id": "path+file:///tmp/dandrum-lanes/runtime/src/clap-adapter#dandrum_clap_adapter@0.1.0",
+          "manifest_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+          "target": {
+            "kind": [
+              "test"
+            ],
+            "crate_types": [
+              "bin"
+            ],
+            "name": "trigger_gui",
+            "src_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/tests/trigger_gui.rs",
+            "edition": "2024",
+            "doc": false,
+            "doctest": false,
+            "test": true
+          },
+          "profile": {
+            "opt_level": "3",
+            "debuginfo": 0,
+            "debug_assertions": false,
+            "overflow_checks": false,
+            "test": true
+          },
+          "features": [
+            "default",
+            "trigger",
+            "trigger-editor"
+          ],
+          "filenames": [
+            "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/rust-target/release/deps/trigger_gui-fa37e3dc64994625"
+          ],
+          "executable": "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/rust-target/release/deps/trigger_gui-fa37e3dc64994625",
+          "fresh": false
+        }
+      }
+    },
+    "resources": {
+      "source": "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/clap/DandrumTrigger.resources",
+      "copy": "DandrumTrigger.resources",
+      "files": [
+        {
+          "path": ".staged",
+          "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "copy_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "editor/app.css",
+          "source_sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5",
+          "copy_sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5"
+        },
+        {
+          "path": "editor/app.js",
+          "source_sha256": "4b9ce5a356fea5f22703f9046c77a80ac616c00242348a12fe81f58fe4f760f2",
+          "copy_sha256": "4b9ce5a356fea5f22703f9046c77a80ac616c00242348a12fe81f58fe4f760f2"
+        },
+        {
+          "path": "editor/fonts/.gitattributes",
+          "source_sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616",
+          "copy_sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616"
+        },
+        {
+          "path": "editor/fonts/3386a05f6ece969e.ttf",
+          "source_sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160",
+          "copy_sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160"
+        },
+        {
+          "path": "editor/fonts/6098b66ce7d608dc.ttf",
+          "source_sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef",
+          "copy_sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef"
+        },
+        {
+          "path": "editor/fonts/74103fd6d41bc32c.ttf",
+          "source_sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154",
+          "copy_sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154"
+        },
+        {
+          "path": "editor/fonts/91c841fdfa8e7b94.ttf",
+          "source_sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc",
+          "copy_sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc"
+        },
+        {
+          "path": "editor/fonts/barlow-OFL.txt",
+          "source_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+          "copy_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+        },
+        {
+          "path": "editor/fonts/barlowsemicondensed-OFL.txt",
+          "source_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+          "copy_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+        },
+        {
+          "path": "editor/fonts/c15439e7a03af571.ttf",
+          "source_sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c",
+          "copy_sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c"
+        },
+        {
+          "path": "editor/fonts/c2b046235fb4c2f8.ttf",
+          "source_sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9",
+          "copy_sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9"
+        },
+        {
+          "path": "editor/fonts/cb75439ae401f776.ttf",
+          "source_sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da",
+          "copy_sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da"
+        },
+        {
+          "path": "editor/fonts/df54dbfafba61d49.ttf",
+          "source_sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8",
+          "copy_sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8"
+        },
+        {
+          "path": "editor/fonts/jetbrainsmono-OFL.txt",
+          "source_sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d",
+          "copy_sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d"
+        },
+        {
+          "path": "editor/index.html",
+          "source_sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26",
+          "copy_sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26"
+        },
+        {
+          "path": "instrument/advanced-drum-kit.yaml",
+          "source_sha256": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008",
+          "copy_sha256": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008"
+        },
+        {
+          "path": "instrument/assets/advanced-drums.wav",
+          "source_sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503",
+          "copy_sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503"
+        }
+      ]
+    }
+  },
+  "trigger-clap-parameters-fixture": {
+    "schema_version": 1,
+    "owner": "prepare-trigger-clap-native.py",
+    "command": [
+      "/home/dan/.cargo/bin/cargo",
+      "test",
+      "--release",
+      "--locked",
+      "--jobs",
+      "2",
+      "--manifest-path",
+      "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+      "--features",
+      "trigger-editor",
+      "--test",
+      "trigger_parameters",
+      "--no-run",
+      "--message-format=json"
+    ],
+    "cwd": "/tmp/dandrum-lanes/runtime/src/clap-adapter",
+    "exit_status": 0,
+    "artifacts": {
+      "plugin": {
+        "source": "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/clap/DandrumTrigger.clap",
+        "copy": "DandrumTrigger.clap",
+        "source_sha256": "17251daa8ecbcc4ec3da600e04056e2338426926c0a274ebb84b70e72e810df3",
+        "copy_sha256": "17251daa8ecbcc4ec3da600e04056e2338426926c0a274ebb84b70e72e810df3",
+        "provenance": "prebuilt-product"
+      },
+      "test": {
+        "source": "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/rust-target/release/deps/trigger_parameters-8fc57b2ef83fb6e4",
+        "copy": "trigger-parameters-test",
+        "source_sha256": "bf762ef233d147e0b2faa9cd365b8af2c60d9b6e1fa768c7821413633fa6bdb2",
+        "copy_sha256": "bf762ef233d147e0b2faa9cd365b8af2c60d9b6e1fa768c7821413633fa6bdb2",
+        "compiler_artifact": {
+          "reason": "compiler-artifact",
+          "package_id": "path+file:///tmp/dandrum-lanes/runtime/src/clap-adapter#dandrum_clap_adapter@0.1.0",
+          "manifest_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+          "target": {
+            "kind": [
+              "test"
+            ],
+            "crate_types": [
+              "bin"
+            ],
+            "name": "trigger_parameters",
+            "src_path": "/tmp/dandrum-lanes/runtime/src/clap-adapter/tests/trigger_parameters.rs",
+            "edition": "2024",
+            "doc": false,
+            "doctest": false,
+            "test": true
+          },
+          "profile": {
+            "opt_level": "3",
+            "debuginfo": 0,
+            "debug_assertions": false,
+            "overflow_checks": false,
+            "test": true
+          },
+          "features": [
+            "default",
+            "trigger",
+            "trigger-editor"
+          ],
+          "filenames": [
+            "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/rust-target/release/deps/trigger_parameters-8fc57b2ef83fb6e4"
+          ],
+          "executable": "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/rust-target/release/deps/trigger_parameters-8fc57b2ef83fb6e4",
+          "fresh": false
+        }
+      }
+    },
+    "resources": {
+      "source": "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/clap/DandrumTrigger.resources",
+      "copy": "DandrumTrigger.resources",
+      "files": [
+        {
+          "path": ".staged",
+          "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "copy_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "editor/app.css",
+          "source_sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5",
+          "copy_sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5"
+        },
+        {
+          "path": "editor/app.js",
+          "source_sha256": "4b9ce5a356fea5f22703f9046c77a80ac616c00242348a12fe81f58fe4f760f2",
+          "copy_sha256": "4b9ce5a356fea5f22703f9046c77a80ac616c00242348a12fe81f58fe4f760f2"
+        },
+        {
+          "path": "editor/fonts/.gitattributes",
+          "source_sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616",
+          "copy_sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616"
+        },
+        {
+          "path": "editor/fonts/3386a05f6ece969e.ttf",
+          "source_sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160",
+          "copy_sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160"
+        },
+        {
+          "path": "editor/fonts/6098b66ce7d608dc.ttf",
+          "source_sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef",
+          "copy_sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef"
+        },
+        {
+          "path": "editor/fonts/74103fd6d41bc32c.ttf",
+          "source_sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154",
+          "copy_sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154"
+        },
+        {
+          "path": "editor/fonts/91c841fdfa8e7b94.ttf",
+          "source_sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc",
+          "copy_sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc"
+        },
+        {
+          "path": "editor/fonts/barlow-OFL.txt",
+          "source_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+          "copy_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+        },
+        {
+          "path": "editor/fonts/barlowsemicondensed-OFL.txt",
+          "source_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+          "copy_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+        },
+        {
+          "path": "editor/fonts/c15439e7a03af571.ttf",
+          "source_sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c",
+          "copy_sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c"
+        },
+        {
+          "path": "editor/fonts/c2b046235fb4c2f8.ttf",
+          "source_sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9",
+          "copy_sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9"
+        },
+        {
+          "path": "editor/fonts/cb75439ae401f776.ttf",
+          "source_sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da",
+          "copy_sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da"
+        },
+        {
+          "path": "editor/fonts/df54dbfafba61d49.ttf",
+          "source_sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8",
+          "copy_sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8"
+        },
+        {
+          "path": "editor/fonts/jetbrainsmono-OFL.txt",
+          "source_sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d",
+          "copy_sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d"
+        },
+        {
+          "path": "editor/index.html",
+          "source_sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26",
+          "copy_sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26"
+        },
+        {
+          "path": "instrument/advanced-drum-kit.yaml",
+          "source_sha256": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008",
+          "copy_sha256": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008"
+        },
+        {
+          "path": "instrument/assets/advanced-drums.wav",
+          "source_sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503",
+          "copy_sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503"
+        }
+      ]
+    }
+  }
+}

@@ -283,3 +283,48 @@ Qtractor closed/inactive limitations remain separate from synthetic host proof.
 Required heartbeat/expiry, mapping/recovery/undo, unmodified production loading
 and concurrent GUI/audio acceptance remain owning gates; this scheduling choice
 does not mark any of them complete.
+
+### Bind joined native acceptance to the maintained graphical product
+
+The G2/G3 joined native criteria now have independently reviewed source-bound
+proof through32e76817: real gestures/feedback and parameter Undo, held note and
+gesture destruction, continuous signed callback audio across view replacement,
+lost acknowledgement/recovery/native Undo with an unaffected instance, two
+independently edited instances and invalid state with the original live view.
+These checkpoints did not change the maintained headless product recipe or
+complete the editor tasks. The following bounded build seam supersedes only
+the earlier developer-checkpoint restriction on CMake graphical product wiring.
+
+Build the opt-in DandrumTrigger.clap with trigger-editor on the selected GNU
+Linux x86_64 X11 platform and include editor Rust source/manifests/lock inputs in
+its rebuild dependencies. The default proof and plain Cargo trigger stay
+headless and free of native editor dependencies. A single serial bounded CTest
+setup actually builds the product before either native fixture preparation.
+
+Require an explicit prebuilt product path in the existing fixture preparer.
+Both maintained callers supply the CMake artifact; no retained caller needs an
+alternate reported-plugin selection mode. Cargo JSON uniquely selects only the
+requested native test executable. Bind the product as a prebuilt input without
+attaching a different test-build cdylib compiler record to it. Retain exact
+source/copy artifact SHA and modes, raw Cargo invocation/output, and sorted
+relative-file SHA records comparing the full source/copied resource trees.
+Private fixture copies remain necessary because native tests modify their
+sidecars. Preserve recognized existing schema1 owned aliases; publish a complete
+new stage atomically and retain the prior accepted alias on every failure.
+
+Use behavior-first fake-Cargo identity/failure tests and real CMake inventory/
+rebuild-plan assertions before implementation. Missing product, missing or
+ambiguous selected test, Cargo failure or artifact/resource copy mismatch must
+never select stale/report-only product bytes or publish a partial fixture.
+Actual maintained-product native tests, rather than fake bytes, prove GUI and
+signed-audio behavior. Preserve bounded exact selectors, zero-test rejection,
+serial native execution and callback audits. This seam earns no task closure
+without root's full verification and independent review.
+
+The existing toy-bundle source-free build remains copy/build evidence only.
+Follow with a fresh maintained GUI-product build and exact native run using the
+real production bundle/fonts from an explicit external input, with absent JUCE/
+web/ui trees and unavailable runtime source resources recorded precisely.
+Retain final validator disposition and complete owner/spec mappings as separate
+checks. VST3, standalone, devices, named DAW and installed/offline beta acceptance
+stay in the following increment; no full-beta claim follows from this seam.

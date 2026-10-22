@@ -1,0 +1,50 @@
+[
+  {
+    "label": "installed-gui",
+    "path": "/tmp/dandrum-evidence/maintained-gui-product-root/sourcefree-production/installed/DandrumTrigger.clap",
+    "sha256": "309e9006a4e41c616b46e41e889e9400507349b20eaf1d0e39ecfde0409b905a",
+    "commands": [
+      {
+        "argv": [
+          "readelf",
+          "-d",
+          "/tmp/dandrum-evidence/maintained-gui-product-root/sourcefree-production/installed/DandrumTrigger.clap"
+        ],
+        "exit": 0,
+        "seconds": 0.007380080001894385
+      },
+      {
+        "argv": [
+          "ldd",
+          "/tmp/dandrum-evidence/maintained-gui-product-root/sourcefree-production/installed/DandrumTrigger.clap"
+        ],
+        "exit": 0,
+        "seconds": 0.09102547797374427
+      }
+    ]
+  },
+  {
+    "label": "ordinary-native-host",
+    "path": "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/trigger-clap-parameters-fixture/trigger-parameters-test",
+    "sha256": "bf762ef233d147e0b2faa9cd365b8af2c60d9b6e1fa768c7821413633fa6bdb2",
+    "commands": [
+      {
+        "argv": [
+          "readelf",
+          "-d",
+          "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/trigger-clap-parameters-fixture/trigger-parameters-test"
+        ],
+        "exit": 0,
+        "seconds": 0.0012175060110166669
+      },
+      {
+        "argv": [
+          "ldd",
+          "/tmp/dandrum-evidence/g3-lost-ack-native-fixture/native-build/trigger-clap-parameters-fixture/trigger-parameters-test"
+        ],
+        "exit": 0,
+        "seconds": 0.08609144197544083
+      }
+    ]
+  }
+]
