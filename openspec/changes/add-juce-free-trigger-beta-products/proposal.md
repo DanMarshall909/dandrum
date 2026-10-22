@@ -1,30 +1,30 @@
 ## Why
 
-The JUCE-free Trigger CLAP editor foundation is verified and published at `2c7bcaa5`, but it is not the requested beta: VST3 and standalone products, real selected-sample loading and portable restoration, named-DAW acceptance and installed release artifacts remain missing. This increment completes those outcomes over the persistent format-neutral Rust host rather than creating separate instrument implementations for each product.
+The published JUCE-free Trigger CLAP editor foundation is not yet the first beta: real native selected-sample loading, portable restoration, named-DAW acceptance and installed release proof remain. The user revised the first beta to CLAP-only on 22 October 2026. VST3 and standalone are deferred to later increments and are not prerequisites for completing this beta.
 
 ## What Changes
 
-- Deliver deliberate Trigger VST3 and standalone products with the production React editor, shared session/runtime behavior and selected Linux x86_64 X11/WebKitGTK proof.
-- Qualify the VST3 dependency/toolchain and actual loader, parameter, state, callback and native-view boundary before adopting a wrapper or expanding its integration. The cached wrapper candidate is not yet a verified product.
-- Let the native editor choose supported WAV files, retain immutable owned samples, publish full patch edits atomically, map and play distinct selected PCM, and retain native edits/undo across editor destruction and recreation.
-- Add bounded self-contained patch/sample/parameter state and standalone file operations, including fresh-instance restoration after original selected files disappear; keep existing packaged-kit state readable.
-- Resolve the retained fractional-rate interoperability failure through honest format-neutral clock/preparation/playback behavior, without truncating or rounding the requested host rate.
-- Prove actual standalone audio/MIDI ownership, native input and lifecycle behavior, named-DAW automation and independent instances, then install offline products outside the checkout with complete no-JUCE build/runtime/linkage and licence evidence.
-- Keep normal hooks, behavior-first tests, independent material-boundary review, focused publication, mutation exclusion, disk-backed bounded caches and cleanup of owned disposable output on every terminal path.
+- Complete the first CLAP beta with the production React/Wry editor, existing Rust engine and persistent format-neutral TriggerHost/session.
+- Let native input select supported WAV files, retain immutable owned content, publish mapping/full-patch edits atomically and play independently known signed PCM.
+- Preserve accepted edits and native undo/redo across complete editor destruction/recreation while host audio continues.
+- Add bounded self-contained CLAP patch/sample/parameter state, with fresh-instance restoration after original selected files disappear and existing packaged-kit state remaining readable.
+- Resolve the explicit official fractional-rate validator failure through precise host/preparation/playback behavior, without rounding, truncation or exclusions.
+- Prove named-DAW CLAP automation and independent instances, installed offline CLAP artifacts outside the checkout and complete JUCE-free build/runtime/linkage.
+- Preserve normal verification, independent material-boundary review/publication, mutation exclusion, disk-backed reusable caches and owned disposable-run cleanup.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `juce-free-trigger-products`: VST3 and standalone execution, precise supported host clocks, device and callback ownership, native/DAW acceptance and installed offline artifacts.
-- `trigger-sample-resources`: native sample selection, owned resource identity, atomic patch publication/history and portable patch/sample/parameter restoration.
+- `juce-free-trigger-products`: the CLAP beta's precise host clocks, native/callback/DAW acceptance and installed offline artifacts. The existing capability identifier is retained for continuity; its active requirements are CLAP-only.
+- `trigger-sample-resources`: native sample selection, immutable resource identity, atomic patch publication/history and portable patch/sample/parameter restoration.
 
 ### Modified Capabilities
 
-None. Existing CLAP, editor and session requirements remain in force; this increment adds the missing beta contracts and supersedes the earlier design's integral-only host-rate limitation through new implementation work.
+None. Existing CLAP, editor and session requirements remain in force. This increment adds the missing CLAP beta contracts and supersedes the earlier integral-only host-rate limitation through implementation work.
 
 ## Impact
 
-Affected owners include `src/trigger-host`, `src/instrument-session`, engine render/preparation configuration where precision requires it, the CLAP/Wry edges, production Trigger native import/document handling, new product adapters and build/install/verification fixtures. The format-neutral host stays free of Clack, Wry, GTK, WebKit, VST3 and JUCE types. Product and SDK dependencies must be pinned, audited and exercised at the actual selected boundary before adoption; no JUCE dependency may enter the new product path.
+Affected owners include `src/trigger-host`, `src/instrument-session`, engine render/preparation configuration, the existing CLAP/Wry edges, production Trigger import/document handling and build/install/verification fixtures. TriggerHost remains free of Clack, Wry, GTK, WebKit, VST3 and JUCE types. The current CLAP adapter and shared engine/session/runtime/parameter/state/editor machinery remain the architecture.
 
-The selected proof platform remains Linux x86_64 X11 with WebKitGTK 2.50.4. Other native platforms, unrestricted patch/plugin architectures and additional sample decoder formats are outside this beta increment. No current limitation or external acceptance gap may be relabelled as completed proof. Main remains clean at `68dd655`; the full beta goal closes only after all remaining required evidence exists.
+The proof platform remains Linux x86_64 X11 with WebKitGTK 2.50.4. VST3, standalone/device ownership, other native platforms and broader plugin frameworks are outside this increment. The later VST3 preference and bounded feasibility gates are recorded in `future-products.md`; no VST3 or standalone implementation starts here. Main remains clean at `68dd655`. The CLAP beta closes only after every retained beta requirement is proven.

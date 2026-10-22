@@ -53,7 +53,7 @@ Admitted sample/patch work and its retained outcomes SHALL belong to the instrum
 
 ### Requirement: Portable state owns patch samples and physical values
 
-Host state and standalone patch Save/Load SHALL use a bounded versioned representation of the accepted patch, verified sample content and named physical parameter values. Fresh restoration SHALL not depend on the original selected paths, the original instance or a shared checkout/cache resource directory.
+CLAP host state SHALL use a bounded versioned representation of the accepted patch, verified sample content and named physical parameter values. Fresh restoration SHALL not depend on the original selected paths, the original instance or a shared checkout/cache resource directory.
 
 #### Scenario: Fresh instance restores selected content after source removal
 
