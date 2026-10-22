@@ -266,6 +266,95 @@ fn accepted_snapshot_projects_real_kit_geometry_and_applied_values_without_chang
 }
 
 #[test]
+fn a_public_control_fanning_out_to_global_and_group_gain_has_instrument_scope_and_drives_both() {
+    let (_package, root) = package();
+    let path = root.join(ADVANCED_DRUM_KIT_DOCUMENT);
+    let yaml = std::fs::read_to_string(&path).unwrap();
+    let global_port = "  - { name: level, direction: input, signal: control, channels: 1, default: 1, min: 0, max: 4, maps_to: player.level }\n";
+    let global_alias = "    - { name: drums.level, maps_to: level }\n";
+    assert!(yaml.contains(global_port) && yaml.contains(global_alias));
+    let yaml = yaml
+        .replace(global_port, "")
+        .replace(global_alias, "")
+        .replacen(
+            "maps_to: player.group_1_level",
+            "maps_to: [player.level, player.group_1_level]",
+            1,
+        );
+    std::fs::write(path, yaml).unwrap();
+    let (mut controller, mut audio) = open(&root);
+    let editor = controller.attach_editor().unwrap();
+    let accepted = controller.session().owner_snapshot();
+    let read = request(
+        &mut controller,
+        &editor.attachment_id,
+        1,
+        "getSamplerSession",
+        json!([]),
+    );
+    let initial = reply(&controller, &read);
+    let parameters = initial["result"]["document"]["parameters"]
+        .as_array()
+        .unwrap();
+    assert_eq!(parameters.len(), 22);
+    let public_index = controller
+        .parameters()
+        .iter()
+        .position(|parameter| parameter.id == "drums.kick.level")
+        .unwrap();
+    let projected = parameters
+        .iter()
+        .find(|parameter| parameter["id"] == "drums.kick.level")
+        .unwrap();
+    assert_eq!(projected["scope"], "instrument");
+    assert!(projected.get("controlGroup").is_none());
+    assert_eq!(projected["normalisedValue"], 0.25);
+
+    let onset = [TimedEvent {
+        frame_offset: 3,
+        event: ControlEvent::NoteOn {
+            note: 36,
+            velocity: 100,
+        },
+    }];
+    let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
+    audio.process_events(&mut left, &mut right, &onset).unwrap();
+    assert_eq!((&left[..3], &right[..3]), (&[0.0; 3][..], &[0.0; 3][..]));
+    assert_eq!((left[3], right[3]), (-0.5, -0.5));
+    audio.reset();
+    let set = request(
+        &mut controller,
+        &editor.attachment_id,
+        2,
+        "setParameter",
+        json!(["drums.kick.level", 0.125, 1]),
+    );
+    assert_eq!(
+        controller.apply(&set).unwrap(),
+        dandrum_trigger_host::parameters::ParameterReply::Accepted {
+            generation: 1,
+            sequence: 1
+        }
+    );
+    audio.process_events(&mut left, &mut right, &onset).unwrap();
+    assert_eq!(controller.physical_value(public_index), Some(0.5));
+    assert_eq!((&left[..3], &right[..3]), (&[0.0; 3][..], &[0.0; 3][..]));
+    // The sample's -0.5 onset passes through two independently authored gain targets.
+    assert_eq!((left[3], right[3]), (-0.125, -0.125));
+    let changed = reply(&controller, &read);
+    let projected = changed["result"]["document"]["parameters"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|parameter| parameter["id"] == "drums.kick.level")
+        .unwrap();
+    assert_eq!(projected["scope"], "instrument");
+    assert!(projected.get("controlGroup").is_none());
+    assert_eq!(projected["normalisedValue"], 0.125);
+    assert_eq!(controller.session().owner_snapshot(), accepted);
+}
+
+#[test]
 fn snapshot_reply_rejects_foreign_retired_and_forged_admission_without_leaking_data() {
     let (_package, root) = package();
     let (mut first, _audio) = open(&root);

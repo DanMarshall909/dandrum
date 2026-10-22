@@ -92,6 +92,18 @@ fn versioned_snapshot_requests_are_typed_and_invalid_envelopes_preserve_accepted
             ProtocolError::InvalidArguments,
         ),
         (
+            message("01", "2", "getSamplerSession", json!([])),
+            ProtocolError::InvalidArguments,
+        ),
+        (
+            message("0", "2", "getSamplerSession", json!([])),
+            ProtocolError::InvalidArguments,
+        ),
+        (
+            message("18446744073709551616", "2", "getSamplerSession", json!([])),
+            ProtocolError::InvalidArguments,
+        ),
+        (
             valid.replace("\"requestId\":\"1\"", "\"requestId\":\"0\""),
             ProtocolError::InvalidArguments,
         ),
@@ -143,6 +155,18 @@ fn versioned_snapshot_requests_are_typed_and_invalid_envelopes_preserve_accepted
         );
         assert_preserved_sound_and_controls(&session);
     }
+    assert!(matches!(
+        protocol.admit(
+            &session,
+            &message(
+                &connection.attachment_id,
+                "2",
+                "getSamplerSession",
+                json!([])
+            ),
+        ),
+        Ok(Admission::New(_))
+    ));
     assert_eq!(
         serde_json::to_value(ProtocolError::CapabilityUnavailable).unwrap(),
         json!({"code":"capabilityUnavailable"})
@@ -334,6 +358,37 @@ fn invalid_method_arguments_and_stale_session_intents_cannot_change_controls_or_
         ])
     };
     let cases = [
+        (
+            "setInstrumentZoneKeyRange",
+            json!(["1", "1", "17", "0", "kit", "kick", 60]),
+            ProtocolError::InvalidArguments,
+        ),
+        (
+            "setInstrumentZoneKeyRange",
+            mapping("01", "1", "17", "0", "kit", "kick", 60, 60),
+            ProtocolError::InvalidArguments,
+        ),
+        (
+            "setInstrumentZoneKeyRange",
+            mapping("1", "0", "17", "0", "kit", "kick", 60, 60),
+            ProtocolError::InvalidArguments,
+        ),
+        (
+            "undoInstrumentSession",
+            json!(["1", "1", "17"]),
+            ProtocolError::InvalidArguments,
+        ),
+        (
+            "getInstrumentSessionJobStatus",
+            json!([17]),
+            ProtocolError::InvalidArguments,
+        ),
+        (
+            "beginGesture",
+            json!(["drums.level"]),
+            ProtocolError::InvalidArguments,
+        ),
+        ("noteOff", json!([36, "1"]), ProtocolError::InvalidArguments),
         (
             "noteOn",
             json!([128, 0.5, 1]),
@@ -589,6 +644,18 @@ fn retired_editor_ids_and_foreign_native_sessions_cannot_recover_authority() {
         protocol.admit(&session, &first),
         Ok(Admission::Duplicate { request_id: 1 })
     ));
+    for invalid in ["01", "0", "18446744073709551616"] {
+        assert_eq!(
+            protocol.detach(&mut session, invalid),
+            Err(ProtocolError::InvalidArguments)
+        );
+        assert_eq!(session.snapshot(&probe.attachment).unwrap(), c.snapshot);
+        assert!(matches!(
+            protocol.admit(&session, &first),
+            Ok(Admission::Duplicate { request_id: 1 })
+        ));
+        assert_preserved_sound_and_controls(&session);
+    }
     protocol.detach(&mut session, &c.attachment_id).unwrap();
     assert!(
         session.snapshot(&probe.attachment).is_err(),
@@ -617,6 +684,32 @@ fn retired_editor_ids_and_foreign_native_sessions_cannot_recover_authority() {
     protocol.detach(&mut session, &next.attachment_id).unwrap();
     assert_eq!(protocol.attach(&mut session).unwrap().attachment_id, "18");
     assert_preserved_sound_and_controls(&session);
+}
+
+#[test]
+fn native_attachment_capacity_rejection_does_not_consume_a_protocol_identity() {
+    let mut session = session();
+    let mut protocol = protocol();
+    let mut native = (0..dandrum_instrument_session::ATTACHMENT_LIMIT)
+        .map(|_| session.attach().unwrap().0)
+        .collect::<Vec<_>>();
+    let before = session.owner_snapshot();
+    assert!(matches!(
+        protocol.attach(&mut session),
+        Err(ProtocolError::Session(
+            dandrum_instrument_session::SessionError::AttachmentLimit
+        ))
+    ));
+    assert_eq!(session.owner_snapshot(), before);
+    assert_preserved_sound_and_controls(&session);
+    session.detach(&native.pop().unwrap()).unwrap();
+    let editor = protocol.attach(&mut session).unwrap();
+    assert_eq!(editor.attachment_id, "1");
+    assert_eq!(editor.snapshot, before);
+    assert!(matches!(
+        protocol.admit(&session, &message("1", "1", "getSamplerSession", json!([]))),
+        Ok(Admission::New(_))
+    ));
 }
 
 #[test]

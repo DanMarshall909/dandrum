@@ -939,10 +939,59 @@ fn invalid_commands_and_stale_or_foreign_owners_preserve_both_instances() {
         json!(["other.level", 0.25, 1]),
     );
     assert_eq!(a.apply(&unknown), Err(ParameterError::UnknownParameter));
+    for (id, args, error) in [
+        (
+            5,
+            json!(["drums.level", 0]),
+            ParameterError::StaleGeneration,
+        ),
+        (
+            6,
+            json!(["other.level", 1]),
+            ParameterError::UnknownParameter,
+        ),
+    ] {
+        let begin = request(&mut a, &editor_a.attachment_id, id, "beginGesture", args);
+        assert_eq!(a.apply(&begin), Err(error));
+        assert_eq!(a.parameter_state(), before_a);
+        assert!(a.peek_automation().is_none());
+    }
+    for (id, method) in [(7, "beginGesture"), (8, "endGesture")] {
+        let command = request(
+            &mut a,
+            &editor_a.attachment_id,
+            id,
+            method,
+            json!(["drums.level", 1]),
+        );
+        assert_eq!(
+            a.apply(&command),
+            Ok(ParameterReply::Accepted {
+                generation: 1,
+                sequence: 0,
+            })
+        );
+    }
+    let level = a
+        .parameters()
+        .iter()
+        .position(|parameter| parameter.id == "drums.level")
+        .unwrap();
+    assert_eq!(
+        automation(&mut a),
+        [
+            AutomationEvent::Begin {
+                parameter_index: level
+            },
+            AutomationEvent::End {
+                parameter_index: level
+            }
+        ]
+    );
     let mut invalid = request(
         &mut a,
         &editor_a.attachment_id,
-        5,
+        9,
         "setParameter",
         json!(["drums.level", 0.25, 1]),
     );
@@ -960,7 +1009,7 @@ fn invalid_commands_and_stale_or_foreign_owners_preserve_both_instances() {
     let write_a = request(
         &mut a,
         &editor_a.attachment_id,
-        6,
+        10,
         "setParameter",
         json!(["drums.level", 0.125, 1]),
     );
@@ -1068,6 +1117,26 @@ fn constructor_rejects_invalid_capacity_resources_and_nonbijective_or_unbounded_
             Err(ParameterError::InvalidSurface)
         ));
     }
+}
+
+#[test]
+fn a_valid_session_with_two_stereo_outputs_is_rejected_by_the_trigger_runtime() {
+    let (_package, root) = package();
+    let document = root.join(ADVANCED_DRUM_KIT_DOCUMENT);
+    let yaml = std::fs::read_to_string(&document).unwrap();
+    let master = "  - { name: master, direction: output, signal: audio, channels: 2, maps_from: player.audio }";
+    assert!(yaml.contains(master));
+    let yaml = yaml.replace(master, &format!("{master}\n  - {{ name: auxiliary, direction: output, signal: audio, channels: 2, maps_from: player.audio }}"));
+    std::fs::write(document, yaml).unwrap();
+    let host = dandrum_trigger_host::TriggerHost::open(&root, configuration())
+        .expect("the broader Session model accepts two named planar stereo outputs");
+    assert_eq!(host.session().owner_snapshot().revision, 0);
+    assert!(matches!(
+        ParameterController::open(&root, configuration(), NonZeroU64::MIN, 4, 8),
+        Err(ParameterError::Runtime(
+            dandrum_trigger_host::runtime::RuntimeError::UnsupportedLayout
+        ))
+    ));
 }
 
 #[test]

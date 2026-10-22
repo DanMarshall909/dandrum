@@ -1,0 +1,1665 @@
+{
+  "base": "dcd65e4a6226f581510c585376c6b1af1689cae5",
+  "scope": "Eight maintained test files only; production unchanged; bounded task5.1 characterization checkpoint, no task/spec/map/overall beta closure",
+  "test_sources": {
+    "src/clap-adapter/tests/internal/trigger_gui_dispatch.rs": "4f860e938a2a6a931a268203e5ac34635dcd27587050fe7e6c2b3926a2fb9703",
+    "src/clap-adapter/tests/trigger_dynamic.rs": "2b093ab4e9aca6e86062e34c90ffe9f21b437aef09770d8201dfd7a4fdd4b3ee",
+    "src/clap-adapter/tests/trigger_parameters.rs": "da8a78468ebff01d3a890f491eadd33bcfdaa203153e7f9c78a4584f446f73cc",
+    "src/trigger-host/tests/packaged_resources.rs": "3c16e8df009e0ae9fa24fef7371eb8aaa2c85259765884cd5c4ee823f0d1a7a5",
+    "src/trigger-host/tests/parameters.rs": "c443fd11fa3d251141e4173834462b8eb10e7de81b0150a11781f85325ebc450",
+    "src/trigger-host/tests/protocol.rs": "84e3456e7cfa96f886d6e991373c661941057403ae679c849ef30e67f3f58f5a",
+    "src/trigger-host/tests/session_jobs.rs": "2db25576069f47eebc7df01d149178303f59f2f3401d0e5b89b583a0fcc53c47",
+    "src/trigger-host/tests/snapshot.rs": "18055c761ceea247fadefa91f66c52203ae34b355fe16b7ba816ac95162c4315"
+  },
+  "production_sources": {
+    "src/trigger-host/src/state.rs": "9355b2c855998d2306c053d50485eea617103b932c7de7e04aa1929d7719afaf",
+    "src/trigger-host/src/runtime.rs": "41cb146824e21aa3c5814885b5561cd00d8152b5390338af25af26bc96f62592",
+    "src/trigger-host/src/parameters.rs": "e124d39bd8acd240624b7580d8c119ecd018adb507046a8e1e82ee9b35c01963",
+    "src/trigger-host/src/protocol.rs": "d18bb5e0cd1fa1e9ff304ab3c25a751739765ef04d0297c4c307b99a8feda58e",
+    "src/trigger-host/src/lib.rs": "d16daf1630f43184909847e03107d402a8d54f3bf2fe6085a8bfd966c1aa80f9",
+    "src/trigger-editor/src/assets.rs": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584",
+    "src/trigger-editor/src/native_x11.rs": "a2803e24488a04350d951fc2809c7afe2025a191fb38995efe9610181e2aea73",
+    "src/trigger-editor/src/lib.rs": "79f49cb29ed9376f8119c06f687ad069d6a7f33114da686797d9962f034b2d2c",
+    "src/clap-adapter/src/trigger.rs": "14ca55d2f68a4a99e4f27ec785af2b43a66ea659382120f1f96fae9fc6ee6bdb",
+    "src/clap-adapter/src/trigger/automation.rs": "c2f2f6a08d04a862834ffb96244149de55d051c8015477e64857ddec194233ea",
+    "src/clap-adapter/src/trigger/gui.rs": "eb878a98a1acfee7a5ad86683d96c54a45992dbdd0ba69959a9cad6d83e4e9b5"
+  },
+  "ordinary_validation": [
+    {
+      "label": "adapter-fmt-check",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "fmt",
+        "--manifest-path",
+        "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+        "--",
+        "--check"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 0.2516937779728323,
+      "stop_reason": null
+    },
+    {
+      "label": "adapter-strict-clippy",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "clippy",
+        "--offline",
+        "--locked",
+        "--jobs",
+        "1",
+        "--manifest-path",
+        "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+        "--features",
+        "trigger-editor",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 1.256127427041065,
+      "stop_reason": null
+    },
+    {
+      "label": "compile-current-dynamic",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--offline",
+        "--locked",
+        "--release",
+        "--jobs",
+        "1",
+        "--manifest-path",
+        "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+        "--features",
+        "trigger",
+        "--test",
+        "trigger_dynamic",
+        "--no-run",
+        "--message-format=json"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 11.807581975997891,
+      "stop_reason": null
+    },
+    {
+      "label": "dynamic-headless",
+      "command": [
+        "/tmp/dandrum-evidence/final-native-input-characterization/combined-validation-retry1/dynamic-host",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 0.502895081997849,
+      "stop_reason": null
+    },
+    {
+      "label": "dynamic-gui",
+      "command": [
+        "/tmp/dandrum-evidence/final-native-input-characterization/combined-validation-retry1/dynamic-host",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 0.5027200839831494,
+      "stop_reason": null
+    },
+    {
+      "label": "host-fmt-check",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "fmt",
+        "--manifest-path",
+        "/tmp/dandrum-lanes/runtime/src/trigger-host/Cargo.toml",
+        "--",
+        "--check"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 0.25156626995885745,
+      "stop_reason": null
+    },
+    {
+      "label": "host-full-suite",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--offline",
+        "--locked",
+        "--jobs",
+        "1",
+        "--manifest-path",
+        "/tmp/dandrum-lanes/runtime/src/trigger-host/Cargo.toml",
+        "--",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 24.87049693497829,
+      "stop_reason": null
+    },
+    {
+      "label": "host-strict-clippy",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "clippy",
+        "--offline",
+        "--locked",
+        "--jobs",
+        "1",
+        "--manifest-path",
+        "/tmp/dandrum-lanes/runtime/src/trigger-host/Cargo.toml",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 3.2648371739778668,
+      "stop_reason": null
+    },
+    {
+      "label": "compile-instrumented-dynamic-host",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "rustc",
+        "--offline",
+        "--locked",
+        "--release",
+        "--jobs",
+        "1",
+        "--manifest-path",
+        "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+        "--features",
+        "trigger",
+        "--test",
+        "trigger_dynamic",
+        "--message-format=json",
+        "--",
+        "-C",
+        "instrument-coverage"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 8.035302206990309,
+      "stop_reason": null
+    },
+    {
+      "label": "dynamic-instrumented-gui",
+      "command": [
+        "/tmp/dandrum-evidence/final-native-input-characterization/final-boundary-checks/instrumented-dynamic-host",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 0.502491646038834,
+      "stop_reason": null
+    },
+    {
+      "label": "merge",
+      "command": [
+        "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-profdata",
+        "merge",
+        "-sparse",
+        "/tmp/dandrum-evidence/final-native-input-characterization/final-boundary-checks/profiles/dynamic-16930730221770598180_0-3069487.profraw",
+        "/tmp/dandrum-evidence/final-native-input-characterization/final-boundary-checks/profiles/dynamic-16930730221770598180_0-3069605.profraw",
+        "/tmp/dandrum-evidence/final-native-input-characterization/final-boundary-checks/profiles/dynamic-2172357237880095879_0-3069487.profraw",
+        "/tmp/dandrum-evidence/final-native-input-characterization/final-boundary-checks/profiles/dynamic-2172357237880095879_0-3069605.profraw",
+        "-o",
+        "/tmp/dandrum-evidence/final-native-input-characterization/final-boundary-checks/merged.profdata"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 0.25188649498159066,
+      "stop_reason": null
+    },
+    {
+      "label": "prepare-current-gui-fixture",
+      "command": [
+        "python3",
+        "/tmp/dandrum-lanes/runtime/scripts/prepare-trigger-clap-native.py",
+        "--cargo",
+        "/home/dan/.cargo/bin/cargo",
+        "--manifest",
+        "/tmp/dandrum-lanes/runtime/src/clap-adapter/Cargo.toml",
+        "--target-dir",
+        "/tmp/dandrum-lanes/cache-editor-guard",
+        "--resource-dir",
+        "/tmp/dandrum-evidence/maintained-gui-product-root/sourcefree-production/installed/DandrumTrigger.resources",
+        "--product",
+        "/tmp/dandrum-evidence/maintained-gui-product-root/sourcefree-production/installed/DandrumTrigger.clap",
+        "--output-dir",
+        "/tmp/dandrum-evidence/final-native-input-characterization/final-boundary-checks/fixture-gui",
+        "--test-target",
+        "trigger_gui"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 11.807115649979096,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-extension",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/final-boundary-checks/fixture-gui/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/final-boundary-checks/fixture-gui/trigger-gui-test",
+        "copied_trigger_editor_exposes_the_actual_clap_gui_extension",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 0.25181992701254785,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-lifecycle",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/final-boundary-checks/fixture-gui/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/final-boundary-checks/fixture-gui/trigger-gui-test",
+        "copied_native_editor_lifecycle_initializes_the_real_react_session_and_preserves_audio",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 2.5104622620274313,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-configuration",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/final-boundary-checks/fixture-gui/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/final-boundary-checks/fixture-gui/trigger-gui-test",
+        "copied_editor_scan_and_configuration_only_do_not_make_code_resident",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 0.2518877569818869,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-loader-identity",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/final-boundary-checks/fixture-gui/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/final-boundary-checks/fixture-gui/trigger-gui-test",
+        "copied_editor_rejects_wrong_loaded_entry_identity_before_gtk_without_state_or_audio_loss",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 0.25166486896341667,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-failed-parent",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/final-boundary-checks/fixture-gui/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/final-boundary-checks/fixture-gui/trigger-gui-test",
+        "copied_editor_failed_native_parent_attempt_retains_only_code_and_preserves_audio",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 0.2518316070199944,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-parameter-state",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/trigger-parameters-test",
+        "copied_native_parameter_state_is_an_authenticated_numeric_dto",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 1.2551394770271145,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-parameter-flush",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/trigger-parameters-test",
+        "copied_native_parameter_flush_delivers_host_accepted_gestures",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 1.005003263009712,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-parameter-ownership",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/trigger-parameters-test",
+        "copied_native_automation_survives_rejected_output_activation_failures_and_audio_return",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 1.004814634041395,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-parameter-timer-required",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/trigger-parameters-test",
+        "copied_native_gui_requires_host_timer",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 0.25192499603144825,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-parameter-timer-refused",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/trigger-parameters-test",
+        "copied_native_gui_rejects_refused_host_timer",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 0.25080150802386925,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-parameter-timer-delivery",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/trigger-parameters-test",
+        "copied_native_host_timer_delivers_a_later_rendered_parameter_edit",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 1.2548413599724881,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-parameter-timer-rollback",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/trigger-parameters-test",
+        "copied_native_timer_rollback_retains_disabled_cleanup_and_retries",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 0.2517726780497469,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-parameter-source-credits",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/trigger-parameters-test",
+        "copied_native_view_independent_source_collects_accepted_automation_credits",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 1.256253955012653,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-parameter-feedback-undo",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/trigger-parameters-test",
+        "copied_native_host_feedback_updates_rendered_control_without_polling_or_undo_pollution",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 1.7572509970050305,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-parameter-callback-audit",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/trigger-parameters-test",
+        "copied_native_parameter_callbacks_allocate_and_destroy_nothing_while_gui_services",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 1.5081637109979056,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-parameter-invalid-stopped-flush",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/trigger-parameters-test",
+        "copied_native_invalid_stopped_flush_preserves_uncollected_automation_ownership",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 1.2552261850214563,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-parameter-structural-session",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/trigger-parameters-test",
+        "structural_native::copied_native_mapping_survives_lost_reply_and_view_loss",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 2.258584344992414,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-parameter-note-hold",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/trigger-parameters-test",
+        "note_native::copied_native_gated_sample_outlasts_short_fixture_and_releases",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 2.2604930649977177,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-parameter-note-heartbeat",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/trigger-parameters-test",
+        "note_native::copied_native_heartbeat_renews_held_note_past_original_deadline",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 4.022021877986845,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-parameter-note-expiry",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/trigger-parameters-test",
+        "note_native::copied_native_live_attachment_expires_renewed_note_and_preserves_host_voice",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 5.275009606964886,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-parameter-note-destroy",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/trigger-parameters-test",
+        "note_native::copied_native_destroy_releases_held_activity_once_and_reconnects",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 2.5152924510184675,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-parameter-creation-failure",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/trigger-parameters-test",
+        "creation_failure_native::copied_native_ipc_registration_failure_cleans_up_and_retries_preserving_state",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 1.00482622301206,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-parameter-continuous-audio",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/trigger-parameters-test",
+        "note_native::copied_native_continuous_audio_survives_view_replacement",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 3.2646097259712406,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-parameter-continuous-audio-audit",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/trigger-parameters-test",
+        "note_native::copied_native_continuous_audio_callbacks_allocate_and_deallocate_nothing",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 3.519078465003986,
+      "stop_reason": null
+    },
+    {
+      "label": "trigger-clap-native-parameter-two-instances",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "GDK_BACKEND=x11",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/DandrumTrigger.clap",
+        "/tmp/dandrum-evidence/final-native-input-characterization/native-baseline/fixture/trigger-parameters-test",
+        "instances_native::copied_native_two_instances_keep_edits_audio_and_editors_independent",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "cwd": "/tmp/dandrum-lanes/runtime",
+      "exit": 0,
+      "seconds": 9.04526258201804,
+      "stop_reason": null
+    }
+  ],
+  "host_counts": {
+    "unit_and_integration": 157,
+    "compile_fail_doctests": 2,
+    "affected_characterization_tests": 55
+  },
+  "native_counts": {
+    "outer_cases": 25,
+    "nested_allocator_children": 2
+  },
+  "dynamic_counts": {
+    "ordinary_headless": 16,
+    "ordinary_gui": 16,
+    "instrumented_gui": 16,
+    "nested_allocator_child_each": 1
+  },
+  "fast_owner_tests": 13,
+  "host_coordinate_union": {
+    "scope": "Coordinate union of exactunchanged hostproduction152baseline plus55currentaffectedtests, excludes neitherownedguardsnorbranchclaims. Embedded runtime/state test ranges remain identified separately by ledger.",
+    "inputs": {
+      "/tmp/dandrum-evidence/final-clap-dcd65e4a/host-owner-coverage/export.stdout": "99e7ce531813e4be9576a9e61ee6d1fb5645e5bc8919bb46357d2557e09f7717",
+      "/tmp/dandrum-evidence/final-host-characterization/root-coverage/export.stdout": "5689f906e31134fe083b8369ca46957e1cb5ae26d1320a2287671bbe44c5a383"
+    },
+    "owners": {
+      "/tmp/dandrum-lanes/runtime/src/trigger-host/src/runtime.rs": {
+        "positive_normal_regions": 2124,
+        "normal_regions": 2130,
+        "zero_ranges": [
+          [
+            874,
+            13,
+            874,
+            14
+          ],
+          [
+            1066,
+            78,
+            1066,
+            79
+          ],
+          [
+            299,
+            75,
+            299,
+            76
+          ],
+          [
+            1636,
+            21,
+            1636,
+            29
+          ],
+          [
+            1853,
+            13,
+            1853,
+            21
+          ],
+          [
+            1508,
+            13,
+            1508,
+            21
+          ]
+        ]
+      },
+      "/tmp/dandrum-lanes/runtime/src/trigger-host/src/parameters.rs": {
+        "positive_normal_regions": 1345,
+        "normal_regions": 1382,
+        "zero_ranges": [
+          [
+            401,
+            93,
+            401,
+            94
+          ],
+          [
+            766,
+            51,
+            766,
+            52
+          ],
+          [
+            419,
+            38,
+            419,
+            43
+          ],
+          [
+            419,
+            48,
+            419,
+            74
+          ],
+          [
+            211,
+            49,
+            211,
+            94
+          ],
+          [
+            314,
+            61,
+            314,
+            71
+          ],
+          [
+            315,
+            71,
+            315,
+            81
+          ],
+          [
+            316,
+            25,
+            316,
+            31
+          ],
+          [
+            320,
+            32,
+            320,
+            48
+          ],
+          [
+            690,
+            38,
+            690,
+            43
+          ],
+          [
+            690,
+            48,
+            690,
+            78
+          ],
+          [
+            1047,
+            20,
+            1047,
+            28
+          ],
+          [
+            530,
+            54,
+            530,
+            55
+          ],
+          [
+            1124,
+            50,
+            1124,
+            51
+          ],
+          [
+            1062,
+            61,
+            1062,
+            62
+          ],
+          [
+            1065,
+            28,
+            1065,
+            73
+          ],
+          [
+            1076,
+            67,
+            1076,
+            68
+          ],
+          [
+            1079,
+            13,
+            1079,
+            25
+          ],
+          [
+            1087,
+            17,
+            1087,
+            22
+          ],
+          [
+            1088,
+            17,
+            1088,
+            33
+          ],
+          [
+            1088,
+            36,
+            1092,
+            19
+          ],
+          [
+            1089,
+            32,
+            1089,
+            48
+          ],
+          [
+            1090,
+            33,
+            1090,
+            50
+          ],
+          [
+            1091,
+            46,
+            1091,
+            54
+          ],
+          [
+            1093,
+            24,
+            1093,
+            55
+          ],
+          [
+            325,
+            67,
+            325,
+            68
+          ],
+          [
+            999,
+            53,
+            999,
+            57
+          ],
+          [
+            1000,
+            63,
+            1000,
+            67
+          ],
+          [
+            1007,
+            17,
+            1007,
+            33
+          ],
+          [
+            1007,
+            17,
+            1007,
+            68
+          ],
+          [
+            1007,
+            34,
+            1007,
+            40
+          ],
+          [
+            1007,
+            71,
+            1007,
+            100
+          ],
+          [
+            1008,
+            24,
+            1008,
+            69
+          ],
+          [
+            1150,
+            72,
+            1150,
+            73
+          ],
+          [
+            1197,
+            75,
+            1197,
+            76
+          ],
+          [
+            1214,
+            54,
+            1214,
+            55
+          ],
+          [
+            297,
+            53,
+            299,
+            26
+          ]
+        ]
+      },
+      "/tmp/dandrum-lanes/runtime/src/trigger-host/src/protocol.rs": {
+        "positive_normal_regions": 512,
+        "normal_regions": 516,
+        "zero_ranges": [
+          [
+            90,
+            53,
+            90,
+            54
+          ],
+          [
+            541,
+            53,
+            541,
+            54
+          ],
+          [
+            521,
+            86,
+            521,
+            87
+          ],
+          [
+            495,
+            57,
+            495,
+            58
+          ]
+        ]
+      },
+      "/tmp/dandrum-lanes/runtime/src/trigger-host/src/lib.rs": {
+        "positive_normal_regions": 173,
+        "normal_regions": 173,
+        "zero_ranges": []
+      },
+      "/tmp/dandrum-lanes/runtime/src/trigger-host/src/state.rs": {
+        "positive_normal_regions": 177,
+        "normal_regions": 177,
+        "zero_ranges": []
+      },
+      "/tmp/dandrum-lanes/runtime/src/trigger-host/src/../tests/internal/state.rs": {
+        "positive_normal_regions": 197,
+        "normal_regions": 198,
+        "zero_ranges": [
+          [
+            166,
+            9,
+            166,
+            15
+          ]
+        ]
+      }
+    }
+  },
+  "adapter_coordinate_union": {
+    "inputs": {
+      "/tmp/dandrum-evidence/final-clap-dcd65e4a/adapter-production-coverage-retry1/export.stdout": "3c52f2805e36daa32c34a691477ad2b2f81d2c4269c86fafab711393a93b17b6",
+      "/tmp/dandrum-evidence/final-native-input-characterization/fast-coverage-retry1/export.stdout": "266251b1572ee1f0fa034d89bd7b2535cb7a4561259d8943282bcf7656009aa0",
+      "/tmp/dandrum-evidence/final-native-input-characterization/native-coverage/export.stdout": "b60a4c18f9093dc4d99c41ca4be28110f9ee5e553e1d8c82813d1c52151f049c",
+      "/tmp/dandrum-evidence/final-native-input-characterization/final-boundary-checks/export.stdout": "a74e80c9255057aae75b614139066b429c05864f3d5ebca5375d99759c248441"
+    },
+    "scope": "Exactunchanged production coordinate union of full25native+16dynamic baseline, fresh13fastowner, freshrawnative9framecase and freshcurrent16dynamic. Separate normal25native/159host/16eachproducts/strictlintcurrentresults. Not branches/assertions/wholefixture claim.",
+    "owners": {
+      "/tmp/dandrum-lanes/runtime/src/clap-adapter/src/trigger/gui.rs": {
+        "positive": 652,
+        "total": 700,
+        "zero_ranges": [
+          [
+            603,
+            57,
+            603,
+            59
+          ],
+          [
+            245,
+            59,
+            245,
+            67
+          ],
+          [
+            256,
+            33,
+            256,
+            41
+          ],
+          [
+            261,
+            26,
+            261,
+            34
+          ],
+          [
+            263,
+            26,
+            263,
+            34
+          ],
+          [
+            279,
+            17,
+            279,
+            18
+          ],
+          [
+            208,
+            75,
+            208,
+            83
+          ],
+          [
+            213,
+            30,
+            213,
+            38
+          ],
+          [
+            209,
+            63,
+            209,
+            71
+          ],
+          [
+            131,
+            28,
+            131,
+            57
+          ],
+          [
+            233,
+            26,
+            233,
+            34
+          ],
+          [
+            118,
+            26,
+            118,
+            34
+          ],
+          [
+            39,
+            70,
+            39,
+            78
+          ],
+          [
+            372,
+            46,
+            372,
+            51
+          ],
+          [
+            372,
+            56,
+            372,
+            61
+          ],
+          [
+            533,
+            26,
+            533,
+            34
+          ],
+          [
+            527,
+            58,
+            527,
+            66
+          ],
+          [
+            460,
+            64,
+            460,
+            72
+          ],
+          [
+            514,
+            51,
+            514,
+            59
+          ],
+          [
+            245,
+            70,
+            245,
+            71
+          ],
+          [
+            250,
+            34,
+            250,
+            35
+          ],
+          [
+            253,
+            20,
+            253,
+            35
+          ],
+          [
+            256,
+            44,
+            256,
+            45
+          ],
+          [
+            261,
+            37,
+            261,
+            38
+          ],
+          [
+            263,
+            37,
+            263,
+            38
+          ],
+          [
+            288,
+            42,
+            288,
+            43
+          ],
+          [
+            208,
+            86,
+            208,
+            87
+          ],
+          [
+            209,
+            74,
+            209,
+            75
+          ],
+          [
+            213,
+            41,
+            213,
+            42
+          ],
+          [
+            233,
+            37,
+            233,
+            38
+          ],
+          [
+            299,
+            17,
+            299,
+            23
+          ],
+          [
+            302,
+            17,
+            302,
+            23
+          ],
+          [
+            305,
+            17,
+            305,
+            23
+          ],
+          [
+            328,
+            17,
+            328,
+            23
+          ],
+          [
+            334,
+            9,
+            334,
+            10
+          ],
+          [
+            623,
+            34,
+            623,
+            35
+          ],
+          [
+            39,
+            81,
+            39,
+            82
+          ],
+          [
+            54,
+            16,
+            54,
+            31
+          ],
+          [
+            61,
+            16,
+            61,
+            31
+          ],
+          [
+            385,
+            19,
+            385,
+            55
+          ],
+          [
+            430,
+            21,
+            430,
+            31
+          ],
+          [
+            430,
+            59,
+            432,
+            10
+          ],
+          [
+            431,
+            21,
+            431,
+            46
+          ],
+          [
+            460,
+            75,
+            460,
+            76
+          ],
+          [
+            490,
+            13,
+            490,
+            18
+          ],
+          [
+            496,
+            13,
+            496,
+            14
+          ],
+          [
+            511,
+            40,
+            511,
+            41
+          ],
+          [
+            514,
+            62,
+            514,
+            63
+          ]
+        ]
+      },
+      "/tmp/dandrum-lanes/runtime/src/clap-adapter/src/trigger/automation.rs": {
+        "positive": 62,
+        "total": 62,
+        "zero_ranges": []
+      },
+      "/tmp/dandrum-lanes/runtime/src/clap-adapter/src/trigger.rs": {
+        "positive": 628,
+        "total": 653,
+        "zero_ranges": [
+          [
+            136,
+            77,
+            136,
+            78
+          ],
+          [
+            144,
+            35,
+            144,
+            36
+          ],
+          [
+            154,
+            50,
+            154,
+            51
+          ],
+          [
+            469,
+            78,
+            469,
+            79
+          ],
+          [
+            472,
+            86,
+            472,
+            87
+          ],
+          [
+            613,
+            36,
+            613,
+            37
+          ],
+          [
+            614,
+            21,
+            614,
+            85
+          ],
+          [
+            615,
+            17,
+            615,
+            18
+          ],
+          [
+            647,
+            13,
+            647,
+            19
+          ],
+          [
+            633,
+            86,
+            633,
+            87
+          ],
+          [
+            321,
+            20,
+            321,
+            27
+          ],
+          [
+            259,
+            17,
+            259,
+            18
+          ],
+          [
+            264,
+            13,
+            264,
+            18
+          ],
+          [
+            233,
+            18,
+            233,
+            19
+          ],
+          [
+            548,
+            29,
+            548,
+            34
+          ],
+          [
+            557,
+            17,
+            557,
+            22
+          ],
+          [
+            463,
+            76,
+            463,
+            77
+          ],
+          [
+            492,
+            17,
+            492,
+            33
+          ],
+          [
+            492,
+            34,
+            492,
+            37
+          ],
+          [
+            492,
+            38,
+            492,
+            49
+          ],
+          [
+            493,
+            24,
+            495,
+            19
+          ],
+          [
+            606,
+            78,
+            606,
+            79
+          ],
+          [
+            615,
+            19,
+            615,
+            20
+          ],
+          [
+            582,
+            78,
+            582,
+            79
+          ],
+          [
+            585,
+            80,
+            585,
+            81
+          ]
+        ]
+      }
+    }
+  },
+  "coverage_limits": "Distinct normal source-coordinate execution union is not LLVM branch/MC/DC or assertion proof; all remaining ranges retain source-bound classifications. Raw runtime/state counts include embedded tests and aliases, separated in host refresh. Three earlier sibling-test snapshot differences are outside those compilation inputs, qualified in adapter refresh.",
+  "red_disposition": "Characterizations pass unchanged production. First fast silence assertion included an earlier valid unheard one-shot tap; accepted behavior confirmed, reset before rejection baseline corrected fixture. No invented behavior RED. Unsupported preparer flag, direct rustc relative cwd, and manual CStr lint failures retained separately from product behavior.",
+  "refactoring": "Reuse existing tables, copied fixtures, public render/status/metadata paths and existing native selector. No production change or extraction. One fanout fixture is the smallest distinct accepted shape; raw IPC matrix stays in its sole owning native DTO test.",
+  "artifacts": {
+    "ordinary_gui": "309e9006a4e41c616b46e41e889e9400507349b20eaf1d0e39ecfde0409b905a",
+    "ordinary_headless": "bc2830ffacfe7e6acd373d2af89389cbe8974956611af29631af40a6364dfdc7"
+  },
+  "resources": {
+    "scope": "Actual globalhost /proc nonzombieownedgroup audit; no termination/deletion. Exact8testpathmirrors/mainclean/known1766Runtimecache preserved.",
+    "owned_groups": [
+      4,
+      23,
+      45,
+      58,
+      73,
+      74,
+      77,
+      132,
+      295,
+      296,
+      303,
+      304,
+      308,
+      508,
+      527,
+      2503,
+      3026887,
+      3026906,
+      3027442,
+      3034843,
+      3038239,
+      3038322,
+      3038330,
+      3038340,
+      3068459,
+      3069487,
+      3069740,
+      3069752,
+      3069759,
+      3069768,
+      3070950,
+      3070955,
+      3071549,
+      3071564,
+      3071580,
+      3071599,
+      3072021,
+      3072111,
+      3072200,
+      3072246,
+      3072356,
+      3072445,
+      3072452,
+      3072674,
+      3072992,
+      3073107,
+      3073196,
+      3073687,
+      3073911,
+      3074683,
+      3075627,
+      3075795,
+      3075875,
+      3076019,
+      3076396
+    ],
+    "active_workers": [],
+    "source_sha256": {
+      "src/clap-adapter/tests/internal/trigger_gui_dispatch.rs": "4f860e938a2a6a931a268203e5ac34635dcd27587050fe7e6c2b3926a2fb9703",
+      "src/clap-adapter/tests/trigger_dynamic.rs": "2b093ab4e9aca6e86062e34c90ffe9f21b437aef09770d8201dfd7a4fdd4b3ee",
+      "src/clap-adapter/tests/trigger_parameters.rs": "da8a78468ebff01d3a890f491eadd33bcfdaa203153e7f9c78a4584f446f73cc",
+      "src/trigger-host/tests/packaged_resources.rs": "3c16e8df009e0ae9fa24fef7371eb8aaa2c85259765884cd5c4ee823f0d1a7a5",
+      "src/trigger-host/tests/parameters.rs": "c443fd11fa3d251141e4173834462b8eb10e7de81b0150a11781f85325ebc450",
+      "src/trigger-host/tests/protocol.rs": "84e3456e7cfa96f886d6e991373c661941057403ae679c849ef30e67f3f58f5a",
+      "src/trigger-host/tests/session_jobs.rs": "2db25576069f47eebc7df01d149178303f59f2f3401d0e5b89b583a0fcc53c47",
+      "src/trigger-host/tests/snapshot.rs": "18055c761ceea247fadefa91f66c52203ae34b355fe16b7ba816ac95162c4315"
+    },
+    "runtime_preserved_cache_regular_files": 1766,
+    "main_head": "68dd6553a2f07e71e2fe09ee1d7094d518559937",
+    "disk_free_bytes": 4174348288
+  },
+  "integration": {
+    "branch": "lane/trigger-integration-20261020",
+    "intended_upstream": "refs/remotes/origin/feat/juce-free-host-adapters",
+    "upstream_oid": "dcd65e4a6226f581510c585376c6b1af1689cae5",
+    "head": "dcd65e4a6226f581510c585376c6b1af1689cae5",
+    "merge_base": "dcd65e4a6226f581510c585376c6b1af1689cae5",
+    "fetch_exit": 0,
+    "fetch_seconds": 0.5313144130050205,
+    "prior_preflight": "/tmp/dandrum-evidence/final-clap-dcd65e4a/next-phase-preflight.json",
+    "refs": "refs/heads/agent/fix-plugin-preparation-lifecycle 06d3b92a990c1959e5baae5cb4e80316db6b07e4\nrefs/heads/agent/graph-kernel-reset-library 9785ea0fb4a3637e26629b9e48c53e18cf3ff758\nrefs/heads/agent/reusable-instrument-host-ui 9da1452b226af8722b80d925517a6427865c61f0\nrefs/heads/agent/tb303-webview 8cc0823712f92b012bae65dc16c17c7740a2265e\nrefs/heads/feat/juce-free-host-adapters dcd65e4a6226f581510c585376c6b1af1689cae5\nrefs/heads/lane/trigger-frontend-20261020 dcd65e4a6226f581510c585376c6b1af1689cae5\nrefs/heads/lane/trigger-integration-20261020 dcd65e4a6226f581510c585376c6b1af1689cae5\nrefs/heads/lane/trigger-protocol-20261020 dcd65e4a6226f581510c585376c6b1af1689cae5\nrefs/heads/lane/trigger-runtime-20261020 dcd65e4a6226f581510c585376c6b1af1689cae5\nrefs/heads/main 68dd6553a2f07e71e2fe09ee1d7094d518559937\nrefs/heads/work/advanced-sampling-options-2026-10-01 3b313a78680f305d10b84cf56dd6c35a6f4752e8\nrefs/heads/work/demo-launcher-2026-10-07 f5bf55b3d33b7a109016fa40df3216d929ee0d6b\nrefs/heads/work/filter-ui-jive-spike-2026-10-07 38202e26f1e5a1b2ded9cf489c30e07ec8ff8948\nrefs/heads/work/filter-ui-launcher-spike-2026-10-07 cc551737fb91df317b9a8275a8d6cf8eaa608691\nrefs/heads/work/filter-ui-slint-spike-2026-10-07 38202e26f1e5a1b2ded9cf489c30e07ec8ff8948\nrefs/heads/work/filter-ui-spikes-2026-10-07 f89c8c0a0f9b213a05b6a6225d78278732bf4713\nrefs/heads/work/instrument-system-ui-2026-10-05 fc3a681060c53efb7320ff5e26902d4f538e3990\nrefs/heads/work/openspec-handoff-2026-09-29 6deb640d737204407e8394b2615db25be7a0a4c5\nrefs/heads/work/react-plugin-editors-2026-10-02 fc3a681060c53efb7320ff5e26902d4f538e3990\nrefs/heads/work/react-ui-performance-2026-10-07 38202e26f1e5a1b2ded9cf489c30e07ec8ff8948\nrefs/heads/work/slint-performance-2026-10-08 16292d6b30bcafd9ab56ef4e2ad86ef24b7cedcd\nrefs/heads/work/slint-performance-launcher-2026-10-08 ae42cbb30e886d6b1bb9c651237015e1a75f8207\nrefs/heads/work/slint-performance-ui-2026-10-08 f89c8c0a0f9b213a05b6a6225d78278732bf4713\nrefs/heads/work/trigger-react-shell-2026-10-06 43c01c71393e041790a9831480e437bd9e8060af\nrefs/remotes/origin/HEAD 68dd6553a2f07e71e2fe09ee1d7094d518559937\nrefs/remotes/origin/agent/reusable-instrument-host-ui 49b32c6476d76f5e6a4d8007e3d1d07adca59330\nrefs/remotes/origin/agent/tb303-webview 8cc0823712f92b012bae65dc16c17c7740a2265e\nrefs/remotes/origin/chore/format-slint bb17396e900ef44c8a3976b664ac87e012147f71\nrefs/remotes/origin/chore/sampler-prerequisites-2026-10-09 5db115073ad8e96aeb5e1bf1a3ef24165ec53ea6\nrefs/remotes/origin/chore/ui-dependency-updates-2026-10-08 079a96b86790a9f88174a9e79f702163a0400cbe\nrefs/remotes/origin/chore/ui-integration-2026-10-08 92d17f51027cd98c9f2c2a8af337025aa1a8514d\nrefs/remotes/origin/docs/juce-replacement-investigation 68dd6553a2f07e71e2fe09ee1d7094d518559937\nrefs/remotes/origin/docs/renderer-independent-plugin-ui 0b9981917d710586f75832a024ec7eea5ab37a4f\nrefs/remotes/origin/docs/sampler-juce-ui-design-prompt 4cdcb3ecdcf8e1d9ec7aaa5ea88362c73da84be4\nrefs/remotes/origin/docs/soft-precision-reference d9202a3f0c59747074177ddbc32cc8c76c5c67c0\nrefs/remotes/origin/docs/update-design-reference d02ee1b6126fa9fb579ac8380716c691a280abdb\nrefs/remotes/origin/feat/filter-slint-design-2026-10-08 ad9c2fd9ef654198da20c02e4282eba6d22491ca\nrefs/remotes/origin/feat/juce-free-host-adapters dcd65e4a6226f581510c585376c6b1af1689cae5\nrefs/remotes/origin/feat/trigger-slint-library-2026-10-08 30d872bd594029ace9db52815d7d87c214bb0085\nrefs/remotes/origin/main 68dd6553a2f07e71e2fe09ee1d7094d518559937\nrefs/remotes/origin/work/advanced-sampling-options-2026-10-01 3b313a78680f305d10b84cf56dd6c35a6f4752e8\nrefs/remotes/origin/work/demo-launcher-2026-10-07 f5bf55b3d33b7a109016fa40df3216d929ee0d6b\nrefs/remotes/origin/work/filter-ui-spikes-2026-10-07 f89c8c0a0f9b213a05b6a6225d78278732bf4713\nrefs/remotes/origin/work/openspec-handoff-2026-09-29 6deb640d737204407e8394b2615db25be7a0a4c5\nrefs/remotes/origin/work/react-ui-performance-2026-10-07 38202e26f1e5a1b2ded9cf489c30e07ec8ff8948\nrefs/remotes/origin/work/slint-performance-2026-10-08 16292d6b30bcafd9ab56ef4e2ad86ef24b7cedcd\nrefs/remotes/origin/work/trigger-react-shell-2026-10-06 43c01c71393e041790a9831480e437bd9e8060af\nrefs/remotes/origin/work/trigger-slint-library-recovery-2026-10-08 b28b74bbc586723a73da1a4f4be2fd09aa72af90\n",
+    "all_refs_match_prior_dispositioned_inventory": true
+  },
+  "raw_archive_sha256": "9c803a1562cc45f5a8318918f40b2c246d7d5e8b9b9845bb0d070314d88d0378",
+  "raw_index_sha256": "86dee233af576cf2554d891914255cdde93a7c2c3b473a2b69dccacbfede541a",
+  "mutation": "Excluded by explicit user direction. Normal hooks remain installed; no engine files changed.",
+  "overall_remaining": "CLAP final scenario/spec/increment review/publication; fractional sample-rate validator failure unwaived; VST3, standalone/device, selected sample persistence, named DAW, installed/offline and physical native acceptance still required.",
+  "orchestration_cost": {
+    "model_token_usage": "unavailable",
+    "native_command_wall_times": "Recorded per phase in raw commands.json; controller duration includes sampling intervals and is not per-test duration."
+  }
+}

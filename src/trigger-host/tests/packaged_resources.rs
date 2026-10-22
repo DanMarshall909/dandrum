@@ -294,3 +294,25 @@ fn missing_installed_sample_never_falls_back_to_the_checkout() {
             .is_file()
     );
 }
+
+#[test]
+fn a_regular_corrupt_sample_fails_preparation_without_checkout_fallback_and_can_be_repaired() {
+    let (_temporary, root) = copied_package();
+    let sample = root.join(ADVANCED_DRUM_KIT_SAMPLE);
+    let original = std::fs::read(&sample).unwrap();
+    std::fs::write(&sample, b"not a WAV file").unwrap();
+    assert!(
+        PackagedResources::open(&root).is_ok(),
+        "files are present and regular"
+    );
+    assert!(matches!(
+        TriggerHost::open(&root, configuration()),
+        Err(TriggerHostError::Session(SessionError::PreparationFailed(
+            _
+        )))
+    ));
+    std::fs::write(sample, original).unwrap();
+    let host = TriggerHost::open(&root, configuration()).unwrap();
+    let rendered = render_note(host.session().prepared(), 36);
+    assert_eq!((rendered[0][0], rendered[1][0]), (-0.5, -0.5));
+}

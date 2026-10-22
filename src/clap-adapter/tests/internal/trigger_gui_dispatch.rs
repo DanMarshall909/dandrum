@@ -55,7 +55,7 @@ fn call(
 }
 #[test]
 fn current_dispatch_preserves_snapshot_notes_admission_and_capability_errors() {
-    let (_package, mut controller, _audio, attachment) = controller(8, 8);
+    let (_package, mut controller, mut audio, attachment) = controller(8, 8);
     let snapshot = call(
         &mut controller,
         &attachment,
@@ -114,6 +114,42 @@ fn current_dispatch_preserves_snapshot_notes_admission_and_capability_errors() {
         "capabilityUnavailable"
     );
     assert_eq!(controller.parameter_state().sequence, 0);
+    // The earlier accepted one-shot tap may still sound after NoteOff.
+    // Clear that prior intent before checking that a rejected note has no onset.
+    audio.reset();
+    let (mut left, mut right) = ([123.0; 16], [123.0; 16]);
+    audio.process_events(&mut left, &mut right, &[]).unwrap();
+    assert_eq!((left, right), ([0.0; 16], [0.0; 16]));
+    let accepted = controller.session().owner_snapshot();
+    let parameters = controller.parameter_state();
+    assert_eq!(
+        call(
+            &mut controller,
+            &attachment,
+            8,
+            "noteOn",
+            json!([36, 1.0, 0])
+        )["error"]["code"],
+        "invalidArguments",
+        "a newly admitted stale-generation note is rejected by the native controller"
+    );
+    assert_eq!(controller.session().owner_snapshot(), accepted);
+    assert_eq!(controller.parameter_state(), parameters);
+    assert!(controller.peek_automation().is_none());
+    audio.process_events(&mut left, &mut right, &[]).unwrap();
+    assert_eq!((left, right), ([0.0; 16], [0.0; 16]));
+    assert_eq!(
+        call(
+            &mut controller,
+            &attachment,
+            9,
+            "noteOn",
+            json!([36, 1.0, 1])
+        )["status"],
+        "accepted"
+    );
+    audio.process_events(&mut left, &mut right, &[]).unwrap();
+    assert_eq!((left[0], right[0]), (-0.5, -0.5));
 }
 
 #[test]

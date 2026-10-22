@@ -336,9 +336,72 @@ fn copied_native_parameter_state_is_an_authenticated_numeric_dto() {
             assert!(Instant::now() < deadline, "actual native getParameterState Promise did not settle");
         };
         eprintln!("actual authenticated native parameter reply: {result}");
+        let before = saved_state(&mut plugin);
+        let session_before = invoke(&mut plugin, &browser, "window.__DANDRUM__.backend.getNativeFunction('getSamplerSession')()");
+        let identity_before = javascript(&mut plugin, &browser, "JSON.stringify([window.__DANDRUM_NATIVE__.instanceId,window.__DANDRUM_NATIVE__.attachmentId])");
+        let attachment = javascript(&mut plugin, &browser, "window.__DANDRUM_NATIVE__.attachmentId");
+        let child = parent.children()[0];
+        let frame = serde_json::json!({"version":1,"attachmentId":attachment,"requestId":"18446744073709551615","method":"setParameter","args":["drums.level",0.125,1]});
+        let mut oversized = frame.to_string();
+        oversized.push_str(&" ".repeat(dandrum_trigger_host::protocol::MESSAGE_BYTES_LIMIT + 1 - oversized.len()));
+        let mut foreign = frame.clone();
+        foreign["attachmentId"] = serde_json::json!(format!("{attachment}0"));
+        let mut missing = frame.clone();
+        missing.as_object_mut().unwrap().remove("requestId");
+        let mut numeric = frame.clone();
+        numeric["requestId"] = serde_json::json!(1);
+        let mut invalid = vec![
+            ("oversized", oversized),
+            ("malformed", "{".to_owned()),
+            ("foreign attachment", foreign.to_string()),
+            ("missing request", missing.to_string()),
+            ("numeric request", numeric.to_string()),
+        ];
+        for id in ["0", "01", "18446744073709551616", "111111111111111111111"] {
+            let mut malformed = frame.clone();
+            malformed["requestId"] = serde_json::json!(id);
+            invalid.push((id, malformed.to_string()));
+        }
+        javascript(&mut plugin, &browser, r#"(()=>{window.__RAW_REPLIES__=[];const surface=window.__DANDRUM__,receive=surface.receiveNativeMessage;surface.receiveNativeMessage=wire=>{const frame=JSON.parse(wire);if(Object.hasOwn(frame,'requestId'))window.__RAW_REPLIES__.push(frame);return receive(wire);};return 'observing';})()"#);
+        let mut rejected = Vec::new();
+        for (case, message) in invalid {
+            javascript(&mut plugin, &browser, &format!("window.__RAW_REPLIES__=[];window.ipc.postMessage({});'sent'", serde_json::to_string(&message).unwrap()));
+            // A subsequent authenticated reply is an IPC ordering barrier, not a timeout oracle.
+            let continued = invoke(&mut plugin, &browser, "window.__DANDRUM__.backend.getNativeFunction('getParameterState')()");
+            let replies: Vec<serde_json::Value> = serde_json::from_str(&javascript(&mut plugin, &browser, "JSON.stringify(window.__RAW_REPLIES__)")).unwrap();
+            rejected.push((case, continued, replies));
+        }
+        let session_after = invoke(&mut plugin, &browser, "window.__DANDRUM__.backend.getNativeFunction('getSamplerSession')()");
+        let identity_after = javascript(&mut plugin, &browser, "JSON.stringify([window.__DANDRUM_NATIVE__.instanceId,window.__DANDRUM_NATIVE__.attachmentId])");
+        let children_after = parent.children();
+        let params = plugin.plugin_handle().get_extension::<PluginParams>().unwrap();
+        let physical = params.get_value(&plugin.plugin_handle(), ClapId::new(3));
+        let mut audio = start_audio(&mut plugin);
+        let mut events = EventBuffer::new();
+        events.push(&MidiEvent::new(3, 0, [0x90, 36, 100]));
+        let mut output = Recorder::new(64);
+        let pcm = render_audio(&mut audio, &events, &mut output);
+        return_audio(&mut plugin, audio);
+        let after = saved_state(&mut plugin);
         // Teardown before assertions so a behavior RED still exercises owner cleanup.
         gui.destroy(&plugin.plugin_handle());
         drop(browser);
+        for (case, continued, replies) in rejected {
+            assert_eq!(continued, result, "raw {case} preserves the accepted DTO and later authenticated requests");
+            assert_eq!(replies.len(), 1, "raw {case} has no fabricated reply; only the later valid request receives one: {replies:?}");
+            assert_eq!(replies[0]["status"], "accepted");
+            assert_eq!(replies[0]["result"], result["result"]);
+        }
+        assert_eq!(session_after, session_before);
+        assert_eq!(identity_after, identity_before);
+        assert_eq!(children_after, [child]);
+        assert_eq!(physical, Some(1.0));
+        assert_eq!(after, before);
+        assert_eq!(output.attempts, 0, "rejected raw writes never emit automation");
+        for channel in pcm {
+            assert_eq!(&channel[..3], &[0.0; 3]);
+            assert_eq!(&channel[3..5], &[-0.5, -358.0 / 32768.0]);
+        }
         assert_eq!(result["status"], "accepted", "G2: real parameter read must be dispatched; actual={result}");
         assert_eq!(result["result"]["generation"], 1);
         assert_eq!(result["result"]["sequence"], 0);

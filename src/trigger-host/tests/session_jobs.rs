@@ -119,6 +119,71 @@ fn render(audio: &mut RuntimeAudio, note: u8) -> ([f32; 16], [f32; 16]) {
     assert_eq!(allocation, allocation_counter::AllocationInfo::default());
     (left, right)
 }
+
+#[test]
+fn exhausted_next_request_projection_does_not_cancel_the_last_admitted_native_job() {
+    let (_package, root) = package();
+    let (mut host, mut audio) = open(&root);
+    let editor = host.attach_editor().unwrap();
+    let accepted = host.session().owner_snapshot();
+    let parameters = host.parameter_state();
+    let last_id = u64::MAX.to_string();
+    let command = mapping(&mut host, &editor.attachment_id, 1, &last_id, "0", 60);
+    assert_eq!(
+        result(host.admit_session_command(&command).unwrap()),
+        json!({"status":"accepted","job_id":last_id})
+    );
+    let read = request(
+        &mut host,
+        &editor.attachment_id,
+        2,
+        "getSamplerSession",
+        json!([]),
+    );
+    assert_eq!(
+        host.sampler_session_reply(&read),
+        Err(ParameterError::Protocol(ProtocolError::Session(
+            dandrum_instrument_session::SessionError::RevisionExhausted
+        )))
+    );
+    assert_eq!(host.session().owner_snapshot(), accepted);
+    assert_eq!(host.parameter_state(), parameters);
+    assert!(host.peek_automation().is_none());
+    let (left, right) = render(&mut audio, 36);
+    assert_eq!((left[0], right[0]), (-0.5, -0.5));
+    assert_eq!(render(&mut audio, 60), ([0.; 16], [0.; 16]));
+
+    let completion = host.take_session_preparation().unwrap().prepare();
+    host.submit_session_completion(completion).unwrap();
+    assert_eq!(
+        host.service_session_jobs().unwrap(),
+        SessionJobProgress::Completed
+    );
+    let changed = host.session().owner_snapshot();
+    assert_eq!(
+        (changed.revision, changed.undo_len, changed.redo_len),
+        (1, 1, 0)
+    );
+    let (left, right) = render(&mut audio, 60);
+    assert_eq!((left[0], right[0]), (-0.5, -0.5));
+    assert_eq!(render(&mut audio, 36), ([0.; 16], [0.; 16]));
+    assert_eq!(
+        status(&mut host, &editor.attachment_id, 3, &last_id),
+        json!({"request_id":last_id,"state":"completed","revision":"1","undoCount":1,"redoCount":0,"error":""})
+    );
+    assert_eq!(
+        host.service_session_jobs().unwrap(),
+        SessionJobProgress::Idle
+    );
+    assert_eq!(
+        host.sampler_session_reply(&read),
+        Err(ParameterError::Protocol(ProtocolError::Session(
+            dandrum_instrument_session::SessionError::RevisionExhausted
+        )))
+    );
+    assert_eq!(host.session().owner_snapshot(), changed);
+}
+
 #[test]
 fn admitted_mapping_survives_editor_loss_and_recovers_one_native_outcome() {
     let (_package, root) = package();

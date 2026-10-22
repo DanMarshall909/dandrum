@@ -295,6 +295,9 @@ fn real_sampler_ports_and_offset_midi_parameter_values_render_literal_signed_pcm
             .flags
             .contains(clack_extensions::audio_ports::AudioPortFlags::SUPPORTS_64BITS)
     );
+    for (index, input) in [(1, false), (0, true)] {
+        assert!(audio.get(&handle, index, input, &mut buffer).is_none());
+    }
     let notes = handle.get_extension::<PluginNotePorts>().unwrap();
     assert_eq!(
         (notes.count(&handle, true), notes.count(&handle, false)),
@@ -304,6 +307,9 @@ fn real_sampler_ports_and_offset_midi_parameter_values_render_literal_signed_pcm
     let port = notes.get(&handle, 0, true, &mut buffer).unwrap();
     assert_eq!(port.supported_dialects, NoteDialects::MIDI);
     assert_eq!(port.preferred_dialect, Some(NoteDialect::Midi));
+    for (index, input) in [(1, true), (0, false)] {
+        assert!(notes.get(&handle, index, input, &mut buffer).is_none());
+    }
     let mut processor = activate(&mut plugin, 48000.0, 16);
     let mut events = note(3, 36);
     events.push(&ParamValueEvent::new(
@@ -853,6 +859,7 @@ fn persistent_endpoints_survive_failed_and_equal_reactivation_then_reconfigure_i
 #[test]
 fn physical_text_conversion_and_unknown_metadata_indices_are_explicit() {
     let mut plugin = load_at(&artifact()).unwrap();
+    let before = save(&mut plugin);
     let handle = plugin.plugin_handle();
     let params = handle.get_extension::<PluginParams>().unwrap();
     let mut text = [0; 32];
@@ -867,10 +874,18 @@ fn physical_text_conversion_and_unknown_metadata_indices_are_explicit() {
             .value_to_text(&handle, ClapId::new(24), 0.3, &mut text)
             .is_err()
     );
+    let mut too_short = [0; 1];
+    assert!(
+        params
+            .value_to_text(&handle, ClapId::new(3), 0.3125, &mut too_short)
+            .is_err()
+    );
     for (id, value, expected) in [
         (3, c"0.3125", Some(0.3125)),
+        (0, c"0.3125", None),
         (24, c"0.3125", None),
         (3, c"bad", None),
+        (3, c"\xff", None),
         (3, c"nan", None),
         (3, c"5", None),
     ] {
@@ -884,6 +899,8 @@ fn physical_text_conversion_and_unknown_metadata_indices_are_explicit() {
             .get_info(&handle, 23, &mut ParamInfoBuffer::new())
             .is_none()
     );
+    assert_eq!(parameter(&mut plugin, 3), Some(1.0));
+    assert_eq!(save(&mut plugin), before);
 }
 
 struct CountedEvents {
