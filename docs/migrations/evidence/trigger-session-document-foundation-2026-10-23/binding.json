@@ -1,0 +1,30 @@
+{
+  "base": "11bb1b51cf269bfbd0600ddab3052f4da9152db7",
+  "scope": "Format-neutral Session document-history/resource foundation only; tasks5.1\u20135.3 advanced, none closed. No public editor capability advertised by this cut.",
+  "current_source": [
+    {
+      "path": "src/instrument-session/src/lib.rs",
+      "sha256": "627f49a5bcf639b37b163284194c4262d18f35726e6c0e0bfea66a0ee884d717"
+    },
+    {
+      "path": "src/instrument-session/tests/session.rs",
+      "sha256": "5b46cab13969f09bfbdd0ff79b0af422c6dab3c05a0ddf896882549505efe651"
+    },
+    {
+      "path": "src/instrument-session/tests/precise_clocks.rs",
+      "sha256": "4b8087769de8b27249dab515dcbe5c7a30fb52f120435eb52143826b75867a74"
+    },
+    {
+      "path": "src/rust-engine/src/preparation.rs",
+      "sha256": "e31822299bcfc27c954b8a74ce32d73daed98a981fcce29dde627d881953aec4"
+    }
+  ],
+  "source_replay": "raw.tar.gz:portable-source-replay.json",
+  "coverage": "99/99 Session functions,956/960 lines,1105/1110 regions; no annotated zero-hit Session source line. No branch/instantiation100% claim; engine getter executed through real consumers, full engine strict coverage passes separately.",
+  "tests": "41 Session tests plus normal engine1091 library tests/strict coverage PASS; Session fmt/strictClippy PASS. Current engine strictClippy FAIL129 baseline; warning-only all-target diagnostics330 unchanged; no waiver.",
+  "red": "Actual dispatch test with trigger-editor feature fails capabilityUnavailable after literal-.25 audio (exit101), before generic document implementation. Zero-test nofeatures attempt is not RED. Existing external replacement API genuinely retains omitted selected owner (exit101); same behavior GREEN after atomic candidate-context publication.",
+  "pending": "Dependent protocol/controller/GUI source excluded; browser ingress, frontend import/Redo, empty-patch/public-surface behavior, portable restoration, installed/native/DAW release acceptance remain pending. Last published validator34/10/0 is historical, not current candidate qualification.",
+  "refactor": "One request-admission/window/outcome/journal path shared by Mapping/Document/Undo/Redo. Typed HistoryDirection removes impossible Append branches and dummy resource closures; resources resolve lazily only for new work. Existing test owners absorb error/retry cases; no new test-only abstractions.",
+  "mutation": "Excluded; none run.",
+  "resources": "Physical disk targets, one heavy job, warmed focused budget3GiB floor/2GiB growth/8GiB availableRAM; cold/native guard unchanged. Owned disposable scratch cleaned after worker closure; reusable caches preserved."
+}

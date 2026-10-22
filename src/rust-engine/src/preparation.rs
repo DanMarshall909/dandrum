@@ -81,6 +81,14 @@ impl PreparationContext {
         self
     }
 
+    /// Borrow immutable selected owners when deriving a narrower native resource
+    /// set. Cloning an owner shares encoded/decoded storage; it never rereads files.
+    pub fn selected_samples(
+        &self,
+    ) -> impl Iterator<Item = &Arc<crate::sample_snapshot::SampleSnapshot>> {
+        self.selected_samples.values()
+    }
+
     pub fn with_sample_rate(mut self, sample_rate: SampleRate) -> Self {
         self.sample_rate_hz = sample_rate.hz();
         self
@@ -2605,6 +2613,7 @@ impl std::error::Error for PreparationError {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     use crate::builtins::{
         DELAY_SAMPLES_PARAMETER, SCRIPT_LANGUAGE_PARAMETER, SCRIPT_LANGUAGE_RHAI,
         SCRIPT_SOURCE_PARAMETER, SPECTRAL_FFT_SIZE_PARAMETER, SPECTRAL_MODE_PARAMETER,
@@ -2662,6 +2671,46 @@ mod tests {
             max_voices,
             crate::kernel::POLY_ALLOCATION_REJECT_NEW,
         )
+    }
+
+    #[test]
+    fn a_derived_resource_set_releases_omitted_content_and_resolves_retained_signed_pcm() {
+        use crate::sample_snapshot::SampleSnapshot;
+        let mut bytes = Vec::new();
+        crate::wav::write_wav_stereo_i16(&mut bytes, 32_000, &[-0.75, 0.25], &[0.5, -0.75])
+            .unwrap();
+        let first = Arc::new(SampleSnapshot::decode(bytes).unwrap());
+        let mut bytes = Vec::new();
+        crate::wav::write_wav_stereo_i16(&mut bytes, 32_000, &[0.25, -0.75], &[-0.5, 0.75])
+            .unwrap();
+        let other = Arc::new(SampleSnapshot::decode(bytes).unwrap());
+        let first_retention = first.retention();
+        let other_retention = other.retention();
+        let resource = ResourceRef::new(
+            ResourceKind::Sample,
+            first.resource_id(),
+            ResourceOrigin::Document,
+        );
+        let context = PreparationContext::new("/unavailable-original-root", 32_000)
+            .with_selected_samples([first, other]);
+        let subset = context
+            .selected_samples()
+            .filter(|sample| Path::new(sample.resource_id()) == resource.path())
+            .cloned()
+            .collect::<Vec<_>>();
+        let derived = context.clone().with_selected_samples(subset);
+        drop(context);
+        assert!(!other_retention.is_live());
+        let resolved = ResourceResolver::new(&derived).resolve(&resource).unwrap();
+        assert_eq!(resolved.sample().source_sample(0, 0), Some(-0.75));
+        assert_eq!(
+            resolved.sample().source_sample(1, 0),
+            Some(16383.0 / 32768.0)
+        );
+        drop(derived);
+        assert!(first_retention.is_live());
+        drop(resolved);
+        assert!(!first_retention.is_live());
     }
 
     #[test]

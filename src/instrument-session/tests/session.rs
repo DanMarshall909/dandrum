@@ -553,7 +553,10 @@ fn accepted_mapping_and_native_undo_redo_publish_document_history_and_signed_aud
     assert_eq!(accepted.instance, initial.instance);
     assert_eq!(accepted.revision, 1);
     assert_eq!((accepted.undo_len, accepted.redo_len), (1, 0));
-    let entry = accepted.undo.as_ref().unwrap();
+    let Some(dandrum_instrument_session::HistoryEntry::Mapping(entry)) = accepted.undo.as_ref()
+    else {
+        panic!("expected mapping history");
+    };
     assert_eq!(entry.version, 1);
     assert_eq!(entry.label, "Change Key Range");
     assert_eq!(entry.change.map_id, "kit");
@@ -1142,8 +1145,10 @@ fn history_retains_one_hundred_entries_and_branching_preserves_then_retires_redo
     }
     assert_eq!(accepted.revision, 101);
     assert_eq!((accepted.undo_len, accepted.redo_len), (100, 0));
-    assert_eq!(accepted.undo.as_ref().unwrap().change.before, [61, 61]);
-    assert_eq!(accepted.undo.as_ref().unwrap().change.after, [60, 60]);
+    assert!(
+        matches!(accepted.undo.as_ref(), Some(dandrum_instrument_session::HistoryEntry::Mapping(entry))
+        if entry.change.before == [61, 61] && entry.change.after == [60, 60])
+    );
     assert_eq!(host.render(60)[0][0], -0.5);
 
     let undone = session.undo(&connection, &mut host).unwrap();
@@ -1458,4 +1463,262 @@ fn native_owned_document_preparation_and_snapshot_require_no_disposable_editor_s
         session.attach().is_ok(),
         "native state never consumed a hidden attachment"
     );
+}
+
+#[test]
+fn document_history_jobs_retry_by_action_and_keep_selected_authority_after_view_loss() {
+    use dandrum_engine::sample_snapshot::SampleSnapshot;
+    let (yaml, _, settings) = fixture();
+    let encoded = std::fs::read(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../examples/patches/assets/advanced-drums.wav"),
+    )
+    .unwrap();
+    let sample = Arc::new(SampleSnapshot::decode(encoded).unwrap());
+    let document = yaml.replace("assets/advanced-drums.wav", sample.resource_id());
+    let root = tempfile::tempdir().unwrap();
+    let context =
+        PreparationContext::new(root.path(), 48_000).with_selected_samples([sample.clone()]);
+    let mut session = InstrumentSession::new(&document, context, settings).unwrap();
+    let (old, initial) = session.attach().unwrap();
+    let mut host = RuntimeHost::new(&session, &initial);
+    let edited: Arc<str> = document
+        .replace("Advanced Drum Kit", "Selected Edit")
+        .replace("key_range: [36, 36]", "key_range: [60, 60]")
+        .into();
+    assert_admission_error(
+        session.admit_document_with(&old, RequestId(10), 0, edited.clone(), || {
+            Err(SessionError::InvalidDocument(
+                "missing selected authority".into(),
+            ))
+        }),
+        SessionError::InvalidDocument("missing selected authority".into()),
+    );
+    assert_eq!(session.owner_snapshot(), initial);
+    assert_eq!(host.attempts, 0);
+    assert_eq!(host.render(36)[0][0], -0.5);
+    // A resource-factory failure is unadmitted: the same ID remains usable.
+    let work =
+        admitted(session.admit_document(&old, RequestId(10), 0, edited.clone(), [sample.clone()]));
+    assert!(matches!(
+        session.admit_document(&old, RequestId(10), 0, edited.clone(), [sample.clone()]),
+        Ok(MappingAdmission::Pending)
+    ));
+    assert_admission_error(
+        session.admit_document(
+            &old,
+            RequestId(10),
+            0,
+            document.clone().into(),
+            [sample.clone()],
+        ),
+        SessionError::ConflictingRequest,
+    );
+    assert_admission_error(
+        session.admit_undo(&old, RequestId(11), 0),
+        SessionError::Busy,
+    );
+    let unavailable = || Err(SessionError::InvalidDocument("released content".into()));
+    assert!(matches!(
+        session.admit_document_with(&old, RequestId(10), 0, edited.clone(), unavailable),
+        Ok(MappingAdmission::Pending)
+    ));
+    assert_admission_error(
+        session.admit_document_with(&old, RequestId(11), 0, edited.clone(), unavailable),
+        SessionError::Busy,
+    );
+    session.detach(&old).unwrap();
+    assert_admission_error(
+        session.admit_document_with(&old, RequestId(11), 0, edited.clone(), unavailable),
+        SessionError::InvalidAttachment,
+    );
+    drop(root);
+    let prepared = std::thread::spawn(move || work.prepare()).join().unwrap();
+    let outcome = session.complete_mapping(prepared, &mut host).unwrap();
+    let accepted = accepted_outcome(&outcome);
+    assert_eq!(accepted.yaml, edited.as_ref());
+    assert_eq!(
+        (accepted.revision, accepted.undo_len, accepted.redo_len),
+        (1, 1, 0)
+    );
+    assert!(matches!(
+        accepted.undo,
+        Some(dandrum_instrument_session::HistoryEntry::Document { version: 1, .. })
+    ));
+    assert_eq!(host.render(60)[0][0], -0.5);
+    assert_eq!(host.render(36), vec![vec![0.0; 16]; 2]);
+    let (fresh, _) = session.attach().unwrap();
+    assert!(matches!(
+        session.admit_document(&fresh, RequestId(10), 0, edited.clone(), [sample.clone()]),
+        Ok(MappingAdmission::Completed(_))
+    ));
+    assert!(matches!(
+        session.admit_document_with(&fresh, RequestId(10), 0, edited.clone(), unavailable),
+        Ok(MappingAdmission::Completed(_))
+    ));
+    assert_admission_error(
+        session.admit_document_with(
+            &fresh,
+            RequestId(10),
+            0,
+            (edited.to_string() + "\n").into(),
+            unavailable,
+        ),
+        SessionError::ConflictingRequest,
+    );
+    assert_admission_error(
+        session.admit_document_with(&fresh, RequestId(9), 1, edited.clone(), unavailable),
+        SessionError::RetiredRequest,
+    );
+    assert_admission_error(
+        session.admit_document_with(&fresh, RequestId(11), 0, edited.clone(), unavailable),
+        SessionError::StaleRequest,
+    );
+    let undo = admitted(session.admit_undo(&fresh, RequestId(11), 1));
+    let result = session.complete_mapping(undo.prepare(), &mut host).unwrap();
+    assert_eq!(accepted_outcome(&result).yaml, document);
+    assert_eq!(host.render(36)[0][0], -0.5);
+    assert!(
+        matches!(
+            session.admit_undo(&fresh, RequestId(11), 1),
+            Ok(MappingAdmission::Completed(_))
+        ),
+        "retry identity is Undo, independent of the now-empty history cursor"
+    );
+    let redo = admitted(session.admit_redo(&fresh, RequestId(12), 2));
+    let result = session.complete_mapping(redo.prepare(), &mut host).unwrap();
+    assert_eq!(accepted_outcome(&result).yaml, edited.as_ref());
+    assert_eq!(host.render(60)[0][0], -0.5);
+    assert!(matches!(
+        session.admit_redo(&fresh, RequestId(12), 2),
+        Ok(MappingAdmission::Completed(_))
+    ));
+    assert_eq!(host.attempts, 3);
+    assert_admission_error(
+        session.admit_redo(&fresh, RequestId(13), 3),
+        SessionError::NothingToRedo,
+    );
+}
+
+#[test]
+fn external_replacement_retires_only_obsolete_selected_authority_after_success() {
+    use dandrum_engine::sample_snapshot::SampleSnapshot;
+    let (yaml, context, settings) = fixture();
+    let sample = Arc::new(
+        SampleSnapshot::decode(
+            std::fs::read(context.document_root().join("assets/advanced-drums.wav")).unwrap(),
+        )
+        .unwrap(),
+    );
+    let mut bytes = Vec::new();
+    dandrum_engine::wav::write_wav_stereo_i16(&mut bytes, 48_000, &[-0.75, 0.25], &[-0.25, 0.5])
+        .unwrap();
+    let unused = Arc::new(SampleSnapshot::decode(bytes).unwrap());
+    let used_retention = sample.retention();
+    let unused_retention = unused.retention();
+    let unused_id = unused.resource_id().to_owned();
+    let selected = yaml.replace("assets/advanced-drums.wav", sample.resource_id());
+    let mut session = InstrumentSession::new(
+        &selected,
+        context.with_selected_samples([sample, unused]),
+        settings,
+    )
+    .unwrap();
+    let initial = session.owner_snapshot();
+    let mut host = RuntimeHost::new(&session, &initial);
+    // The generic session also owns resources referenced by static arguments
+    // and defaults, beyond Trigger's sample-source table.
+    for indirect in [false, true] {
+        let resource = format!("{{ kind: sample, path: {unused_id} }}");
+        let value = if indirect { "$clip" } else { &resource };
+        let mut candidate_yaml = selected.replace(
+            "modules:\n",
+            &format!(
+                "modules:\n  - {{ id: spare, type: sampler, static: {{ sample: {value} }} }}\n"
+            ),
+        );
+        if indirect {
+            candidate_yaml = candidate_yaml.replace("instrument:", &format!("static_params:\n  - {{ name: clip, type: resource, resource_kind: sample, default: {resource} }}\ninstrument:"));
+        }
+        let candidate = session
+            .prepare_document_replacement_owned(&candidate_yaml)
+            .unwrap();
+        session
+            .commit_document_replacement(candidate, &mut host)
+            .unwrap();
+        assert!(used_retention.is_live());
+        assert!(
+            unused_retention.is_live(),
+            "selected static resources remain preparable and owned"
+        );
+        assert_eq!(host.render(36)[0][0], -0.5);
+    }
+    let initial = session.owner_snapshot();
+    let kept = selected.replace("Advanced Drum Kit", "Keep Selected");
+    let candidate = session.prepare_document_replacement_owned(&kept).unwrap();
+    host.reject = true;
+    assert_eq!(
+        session.commit_document_replacement(candidate, &mut host),
+        Err(CommitError::Activation("activation rejected"))
+    );
+    assert_eq!(session.owner_snapshot(), initial);
+    assert!(used_retention.is_live());
+    assert!(
+        unused_retention.is_live(),
+        "failed replacement cannot mutate accepted resource ownership"
+    );
+    host.reject = false;
+    let candidate = session.prepare_document_replacement_owned(&kept).unwrap();
+    session
+        .commit_document_replacement(candidate, &mut host)
+        .unwrap();
+    assert!(
+        used_retention.is_live(),
+        "the exact referenced selected resource survives replacement"
+    );
+    assert!(
+        !unused_retention.is_live(),
+        "successful replacement must release unreferenced selected authority"
+    );
+    assert_eq!(host.render(36)[0][0], -0.5);
+    let candidate = session.prepare_document_replacement_owned(&yaml).unwrap();
+    session
+        .commit_document_replacement(candidate, &mut host)
+        .unwrap();
+    assert!(
+        !used_retention.is_live(),
+        "packaged replacement must retire the last obsolete selected context after the old runtime is destroyed"
+    );
+    assert_eq!(host.render(36)[0][0], -0.5);
+    assert_eq!(session.owner_snapshot().yaml, yaml);
+}
+
+#[test]
+fn invalid_legacy_clock_rejects_construction_and_preserves_an_existing_session() {
+    let (yaml, context, settings) = fixture();
+    let mut invalid = settings.clone();
+    invalid.sample_rate_hz = 0;
+    assert!(matches!(
+        InstrumentSession::new(&yaml, context.clone(), invalid.clone()),
+        Err(SessionError::PreparationFailed(_))
+    ));
+    let mut session = InstrumentSession::new(&yaml, context, settings.clone()).unwrap();
+    let (detached, _) = session.attach().unwrap();
+    session.detach(&detached).unwrap();
+    assert_admission_error(
+        session.admit_redo(&detached, RequestId(1), 0),
+        SessionError::InvalidAttachment,
+    );
+    assert!(matches!(
+        session.prepare_render_configuration(&detached, settings, planar_host_buses(&yaml)),
+        Err(SessionError::InvalidAttachment)
+    ));
+    let before = session.owner_snapshot();
+    assert!(matches!(
+        session.prepare_render_configuration_owned(invalid, planar_host_buses(&yaml)),
+        Err(SessionError::PreparationFailed(_))
+    ));
+    assert_eq!(session.owner_snapshot(), before);
+    let hit = render_note(session.prepared(), 36);
+    assert_eq!((hit[0][0], hit[1][0]), (-0.5, -0.5));
 }

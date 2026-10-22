@@ -375,3 +375,63 @@ fn admitted_selected_content_survives_real_session_reconfiguration_after_source_
         assert_audio(&session, hz, 60, false);
     }
 }
+
+#[test]
+fn whole_document_undo_and_redo_prepare_history_at_the_current_precise_clock() {
+    let fixture = Fixture::new();
+    let mut session = fixture.session(48_000.5);
+    let (editor, _) = session.attach().unwrap();
+    let edited = PATCH.replace("key_range: [36, 36]", "key_range: [60, 60]");
+    let MappingAdmission::Admitted(work) = session
+        .admit_document(&editor, RequestId(1), 0, edited.into(), [])
+        .unwrap()
+    else {
+        panic!("document admitted");
+    };
+    session
+        .complete_mapping(work.prepare(), &mut AcceptPublication)
+        .unwrap()
+        .result
+        .as_ref()
+        .unwrap();
+    assert_audio(&session, 48_000.5, 60, true);
+    let configuration = session
+        .prepare_realtime_render_configuration_owned(
+            settings(44_100.25),
+            HostBuses::new().with_output("master", 2),
+        )
+        .unwrap();
+    session
+        .commit_render_configuration(configuration, &mut AcceptPublication)
+        .unwrap();
+    assert_eq!(session.owner_snapshot().revision, 1);
+    let MappingAdmission::Admitted(undo) = session.admit_undo(&editor, RequestId(2), 1).unwrap()
+    else {
+        panic!("undo admitted");
+    };
+    session
+        .complete_mapping(undo.prepare(), &mut AcceptPublication)
+        .unwrap()
+        .result
+        .as_ref()
+        .unwrap();
+    assert_audio(&session, 44_100.25, 36, true);
+    assert_audio(&session, 44_100.25, 60, false);
+    let MappingAdmission::Admitted(redo) = session.admit_redo(&editor, RequestId(3), 2).unwrap()
+    else {
+        panic!("redo admitted");
+    };
+    session
+        .complete_mapping(redo.prepare(), &mut AcceptPublication)
+        .unwrap()
+        .result
+        .as_ref()
+        .unwrap();
+    assert_audio(&session, 44_100.25, 60, true);
+    assert_audio(&session, 44_100.25, 36, false);
+    let accepted = session.owner_snapshot();
+    assert_eq!(
+        (accepted.revision, accepted.undo_len, accepted.redo_len),
+        (3, 1, 0)
+    );
+}

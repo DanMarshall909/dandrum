@@ -44,8 +44,8 @@ pub struct SessionSnapshot {
     pub yaml: String,
     pub undo_len: usize,
     pub redo_len: usize,
-    pub undo: Option<JournalEntry>,
-    pub redo: Option<JournalEntry>,
+    pub undo: Option<HistoryEntry>,
+    pub redo: Option<HistoryEntry>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -55,13 +55,20 @@ pub struct JournalEntry {
     pub change: ZoneKeyRangeChange,
 }
 
+/// Public history metadata. Document inverses and resource ownership stay native.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HistoryEntry {
+    Mapping(JournalEntry),
+    Document { version: u32, label: String },
+}
+
 pub struct Publication<'a> {
     pub revision: u64,
     pub yaml: &'a str,
     pub undo_len: usize,
     pub redo_len: usize,
-    pub undo: Option<&'a JournalEntry>,
-    pub redo: Option<&'a JournalEntry>,
+    pub undo: Option<&'a HistoryEntry>,
+    pub redo: Option<&'a HistoryEntry>,
 }
 
 /// A host lease reserves safe publication while keeping unpublished runtime and
@@ -196,6 +203,7 @@ pub struct PreparedMapping {
 /// A fully prepared external document that has not changed accepted state.
 pub struct PreparedDocumentReplacement {
     yaml: String,
+    context: PreparationContext,
     prepared: PreparedKernelInstrument,
     owner: SessionIdentity,
     base_revision: u64,
@@ -211,40 +219,128 @@ pub struct PreparedRenderConfiguration {
     base_revision: u64,
 }
 
-/// Owned preparation work. It can move to a worker without retaining an editor.
+/// Owned preparation work shared by mapping and whole-document edits.
+/// A job owns its authority and can move to a worker without an editor.
 pub struct MappingJob {
-    request: MappingRequest,
+    request: SessionRequest,
     action: HistoryAction,
-    yaml: String,
+    target: PreparationTarget,
     context: Box<PreparationContext>,
     settings: RealtimeRenderSettings,
     host_buses: Option<Box<HostBuses>>,
 }
 
-pub struct PreparedMappingJob {
-    request: MappingRequest,
-    action: HistoryAction,
-    result: Result<PreparedMapping, SessionError>,
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct SessionRequest {
+    instance: SessionIdentity,
+    request_id: RequestId,
+    expected_revision: u64,
+    intent: SessionIntent,
 }
-
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum SessionIntent {
+    Mapping(SetZoneKeyRange),
+    Document(Arc<str>),
+    Undo,
+    Redo,
+}
+impl From<MappingRequest> for SessionRequest {
+    fn from(request: MappingRequest) -> Self {
+        Self {
+            instance: request.instance,
+            request_id: request.request_id,
+            expected_revision: request.expected_revision,
+            intent: SessionIntent::Mapping(request.intent),
+        }
+    }
+}
+/// Context clones share selected PCM owners. Historical clock values are never
+/// used for preparation: admission installs the session's current precise clock.
+#[derive(Clone)]
+struct DocumentState {
+    yaml: Arc<str>,
+    context: PreparationContext,
+}
+#[derive(Clone)]
+struct HistoryRecord {
+    entry: HistoryEntry,
+    documents: Option<(DocumentState, DocumentState)>,
+}
+enum PreparationTarget {
+    Mapping {
+        yaml: Arc<str>,
+        intent: SetZoneKeyRange,
+    },
+    Document(Arc<str>),
+}
+struct PreparedEdit {
+    yaml: Arc<str>,
+    prepared: PreparedKernelInstrument,
+    context: PreparationContext,
+    entry: HistoryEntry,
+    owner: SessionIdentity,
+    base_revision: u64,
+}
+impl PreparedEdit {
+    fn mapping(candidate: PreparedMapping, context: PreparationContext) -> Self {
+        Self {
+            yaml: candidate.yaml.into(),
+            prepared: candidate.prepared,
+            context,
+            entry: HistoryEntry::Mapping(JournalEntry {
+                version: 1,
+                label: "Change Key Range".into(),
+                change: candidate.change,
+            }),
+            owner: candidate.owner,
+            base_revision: candidate.base_revision,
+        }
+    }
+}
+pub struct PreparedMappingJob {
+    request: SessionRequest,
+    action: HistoryAction,
+    result: Result<PreparedEdit, SessionError>,
+}
 impl MappingJob {
     pub fn prepare(self) -> PreparedMappingJob {
-        let result = InstrumentSession::prepare_mapping_document(
-            &self.yaml,
-            &self.context,
-            &self.settings,
-            self.host_buses.as_deref(),
-            self.request.instance.clone(),
-            self.request.expected_revision,
-            self.request.intent.clone(),
-        );
+        let result = match self.target {
+            PreparationTarget::Mapping { yaml, intent } => {
+                InstrumentSession::prepare_mapping_document(
+                    &yaml,
+                    &self.context,
+                    &self.settings,
+                    self.host_buses.as_deref(),
+                    self.request.instance.clone(),
+                    self.request.expected_revision,
+                    intent,
+                )
+                .map(|candidate| PreparedEdit::mapping(candidate, *self.context))
+            }
+            PreparationTarget::Document(yaml) => InstrumentSession::prepare_document(
+                &yaml,
+                &self.context,
+                &self.settings,
+                self.host_buses.as_deref(),
+            )
+            .map(|prepared| PreparedEdit {
+                yaml,
+                prepared,
+                context: *self.context,
+                entry: HistoryEntry::Document {
+                    version: 1,
+                    label: "Edit Instrument".into(),
+                },
+                owner: self.request.instance.clone(),
+                base_revision: self.request.expected_revision,
+            }),
+        };
         PreparedMappingJob {
             request: self.request,
             action: self.action,
             result,
         }
     }
-
     pub fn fail(self, error: SessionError) -> PreparedMappingJob {
         PreparedMappingJob {
             request: self.request,
@@ -253,7 +349,6 @@ impl MappingJob {
         }
     }
 }
-
 impl PreparedMappingJob {
     pub fn fail(mut self, error: SessionError) -> Self {
         self.result = Err(error);
@@ -276,7 +371,6 @@ pub struct InstrumentSession {
     accepted: AcceptedState,
     identity: SessionIdentity,
     attachments: Vec<Weak<()>>,
-    context: PreparationContext,
     settings: RealtimeRenderSettings,
     host_buses: Option<HostBuses>,
     pending: Option<PendingRequest>,
@@ -284,10 +378,11 @@ pub struct InstrumentSession {
     highest_request_id: Option<RequestId>,
 }
 struct AcceptedState {
-    yaml: String,
+    yaml: Arc<str>,
+    context: PreparationContext,
     prepared: PreparedKernelInstrument,
     revision: u64,
-    journal: Vec<JournalEntry>,
+    journal: Vec<HistoryRecord>,
     cursor: usize,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -296,14 +391,32 @@ enum HistoryAction {
     Undo,
     Redo,
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum HistoryDirection {
+    Undo,
+    Redo,
+}
+impl HistoryDirection {
+    fn action(self) -> HistoryAction {
+        match self {
+            Self::Undo => HistoryAction::Undo,
+            Self::Redo => HistoryAction::Redo,
+        }
+    }
+    fn intent(self) -> SessionIntent {
+        match self {
+            Self::Undo => SessionIntent::Undo,
+            Self::Redo => SessionIntent::Redo,
+        }
+    }
+}
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct PendingRequest {
-    request: MappingRequest,
+    request: SessionRequest,
     action: HistoryAction,
 }
 struct RetainedOutcome {
-    request: MappingRequest,
-    action: HistoryAction,
+    request: SessionRequest,
     outcome: Arc<RequestOutcome>,
 }
 impl AcceptedState {
@@ -316,8 +429,9 @@ impl AcceptedState {
             undo: self
                 .cursor
                 .checked_sub(1)
-                .and_then(|index| self.journal.get(index)),
-            redo: self.journal.get(self.cursor),
+                .and_then(|index| self.journal.get(index))
+                .map(|record| &record.entry),
+            redo: self.journal.get(self.cursor).map(|record| &record.entry),
         }
     }
 }
@@ -329,47 +443,130 @@ impl InstrumentSession {
     ) -> Result<MappingAdmission, SessionError> {
         self.attachment_index(attachment)
             .ok_or(SessionError::InvalidAttachment)?;
-        self.admit_mapping_request(request, HistoryAction::Append)
+        self.admit_mapping_request(request)
     }
 
     pub(crate) fn admit_mapping_owned(
         &mut self,
         request: MappingRequest,
     ) -> Result<MappingAdmission, SessionError> {
-        self.admit_mapping_request(request, HistoryAction::Append)
+        self.admit_mapping_request(request)
     }
 
+    /// Native-authorized document admission. This generic session imposes no
+    /// Trigger/browser resource profile.
+    pub fn admit_document(
+        &mut self,
+        attachment: &Attachment,
+        request_id: RequestId,
+        expected_revision: u64,
+        yaml: Arc<str>,
+        samples: impl IntoIterator<Item = Arc<dandrum_engine::sample_snapshot::SampleSnapshot>>,
+    ) -> Result<MappingAdmission, SessionError> {
+        self.admit_document_with(attachment, request_id, expected_revision, yaml, || {
+            Ok(samples.into_iter().collect())
+        })
+    }
+    /// The trusted native factory validates/acquires resources only for new
+    /// work. Pending and terminal retries never need released source authority.
+    pub fn admit_document_with(
+        &mut self,
+        attachment: &Attachment,
+        request_id: RequestId,
+        expected_revision: u64,
+        yaml: Arc<str>,
+        resources: impl FnOnce() -> Result<
+            Vec<Arc<dandrum_engine::sample_snapshot::SampleSnapshot>>,
+            SessionError,
+        >,
+    ) -> Result<MappingAdmission, SessionError> {
+        self.attachment_index(attachment)
+            .ok_or(SessionError::InvalidAttachment)?;
+        self.admit_request_with_target(
+            SessionRequest {
+                instance: self.identity.clone(),
+                request_id,
+                expected_revision,
+                intent: SessionIntent::Document(yaml.clone()),
+            },
+            |session| {
+                Ok((
+                    HistoryAction::Append,
+                    PreparationTarget::Document(yaml),
+                    session
+                        .accepted
+                        .context
+                        .clone()
+                        .with_selected_samples(resources()?),
+                ))
+            },
+        )
+    }
     pub fn admit_undo(
         &mut self,
         attachment: &Attachment,
         request_id: RequestId,
         expected_revision: u64,
     ) -> Result<MappingAdmission, SessionError> {
-        self.attachment_index(attachment)
-            .ok_or(SessionError::InvalidAttachment)?;
-        let entry = self
-            .accepted
-            .publication()
-            .undo
-            .ok_or(SessionError::NothingToUndo)?;
-        let request = MappingRequest {
-            instance: self.identity.clone(),
+        self.admit_history(
+            attachment,
             request_id,
             expected_revision,
-            intent: SetZoneKeyRange {
-                map_id: entry.change.map_id.clone(),
-                zone_id: entry.change.zone_id.clone(),
-                key_range: entry.change.before,
-            },
-        };
-        self.admit_mapping_request(request, HistoryAction::Undo)
+            HistoryDirection::Undo,
+        )
     }
-
+    pub fn admit_redo(
+        &mut self,
+        attachment: &Attachment,
+        request_id: RequestId,
+        expected_revision: u64,
+    ) -> Result<MappingAdmission, SessionError> {
+        self.admit_history(
+            attachment,
+            request_id,
+            expected_revision,
+            HistoryDirection::Redo,
+        )
+    }
+    fn admit_history(
+        &mut self,
+        attachment: &Attachment,
+        request_id: RequestId,
+        expected_revision: u64,
+        direction: HistoryDirection,
+    ) -> Result<MappingAdmission, SessionError> {
+        self.attachment_index(attachment)
+            .ok_or(SessionError::InvalidAttachment)?;
+        self.admit_request_with_target(
+            SessionRequest {
+                instance: self.identity.clone(),
+                request_id,
+                expected_revision,
+                intent: direction.intent(),
+            },
+            |session| session.history_target(direction),
+        )
+    }
     fn admit_mapping_request(
         &mut self,
         request: MappingRequest,
-        action: HistoryAction,
     ) -> Result<MappingAdmission, SessionError> {
+        self.admit_request_with_target(request.clone().into(), |session| {
+            Ok((
+                HistoryAction::Append,
+                PreparationTarget::Mapping {
+                    yaml: session.accepted.yaml.clone(),
+                    intent: request.intent,
+                },
+                session.accepted.context.clone(),
+            ))
+        })
+    }
+    /// All commands share the same request window before resolving owned work.
+    fn request_admission(
+        &self,
+        request: &SessionRequest,
+    ) -> Result<Option<MappingAdmission>, SessionError> {
         if request.instance != self.identity {
             return Err(SessionError::InvalidRequestInstance);
         }
@@ -378,16 +575,18 @@ impl InstrumentSession {
             .iter()
             .find(|retained| retained.request.request_id == request.request_id)
         {
-            return if retained.request == request && retained.action == action {
-                Ok(MappingAdmission::Completed(Arc::clone(&retained.outcome)))
+            return if retained.request == *request {
+                Ok(Some(MappingAdmission::Completed(Arc::clone(
+                    &retained.outcome,
+                ))))
             } else {
                 Err(SessionError::ConflictingRequest)
             };
         }
         if let Some(pending) = &self.pending {
             return if pending.request.request_id == request.request_id {
-                if pending.request == request && pending.action == action {
-                    Ok(MappingAdmission::Pending)
+                if pending.request == *request {
+                    Ok(Some(MappingAdmission::Pending))
                 } else {
                     Err(SessionError::ConflictingRequest)
                 }
@@ -404,17 +603,85 @@ impl InstrumentSession {
         if request.expected_revision != self.accepted.revision {
             return Err(SessionError::StaleRequest);
         }
+        Ok(None)
+    }
+    fn admit_request_with_target(
+        &mut self,
+        request: SessionRequest,
+        prepare: impl FnOnce(
+            &Self,
+        ) -> Result<
+            (HistoryAction, PreparationTarget, PreparationContext),
+            SessionError,
+        >,
+    ) -> Result<MappingAdmission, SessionError> {
+        if let Some(admission) = self.request_admission(&request)? {
+            return Ok(admission);
+        }
+        let (action, target, context) = prepare(self)?;
         let job = MappingJob {
             request: request.clone(),
             action,
-            yaml: self.accepted.yaml.clone(),
-            context: Box::new(self.context.clone()),
+            target,
+            context: Box::new(context.with_sample_rate(self.settings.sample_rate_hz)),
             settings: self.settings.clone(),
             host_buses: self.host_buses.clone().map(Box::new),
         };
         self.highest_request_id = Some(request.request_id);
         self.pending = Some(PendingRequest { request, action });
         Ok(MappingAdmission::Admitted(job))
+    }
+    fn history_target(
+        &self,
+        direction: HistoryDirection,
+    ) -> Result<(HistoryAction, PreparationTarget, PreparationContext), SessionError> {
+        let action = direction.action();
+        let record = match direction {
+            HistoryDirection::Undo => self
+                .accepted
+                .cursor
+                .checked_sub(1)
+                .and_then(|index| self.accepted.journal.get(index))
+                .ok_or(SessionError::NothingToUndo)?,
+            HistoryDirection::Redo => self
+                .accepted
+                .journal
+                .get(self.accepted.cursor)
+                .ok_or(SessionError::NothingToRedo)?,
+        };
+        let (target, context) = match &record.entry {
+            HistoryEntry::Mapping(entry) => (
+                PreparationTarget::Mapping {
+                    yaml: self.accepted.yaml.clone(),
+                    intent: SetZoneKeyRange {
+                        map_id: entry.change.map_id.clone(),
+                        zone_id: entry.change.zone_id.clone(),
+                        key_range: if action == HistoryAction::Undo {
+                            entry.change.before
+                        } else {
+                            entry.change.after
+                        },
+                    },
+                },
+                self.accepted.context.clone(),
+            ),
+            HistoryEntry::Document { .. } => {
+                let (before, after) = record
+                    .documents
+                    .as_ref()
+                    .expect("document history owns both sides");
+                let target = if action == HistoryAction::Undo {
+                    before
+                } else {
+                    after
+                };
+                (
+                    PreparationTarget::Document(target.yaml.clone()),
+                    target.context.clone(),
+                )
+            }
+        };
+        Ok((action, target, context))
     }
 
     pub fn complete_mapping<H: ActivationHost>(
@@ -461,7 +728,7 @@ impl InstrumentSession {
                     let returned = Arc::clone(&accepted);
                     match self.install_staged(staged, &snapshot, host, None) {
                         Ok(()) => {
-                            self.retain_outcome(request, completion.action, accepted);
+                            self.retain_outcome(request, accepted);
                             return Ok(returned);
                         }
                         Err(error) => Arc::new(RequestOutcome {
@@ -473,7 +740,7 @@ impl InstrumentSession {
             },
         };
         let returned = Arc::clone(&outcome);
-        self.retain_outcome(request, completion.action, outcome);
+        self.retain_outcome(request, outcome);
         Ok(returned)
     }
 
@@ -517,18 +784,67 @@ impl InstrumentSession {
         yaml: &str,
     ) -> Result<PreparedDocumentReplacement, SessionError> {
         self.ensure_idle()?;
-        let prepared = Self::prepare_document(
-            yaml,
-            &self.context,
-            &self.settings,
-            self.host_buses.as_ref(),
-        )?;
+        let context = self.replacement_context(yaml)?;
+        let prepared =
+            Self::prepare_document(yaml, &context, &self.settings, self.host_buses.as_ref())?;
         Ok(PreparedDocumentReplacement {
             yaml: yaml.into(),
+            context,
             prepared,
             owner: self.identity.clone(),
             base_revision: self.accepted.revision,
         })
+    }
+
+    fn replacement_context(&self, yaml: &str) -> Result<PreparationContext, SessionError> {
+        use dandrum_engine::kernel::{ResourceKind, ResourceOrigin, StaticArg, StaticValue};
+        let patch = load_kernel_patch_str(yaml)
+            .map_err(|error| SessionError::InvalidDocument(error.to_string()))?;
+        let declared = std::iter::once(patch.root())
+            .chain(patch.registry().definitions())
+            .flat_map(|definition| {
+                definition
+                    .static_params()
+                    .iter()
+                    .filter_map(|parameter| match parameter.default() {
+                        Some(StaticValue::Resource(resource)) => Some(resource),
+                        _ => None,
+                    })
+                    .chain(
+                        definition
+                            .nodes()
+                            .iter()
+                            .flat_map(|node| node.static_args().values())
+                            .filter_map(|value| match value {
+                                StaticArg::Literal(StaticValue::Resource(resource)) => {
+                                    Some(resource)
+                                }
+                                _ => None,
+                            }),
+                    )
+            });
+        let required = declared
+            .chain(
+                patch
+                    .sample_assets()
+                    .sample_sources
+                    .iter()
+                    .map(|source| &source.resource),
+            )
+            .filter(|resource| {
+                resource.kind() == ResourceKind::Sample
+                    && resource.origin() == &ResourceOrigin::Document
+            })
+            .map(|resource| resource.path())
+            .collect::<std::collections::BTreeSet<_>>();
+        let samples = self
+            .accepted
+            .context
+            .selected_samples()
+            .filter(|sample| required.contains(std::path::Path::new(sample.resource_id())))
+            .cloned()
+            .collect::<Vec<_>>();
+        Ok(self.accepted.context.clone().with_selected_samples(samples))
     }
 
     /// Publish a prepared external document and retire incompatible recovery state.
@@ -581,6 +897,7 @@ impl InstrumentSession {
     ) -> Result<PreparedRenderConfiguration, SessionError> {
         self.ensure_idle()?;
         let context = self
+            .accepted
             .context
             .clone()
             .with_sample_rate(settings.sample_rate_hz);
@@ -610,6 +927,7 @@ impl InstrumentSession {
         }
         let staged = AcceptedState {
             yaml: self.accepted.yaml.clone(),
+            context: candidate.context,
             prepared: candidate.prepared,
             revision: self.accepted.revision,
             journal: self.accepted.journal.clone(),
@@ -620,7 +938,6 @@ impl InstrumentSession {
             .activate(&staged.prepared, &snapshot)
             .map_err(CommitError::Activation)?;
         let previous = std::mem::replace(&mut self.accepted, staged);
-        self.context = candidate.context;
         self.settings = candidate.settings;
         self.host_buses = Some(candidate.host_buses);
         lease.publish(self.accepted.publication());
@@ -633,52 +950,59 @@ impl InstrumentSession {
         attachment: &Attachment,
         host: &mut H,
     ) -> Result<SessionSnapshot, CommitError<H::Error>> {
-        self.attachment_index(attachment)
-            .ok_or(CommitError::Session(SessionError::InvalidAttachment))?;
-        self.ensure_idle().map_err(CommitError::Session)?;
-        let entry = self
-            .accepted
-            .publication()
-            .undo
-            .ok_or(CommitError::Session(SessionError::NothingToUndo))?;
-        let intent = SetZoneKeyRange {
-            map_id: entry.change.map_id.clone(),
-            zone_id: entry.change.zone_id.clone(),
-            key_range: entry.change.before,
-        };
-        let candidate = self
-            .prepare_mapping(attachment, intent)
-            .map_err(CommitError::Session)?;
-        self.publish(candidate, HistoryAction::Undo, host)
+        self.publish_history(attachment, HistoryDirection::Undo, host)
     }
-
     pub fn redo<H: ActivationHost>(
         &mut self,
         attachment: &Attachment,
         host: &mut H,
     ) -> Result<SessionSnapshot, CommitError<H::Error>> {
+        self.publish_history(attachment, HistoryDirection::Redo, host)
+    }
+    fn publish_history<H: ActivationHost>(
+        &mut self,
+        attachment: &Attachment,
+        direction: HistoryDirection,
+        host: &mut H,
+    ) -> Result<SessionSnapshot, CommitError<H::Error>> {
         self.attachment_index(attachment)
             .ok_or(CommitError::Session(SessionError::InvalidAttachment))?;
         self.ensure_idle().map_err(CommitError::Session)?;
-        let entry = self
-            .accepted
-            .publication()
-            .redo
-            .ok_or(CommitError::Session(SessionError::NothingToRedo))?;
-        let intent = SetZoneKeyRange {
-            map_id: entry.change.map_id.clone(),
-            zone_id: entry.change.zone_id.clone(),
-            key_range: entry.change.after,
-        };
-        let candidate = self
-            .prepare_mapping(attachment, intent)
+        let (action, target, context) = self
+            .history_target(direction)
             .map_err(CommitError::Session)?;
-        self.publish(candidate, HistoryAction::Redo, host)
+        let job = MappingJob {
+            request: SessionRequest {
+                instance: self.identity.clone(),
+                request_id: RequestId(0),
+                expected_revision: self.accepted.revision,
+                intent: direction.intent(),
+            },
+            action,
+            target,
+            context: Box::new(context.with_sample_rate(self.settings.sample_rate_hz)),
+            settings: self.settings.clone(),
+            host_buses: self.host_buses.clone().map(Box::new),
+        };
+        let candidate = job.prepare().result.map_err(CommitError::Session)?;
+        self.publish_edit(candidate, action, host)
     }
 
     fn publish<H: ActivationHost>(
         &mut self,
         candidate: PreparedMapping,
+        action: HistoryAction,
+        host: &mut H,
+    ) -> Result<SessionSnapshot, CommitError<H::Error>> {
+        self.publish_edit(
+            PreparedEdit::mapping(candidate, self.accepted.context.clone()),
+            action,
+            host,
+        )
+    }
+    fn publish_edit<H: ActivationHost>(
+        &mut self,
+        candidate: PreparedEdit,
         action: HistoryAction,
         host: &mut H,
     ) -> Result<SessionSnapshot, CommitError<H::Error>> {
@@ -711,7 +1035,7 @@ impl InstrumentSession {
 
     fn stage(
         &self,
-        candidate: PreparedMapping,
+        candidate: PreparedEdit,
         action: HistoryAction,
     ) -> Result<AcceptedState, SessionError> {
         let revision = self.next_candidate_revision(&candidate.owner, candidate.base_revision)?;
@@ -719,10 +1043,22 @@ impl InstrumentSession {
         let cursor = match action {
             HistoryAction::Append => {
                 journal.truncate(self.accepted.cursor);
-                journal.push(JournalEntry {
-                    version: 1,
-                    label: "Change Key Range".into(),
-                    change: candidate.change,
+                let documents =
+                    matches!(candidate.entry, HistoryEntry::Document { .. }).then(|| {
+                        (
+                            DocumentState {
+                                yaml: self.accepted.yaml.clone(),
+                                context: self.accepted.context.clone(),
+                            },
+                            DocumentState {
+                                yaml: candidate.yaml.clone(),
+                                context: candidate.context.clone(),
+                            },
+                        )
+                    });
+                journal.push(HistoryRecord {
+                    entry: candidate.entry,
+                    documents,
                 });
                 if journal.len() > HISTORY_LIMIT {
                     journal.remove(0);
@@ -734,6 +1070,7 @@ impl InstrumentSession {
         };
         Ok(AcceptedState {
             yaml: candidate.yaml,
+            context: candidate.context,
             prepared: candidate.prepared,
             revision,
             journal,
@@ -747,7 +1084,8 @@ impl InstrumentSession {
     ) -> Result<AcceptedState, SessionError> {
         let revision = self.next_candidate_revision(&candidate.owner, candidate.base_revision)?;
         Ok(AcceptedState {
-            yaml: candidate.yaml,
+            yaml: candidate.yaml.into(),
+            context: candidate.context,
             prepared: candidate.prepared,
             revision,
             journal: Vec::with_capacity(HISTORY_LIMIT),
@@ -780,20 +1118,12 @@ impl InstrumentSession {
         }
     }
 
-    fn retain_outcome(
-        &mut self,
-        request: MappingRequest,
-        action: HistoryAction,
-        outcome: Arc<RequestOutcome>,
-    ) {
+    fn retain_outcome(&mut self, request: SessionRequest, outcome: Arc<RequestOutcome>) {
         if self.outcomes.len() == OUTCOME_LIMIT {
             self.outcomes.pop_front();
         }
-        self.outcomes.push_back(RetainedOutcome {
-            request,
-            action,
-            outcome,
-        });
+        self.outcomes
+            .push_back(RetainedOutcome { request, outcome });
     }
 
     /// Prepare off audio without publishing or changing accepted state.
@@ -807,7 +1137,7 @@ impl InstrumentSession {
         self.ensure_idle()?;
         Self::prepare_mapping_document(
             &self.accepted.yaml,
-            &self.context,
+            &self.accepted.context,
             &self.settings,
             self.host_buses.as_ref(),
             self.identity.clone(),
@@ -922,6 +1252,7 @@ impl InstrumentSession {
         Ok(Self {
             accepted: AcceptedState {
                 yaml: yaml.into(),
+                context,
                 prepared,
                 revision: 0,
                 journal: Vec::with_capacity(HISTORY_LIMIT),
@@ -929,7 +1260,6 @@ impl InstrumentSession {
             },
             identity: SessionIdentity(Arc::new(())),
             attachments: Vec::with_capacity(ATTACHMENT_LIMIT),
-            context,
             settings,
             host_buses,
             pending: None,
