@@ -1,4 +1,4 @@
-"""Exercise the push hook's changed-owner contract without running mutation jobs."""
+"""Prove the ordinary push gate and explicit mutation exclusion with fake Cargo."""
 import json
 import os
 import subprocess
@@ -61,21 +61,16 @@ class MutationHookTest(unittest.TestCase):
         calls = [json.loads(line) for line in self.calls.read_text().splitlines()]
         return result, calls
 
-    def test_selects_changed_owners_relative_to_crate_with_spaces_intact(self):
+    def test_changed_engine_sources_run_unit_gate_without_starting_mutation(self):
         self.write("src/rust-engine/src/preparation.rs", "pub fn prepare() {}\n")
         self.write("src/rust-engine/src/kernel/voice with spaces.rs", "pub fn voice() {}\n")
         self.write("tests/cpp/ignored.cpp", "int ignored;\n")
         self.commit("Change two Rust owners and unrelated C++")
-        result, calls = self.invoke()
+        result, calls = self.invoke(mutation_exit=17)
         self.assertEqual(result.returncode, 0, result.stderr)
         manifest = str(self.root / "src/rust-engine/Cargo.toml")
-        self.assertEqual(calls[0], ["test", "--manifest-path", manifest])
-        self.assertEqual(calls[1][:3], ["mutants", "--manifest-path", manifest])
-        selectors = calls[1][3:]
-        self.assertEqual(selectors[::2], ["--file", "--file"])
-        self.assertEqual(set(selectors[1::2]),
-                         {"src/preparation.rs", "src/kernel/voice with spaces.rs"})
-        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls, [["test", "--manifest-path", manifest]])
+        self.assertIn("mutation-policy: excluded", result.stdout)
 
     def test_non_rust_change_runs_tests_without_starting_mutation(self):
         self.write("README.md", "documentation only\n")
@@ -84,15 +79,17 @@ class MutationHookTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(len(calls), 1)
         self.assertEqual(calls[0][0], "test")
-        self.assertIn("No changed Rust source files", result.stdout)
+        self.assertIn("mutation-policy: excluded", result.stdout)
 
-    def test_missing_upstream_selects_owners_from_last_commit(self):
+    def test_missing_upstream_still_runs_unit_gate_without_starting_mutation(self):
         self.git("branch", "--unset-upstream")
         self.write("src/rust-engine/src/fallback.rs", "pub fn fallback() {}\n")
         self.commit("Fallback owner")
         result, calls = self.invoke()
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(calls[1][-2:], ["--file", "src/fallback.rs"])
+        self.assertEqual(calls, [["test", "--manifest-path",
+                                 str(self.root / "src/rust-engine/Cargo.toml")]])
+        self.assertIn("mutation-policy: excluded", result.stdout)
 
     def test_failed_unit_gate_propagates_exit_without_starting_mutation(self):
         self.write("src/rust-engine/src/failing.rs", "pub fn failing() {}\n")
@@ -101,13 +98,6 @@ class MutationHookTest(unittest.TestCase):
         self.assertEqual(result.returncode, 23)
         self.assertEqual(len(calls), 1)
         self.assertEqual(calls[0][0], "test")
-
-    def test_failed_mutation_gate_propagates_exit(self):
-        self.write("src/rust-engine/src/failing.rs", "pub fn failing() {}\n")
-        self.commit("Changed owner")
-        result, calls = self.invoke(mutation_exit=17)
-        self.assertEqual(result.returncode, 17)
-        self.assertEqual([call[0] for call in calls], ["test", "mutants"])
 
 
 if __name__ == "__main__":

@@ -293,6 +293,12 @@ add_test(NAME engine-only-build
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_engine_only_build.py EngineOnlyBuildTest)
 set_tests_properties(engine-only-build PROPERTIES LABELS "build-boundary" RUN_SERIAL TRUE TIMEOUT 1200)
 
+add_test(NAME mutation-hook
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover
+            -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/python
+            -p test_mutation_hook.py)
+set_tests_properties(mutation-hook PROPERTIES LABELS "fast")
+
 add_test(NAME engine-build-fixture-cleanup
     COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1 python3
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_engine_build_fixture_cleanup.py)
@@ -1089,11 +1095,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1 python3
                 ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_slint_build_environment.py)
 endif()
-
-add_test(NAME mutation-hook
-    COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover
-            -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/python
-            -p test_mutation_hook.py)
 
 if(NOT DANDRUM_NATIVE_ONLY)
     add_test(NAME shared-instrument-ui COMMAND ${DANDRUM_NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/SharedInstrumentUiTest.mjs)

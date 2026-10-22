@@ -1,0 +1,152 @@
+[
+  {
+    "path": "bash-trace-env.sh",
+    "sha256": "a716baaeacc481f8e48674809c88e63709525b1fe35d2f5f4e3d5a534abecc97",
+    "bytes": 85
+  },
+  {
+    "path": "check-0.log",
+    "sha256": "69921c291db820ace9446e66aa364a5c483e097becc20165902e315b526d13bf",
+    "bytes": 54
+  },
+  {
+    "path": "check-1.log",
+    "sha256": "a4f3fdcd2c8468842ecfe3d42bdf0fae59f242a6b25fb11fa23df91dff10036a",
+    "bytes": 1491
+  },
+  {
+    "path": "check-2.log",
+    "sha256": "ae5a9c58d906b1e64ec38045f70131dec880d2054d0db7bfde08b9f2eb9990dd",
+    "bytes": 149
+  },
+  {
+    "path": "check-3.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  {
+    "path": "checks.json",
+    "sha256": "144d22e79f423515f02868d61a26152c7152bb75934cfdad71b445c69480ef8c",
+    "bytes": 1106
+  },
+  {
+    "path": "configure-corrected.log",
+    "sha256": "58aade8e43316e5dc401d0f3a7b837e52a722f84b78fab85edc2b562385d0836",
+    "bytes": 650
+  },
+  {
+    "path": "configure-native.log",
+    "sha256": "f6e7269d5f55d56fe6ee8e3340189b9a9bb29cf8570cc3767697d7eb8aa5e783",
+    "bytes": 9782
+  },
+  {
+    "path": "configure.log",
+    "sha256": "6009a652b2eaec4c43a07db307387b65e163e329eee418de471675633bfd9878",
+    "bytes": 640
+  },
+  {
+    "path": "corrected-ctest-checks.json",
+    "sha256": "6f0a7b9203a73acfaf50a88097a011770dda9865bf47094f475e4a4566d40ac4",
+    "bytes": 1532
+  },
+  {
+    "path": "coverage.json",
+    "sha256": "4b5f735ff26b9c954ae28478cb7868503c66d2dce3e4a0981e93321867a89d0f",
+    "bytes": 744
+  },
+  {
+    "path": "coverage.log",
+    "sha256": "2cf80906d85607a67cc1e632b6366335f9e3ff00cbe2f8339501351602da78eb",
+    "bytes": 497
+  },
+  {
+    "path": "ctest-checks.json",
+    "sha256": "a1c0333d0b75a03913dadda30fb48480d94468fb5ed4bef69096aa2c6db425fe",
+    "bytes": 1367
+  },
+  {
+    "path": "ctest-corrected.log",
+    "sha256": "e7ff0df768c2b43880fd7b8fd003b2b47a86ead7e46699a2c91374416113ec44",
+    "bytes": 398
+  },
+  {
+    "path": "ctest.log",
+    "sha256": "331998953108e51da7eb937876f9ab8aa215345ebce291e85ae0a17ccb32843a",
+    "bytes": 166
+  },
+  {
+    "path": "green.json",
+    "sha256": "e9cdc50a0a87d053c24defda375c26330902daa0aedf47da090b035274e9d8d1",
+    "bytes": 444
+  },
+  {
+    "path": "green.log",
+    "sha256": "a574e3bf91509133e7ae007a7cb0999246de88d3241359124cfbefb1944760d9",
+    "bytes": 497
+  },
+  {
+    "path": "hook-before.sh",
+    "sha256": "3085271367c3169f17c91478860a09cd6b2f0cc803319b57bc78797fa750d2d8",
+    "bytes": 1026
+  },
+  {
+    "path": "hook-command-lines.log",
+    "sha256": "4d084ca33ae95055dda44760aac1993e8a9bddf6cb0f397654c007f29c480796",
+    "bytes": 1199
+  },
+  {
+    "path": "inventory-corrected.log",
+    "sha256": "2302826beef2ff9143b7369374767d32a84a854f178d52d0b335f04bbebde784",
+    "bytes": 1115
+  },
+  {
+    "path": "inventory.log",
+    "sha256": "655b4edf543a99640d87b7cec2509f8071db3e631f77a63bd8b28f1533babfc4",
+    "bytes": 186
+  },
+  {
+    "path": "native-ctest-checks.json",
+    "sha256": "93f90dc91b252baeb55592a97f4c33c9df138533bb86e5521801d55e64a3f074",
+    "bytes": 436
+  },
+  {
+    "path": "ordinary-repeat-0.log",
+    "sha256": "d47262516f33464eaf0468d4a5d153b6aedd732c033d54f5a7fe111eda1447da",
+    "bytes": 497
+  },
+  {
+    "path": "ordinary-repeat-1.log",
+    "sha256": "40492dcf37bc6913a2605ad794d9038c4725c88fdcccadd746c4eb45b057faf9",
+    "bytes": 497
+  },
+  {
+    "path": "ordinary-timing-repeats.json",
+    "sha256": "ec9ad48f4723295ac10d0693ace3f7e6737e6c5e39209ccd64f4c13cc87653b1",
+    "bytes": 508
+  },
+  {
+    "path": "red-tests.py",
+    "sha256": "b8d7f3236acd4d3b0c76cc6ec0a5314c637f442be3f57df6395fd4859d37b5d9",
+    "bytes": 4585
+  },
+  {
+    "path": "red.json",
+    "sha256": "847f75437b9b91e7de4d2351b1c1781f926bcaa93f1dfa16bbcb41855856b4fd",
+    "bytes": 428
+  },
+  {
+    "path": "red.log",
+    "sha256": "ae53a8fd3dfe54d03b07012c642ca428dd155d275141d5a62e21e5d44e858385",
+    "bytes": 3037
+  },
+  {
+    "path": "scope.json",
+    "sha256": "bab885180f2239fbec4cd3efe3e7971ea99af9f4bd35a74b6a42e4ca6eacc334",
+    "bytes": 1210
+  },
+  {
+    "path": "tests-before.py",
+    "sha256": "b5c6401335a587e198fc1903d5f189afb2dcc67c7bb438d5eef353cdaf29a69b",
+    "bytes": 5050
+  }
+]

@@ -1,0 +1,20 @@
+{
+  "base": "c294742480b3e31cb21d3993cfab83fa2f0ce558",
+  "task": "1.2",
+  "inputs": {
+    ".githooks/pre-push": "e22b530d19c4d1499db66d990f30329459bcff7c9a12e1fe65962c926e151b5f",
+    ".githooks/pre-commit": "32a983155028314f516b3d4c60475a8eefbbec6bfd5ef974b941851c47cca985",
+    "tests/python/test_mutation_hook.py": "b8d7f3236acd4d3b0c76cc6ec0a5314c637f442be3f57df6395fd4859d37b5d9",
+    "CMakeLists.txt": "c8ab75c1f5dfd03e08a82e1ada89a6a58815f9abd2767bfbd748d4449d97a047",
+    "AGENTS.md": "29bb9a555e72cbdfe467686b5b59f48b3983acce3b0f4cbec9ef8bef12f6deaf"
+  },
+  "red": "Three expected failures and one passing existing unit-failure case against old hook; no actual Cargo mutation job.",
+  "green": "Four actual hook executions against real temporary Git repos and recording Cargo stand-in.",
+  "coverage": "6/6 executable Bash command lines observed; not branch coverage. No Rust behavior changed; LLVM not applicable. Normal strict engine coverage hook retained.",
+  "mutation": "Explicitly excluded; no pending or running mutation jobs.",
+  "limits": [
+    "Fake Cargo proves command/exit contract; normal publication still must execute actual engine tests and strict coverage.",
+    "Initial engine-only CTest empty selection rejected, not passing evidence.",
+    "Native configure linker failure retained; corrected engine-only registration used for actual CTest."
+  ]
+}

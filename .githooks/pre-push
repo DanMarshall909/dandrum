@@ -7,25 +7,7 @@ CARGO="${DANDRUM_CARGO:-$HOME/.cargo/bin/cargo}"
 echo "=== Running Rust unit tests ==="
 "$CARGO" test --manifest-path "$ENGINE_DIR/Cargo.toml"
 
-# Changed Rust source files compared to upstream
-UPSTREAM=$(git rev-parse --symbolic-full-name @{u} 2>/dev/null || true)
-if [ -n "$UPSTREAM" ]; then
-    DIFF_RANGE="${UPSTREAM}..HEAD"
-else
-    DIFF_RANGE='HEAD~1..HEAD'
-fi
-
-MUTANT_ARGS=()
-while IFS= read -r -d '' f; do
-    # cargo-mutants resolves file selectors relative to the manifest's crate.
-    MUTANT_ARGS+=(--file "${f#src/rust-engine/}")
-done < <(git diff --name-only -z "$DIFF_RANGE" -- 'src/rust-engine/src/*.rs' 2>/dev/null || true)
-
-if [ ${#MUTANT_ARGS[@]} -gt 0 ]; then
-    echo ""
-    echo "=== Running mutation tests on changed files ==="
-    "$CARGO" mutants --manifest-path "$ENGINE_DIR/Cargo.toml" "${MUTANT_ARGS[@]}"
-else
-    echo ""
-    echo "=== No changed Rust source files; skipping mutation tests ==="
-fi
+# Mutation is excluded by recorded user direction for the JUCE-free Trigger beta.
+# Any later authorized mutation belongs to the separate post-session workflow,
+# rather than a push hook that also runs for intermediate verified commits.
+echo "mutation-policy: excluded (recorded user direction; no mutation jobs in pre-push)"

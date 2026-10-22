@@ -61,9 +61,10 @@
 - When testing a composed voice or graph, exercise a representative child module that produces the output or event;
   direct mappings from voice intrinsics prove wiring only. Assert rendered output and lifecycle behavior, and reject
   unsupported child steps during preparation instead of silently rendering silence.
-- The checked-in pre-push hook (`.githooks/pre-push`) runs `cargo test`, then mutation on changed Rust files relative
-  to the tracked upstream (last commit when no upstream exists). It runs only when Git's hook configuration installs
-  it: inspect `git config --get core.hooksPath` and the active pre-push entrypoint before claiming enforcement.
+- The checked-in pre-push hook (`.githooks/pre-push`) runs `cargo test` and reports the current user-directed mutation
+  exclusion; it does not launch mutation jobs. Any separately authorized mutation belongs to the post-session workflow.
+  The hook runs only when Git's configuration installs it: inspect `git config --get core.hooksPath` and the active
+  pre-push entrypoint before claiming enforcement.
   `DANDRUM_CARGO` can select an explicit Cargo executable for calibrated hook tests; the default remains
   `$HOME/.cargo/bin/cargo`. Do not bypass hooks without explicit task authority.
 - For long mutation runs, follow the shared `coverage-and-mutation` workflow: retain raw logs outside model context,
