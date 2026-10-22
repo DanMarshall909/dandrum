@@ -1,0 +1,170 @@
+{
+  "implementation_base": "16184e21e957e2adcca2f50845cf33f3b49ec510",
+  "current": "5a9759db1503e4cd5f5a2e392875ccda645d3607",
+  "scope": "Whole current CLAP increment candidate assessment and proposed exact13scenario/tasks synchronization, pending independent review and actual gates. Fullbeta remains open.",
+  "raw_archive_sha256": "b4ba8e84052e406c025267e9a632ea4322f8728dd5f30766f728867158b7badd",
+  "raw_members": 41,
+  "external_inputs": {
+    "cleanup/incremental-receipt.json": {
+      "path": "/tmp/dandrum-evidence/resource-retention-audit-20261022/approved-incremental-cleanup-receipt.json",
+      "sha256": "7d3ad580181c8945e4fb549ded9861acb9058aeeb7d90ee15dc6ca0a9e0f2182"
+    },
+    "cleanup/terminal-tmp-receipt.json": {
+      "path": "/tmp/dandrum-evidence/resource-retention-audit-20261022/completed-publication-temp-cleanup.json",
+      "sha256": "30a03300704db981d287ad961535535bb398230d7c0b7375a3a29559b08127b2"
+    },
+    "coverage/adapter.json": {
+      "path": "/tmp/dandrum-evidence/final-adapter-coverage-assessment-refresh/assessment.json",
+      "sha256": "2b22eb8517b32626c1dfa697ea569345352cbc7cbd3e438278308b528a4620bd"
+    },
+    "coverage/adapter.md": {
+      "path": "/tmp/dandrum-evidence/final-adapter-coverage-assessment-refresh/report.md",
+      "sha256": "90fac95c010018a283d4523dd6e8fd2bdf9405d820a68cf019907e957e74001f"
+    },
+    "coverage/host.json": {
+      "path": "/tmp/dandrum-evidence/final-host-coverage-assessment-refresh/assessment.json",
+      "sha256": "1cd87a3f7f1025260656cdb27f8142255b924ddeb9916378ff6208cd29b33d9c"
+    },
+    "coverage/host.md": {
+      "path": "/tmp/dandrum-evidence/final-host-coverage-assessment-refresh/report.md",
+      "sha256": "b0eca6b779fab54a1faa32adfd9406e4b1119e246e012a297ad68bd24cf31749"
+    },
+    "current/source-correspondence.json": {
+      "path": "/tmp/dandrum-evidence/final-clap-closure-draft-20261022/source-correspondence.json",
+      "sha256": "44797ebf44bceccc1a6de2efde6c90c0a4c50817916943e7bf6511a739b3a18d"
+    },
+    "final-verification/js-native-adapter.stderr": {
+      "path": "/tmp/dandrum-evidence/final-clap-dcd65e4a/js-native-adapter.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "final-verification/js-native-adapter.stdout": {
+      "path": "/tmp/dandrum-evidence/final-clap-dcd65e4a/js-native-adapter.stdout",
+      "sha256": "d6329c2a2de78ab25e080382aeb39f85d8b885df199b6ec6093410f7fe406d3b"
+    },
+    "final-verification/js-owned-workers.json": {
+      "path": "/tmp/dandrum-evidence/final-clap-dcd65e4a/js-owned-workers.json",
+      "sha256": "cbfd04455b929a327f72bce1344b96f22d088f3088d6b05a7896227b88bce5ba"
+    },
+    "final-verification/js-results.json": {
+      "path": "/tmp/dandrum-evidence/final-clap-dcd65e4a/js-results.json",
+      "sha256": "dcaf40af0ef9ccbf857f6d45ef4f547d7cd4eb8c91461573df5be560499c50d4"
+    },
+    "final-verification/js-shell.stderr": {
+      "path": "/tmp/dandrum-evidence/final-clap-dcd65e4a/js-shell.stderr",
+      "sha256": "20adc1e0a42c07305bc25e3d16911e881c22bd1b9d3d2149e3012cb8035fa5b2"
+    },
+    "final-verification/js-shell.stdout": {
+      "path": "/tmp/dandrum-evidence/final-clap-dcd65e4a/js-shell.stdout",
+      "sha256": "c7a51eaf058fc860f2b318b4e63f8af884b1529b83db29e05c87795ad5c3aff2"
+    },
+    "final-verification/validator-receipt.json": {
+      "path": "/tmp/dandrum-evidence/final-clap-dcd65e4a/validator-receipt.json",
+      "sha256": "b88988df01a78e56c104ef0cf9bfc4b84289a286852c9b08f73f292427810b5a"
+    },
+    "final-verification/validator-result-summary.json": {
+      "path": "/tmp/dandrum-evidence/final-clap-dcd65e4a/validator-result-summary.json",
+      "sha256": "71a9b12e71d93abcc22d6751719594c6bff4f31665849746ca967ffecd4ec794"
+    },
+    "final-verification/validator.stderr": {
+      "path": "/tmp/dandrum-evidence/final-clap-dcd65e4a/validator.stderr",
+      "sha256": "658ad50a6465bd5b7b89d1627f5ca622da009681b4cccfa1e8947ab869c71894"
+    },
+    "final-verification/validator.stdout": {
+      "path": "/tmp/dandrum-evidence/final-clap-dcd65e4a/validator.stdout",
+      "sha256": "76ab0356b1298cc0fcba7c92d3e8fd23c7b8820560b48c10490bd0f1b6376602"
+    },
+    "mapping/bindings.json": {
+      "path": "/tmp/dandrum-evidence/final-clap-mapping-current/bindings.json",
+      "sha256": "347ef2d41bb824534934519bd75439b3f13977aa376714b6ff7868e186cc23ad"
+    },
+    "mapping/report.md": {
+      "path": "/tmp/dandrum-evidence/final-clap-mapping-current/report.md",
+      "sha256": "8a772396a213f7e29379eaed31fa3ba2e02e6827c9f73e6e033fcc5272de0d13"
+    },
+    "proposed/draft-check.stdout": {
+      "path": "/tmp/dandrum-evidence/final-clap-closure-draft-20261022/draft-check.stdout",
+      "sha256": "ae5a9c58d906b1e64ec38045f70131dec880d2054d0db7bfde08b9f2eb9990dd"
+    },
+    "proposed/draft.json": {
+      "path": "/tmp/dandrum-evidence/final-clap-closure-draft-20261022/draft.json",
+      "sha256": "b0599ed90ed1dd21dbe7c5eb8b0d9f9c0173529a335e4c0a8dd832e800ee8e0c"
+    },
+    "proposed/openspec/specs/juce-free-clap-proof/spec.md": {
+      "path": "/tmp/dandrum-evidence/final-clap-dcd65e4a/proposed-spec-sync/openspec/specs/juce-free-clap-proof/spec.md",
+      "sha256": "e56799359be9a79c05eeb963b00f1d73fd5a04e4a0c48dbc42125a892cd1e380"
+    },
+    "proposed/openspec/specs/juce-free-trigger-editor/spec.md": {
+      "path": "/tmp/dandrum-evidence/final-clap-dcd65e4a/proposed-spec-sync/openspec/specs/juce-free-trigger-editor/spec.md",
+      "sha256": "ac26c6579a0bed195ffcedefbcdbaaebb6b05d6bcb3b50c144cb53b18e12d91f"
+    },
+    "proposed/spec-tests.map": {
+      "path": "/tmp/dandrum-evidence/final-clap-closure-draft-20261022/spec-tests.map",
+      "sha256": "bc8f9a97353f909705db34de9503625d8e0056c27be605d45ca269bfe8724a2e"
+    },
+    "proposed/tasks.md": {
+      "path": "/tmp/dandrum-evidence/final-clap-closure-draft-20261022/tasks.md",
+      "sha256": "e466d74b6339c8524889602d3326876577df2e627785f5b387b4e151c77de92c"
+    },
+    "publication/fixture-cleanup-publication/commit.json": {
+      "path": "/tmp/dandrum-evidence/fixture-cleanup-publication/commit.json",
+      "sha256": "409a20127c49565877ea4727a351ffa3f226bbb2ecbd69e9f2f2382a5dc76a55"
+    },
+    "publication/fixture-cleanup-publication/published-and-next-base.json": {
+      "path": "/tmp/dandrum-evidence/fixture-cleanup-publication/published-and-next-base.json",
+      "sha256": "fb017c9366050ce63c9d31a92d75ba8b3a70a1a75e28dcda48814a3db99651b1"
+    },
+    "publication/fixture-cleanup-publication/push.json": {
+      "path": "/tmp/dandrum-evidence/fixture-cleanup-publication/push.json",
+      "sha256": "58daa37479e4e80dc11e611a85b23b11873e3dab9a9576d72472b9229d38c2c7"
+    },
+    "publication/fixture-cleanup-review/report.md": {
+      "path": "/tmp/dandrum-evidence/fixture-cleanup-review/report.md",
+      "sha256": "ed35ff6fdc035c623c699447aaca673605d880f63f16320e1f4e79367dabc2dc"
+    },
+    "publication/fixture-cleanup-review/verdict.json": {
+      "path": "/tmp/dandrum-evidence/fixture-cleanup-review/verdict.json",
+      "sha256": "10d19f782a2b859b93b6cbfcce2f06c521c39c4a644da365e3a259e5785c8561"
+    },
+    "publication/input-characterization-publication/commit.json": {
+      "path": "/tmp/dandrum-evidence/input-characterization-publication/commit.json",
+      "sha256": "c8c8aed11873c9d1fe21c89182ef03a090f84bffd93750bb54a065caed6298a9"
+    },
+    "publication/input-characterization-publication/published-and-next-base.json": {
+      "path": "/tmp/dandrum-evidence/input-characterization-publication/published-and-next-base.json",
+      "sha256": "7c4901eaa94681a10a016b059dd9e4907ba6023c4a283a5967360de8089bf3b5"
+    },
+    "publication/input-characterization-publication/push.json": {
+      "path": "/tmp/dandrum-evidence/input-characterization-publication/push.json",
+      "sha256": "25752760e572e162b16dbb5356d81df82326c3738dffb9f956189798675a8744"
+    },
+    "publication/input-characterization-review/refresh-v2-report.md": {
+      "path": "/tmp/dandrum-evidence/input-characterization-review/refresh-v2-report.md",
+      "sha256": "99e6c48876f98ad612b15a3005aec5bc377c13933fb72def2cb22ffe75e4da8c"
+    },
+    "publication/input-characterization-review/refresh-v2-verification.json": {
+      "path": "/tmp/dandrum-evidence/input-characterization-review/refresh-v2-verification.json",
+      "sha256": "7c3e4ade7139f3a33ea3a1e85a843ce9f6600cd0f3e72f8204aef8ffbeeedd8f"
+    },
+    "readiness/report.md": {
+      "path": "/tmp/dandrum-evidence/final-clap-closure-readiness/report.md",
+      "sha256": "98839f3b43a5f2b960d44c5c023aee7993d47de0c4fa84beeeab9454653ab095"
+    }
+  },
+  "proposal_status": "Exact4task/spec/map transformations staged; EOF-only repair after rejected post-PASS gate; pending renewed review/normalpublication",
+  "mutation": "excluded",
+  "validator": "33success10skip1FAIL; unwaivedfractional1234.5678Hz",
+  "repair": [
+    {
+      "path": "openspec/specs/juce-free-trigger-editor/spec.md",
+      "before_sha256": "84127911c0a6462f4502ea795d84533e04c9796ae16ac28828422c6045e764ad",
+      "after_sha256": "ac26c6579a0bed195ffcedefbcdbaaebb6b05d6bcb3b50c144cb53b18e12d91f",
+      "change": "Remove only surplus EOF newline"
+    },
+    {
+      "path": "spec-tests.map",
+      "before_sha256": "e10b67e0878c890d146d3fc5c0309cf8817194f4b79a1a53dd0a15b30cda1677",
+      "after_sha256": "bc8f9a97353f909705db34de9503625d8e0056c27be605d45ca269bfe8724a2e",
+      "change": "Remove only surplus EOF newline"
+    }
+  ]
+}
