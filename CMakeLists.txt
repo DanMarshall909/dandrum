@@ -293,6 +293,11 @@ add_test(NAME engine-only-build
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_engine_only_build.py EngineOnlyBuildTest)
 set_tests_properties(engine-only-build PROPERTIES LABELS "build-boundary" RUN_SERIAL TRUE TIMEOUT 1200)
 
+add_test(NAME engine-build-fixture-cleanup
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1 python3
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_engine_build_fixture_cleanup.py)
+set_tests_properties(engine-build-fixture-cleanup PROPERTIES LABELS "fast" TIMEOUT 30)
+
 if(DANDRUM_CLAP_PROOF)
     add_test(NAME trigger-clap-native-fixture-driver
         COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_trigger_native_fixture.py)

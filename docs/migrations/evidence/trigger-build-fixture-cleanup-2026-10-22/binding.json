@@ -1,0 +1,23 @@
+{
+  "base": "3e5e2b0fae9affb9e3d635e1260505c45f4192e1",
+  "scope": "Task5.1 build-fixture cleanup only; no task/spec/map/beta closure",
+  "source_sha256": {
+    "CMakeLists.txt": "18ccd302a37cf600a1903fc61cf74ca1dd89a58e239ccdf1761917161a35844f",
+    "tests/python/test_engine_only_build.py": "19618d57bc9ab25b1a14cd7225657dde87f912f876e1bb5181f3a1a0927ff800",
+    "tests/python/test_engine_build_fixture_cleanup.py": "dc04c773459bade16ae242368fedecfe8e62f08d60d566932275d51b4fa74a23"
+  },
+  "raw_archive_sha256": "f37303f16b4faa0aea4fd5f27555117d6fd36ad7a074ea45816b0929166a20b7",
+  "raw_members": 31,
+  "mutation": "excluded",
+  "coverage": "Python trace new cleanup registration executes3times; LLVM is inapplicable to this Python/CMake-only behavior change",
+  "refactor": {
+    "production": "Use unittest class cleanup directly; registration immediately follows directory creation so setup exceptions are covered. No new helper/module needed.",
+    "tests": "One lifecycle table shares setup for success/failure/setup-error, with diagnostic assertions and shared-target/log sentinels. Preserve Linux-only fixture contract."
+  },
+  "limitations": [
+    "No crash/SIGKILL or detached-worker recovery claim.",
+    "Existing33 historical snapshots were not removed by this change.",
+    "Initial trace invocation ran0tests and is retained as rejected discovery evidence, not passing coverage.",
+    "No Rust production/test files changed; normal installed Git hooks remain required before publication."
+  ]
+}

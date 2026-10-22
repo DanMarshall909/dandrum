@@ -22,6 +22,7 @@ class EngineBuildFixture(unittest.TestCase):
         cls.work.mkdir(parents=True, exist_ok=True)
         # Fresh snapshots cannot retain removed source files or discovery caches.
         cls.fixture_root = Path(tempfile.mkdtemp(prefix="fixture-", dir=cls.work))
+        cls.addClassCleanup(shutil.rmtree, cls.fixture_root)
         cls.source = cls.fixture_root / "source"
         cls.source.mkdir()
         cls.cargo_target = cls.work / "cargo-target"
