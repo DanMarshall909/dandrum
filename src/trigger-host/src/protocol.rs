@@ -1,4 +1,9 @@
-//! Version 1 editor admission and envelope encoding, used only off audio.
+//! Bounded editor admission and envelope encoding, used only off audio.
+//!
+//! Version 1 keeps its existing limits. A retained native attachment can opt
+//! into version 2 patch/snapshot framing; other methods and events remain v1.
+//! Full-patch documents are shared immutable strings with separate decoded,
+//! wire and retained-replay byte limits, in addition to the request-count cap.
 //!
 //! Requests are JSON `{version:1, attachmentId:"1", requestId:"1", method, args}`.
 //! Identities are canonical decimal strings carrying full `u64` precision. The
@@ -9,7 +14,7 @@
 //! - `getSamplerSession`, `getParameterState`, `noteHeartbeat`: `[]`.
 //! - `setInstrumentZoneKeyRange`: `[instanceId, attachmentId, sessionRequestId,
 //!   revision, mapId, zoneId, low, high]` (the first four are decimal strings).
-//! - `undoInstrumentSession`: `[instanceId, attachmentId, sessionRequestId, revision]`.
+//! - `undoInstrumentSession`, `redoInstrumentSession`: `[instanceId, attachmentId, sessionRequestId, revision]`.
 //! - `getInstrumentSessionJobStatus`: `[sessionRequestId]`.
 //! - `beginGesture`, `endGesture`: `[parameterId, generation]`.
 //! - `setParameter`: `[parameterId, normalizedValue, generation]`.
@@ -36,6 +41,11 @@ use dandrum_instrument_session::{Attachment, InstrumentSession, SessionError, Se
 pub const PROTOCOL_VERSION: u32 = 1;
 pub const MESSAGE_BYTES_LIMIT: usize = 16 * 1024;
 pub const REPLAY_LIMIT: usize = 128;
+pub const PATCH_PROTOCOL_VERSION: u32 = 2;
+pub const PATCH_DOCUMENT_BYTES_LIMIT: usize = 65_536;
+pub const PATCH_MESSAGE_BYTES_LIMIT: usize = 524_288;
+pub const PATCH_OUTBOUND_BYTES_LIMIT: usize = 1_048_576;
+pub const PATCH_REPLAY_DOCUMENT_BYTES_LIMIT: usize = 262_144;
 
 #[derive(Debug, PartialEq, Eq, serde::Serialize)]
 #[serde(tag = "code", rename_all = "camelCase")]
@@ -68,7 +78,8 @@ struct Connection {
     attachment: Attachment,
     highest_request: u64,
     next_event: u64,
-    retained: std::collections::VecDeque<(u64, EditorCommand)>,
+    patch_protocol: bool,
+    retained: std::collections::VecDeque<(u64, u32, EditorCommand)>,
 }
 /// Own one protocol per instrument; only the first native session can attach.
 pub struct EditorProtocol {
@@ -108,6 +119,7 @@ impl EditorProtocol {
             attachment,
             highest_request: 0,
             next_event: 1,
+            patch_protocol: false,
             retained: std::collections::VecDeque::new(),
         });
         self.next_attachment = next;
@@ -121,7 +133,12 @@ impl EditorProtocol {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum EditorCommand {
+    NegotiateEditorProtocol,
     GetSamplerSession,
+    PrepareInstrumentSessionPatch {
+        identity: SessionCommandIdentity,
+        document: std::sync::Arc<str>,
+    },
     ChooseSamplerFiles,
     GetSamplerSelectionStatus {
         selection_id: u64,
@@ -135,6 +152,9 @@ pub enum EditorCommand {
         intent: dandrum_instrument_session::SetZoneKeyRange,
     },
     UndoInstrumentSession {
+        identity: SessionCommandIdentity,
+    },
+    RedoInstrumentSession {
         identity: SessionCommandIdentity,
     },
     GetInstrumentSessionJobStatus {
@@ -175,6 +195,7 @@ pub struct SessionCommandIdentity {
 #[derive(Debug)]
 pub struct AdmittedRequest {
     admission_owner: std::sync::Arc<()>,
+    wire_version: u32,
     /// Transport correlation, independent of a structural session request.
     pub request_id: u64,
     pub attachment_id: u64,
@@ -187,17 +208,28 @@ pub enum Admission {
     Duplicate { request_id: u64 },
 }
 impl EditorProtocol {
+    pub(crate) fn message_fits_limits(
+        &self,
+        session: &InstrumentSession,
+        attachment: Option<&str>,
+        message: &str,
+    ) -> bool {
+        message.len() <= PATCH_MESSAGE_BYTES_LIMIT
+            && (message.len() <= MESSAGE_BYTES_LIMIT
+                || self.patch_profile(session, attachment, message).is_some())
+    }
+
     pub fn admit(
         &mut self,
         session: &InstrumentSession,
         message: &str,
     ) -> Result<Admission, ProtocolError> {
-        if message.len() > MESSAGE_BYTES_LIMIT {
+        if !self.message_fits_limits(session, None, message) {
             return Err(ProtocolError::Oversized);
         }
         let envelope: Envelope =
             serde_json::from_str(message).map_err(|_| ProtocolError::Malformed)?;
-        if envelope.version != PROTOCOL_VERSION {
+        if !matches!(envelope.version, PROTOCOL_VERSION | PATCH_PROTOCOL_VERSION) {
             return Err(ProtocolError::UnsupportedVersion);
         }
         let attachment_id = decimal(&envelope.attachment_id, false)?;
@@ -210,9 +242,20 @@ impl EditorProtocol {
         let snapshot = session
             .snapshot(&connection.attachment)
             .map_err(|_| ProtocolError::StaleAttachment)?;
+        if envelope.version == PATCH_PROTOCOL_VERSION
+            && (!connection.patch_protocol || !patch_method(&envelope.method))
+            || envelope.version == PROTOCOL_VERSION
+                && envelope.method == "prepareInstrumentSessionPatch"
+        {
+            return Err(ProtocolError::UnsupportedVersion);
+        }
         let command = parse_command(&envelope.method, envelope.args)?;
-        if let Some((_, retained)) = connection.retained.iter().find(|(id, _)| *id == request_id) {
-            return if *retained == command {
+        if let Some((_, version, retained)) = connection
+            .retained
+            .iter()
+            .find(|(id, _, _)| *id == request_id)
+        {
+            return if *version == envelope.version && *retained == command {
                 Ok(Admission::Duplicate { request_id })
             } else {
                 Err(ProtocolError::ConflictingRequest)
@@ -222,19 +265,78 @@ impl EditorProtocol {
             return Err(ProtocolError::RetiredRequest);
         }
         command.validate(self.instance_id.get(), attachment_id, snapshot.revision)?;
+        let incoming = command.document_bytes();
+        let mut retained_bytes = connection
+            .retained
+            .iter()
+            .map(|(_, _, command)| command.document_bytes())
+            .sum::<usize>();
+        while retained_bytes + incoming > PATCH_REPLAY_DOCUMENT_BYTES_LIMIT {
+            let index = connection.retained.iter().position(|(_, _, command)| command.document_bytes() != 0)
+                .expect("byte pressure implies a retained document because one document fits the budget");
+            let (_, _, retired) = connection
+                .retained
+                .remove(index)
+                .expect("retained document index");
+            retained_bytes -= retired.document_bytes();
+        }
         if connection.retained.len() == REPLAY_LIMIT {
             connection.retained.pop_front();
         }
-        connection.retained.push_back((request_id, command.clone()));
+        connection
+            .retained
+            .push_back((request_id, envelope.version, command.clone()));
         connection.highest_request = request_id;
         Ok(Admission::New(AdmittedRequest {
             admission_owner: connection.admission_owner.clone(),
+            wire_version: envelope.version,
             request_id,
             attachment_id,
             attachment: connection.attachment.clone(),
             command,
         }))
     }
+
+    fn patch_profile(
+        &self,
+        session: &InstrumentSession,
+        expected_attachment: Option<&str>,
+        message: &str,
+    ) -> Option<FrameProfile> {
+        // Ignore argument values while inspecting the small framing fields. A
+        // larger parsing budget comes from retained native authority, never
+        // from the browser's version field alone. Full validation follows.
+        let header = serde_json::from_str::<FrameProfile>(message).ok()?;
+        if header.version != PATCH_PROTOCOL_VERSION
+            || !patch_method(&header.method)
+            || expected_attachment.is_some_and(|expected| expected != header.attachment_id)
+        {
+            return None;
+        }
+        let id = decimal(&header.attachment_id, false).ok()?;
+        let connection = self
+            .connections
+            .iter()
+            .find(|connection| connection.id == id && connection.patch_protocol)?;
+        session.snapshot(&connection.attachment).ok()?;
+        Some(header)
+    }
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct FrameProfile {
+    version: u32,
+    attachment_id: String,
+    request_id: String,
+    method: String,
+}
+
+fn patch_method(method: &str) -> bool {
+    matches!(
+        method,
+        "getSamplerSession" | "prepareInstrumentSessionPatch"
+    )
 }
 
 #[derive(serde::Deserialize)]
@@ -265,6 +367,32 @@ fn decimal(text: &str, zero: bool) -> Result<u64, ProtocolError> {
 fn parse_command(method: &str, args: serde_json::Value) -> Result<EditorCommand, ProtocolError> {
     use EditorCommand::*;
     Ok(match method {
+        "prepareInstrumentSessionPatch" => {
+            let (instance, attachment, request, revision, document): (
+                String,
+                String,
+                String,
+                String,
+                String,
+            ) = arguments(args)?;
+            if document.len() > PATCH_DOCUMENT_BYTES_LIMIT {
+                return Err(ProtocolError::Oversized);
+            }
+            if document.is_empty() {
+                return Err(ProtocolError::InvalidArguments);
+            }
+            PrepareInstrumentSessionPatch {
+                identity: command_identity(instance, attachment, request, revision)?,
+                document: document.into(),
+            }
+        }
+        "negotiateEditorProtocol" => {
+            let (version,): (u32,) = arguments(args)?;
+            if version != PATCH_PROTOCOL_VERSION {
+                return Err(ProtocolError::UnsupportedVersion);
+            }
+            NegotiateEditorProtocol
+        }
         "getSamplerSession" | "getParameterState" | "noteHeartbeat" | "chooseSamplerFiles" => {
             if args != serde_json::json!([]) {
                 return Err(ProtocolError::InvalidArguments);
@@ -305,11 +433,14 @@ fn parse_command(method: &str, args: serde_json::Value) -> Result<EditorCommand,
                 },
             }
         }
-        "undoInstrumentSession" => {
+        "undoInstrumentSession" | "redoInstrumentSession" => {
             let (instance, attachment, request, revision): (String, String, String, String) =
                 arguments(args)?;
-            UndoInstrumentSession {
-                identity: command_identity(instance, attachment, request, revision)?,
+            let identity = command_identity(instance, attachment, request, revision)?;
+            if method == "undoInstrumentSession" {
+                UndoInstrumentSession { identity }
+            } else {
+                RedoInstrumentSession { identity }
             }
         }
         "getInstrumentSessionJobStatus" => {
@@ -375,6 +506,13 @@ fn command_identity(
 pub const IDENTIFIER_BYTES_LIMIT: usize = 256;
 pub const MAX_SAFE_GENERATION: u64 = 9_007_199_254_740_991;
 impl EditorCommand {
+    fn document_bytes(&self) -> usize {
+        match self {
+            Self::PrepareInstrumentSessionPatch { document, .. } => document.len(),
+            _ => 0,
+        }
+    }
+
     fn validate(
         &self,
         instance_id: u64,
@@ -383,6 +521,10 @@ impl EditorCommand {
     ) -> Result<(), ProtocolError> {
         use EditorCommand::*;
         let valid = match self {
+            PrepareInstrumentSessionPatch { identity, .. } => {
+                validate_identity(identity, instance_id, attachment_id, revision)?;
+                true
+            }
             SetZoneKeyRange { identity, intent } => {
                 validate_identity(identity, instance_id, attachment_id, revision)?;
                 identifier(&intent.map_id)
@@ -390,7 +532,7 @@ impl EditorCommand {
                     && intent.key_range[0] <= intent.key_range[1]
                     && intent.key_range[1] <= 127
             }
-            UndoInstrumentSession { identity } => {
+            UndoInstrumentSession { identity } | RedoInstrumentSession { identity } => {
                 validate_identity(identity, instance_id, attachment_id, revision)?;
                 true
             }
@@ -443,13 +585,39 @@ fn validate_identity(
     if identity.instance_id != instance || identity.attachment_id != attachment {
         return Err(ProtocolError::StaleAttachment);
     }
-    if identity.expected_revision != revision {
+    // A past revision may name an exact retained native action. The session
+    // checks that identity before rejecting genuinely new stale work.
+    if identity.expected_revision > revision {
         return Err(ProtocolError::StaleRequest);
     }
     Ok(())
 }
 
 impl EditorProtocol {
+    /// Negotiate only this retained native attachment, after a bounded v1 reply
+    /// has been constructed. No session work or authoring state is changed.
+    pub fn negotiate(
+        &mut self,
+        session: &InstrumentSession,
+        request: &AdmittedRequest,
+    ) -> Result<String, ProtocolError> {
+        let context = self.admitted_context(session, request)?;
+        if request.command != EditorCommand::NegotiateEditorProtocol {
+            return Err(ProtocolError::InvalidArguments);
+        }
+        let reply = self.encode_reply(session, &context.attachment_id.to_string(), &request.request_id.to_string(), Ok(serde_json::json!({
+            "wireVersion":PATCH_PROTOCOL_VERSION,
+            "methods":["prepareInstrumentSessionPatch","getSamplerSession"],
+            "limits":{"documentBytes":PATCH_DOCUMENT_BYTES_LIMIT,"requestBytes":PATCH_MESSAGE_BYTES_LIMIT,
+                "replyBytes":PATCH_OUTBOUND_BYTES_LIMIT,"replayDocumentBytes":PATCH_REPLAY_DOCUMENT_BYTES_LIMIT}
+        })))?;
+        self.connections
+            .iter_mut()
+            .find(|connection| connection.id == context.attachment_id)
+            .expect("admitted native connection remains live")
+            .patch_protocol = true;
+        Ok(reply)
+    }
     pub fn new(instance_id: std::num::NonZeroU64) -> Self {
         Self {
             instance_id,
@@ -501,11 +669,11 @@ impl EditorProtocol {
                     && std::sync::Arc::ptr_eq(&connection.admission_owner, &request.admission_owner)
             })
             .ok_or(ProtocolError::StaleAttachment)?;
-        if !connection
-            .retained
-            .iter()
-            .any(|(id, command)| *id == request.request_id && *command == request.command)
-        {
+        if !connection.retained.iter().any(|(id, version, command)| {
+            *id == request.request_id
+                && *version == request.wire_version
+                && *command == request.command
+        }) {
             return Err(ProtocolError::StaleRequest);
         }
         let snapshot = session
@@ -527,7 +695,41 @@ impl EditorProtocol {
     ) -> Result<String, ProtocolError> {
         let (index, _) = self.connection_snapshot(session, attachment_id)?;
         let request = decimal(request_id, false)?;
-        let mut envelope = serde_json::json!({"version":PROTOCOL_VERSION,"instanceId":self.instance_id.to_string(),"attachmentId":self.connections[index].id.to_string(),"requestId":request.to_string()});
+        let version = self.connections[index]
+            .retained
+            .iter()
+            .find(|(id, _, _)| *id == request)
+            .map_or(PROTOCOL_VERSION, |(_, version, _)| *version);
+        self.encode_reply_versioned(index, request, version, result)
+    }
+
+    /// A rejected request is not retained admission, but a negotiated caller
+    /// still needs a correlated reply in its permitted request version.
+    pub fn encode_rejection(
+        &self,
+        session: &InstrumentSession,
+        attachment_id: &str,
+        request_id: &str,
+        message: &str,
+        error: ProtocolError,
+    ) -> Result<String, ProtocolError> {
+        let (index, _) = self.connection_snapshot(session, attachment_id)?;
+        let request = decimal(request_id, false)?;
+        let version = self
+            .patch_profile(session, Some(attachment_id), message)
+            .filter(|header| header.request_id == request_id)
+            .map_or(PROTOCOL_VERSION, |_| PATCH_PROTOCOL_VERSION);
+        self.encode_reply_versioned(index, request, version, Err(error))
+    }
+
+    fn encode_reply_versioned(
+        &self,
+        index: usize,
+        request: u64,
+        version: u32,
+        result: Result<serde_json::Value, ProtocolError>,
+    ) -> Result<String, ProtocolError> {
+        let mut envelope = serde_json::json!({"version":version,"instanceId":self.instance_id.to_string(),"attachmentId":self.connections[index].id.to_string(),"requestId":request.to_string()});
         match result {
             Ok(value) => {
                 envelope["status"] = "accepted".into();
@@ -539,7 +741,14 @@ impl EditorProtocol {
                     serde_json::to_value(error).map_err(|_| ProtocolError::Malformed)?;
             }
         }
-        encode_bounded(&envelope)
+        encode_bounded(
+            &envelope,
+            if version == PATCH_PROTOCOL_VERSION {
+                PATCH_OUTBOUND_BYTES_LIMIT
+            } else {
+                OUTBOUND_BYTES_LIMIT
+            },
+        )
     }
     pub fn encode_event(
         &mut self,
@@ -558,7 +767,7 @@ impl EditorProtocol {
             .checked_add(1)
             .ok_or(ProtocolError::IdentityExhausted)?;
         let envelope = serde_json::json!({"version":PROTOCOL_VERSION,"instanceId":self.instance_id.to_string(),"attachmentId":connection.id.to_string(),"sequence":connection.next_event.to_string(),"event":event,"payload":payload});
-        let encoded = encode_bounded(&envelope)?;
+        let encoded = encode_bounded(&envelope, OUTBOUND_BYTES_LIMIT)?;
         connection.next_event = next;
         Ok(encoded)
     }
@@ -580,8 +789,8 @@ impl EditorProtocol {
     }
 }
 
-fn encode_bounded(value: &serde_json::Value) -> Result<String, ProtocolError> {
-    let mut buffer = vec![0; OUTBOUND_BYTES_LIMIT];
+fn encode_bounded(value: &serde_json::Value, limit: usize) -> Result<String, ProtocolError> {
+    let mut buffer = vec![0; limit];
     let length = {
         let mut cursor = std::io::Cursor::new(buffer.as_mut_slice());
         serde_json::to_writer(&mut cursor, value).map_err(|_| ProtocolError::Oversized)?;

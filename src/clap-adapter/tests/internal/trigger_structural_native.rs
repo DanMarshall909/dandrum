@@ -462,6 +462,159 @@ fn native_structural_scenario() {
             serde_json::json!({"undoCount":0,"redoCount":1})
         );
         baseline_b.check(&mut plugin_b, &parent_b, browser_b.as_ref().unwrap());
+        // Exercise real Wry IPC without presenting the legacy frontend as a
+        // v2 consumer. A calibrated unsupported call advances the broker while
+        // leaving its transport ID unadmitted; the raw frame uses that ID.
+        // Subsequent ordinary broker calls therefore remain aligned.
+        let negotiation = invoke(
+            &mut plugin,
+            browser_a.as_ref().unwrap(),
+            "window.__DANDRUM__.backend.getNativeFunction('negotiateEditorProtocol')(2)",
+        );
+        assert_eq!(negotiation["status"], "accepted", "{negotiation}");
+        assert_eq!(negotiation["result"]["wireVersion"], 2);
+        let before_patch = undone["yaml"].as_str().unwrap();
+        let regions = (0..256)
+            .map(|index| {
+                format!(
+                    "        - {{ id: native_{index}, start_frame: {}, end_frame: {} }}\n",
+                    index * 32,
+                    index * 32 + 16
+                )
+            })
+            .collect::<String>();
+        // The current mapping document has been canonically serialized; use
+        // the embedded package fixture for the authored region-list layout.
+        let candidate = include_str!("../../../../examples/patches/advanced-drum-kit.yaml")
+            .replacen("      regions:\n", &format!("      regions:\n{regions}"), 1)
+            .replace("key_range: [36, 36]", "key_range: [60, 60]");
+        assert!(candidate.len() > 16_384 && candidate.len() < 65_536);
+        assert!(
+            candidate.contains("id: native_255"),
+            "fixture contains the additional real regions"
+        );
+        dandrum_engine::kernel::document::load_kernel_patch_str(&candidate)
+            .expect("meaningful bounded sample-region document");
+        javascript(
+            &mut plugin,
+            browser_a.as_ref().unwrap(),
+            r#"(()=>{window.__G5_PATCH_REPLY__=null;window.__G5_PATCH_SLOT__=null;
+              const surface=window.__DANDRUM__,receive=surface.receiveNativeMessage;
+              surface.receiveNativeMessage=message=>{const frame=JSON.parse(message);
+                if(frame.version===2){window.__G5_PATCH_REPLY__=frame;return 'observed';}
+                if(frame.error?.code==='capabilityUnavailable')window.__G5_PATCH_SLOT__=frame.requestId;
+                return receive(message);};return 'observing';})()"#,
+        );
+        let unavailable = invoke(
+            &mut plugin,
+            browser_a.as_ref().unwrap(),
+            "window.__DANDRUM__.backend.getNativeFunction('requestSourceWaveform')('drums',0,8,4)",
+        );
+        assert_eq!(unavailable["code"], "capabilityUnavailable");
+        let slot = javascript(
+            &mut plugin,
+            browser_a.as_ref().unwrap(),
+            "String(window.__G5_PATCH_SLOT__)",
+        );
+        assert!(
+            slot.parse::<u64>().is_ok_and(|id| id != 0),
+            "bounded unadmitted transport identity: {slot}"
+        );
+        let script = format!(
+            r#"(()=>{{const c=window.__DANDRUM_NATIVE__;
+          const frame={{version:2,attachmentId:c.attachmentId,requestId:window.__G5_PATCH_SLOT__,
+            method:'prepareInstrumentSessionPatch',args:[c.instanceId,c.attachmentId,'7003','3',{}]}};
+          const wire=JSON.stringify(frame);window.__G5_PATCH_BYTES__=new TextEncoder().encode(wire).length;
+          window.ipc.postMessage(wire);return 'sent';}})()"#,
+            serde_json::to_string(&candidate).unwrap()
+        );
+        javascript(&mut plugin, browser_a.as_ref().unwrap(), &script);
+        let bytes = javascript(
+            &mut plugin,
+            browser_a.as_ref().unwrap(),
+            "String(window.__G5_PATCH_BYTES__)",
+        )
+        .parse::<usize>()
+        .unwrap();
+        assert!(
+            bytes > 16_384 && bytes <= 524_288,
+            "actual UTF-8 wire bytes: {bytes}"
+        );
+        eprintln!("NATIVE_PATCH negotiated v2, {bytes} wire bytes, prior signed PCM [-0.5,-0.5]");
+        let deadline = Instant::now() + Duration::from_secs(5);
+        let admitted = loop {
+            let raw = javascript(
+                &mut plugin,
+                browser_a.as_ref().unwrap(),
+                "JSON.stringify(window.__G5_PATCH_REPLY__)",
+            );
+            if raw != "null" {
+                break serde_json::from_str::<serde_json::Value>(&raw).unwrap();
+            }
+            assert!(
+                Instant::now() < deadline,
+                "negotiated >16KiB patch must reach the actual Wry/Core ingress"
+            );
+        };
+        assert_eq!(admitted["version"], 2);
+        assert_eq!(admitted["status"], "accepted", "{admitted}");
+        assert_eq!(admitted["result"]["job_id"], "7003");
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
+            let status = invoke(
+                &mut plugin,
+                browser_a.as_ref().unwrap(),
+                "window.__DANDRUM__.backend.getNativeFunction('getInstrumentSessionJobStatus')('7003')",
+            );
+            assert_eq!(status["status"], "accepted", "{status}");
+            match status["result"]["state"].as_str() {
+                Some("completed") => {
+                    assert_eq!(status["result"]["revision"], "4");
+                    break;
+                }
+                Some("running") => {
+                    assert!(Instant::now() < deadline, "bounded native patch worker")
+                }
+                _ => panic!("native patch failed: {status}"),
+            }
+        }
+        let saved: serde_json::Value = serde_json::from_slice(&saved_state(&mut plugin)).unwrap();
+        assert_eq!(
+            saved["document"], candidate,
+            "actual CLAP state owns the complete published document"
+        );
+        audio_a = Some(start_audio(&mut plugin));
+        assert_eq!(note(audio_a.as_mut().unwrap(), 60), [-0.5, -0.5]);
+        assert_eq!(note(audio_a.as_mut().unwrap(), 36), [0.0, 0.0]);
+        return_audio(&mut plugin, audio_a.take().unwrap());
+        let undo = invoke(
+            &mut plugin,
+            browser_a.as_ref().unwrap(),
+            "(()=>{const c=window.__DANDRUM_NATIVE__;return window.__DANDRUM__.backend.getNativeFunction('undoInstrumentSession')(c.instanceId,c.attachmentId,'7004','4');})()",
+        );
+        assert_eq!(undo["status"], "accepted", "{undo}");
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
+            let status = invoke(
+                &mut plugin,
+                browser_a.as_ref().unwrap(),
+                "window.__DANDRUM__.backend.getNativeFunction('getInstrumentSessionJobStatus')('7004')",
+            );
+            assert_eq!(status["status"], "accepted", "{status}");
+            match status["result"]["state"].as_str() {
+                Some("completed") => {
+                    assert_eq!(status["result"]["revision"], "5");
+                    break;
+                }
+                Some("running") => {
+                    assert!(Instant::now() < deadline, "bounded native document Undo")
+                }
+                _ => panic!("native patch Undo failed: {status}"),
+            }
+        }
+        let saved: serde_json::Value = serde_json::from_slice(&saved_state(&mut plugin)).unwrap();
+        assert_eq!(saved["document"], before_patch);
+        baseline_b.check(&mut plugin_b, &parent_b, browser_b.as_ref().unwrap());
         audio_a = Some(start_audio(&mut plugin));
         assert_eq!(note(audio_a.as_mut().unwrap(), 36), [-0.5, -0.5]);
         assert_eq!(note(audio_a.as_mut().unwrap(), 60), [0.0, 0.0]);

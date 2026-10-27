@@ -53,6 +53,11 @@ Preserve the current product's stable public aliases and physical values. New UI
 
 Extend the versioned transport with explicit supported methods and measured bounds. Keep existing version 1 behavior and retained JUCE comparison consumers compatible; negotiate any larger/new wire version rather than silently enlarging old malformed-input acceptance. Real frontend serialization and native controller tests must meet at this boundary; fake bridges cannot qualify it.
 
+The subsequent bounded full-patch/profile contract and its initial executable
+proof are specified in `interactive-patches.md`. Its proposed budgets must be
+qualified through the owning tests before advertising a capability; no task or
+beta closure follows from negotiation alone.
+
 ### Save a bounded self-contained patch, resources and named values
 
 Use a new versioned container carrying the accepted patch, canonical resource manifest, owned encoded sample snapshots/content identities and named physical parameter values. Avoid base64 copies of large audio buffers; bound framing/counts/lengths before allocating or preparing. Validate content identity and the complete candidate before any accepted publication. Retain readable version 2 packaged-kit state and explicitly reject unsupported versions and incompatible surfaces.

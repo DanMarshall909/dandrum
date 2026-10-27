@@ -99,15 +99,624 @@ fn native_selection_commands_use_existing_bounds_without_browser_file_authority(
         json!([]),
     ))
     .unwrap();
-    wrong_version["version"] = json!(2);
-    assert!(matches!(
-        protocol.admit(&session, &wrong_version.to_string()),
-        Err(ProtocolError::UnsupportedVersion)
-    ));
+    for version in [0, 2, 3, u32::MAX] {
+        wrong_version["version"] = json!(version);
+        assert!(matches!(
+            protocol.admit(&session, &wrong_version.to_string()),
+            Err(ProtocolError::UnsupportedVersion)
+        ));
+    }
 }
 fn message(attachment: &str, request: &str, method: &str, args: serde_json::Value) -> String {
     json!({"version":1,"attachmentId":attachment,"requestId":request,"method":method,"args":args})
         .to_string()
+}
+
+#[test]
+fn native_negotiation_requires_the_retained_owner_and_explicit_execution() {
+    let mut session = session();
+    let mut protocol = protocol();
+    let connection = protocol.attach(&mut session).unwrap();
+    let frame = message(
+        &connection.attachment_id,
+        "1",
+        "getSamplerSession",
+        json!([]),
+    );
+    let Admission::New(mut read) = protocol.admit(&session, &frame).unwrap() else {
+        panic!("new read")
+    };
+    assert_eq!(
+        protocol.negotiate(&session, &read),
+        Err(ProtocolError::InvalidArguments)
+    );
+    let frame = message(
+        &connection.attachment_id,
+        "2",
+        "negotiateEditorProtocol",
+        json!([2]),
+    );
+    let Admission::New(negotiation) = protocol.admit(&session, &frame).unwrap() else {
+        panic!("new negotiation")
+    };
+    let snapshot = json!({"version":2,"attachmentId":connection.attachment_id,"requestId":"3","method":"getSamplerSession","args":[]}).to_string();
+    assert_eq!(
+        protocol.admit(&session, &snapshot).unwrap_err(),
+        ProtocolError::UnsupportedVersion,
+        "transport admission alone does not grant a profile"
+    );
+    let mut other_session = self::session();
+    let mut other = self::protocol();
+    let coincident = other.attach(&mut other_session).unwrap();
+    assert_eq!(coincident.attachment_id, connection.attachment_id);
+    assert_eq!(
+        other.negotiate(&other_session, &negotiation),
+        Err(ProtocolError::StaleAttachment)
+    );
+    assert_eq!(
+        other.admit(&other_session, &snapshot).unwrap_err(),
+        ProtocolError::UnsupportedVersion
+    );
+    let own_frame = message(
+        &coincident.attachment_id,
+        "1",
+        "negotiateEditorProtocol",
+        json!([2]),
+    );
+    let Admission::New(stale) = other.admit(&other_session, &own_frame).unwrap() else {
+        panic!("own negotiation")
+    };
+    other_session.detach(&stale.attachment).unwrap();
+    assert_eq!(
+        other.negotiate(&other_session, &stale),
+        Err(ProtocolError::StaleAttachment)
+    );
+    let reply: serde_json::Value =
+        serde_json::from_str(&protocol.negotiate(&session, &negotiation).unwrap()).unwrap();
+    assert_eq!(reply["version"], 1);
+    assert_eq!(reply["result"]["wireVersion"], 2);
+    assert!(matches!(
+        protocol.admit(&session, &snapshot),
+        Ok(Admission::New(_))
+    ));
+    let cross_version = json!({"version":2,"attachmentId":connection.attachment_id,"requestId":"1","method":"getSamplerSession","args":[]}).to_string();
+    assert_eq!(
+        protocol.admit(&session, &cross_version).unwrap_err(),
+        ProtocolError::ConflictingRequest
+    );
+    read.command = EditorCommand::NegotiateEditorProtocol;
+    assert_eq!(
+        protocol.negotiate(&session, &read),
+        Err(ProtocolError::StaleRequest),
+        "changing public request data cannot forge a retained native command"
+    );
+    assert_eq!(session.owner_snapshot(), connection.snapshot);
+    protocol
+        .detach(&mut session, &connection.attachment_id)
+        .unwrap();
+    assert_eq!(
+        protocol.negotiate(&session, &negotiation),
+        Err(ProtocolError::StaleAttachment)
+    );
+    let fresh = protocol.attach(&mut session).unwrap();
+    let frame = json!({"version":2,"attachmentId":fresh.attachment_id,"requestId":"1","method":"getSamplerSession","args":[]}).to_string();
+    assert_eq!(
+        protocol.admit(&session, &frame).unwrap_err(),
+        ProtocolError::UnsupportedVersion
+    );
+}
+
+#[test]
+fn invalid_profile_choices_and_version_two_small_methods_preserve_version_one() {
+    let mut session = session();
+    let mut protocol = protocol();
+    let connection = protocol.attach(&mut session).unwrap();
+    for (args, error) in [
+        (json!([]), ProtocolError::InvalidArguments),
+        (json!(["2"]), ProtocolError::InvalidArguments),
+        (json!([2, 2]), ProtocolError::InvalidArguments),
+        (json!([-1]), ProtocolError::InvalidArguments),
+        (json!([4294967296_u64]), ProtocolError::InvalidArguments),
+        (json!([1]), ProtocolError::UnsupportedVersion),
+        (json!([3]), ProtocolError::UnsupportedVersion),
+    ] {
+        assert_eq!(
+            protocol
+                .admit(
+                    &session,
+                    &message(
+                        &connection.attachment_id,
+                        "1",
+                        "negotiateEditorProtocol",
+                        args
+                    )
+                )
+                .unwrap_err(),
+            error
+        );
+    }
+    let Admission::New(negotiation) = protocol
+        .admit(
+            &session,
+            &message(
+                &connection.attachment_id,
+                "1",
+                "negotiateEditorProtocol",
+                json!([2]),
+            ),
+        )
+        .unwrap()
+    else {
+        panic!("new negotiation")
+    };
+    protocol.negotiate(&session, &negotiation).unwrap();
+    for method in [
+        "getParameterState",
+        "chooseSamplerFiles",
+        "noteHeartbeat",
+        "negotiateEditorProtocol",
+    ] {
+        let frame = json!({"version":2,"attachmentId":connection.attachment_id,"requestId":"2","method":method,"args":[]}).to_string();
+        assert_eq!(
+            protocol.admit(&session, &frame).unwrap_err(),
+            ProtocolError::UnsupportedVersion
+        );
+    }
+    assert!(matches!(
+        protocol.admit(
+            &session,
+            &message(
+                &connection.attachment_id,
+                "2",
+                "getParameterState",
+                json!([])
+            )
+        ),
+        Ok(Admission::New(_))
+    ));
+    assert_eq!(session.owner_snapshot(), connection.snapshot);
+    assert_preserved_sound_and_controls(&session);
+}
+
+#[test]
+fn negotiated_patch_frames_admit_real_larger_documents_and_retain_exact_replay_identity() {
+    let mut session = session();
+    let mut protocol = protocol();
+    let connection = protocol.attach(&mut session).unwrap();
+    let regions = (0..256)
+        .map(|index| {
+            format!(
+                "        - {{ id: library_{index}, start_frame: {}, end_frame: {} }}\n",
+                index * 32,
+                index * 32 + 16,
+            )
+        })
+        .collect::<String>();
+    let yaml = connection.snapshot.yaml.replacen(
+        "      regions:\n",
+        &format!("      regions:\n{regions}"),
+        1,
+    );
+    assert!(yaml.len() > 16_384 && yaml.len() < 65_536);
+    dandrum_engine::kernel::document::load_kernel_patch_str(&yaml)
+        .expect("meaningful larger sample-region document");
+    let patch_frame = |version, id: &str, yaml: &str| {
+        json!({
+        "version":version,"attachmentId":connection.attachment_id,"requestId":id,
+        "method":"prepareInstrumentSessionPatch","args":["1",connection.attachment_id,"41","0",yaml]
+    }).to_string()
+    };
+    assert_eq!(
+        protocol
+            .admit(&session, &patch_frame(1, "2", &yaml))
+            .unwrap_err(),
+        ProtocolError::Oversized
+    );
+    assert_eq!(
+        protocol
+            .admit(&session, &patch_frame(2, "2", &yaml))
+            .unwrap_err(),
+        ProtocolError::Oversized
+    );
+    let Admission::New(negotiation) = protocol
+        .admit(
+            &session,
+            &message(
+                &connection.attachment_id,
+                "1",
+                "negotiateEditorProtocol",
+                json!([2]),
+            ),
+        )
+        .unwrap()
+    else {
+        panic!("new negotiation")
+    };
+    protocol.negotiate(&session, &negotiation).unwrap();
+    let frame = patch_frame(2, "2", &yaml);
+    let admitted = protocol.admit(&session, &frame);
+    assert!(
+        matches!(&admitted, Ok(Admission::New(_))),
+        "a real negotiated patch above the old16KiB limit must reach native admission: {admitted:?}"
+    );
+    let Admission::New(request) = admitted.unwrap() else {
+        panic!("new patch")
+    };
+    assert_eq!(request.request_id, 2);
+    let EditorCommand::PrepareInstrumentSessionPatch { identity, document } = request.command
+    else {
+        panic!("typed patch")
+    };
+    assert_eq!(
+        identity.request_id.0, 41,
+        "session and transport cursors stay independent"
+    );
+    assert_eq!(&*document, yaml);
+    assert!(matches!(
+        protocol.admit(&session, &frame),
+        Ok(Admission::Duplicate { request_id: 2 })
+    ));
+    assert_eq!(
+        protocol
+            .admit(
+                &session,
+                &patch_frame(2, "2", &(yaml.clone() + "\n# different exact request\n"))
+            )
+            .unwrap_err(),
+        ProtocolError::ConflictingRequest
+    );
+    assert_eq!(session.owner_snapshot(), connection.snapshot);
+    assert_preserved_sound_and_controls(&session);
+}
+
+fn negotiated_protocol() -> (
+    InstrumentSession,
+    EditorProtocol,
+    dandrum_trigger_host::protocol::EditorConnection,
+) {
+    let mut session = session();
+    let mut protocol = protocol();
+    let connection = protocol.attach(&mut session).unwrap();
+    let Admission::New(request) = protocol
+        .admit(
+            &session,
+            &message(
+                &connection.attachment_id,
+                "1",
+                "negotiateEditorProtocol",
+                json!([2]),
+            ),
+        )
+        .unwrap()
+    else {
+        panic!("new negotiation")
+    };
+    protocol.negotiate(&session, &request).unwrap();
+    (session, protocol, connection)
+}
+
+fn full_patch_frame(
+    connection: &dandrum_trigger_host::protocol::EditorConnection,
+    id: &str,
+    document: &str,
+) -> String {
+    json!({"version":2,"attachmentId":connection.attachment_id,"requestId":id,
+        "method":"prepareInstrumentSessionPatch","args":[connection.instance_id,connection.attachment_id,id,"0",document]}).to_string()
+}
+
+#[test]
+fn negotiated_wire_document_and_reply_bounds_are_independent_of_version_one() {
+    let (session, mut protocol, connection) = negotiated_protocol();
+    let base = connection.snapshot.yaml.clone() + "\n#";
+    let document = format!("{base}{}", "x".repeat(65_536 - base.len()));
+    let oversize = full_patch_frame(&connection, "2", &(document.clone() + "x"));
+    assert!(
+        oversize.len() < 524_288,
+        "decoded document limit is not the wire limit"
+    );
+    assert_eq!(
+        protocol.admit(&session, &oversize).unwrap_err(),
+        ProtocolError::Oversized
+    );
+    let frame = full_patch_frame(&connection, "2", &document);
+    let exact = format!("{frame}{}", " ".repeat(524_288 - frame.len()));
+    assert_eq!(
+        protocol
+            .admit(&session, &(exact.clone() + " "))
+            .unwrap_err(),
+        ProtocolError::Oversized
+    );
+    assert!(
+        matches!(protocol.admit(&session, &exact), Ok(Admission::New(_))),
+        "an exact bounded frame with a bounded decoded document must be admitted"
+    );
+    let empty = protocol
+        .encode_reply(&session, &connection.attachment_id, "2", Ok(json!("")))
+        .unwrap();
+    let payload = "x".repeat(1_048_576 - empty.len());
+    let reply = protocol
+        .encode_reply(&session, &connection.attachment_id, "2", Ok(json!(payload)))
+        .unwrap();
+    assert_eq!(reply.len(), 1_048_576);
+    assert_eq!(
+        serde_json::from_str::<serde_json::Value>(&reply).unwrap()["version"],
+        2
+    );
+    assert_eq!(
+        protocol.encode_reply(
+            &session,
+            &connection.attachment_id,
+            "2",
+            Ok(json!(payload + "x"))
+        ),
+        Err(ProtocolError::Oversized)
+    );
+    assert_eq!(
+        protocol.encode_reply(
+            &session,
+            &connection.attachment_id,
+            "1",
+            Ok(json!("x".repeat(65_536)))
+        ),
+        Err(ProtocolError::Oversized),
+        "negotiation never enlarges a v1 reply"
+    );
+    assert_eq!(session.owner_snapshot(), connection.snapshot);
+}
+
+#[test]
+fn document_replay_byte_pressure_retires_old_documents_without_evicting_small_requests() {
+    let (session, mut protocol, connection) = negotiated_protocol();
+    let small = message(
+        &connection.attachment_id,
+        "2",
+        "getParameterState",
+        json!([]),
+    );
+    assert!(matches!(
+        protocol.admit(&session, &small),
+        Ok(Admission::New(_))
+    ));
+    let mut frames = Vec::new();
+    for id in 3..=7 {
+        let base = format!("{}\n# edit{id}:", connection.snapshot.yaml);
+        let document = format!("{base}{}", "x".repeat(65_536 - base.len()));
+        let frame = full_patch_frame(&connection, &id.to_string(), &document);
+        assert!(matches!(
+            protocol.admit(&session, &frame),
+            Ok(Admission::New(_))
+        ));
+        frames.push(frame);
+    }
+    assert_eq!(
+        protocol.admit(&session, &frames[0]).unwrap_err(),
+        ProtocolError::RetiredRequest,
+        "the fifth64KiB document retires the oldest document rather than retaining unbounded payloads"
+    );
+    assert!(
+        matches!(
+            protocol.admit(&session, &small),
+            Ok(Admission::Duplicate { request_id: 2 })
+        ),
+        "byte pressure does not evict a small request that owns no document bytes"
+    );
+    assert!(matches!(
+        protocol.admit(&session, &frames[4]),
+        Ok(Admission::Duplicate { request_id: 7 })
+    ));
+    assert_eq!(session.owner_snapshot(), connection.snapshot);
+}
+
+#[test]
+fn patch_argument_authority_and_utf8_limits_reject_without_consuming_the_request() {
+    let (session, mut protocol, connection) = negotiated_protocol();
+    for (args, error) in [
+        (json!([]), ProtocolError::InvalidArguments),
+        (
+            json!(["1", connection.attachment_id, "2", "0", 42]),
+            ProtocolError::InvalidArguments,
+        ),
+        (
+            json!(["1", connection.attachment_id, "2", "0", ""]),
+            ProtocolError::InvalidArguments,
+        ),
+        (
+            json!(["2", connection.attachment_id, "2", "0", "yaml"]),
+            ProtocolError::StaleAttachment,
+        ),
+        (
+            json!(["1", "2", "2", "0", "yaml"]),
+            ProtocolError::StaleAttachment,
+        ),
+        (
+            json!(["1", connection.attachment_id, "0", "0", "yaml"]),
+            ProtocolError::InvalidArguments,
+        ),
+        (
+            json!(["1", connection.attachment_id, "2", "1", "yaml"]),
+            ProtocolError::StaleRequest,
+        ),
+        (
+            json!(["1", connection.attachment_id, "2", "0", "é".repeat(32_769)]),
+            ProtocolError::Oversized,
+        ),
+    ] {
+        let frame = json!({"version":2,"attachmentId":connection.attachment_id,"requestId":"2",
+            "method":"prepareInstrumentSessionPatch","args":args})
+        .to_string();
+        assert_eq!(protocol.admit(&session, &frame).unwrap_err(), error);
+    }
+    // Framing admits bytes; YAML/resource validation belongs to the worker.
+    // These inputs distinguish UTF-8 byte length from characters and prove
+    // worst-case JSON escaping independently of the meaningful document test.
+    for (id, text) in [("2", "é".repeat(32_768)), ("3", "\u{0001}".repeat(65_536))] {
+        let frame = full_patch_frame(&connection, id, &text);
+        assert!(frame.len() < 524_288);
+        let Admission::New(request) = protocol.admit(&session, &frame).unwrap() else {
+            panic!("new bounded frame")
+        };
+        let EditorCommand::PrepareInstrumentSessionPatch { document, identity } = request.command
+        else {
+            panic!("typed patch")
+        };
+        assert_eq!(&*document, text);
+        assert_eq!(document.len(), 65_536);
+        assert_eq!(identity.instance_id, 1);
+        assert_eq!(identity.attachment_id.to_string(), connection.attachment_id);
+        assert_eq!(identity.request_id.0.to_string(), id);
+        assert_eq!(identity.expected_revision, 0);
+    }
+    assert_eq!(session.owner_snapshot(), connection.snapshot);
+    assert_preserved_sound_and_controls(&session);
+}
+
+#[test]
+fn rejected_reply_versions_require_the_same_live_attachment_and_request() {
+    let (mut session, mut protocol, connection) = negotiated_protocol();
+    let other = protocol.attach(&mut session).unwrap();
+    let frame = |attachment: &str, id: &str| {
+        json!({"version":2,"attachmentId":attachment,
+        "requestId":id,"method":"getSamplerSession","args":[1]})
+        .to_string()
+    };
+    let rejected = |protocol: &EditorProtocol, attachment: &str, id: &str, message: &str| {
+        serde_json::from_str::<serde_json::Value>(
+            &protocol
+                .encode_rejection(
+                    &session,
+                    attachment,
+                    id,
+                    message,
+                    ProtocolError::InvalidArguments,
+                )
+                .unwrap(),
+        )
+        .unwrap()
+    };
+    let message = frame(&connection.attachment_id, "2");
+    assert_eq!(
+        rejected(&protocol, &connection.attachment_id, "2", &message)["version"],
+        2
+    );
+    assert_eq!(
+        rejected(&protocol, &connection.attachment_id, "3", &message)["version"],
+        1,
+        "another request's header does not select v2"
+    );
+    assert_eq!(
+        rejected(&protocol, &other.attachment_id, "2", &message)["version"],
+        1,
+        "another attachment's header does not select v2"
+    );
+    assert_eq!(
+        rejected(
+            &protocol,
+            &other.attachment_id,
+            "2",
+            &frame(&other.attachment_id, "2")
+        )["version"],
+        1,
+        "an unnegotiated attachment stays v1"
+    );
+    let mut conflict: serde_json::Value =
+        serde_json::from_str(&frame(&connection.attachment_id, "1")).unwrap();
+    conflict["args"] = json!([]);
+    let conflict = conflict.to_string();
+    assert_eq!(
+        protocol.admit(&session, &conflict).unwrap_err(),
+        ProtocolError::ConflictingRequest
+    );
+    assert_eq!(
+        rejected(&protocol, &connection.attachment_id, "1", &conflict)["version"],
+        2,
+        "rejection uses the permitted incoming profile, not an old retained v1 command"
+    );
+    assert_eq!(
+        protocol.encode_rejection(
+            &session,
+            &connection.attachment_id,
+            "0",
+            &message,
+            ProtocolError::Malformed
+        ),
+        Err(ProtocolError::InvalidArguments)
+    );
+    assert_eq!(
+        protocol.encode_rejection(
+            &self::session(),
+            &connection.attachment_id,
+            "2",
+            &message,
+            ProtocolError::Malformed
+        ),
+        Err(ProtocolError::StaleAttachment)
+    );
+    let valid = json!({"version":2,"attachmentId":connection.attachment_id,"requestId":"2","method":"getSamplerSession","args":[]}).to_string();
+    assert!(
+        matches!(protocol.admit(&session, &valid), Ok(Admission::New(_))),
+        "encoding rejection never reserves transport admission"
+    );
+    protocol
+        .detach(&mut session, &connection.attachment_id)
+        .unwrap();
+    assert_eq!(
+        protocol.encode_rejection(
+            &session,
+            &connection.attachment_id,
+            "2",
+            &message,
+            ProtocolError::Malformed
+        ),
+        Err(ProtocolError::StaleAttachment)
+    );
+    assert_eq!(session.owner_snapshot(), connection.snapshot);
+}
+
+#[test]
+fn larger_messages_cannot_borrow_a_profile_from_unmatched_headers_or_native_sessions() {
+    let (mut session, mut protocol, connection) = negotiated_protocol();
+    let document = connection.snapshot.yaml.clone() + "\n#" + "x".repeat(16_384).as_str();
+    let frame: serde_json::Value =
+        serde_json::from_str(&full_patch_frame(&connection, "2", &document)).unwrap();
+    for (field, value) in [
+        ("version", json!(1)),
+        ("version", json!(3)),
+        ("attachmentId", json!("0")),
+        ("attachmentId", json!("01")),
+        ("attachmentId", json!("99")),
+        ("method", json!("noteHeartbeat")),
+    ] {
+        let mut malformed = frame.clone();
+        malformed[field] = value;
+        assert_eq!(
+            protocol
+                .admit(&session, &malformed.to_string())
+                .unwrap_err(),
+            ProtocolError::Oversized
+        );
+    }
+    let frame = frame.to_string();
+    assert_eq!(
+        protocol.admit(&self::session(), &frame).unwrap_err(),
+        ProtocolError::Oversized
+    );
+    let other = protocol.attach(&mut session).unwrap();
+    let mut foreign: serde_json::Value = serde_json::from_str(&frame).unwrap();
+    foreign["attachmentId"] = json!(other.attachment_id);
+    assert_eq!(
+        protocol.admit(&session, &foreign.to_string()).unwrap_err(),
+        ProtocolError::Oversized
+    );
+    let Admission::New(request) = protocol.admit(&session, &frame).unwrap() else {
+        panic!("own negotiated frame")
+    };
+    session.detach(&request.attachment).unwrap();
+    assert_eq!(
+        protocol.admit(&session, &frame).unwrap_err(),
+        ProtocolError::Oversized
+    );
+    assert_eq!(session.owner_snapshot(), connection.snapshot);
+    assert_preserved_sound_and_controls(&session);
 }
 #[test]
 fn versioned_snapshot_requests_are_typed_and_invalid_envelopes_preserve_accepted_state() {
@@ -319,7 +928,14 @@ fn supported_methods_preserve_distinct_session_job_parameter_and_note_values() {
         (
             "undoInstrumentSession",
             json!(["1", "1", "17", "0"]),
-            EditorCommand::UndoInstrumentSession { identity },
+            EditorCommand::UndoInstrumentSession {
+                identity: identity.clone(),
+            },
+        ),
+        (
+            "redoInstrumentSession",
+            json!(["1", "1", "17", "0"]),
+            EditorCommand::RedoInstrumentSession { identity },
         ),
         (
             "getInstrumentSessionJobStatus",
@@ -562,6 +1178,36 @@ fn invalid_method_arguments_and_stale_session_intents_cannot_change_controls_or_
             "undoInstrumentSession",
             json!(["1", "1", "17", "00"]),
             ProtocolError::InvalidArguments,
+        ),
+        (
+            "redoInstrumentSession",
+            json!(["1", "1", "17"]),
+            ProtocolError::InvalidArguments,
+        ),
+        (
+            "redoInstrumentSession",
+            json!(["1", "1", "17", "1"]),
+            ProtocolError::StaleRequest,
+        ),
+        (
+            "redoInstrumentSession",
+            json!(["1", "1", "0", "0"]),
+            ProtocolError::InvalidArguments,
+        ),
+        (
+            "redoInstrumentSession",
+            json!(["1", "1", "17", "00"]),
+            ProtocolError::InvalidArguments,
+        ),
+        (
+            "redoInstrumentSession",
+            json!(["2", "1", "17", "0"]),
+            ProtocolError::StaleAttachment,
+        ),
+        (
+            "redoInstrumentSession",
+            json!(["1", "2", "17", "0"]),
+            ProtocolError::StaleAttachment,
         ),
         (
             "getInstrumentSessionJobStatus",

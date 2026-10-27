@@ -8,7 +8,7 @@ use dandrum_trigger_host::{
         NativeSelectionPermit, ParameterController, ParameterError, ParameterReply, ParameterValue,
         SessionJobProgress, SessionServiceWake,
     },
-    protocol::{Admission, EditorCommand, MESSAGE_BYTES_LIMIT, ProtocolError},
+    protocol::{Admission, EditorCommand, PATCH_MESSAGE_BYTES_LIMIT, ProtocolError},
     samples::{NativeSampleFile, SampleError},
 };
 use std::{
@@ -374,7 +374,7 @@ impl Core {
         }
     }
     fn receive(self: &Rc<Self>, attachment: &str, message: &str) {
-        if message.len() > MESSAGE_BYTES_LIMIT {
+        if message.len() > PATCH_MESSAGE_BYTES_LIMIT {
             return;
         }
         let child = {
@@ -389,6 +389,14 @@ impl Core {
             };
             child
         };
+        {
+            let Ok(controller) = self.controller.try_borrow() else {
+                return;
+            };
+            if !controller.editor_message_fits_limits(attachment, message) {
+                return;
+            }
+        }
         // Only a bounded canonical ID in this current attachment may receive a reply.
         let Ok(frame) = serde_json::from_str::<serde_json::Value>(message) else {
             return;
@@ -535,7 +543,17 @@ fn dispatch(
 ) -> Result<String, ParameterError> {
     let result = match controller.admit(message) {
         Ok(Admission::New(request)) => match request.command {
-            EditorCommand::GetSamplerSession => return controller.sampler_session_reply(&request),
+            EditorCommand::NegotiateEditorProtocol => {
+                match controller.negotiate_editor_protocol(&request) {
+                    Ok(reply) => return Ok(reply),
+                    Err(error) => Err(command_error(error)),
+                }
+            }
+            EditorCommand::GetSamplerSession => match controller.sampler_session_reply(&request) {
+                Ok(reply) => return Ok(reply),
+                Err(ParameterError::Protocol(error)) => Err(error),
+                Err(error) => Err(command_error(error)),
+            },
             EditorCommand::GetSamplerSelectionStatus { .. }
             | EditorCommand::ReleaseSamplerSelection { .. } => {
                 return controller.sample_selection_reply(&request);
@@ -547,7 +565,10 @@ fn dispatch(
                     Err(error) => Err(command_error(error)),
                 }
             }
-            EditorCommand::SetZoneKeyRange { .. } | EditorCommand::UndoInstrumentSession { .. } => {
+            EditorCommand::SetZoneKeyRange { .. }
+            | EditorCommand::UndoInstrumentSession { .. }
+            | EditorCommand::RedoInstrumentSession { .. }
+            | EditorCommand::PrepareInstrumentSessionPatch { .. } => {
                 match controller.admit_session_command(&request) {
                     Ok(reply) => return Ok(reply),
                     Err(error) => Err(command_error(error)),
@@ -574,7 +595,10 @@ fn dispatch(
         Err(ParameterError::Protocol(error)) => Err(error),
         Err(_) => Err(ProtocolError::InvalidArguments),
     };
-    controller.encode_editor_reply(attachment, request_id, result)
+    match result {
+        Ok(value) => controller.encode_editor_reply(attachment, request_id, Ok(value)),
+        Err(error) => controller.encode_editor_rejection(attachment, request_id, message, error),
+    }
 }
 
 fn parameter_values(parameters: Vec<ParameterValue>) -> serde_json::Value {
@@ -605,6 +629,9 @@ fn parameter_reply(reply: ParameterReply) -> serde_json::Value {
 fn command_error(error: ParameterError) -> ProtocolError {
     match error {
         ParameterError::QueueFull | ParameterError::SessionWorkerBusy => ProtocolError::Busy,
+        ParameterError::Session(dandrum_trigger_host::SessionError::StaleRequest) => {
+            ProtocolError::StaleRequest
+        }
         _ => ProtocolError::CommandRejected,
     }
 }

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "resources": {
     "memory": {
       "reserveMiBPerActiveWorktree": 4096,
@@ -15,6 +15,18 @@
         "minimumAvailableMiB": 17861,
         "peakTaskSwapMiB": 0,
         "notes": "Additional completed run evidence: docs/resource-measurements/2026-09-29-rust-coverage-repeat.json, docs/resource-measurements/2026-09-29-rust-coverage-final.json, docs/resource-measurements/2026-09-29-rust-coverage-round3.json, docs/resource-measurements/2026-09-29-rust-coverage-round4.json, docs/resource-measurements/2026-09-29-rust-coverage-round5.json, and docs/resource-measurements/2026-09-29-rust-coverage-round6.json."
+      }
+    },
+    "disk": {
+      "workloads": {
+        "trigger-beta-verification": {
+          "reserveMiB": 8192,
+          "outputGrowthMiB": 8192,
+          "tempGrowthMiB": 512,
+          "retainedBudgetMiB": 65536,
+          "basis": "estimated",
+          "estimateReason": "One serial Trigger Rust test, LLVM coverage or native verification build, using persistent disk-backed Cargo caches. Allows 8 GiB cache/output growth plus 512 MiB scratch and preserves an 8 GiB free-space reserve. Retained budget includes ordinary, LLVM and native build outputs; reusable caches require explicit direction before removal."
+        }
       }
     }
   }

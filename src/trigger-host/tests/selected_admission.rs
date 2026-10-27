@@ -107,6 +107,211 @@ fn file() -> NativeSampleFile {
 }
 
 #[test]
+fn native_view_framing_uses_only_its_live_negotiated_profile_without_admitting_work() {
+    use dandrum_trigger_host::protocol::{MESSAGE_BYTES_LIMIT, PATCH_MESSAGE_BYTES_LIMIT};
+    use serde_json::json;
+
+    let mut fixture = Fixture::with_worker(false);
+    let before = fixture.state();
+    let attachment = fixture.connection.attachment_id.clone();
+    let frame = |version, owner: &str, method: &str, bytes| {
+        let mut text = json!({"version":version,"attachmentId":owner,
+            "requestId":"2","method":method,"args":[]})
+        .to_string();
+        text.extend(std::iter::repeat_n(' ', bytes - text.len()));
+        text
+    };
+    let large = frame(2, &attachment, "getSamplerSession", MESSAGE_BYTES_LIMIT + 1);
+    assert!(
+        fixture
+            .controller
+            .editor_message_fits_limits(&attachment, &" ".repeat(MESSAGE_BYTES_LIMIT))
+    );
+    assert!(
+        !fixture
+            .controller
+            .editor_message_fits_limits(&attachment, &large)
+    );
+    let negotiation = fixture.request("negotiateEditorProtocol", json!([2]));
+    // Receiving the request alone does not activate a larger framing profile.
+    assert!(
+        !fixture
+            .controller
+            .editor_message_fits_limits(&attachment, &large)
+    );
+    fixture
+        .controller
+        .negotiate_editor_protocol(&negotiation)
+        .unwrap();
+    let other = fixture.controller.attach_editor().unwrap();
+    for method in ["getSamplerSession", "prepareInstrumentSessionPatch"] {
+        let maximum = frame(2, &attachment, method, PATCH_MESSAGE_BYTES_LIMIT);
+        assert!(
+            fixture
+                .controller
+                .editor_message_fits_limits(&attachment, &maximum)
+        );
+        assert!(
+            !fixture
+                .controller
+                .editor_message_fits_limits(&attachment, &(maximum + " "))
+        );
+    }
+    for (version, owner, method) in [
+        (1, attachment.as_str(), "getSamplerSession"),
+        (3, attachment.as_str(), "getSamplerSession"),
+        (2, attachment.as_str(), "getInstrumentSessionJobStatus"),
+        (2, other.attachment_id.as_str(), "getSamplerSession"),
+        (2, "999", "getSamplerSession"),
+    ] {
+        assert!(!fixture.controller.editor_message_fits_limits(
+            &attachment,
+            &frame(version, owner, method, MESSAGE_BYTES_LIMIT + 1)
+        ));
+    }
+    assert!(
+        !fixture
+            .controller
+            .editor_message_fits_limits(&other.attachment_id, &large)
+    );
+    assert!(
+        !fixture
+            .controller
+            .editor_message_fits_limits(&attachment, &" ".repeat(MESSAGE_BYTES_LIMIT + 1))
+    );
+    // The framing check neither retains a transport request nor advances a
+    // native edit cursor. Full admission still accepts this same request ID.
+    assert!(matches!(
+        fixture.controller.admit(&large),
+        Ok(Admission::New(_))
+    ));
+    assert_eq!(fixture.controller.session().next_request_id().unwrap().0, 1);
+    assert_eq!(fixture.state(), before);
+    fixture.controller.detach_editor(&attachment).unwrap();
+    assert!(
+        !fixture
+            .controller
+            .editor_message_fits_limits(&attachment, &large)
+    );
+    let fresh = fixture.controller.attach_editor().unwrap();
+    let unnegotiated = frame(
+        2,
+        &fresh.attachment_id,
+        "getSamplerSession",
+        MESSAGE_BYTES_LIMIT + 1,
+    );
+    assert!(
+        !fixture
+            .controller
+            .editor_message_fits_limits(&fresh.attachment_id, &unnegotiated)
+    );
+    assert_eq!(fixture.state(), before);
+}
+
+#[test]
+fn repeated_yaml_content_is_rejected_with_bounded_admission_memory_and_preserved_audio() {
+    use dandrum_trigger_host::parameters::{ParameterError, SessionJobProgress};
+    use dandrum_trigger_host::runtime::{ControlEvent, TimedEvent};
+    use serde_json::json;
+
+    let mut fixture = Fixture::new();
+    let original = fixture.controller.session().owner_snapshot().yaml;
+    let before = fixture.state();
+    let negotiation = fixture.request("negotiateEditorProtocol", json!([2]));
+    fixture
+        .controller
+        .negotiate_editor_protocol(&negotiation)
+        .unwrap();
+    let request = |fixture: &mut Fixture, document: &str| {
+        let frame = json!({"version":2,"attachmentId":fixture.connection.attachment_id,
+            "requestId":fixture.next_request.to_string(),"method":"prepareInstrumentSessionPatch",
+            "args":["113",fixture.connection.attachment_id,"41","0",document]})
+        .to_string();
+        fixture.next_request += 1;
+        let Admission::New(request) = fixture.controller.admit(&frame).unwrap() else {
+            panic!("fresh patch transport")
+        };
+        request
+    };
+    let warm = request(&mut fixture, "metadata: { name: true }");
+    assert!(fixture.controller.admit_session_command(&warm).is_err());
+    // A small source with repeated ordinary YAML content must be rejected
+    // before constructing all the expanded owned strings and schema copies.
+    let repeated = format!(
+        "value: &text '{}'\ncopies: [{}]\n",
+        "x".repeat(16_384),
+        std::iter::repeat_n("*text", 128)
+            .collect::<Vec<_>>()
+            .join(",")
+    );
+    assert!(repeated.len() < 18_000);
+    let candidate = request(&mut fixture, &repeated);
+    let mut result = None;
+    let allocation = allocation_counter::measure(|| {
+        result = Some(fixture.controller.admit_session_command(&candidate));
+    });
+    assert!(matches!(
+        result.unwrap(),
+        Err(ParameterError::Session(
+            dandrum_instrument_session::SessionError::InvalidDocument(_)
+        ))
+    ));
+    eprintln!(
+        "REPEATED_YAML admission peak={} bytes",
+        allocation.bytes_max
+    );
+    assert!(
+        allocation.bytes_max < 1_048_576,
+        "bounded rejected admission must not allocate the complete repeated tree: {allocation:?}"
+    );
+    assert_eq!(
+        fixture.controller.service_session_jobs().unwrap(),
+        SessionJobProgress::Idle
+    );
+    assert_eq!(fixture.controller.session().next_request_id().unwrap().0, 1);
+    assert_eq!(fixture.state(), before);
+
+    // Normal aliases and literal punctuation remain usable in a valid patch.
+    let normal = original
+        .replace("Advanced Drum Kit", "'Kit & *'")
+        .replace("channels: 2", "channels: *stereo")
+        .replacen("channels: *stereo", "channels: &stereo 2", 1);
+    assert!(normal.contains("channels: *stereo"));
+    let candidate = request(&mut fixture, &normal);
+    fixture
+        .controller
+        .admit_session_command(&candidate)
+        .unwrap();
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let progress = fixture.controller.service_session_jobs().unwrap();
+        if fixture.controller.session().owner_snapshot().revision == 1 {
+            break;
+        }
+        assert_ne!(progress, SessionJobProgress::Idle);
+        assert!(Instant::now() < deadline);
+        std::thread::sleep(Duration::from_millis(2));
+    }
+    assert_eq!(fixture.controller.session().owner_snapshot().yaml, normal);
+    let (mut left, mut right) = ([123.0; 16], [123.0; 16]);
+    fixture
+        ._audio
+        .process_events(
+            &mut left,
+            &mut right,
+            &[TimedEvent {
+                frame_offset: 0,
+                event: ControlEvent::NoteOn {
+                    note: 36,
+                    velocity: 127,
+                },
+            }],
+        )
+        .unwrap();
+    assert_eq!((left[0], right[0]), (-0.5, -0.5));
+}
+
+#[test]
 fn rejected_file_count_and_decode_preserve_state_and_allow_later_selection() {
     let mut fixture = Fixture::new();
     let before = fixture.state();
@@ -430,4 +635,125 @@ fn rejected_native_acquisition_is_bounded_and_a_later_selection_remains_possible
     let (permit, _) = fixture.controller.begin_sample_selection(&request).unwrap();
     fixture.controller.cancel_sample_selection(&permit).unwrap();
     assert_eq!(fixture.status("2")["phase"], "cancelled");
+}
+
+#[test]
+fn failed_patch_retry_recovers_after_its_selected_content_is_released() {
+    use serde_json::{Value, json};
+    let mut fixture = Fixture::new();
+    let before = fixture.state();
+    let choose = fixture.request("chooseSamplerFiles", json!([]));
+    let (permit, _) = fixture.controller.begin_sample_selection(&choose).unwrap();
+    fixture
+        .controller
+        .admit_selected_files(&permit, vec![file()])
+        .unwrap();
+    let deadline = Instant::now() + Duration::from_secs(5);
+    let selected = loop {
+        fixture.controller.service_session_jobs().unwrap();
+        let status = fixture.status("1");
+        if status["phase"] == "ready" {
+            break status;
+        }
+        assert_eq!(status["phase"], "preparing");
+        assert!(Instant::now() < deadline);
+        std::thread::sleep(Duration::from_millis(2));
+    };
+    let resource = selected["files"][0]["resourceId"].as_str().unwrap();
+    // This real 2-frame source cannot satisfy the kit's authored 12,000-frame
+    // kick region. Preparation must fail without changing accepted state.
+    let document = fixture
+        .controller
+        .session()
+        .owner_snapshot()
+        .yaml
+        .replace("assets/advanced-drums.wav", resource);
+    let negotiation = fixture.request("negotiateEditorProtocol", json!([2]));
+    fixture
+        .controller
+        .negotiate_editor_protocol(&negotiation)
+        .unwrap();
+    let patch_request = |fixture: &mut Fixture, job: &str, document: &str| {
+        let frame = json!({"version":2,"attachmentId":fixture.connection.attachment_id,
+            "requestId":fixture.next_request.to_string(),"method":"prepareInstrumentSessionPatch",
+            "args":["113",fixture.connection.attachment_id,job,"0",document]})
+        .to_string();
+        fixture.next_request += 1;
+        let Admission::New(request) = fixture.controller.admit(&frame).unwrap() else {
+            panic!("fresh transport");
+        };
+        request
+    };
+    let request = patch_request(&mut fixture, "41", &document);
+    fixture.controller.admit_session_command(&request).unwrap();
+    let deadline = Instant::now() + Duration::from_secs(5);
+    let failed = loop {
+        fixture.controller.service_session_jobs().unwrap();
+        let query = fixture.request("getInstrumentSessionJobStatus", json!(["41"]));
+        let status: Value =
+            serde_json::from_str(&fixture.controller.session_job_status(&query).unwrap()).unwrap();
+        if status["result"]["state"] == "failed" {
+            break status["result"].clone();
+        }
+        assert_eq!(status["result"]["state"], "running");
+        assert!(Instant::now() < deadline);
+        std::thread::sleep(Duration::from_millis(2));
+    };
+    assert_eq!(fixture.state(), before);
+    let release = fixture.request("releaseSamplerSelection", json!(["1"]));
+    fixture.controller.sample_selection_reply(&release).unwrap();
+    drop(selected);
+    // A new chooser owns unadmitted selection work, not the session's retained
+    // terminal outcomes. Exact retries must remain recoverable while it is open.
+    let choose = fixture.request("chooseSamplerFiles", json!([]));
+    let (chooser, reply) = fixture.controller.begin_sample_selection(&choose).unwrap();
+    let reply: Value = serde_json::from_str(&reply).unwrap();
+    let choosing = reply["result"]["selectionId"].as_str().unwrap();
+    assert_eq!(fixture.status(choosing)["phase"], "choosing");
+    let retry = patch_request(&mut fixture, "41", &document);
+    let recovered = fixture.controller.admit_session_command(&retry);
+    assert!(
+        recovered.is_ok(),
+        "exact failed request retry must recover during another chooser without re-acquiring released content: {recovered:?}"
+    );
+    assert_eq!(
+        fixture.controller.service_session_jobs().unwrap(),
+        dandrum_trigger_host::parameters::SessionJobProgress::Idle
+    );
+    let query = fixture.request("getInstrumentSessionJobStatus", json!(["41"]));
+    let status: Value =
+        serde_json::from_str(&fixture.controller.session_job_status(&query).unwrap()).unwrap();
+    assert_eq!(status["result"], failed);
+    let conflict = patch_request(&mut fixture, "41", &(document.clone() + "\n"));
+    assert!(matches!(
+        fixture.controller.admit_session_command(&conflict),
+        Err(dandrum_trigger_host::parameters::ParameterError::Session(
+            dandrum_instrument_session::SessionError::ConflictingRequest
+        ))
+    ));
+    let busy = patch_request(&mut fixture, "42", &document);
+    assert!(matches!(
+        fixture.controller.admit_session_command(&busy),
+        Err(dandrum_trigger_host::parameters::ParameterError::SessionWorkerBusy)
+    ));
+    assert_eq!(fixture.status(choosing)["phase"], "choosing");
+    assert_eq!(
+        fixture.controller.session().next_request_id().unwrap().0,
+        42
+    );
+    assert_eq!(fixture.state(), before);
+    fixture
+        .controller
+        .cancel_sample_selection(&chooser)
+        .unwrap();
+    let missing = patch_request(&mut fixture, "42", &document);
+    assert!(
+        fixture.controller.admit_session_command(&missing).is_err(),
+        "new work still requires live selected authority"
+    );
+    assert_eq!(
+        fixture.controller.session().next_request_id().unwrap().0,
+        42
+    );
+    assert_eq!(fixture.state(), before);
 }

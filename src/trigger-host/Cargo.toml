@@ -13,6 +13,7 @@ dandrum_instrument_session = { path = "../instrument-session" }
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+serde_yaml = "=0.9.34"
 rtrb = "=0.3.2"
 
 [dev-dependencies]

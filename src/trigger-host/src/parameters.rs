@@ -386,23 +386,24 @@ impl ParameterController {
         use crate::state::{PRODUCT_ID, RESOURCE_ID, SavedParameter, SavedState};
         let snapshot = self.host.session().owner_snapshot();
         let values = self.runtime.snapshot_state_values();
-        crate::state::write(
-            &SavedState {
-                version: 2,
-                product: PRODUCT_ID.into(),
-                resource: RESOURCE_ID.into(),
-                document: snapshot.yaml,
-                parameters: self
-                    .parameters
-                    .iter()
-                    .map(|parameter| SavedParameter {
-                        id: parameter.id.clone(),
-                        value: values[parameter.root_index],
-                    })
-                    .collect(),
-            },
-            output,
-        )
+        let state = SavedState {
+            version: 2,
+            product: PRODUCT_ID.into(),
+            resource: RESOURCE_ID.into(),
+            document: snapshot.yaml,
+            parameters: self
+                .parameters
+                .iter()
+                .map(|parameter| SavedParameter {
+                    id: parameter.id.clone(),
+                    value: values[parameter.root_index],
+                })
+                .collect(),
+        };
+        // Interactive documents can exceed the legacy codec's resource/default
+        // contract. Refuse before writing a state a fresh instance cannot load.
+        state.values_for(&self.parameters, &self.runtime)?;
+        crate::state::write(&state, output)
     }
     /// Validate and prepare complete bounded native state before publication.
     /// Held gestures/outbound automation return Busy so no promised End is lost.
@@ -830,9 +831,25 @@ impl ParameterController {
         });
         Ok(connection)
     }
+    /// Framing gate for a native view. Small frames still require full admission;
+    /// only a live negotiated attachment may use the larger patch profile.
+    pub fn editor_message_fits_limits(&self, attachment: &str, message: &str) -> bool {
+        self.protocol
+            .message_fits_limits(self.host.session(), Some(attachment), message)
+    }
+
     pub fn admit(&mut self, message: &str) -> Result<Admission, ParameterError> {
         self.protocol
             .admit(self.host.session(), message)
+            .map_err(ParameterError::Protocol)
+    }
+
+    pub fn negotiate_editor_protocol(
+        &mut self,
+        request: &AdmittedRequest,
+    ) -> Result<String, ParameterError> {
+        self.protocol
+            .negotiate(self.host.session(), request)
             .map_err(ParameterError::Protocol)
     }
 
@@ -848,6 +865,24 @@ impl ParameterController {
             .map_err(ParameterError::Protocol)
     }
 
+    pub fn encode_editor_rejection(
+        &self,
+        attachment_id: &str,
+        request_id: &str,
+        message: &str,
+        error: ProtocolError,
+    ) -> Result<String, ParameterError> {
+        self.protocol
+            .encode_rejection(
+                self.host.session(),
+                attachment_id,
+                request_id,
+                message,
+                error,
+            )
+            .map_err(ParameterError::Protocol)
+    }
+
     /// Encode a bounded event off audio with the live editor's retained sequence.
     pub fn encode_editor_event(
         &mut self,
@@ -860,105 +895,42 @@ impl ParameterController {
             .map_err(ParameterError::Protocol)
     }
 
-    /// Project the accepted native session off audio and encode one bounded v1
-    /// reply. This read reuses its admitted editor and never changes history.
+    /// Project the accepted native session off audio in its admitted wire
+    /// version. This read reuses its editor and never changes history.
     pub fn sampler_session_reply(
         &self,
         request: &AdmittedRequest,
     ) -> Result<String, ParameterError> {
-        use dandrum_instrument_session::{
-            ACTIVE_REQUEST_LIMIT, ATTACHMENT_LIMIT, CONNECTION_CONTRACT_VERSION, HISTORY_LIMIT,
-            OUTCOME_LIMIT,
-        };
-        use serde_json::{Value, json};
         let context = self
             .protocol
             .admitted_context(self.host.session(), request)
             .map_err(ParameterError::Protocol)?;
-        let snapshot = context.snapshot;
-        let instance_id = context.instance_id.to_string();
         if request.command != EditorCommand::GetSamplerSession {
             return Err(ParameterError::UnsupportedCommand);
         }
-        let source_path = self
-            .host
-            .resource_root()
-            .join(crate::ADVANCED_DRUM_KIT_DOCUMENT);
-        let source_path = source_path.to_str().ok_or_else(|| {
-            ParameterError::Host("Trigger resource path cannot be represented as UTF-8".into())
-        })?;
-        let patch =
-            load_kernel_patch_str(&snapshot.yaml).expect("accepted session document is valid");
-        let state = self.parameter_state();
-        let parameters = self.parameters.iter().zip(&state.parameters).map(|(parameter, current)| {
-            let alias = patch.preset_surface().parameters().iter().find(|alias| alias.name() == parameter.id)
-                .expect("accepted Trigger surface retains public aliases");
-            let group = patch.root().ports().iter().find(|port| port.name() == alias.port_name())
-                .and_then(|port| match port.internal_targets() { [target] => Some(target), _ => None })
-                .and_then(|target| patch.root().nodes().iter().find(|node| node.id() == target.node())
-                    .filter(|node| node.definition_ref() == "sample_map_player").map(|_| target))
-                .and_then(|target| target.port().strip_prefix("group_"))
-                .and_then(|suffix| suffix.split_once('_'))
-                .and_then(|(group, _)| group.parse::<u8>().ok()).filter(|group| *group > 0);
-            let mut value = json!({"id":parameter.id,"name":parameter.id,"normalisedValue":current.value,
-                "normalisedDefaultValue":parameter.project(parameter.physical_default).value,
-                "minValue":parameter.physical_min,"maxValue":parameter.physical_max,
-                "scope":if group.is_some() {"sampleGroup"} else {"instrument"}});
-            if let Some(group) = group { value["controlGroup"] = group.into(); }
-            value
-        }).collect::<Vec<_>>();
-        // Omit absent authored optionals, retaining the comparison DTO's default
-        // semantics without manufacturing values or exposing PCM.
-        let present = |mut value: Value| {
-            value
-                .as_object_mut()
-                .expect("DTO is an object")
-                .retain(|_, value| !value.is_null());
-            value
+        let projection = SamplerProjection {
+            source_path: self
+                .host
+                .resource_root()
+                .join(crate::ADVANCED_DRUM_KIT_DOCUMENT),
+            parameters: &self.parameters,
+            state: self.parameter_state(),
+            instance_id: context.instance_id.to_string(),
+            selections: self.selections.summaries(),
+            next_request_id: self
+                .host
+                .session()
+                .next_request_id()
+                .map_err(ProtocolError::Session)
+                .map_err(ParameterError::Protocol)?
+                .0
+                .to_string(),
         };
-        let assets = self.host.session().prepared().sample_assets();
-        let sources = assets.sources().iter().map(|source| {
-            let regions = source.declaration().regions.iter().map(|region| {
-                let loop_settings = region.loop_settings.as_ref().map(|settings| json!({
-                    "mode":settings.mode,"startFrame":settings.start_frame.to_string(),
-                    "endFrame":settings.end_frame.to_string(),"crossfadeMs":settings.crossfade_ms.unwrap_or(0.0)}));
-                present(json!({"id":region.id,"startFrame":region.start_frame.to_string(),"endFrame":region.end_frame.to_string(),
-                    "rootNote":region.root_note,"gainDb":region.gain_db,"pan":region.pan,"reverse":region.reverse,
-                    "fadeInMs":region.fade_in_ms.unwrap_or(0.0),"fadeOutMs":region.fade_out_ms.unwrap_or(0.0),"loop":loop_settings}))
-            }).collect::<Vec<_>>();
-            json!({"id":source.id(),"sampleRateHz":source.sample().sample_rate_hz(),
-                "channelCount":source.sample().source_channel_count(),"frameCount":source.sample().frame_count().to_string(),"regions":regions})
-        }).collect::<Vec<_>>();
-        let maps = assets.maps().iter().map(|map| {
-            let prepared = assets.map_by_id(&map.id).expect("prepared map is indexed");
-            let zones = prepared.zones().iter().map(|zone| {
-                let declaration = zone.declaration();
-                present(json!({"id":declaration.id.as_deref().unwrap_or(""),
-                    "sourceIndex":zone.source_index(),"regionIndex":zone.region_index(),
-                    "startFrame":zone.effective_region().start_frame.to_string(),"endFrame":zone.effective_region().end_frame.to_string(),
-                    "keyLow":declaration.key_range[0],"keyHigh":declaration.key_range[1],
-                    "velocityLow":declaration.velocity_range[0],"velocityHigh":declaration.velocity_range[1],
-                    "roundRobinGroup":declaration.round_robin_group,"chokeGroup":declaration.choke_group,
-                    "controlGroup":declaration.control_group,"weight":declaration.weight.unwrap_or(1),
-                    "gainDb":declaration.gain_db,"pan":declaration.pan,"pitchSemitones":declaration.pitch_semitones}))
-            }).collect::<Vec<_>>();
-            json!({"id":map.id,"selectionMode":prepared.selection_mode().unwrap_or("first_match"),"selectionSeed":prepared.selection_seed().to_string(),"zones":zones})
-        }).collect::<Vec<_>>();
-        let next_request = self
-            .host
-            .session()
-            .next_request_id()
-            .map_err(ProtocolError::Session)
-            .map_err(ParameterError::Protocol)?;
-        let result = json!({"yaml":snapshot.yaml,
-            "sourcePath":source_path,
-            "sampleSelections":self.selections.summaries(),
-            "document":{"generation":state.generation,"instrumentId":patch.instrument().map(|identity| identity.id.as_str()).unwrap_or(""),
-                "parameters":parameters,"sources":sources,"maps":maps},
-            "connection":{"version":CONNECTION_CONTRACT_VERSION,"instanceId":instance_id,
-                "attachmentId":request.attachment_id.to_string(),"revision":snapshot.revision.to_string(),"nextRequestId":next_request.0.to_string(),
-                "limits":{"attachments":ATTACHMENT_LIMIT,"history":HISTORY_LIMIT,"outcomes":OUTCOME_LIMIT,"activeRequests":ACTIVE_REQUEST_LIMIT},
-                "history":{"undoCount":snapshot.undo_len,"redoCount":snapshot.redo_len}}});
+        let result = projection.value(
+            &context.snapshot,
+            self.host.session().prepared(),
+            &request.attachment_id.to_string(),
+        )?;
         self.protocol
             .encode_reply(
                 self.host.session(),
@@ -967,6 +939,155 @@ impl ParameterController {
                 Ok(result),
             )
             .map_err(ParameterError::Protocol)
+    }
+
+    fn patch_samples(
+        document: &str,
+        parameters: &[PublicParameter],
+        runtime: &RuntimeControl,
+        catalog: &crate::samples::SampleCatalog,
+    ) -> Result<Vec<std::sync::Arc<dandrum_engine::sample_snapshot::SampleSnapshot>>, ParameterError>
+    {
+        use dandrum_engine::kernel::{StaticArg, StaticValue};
+        // Sealed protocol admission and the counted parser own document bounds.
+        // Resource kind/origin are fixed by the YAML sample-source parser;
+        // package/catalog identity below supplies the remaining authority.
+        super::patch_budget::check(document).map_err(|_| ParameterError::InvalidSurface)?;
+        let patch = load_kernel_patch_str(document).map_err(|_| ParameterError::InvalidSurface)?;
+        let root = patch.root();
+        let assets = patch.sample_assets();
+        let short = |name: &str| name.len() <= 256;
+        if patch.registry().definitions().any(|definition| {
+            definition.metadata().category()
+                != dandrum_engine::kernel::DefinitionCategory::Primitive
+        }) || !root.static_params().is_empty()
+            || root.nodes().len() > 64
+            || root.connections().len() > 128
+            || root.ports().len() > 64
+            || assets.sample_sources.len() > 256
+            || assets.sample_maps.len() > 64
+            || assets
+                .sample_sources
+                .iter()
+                .map(|s| s.regions.len())
+                .sum::<usize>()
+                > 1024
+            || assets
+                .sample_maps
+                .iter()
+                .map(|m| m.zones.len())
+                .sum::<usize>()
+                > 1024
+            || patch.metadata().name().is_some_and(|name| !short(name))
+            || patch.instrument().is_none_or(|id| !short(&id.id))
+        {
+            return Err(ParameterError::InvalidSurface);
+        }
+        for kind in ["midi_input", "sample_map_player"] {
+            if root
+                .nodes()
+                .iter()
+                .filter(|n| n.definition_ref() == kind)
+                .count()
+                > 1
+            {
+                return Err(ParameterError::InvalidSurface);
+            }
+        }
+        for node in root.nodes() {
+            if !short(node.id().as_str())
+                || !matches!(
+                    node.definition_ref(),
+                    "midi_input" | "sample_map_player" | "audio_mixer" | "control_mixer"
+                )
+            {
+                return Err(ParameterError::InvalidSurface);
+            }
+            for (key, value) in node.static_args() {
+                if !short(key)
+                    || matches!(
+                        value,
+                        StaticArg::ParamRef(_) | StaticArg::Literal(StaticValue::Resource(_))
+                    )
+                {
+                    return Err(ParameterError::InvalidSurface);
+                }
+                if key == "max_voices"
+                    && !matches!(value, StaticArg::Literal(StaticValue::Int(1..=128)))
+                {
+                    return Err(ParameterError::InvalidSurface);
+                }
+                if key == "channels" {
+                    let allowed = match value {
+                        StaticArg::Literal(StaticValue::Int(channels)) => {
+                            if node.definition_ref() == "control_mixer" {
+                                *channels == 1
+                            } else {
+                                (1..=2).contains(channels)
+                            }
+                        }
+                        _ => false,
+                    };
+                    if !allowed {
+                        return Err(ParameterError::InvalidSurface);
+                    }
+                }
+            }
+        }
+        let aliases = patch.preset_surface().parameters();
+        if aliases.len() != parameters.len() {
+            return Err(ParameterError::InvalidSurface);
+        }
+        for (alias, parameter) in aliases.iter().zip(parameters) {
+            if alias.name() != parameter.id
+                || runtime.parameter_index(alias.port_name()) != Some(parameter.root_index)
+                || alias.control_default().min() != Some(parameter.physical_min)
+                || alias.control_default().max() != Some(parameter.physical_max)
+            {
+                return Err(ParameterError::InvalidSurface);
+            }
+        }
+        let mut samples = std::collections::BTreeMap::new();
+        for source in &assets.sample_sources {
+            if !short(&source.id)
+                || source.regions.iter().any(|r| !short(&r.id))
+                || source.slices.iter().any(|slice| !short(&slice.id))
+                || source.cues.iter().any(|cue| !short(&cue.id))
+            {
+                return Err(ParameterError::InvalidSurface);
+            }
+            if source.resource.path() != std::path::Path::new("assets/advanced-drums.wav") {
+                let id = source
+                    .resource
+                    .path()
+                    .to_str()
+                    .expect("sample paths originate in UTF-8 YAML");
+                let sample = catalog
+                    .acquire(id)
+                    .map_err(|_| ParameterError::InvalidSurface)?;
+                samples.insert(id.to_string(), sample);
+            }
+        }
+        for map in &assets.sample_maps {
+            if !short(&map.id)
+                || map.zones.iter().any(|zone| {
+                    [
+                        zone.id.as_deref(),
+                        zone.round_robin_group.as_deref(),
+                        zone.choke_group.as_deref(),
+                    ]
+                    .into_iter()
+                    .flatten()
+                    .any(|id| !short(id))
+                })
+            {
+                return Err(ParameterError::InvalidSurface);
+            }
+        }
+        if root.ports().iter().any(|p| !short(p.name())) {
+            return Err(ParameterError::InvalidSurface);
+        }
+        Ok(samples.into_values().collect())
     }
 
     /// Admit structural work once. Transport correlation is separate from the
@@ -982,7 +1103,23 @@ impl ParameterController {
             .map_err(ParameterError::Protocol)?;
         self.check_session_worker()?;
         if self.selections.busy() {
-            return Err(ParameterError::SessionWorkerBusy);
+            let retained = match &request.command {
+                EditorCommand::SetZoneKeyRange { identity, .. }
+                | EditorCommand::PrepareInstrumentSessionPatch { identity, .. }
+                | EditorCommand::UndoInstrumentSession { identity }
+                | EditorCommand::RedoInstrumentSession { identity } => self
+                    .host
+                    .session()
+                    .request_outcome(&context.attachment, identity.request_id)
+                    .map_err(ParameterError::Session)?
+                    .is_some(),
+                _ => false,
+            };
+            if !retained {
+                return Err(ParameterError::SessionWorkerBusy);
+            }
+            // Retention only bypasses chooser backpressure. The native admission
+            // below still compares the complete request and rejects conflicts.
         }
         let (id, admission) = match &request.command {
             EditorCommand::SetZoneKeyRange { identity, intent } => (
@@ -997,9 +1134,40 @@ impl ParameterController {
                     },
                 ),
             ),
+            EditorCommand::PrepareInstrumentSessionPatch { identity, document } => {
+                let catalog = &self.host.sample_catalog;
+                let parameters = &self.parameters;
+                let runtime = &self.runtime;
+                (
+                    identity.request_id,
+                    self.host.session.admit_document_with(
+                        &context.attachment,
+                        identity.request_id,
+                        identity.expected_revision,
+                        document.clone(),
+                        || {
+                            Self::patch_samples(document, parameters, runtime, catalog).map_err(
+                                |error| {
+                                    dandrum_instrument_session::SessionError::InvalidDocument(
+                                        format!("{error:?}"),
+                                    )
+                                },
+                            )
+                        },
+                    ),
+                )
+            }
             EditorCommand::UndoInstrumentSession { identity } => (
                 identity.request_id,
                 self.host.session_mut().admit_undo(
+                    &context.attachment,
+                    identity.request_id,
+                    identity.expected_revision,
+                ),
+            ),
+            EditorCommand::RedoInstrumentSession { identity } => (
+                identity.request_id,
+                self.host.session_mut().admit_redo(
                     &context.attachment,
                     identity.request_id,
                     identity.expected_revision,
@@ -1118,10 +1286,23 @@ impl ParameterController {
         let SessionWork::Ready(completion) = active.work else {
             unreachable!("ready session job checked above")
         };
+        let mut state = self.parameter_state();
+        state.generation = next_generation;
+        let projection = SamplerProjection {
+            source_path: self.host.resource_root().join(crate::ADVANCED_DRUM_KIT_DOCUMENT),
+            parameters: &self.parameters, state,
+            instance_id: "18446744073709551615".into(),
+            selections: (0..33).map(|_| serde_json::json!({"selectionId":"18446744073709551615","phase":"preparing"})).collect(),
+            next_request_id: "18446744073709551615".into(),
+        };
+        let mut activation = ProjectedActivation {
+            runtime: &mut self.runtime,
+            projection,
+        };
         let outcome = match self
             .host
             .session_mut()
-            .complete_mapping(*completion, &mut self.runtime)
+            .complete_mapping(*completion, &mut activation)
         {
             Ok(outcome) => outcome,
             Err(route) => {
@@ -1329,3 +1510,153 @@ impl ParameterController {
 #[cfg(test)]
 #[path = "../tests/internal/state.rs"]
 mod state_tests;
+
+/// One projection serves accepted reads and pre-publication representability.
+struct SamplerProjection<'a> {
+    source_path: std::path::PathBuf,
+    parameters: &'a [PublicParameter],
+    state: ParameterState,
+    instance_id: String,
+    selections: serde_json::Value,
+    next_request_id: String,
+}
+impl SamplerProjection<'_> {
+    fn value(
+        &self,
+        snapshot: &dandrum_instrument_session::SessionSnapshot,
+        prepared: &dandrum_engine::preparation::PreparedKernelInstrument,
+        attachment_id: &str,
+    ) -> Result<serde_json::Value, ParameterError> {
+        use dandrum_instrument_session::{
+            ACTIVE_REQUEST_LIMIT, ATTACHMENT_LIMIT, CONNECTION_CONTRACT_VERSION, HISTORY_LIMIT,
+            OUTCOME_LIMIT,
+        };
+        use serde_json::{Value, json};
+        let source_path = self.source_path.to_str().ok_or_else(|| {
+            ParameterError::Host("Trigger resource path cannot be represented as UTF-8".into())
+        })?;
+        let patch =
+            load_kernel_patch_str(&snapshot.yaml).expect("accepted session document is valid");
+        let state = &self.state;
+        let parameters = self.parameters.iter().zip(&state.parameters).map(|(parameter, current)| {
+            let alias = patch.preset_surface().parameters().iter().find(|alias| alias.name() == parameter.id)
+                .expect("accepted Trigger surface retains public aliases");
+            let group = patch.root().ports().iter().find(|port| port.name() == alias.port_name())
+                .and_then(|port| match port.internal_targets() { [target] => Some(target), _ => None })
+                .and_then(|target| patch.root().nodes().iter().find(|node| node.id() == target.node())
+                    .filter(|node| node.definition_ref() == "sample_map_player").map(|_| target))
+                .and_then(|target| target.port().strip_prefix("group_"))
+                .and_then(|suffix| suffix.split_once('_'))
+                .and_then(|(group, _)| group.parse::<u8>().ok()).filter(|group| *group > 0);
+            let mut value = json!({"id":parameter.id,"name":parameter.id,"normalisedValue":current.value,
+                "normalisedDefaultValue":parameter.project(parameter.physical_default).value,
+                "minValue":parameter.physical_min,"maxValue":parameter.physical_max,
+                "scope":if group.is_some() {"sampleGroup"} else {"instrument"}});
+            if let Some(group) = group { value["controlGroup"] = group.into(); }
+            value
+        }).collect::<Vec<_>>();
+        // Omit absent authored optionals, retaining the comparison DTO's default
+        // semantics without manufacturing values or exposing PCM.
+        let present = |mut value: Value| {
+            value
+                .as_object_mut()
+                .expect("DTO is an object")
+                .retain(|_, value| !value.is_null());
+            value
+        };
+        let assets = prepared.sample_assets();
+        let sources = assets.sources().iter().map(|source| {
+            let regions = source.declaration().regions.iter().map(|region| {
+                let loop_settings = region.loop_settings.as_ref().map(|settings| json!({
+                    "mode":settings.mode,"startFrame":settings.start_frame.to_string(),
+                    "endFrame":settings.end_frame.to_string(),"crossfadeMs":settings.crossfade_ms.unwrap_or(0.0)}));
+                present(json!({"id":region.id,"startFrame":region.start_frame.to_string(),"endFrame":region.end_frame.to_string(),
+                    "rootNote":region.root_note,"gainDb":region.gain_db,"pan":region.pan,"reverse":region.reverse,
+                    "fadeInMs":region.fade_in_ms.unwrap_or(0.0),"fadeOutMs":region.fade_out_ms.unwrap_or(0.0),"loop":loop_settings}))
+            }).collect::<Vec<_>>();
+            json!({"id":source.id(),"sampleRateHz":source.sample().sample_rate_hz(),
+                "channelCount":source.sample().source_channel_count(),"frameCount":source.sample().frame_count().to_string(),"regions":regions})
+        }).collect::<Vec<_>>();
+        let maps = assets.maps().iter().map(|map| {
+            let prepared = assets.map_by_id(&map.id).expect("prepared map is indexed");
+            let zones = prepared.zones().iter().map(|zone| {
+                let declaration = zone.declaration();
+                present(json!({"id":declaration.id.as_deref().unwrap_or(""),
+                    "sourceIndex":zone.source_index(),"regionIndex":zone.region_index(),
+                    "startFrame":zone.effective_region().start_frame.to_string(),"endFrame":zone.effective_region().end_frame.to_string(),
+                    "keyLow":declaration.key_range[0],"keyHigh":declaration.key_range[1],
+                    "velocityLow":declaration.velocity_range[0],"velocityHigh":declaration.velocity_range[1],
+                    "roundRobinGroup":declaration.round_robin_group,"chokeGroup":declaration.choke_group,
+                    "controlGroup":declaration.control_group,"weight":declaration.weight.unwrap_or(1),
+                    "gainDb":declaration.gain_db,"pan":declaration.pan,"pitchSemitones":declaration.pitch_semitones}))
+            }).collect::<Vec<_>>();
+            json!({"id":map.id,"selectionMode":prepared.selection_mode().unwrap_or("first_match"),"selectionSeed":prepared.selection_seed().to_string(),"zones":zones})
+        }).collect::<Vec<_>>();
+        let result = json!({"yaml":snapshot.yaml,
+            "sourcePath":source_path,
+            "sampleSelections":self.selections,
+            "document":{"generation":state.generation,"instrumentId":patch.instrument().map(|identity| identity.id.as_str()).unwrap_or(""),
+                "parameters":parameters,"sources":sources,"maps":maps},
+            "connection":{"version":CONNECTION_CONTRACT_VERSION,"instanceId":self.instance_id,
+                "attachmentId":attachment_id,"revision":snapshot.revision.to_string(),"nextRequestId":self.next_request_id,
+                "limits":{"attachments":ATTACHMENT_LIMIT,"history":HISTORY_LIMIT,"outcomes":OUTCOME_LIMIT,"activeRequests":ACTIVE_REQUEST_LIMIT},
+                "history":{"undoCount":snapshot.undo_len,"redoCount":snapshot.redo_len}}});
+        Ok(result)
+    }
+}
+struct ProjectedActivation<'a> {
+    runtime: &'a mut RuntimeControl,
+    projection: SamplerProjection<'a>,
+}
+impl dandrum_instrument_session::ActivationHost for ProjectedActivation<'_> {
+    type Error = RuntimeError;
+    type Lease<'a>
+        = <RuntimeControl as dandrum_instrument_session::ActivationHost>::Lease<'a>
+    where
+        Self: 'a;
+    fn activate<'a>(
+        &'a mut self,
+        prepared: &dandrum_engine::preparation::PreparedKernelInstrument,
+        next: &dandrum_instrument_session::SessionSnapshot,
+    ) -> Result<Self::Lease<'a>, Self::Error> {
+        // Reserve worst-width connection/correlation fields and the full bounded
+        // selection-summary window. No accepted document can strand a new view.
+        let mut result = self
+            .projection
+            .value(next, prepared, "18446744073709551615")
+            .map_err(|_| RuntimeError::IncompatibleRuntime)?;
+        result["document"]["generation"] = MAX_SAFE_GENERATION.into();
+        result["connection"]["revision"] = u64::MAX.to_string().into();
+        result["connection"]["history"] = serde_json::json!({
+            "undoCount":dandrum_instrument_session::HISTORY_LIMIT,
+            "redoCount":dandrum_instrument_session::HISTORY_LIMIT,
+        });
+        // The locked serde_json formatter uses zmij's24-byte buffer. A quoted
+        // 25-character size-only sentinel reserves27 bytes for each numeric
+        // field. This conservative projection is never sent to an editor.
+        for parameter in result["document"]["parameters"]
+            .as_array_mut()
+            .expect("projection parameters are an array")
+        {
+            for field in [
+                "normalisedValue",
+                "normalisedDefaultValue",
+                "minValue",
+                "maxValue",
+            ] {
+                parameter[field] = "0".repeat(25).into();
+            }
+        }
+        let frame = serde_json::json!({"version":2,"instanceId":self.projection.instance_id,
+            "attachmentId":"18446744073709551615","requestId":"18446744073709551615",
+            "status":"accepted","result":result});
+        if serde_json::to_vec(&frame)
+            .expect("finite snapshot values serialize")
+            .len()
+            > crate::protocol::PATCH_OUTBOUND_BYTES_LIMIT
+        {
+            return Err(RuntimeError::IncompatibleRuntime);
+        }
+        dandrum_instrument_session::ActivationHost::activate(self.runtime, prepared, next)
+    }
+}

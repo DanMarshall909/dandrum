@@ -296,7 +296,7 @@ impl ActivationHost for QuiescentControl<'_> {
         // Session has not published yet: construction, probing and every
         // fallible check belong before its infallible publication boundary.
         let candidate = PreparedRuntime::new(prepared, self.configuration)?;
-        if candidate.0.layout != self.control.layout
+        if !compatible_layout(&candidate.0.layout, &self.control.layout)
             || self.audio.state.event_capacity > candidate.0.graph.pending_event_capacity() / 2
         {
             return Err(RuntimeError::InvalidConfiguration);
@@ -718,7 +718,8 @@ impl RuntimeControl {
             .map_err(|_| RuntimeError::QueueFull)
     }
     fn compatible(&self, next: &PreparedRuntime) -> bool {
-        next.0.configuration == self.configuration && next.0.layout == self.layout
+        next.0.configuration == self.configuration
+            && compatible_layout(&next.0.layout, &self.layout)
     }
 
     /// A rejected value remains owned by the caller, including under backpressure.
@@ -1209,6 +1210,19 @@ impl Processor {
         left.copy_from_slice(&self.outputs[0][0]);
         right.copy_from_slice(&self.outputs[0][1]);
     }
+}
+
+fn compatible_layout(left: &[PortMetadata], right: &[PortMetadata]) -> bool {
+    left.len() == right.len()
+        && left.iter().zip(right).all(|(a, b)| {
+            a.name() == b.name()
+                && a.direction() == b.direction()
+                && a.signal_type() == b.signal_type()
+                && a.channels() == b.channels()
+                && a.multiplicity() == b.multiplicity()
+                && a.control_default().map(|d| (d.min(), d.max(), d.unit()))
+                    == b.control_default().map(|d| (d.min(), d.max(), d.unit()))
+        })
 }
 
 #[cfg(test)]

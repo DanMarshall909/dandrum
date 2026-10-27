@@ -6,6 +6,7 @@
 #![forbid(unsafe_code)]
 
 pub mod parameters;
+mod patch_budget;
 pub mod protocol;
 pub mod runtime;
 pub mod samples;
@@ -16,11 +17,11 @@ use dandrum_engine::kernel::document::load_kernel_patch_str;
 use dandrum_engine::preparation::{HostBuses, PreparationContext};
 use dandrum_engine::render_settings::RealtimeRenderSettings;
 pub use dandrum_engine::render_settings::SampleRate;
-use dandrum_instrument_session::{Attachment, PreparedDocumentReplacement, SessionError};
+use dandrum_instrument_session::{Attachment, PreparedDocumentReplacement};
 use std::fmt;
 use std::path::{Path, PathBuf};
 
-pub use dandrum_instrument_session::InstrumentSession;
+pub use dandrum_instrument_session::{InstrumentSession, SessionError};
 
 pub const ADVANCED_DRUM_KIT_DOCUMENT: &str = "instrument/advanced-drum-kit.yaml";
 pub const ADVANCED_DRUM_KIT_SAMPLE: &str = "instrument/assets/advanced-drums.wav";
