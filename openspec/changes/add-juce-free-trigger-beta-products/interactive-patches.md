@@ -239,3 +239,10 @@ restriction is not completion of those tasks, and does not restrict the existing
 native protocol's independently verified full-document endpoints. Broader editor
 metadata needs a deliberate bounded native representation before being enabled;
 retaining browser closures does not satisfy native history or recreation.
+
+Native rule/candidate origin IDs are retained independently of typed-command
+eligibility. Canonical reprojection must not repeatedly prefix or rename zones
+during unrelated document edits. A selector-backed key-range edit updates all
+candidate zones through full-document preparation; origin metadata alone never
+permits a single-zone typed update. Existing public parameter identities and
+current values remain separately verified.

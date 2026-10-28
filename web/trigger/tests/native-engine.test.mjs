@@ -468,3 +468,15 @@ test('a failed native session command refreshes the consumed request identity be
   assert.deepEqual(requests,['1','2']);
   assert.equal(engine.getPatch().rules.find(rule=>rule.id==='kit.kick').noteLo,61);
 });
+
+
+test('comparison unmapped rules lose obsolete native ownership before later range edits',async t=>{
+  const {engine,bridge}=await setup(t);
+  await engine.updateRule('kit.kick',{source:null});
+  const rule=engine.getPatch().rules.find(rule=>rule.id==='kit.kick');
+  assert.equal(rule.source,null);assert.equal(rule.nativeMapId,undefined);assert.equal(rule.nativeZoneId,undefined);
+  bridge.functions.setInstrumentZoneKeyRange=()=>assert.fail('an unbound rule cannot address a retired native zone');
+  await engine.updateRule('kit.kick',{noteLo:70,noteHi:70});
+  assert.equal(engine.getPatch().rules.find(rule=>rule.id==='kit.kick').noteLo,70);
+  assert.equal(bridge.calls.filter(([method])=>method==='prepareSampler').length,2);
+});

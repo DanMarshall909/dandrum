@@ -1,0 +1,35 @@
+{
+  "base": "7a7706c30dd7c0fac5ada089ba5160eefec23fc8",
+  "source": {
+    "web/trigger/engine/native-document.mjs": "0569bb9129dc4a0cf86064ee1ef8899be4c917f2571c6648f87502ed5af0ad61",
+    "web/trigger/engine/native-engine.mjs": "4fd394f0c490176d393e0cd59b11eab73cc65cd7f626e30c930daec0689658e8",
+    "web/trigger/engine/contract.ts": "60c103d7aa0ce13cbc3d6025da70f962073f27791413dea9f2829c1798a3b8b4",
+    "web/trigger/tests/native-session-edits.test.mjs": "fb7692dbba9000d5cfb28d98c282c0de38b589a80f1cc8365f1815688b9edbcc",
+    "web/trigger/tests/native-document.test.mjs": "fd67ad076bc49faf645067f6f4001e28c0574ad1e53d85a66d119de835d015b0",
+    "web/trigger/tests/native-engine.test.mjs": "8590876116bdd7ac89af767dd9fc53ed9b1e80a4656d15cf5e2614cec05dd4d6",
+    "src/clap-adapter/tests/internal/trigger_structural_native.rs": "e44ddda18b7e53a0b904b8f5b88aa1523654f84a70997e5ac52e0e5bc7fd61d0",
+    "openspec/changes/add-juce-free-trigger-beta-products/interactive-patches.md": "c5e9ae0d1d94801254fbfb092b3a06efb8ba12e6abc8ba890470107204ad1512"
+  },
+  "raw_archive_sha256": "95f3ff3fbdf31c79e09ece9d34839013bb7eb1f56490c009b1ceceba7ad578e8",
+  "native_replays": [
+    {
+      "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/frontend-zone-origin-native-red-replay.tar.gz",
+      "sha256": "279143eabcf9b51a26465393d43665e4cb81ac5f741eec1860735ca342156835",
+      "bytes": 8651187
+    },
+    {
+      "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/frontend-zone-origin-native-green-replay.tar.gz",
+      "sha256": "4954f0fe6dbd64729018ea1d0414b2a7ca9a0b25a69317c0786f4ddd23707147",
+      "bytes": 8651194
+    }
+  ],
+  "checks": {
+    "frontend": 197,
+    "browser_entrypoint": 12,
+    "native_clap": 30,
+    "NativeDocument_V8": "100% lines /77.64% branches /95.12% functions",
+    "NativeEngine_V8": "100% lines /87.32% branches /91.51% functions",
+    "Store_V8": "100% lines /86.45% branches /88.89% functions"
+  },
+  "limits": "No beta task/scenario closure. Strict engineClippy129 baseline FAIL. Mutation excluded. Component X11 proof only; native import/Empty/portable/installed/physical/DAW remain pending."
+}

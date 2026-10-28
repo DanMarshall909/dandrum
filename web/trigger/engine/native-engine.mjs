@@ -210,7 +210,7 @@ export class NativeEngine {
   ownsKeyRangeOperation(method,...args){
     if(method!=='updateRule')return false;
     const [id,delta]=args,rule=this.patch.rules.find(item=>item.id===id),keys=delta&&typeof delta==='object'?Object.keys(delta):[];
-    return !!rule?.nativeMapId&&!!rule?.nativeZoneId&&keys.length>0&&keys.every(key=>key==='noteLo'||key==='noteHi');
+    return !!rule?.nativeMapId&&!!rule?.nativeZoneId&&!this.patch.selectors[rule.source]&&keys.length>0&&keys.every(key=>key==='noteLo'||key==='noteHi');
   }
   reconcilePreparedRuleIdentities(accepted){
     for(const rule of this.patch.rules){

@@ -70,11 +70,11 @@ export function patchFromSession(session){
         }
         const selector=patch.selectors[key];
         const duplicate=selector.candidates.some(candidate=>candidate.id===regionId);
-        selector.candidates.push({id:duplicate?`${map.id}.${zone.id}`:regionId,...(duplicate?{nativeSource:regionId}:{}),name:readable(zone.id),weight:zone.weight??1,muted:false,solo:false,gain:zone.gainDb??0,pan:zone.pan??0,tune:zone.pitchSemitones??0,nativeChokeGroup:zone.chokeGroup});
+        selector.candidates.push({id:duplicate?`${map.id}.${zone.id}`:regionId,...(duplicate?{nativeSource:regionId}:{}),name:readable(zone.id),nativeZoneId:zone.id,weight:zone.weight??1,muted:false,solo:false,gain:zone.gainDb??0,pan:zone.pan??0,tune:zone.pitchSemitones??0,nativeChokeGroup:zone.chokeGroup});
       }
       if(key&&grouped.get(key)!==zone)continue;
       const root=patch.regions.find(item=>item.id===regionId)?.root??zone.keyLow;
-      patch.rules.push({id:`${map.id}.${zone.id}`,...(key?{}:{nativeMapId:map.id,nativeZoneId:zone.id}),group:map.id,target,name:readable(zone.id),source:key??regionId,noteLo:zone.keyLow,noteHi:zone.keyHigh,velLo:zone.velocityLow,velHi:zone.velocityHigh,root,nativeInitialRoot:root,nativeControlGroup:zone.controlGroup,nativeChokeGroup:zone.chokeGroup,nativeGain:zone.gainDb,nativePan:zone.pan,nativeTune:zone.pitchSemitones});
+      patch.rules.push({id:`${map.id}.${zone.id}`,nativeMapId:map.id,nativeZoneId:zone.id,group:map.id,target,name:readable(zone.id),source:key??regionId,noteLo:zone.keyLow,noteHi:zone.keyHigh,velLo:zone.velocityLow,velHi:zone.velocityHigh,root,nativeInitialRoot:root,nativeControlGroup:zone.controlGroup,nativeChokeGroup:zone.chokeGroup,nativeGain:zone.gainDb,nativePan:zone.pan,nativeTune:zone.pitchSemitones});
     }
   }
   return patch;
@@ -139,7 +139,7 @@ export function compileNativePatch(patch,session){
     return active.flatMap(candidate=>{
       if(candidate.output&&!['inherit','main'].includes(candidate.output))unsupported('Candidate output routing');
       if(candidate.velLo!=null||candidate.velHi!=null)unsupported('Per candidate velocity windows');
-      return expand(candidate.nativeSource??candidate.id,[...path,source],{...controls,round_robin_group:source,weight:selector.policy==='random'?1:candidate.weight??1,gain_db:candidate.gain??0,pan:candidate.pan??0,pitch_semitones:candidate.tune??0,choke_group:candidate.nativeChokeGroup});
+      return expand(candidate.nativeSource??candidate.id,[...path,source],{...controls,round_robin_group:source,nativeZoneId:candidate.nativeZoneId,weight:selector.policy==='random'?1:candidate.weight??1,gain_db:candidate.gain??0,pan:candidate.pan??0,pitch_semitones:candidate.tune??0,choke_group:candidate.nativeChokeGroup});
     });
   }
   for(const rule of patch.rules){
@@ -160,8 +160,9 @@ export function compileNativePatch(patch,session){
         }
       }
       const nativeZoneId=compiledNativeZoneId(rule);
-      const zone={id:index?`${nativeZoneId}_${index}`:nativeZoneId,region:candidate.region,key_range:[rule.noteLo,rule.noteHi],velocity_range:[rule.velLo,rule.velHi]};
-      Object.assign(zone,{gain_db:rule.nativeGain,pan:rule.nativePan,pitch_semitones:rule.nativeTune,choke_group:rule.nativeChokeGroup,control_group:target?.nativeControlGroup??rule.nativeControlGroup},candidate);
+      const {nativeZoneId:origin,...properties}=candidate;
+      const zone={id:origin??(index?`${nativeZoneId}_${index}`:nativeZoneId),region:candidate.region,key_range:[rule.noteLo,rule.noteHi],velocity_range:[rule.velLo,rule.velHi]};
+      Object.assign(zone,{gain_db:rule.nativeGain,pan:rule.nativePan,pitch_semitones:rule.nativeTune,choke_group:rule.nativeChokeGroup,control_group:target?.nativeControlGroup??rule.nativeControlGroup},properties);
       for(const key of Object.keys(zone))if(zone[key]==null||zone[key]==='')delete zone[key];
       zones.push(zone);
     }

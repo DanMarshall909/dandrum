@@ -291,3 +291,39 @@ for(const action of ['candidate controls','candidate order','candidate removal',
   await store.redo();assert.deepEqual(engine.getPatch(),accepted);
   engine.close();recreated=new NativeEngine({heartbeatMs:0,pollMs:0});await recreated.initialize();assert.deepEqual(recreated.getPatch(),accepted);
 });
+
+
+test('repeated native document edits and recreation preserve every existing zone identity',async t=>{
+  const previous=globalThis.window,bridge=backend();globalThis.window={__DANDRUM__:{protocolVersion:1,backendId:'juce-free',capabilities,backend:bridge}};
+  let engine=new NativeEngine({heartbeatMs:0,pollMs:0}),candidate,revision=0;
+  t.after(()=>{engine.close();globalThis.window=previous;});await engine.initialize();
+  const ids=parse(yaml).assets.sample_maps[0].zones.map(zone=>zone.id);
+  bridge.functions.prepareInstrumentSessionPatch=(_i,_a,request,_r,text)=>{
+    candidate=text;assert.deepEqual(parse(text).assets.sample_maps[0].zones.map(zone=>zone.id),ids,'unrelated document edits preserve native mapping origins');return {status:'accepted',job_id:request};
+  };
+  bridge.functions.getInstrumentSessionJobStatus=request=>{
+    revision++;bridge.setSession(session(candidate,7+revision,connection({revision:String(revision),nextRequestId:String(revision+1),history:{undoCount:revision,redoCount:0}})));
+    return {state:'completed',request_id:request,revision:String(revision)};
+  };
+  for(const limit of [9,10,11]){
+    await engine.setVoicePolicy({limit});assert.equal(engine.getPatch().voicePolicy.limit,limit);
+    engine.close();engine=new NativeEngine({heartbeatMs:0,pollMs:0});await engine.initialize();
+  }
+});
+
+test('selector mapping edits move all original zones through a document rather than one typed zone',async t=>{
+  const previous=globalThis.window,bridge=backend();globalThis.window={__DANDRUM__:{protocolVersion:1,backendId:'juce-free',capabilities,backend:bridge}};
+  const engine=new NativeEngine({heartbeatMs:0,pollMs:0});let candidate;
+  t.after(()=>{engine.close();globalThis.window=previous;});await engine.initialize();
+  bridge.functions.setInstrumentZoneKeyRange=()=>assert.fail('a selector must update every candidate, not only one native zone');
+  bridge.functions.prepareInstrumentSessionPatch=(_i,_a,request,_r,text)=>{
+    candidate=text;const zones=parse(text).assets.sample_maps[0].zones.filter(zone=>zone.round_robin_group==='kit.hard_snare'||zone.round_robin_group==='hard_snare');
+    assert.deepEqual(zones.map(zone=>[zone.id,zone.key_range]),[['snare_hard_a',[70,72]],['snare_hard_b',[70,72]]]);return {status:'accepted',job_id:request};
+  };
+  bridge.functions.getInstrumentSessionJobStatus=request=>{
+    bridge.setSession(session(candidate,8,connection({revision:'1',nextRequestId:'2',history:{undoCount:1,redoCount:0}})));return {state:'completed',request_id:request,revision:'1'};
+  };
+  const rule=engine.getPatch().rules.find(rule=>rule.source==='kit.hard_snare');
+  await engine.updateRule(rule.id,{noteLo:70,noteHi:72});
+  const moved=engine.getPatch().rules.find(rule=>rule.source==='kit.hard_snare');assert.deepEqual([moved.noteLo,moved.noteHi],[70,72]);
+});

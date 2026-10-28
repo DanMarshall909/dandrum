@@ -11,7 +11,8 @@ test('native document projects exact file paths, real frame geometry, public con
   assert.equal(patch.params['drums.level'].value,.25);assert.equal(patch.params['drums.level'].max,1);
   assert.equal(patch.selectors['kit.hard_snare'].policy,'rr');assert.equal(patch.selectors['kit.hard_snare'].candidates.length,2);
   const grouped=patch.rules.find(r=>r.source==='kit.hard_snare');assert.equal(grouped.velLo,64);
-  assert.equal(grouped.nativeMapId,undefined);assert.equal(grouped.nativeZoneId,undefined);
+  assert.equal(grouped.nativeMapId,'kit');assert.equal(grouped.nativeZoneId,'snare_hard_a');
+  assert.deepEqual(patch.selectors['kit.hard_snare'].candidates.map(candidate=>candidate.nativeZoneId),['snare_hard_a','snare_hard_b']);
   assert.equal(patch.voicePolicy.limit,8);assert.equal(patch.modules.length,1);
 });
 

@@ -8,7 +8,7 @@ export interface Node {id:Id;name:string;kind:'instrument'|'group'|'sound';paren
 export interface Asset {id:Id;name:string;uri:string;state:'loading'|'loaded'|'missing'|'unsupported';progress?:number;duration:number;sampleRate:number;bits:number;channels:number;cached:boolean;group?:Id;analysis?:{note?:number;cents?:number;peak?:number;lufs?:number}}
 export interface Region {id:Id;assetId:Id;name:string;kind:'sample'|'slice';start:number;end:number;root?:number;note?:number;fades?:{in:number;out:number};loop?:{start:number;end:number;crossfade:number}|null;playback?:string;reverse?:boolean;tune?:number;gain?:number;pan?:number;choke?:number}
 export interface Rule {id?:Id;group:Id;target?:Id;name:string;source:Id|null;noteLo:number;noteHi:number;velLo:number;velHi:number;root:number;nativeMapId?:Id;nativeZoneId?:Id}
-export interface Candidate {id:Id;name:string;weight:number;muted:boolean;solo:boolean;plays?:number;gain?:number;pan?:number;tune?:number;output?:Id;velLo?:number;velHi?:number}
+export interface Candidate {id:Id;name:string;nativeZoneId?:Id;weight:number;muted:boolean;solo:boolean;plays?:number;gain?:number;pan?:number;tune?:number;output?:Id;velLo?:number;velHi?:number}
 export interface Selector {policy:'stack'|'velocity'|'rr'|'alt'|'random'|'weighted';reset?:string;softHi?:number;hardLo?:number;curve?:string;candidates:Candidate[]}
 export interface Module {id:Id;type:string;params:Record<string,ParamValue>;paramIds?:Record<string,Id>;bypassed?:boolean}
 export interface Parameter {id:Id;name:string;value:number;default:number;min:number;max:number;unit:string}

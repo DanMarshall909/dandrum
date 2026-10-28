@@ -724,7 +724,30 @@ fn native_structural_scenario() {
             browser_a.as_ref().unwrap(),
             "document.querySelector('[role=spinbutton][aria-label=\"Voice limit\"][aria-valuenow=\"9\"]')",
         );
+        let zone_ids = |state: &serde_json::Value| {
+            state["document"]["maps"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|map| {
+                    (
+                        map["id"].clone(),
+                        map["zones"]
+                            .as_array()
+                            .unwrap()
+                            .iter()
+                            .map(|zone| zone["id"].clone())
+                            .collect::<Vec<_>>(),
+                    )
+                })
+                .collect::<Vec<_>>()
+        };
         let edited = snapshot(&mut plugin, browser_a.as_ref().unwrap());
+        assert_eq!(
+            zone_ids(&edited),
+            zone_ids(&ui_before),
+            "unrelated React voice edits preserve every native zone identity"
+        );
         assert_eq!(edited["connection"]["revision"], "6");
         assert_eq!(
             edited["connection"]["history"],
@@ -773,6 +796,7 @@ fn native_structural_scenario() {
                     .collect::<Vec<_>>()
             };
             assert_eq!(ids(&current), ids(&ui_before));
+            assert_eq!(zone_ids(&current), zone_ids(&ui_before));
             let values = feedback(&mut plugin, browser_a.as_ref().unwrap());
             assert_eq!(
                 values["parameters"]
