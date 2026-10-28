@@ -480,3 +480,23 @@ test('comparison unmapped rules lose obsolete native ownership before later rang
   assert.equal(engine.getPatch().rules.find(rule=>rule.id==='kit.kick').noteLo,70);
   assert.equal(bridge.calls.filter(([method])=>method==='prepareSampler').length,2);
 });
+
+
+test('comparison sound duplication generates fresh zone identities without changing original candidate origins',async t=>{
+  const {engine,bridge}=await setup(t),before=engine.getPatch();
+  const node=before.nodes.find(node=>before.rules.some(rule=>rule.target===node.id&&rule.source==='kit.open_hats'));
+  assert.ok(node,'packaged open-hat sound has a shared selector');
+  const copied=await engine.duplicateNode(node.id);
+  const graph=parse(bridge.calls.filter(([method])=>method==='prepareSampler').at(-1)[1]);
+  const zones=graph.assets.sample_maps[0].zones,ids=zones.map(zone=>zone.id);
+  assert.equal(new Set(ids).size,ids.length,'copied rules cannot reuse original candidate native zone IDs');
+  for(const id of ['hat_open','hat_open_alt'])assert.ok(ids.includes(id),'original candidate identity remains');
+  const rule=engine.getPatch().rules.find(rule=>rule.target===copied);
+  assert.ok(ids.includes(rule.id),'the copied rule uses its fresh generated identity');
+  assert.ok(ids.includes(rule.id+'_1'));
+  const original=before.rules.find(rule=>rule.target===node.id);
+  await engine.setRules([...before.rules,{...original,id:'undefined.undefined',nativeMapId:undefined,nativeZoneId:undefined}]);
+  const authored=parse(bridge.calls.filter(([method])=>method==='prepareSampler').at(-1)[1]).assets.sample_maps[0].zones.map(zone=>zone.id);
+  assert.equal(new Set(authored).size,authored.length,'a rule without native provenance cannot borrow candidate origins');
+  assert.ok(authored.includes('undefined.undefined'));assert.ok(authored.includes('undefined.undefined_1'));
+});

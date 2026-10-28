@@ -1,0 +1,23 @@
+{
+  "base": "37bd598dd642b97d74c716d3ef9c59d163872ef7",
+  "source": {
+    "web/trigger/engine/native-document.mjs": "3bb8ebc3fe6ccfde8fe097b840cbce76af51e79daa4e120b62bdcc63c4d6c175",
+    "web/trigger/tests/native-engine.test.mjs": "385b6336f1b7d0557071fa195d105b7c8a61bcd50b335c984b769b07caf878d1",
+    "openspec/changes/add-juce-free-trigger-beta-products/interactive-patches.md": "e2c0f3f9afd79bd7188e6bad22dbe329d94857a4d9e35f83536454cd9a9099ab"
+  },
+  "raw_archive_sha256": "d21ceaa8f32302c3d5c614911bc39d1a544bb83e50d090b8d6294244d1b6ade7",
+  "native_replay": {
+    "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/frontend-origin-copy-native-replay.tar.gz",
+    "sha256": "bb3ce0b250cc8a8dcc1a6ed2e0e86cb601e05c83757afe62addd036305587a55",
+    "bytes": 8651268
+  },
+  "checks": {
+    "frontend": 198,
+    "browser_entrypoint": 12,
+    "native_clap": 30,
+    "NativeDocument_V8": "100% lines /78.42% branches /95.12% functions",
+    "NativeEngine_V8": "100% lines /87.32% branches /91.51% functions",
+    "Store_V8": "100% lines /86.45% branches /88.89% functions"
+  },
+  "limits": "No beta closure; strict engineClippy129baselineFAIL; mutationexcluded; selected import/Empty/portable/installed/physical/DAW pending."
+}

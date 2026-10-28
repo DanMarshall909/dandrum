@@ -246,3 +246,7 @@ during unrelated document edits. A selector-backed key-range edit updates all
 candidate zones through full-document preparation; origin metadata alone never
 permits a single-zone typed update. Existing public parameter identities and
 current values remain separately verified.
+
+Candidate origins are reused only for their containing original projected rule.
+Duplicated or authored rules, including rules without origin metadata, generate
+fresh zone identities rather than borrow another rule's native addresses.
