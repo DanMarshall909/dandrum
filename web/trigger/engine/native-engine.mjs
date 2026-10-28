@@ -90,7 +90,7 @@ export class NativeEngine {
       this.session=session;this.generation=session.document.generation;this.sourcePath=session.sourcePath;
       this.connection=connection;
       if(this.pendingGeneration<=this.generation)this.pendingGeneration=0;
-      if(accepted.rules.length)this.samplerSession=session;
+      if(this.backendId==='juce-free'||accepted.rules.length)this.samplerSession=session;
       if(replacement)this.patch=accepted;
       else this.patch.params=accepted.params;
       await this.startFeedback(true);
@@ -147,7 +147,7 @@ export class NativeEngine {
       try{
         const draft=this.getPatch(),result=edit(draft);
         if(draft.rules.some(rule=>rule.source)&&!Object.keys(draft.params).length)draft.params=patchFromSession(this.samplerSession).params;
-        const text=reloadPath?null:compileNativePatch(draft,this.samplerSession),generation=this.generation;
+        const text=reloadPath?null:compileNativePatch(draft,this.samplerSession,{retainPublicSurface:this.backendId==='juce-free'}),generation=this.generation;
         const request=before.nextRequestId;
         const admitted=await (sessionOwned
           ?this.invoke('prepareInstrumentSessionPatch',before.instanceId,before.attachmentId,request,before.revision,text)
@@ -162,7 +162,7 @@ export class NativeEngine {
         if(sessionOwned&&(connection.instanceId!==before.instanceId||connection.attachmentId!==before.attachmentId||completed.request_id!==request||completed.revision!==connection.revision||connection.nextRequestId!==nextDecimalId(request)))throw new Error('Native document preparation returned incoherent identity or revision metadata');
         this.session=session;this.generation=session.document.generation;this.sourcePath=session.sourcePath;
         this.connection=connection;
-        if(accepted.rules.length)this.samplerSession=session;
+        if(this.backendId==='juce-free'||accepted.rules.length)this.samplerSession=session;
         this.patch=sessionOwned||reloadPath?accepted:draft;
         this.patch.params=accepted.params;
         if(!reloadPath&&!sessionOwned)this.reconcilePreparedRuleIdentities(accepted);
@@ -296,7 +296,7 @@ export class NativeEngine {
     });
   }
   resetParam(id){return this.setParam(id,this.patch.params[id]?.default);}
-  newPatch(){return this.prepared(draft=>{const next=emptyPatch();next.macros=[];next.modules=[{id:'sample',type:'Sample player',params:{mode:'once'},paramIds:{}}];Object.assign(draft,next);});}
+  newPatch(){return this.prepared(draft=>{const next=emptyPatch();next.macros=[];next.modules=[{id:'sample',type:'Sample player',params:{mode:'once'},paramIds:{}}];if(this.backendId==='juce-free')next.voicePolicy.limit=16;Object.assign(draft,next);});}
   async loadPreset(id){if(id==='empty')return this.newPatch();if(id!=='felt-kit'&&id!=='native')throw new Error(`Unknown preset: ${id}`);const path=await this.invoke('getSamplerPresetPath');return this.prepared(()=>{}, {reloadPath:path});}
   reload(){return this.prepared(()=>{}, {reloadPath:this.sourcePath});}
   chooseSamples(){return this.backendId==='juce-free'?chooseNativeSamples(this):this.invoke('chooseSamplerFiles');}

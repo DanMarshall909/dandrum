@@ -366,16 +366,22 @@ fn copied_react_import_maps_selected_pcm_once_through_native_history() {
 }
 
 fn assert_import_audio(plugin: &mut PluginInstance<GuiHost>, selected: bool) {
+    assert_mapping_audio(
+        plugin,
+        &[
+            (48, if selected { [-0.25, -0.25] } else { [0.0, 0.0] }),
+            (36, [-1.0, -1.0]),
+            (60, [0.0, 0.0]),
+        ],
+    );
+}
+fn assert_mapping_audio(plugin: &mut PluginInstance<GuiHost>, cases: &[(u8, [f32; 2])]) {
     let mut audio = start_audio(plugin);
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         // Apply queued gain before reset deliberately cancels unconsumed activity.
         let _ = render_audio(&mut audio, &EventBuffer::new(), &mut Recorder::new(64));
         // Existing stereo playback mix: (-0.75 + 0.5) / 2, times physical gain2.
-        for (key, expected) in [
-            (48, if selected { [-0.25, -0.25] } else { [0.0, 0.0] }),
-            (36, [-1.0, -1.0]),
-            (60, [0.0, 0.0]),
-        ] {
+        for &(key, expected) in cases {
             std::thread::scope(|scope| scope.spawn(|| audio.reset()).join().unwrap());
             let mut events = EventBuffer::new();
             events.push(&MidiEvent::new(0, 0, [0x90, key, 127]));
@@ -389,4 +395,92 @@ fn assert_import_audio(plugin: &mut PluginInstance<GuiHost>, selected: bool) {
     }));
     return_audio(plugin, audio);
     result.unwrap();
+}
+
+#[test]
+#[ignore = "native Empty/import boundary: actual copied React/Wry/GTK; no physical-input claim"]
+fn copied_react_empty_retains_controls_and_imports_after_recreation() {
+    std::thread::spawn(|| {
+        let parent = Parent::new();
+        let mut plugin = copied_plugin();
+        let mut independent = copied_plugin();
+        assert_packaged_audio(&mut independent);
+        let independent_state = saved_state(&mut independent);
+        let mut browser = structural_native::open_view(&mut plugin, &parent);
+        let initial = structural_native::snapshot(&mut plugin, &browser);
+        let generation = initial["document"]["generation"].as_u64().unwrap();
+        let value = invoke(&mut plugin, &browser, &format!(
+            "window.__DANDRUM__.backend.getNativeFunction('setParameter')('drums.level',0.5,{generation})"));
+        assert_eq!(value["status"], "accepted");
+        assert_import_audio(&mut plugin, false);
+        let before = structural_native::snapshot(&mut plugin, &browser);
+        assert_eq!(before["document"]["parameters"].as_array().unwrap().len(), 23);
+        javascript(&mut plugin, &browser, r#"(()=>{Array.from(document.querySelectorAll('header button')).find(button=>button.textContent.trim().startsWith('Patch')).click();return 'menu';})()"#);
+        wait_dom(&mut plugin, &browser, "document.querySelector('.patch-menu')");
+        javascript(&mut plugin, &browser, r#"(()=>{Array.from(document.querySelectorAll('.patch-menu button')).find(button=>button.textContent.trim()==='New empty patch').click();return 'new';})()"#);
+        let deadline = Instant::now() + Duration::from_secs(5);
+        let empty = loop {
+            let current = structural_native::snapshot(&mut plugin, &browser);
+            if current["connection"]["revision"] == "1" && current["document"]["maps"].as_array().unwrap().is_empty() {
+                break current;
+            }
+            assert!(Instant::now() < deadline,
+                "New empty patch must be a native accepted silent document; revision={}, maps={}, history={}",
+                current["connection"]["revision"], current["document"]["maps"], current["connection"]["history"]);
+            std::thread::sleep(Duration::from_millis(5));
+        };
+        assert!(empty["document"]["sources"].as_array().unwrap().is_empty());
+        assert_eq!(empty["document"]["parameters"], before["document"]["parameters"]);
+        assert_eq!(empty["connection"]["history"], serde_json::json!({"undoCount":1,"redoCount":0}));
+        assert_mapping_audio(&mut plugin, &[(36,[0.0,0.0]),(48,[0.0,0.0]),(60,[0.0,0.0])]);
+        let gui = plugin.plugin_handle().get_extension::<PluginGui>().unwrap();
+        gui.destroy(&plugin.plugin_handle());drop(browser);assert!(parent.children().is_empty());
+        browser = structural_native::open_view(&mut plugin, &parent);
+        let recreated = structural_native::snapshot(&mut plugin, &browser);
+        assert_ne!(recreated["connection"]["attachmentId"], empty["connection"]["attachmentId"]);
+        assert_eq!(recreated["yaml"], empty["yaml"]);assert_eq!(recreated["document"], empty["document"]);
+        assert_mapping_audio(&mut plugin, &[(36,[0.0,0.0]),(48,[0.0,0.0]),(60,[0.0,0.0])]);
+        // This new consumer has only the accepted Empty graph, never a cached kit template.
+        wait_dom(&mut plugin, &browser, r#"Array.from(document.querySelectorAll('button')).some(button=>button.textContent.trim()==='Browse samples…')"#);
+        let selected = tempfile::tempdir().unwrap();let path = selected.path().join("empty-selected.wav");
+        std::fs::write(&path, SELECTED_WAV).unwrap();
+        javascript(&mut plugin, &browser, r#"(()=>{Array.from(document.querySelectorAll('button')).find(button=>button.textContent.trim()==='Browse samples…').click();return 'choose';})()"#);
+        gtk::init().expect("host joins initialized GTK");let chooser = native_dialog(&mut plugin);
+        assert!(chooser.set_filename(&path));let deadline = Instant::now() + Duration::from_secs(5);
+        while chooser.filename().as_deref() != Some(path.as_path()) {
+            dispatch_context(&mut plugin);assert!(Instant::now() < deadline, "real Empty import file selection");
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        chooser.response(gtk::ResponseType::Accept);drop(chooser);
+        loop {
+            let current = structural_native::snapshot(&mut plugin, &browser);
+            if current["connection"]["revision"] == "2" && current["yaml"].as_str().unwrap().contains(CONTENT_SHA256) {
+                assert_eq!(current["document"]["parameters"], before["document"]["parameters"]);
+                assert_eq!(current["document"]["sources"].as_array().unwrap().len(),1);
+                assert_eq!(current["connection"]["history"],serde_json::json!({"undoCount":2,"redoCount":0}));break;
+            }
+            assert!(Instant::now() < deadline, "recreated Empty editor publishes the selected sample without a kit fallback");
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        std::fs::remove_file(&path).unwrap();
+        assert_mapping_audio(&mut plugin, &[(48,[-0.25,-0.25]),(36,[0.0,0.0]),(60,[0.0,0.0])]);
+        for (action,revision,selected,undo,redo) in [("Undo","3",false,1,1),("Redo","4",true,2,0)] {
+            let selector=serde_json::to_string(&format!("header button[aria-label^=\"{action} \"]:not(:disabled)")).unwrap();
+            wait_dom(&mut plugin,&browser,&format!("document.querySelector({selector})"));
+            javascript(&mut plugin,&browser,&format!("document.querySelector({selector}).click() || 'clicked'"));
+            let deadline=Instant::now()+Duration::from_secs(5);
+            loop {
+                let current=structural_native::snapshot(&mut plugin,&browser);
+                if current["connection"]["revision"]==revision {
+                    assert_eq!(current["yaml"].as_str().unwrap().contains(CONTENT_SHA256),selected);
+                    assert_eq!(current["document"]["parameters"],before["document"]["parameters"]);
+                    assert_eq!(current["connection"]["history"],serde_json::json!({"undoCount":undo,"redoCount":redo}));break;
+                }
+                assert!(Instant::now()<deadline,"Empty/import history completes once");std::thread::sleep(Duration::from_millis(5));
+            }
+            assert_mapping_audio(&mut plugin,&[(48,if selected {[-0.25,-0.25]} else {[0.0,0.0]}),(36,[0.0,0.0]),(60,[0.0,0.0])]);
+        }
+        assert_eq!(saved_state(&mut independent),independent_state);assert_packaged_audio(&mut independent);
+        gui.destroy(&plugin.plugin_handle());drop(browser);assert!(parent.children().is_empty());
+    }).join().expect("real Empty/import host thread completes");
 }

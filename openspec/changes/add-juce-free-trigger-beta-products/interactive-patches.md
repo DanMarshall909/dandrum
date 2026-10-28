@@ -296,5 +296,34 @@ selection cleanup fails, show an explicit cleanup warning while retaining import
 success, rather than invite a duplicate edit by falsely reporting import failure.
 Once-only history, current physical values, source removal, editor recreation,
 Undo/Redo and independent-instance signed audio need real native component proof.
-Lost admission-reply recovery, New Empty, portable state, physical input and DAW
-acceptance remain separate open requirements.
+Lost admission-reply recovery, portable state, physical input and DAW acceptance
+remain separate open requirements.
+
+## Resource-free Empty and fresh sampler reconstruction
+
+The JUCE-free consumer emits a resource-free stereo audio_mixer with unconnected
+inputs and one unused mono control_mixer sink per public input. It retains the
+instrument identity, complete root port order/types/channels/ranges and public
+aliases. No dormant kit/sample map or old browser session supplies silence.
+The native descriptor policy above retains each control's product scope/group.
+
+A new consumer reconstructs the fixed MIDI-input/sample-player routing from the
+accepted Empty interface and its retained native descriptions. Only the existing
+pitch_ratio/start_offset/level/pan/variation performance controls and supported
+native group numbers are reconstructed. Creating Empty first verifies that the
+current control targets match those restorable bindings; unknown kinds, fanout
+or incompatible surfaces refuse before admission rather than fabricate a route.
+Comparison-backend Empty behavior keeps its existing no-phantom-control contract.
+
+An unmapped native Empty uses the existing projected sampler default of16voices
+and oldest stealing for later mapping. Editing voice policy while no sampler is
+mapped refuses explicitly; a mapped sampler retains the existing editable and
+persisted policy. This avoids reporting a successful policy change that has no
+native representation. Recreated import must work from only the current Empty
+snapshot, with one native history transition and retained current host values.
+The consumer must refresh its compiler session even when no rules remain.
+
+A no-zone edit that retains sample assets/regions is not New Empty. The consumer
+refuses that unrepresentable final-rule/candidate removal before admission rather
+than silently discard registered assets. Explicit New Empty alone deliberately
+clears them; later library-only mapping needs its own supported representation.

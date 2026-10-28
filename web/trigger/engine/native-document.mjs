@@ -95,11 +95,46 @@ function validateCapabilities(patch){
   if(!Number.isInteger(policy.limit)||policy.limit<1||policy.limit>128||!['oldest','quietest','reject_new'].includes(policy.steal))unsupported('Voice allocation policy');
 }
 
+function samplerBindings(graph,session){
+  const kinds=new Set(['pitch_ratio','start_offset','level','pan','variation']);
+  const inputs=graph.ports.filter(port=>port.direction==='input');
+  const bindings=(graph.preset_surface?.parameters??[]).map(alias=>{
+    const port=inputs.find(port=>port.name===alias.maps_to),parameter=session.document.parameters.find(parameter=>parameter.id===alias.name),kind=alias.name.split('.').at(-1);
+    if(!port||port.signal!=='control'||port.channels!==1||!parameter||!kinds.has(kind)
+      ||!['instrument','sampleGroup'].includes(parameter.scope)
+      ||(parameter.scope==='sampleGroup'&&(!Number.isInteger(parameter.controlGroup)||parameter.controlGroup<1||parameter.controlGroup>8)))unsupported('Empty sampler control bindings');
+    return {port,target:(parameter.scope==='sampleGroup'?`group_${parameter.controlGroup}_`:'')+kind};
+  });
+  if(bindings.length!==inputs.length||new Set(bindings.map(binding=>binding.port)).size!==inputs.length)unsupported('Empty sampler control surface');
+  const outputs=graph.ports.filter(port=>port.direction==='output');
+  if(outputs.length!==1||outputs[0].signal!=='audio'||outputs[0].channels!==2)unsupported('Empty sampler output surface');
+  return {bindings,output:outputs[0]};
+}
+function restoreSamplerGraph(graph,session){
+  if(graph.assets||graph.connections?.length||graph.modules?.some(module=>!['audio_mixer','control_mixer'].includes(module.type)))unsupported('Empty sampler graph');
+  const {bindings,output}=samplerBindings(graph,session);
+  for(const {port,target} of bindings)port.maps_to=`player.${target}`;
+  output.maps_from='player.audio';
+  graph.modules=[{id:'midi',type:'midi_input'},{id:'player',type:'sample_map_player',static:{sample_map:'trigger',channels:2,max_voices:16,voice_steal:'oldest',choke_mode:'cut'}}];
+  graph.connections=[{from:'midi.events',to:'player.note'}];
+}
+function retainSilentSurface(graph,session,patch){
+  if(patch.voicePolicy.limit!==16||patch.voicePolicy.steal!=='oldest')unsupported('Voice policy without a mapped sampler');
+  const {bindings,output}=samplerBindings(graph,session),player=graph.modules.find(module=>module.type==='sample_map_player');
+  if(bindings.some(({port,target})=>port.maps_to!==`${player.id}.${target}`))unsupported('Empty sampler control bindings');
+  graph.modules=[{id:'empty_audio',type:'audio_mixer',static:{channels:2}}];
+  bindings.forEach(({port},index)=>{const id=`empty_control_${index}`;port.maps_to=`${id}.inputs`;graph.modules.push({id,type:'control_mixer',static:{channels:1}});});
+  output.maps_from='empty_audio.mix';graph.connections=[];delete graph.assets;
+}
+
 /** A validated sampler graph is compiled before any native transaction is admitted. */
-export function compileNativePatch(patch,session){
+export function compileNativePatch(patch,session,{retainPublicSurface=false}={}){
   validateCapabilities(patch);
   const graph=clone(parse(session.yaml));
-  if(!graph.modules?.some(module=>module.type==='sample_map_player'))throw new Error('Native sampler graph has no sample map player');
+  if(!graph.modules?.some(module=>module.type==='sample_map_player')){
+    if(!retainPublicSurface)throw new Error('Native sampler graph has no sample map player');
+    restoreSamplerGraph(graph,session);
+  }
   const publicIds=new Set((graph.preset_surface?.parameters??[]).map(parameter=>parameter.name));
   if(Object.keys(patch.params).some(id=>!publicIds.has(id)))unsupported('Controls absent from the native parameter surface');
   graph.metadata={...graph.metadata,name:patch.name};
@@ -172,6 +207,10 @@ export function compileNativePatch(patch,session){
   }
   if(modes.size>1)unsupported('Mixed random and round robin maps');
   if(!zones.length){
+    if(retainPublicSurface){
+      if(sources.length)unsupported('Unmapping all rules while retaining sample assets');
+      retainSilentSurface(graph,session,patch);return stringify(graph);
+    }
     // An unconnected summing input is exact zero audio in the real graph engine.
     graph.modules=[{id:'silence',type:'audio_mixer',static:{channels:2}}];graph.connections=[];
     graph.ports=[{name:'master',direction:'output',signal:'audio',channels:2,maps_from:'silence.mix'}];

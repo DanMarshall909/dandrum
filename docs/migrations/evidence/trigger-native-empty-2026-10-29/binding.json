@@ -1,0 +1,33 @@
+{
+  "base": "d7f37fcea030ca70cbeb590351959c82a5cfe921",
+  "published_base": "05b1048ac8a30b681a3a6f3a9211f7cf21cea995",
+  "source": {
+    "CMakeLists.txt": "17f082975d6e36905f09bf75625d0c5d2f809d74cfdb950d6f1c929551196f6c",
+    "openspec/changes/add-juce-free-trigger-beta-products/interactive-patches.md": "38b340655ff1179bbf540ee2da989650969c2385217973b34d61a7aa842bb211",
+    "src/clap-adapter/tests/internal/trigger_selection_native.rs": "a95ff3b095848bfeba3462bc72eb7e7a8525a833166622a51ec87720be359fb4",
+    "web/trigger/engine/native-document.mjs": "091fbc52dc15021b8d19191be38b3351cee33b47ec61dc85394a8346a4a80474",
+    "web/trigger/engine/native-engine.mjs": "c0b60b0e4de4bdeea8ff9bba34825fbeaae7015367359bd17e8c4736e21db6b1",
+    "web/trigger/tests/native-empty.test.mjs": "b18e862178eaf95a2cfabbfe17805387e0049437c3711575243e9cce11d85742"
+  },
+  "raw_archive_sha256": "9d7f3cba8bdcf17c57539ce9ccfd9e32cc4d629a14f022f17daeb54ae2ce404a",
+  "external_replays": [
+    {
+      "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/empty-patch-native-red-replay.tar.gz",
+      "sha256": "32fd351ee90977219ec19eb2a01d6eccf5f7d22ab0bc3182250271bdb0f42a74",
+      "bytes": 8662250
+    },
+    {
+      "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/empty-patch-final-native-replay.tar.gz",
+      "sha256": "acb9012a83440823346abefad3365d05a08566c2b4d6e4df02d9c34611927a15",
+      "bytes": 8680946
+    }
+  ],
+  "native_replay_binding": "raw.tar.gz:empty-patch-final-native-replay.json",
+  "current_product_sha256": "1c770ba4ab9a2cdf5f757794b1b2c407b774eadb29a37d00f6bcd3ac30f52177",
+  "scope": "CLAP-only beta tasks5.3/5.5 resource-free Empty with immutable product controls, recreated selected import, native Undo/Redo and independent-instance signed audio; not whole task closure. Descriptor prerequisite has its separate committed LLVM packet.",
+  "checks": "257Node tests,14Chromium entrypoint cases,32native CLAP cases,9source-free cases; types/components/fmt/strict host+adapterClippy;192host tests+2doctests and focused3object/3profileLLVM retained from unchanged d7 descriptor prerequisite. Active and52canonical strict specs,631scenarios392mapped239ratchet. Current official validator34success10explicitSKIP0FAIL.",
+  "known_failure": "Strict engineClippy remains FAIL129 baseline diagnostics (unchanged engine); not a passing lint gate or waiver.",
+  "limits": "Private authenticated X11/WebKitGTK2.50.4 component/acquisition proof, not physical input, continuous selected audio, installed/offline or named-DAW acceptance. Legacyv2 state still refuses selected/Empty; portable codec remains open. Fixed unmapped16voices/oldest; unknown binding/voice changes and final unmapping retaining assets explicitly refuse before admission. Comparison Empty behavior unchanged. Mutation excluded, VST3/standalone deferred.",
+  "refactor": "Three validation/reconstruction helpers remain in existing native-document module; one current accepted compiler session, existing native history/parameter owners. Borrowed audio-case slice factors existing test oracles. No new module/dependency/engine language/codec.",
+  "finding": "Early independent design audit found last mapping removal could drop retained assets. Two genuine REDs now reject before admission; a positive ordinary removeRule assertion preserves supported removal. No new standing guidance/memory."
+}
