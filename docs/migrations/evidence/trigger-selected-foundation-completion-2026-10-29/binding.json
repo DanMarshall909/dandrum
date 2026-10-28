@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "source_commit": "a6303b0762830c12057edab2a59817985c6573bc",
+  "source_tree": "ef8d6c6b88215e3b70916e7d4108a8b335bd403b",
+  "scope": "Complete current session, host and trigger-editor adapter-library tests; no new production or test behavior",
+  "archive": {
+    "file": "owners.tar.gz",
+    "sha256": "0aae56bcbc77412b97759950734855e4006a615a524f8997ec3844b473a46b47",
+    "bytes": 9347
+  },
+  "members": {
+    "owner.json": {
+      "sha256": "4a6382284fcbb941fd71351d88fba28596080f24e32185b2108d848f922d875d",
+      "bytes": 1203
+    },
+    "command.json": {
+      "sha256": "85c45a3bd59daa2b05c9cefabb1a5f72949b3922ea9b0c6ffc6e2a6c57c51308",
+      "bytes": 48
+    },
+    "stdout.log": {
+      "sha256": "6e5a91a2f789736cd4b4bb24ece384b47b9e1ad3e10a9a3fd4c71aef13339e84",
+      "bytes": 26966
+    },
+    "stderr.log": {
+      "sha256": "cbfa41a09d2d16bd28587dd4d6ddb03c0add60884986c694c191daeb4b6eac1b",
+      "bytes": 3415
+    },
+    "cleanup.json": {
+      "sha256": "24d77b0c116d2c116338830e5068c07710dd6797e996b89bf43ab07d110e02ee",
+      "bytes": 280
+    }
+  }
+}

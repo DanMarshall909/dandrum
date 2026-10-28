@@ -15,11 +15,13 @@ Root owns integration/Git/tracker/shared caches. Task 1.3's cleanup runner/tests
 
 ## 5. Selected Samples And Interactive Patch Publication
 
-- [ ] 5.1 Specify and implement bounded immutable sample snapshot/catalog ownership using the existing decoder; prove real metadata/content identity, original-file replacement/removal, isolation, memory bounds and off-audio lifetime/reclamation.
-- [ ] 5.2 Extend the versioned bounded native protocol and controller admission/status for selected resources and full-patch work; prove version 1 compatibility, invalid/stale/conflicting/busy results and exact unadmitted versus admitted ownership.
-- [ ] 5.3 Publish interactive full-patch edits through native history while preserving public identities/current physical values; prove compatible-default handling, true layout rejection, empty-patch silence, once-only import and native undo/redo with signed PCM.
-- [ ] 5.4 Integrate actual native file selection with the production frontend; prove real decoded metadata, cancel/invalid/stale-view cleanup and valid normal single-file mapping instead of accidental kit overlap or mock acceptance.
-- [ ] 5.5 Join native sample import/mapping/status/recovery/Undo through real editor destruction/recreation and an independent instance; retain actual selected-waveform oracles and no late callback/resource leak.
+- [x] 5.1 Specify and implement bounded immutable sample snapshot/catalog ownership using the existing decoder; prove real metadata/content identity, original-file replacement/removal, isolation, memory bounds and off-audio lifetime/reclamation.
+- [x] 5.2 Extend the versioned bounded native protocol and controller admission/status for selected resources and full-patch work; prove version 1 compatibility, invalid/stale/conflicting/busy results and exact unadmitted versus admitted ownership.
+- [x] 5.3 Publish interactive full-patch edits through native history while preserving public identities/current physical values; prove compatible-default handling, true layout rejection, empty-patch silence, once-only import and native undo/redo with signed PCM.
+- [x] 5.4 Integrate actual native file selection with the production frontend; prove real decoded metadata, cancel/invalid/stale-view cleanup and valid normal single-file mapping instead of accidental kit overlap or mock acceptance.
+- [x] 5.5 Join native sample import/mapping/status/recovery/Undo through real editor destruction/recreation and an independent instance; retain actual selected-waveform oracles and no late callback/resource leak.
+
+The clause-to-evidence completion audit is recorded in `docs/migrations/evidence/trigger-selected-foundation-completion-2026-10-29/README.md`. These component tasks do not close installed/native-input/continuous-audio/DAW acceptance or portable state. Existing coverage gaps and the engine strict-Clippy baseline failure remain explicit.
 
 ## 6. Portable Patch Sample And Parameter State
 
