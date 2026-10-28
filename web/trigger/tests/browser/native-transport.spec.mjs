@@ -210,3 +210,33 @@ test('a code-only native protocol rejection displays its explicit capability fai
   expect(await page.evaluate(()=>window.nativeCalls)).toEqual([{version:1,attachmentId:'23',requestId:'1',method:'negotiateEditorProtocol',args:[2]}]);
   expect(await page.evaluate(()=>window.__DANDRUM__.backend.getNativeFunction('getSamplerSession')().catch(error=>error.code))).toBe('closed');
 });
+
+
+for(const input of ['DOM event','browser keyboard'])test(`production native mapping ${input} Escape releases its choice`,async({page})=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.addInitScript(initial=>{
+    window.nativeCalls=[];let phase='ready';
+    const hash='2e484972f38876c961b3c23fb4952487dce3e18501c7fb0efd1b8cb7011734d5';
+    const file=name=>({name,resourceId:`selected/${hash}.wav`,contentSha256:hash,encodedBytes:60,sampleRateHz:32000,channelCount:2,frameCount:4});
+    window.__DANDRUM__={protocolVersion:1,backendId:'juce-free',capabilities:{metering:false,sourceWaveforms:false,windowTitle:false,editorResize:false},backend:{
+      addEventListener:()=>0,removeEventListener:()=>{},getNativeFunction:name=>async(...args)=>{
+        window.nativeCalls.push([name,...args]);if(window.nativeCalls.length>30)throw Error('Unexpected repeated request');
+        if(name==='negotiateEditorProtocol')return window.__TEST_EDITOR_PROFILE__;
+        if(name==='getSamplerSession')return initial;
+        if(name==='chooseSamplerFiles')return {selectionId:'1',phase:'choosing'};
+        if(name==='getSamplerSelectionStatus')return {selectionId:'1',phase,files:[file('first.wav'),file('second.wav')]};
+        if(name==='releaseSamplerSelection'){phase='released';return {selectionId:'1',phase};}
+        throw Error('Unexpected '+name);
+      },
+    }};
+  },session());
+  await page.goto('/');await expect(page.getByTestId('trigger-editor')).toBeVisible();
+  if(!await page.getByRole('button',{name:'Add source…',exact:true}).isVisible())await page.getByRole('button',{name:'Instrument tree',exact:true}).click();
+  await page.getByRole('button',{name:'Add source…',exact:true}).click();
+  await expect(page.getByRole('region',{name:'Import mapping',exact:true})).toBeVisible();
+  if(input==='DOM event')await page.evaluate(()=>window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})));
+  else await page.keyboard.press('Escape');
+  await expect(page.getByRole('region',{name:'Import mapping',exact:true})).toHaveCount(0);
+  expect(await page.evaluate(()=>window.nativeCalls.filter(call=>call[0]==='releaseSamplerSelection'))).toEqual([['releaseSamplerSelection','1']]);
+  expect(errors).toEqual([]);
+});

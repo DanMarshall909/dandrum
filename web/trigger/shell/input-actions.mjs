@@ -6,7 +6,7 @@ attach() {
     this.keyboardBindings={
       onNoteOn:(note,velocity)=>this.props.store.noteOn(note,velocity),onNoteOff:note=>this.props.store.noteOff(note),
       onPage:page=>this.go(page),onAudition:()=>this.auditionSelection(),
-      onEscape:()=>this.setState({dialog:null,importDialog:null,cmenu:null,kmenu:null,dmenu:null,menu:null,dragSrc:null,dragMod:null,rail:null}),
+      onEscape:()=>{if(this.props.store.closed)return;const cancelled=this.cancelImport();this.setState({dialog:null,cmenu:null,kmenu:null,dmenu:null,menu:null,dragSrc:null,dragMod:null,rail:null});return cancelled;},
       onModulation:target=>{const knob=target?.closest?.('[data-knob]');if(knob){const r=knob.getBoundingClientRect();const p=this.winPt({clientX:r.left,clientY:r.bottom},264,200);this.setState({kmenu:{...p,label:knob.getAttribute('data-knob'),path:[]}});}},
     };this.forceUpdate();
     this.onR = () => this.forceUpdate();

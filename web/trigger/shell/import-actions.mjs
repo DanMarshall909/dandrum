@@ -7,9 +7,18 @@ export async function selectNativeSamples(presenter,options={}){
   }catch(error){if(!presenter.props.store.closed)presenter.setState({lastImportError:error.message??error.code??String(error)});}
 }
 export const importActions={
+  async cancelImport(dialog=this.state.importDialog){
+    if(this.props.store.closed||!dialog||this.state.importDialog!==dialog)return;
+    // Clear synchronously so repeated or obsolete callbacks cannot release twice.
+    this.setState({importDialog:null});
+    if(this.props.store.engine.releaseSamples)try{await this.props.store.engine.releaseSamples(dialog.files);}
+    catch(error){if(!this.props.store.closed){const message=error.message??error.code??String(error);this.setState({lastImportError:message,modNote:message});}}
+  },
   queueImport(files,options={}){
+    if(this.props.store.closed)return;
     const refs=Array.from(files,file=>({...file,name:file.name,uri:file.uri??'mock://'+file.name}));
     if(!refs.length)return;
+    if(this.state.importDialog)return this.cancelImport().then(()=>this.queueImport(refs,options));
     this.setState({lastImportError:null});
     const engine=this.props.store.engine,native=engine.backendId==='juce-free',patch=this.props.store.getSnapshot().patch;
     const group=native?patch.nodes.find(node=>node.kind==='group'):null;
@@ -50,11 +59,7 @@ export const importActions={
     model.onFileDrag=e=>{if(Array.from(e.dataTransfer?.types??[]).includes('Files')){e.preventDefault();e.dataTransfer.dropEffect='copy';}};
     model.onFileDrop=e=>{if(!e.dataTransfer?.files.length)return;e.preventDefault();e.stopPropagation();this.queueImport(e.dataTransfer.files);};
     model.importGroupNameEditable=this.props.store.engine.backendId!=='juce-free';
-    model.cancelImport=async()=>{
-      this.setState({importDialog:null});
-      if(this.props.store.engine.releaseSamples&&dialog?.files)try{await this.props.store.engine.releaseSamples(dialog.files);}
-      catch(error){if(!this.props.store.closed)this.setState({lastImportError:error.message??error.code??String(error)});}
-    };
+    model.cancelImport=()=>this.cancelImport(dialog);
     model.setImportOption=(key,value)=>this.setState({importDialog:{...this.state.importDialog,[key]:value}});
     model.applyImport=()=>this.importFiles(dialog.files,dialog);
     model.importOptions=dialog;

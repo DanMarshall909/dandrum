@@ -274,8 +274,12 @@ and recheck the live attachment when queued preparation actually starts. The
 native worker owns admitted work; accepted patch/history retain selected owners
 before the consumer releases the terminal choice. A failed attempt also releases
 its choice and requires re-selection for a new attempt. Cancellation releases the
-terminal outcome without history. Foreign-instance references never prepare or
-release another instance's resources. Editor retirement suppresses outgoing
+terminal outcome without history. Cancel, Escape and replacement of an open
+mapping dialog use one current-dialog disposal path. Repeated or obsolete dialog
+callbacks cannot release twice or dismiss a replacement. Snapshot a new nonempty
+file offer before awaiting prior disposal; an empty offer preserves the current
+choice. A cleanup failure remains visible while a new mapping choice is allowed.
+Foreign-instance references never prepare or release another instance's resources. Editor retirement suppresses outgoing
 cleanup and late presentation; it does not revoke session-owned work.
 
 Publish only the canonical native accepted asset/rule identities and metadata.

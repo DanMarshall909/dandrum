@@ -6,6 +6,8 @@ import {patchFromSession,compileNativePatch} from '../engine/native-document.mjs
 import {Store} from '../engine/store.mjs';
 import {ShellPresenter} from '../shell/ShellPresenter.mjs';
 import {selectNativeSamples} from '../shell/import-actions.mjs';
+import {installComputerKeyboard} from '../shell/computer-keyboard.mjs';
+import {JSDOM} from 'jsdom';
 import {backend,session,connection,yaml} from './native-fixture.mjs';
 
 const hash='2e484972f38876c961b3c23fb4952487dce3e18501c7fb0efd1b8cb7011734d5',resource=`selected/${hash}.wav`,selectionId='9007199254740993';
@@ -179,4 +181,81 @@ test('native preparation and cleanup failure preserves the primary rejection and
   bridge.functions.releaseSamplerSelection=()=>Promise.reject({code:'releaseUnavailable'});
   await assert.rejects(engine.importSamples(files,{policy:'sequential',startNote:48}),error=>error.cause===failure&&error.message.includes('sessionWorkerBusy')&&error.message.includes('releaseUnavailable'));
   assert.deepEqual(engine.getPatch(),before);assert.equal(engine.sessionHistory.undoCount,0);
+});
+
+
+function keyboard(presenter){
+  const dom=new JSDOM('<body></body>');
+  window.addEventListener=dom.window.addEventListener.bind(dom.window);
+  window.removeEventListener=dom.window.removeEventListener.bind(dom.window);
+  presenter.attach();const uninstall=installComputerKeyboard(presenter.keyboardBindings);
+  return {press:(key,options={})=>dom.window.document.body.dispatchEvent(new dom.window.KeyboardEvent('keydown',{key,bubbles:true,...options})),
+    close:()=>{uninstall();presenter.detach();dom.window.close();}};
+}
+test('Escape disposes the native mapping choice once through the installed keyboard entrypoint',async t=>{
+  const {engine,bridge,store,files}=await setup(t),presenter=new ShellPresenter(store),before=engine.getPatch(),keys=keyboard(presenter);
+  try{
+    presenter.queueImport([...files,...files]);const old=presenter.buildModel();
+    keys.press('Escape');keys.press('Escape');await new Promise(setImmediate);
+    assert.equal(store.getSnapshot().editor.importDialog,null);
+    assert.deepEqual(bridge.calls.filter(([method])=>method==='releaseSamplerSelection'),[['releaseSamplerSelection',selectionId]]);
+    await old.cancelImport();assert.equal(bridge.calls.filter(([method])=>method==='releaseSamplerSelection').length,1);
+    assert.deepEqual(engine.getPatch(),before);assert.equal(store.undoCount,0);
+  }finally{keys.close();}
+});
+test('replacing an open native mapping dialog disposes its previous choice once and retains the new choice',async t=>{
+  const {engine,bridge,store}=await setup(t,{autoChoose:false}),presenter=new ShellPresenter(store),before=engine.getPatch(),keys=keyboard(presenter);let next=0,choosing;
+  bridge.functions.chooseSamplerFiles=()=>({selectionId:String(++next),phase:'choosing'});
+  bridge.functions.getSamplerSelectionStatus=id=>({selectionId:id,phase:'ready',files:[selected(),{...selected(),name:'other.wav'}]});
+  presenter.browseSamples=()=>{choosing=selectNativeSamples(presenter);};
+  try{
+    keys.press('o',{ctrlKey:true});await choosing;const old=presenter.buildModel();
+    assert.equal(store.getSnapshot().editor.importDialog.files[0].selectionId,'1');
+    keys.press('o',{ctrlKey:true});await choosing;
+    assert.deepEqual(bridge.calls.filter(([method])=>method==='releaseSamplerSelection'),[['releaseSamplerSelection','1']]);
+    assert.equal(store.getSnapshot().editor.importDialog.files[0].selectionId,'2');
+    await old.cancelImport();assert.equal(store.getSnapshot().editor.importDialog.files[0].selectionId,'2','an obsolete dialog callback cannot cancel its replacement');
+    await presenter.buildModel().cancelImport();await old.cancelImport();
+    assert.deepEqual(bridge.calls.filter(([method])=>method==='releaseSamplerSelection'),[['releaseSamplerSelection','1'],['releaseSamplerSelection','2']]);
+    assert.deepEqual(engine.getPatch(),before);assert.equal(store.undoCount,0);
+  }finally{keys.close();}
+});
+
+
+test('retired native mapping presentation ignores repeated cancellation and late cleanup failure',async t=>{
+  const {bridge,store,files}=await setup(t),presenter=new ShellPresenter(store),completion=Promise.withResolvers(),updates=[];
+  t.after(()=>completion.reject({code:'releaseUnavailable'}));
+  presenter.queueImport([...files,...files]);const model=presenter.buildModel();
+  bridge.functions.releaseSamplerSelection=()=>completion.promise;
+  const cancelled=model.cancelImport();store.close();
+  const original=presenter.setState.bind(presenter);presenter.setState=update=>{updates.push(update);original(update);};
+  const repeated=model.cancelImport();completion.reject({code:'releaseUnavailable'});await Promise.all([cancelled,repeated]);
+  assert.deepEqual(updates,[]);assert.equal(bridge.calls.filter(([method])=>method==='releaseSamplerSelection').length,1);
+});
+test('native dialog replacement retains a cleanup warning without rejecting the new mapping choice',async t=>{
+  const {engine,bridge,store,files}=await setup(t),presenter=new ShellPresenter(store),before=engine.getPatch();
+  presenter.queueImport([...files,...files]);bridge.functions.releaseSamplerSelection=()=>Promise.reject({code:'releaseUnavailable'});
+  const replacement=files.map(file=>({...file,selectionId:'2'}));await presenter.queueImport([...replacement,...replacement]);
+  assert.equal(store.getSnapshot().editor.importDialog.files[0].selectionId,'2');
+  assert.match(store.getSnapshot().editor.modNote??'',/releaseUnavailable/);
+  assert.deepEqual(bridge.calls.filter(([method])=>method==='releaseSamplerSelection'),[['releaseSamplerSelection',selectionId]]);
+  assert.deepEqual(engine.getPatch(),before);assert.equal(store.undoCount,0);
+});
+
+
+test('an empty import offer leaves the current native mapping choice live',async t=>{
+  const {bridge,store,files}=await setup(t),presenter=new ShellPresenter(store);
+  presenter.queueImport([...files,...files]);const dialog=store.getSnapshot().editor.importDialog;
+  await presenter.queueImport([]);assert.equal(store.getSnapshot().editor.importDialog,dialog);
+  assert.equal(bridge.calls.filter(([method])=>method==='releaseSamplerSelection').length,0);
+});
+test('native mapping replacement snapshots offered files before waiting for previous-choice disposal',async t=>{
+  const {bridge,store,files}=await setup(t),presenter=new ShellPresenter(store),completion=Promise.withResolvers();
+  t.after(()=>completion.resolve({selectionId,phase:'released'}));presenter.queueImport([...files,...files]);
+  bridge.functions.releaseSamplerSelection=()=>completion.promise;
+  const offered=[...files,...files].map(file=>({...file,selectionId:'2'}));
+  const replacing=presenter.queueImport(offered);offered.length=0;completion.resolve({selectionId,phase:'released'});await replacing;
+  assert.equal(store.getSnapshot().editor.importDialog?.files.length,2);
+  assert.equal(store.getSnapshot().editor.importDialog.files[0].selectionId,'2');
+  assert.deepEqual(bridge.calls.filter(([method])=>method==='releaseSamplerSelection'),[['releaseSamplerSelection',selectionId]]);
 });

@@ -303,6 +303,62 @@ fn copied_react_import_maps_selected_pcm_once_through_native_history() {
             assert_eq!(saved_state(&mut independent), independent_state);
             assert_packaged_audio(&mut independent);
         }
+        // Exercise the production keyboard cancellation path against real native leases.
+        let before_cancel = structural_native::snapshot(&mut plugin, &browser);
+        let first = selected.path().join("cancel-first.wav");
+        let second = selected.path().join("cancel-second.wav");
+        std::fs::write(&first, SELECTED_WAV).unwrap();
+        std::fs::write(&second, SELECTED_WAV).unwrap();
+        javascript(&mut plugin, &browser, r#"(()=>{
+            if(!document.querySelector('button[aria-label="Add source…"]'))document.querySelector('button[aria-label="Instrument tree"]').click();
+            return 'tree';
+        })()"#);
+        wait_dom(&mut plugin, &browser, r#"document.querySelector('button[aria-label="Add source…"]')"#);
+        javascript(&mut plugin, &browser, r#"(()=>{document.querySelector('button[aria-label="Add source…"]').click();return 'choose';})()"#);
+        let chooser = native_dialog(&mut plugin);
+        assert!(chooser.set_filename(&first));
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while chooser.filename().as_deref() != Some(first.as_path()) {
+            dispatch_context(&mut plugin);
+            assert!(Instant::now() < deadline, "first cancellation fixture file selected");
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        while chooser.filenames().len() != 2 {
+            dispatch_context(&mut plugin);
+            // The chooser may report its pending filename before its folder model
+            // is loaded; select its two actual files once that model is ready.
+            chooser.select_all();
+            assert!(Instant::now() < deadline, "two actual selected files create mapping presentation: {:?}", chooser.filenames());
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        chooser.response(gtk::ResponseType::Accept);
+        drop(chooser);
+        wait_dom(&mut plugin, &browser, r#"document.querySelector('section[aria-label="Import mapping"]')"#);
+        let ready = structural_native::snapshot(&mut plugin, &browser);
+        eprintln!("CANCEL_CHOICES before={}, ready={}", before_cancel["sampleSelections"], ready["sampleSelections"]);
+        let choices = ready["sampleSelections"].as_array().unwrap().iter()
+            .filter(|selection| selection["phase"] == "ready" && !before_cancel["sampleSelections"].as_array().unwrap().iter()
+                .any(|previous| previous["selectionId"] == selection["selectionId"]))
+            .collect::<Vec<_>>();
+        assert_eq!(choices.len(), 1, "one newly acquired mapping choice");
+        let choice = choices[0]["selectionId"].clone();
+        javascript(&mut plugin, &browser, r#"(()=>{window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return 'escape';})()"#);
+        eprintln!("CANCEL_DOM {}", javascript(&mut plugin, &browser, r#"JSON.stringify({mapping:!!document.querySelector('section[aria-label="Import mapping"]'),text:document.body.innerText.slice(-1600)})"#));
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
+            let current = structural_native::snapshot(&mut plugin, &browser);
+            let phase = &current["sampleSelections"].as_array().unwrap().iter()
+                .find(|selection| selection["selectionId"] == choice).unwrap()["phase"];
+            if phase == "released" {
+                assert_eq!(current["yaml"], before_cancel["yaml"]);
+                assert_eq!(current["connection"]["history"], before_cancel["connection"]["history"]);
+                assert_eq!(current["document"]["parameters"], before_cancel["document"]["parameters"]);
+                break;
+            }
+            assert!(Instant::now() < deadline, "real React Escape must release the discarded native selection; phase={phase}");
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert_import_audio(&mut plugin, true);
         gui.destroy(&plugin.plugin_handle());
         drop(browser);
         assert!(parent.children().is_empty());

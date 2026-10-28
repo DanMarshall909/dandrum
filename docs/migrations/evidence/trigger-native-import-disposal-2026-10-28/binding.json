@@ -1,0 +1,511 @@
+{
+  "base": "8d161936bcc412144b66e082e1d3b0867f522307",
+  "source": {
+    "openspec/changes/add-juce-free-trigger-beta-products/interactive-patches.md": "45b574512c97ded0f7f5d1c0f9f393efa43f1b8f7291ccadb4c8e07996afe9e8",
+    "src/clap-adapter/tests/internal/trigger_selection_native.rs": "2ef78f0a21c3ec171584d53a384910c85539e77ea0a623d1ad6043e9b40a63ca",
+    "web/trigger/shell/import-actions.mjs": "e39e562d25a20a5adc3c97412c0fbe0e4e7eb6b52a9b63510bd35f984c5ac20d",
+    "web/trigger/shell/input-actions.mjs": "9586b26484e9cdc143b28137a8099166a4a09bc426ad67ca7d9b32b5cd0d8037",
+    "web/trigger/tests/browser/native-transport.spec.mjs": "366184716920d1826f5da3e3542e8c51857dda097fef20a9418b9b6592aff837",
+    "web/trigger/tests/native-selected-import.test.mjs": "a5fb6c7c0bf4d5062f995c23d4d5128ad743650f51f409e7a0c086d52345b366"
+  },
+  "raw_archive_sha256": "ccbe4db0f2db78cd4823396da7d52c3a2dfc65872991f2fe0b74df2d1f8a0fc6",
+  "native_final_replay": {
+    "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/native-import-disposal-final-replay.tar.gz",
+    "sha256": "d21ee2255306c76bbaf4a0f7357323f4b1eec8f839af5659848d82aba46d24f8",
+    "bytes": 8653020,
+    "binding": {
+      "schema_version": 1,
+      "owner": "prepare-trigger-clap-native.py",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--release",
+        "--locked",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter/Cargo.toml",
+        "--features",
+        "trigger-editor",
+        "--test",
+        "trigger_parameters",
+        "--no-run",
+        "--message-format=json"
+      ],
+      "cwd": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter",
+      "exit_status": 0,
+      "artifacts": {
+        "plugin": {
+          "source": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only/clap/DandrumTrigger.clap",
+          "copy": "DandrumTrigger.clap",
+          "source_sha256": "33af9b9041165b6736a19829b53dcb6c15974f4e76129ec201e9d9f1c6749572",
+          "copy_sha256": "33af9b9041165b6736a19829b53dcb6c15974f4e76129ec201e9d9f1c6749572",
+          "provenance": "prebuilt-product"
+        },
+        "test": {
+          "source": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only/rust-target/release/deps/trigger_parameters-f0f93c2ea72dff92",
+          "copy": "trigger-parameters-test",
+          "source_sha256": "d02dc9cac0c54b8a2289573e5015edf8fe37b3f4db1a61478edc0f33e0dc60f6",
+          "copy_sha256": "d02dc9cac0c54b8a2289573e5015edf8fe37b3f4db1a61478edc0f33e0dc60f6",
+          "compiler_artifact": {
+            "reason": "compiler-artifact",
+            "package_id": "path+file:///home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter#dandrum_clap_adapter@0.1.0",
+            "manifest_path": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter/Cargo.toml",
+            "target": {
+              "kind": [
+                "test"
+              ],
+              "crate_types": [
+                "bin"
+              ],
+              "name": "trigger_parameters",
+              "src_path": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter/tests/trigger_parameters.rs",
+              "edition": "2024",
+              "doc": false,
+              "doctest": false,
+              "test": true
+            },
+            "profile": {
+              "opt_level": "3",
+              "debuginfo": 0,
+              "debug_assertions": false,
+              "overflow_checks": false,
+              "test": true
+            },
+            "features": [
+              "default",
+              "trigger",
+              "trigger-editor"
+            ],
+            "filenames": [
+              "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only/rust-target/release/deps/trigger_parameters-f0f93c2ea72dff92"
+            ],
+            "executable": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only/rust-target/release/deps/trigger_parameters-f0f93c2ea72dff92",
+            "fresh": false
+          }
+        }
+      },
+      "resources": {
+        "source": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only/clap/DandrumTrigger.resources",
+        "copy": "DandrumTrigger.resources",
+        "files": [
+          {
+            "path": ".staged",
+            "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "copy_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "path": "editor/app.css",
+            "source_sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5",
+            "copy_sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5"
+          },
+          {
+            "path": "editor/app.js",
+            "source_sha256": "0f90d10b94313a822f7840b26f97b15f3f1acc8c05bedf19f0752237927cfdbd",
+            "copy_sha256": "0f90d10b94313a822f7840b26f97b15f3f1acc8c05bedf19f0752237927cfdbd"
+          },
+          {
+            "path": "editor/fonts/.gitattributes",
+            "source_sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616",
+            "copy_sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616"
+          },
+          {
+            "path": "editor/fonts/3386a05f6ece969e.ttf",
+            "source_sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160",
+            "copy_sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160"
+          },
+          {
+            "path": "editor/fonts/6098b66ce7d608dc.ttf",
+            "source_sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef",
+            "copy_sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef"
+          },
+          {
+            "path": "editor/fonts/74103fd6d41bc32c.ttf",
+            "source_sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154",
+            "copy_sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154"
+          },
+          {
+            "path": "editor/fonts/91c841fdfa8e7b94.ttf",
+            "source_sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc",
+            "copy_sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc"
+          },
+          {
+            "path": "editor/fonts/barlow-OFL.txt",
+            "source_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+            "copy_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+          },
+          {
+            "path": "editor/fonts/barlowsemicondensed-OFL.txt",
+            "source_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+            "copy_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+          },
+          {
+            "path": "editor/fonts/c15439e7a03af571.ttf",
+            "source_sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c",
+            "copy_sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c"
+          },
+          {
+            "path": "editor/fonts/c2b046235fb4c2f8.ttf",
+            "source_sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9",
+            "copy_sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9"
+          },
+          {
+            "path": "editor/fonts/cb75439ae401f776.ttf",
+            "source_sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da",
+            "copy_sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da"
+          },
+          {
+            "path": "editor/fonts/df54dbfafba61d49.ttf",
+            "source_sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8",
+            "copy_sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8"
+          },
+          {
+            "path": "editor/fonts/jetbrainsmono-OFL.txt",
+            "source_sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d",
+            "copy_sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d"
+          },
+          {
+            "path": "editor/index.html",
+            "source_sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26",
+            "copy_sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26"
+          },
+          {
+            "path": "instrument/advanced-drum-kit.yaml",
+            "source_sha256": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008",
+            "copy_sha256": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008"
+          },
+          {
+            "path": "instrument/assets/advanced-drums.wav",
+            "source_sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503",
+            "copy_sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503"
+          }
+        ]
+      }
+    },
+    "native_test_sha256": "2ef78f0a21c3ec171584d53a384910c85539e77ea0a623d1ad6043e9b40a63ca"
+  },
+  "native_initial_red_replay": {
+    "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/native-import-disposal-native-red-replay.tar.gz",
+    "sha256": "4caf9fc86c9efd4fd343267370cb1145ddcbcaa3bf1d58768753a24adfb16b46",
+    "bytes": 8651910,
+    "binding": {
+      "schema_version": 1,
+      "owner": "prepare-trigger-clap-native.py",
+      "command": [
+        "/home/dan/.cargo/bin/cargo",
+        "test",
+        "--release",
+        "--locked",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter/Cargo.toml",
+        "--features",
+        "trigger-editor",
+        "--test",
+        "trigger_parameters",
+        "--no-run",
+        "--message-format=json"
+      ],
+      "cwd": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter",
+      "exit_status": 0,
+      "artifacts": {
+        "plugin": {
+          "source": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only/clap/DandrumTrigger.clap",
+          "copy": "DandrumTrigger.clap",
+          "source_sha256": "33af9b9041165b6736a19829b53dcb6c15974f4e76129ec201e9d9f1c6749572",
+          "copy_sha256": "33af9b9041165b6736a19829b53dcb6c15974f4e76129ec201e9d9f1c6749572",
+          "provenance": "prebuilt-product"
+        },
+        "test": {
+          "source": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only/rust-target/release/deps/trigger_parameters-f0f93c2ea72dff92",
+          "copy": "trigger-parameters-test",
+          "source_sha256": "b6a81de3dca10cdcd059457bb9ea9f848d5dc5549853429ab5a6b120134554f8",
+          "copy_sha256": "b6a81de3dca10cdcd059457bb9ea9f848d5dc5549853429ab5a6b120134554f8",
+          "compiler_artifact": {
+            "reason": "compiler-artifact",
+            "package_id": "path+file:///home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter#dandrum_clap_adapter@0.1.0",
+            "manifest_path": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter/Cargo.toml",
+            "target": {
+              "kind": [
+                "test"
+              ],
+              "crate_types": [
+                "bin"
+              ],
+              "name": "trigger_parameters",
+              "src_path": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter/tests/trigger_parameters.rs",
+              "edition": "2024",
+              "doc": false,
+              "doctest": false,
+              "test": true
+            },
+            "profile": {
+              "opt_level": "3",
+              "debuginfo": 0,
+              "debug_assertions": false,
+              "overflow_checks": false,
+              "test": true
+            },
+            "features": [
+              "default",
+              "trigger",
+              "trigger-editor"
+            ],
+            "filenames": [
+              "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only/rust-target/release/deps/trigger_parameters-f0f93c2ea72dff92"
+            ],
+            "executable": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only/rust-target/release/deps/trigger_parameters-f0f93c2ea72dff92",
+            "fresh": false
+          }
+        }
+      },
+      "resources": {
+        "source": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only/clap/DandrumTrigger.resources",
+        "copy": "DandrumTrigger.resources",
+        "files": [
+          {
+            "path": ".staged",
+            "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "copy_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "path": "editor/app.css",
+            "source_sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5",
+            "copy_sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5"
+          },
+          {
+            "path": "editor/app.js",
+            "source_sha256": "89e426e216f000a892f69dc96dcebe715297b1a9db214dfeda500883fba11501",
+            "copy_sha256": "89e426e216f000a892f69dc96dcebe715297b1a9db214dfeda500883fba11501"
+          },
+          {
+            "path": "editor/fonts/.gitattributes",
+            "source_sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616",
+            "copy_sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616"
+          },
+          {
+            "path": "editor/fonts/3386a05f6ece969e.ttf",
+            "source_sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160",
+            "copy_sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160"
+          },
+          {
+            "path": "editor/fonts/6098b66ce7d608dc.ttf",
+            "source_sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef",
+            "copy_sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef"
+          },
+          {
+            "path": "editor/fonts/74103fd6d41bc32c.ttf",
+            "source_sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154",
+            "copy_sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154"
+          },
+          {
+            "path": "editor/fonts/91c841fdfa8e7b94.ttf",
+            "source_sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc",
+            "copy_sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc"
+          },
+          {
+            "path": "editor/fonts/barlow-OFL.txt",
+            "source_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+            "copy_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+          },
+          {
+            "path": "editor/fonts/barlowsemicondensed-OFL.txt",
+            "source_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+            "copy_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+          },
+          {
+            "path": "editor/fonts/c15439e7a03af571.ttf",
+            "source_sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c",
+            "copy_sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c"
+          },
+          {
+            "path": "editor/fonts/c2b046235fb4c2f8.ttf",
+            "source_sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9",
+            "copy_sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9"
+          },
+          {
+            "path": "editor/fonts/cb75439ae401f776.ttf",
+            "source_sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da",
+            "copy_sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da"
+          },
+          {
+            "path": "editor/fonts/df54dbfafba61d49.ttf",
+            "source_sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8",
+            "copy_sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8"
+          },
+          {
+            "path": "editor/fonts/jetbrainsmono-OFL.txt",
+            "source_sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d",
+            "copy_sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d"
+          },
+          {
+            "path": "editor/index.html",
+            "source_sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26",
+            "copy_sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26"
+          },
+          {
+            "path": "instrument/advanced-drum-kit.yaml",
+            "source_sha256": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008",
+            "copy_sha256": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008"
+          },
+          {
+            "path": "instrument/assets/advanced-drums.wav",
+            "source_sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503",
+            "copy_sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503"
+          }
+        ]
+      }
+    },
+    "native_test_sha256": "33142eae10acd5d863cc0bd0c7e76a095f4d3265f1f2b812fdad452528de5a0c",
+    "production_bundle_base": "8d161936bcc412144b66e082e1d3b0867f522307",
+    "result": "Genuine native RED: real React Escape leaves selection phase ready. Earlier two-file folder-model timing failure is retained as setup only."
+  },
+  "correlated_red_binding": {
+    "old_archive_sha256": "bf6e600f528bd321fa93ecc318f1339d5a93cdd24103efe273d32ceb97443205",
+    "current_test": {
+      "source": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only/rust-target/release/deps/trigger_parameters-f0f93c2ea72dff92",
+      "copy": "trigger-parameters-test",
+      "source_sha256": "d02dc9cac0c54b8a2289573e5015edf8fe37b3f4db1a61478edc0f33e0dc60f6",
+      "copy_sha256": "d02dc9cac0c54b8a2289573e5015edf8fe37b3f4db1a61478edc0f33e0dc60f6",
+      "compiler_artifact": {
+        "reason": "compiler-artifact",
+        "package_id": "path+file:///home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter#dandrum_clap_adapter@0.1.0",
+        "manifest_path": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter/Cargo.toml",
+        "target": {
+          "kind": [
+            "test"
+          ],
+          "crate_types": [
+            "bin"
+          ],
+          "name": "trigger_parameters",
+          "src_path": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/clap-adapter/tests/trigger_parameters.rs",
+          "edition": "2024",
+          "doc": false,
+          "doctest": false,
+          "test": true
+        },
+        "profile": {
+          "opt_level": "3",
+          "debuginfo": 0,
+          "debug_assertions": false,
+          "overflow_checks": false,
+          "test": true
+        },
+        "features": [
+          "default",
+          "trigger",
+          "trigger-editor"
+        ],
+        "filenames": [
+          "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only/rust-target/release/deps/trigger_parameters-f0f93c2ea72dff92"
+        ],
+        "executable": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/build/engine-only/rust-target/release/deps/trigger_parameters-f0f93c2ea72dff92",
+        "fresh": false
+      }
+    },
+    "test_source_sha256": "2ef78f0a21c3ec171584d53a384910c85539e77ea0a623d1ad6043e9b40a63ca",
+    "resource_files": [
+      {
+        "path": ".staged",
+        "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "copy_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "editor/app.css",
+        "source_sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5",
+        "copy_sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5"
+      },
+      {
+        "path": "editor/app.js",
+        "source_sha256": "89e426e216f000a892f69dc96dcebe715297b1a9db214dfeda500883fba11501",
+        "copy_sha256": "89e426e216f000a892f69dc96dcebe715297b1a9db214dfeda500883fba11501"
+      },
+      {
+        "path": "editor/fonts/.gitattributes",
+        "source_sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616",
+        "copy_sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616"
+      },
+      {
+        "path": "editor/fonts/3386a05f6ece969e.ttf",
+        "source_sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160",
+        "copy_sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160"
+      },
+      {
+        "path": "editor/fonts/6098b66ce7d608dc.ttf",
+        "source_sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef",
+        "copy_sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef"
+      },
+      {
+        "path": "editor/fonts/74103fd6d41bc32c.ttf",
+        "source_sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154",
+        "copy_sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154"
+      },
+      {
+        "path": "editor/fonts/91c841fdfa8e7b94.ttf",
+        "source_sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc",
+        "copy_sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc"
+      },
+      {
+        "path": "editor/fonts/barlow-OFL.txt",
+        "source_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+        "copy_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+      },
+      {
+        "path": "editor/fonts/barlowsemicondensed-OFL.txt",
+        "source_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+        "copy_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+      },
+      {
+        "path": "editor/fonts/c15439e7a03af571.ttf",
+        "source_sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c",
+        "copy_sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c"
+      },
+      {
+        "path": "editor/fonts/c2b046235fb4c2f8.ttf",
+        "source_sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9",
+        "copy_sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9"
+      },
+      {
+        "path": "editor/fonts/cb75439ae401f776.ttf",
+        "source_sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da",
+        "copy_sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da"
+      },
+      {
+        "path": "editor/fonts/df54dbfafba61d49.ttf",
+        "source_sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8",
+        "copy_sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8"
+      },
+      {
+        "path": "editor/fonts/jetbrainsmono-OFL.txt",
+        "source_sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d",
+        "copy_sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d"
+      },
+      {
+        "path": "editor/index.html",
+        "source_sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26",
+        "copy_sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26"
+      },
+      {
+        "path": "instrument/advanced-drum-kit.yaml",
+        "source_sha256": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008",
+        "copy_sha256": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008"
+      },
+      {
+        "path": "instrument/assets/advanced-drums.wav",
+        "source_sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503",
+        "copy_sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503"
+      }
+    ]
+  },
+  "checks": {
+    "node": 249,
+    "browser": 14,
+    "native_clap": 31,
+    "native_seconds": 120.42,
+    "import_actions_V8": "100%lines/74.63%branches/64%functions",
+    "input_actions_V8": "62.77%lines/46.51%branches/31.25%functions"
+  },
+  "reuse": "CMake unchanged from8d161936:9source-free cases183.537s; unchangedRust production33af9b90 retains published ownerLLVM/official validator. No new wholeGUI/physical/DAW/state claim."
+}
