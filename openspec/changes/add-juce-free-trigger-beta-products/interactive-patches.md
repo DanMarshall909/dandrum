@@ -163,6 +163,13 @@ compatibility. Current host-owned physical values must be installed before the
 new runtime's first consuming block, including nondefault values and concurrent
 automation. True incompatible interfaces still reject explicitly.
 
+The public parameter description includes its product scope and optional control
+group. Resolve these from the initially prepared target bindings alongside the
+fixed alias/range descriptions, rather than reclassifying controls when a later
+silent graph temporarily replaces the player with control sinks. Current values
+remain runtime-owned. Empty must keep the same public descriptions, not turn
+sample-group controls into global controls merely because it renders no sample.
+
 Native history owns before/after document and selected-resource states.
 
 The version-1 `redoInstrumentSession` operation takes the same four canonical

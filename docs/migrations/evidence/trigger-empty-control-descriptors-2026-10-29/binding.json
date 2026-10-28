@@ -1,0 +1,232 @@
+{
+  "base": "05b1048ac8a30b681a3a6f3a9211f7cf21cea995",
+  "source": {
+    "src/trigger-host/src/parameters.rs": "88e5f7a8d22d1bc9e38b2cd394301f64918aba3b63b1bd8738bdf8e5ada23a4c",
+    "src/trigger-host/tests/selected_admission.rs": "0c1bb4990768de1c6a464547aba4850db552cbd677faa9e3a5b604bc796618bb",
+    "openspec/changes/add-juce-free-trigger-beta-products/interactive-patches.md": "ce3d758cbb6265172cc86c6396548e732cde0d1eec990df5b849c6a681f96348"
+  },
+  "raw_archive_sha256": "50fe5df91a497964f06328a28c59182e9d5fe1adda8f13259604f9d96e877976",
+  "llvm": {
+    "base": "05b1048ac8a30b681a3a6f3a9211f7cf21cea995",
+    "objects": [
+      {
+        "path": "/home/dan/.cache/dandrum-trigger-beta/llvm/debug/deps/selected_admission-4a228bd0aeaa452e",
+        "sha256": "5b6f0efa5ee8d9beabb00b4274e6dee69c9ccb2125f6f1a78e9a9930d3e3c885",
+        "artifact": {
+          "reason": "compiler-artifact",
+          "package_id": "path+file:///home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/trigger-host#dandrum-trigger-host@0.1.0",
+          "manifest_path": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/trigger-host/Cargo.toml",
+          "target": {
+            "kind": [
+              "test"
+            ],
+            "crate_types": [
+              "bin"
+            ],
+            "name": "selected_admission",
+            "src_path": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/trigger-host/tests/selected_admission.rs",
+            "edition": "2024",
+            "doc": false,
+            "doctest": false,
+            "test": true
+          },
+          "profile": {
+            "opt_level": "0",
+            "debuginfo": 1,
+            "debug_assertions": true,
+            "overflow_checks": true,
+            "test": true
+          },
+          "features": [],
+          "filenames": [
+            "/home/dan/.cache/dandrum-trigger-beta/llvm/debug/deps/selected_admission-4a228bd0aeaa452e"
+          ],
+          "executable": "/home/dan/.cache/dandrum-trigger-beta/llvm/debug/deps/selected_admission-4a228bd0aeaa452e",
+          "fresh": false
+        },
+        "owner": "trigger-host"
+      },
+      {
+        "path": "/home/dan/.cache/dandrum-trigger-beta/llvm/debug/deps/snapshot-fbc800a2697a4d35",
+        "sha256": "e8e142a159c80ae9623925130a824fcf8cde0e6be018c2d30fb64203cec85106",
+        "artifact": {
+          "reason": "compiler-artifact",
+          "package_id": "path+file:///home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/trigger-host#dandrum-trigger-host@0.1.0",
+          "manifest_path": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/trigger-host/Cargo.toml",
+          "target": {
+            "kind": [
+              "test"
+            ],
+            "crate_types": [
+              "bin"
+            ],
+            "name": "snapshot",
+            "src_path": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/trigger-host/tests/snapshot.rs",
+            "edition": "2024",
+            "doc": false,
+            "doctest": false,
+            "test": true
+          },
+          "profile": {
+            "opt_level": "0",
+            "debuginfo": 1,
+            "debug_assertions": true,
+            "overflow_checks": true,
+            "test": true
+          },
+          "features": [],
+          "filenames": [
+            "/home/dan/.cache/dandrum-trigger-beta/llvm/debug/deps/snapshot-fbc800a2697a4d35"
+          ],
+          "executable": "/home/dan/.cache/dandrum-trigger-beta/llvm/debug/deps/snapshot-fbc800a2697a4d35",
+          "fresh": false
+        },
+        "owner": "trigger-host"
+      },
+      {
+        "path": "/home/dan/.cache/dandrum-trigger-beta/llvm/debug/deps/parameters-dfc65653368ed704",
+        "sha256": "d69f89f4418fad83126cf40a52cf20959cabc8e2ffc4ba2970c1636eaaff8f52",
+        "artifact": {
+          "reason": "compiler-artifact",
+          "package_id": "path+file:///home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/trigger-host#dandrum-trigger-host@0.1.0",
+          "manifest_path": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/trigger-host/Cargo.toml",
+          "target": {
+            "kind": [
+              "test"
+            ],
+            "crate_types": [
+              "bin"
+            ],
+            "name": "parameters",
+            "src_path": "/home/dan/code/dandrum-worktrees/juce-free-host-adapters/src/trigger-host/tests/parameters.rs",
+            "edition": "2024",
+            "doc": false,
+            "doctest": false,
+            "test": true
+          },
+          "profile": {
+            "opt_level": "0",
+            "debuginfo": 1,
+            "debug_assertions": true,
+            "overflow_checks": true,
+            "test": true
+          },
+          "features": [],
+          "filenames": [
+            "/home/dan/.cache/dandrum-trigger-beta/llvm/debug/deps/parameters-dfc65653368ed704"
+          ],
+          "executable": "/home/dan/.cache/dandrum-trigger-beta/llvm/debug/deps/parameters-dfc65653368ed704",
+          "fresh": false
+        },
+        "owner": "trigger-host"
+      }
+    ],
+    "profiles": {
+      "15292036324928771470_0-744899.profraw": "bcfe2d0eec75f2b6549715296df0754b9a04a1b81488c512ab9fe0705ee37ad5",
+      "18028913585598305000_0-744892.profraw": "7a2cf6f0262c7aff71cb3cdc37c1d13cda1d595fb79a5cc714666166377977f7",
+      "9477588068213697339_0-744864.profraw": "d0766d644531d5fb7188483d8823ade91d66901a0d8bead1fb31325a65d5b24d"
+    },
+    "merged_sha256": "2dac8d52aea8b440cbf8998d1c77c122438b304ca0879f1cfe0786384d93d08c",
+    "tools": {
+      "llvm-cov": "db3a5f91495e98fa6e4ce9e2fd6f890f35ddeb17966fb10fe2fab332497388f6",
+      "llvm-profdata": "0a7a1ad6ec3c5af6eb594009d949e470ad57c8f5dd5e1c1d8731babf9407251d"
+    },
+    "source_sha256": "a7b8ec6a2291e1bd839a83a439b0e0d6adbc307915bf0d97158a441feedead55",
+    "replay_objects_pending": false,
+    "scope": "Focused host selected-admission, parameter and snapshot test executables. Actual native Core/GTK/physical input, official release validator, portable restoration, installed and named DAW gates remain separate; full engine owner coverage is not this scope.",
+    "object_replay": {
+      "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/empty-patch-scope-llvm-objects.tar.gz",
+      "sha256": "303f839a9d55912321b610fcf6af519146b8ec2fc40b009b7fb3ff29053569dc",
+      "bytes": 87751563
+    }
+  },
+  "host_test_results": [
+    [
+      "26",
+      "0",
+      "0"
+    ],
+    [
+      "4",
+      "0",
+      "0"
+    ],
+    [
+      "14",
+      "0",
+      "0"
+    ],
+    [
+      "17",
+      "0",
+      "0"
+    ],
+    [
+      "9",
+      "0",
+      "0"
+    ],
+    [
+      "7",
+      "0",
+      "0"
+    ],
+    [
+      "17",
+      "0",
+      "0"
+    ],
+    [
+      "2",
+      "0",
+      "0"
+    ],
+    [
+      "17",
+      "0",
+      "0"
+    ],
+    [
+      "11",
+      "0",
+      "0"
+    ],
+    [
+      "18",
+      "0",
+      "0"
+    ],
+    [
+      "7",
+      "0",
+      "0"
+    ],
+    [
+      "13",
+      "0",
+      "0"
+    ],
+    [
+      "15",
+      "0",
+      "0"
+    ],
+    [
+      "6",
+      "0",
+      "0"
+    ],
+    [
+      "9",
+      "0",
+      "0"
+    ],
+    [
+      "2",
+      "0",
+      "0"
+    ]
+  ],
+  "host_ordinary_tests": 192,
+  "scope": "Descriptor stability only; native New Empty consumer still RED/unimplemented. Unstaged CMake/native Empty fixture changes do not enter this host owner compile/check scope."
+}

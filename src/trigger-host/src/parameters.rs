@@ -61,6 +61,8 @@ pub struct PublicParameter {
     pub physical_min: f64,
     pub physical_max: f64,
     pub physical_default: f64,
+    /// Product grouping remains stable when an accepted graph is silent.
+    pub control_group: Option<u8>,
 }
 
 impl PublicParameter {
@@ -751,12 +753,35 @@ impl ParameterController {
             {
                 return Err(ParameterError::InvalidSurface);
             }
+            let control_group = patch
+                .root()
+                .ports()
+                .iter()
+                .find(|port| port.name() == alias.port_name())
+                .and_then(|port| match port.internal_targets() {
+                    [target] => Some(target),
+                    _ => None,
+                })
+                .and_then(|target| {
+                    patch
+                        .root()
+                        .nodes()
+                        .iter()
+                        .find(|node| node.id() == target.node())
+                        .filter(|node| node.definition_ref() == "sample_map_player")
+                        .map(|_| target)
+                })
+                .and_then(|target| target.port().strip_prefix("group_"))
+                .and_then(|suffix| suffix.split_once('_'))
+                .and_then(|(group, _)| group.parse::<u8>().ok())
+                .filter(|group| *group > 0);
             parameters.push(PublicParameter {
                 id: alias.name().into(),
                 root_index,
                 physical_min: min,
                 physical_max: max,
                 physical_default: range.default(),
+                control_group,
             });
         }
         if parameters.len()
@@ -1539,15 +1564,7 @@ impl SamplerProjection<'_> {
             load_kernel_patch_str(&snapshot.yaml).expect("accepted session document is valid");
         let state = &self.state;
         let parameters = self.parameters.iter().zip(&state.parameters).map(|(parameter, current)| {
-            let alias = patch.preset_surface().parameters().iter().find(|alias| alias.name() == parameter.id)
-                .expect("accepted Trigger surface retains public aliases");
-            let group = patch.root().ports().iter().find(|port| port.name() == alias.port_name())
-                .and_then(|port| match port.internal_targets() { [target] => Some(target), _ => None })
-                .and_then(|target| patch.root().nodes().iter().find(|node| node.id() == target.node())
-                    .filter(|node| node.definition_ref() == "sample_map_player").map(|_| target))
-                .and_then(|target| target.port().strip_prefix("group_"))
-                .and_then(|suffix| suffix.split_once('_'))
-                .and_then(|(group, _)| group.parse::<u8>().ok()).filter(|group| *group > 0);
+            let group = parameter.control_group;
             let mut value = json!({"id":parameter.id,"name":parameter.id,"normalisedValue":current.value,
                 "normalisedDefaultValue":parameter.project(parameter.physical_default).value,
                 "minValue":parameter.physical_min,"maxValue":parameter.physical_max,

@@ -757,3 +757,134 @@ fn failed_patch_retry_recovers_after_its_selected_content_is_released() {
     );
     assert_eq!(fixture.state(), before);
 }
+
+#[test]
+fn silent_empty_document_keeps_product_parameter_scopes_values_and_callback_ownership() {
+    use dandrum_trigger_host::runtime::{ControlEvent, TimedEvent};
+    use serde_json::{Value, json};
+    let mut fixture = Fixture::new();
+    let set = fixture.request("setParameter", json!(["drums.level", 0.5, 1]));
+    fixture.controller.apply(&set).unwrap();
+    let (mut left, mut right) = ([123.; 16], [123.; 16]);
+    fixture
+        ._audio
+        .process_events(
+            &mut left,
+            &mut right,
+            &[TimedEvent {
+                frame_offset: 0,
+                event: ControlEvent::NoteOn {
+                    note: 36,
+                    velocity: 127,
+                },
+            }],
+        )
+        .unwrap();
+    assert_eq!(
+        (left[0], right[0]),
+        (-1.0, -1.0),
+        "known signed nondefault control before Empty"
+    );
+    let read = fixture.request("getSamplerSession", json!([]));
+    let before: Value =
+        serde_json::from_str(&fixture.controller.sampler_session_reply(&read).unwrap()).unwrap();
+    assert_eq!(
+        before["result"]["document"]["parameters"]
+            .as_array()
+            .unwrap()
+            .len(),
+        23
+    );
+    let mut graph: serde_yaml::Value =
+        serde_yaml::from_str(&fixture.controller.session().owner_snapshot().yaml).unwrap();
+    let mut modules =
+        vec![json!({"id":"empty_audio","type":"audio_mixer","static":{"channels":2}})];
+    for (index, port) in graph["ports"]
+        .as_sequence_mut()
+        .unwrap()
+        .iter_mut()
+        .enumerate()
+    {
+        if port["direction"].as_str() == Some("input") {
+            let id = format!("empty_control_{index}");
+            modules.push(json!({"id":id,"type":"control_mixer","static":{"channels":1}}));
+            port["maps_to"] = format!("{id}.inputs").into();
+        } else {
+            port["maps_from"] = "empty_audio.mix".into();
+        }
+    }
+    graph["modules"] = serde_yaml::to_value(modules).unwrap();
+    graph["connections"] = serde_yaml::to_value(Vec::<Value>::new()).unwrap();
+    graph
+        .as_mapping_mut()
+        .unwrap()
+        .remove(serde_yaml::Value::String("assets".into()));
+    graph["metadata"]["name"] = "Empty".into();
+    let document = serde_yaml::to_string(&graph).unwrap();
+    let negotiate = fixture.request("negotiateEditorProtocol", json!([2]));
+    fixture
+        .controller
+        .negotiate_editor_protocol(&negotiate)
+        .unwrap();
+    let frame=json!({"version":2,"attachmentId":fixture.connection.attachment_id,"requestId":fixture.next_request.to_string(),
+        "method":"prepareInstrumentSessionPatch","args":["113",fixture.connection.attachment_id,"1","0",document]}).to_string();
+    fixture.next_request += 1;
+    let Admission::New(request) = fixture.controller.admit(&frame).unwrap() else {
+        panic!("new native request")
+    };
+    fixture.controller.admit_session_command(&request).unwrap();
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while fixture.controller.session().owner_snapshot().revision != 1 {
+        fixture.controller.service_session_jobs().unwrap();
+        assert!(Instant::now() < deadline, "Empty worker publishes");
+        std::thread::sleep(Duration::from_millis(2));
+    }
+    let allocations = std::thread::scope(|scope| {
+        scope
+            .spawn(|| {
+                allocation_counter::measure(|| {
+                    let report = fixture
+                        ._audio
+                        .process_events(
+                            &mut left,
+                            &mut right,
+                            &[TimedEvent {
+                                frame_offset: 0,
+                                event: ControlEvent::NoteOn {
+                                    note: 36,
+                                    velocity: 127,
+                                },
+                            }],
+                        )
+                        .unwrap();
+                    assert!(report.swapped);
+                })
+            })
+            .join()
+            .unwrap()
+    });
+    assert_eq!(allocations, allocation_counter::AllocationInfo::default());
+    assert!(
+        left.into_iter().chain(right).all(|sample| sample == 0.0),
+        "accepted Empty is literal zero after the real callback"
+    );
+    let read = fixture.request("getSamplerSession", json!([]));
+    let after: Value =
+        serde_json::from_str(&fixture.controller.sampler_session_reply(&read).unwrap()).unwrap();
+    assert_eq!(
+        after["result"]["document"]["parameters"], before["result"]["document"]["parameters"],
+        "public descriptors and applied values remain stable in Empty"
+    );
+    assert!(
+        after["result"]["document"]["maps"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    assert!(
+        after["result"]["document"]["sources"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+}
