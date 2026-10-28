@@ -86,6 +86,28 @@ session and survive editor destruction. Before admission, disposal releases only
 view-owned work. Status recovery never re-executes an edit or loosens the native
 admission-owner check. Existing mapping retry behavior is not changed implicitly.
 
+
+### Recreated-consumer discovery of pending work
+
+The accepted session connection optionally includes one `activeRequestId`, a
+canonical positive decimal session request ID strictly below `nextRequestId`.
+It identifies the one native admitted patch/mapping/history request still owned
+by the controller, including preparation and a ready runtime awaiting safe
+publication. It survives editor retirement and is absent after terminal completion.
+It carries no document, resources, callback or authority to resubmit an edit.
+The additive optional field preserves the version1 connection and bounded wire
+profiles; absent means no pending structural request, including legacy comparison
+snapshots. Pre-publication reply-budget qualification includes its worst-case ID.
+
+A recreated JUCE-free production consumer follows that ID through the existing
+status operation before exposing the editor, then reads the canonical accepted
+snapshot and native history. It never reissues the original preparation. A failed
+recovered job preserves the accepted instrument and presents its bounded failure;
+a closed consumer makes no subsequent request or presentation update. It must not
+infer pending work from `nextRequestId - 1`: external state replacement may clear
+retained outcomes while preserving that cursor. No browser history/job owner is
+introduced.
+
 ## Bounded supported patch validation
 
 Validate the entire candidate before preparation/publication. Resolve only the

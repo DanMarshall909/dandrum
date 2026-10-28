@@ -1,0 +1,16 @@
+{
+  "base": "6ac70423afd7ed385f415bda8df790bd1a41bef1",
+  "source": {
+    "src/trigger-host/src/parameters.rs": "497024b6b2a3d95021509c53b492a7bcc48a0c426f222733404ff2f7e4c4257c",
+    "src/trigger-host/tests/session_jobs.rs": "e131f6c5170ac84c6e9fa5694412e87d7eabf98e159a4373476a93ffc8511f78",
+    "openspec/changes/add-juce-free-trigger-beta-products/interactive-patches.md": "68ab6b2c58476f5efc4078a5173a36ad3c748a93b133b3398a9fcd3adb7ef993"
+  },
+  "raw_archive_sha256": "5cb095e1c57ce75cf5bb34b66b4a55b4b33339a118c7669b43684bc034152ad0",
+  "llvm_objects": {
+    "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/recovery-active-request-coverage/replay-objects.tar.gz",
+    "sha256": "ac48b58dec63ca4879cdc67bd40baceff84da3c92401cc83a81c56742acb881b",
+    "bytes": 71002532
+  },
+  "scope": "Optional bounded native pending-request metadata prerequisite for task5.5; no production consumer recovery, native/official requalification, publication or task closure claimed.",
+  "explicit_failure": "Strict engineClippy129 unchanged baseline remains FAIL; no engine source change. Mutation excluded."
+}

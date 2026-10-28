@@ -942,6 +942,7 @@ impl ParameterController {
             state: self.parameter_state(),
             instance_id: context.instance_id.to_string(),
             selections: self.selections.summaries(),
+            active_request_id: self.session_job.as_ref().map(|job| job.request_id.0),
             next_request_id: self
                 .host
                 .session()
@@ -1319,6 +1320,7 @@ impl ParameterController {
             instance_id: "18446744073709551615".into(),
             selections: (0..33).map(|_| serde_json::json!({"selectionId":"18446744073709551615","phase":"preparing"})).collect(),
             next_request_id: "18446744073709551615".into(),
+            active_request_id: Some(u64::MAX - 1),
         };
         let mut activation = ProjectedActivation {
             runtime: &mut self.runtime,
@@ -1544,6 +1546,7 @@ struct SamplerProjection<'a> {
     instance_id: String,
     selections: serde_json::Value,
     next_request_id: String,
+    active_request_id: Option<u64>,
 }
 impl SamplerProjection<'_> {
     fn value(
@@ -1609,7 +1612,7 @@ impl SamplerProjection<'_> {
             }).collect::<Vec<_>>();
             json!({"id":map.id,"selectionMode":prepared.selection_mode().unwrap_or("first_match"),"selectionSeed":prepared.selection_seed().to_string(),"zones":zones})
         }).collect::<Vec<_>>();
-        let result = json!({"yaml":snapshot.yaml,
+        let mut result = json!({"yaml":snapshot.yaml,
             "sourcePath":source_path,
             "sampleSelections":self.selections,
             "document":{"generation":state.generation,"instrumentId":patch.instrument().map(|identity| identity.id.as_str()).unwrap_or(""),
@@ -1618,6 +1621,9 @@ impl SamplerProjection<'_> {
                 "attachmentId":attachment_id,"revision":snapshot.revision.to_string(),"nextRequestId":self.next_request_id,
                 "limits":{"attachments":ATTACHMENT_LIMIT,"history":HISTORY_LIMIT,"outcomes":OUTCOME_LIMIT,"activeRequests":ACTIVE_REQUEST_LIMIT},
                 "history":{"undoCount":snapshot.undo_len,"redoCount":snapshot.redo_len}}});
+        if let Some(id) = self.active_request_id {
+            result["connection"]["activeRequestId"] = id.to_string().into();
+        }
         Ok(result)
     }
 }

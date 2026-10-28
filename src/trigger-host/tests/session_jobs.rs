@@ -198,10 +198,9 @@ fn admitted_mapping_survives_editor_loss_and_recovers_one_native_outcome() {
         status(&mut host, &editor.attachment_id, 91, "1")["state"],
         "running"
     );
-    assert_eq!(
-        snapshot(&mut host, &editor.attachment_id, 92)["connection"]["nextRequestId"],
-        "2"
-    );
+    let pending = snapshot(&mut host, &editor.attachment_id, 92);
+    assert_eq!(pending["connection"]["nextRequestId"], "2");
+    assert_eq!(pending["connection"]["activeRequestId"], "1");
     assert_eq!(
         host.service_session_jobs().unwrap(),
         SessionJobProgress::Pending
@@ -229,6 +228,9 @@ fn admitted_mapping_survives_editor_loss_and_recovers_one_native_outcome() {
         status(&mut host, &fresh.attachment_id, 1, "1")["state"],
         "running"
     );
+    let recovered = snapshot(&mut host, &fresh.attachment_id, 2);
+    assert_eq!(recovered["connection"]["activeRequestId"], "1");
+    assert_eq!(recovered["connection"]["revision"], "0");
     release_tx.send(()).unwrap();
     host.submit_session_completion(worker.join().unwrap())
         .unwrap();
@@ -240,7 +242,8 @@ fn admitted_mapping_survives_editor_loss_and_recovers_one_native_outcome() {
     let (left, right) = render(&mut audio, 60);
     assert_eq!((left[0], right[0]), (-0.5, -0.5));
     assert_eq!(render(&mut audio, 36), ([0.; 16], [0.; 16]));
-    let accepted = snapshot(&mut host, &fresh.attachment_id, 2);
+    let accepted = snapshot(&mut host, &fresh.attachment_id, 3);
+    assert!(accepted["connection"].get("activeRequestId").is_none());
     assert_eq!(accepted["connection"]["revision"], "1");
     assert_eq!(accepted["connection"]["nextRequestId"], "2");
     assert_eq!(
@@ -249,7 +252,7 @@ fn admitted_mapping_survives_editor_loss_and_recovers_one_native_outcome() {
     );
     assert_eq!(accepted["document"]["generation"], 2);
     assert_eq!(host.parameter_state().parameters[2].value, 0.25);
-    for id in 3..=135 {
+    for id in 4..=136 {
         let retained = status(&mut host, &fresh.attachment_id, id, "1");
         assert_eq!(retained["state"], "completed");
         assert_eq!(retained["revision"], "1");
@@ -520,6 +523,7 @@ fn failed_preparation_reports_only_its_real_error_and_preserves_accepted_state()
     assert_eq!(unchanged["document"]["generation"], 1);
     assert_eq!(unchanged["connection"]["revision"], "0");
     assert_eq!(unchanged["connection"]["nextRequestId"], "2");
+    assert!(unchanged["connection"].get("activeRequestId").is_none());
     assert_eq!(
         unchanged["connection"]["history"],
         json!({"undoCount":0,"redoCount":0})
