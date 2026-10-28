@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {parse,stringify} from 'yaml';
 import {NativeEngine} from '../engine/native-engine.mjs';
 import {Store} from '../engine/store.mjs';
+import {entityDelta} from '../engine/entity-delta.mjs';
 import {backend,session,connection,yaml} from './native-fixture.mjs';
 
 const capabilities={metering:false,sourceWaveforms:false,windowTitle:false,editorResize:false};
@@ -133,24 +134,24 @@ test('a fresh editor exposes retained native Redo without recreating browser und
 });
 
 
-test('a document-created rule keeps its editor identity when a later typed mapping command completes',async t=>{
+test('an existing rule keeps its canonical editor identity after document and typed mapping commands',async t=>{
   const previous=globalThis.window,bridge=backend();globalThis.window={__DANDRUM__:{protocolVersion:1,backendId:'juce-free',capabilities,backend:bridge}};
   const engine=new NativeEngine({heartbeatMs:0,pollMs:0});let store,document,step=0;
   t.after(()=>{store?.close();engine.close();globalThis.window=previous;});await engine.initialize();store=new Store(engine);
   bridge.functions.prepareInstrumentSessionPatch=(_instance,_attachment,request,_revision,text)=>{assert.equal(request,'1');document=text;step=1;return {status:'accepted',job_id:request};};
   bridge.functions.setInstrumentZoneKeyRange=(_instance,_attachment,request,revision,map,zone,low,high)=>{
-    assert.equal(request,'2');assert.equal(revision,'1');assert.equal(map,'kit');assert.equal(zone,'editor-copy');
-    const graph=parse(document);graph.assets.sample_maps[0].zones.find(item=>item.id==='editor-copy').key_range=[low,high];document=stringify(graph);step=2;return {status:'accepted',job_id:request};
+    assert.equal(request,'2');assert.equal(revision,'1');assert.equal(map,'kit');assert.equal(zone,'kick');
+    const graph=parse(document);graph.assets.sample_maps[0].zones.find(item=>item.id==='kick').key_range=[low,high];document=stringify(graph);step=2;return {status:'accepted',job_id:request};
   };
   bridge.functions.getInstrumentSessionJobStatus=request=>{
     bridge.setSession(session(document,7+step,connection({revision:String(step),nextRequestId:String(step+1),history:{undoCount:step,redoCount:0}})));
     return {state:'completed',request_id:request,revision:String(step)};
   };
-  const rules=engine.getPatch().rules,copy={...rules.find(rule=>rule.id==='kit.kick'),id:'editor-copy',noteLo:70,noteHi:70};
-  await store.operation('Add mapping','setRules',[...rules,copy]);
-  assert.ok(engine.getPatch().rules.some(rule=>rule.id==='editor-copy'));
-  await store.operation('Move mapping','updateRule','editor-copy',{noteLo:71,noteHi:71});
-  const retained=engine.getPatch().rules.find(rule=>rule.id==='editor-copy');
+  const rules=engine.getPatch().rules.map(rule=>rule.id==='kit.kick'?{...rule,noteLo:70,noteHi:70}:rule);
+  await store.operation('Move mapping document','setRules',rules);
+  assert.ok(engine.getPatch().rules.some(rule=>rule.id==='kit.kick'));
+  await store.operation('Move mapping','updateRule','kit.kick',{noteLo:71,noteHi:71});
+  const retained=engine.getPatch().rules.find(rule=>rule.id==='kit.kick');
   assert.ok(retained,'typed mapping preserves the document editor identity');assert.equal(retained.noteLo,71);assert.equal(store.undoCount,2);
 });
 
@@ -199,4 +200,94 @@ for(const action of ['document','undo','redo'])test(`closing during ${action} er
   await assert.rejects(pending,error=>error===failure);
   assert.deepEqual(engine.getPatch(),before,'closed editor ignores the recovered native document');
   assert.deepEqual(events.map(event=>event.phase),['preparing']);
+});
+
+
+const unrepresentableEdits=[
+  ['renameNode',p=>['kit','Percussion']],
+  ['addNode',p=>['root','group']],
+  ['moveNode',p=>[p.nodes.find(n=>n.kind==='sound').id,'root',0]],
+  ['setRegion',p=>[p.regions[0].id,{name:'Named hit'}]],
+  ['setOutput',p=>['kit','main']],
+  ['setBus',p=>['main',{channels:[7,8]}]],
+  ['setSelector',p=>['kit.hard_snare',{reset:'never'}]],
+  ['setSelector',p=>['kit.hard_snare',{policy:'random'}]],
+  ['setCandidate',p=>['kit.hard_snare',p.selectors['kit.hard_snare'].candidates[0].id,{name:'Named candidate'}]],
+  ['setCandidate',p=>['kit.hard_snare',p.selectors['kit.hard_snare'].candidates[0].id,{muted:true}]],
+  ['updateRule',p=>[p.rules[0].id,{name:'Named mapping',noteLo:70,noteHi:70}]],
+  ['setRules',p=>[p.rules.map((r,i)=>i? r:{...r,name:'Named mapping',noteLo:70,noteHi:70})]],
+  ['setRules',p=>[[...p.rules,{...p.rules[0],id:'new-rule',noteLo:70,noteHi:70}]]],
+  ['addHistory',p=>['Trim',{start:.01,end:.5},p.regions[0].id]],
+  ['setSlices',p=>[p.assets[0].id,[0,.5],{startNote:70}]],
+  ['importAssets',p=>[[{name:'kit.wav',uri:p.assets[0].uri,duration:1,sampleRate:48000,channels:2}]]],
+  ['importSamples',p=>[[{name:'kit.wav',uri:p.assets[0].uri,duration:1,sampleRate:48000,channels:2}],{policy:'sequential',startNote:70}]],
+  ['mapAssets',p=>[[p.assets[0].id],{policy:'sequential',startNote:70}]],
+  ['applyDelta',p=>{const next=structuredClone(p);next.nodes.find(n=>n.id==='kit').name='Delta rename';return [entityDelta(p,next)];}],
+];
+for(const [index,[method,args]] of unrepresentableEdits.entries())test(`native history refuses unrepresentable edit ${index+1}: ${method}`,async t=>{
+  const previous=globalThis.window,bridge=backend();globalThis.window={__DANDRUM__:{protocolVersion:1,backendId:'juce-free',capabilities,backend:bridge}};
+  const engine=new NativeEngine({heartbeatMs:0,pollMs:0});let store,admissions=0;
+  t.after(()=>{store?.close();engine.close();globalThis.window=previous;});await engine.initialize();store=new Store(engine);
+  const before=engine.getPatch();
+  bridge.functions.prepareInstrumentSessionPatch=(_i,_a,request,_r,text)=>{admissions++;bridge.setSession(session(text,8,connection({revision:'1',nextRequestId:'2',history:{undoCount:1,redoCount:0}})));return {status:'accepted',job_id:request};};
+  bridge.functions.getInstrumentSessionJobStatus=request=>({state:'completed',request_id:request,revision:'1'});
+  const pending=method==='applyDelta'?engine.applyDelta(...args(before)):store.operation('Unsupported edit',method,...args(before));
+  await assert.rejects(pending,/unsupported/i);
+  assert.equal(admissions,0,'unrepresentable state cannot consume native admission or history');
+  assert.deepEqual(engine.getPatch(),before);assert.equal(store.undoCount,0);
+});
+
+test('native region DSP edits publish only reconstructible state through Undo Redo and recreation',async t=>{
+  const previous=globalThis.window,bridge=backend();globalThis.window={__DANDRUM__:{protocolVersion:1,backendId:'juce-free',capabilities,backend:bridge}};
+  const engine=new NativeEngine({heartbeatMs:0,pollMs:0});let store,candidate,action,recreated;
+  t.after(()=>{recreated?.close();store?.close();engine.close();globalThis.window=previous;});await engine.initialize();store=new Store(engine);
+  const before=engine.getPatch();
+  bridge.functions.prepareInstrumentSessionPatch=(_i,_a,request,_r,text)=>{candidate=text;action='edit';return {status:'accepted',job_id:request};};
+  bridge.functions.undoInstrumentSession=(_i,_a,request)=>{action='undo';return {status:'accepted',job_id:request};};
+  bridge.functions.redoInstrumentSession=(_i,_a,request)=>{action='redo';return {status:'accepted',job_id:request};};
+  bridge.functions.getInstrumentSessionJobStatus=request=>{
+    const undo=action==='undo',revision=action==='edit'?1:undo?2:3;
+    bridge.setSession(session(undo?yaml:candidate,7+revision,connection({revision:String(revision),nextRequestId:String(revision+1),history:{undoCount:undo?0:1,redoCount:undo?1:0}})));
+    return {state:'completed',request_id:request,revision:String(revision)};
+  };
+  await store.operation('Trim','setRegion','drums.kick',{start:.01,end:.1,reverse:true,root:36,gain:-6,pan:.25,fades:{in:.001,out:.002},loop:{mode:'forward',start:.02,end:.08,crossfade:.0005}});
+  const accepted=engine.getPatch();assert.deepEqual(accepted.history,[],'native operation history is the supported Undo authority; no transient processing stack');
+  assert.equal(accepted.regions.find(r=>r.id==='drums.kick').start,.01);assert.equal(accepted.regions.find(r=>r.id==='drums.kick').reverse,true);
+  const region=accepted.regions.find(r=>r.id==='drums.kick');
+  assert.deepEqual([region.root,region.gain,region.pan,region.fades,region.loop],[36,-6,.25,{in:.001,out:.002},{mode:'forward',start:.02,end:.08,crossfade:.0005}]);
+  for(const [method,args] of unrepresentableEdits){
+    const pending=method==='applyDelta'?engine.applyDelta(...args(accepted)):store.operation('Rejected edit',method,...args(accepted));
+    await assert.rejects(pending,/unsupported/i);assert.deepEqual(engine.getPatch(),accepted);assert.equal(store.undoCount,1);
+  }
+  await store.undo();assert.deepEqual(engine.getPatch(),before);
+  await store.redo();assert.deepEqual(engine.getPatch(),accepted);
+  engine.close();recreated=new NativeEngine({heartbeatMs:0,pollMs:0});await recreated.initialize();assert.deepEqual(recreated.getPatch(),accepted);
+});
+
+
+for(const action of ['candidate controls','candidate order','candidate removal','voice allocation'])test(`supported native ${action} survives history and reconstruction`,async t=>{
+  const previous=globalThis.window,bridge=backend();globalThis.window={__DANDRUM__:{protocolVersion:1,backendId:'juce-free',capabilities,backend:bridge}};
+  const engine=new NativeEngine({heartbeatMs:0,pollMs:0});let store,candidate,phase,recreated;
+  t.after(()=>{recreated?.close();store?.close();engine.close();globalThis.window=previous;});await engine.initialize();store=new Store(engine);
+  const before=engine.getPatch(),selector='kit.hard_snare',ids=before.selectors[selector].candidates.map(c=>c.id);
+  bridge.functions.prepareInstrumentSessionPatch=(_i,_a,request,_r,text)=>{candidate=text;phase='edit';return {status:'accepted',job_id:request};};
+  bridge.functions.undoInstrumentSession=(_i,_a,request)=>{phase='undo';return {status:'accepted',job_id:request};};
+  bridge.functions.redoInstrumentSession=(_i,_a,request)=>{phase='redo';return {status:'accepted',job_id:request};};
+  bridge.functions.getInstrumentSessionJobStatus=request=>{
+    const undo=phase==='undo',revision=phase==='edit'?1:undo?2:3;
+    bridge.setSession(session(undo?yaml:candidate,7+revision,connection({revision:String(revision),nextRequestId:String(revision+1),history:{undoCount:undo?0:1,redoCount:undo?1:0}})));
+    return {state:'completed',request_id:request,revision:String(revision)};
+  };
+  if(action==='candidate controls')await store.operation('Candidate','setCandidate',selector,ids[0],{weight:2.5,gain:-3,pan:-.2,tune:4});
+  else if(action==='candidate order')await store.operation('Order','reorderCandidates',selector,[...ids].reverse());
+  else if(action==='candidate removal')await store.operation('Remove','removeCandidate',selector,ids[1]);
+  else await store.operation('Voices','setVoicePolicy',{limit:9,steal:'quietest'});
+  const accepted=engine.getPatch(),candidates=accepted.selectors[selector].candidates;
+  if(action==='candidate controls')assert.deepEqual([candidates[0].weight,candidates[0].gain,candidates[0].pan,candidates[0].tune],[2.5,-3,-.2,4]);
+  else if(action==='candidate order')assert.deepEqual(candidates.map(c=>c.id),[...ids].reverse());
+  else if(action==='candidate removal')assert.deepEqual(candidates.map(c=>c.id),[ids[0]]);
+  else assert.deepEqual([accepted.voicePolicy.limit,accepted.voicePolicy.steal],[9,'quietest']);
+  await store.undo();assert.deepEqual(engine.getPatch(),before);
+  await store.redo();assert.deepEqual(engine.getPatch(),accepted);
+  engine.close();recreated=new NativeEngine({heartbeatMs:0,pollMs:0});await recreated.initialize();assert.deepEqual(recreated.getPatch(),accepted);
 });

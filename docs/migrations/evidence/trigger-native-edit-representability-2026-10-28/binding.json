@@ -1,0 +1,23 @@
+{
+  "base": "aeefa184550d188ec317a09f5e56e4530cd3713e",
+  "source": {
+    "web/trigger/engine/native-engine.mjs": "1b8d314db35b6314f341d8ff47cf7c3c5a6ce4a2c56f77c1a7f742ea01f14e0d",
+    "web/trigger/tests/native-session-edits.test.mjs": "fa9772273b21b819a083261b72fd10860ea4a02b454f1961665e4d99bd1e23e4",
+    "web/trigger/tests/native-fixture.mjs": "3ce20b1532cd84bbcc1138de0902378acbc0723992bc8c02d4b18307d3007e17",
+    "openspec/changes/add-juce-free-trigger-beta-products/interactive-patches.md": "8d6be294d18dda79f2b829fbee1d846b0d2dc000a0ee4f1f0f9f79b5127bca92"
+  },
+  "raw_archive_sha256": "8ae792079d158d921e5a407189127c141ceccba92b68d219f33d7460bcf7333a",
+  "native_replay": {
+    "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/frontend-representability-native-replay.tar.gz",
+    "sha256": "85b5a2d6f19acbf352f49d421e785c3e03d9d9c1f2dc0ea372f57af0a0e43fc1",
+    "bytes": 8647530
+  },
+  "checks": {
+    "frontend": 194,
+    "browser_entrypoint": 12,
+    "native_clap": 30,
+    "NativeEngine_V8": "100% lines /87.71% branches /91.51% functions",
+    "Store_V8": "100% lines /86.45% branches /88.89% functions"
+  },
+  "scope": "Repair independent review finding before publication; no beta task/scenario closure. Selection/import/new mappings/Empty remain pending. Strict engineClippy129 baseline FAIL; mutation excluded."
+}

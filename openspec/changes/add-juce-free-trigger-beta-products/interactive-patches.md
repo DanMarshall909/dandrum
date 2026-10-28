@@ -213,3 +213,29 @@ explicitly. Preserve valid packaged saves and all existing restore validation;
 do not emit an unreadable state, rewrite authored defaults or treat selected
 filesystem paths as portable authority. This temporary refusal is not completion
 of the required beta fresh-instance restoration.
+
+## Production consumer representability boundary
+
+The JUCE-free consumer publishes the canonical native snapshot after a document
+operation. Browser drafts are compiler inputs, never an additional accepted
+instrument. Only the fixed projected sample player, root instrument name, voice
+limit/steal, existing mapping geometry/root/removal, sample-region DSP geometry
+and representable candidate controls/order/removal are currently editable.
+Selector policy is restricted to the projected round-robin/weighted forms.
+Allowed field sets reject partial edits that mix a DSP change with unsupported
+metadata. Existing-rule bulk changes cannot create new browser rule identities.
+
+Child names, empty nodes, hierarchy, output/bus/chain/template metadata, selector
+reset/names/mute/solo, explicit processing-history/slice operations and arbitrary
+browser history deltas are rejected before native admission. Region geometry
+edits publish native operation history without a browser-only processing stack.
+Rejecting these edits preserves patch, request cursor and native Undo/Redo,
+including a recreated editor. Comparison-backend behavior is unchanged.
+
+Native selection/import/new mapping and New Empty remain pending in their owning
+tasks. Their production consumer entrypoints must not report successful imports
+before the admitted-resource and canonical-result flow is implemented. This
+restriction is not completion of those tasks, and does not restrict the existing
+native protocol's independently verified full-document endpoints. Broader editor
+metadata needs a deliberate bounded native representation before being enabled;
+retaining browser closures does not satisfy native history or recreation.

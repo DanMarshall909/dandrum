@@ -17,6 +17,15 @@ import {selectNativeTransport} from './native-transport.mjs';
 
 const operations={...structureOperations,...instrumentOperations,...historyOperations,...sliceOperations,...candidateOperations,...routingOperations};
 const unsupported=new Set(['collapseHistory','addModulator','setModulator','removeModulator','addRoute','updateRoute','removeRoute','setMacro','bindMacro','learnMidi','receiveMidi','addProcessor','moveProcessor','setProcessorParam','removeProcessor']);
+// The JUCE-free document stores DSP state, not browser hierarchy or processing stacks.
+const nativeEditFields={
+  setVoicePolicy:[0,['limit','steal']],
+  updateRule:[1,['noteLo','noteHi','velLo','velHi','root']],
+  setRegion:[1,['start','end','root','reverse','gain','pan','fades','loop','playback']],
+  setCandidate:[2,['weight','gain','pan','tune','nativeChokeGroup']],
+  setSelector:[1,['policy']],
+};
+const nativeEditMethods=new Set(['renameNode','setRules','removeRule','removeCandidate','reorderCandidates',...Object.keys(nativeEditFields)]);
 function errorMessage(error){
   return error instanceof Error?error.message
     :typeof error?.message==='string'?error.message
@@ -153,9 +162,9 @@ export class NativeEngine {
         this.session=session;this.generation=session.document.generation;this.sourcePath=session.sourcePath;
         this.connection=connection;
         if(accepted.rules.length)this.samplerSession=session;
-        this.patch=reloadPath?accepted:draft;
+        this.patch=sessionOwned||reloadPath?accepted:draft;
         this.patch.params=accepted.params;
-        if(!reloadPath)this.reconcilePreparedRuleIdentities(accepted);
+        if(!reloadPath&&!sessionOwned)this.reconcilePreparedRuleIdentities(accepted);
         // Native geometry is authoritative; keep stable editor identities and undo operands.
         for(const asset of this.patch.assets){const decoded=accepted.assets.find(a=>a.id===asset.id||a.uri===asset.uri);if(decoded)Object.assign(asset,{sampleRate:decoded.sampleRate,channels:decoded.channels,duration:decoded.duration,frameCount:decoded.frameCount});}
         await this.startFeedback(true);
@@ -173,7 +182,21 @@ export class NativeEngine {
       finally{this.preparing=false;if(this.pendingGeneration>this.generation)void this.requestGeneration(this.pendingGeneration);else this.pendingGeneration=0;}
     });
   }
+  assertNativeEdit(name,args){
+    if(this.backendId!=='juce-free')return;
+    const reject=()=>{throw new Error(`${name} contains state unsupported by native document history`);};
+    if(!nativeEditMethods.has(name))reject();
+    const fields=nativeEditFields[name];
+    if(fields&&Object.keys(args[fields[0]]??{}).some(key=>!fields[1].includes(key)))reject();
+    if(name==='renameNode'&&!this.patch.nodes.some(node=>node.id===args[0]&&node.parent===null))reject();
+    if(name==='setSelector'&&!['rr','weighted'].includes(args[1]?.policy))reject();
+    if(name==='setRules')for(const rule of args[0]){
+      const prior=this.patch.rules.find(item=>item.id===rule.id);
+      if(!prior||[...new Set([...Object.keys(prior),...Object.keys(rule)])].some(key=>!nativeEditFields.updateRule[1].includes(key)&&JSON.stringify(prior[key])!==JSON.stringify(rule[key])))reject();
+    }
+  }
   edit(name,args){
+    try{this.assertNativeEdit(name,args);}catch(error){return Promise.reject(error);}
     if(unsupported.has(name))return Promise.reject(new Error(`${name} is unsupported by the native sampler`));
     if(name==='setModuleParam')return Promise.reject(new Error('Voice module configuration is unsupported; use exposed native parameters'));
     if(['setHistory','addHistory'].includes(name)&&args.some(value=>value?.config?.snap||value?.snap))return Promise.reject(new Error('Zero crossing analysis is unsupported by the native sampler'));
@@ -250,7 +273,7 @@ export class NativeEngine {
     return this.publishSessionCommand('undoInstrumentSession',[]);
   }
   get sessionHistory(){return {undoCount:this.connection?.history.undoCount??0,redoCount:this.connection?.history.redoCount??0,undoLabel:this.backendId==='juce-free'?'Edit instrument':'Change Key Range'};}
-  applyDelta(changes){return this.prepared(draft=>applyEntityDelta(draft,changes));}
+  applyDelta(changes){if(this.backendId==='juce-free')return Promise.reject(new Error('Browser history deltas are unsupported by native document history'));return this.prepared(draft=>applyEntityDelta(draft,changes));}
   beginHostGesture(id){return this.serial(async()=>{await this.parameters.command('beginGesture',id,this.generation);});}
   endHostGesture(id){return this.serial(async()=>{await this.parameters.command('endGesture',id,this.generation);});}
   async resizeEditor(mode){
@@ -282,9 +305,9 @@ export class NativeEngine {
       const asset={id:this.id('asset'),name:file.name,uri:file.uri,state:'loaded',cached:true,duration:file.duration,sampleRate:file.sampleRate,bits:file.bits??0,channels:file.channels,frameCount:Math.round(file.duration*file.sampleRate)};draft.assets.push(asset);return asset;
     });
   }
-  importAssets(files){return this.prepared(draft=>this.importInto(draft,files));}
-  importSamples(files,options={}){return this.prepared(draft=>{const assets=this.importInto(draft,files);if(options.replace){if(assets[0])structureOperations.replaceRegionAsset.call(this,draft,options.replace,assets[0].id);return {assets,rule:null};}return {assets,rule:assets.length?mapAssets.call(this,draft,assets.map(a=>a.id),options):null};});}
-  mapAssets(ids,options){return this.prepared(draft=>mapAssets.call(this,draft,ids,options));}
+  importAssets(files){if(this.backendId==='juce-free')return Promise.reject(new Error('Selected sample import and mapping are unsupported by this native consumer'));return this.prepared(draft=>this.importInto(draft,files));}
+  importSamples(files,options={}){if(this.backendId==='juce-free')return Promise.reject(new Error('Selected sample import and mapping are unsupported by this native consumer'));return this.prepared(draft=>{const assets=this.importInto(draft,files);if(options.replace){if(assets[0])structureOperations.replaceRegionAsset.call(this,draft,options.replace,assets[0].id);return {assets,rule:null};}return {assets,rule:assets.length?mapAssets.call(this,draft,assets.map(a=>a.id),options):null};});}
+  mapAssets(ids,options){if(this.backendId==='juce-free')return Promise.reject(new Error('Selected sample import and mapping are unsupported by this native consumer'));return this.prepared(draft=>mapAssets.call(this,draft,ids,options));}
   relink(){return Promise.reject(new Error('Native relinking requires file selection with decoded metadata'));}
   getPeaks(id,bins){return this.live.getPeaks(id,bins);}
   getPeaksAsync(id,bins){return this.live.getPeaksAsync(id,bins);}
