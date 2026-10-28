@@ -64,6 +64,8 @@ Use a new versioned container carrying the accepted patch, canonical resource ma
 
 CLAP host state uses this authority. A fresh instance must restore after original selected paths and the original instance are gone, without a shared source/cache directory. Accepted output, mappings and values must match independently expected signed PCM. Missing/corrupt/oversized/short-reading state preserves the prior session/history/feedback/audio. Replacing only an external path label or round-tripping the same live object is insufficient.
 
+The first resource-free version-3 framing criterion and remaining payload work are bounded in `portable-state.md`. It does not close tasks 6.1 or 6.2.
+
 ### Preserve requested fractional host clocks through preparation
 
 Introduce an explicit validated realtime sample-rate representation retaining the requested floating-point clock across configuration identity, session preparation/reconfiguration, sample-rate conversion and runtime creation. Preserve the previous supported integer domain and add supported fractional values including 1234.5678 and 48000.5. WAV source metadata remains integer. Existing DSP numeric precision may remain explicit; integer rounding/truncation of the host clock is forbidden.

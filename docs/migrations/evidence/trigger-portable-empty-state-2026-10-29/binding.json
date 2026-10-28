@@ -1,0 +1,22 @@
+{
+  "base": "bbba79b605f9b4a550d1a46f57d8cfe9f6cbde04",
+  "source": {
+    "src/trigger-host/src/state.rs": "bc2e7cd63409a2fd25c7b74086c6cebcd745c6d1df367dd6fede6f0ab9c15002",
+    "src/trigger-host/src/parameters.rs": "56de8899a065632822ec445b2c48467ac23620a5fba4248ef482ff428c8fa6bb",
+    "src/trigger-host/tests/selected_admission.rs": "243c6072de6c1d3e2261507a298b52f25646862f023606e2f9be42c2920ffc84",
+    "openspec/changes/add-juce-free-trigger-beta-products/design.md": "50c482d1f33254a734c2eea267e26395441b06aeebe795939b79de24c0d5e23a",
+    "openspec/changes/add-juce-free-trigger-beta-products/portable-state.md": "a7043a77d1552d022b35d014a7b90cfb00d18f52ba26b2c389640dc8e0256ee6"
+  },
+  "archive": {
+    "path": "raw.tar.gz",
+    "sha256": "3633e938a819bdbeafeff0834d842c27d9e135ece343190839ec60d1cb5c9559",
+    "bytes": 13905865,
+    "members": 242
+  },
+  "external_replay": {
+    "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/portable-empty-current-coverage/replay-objects.tar.gz",
+    "bytes": 103979119,
+    "sha256": "72748764495a6d7e6b411eacbad7cecafdc2237ef40965cbdeb7f08982f32a83"
+  },
+  "scope": "First task6.1 resource-free portable Empty state criterion; selected payload/complete6.1/6.2/current native product acceptance remain open"
+}

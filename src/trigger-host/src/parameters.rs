@@ -388,7 +388,7 @@ impl ParameterController {
         use crate::state::{PRODUCT_ID, RESOURCE_ID, SavedParameter, SavedState};
         let snapshot = self.host.session().owner_snapshot();
         let values = self.runtime.snapshot_state_values();
-        let state = SavedState {
+        let mut state = SavedState {
             version: 2,
             product: PRODUCT_ID.into(),
             resource: RESOURCE_ID.into(),
@@ -404,7 +404,30 @@ impl ParameterController {
         };
         // Interactive documents can exceed the legacy codec's resource/default
         // contract. Refuse before writing a state a fresh instance cannot load.
-        state.values_for(&self.parameters, &self.runtime)?;
+        if state.values_for(&self.parameters, &self.runtime).is_err() {
+            // Resource-free accepted patches have no external sample authority.
+            // Selected payload restoration is a subsequent portable-state boundary.
+            let samples = Self::patch_samples(
+                &state.document,
+                &self.parameters,
+                &self.runtime,
+                &self.host.sample_catalog,
+            )
+            .map_err(|_| crate::state::StateError::Invalid)?;
+            if !samples.is_empty()
+                || !self
+                    .host
+                    .session()
+                    .prepared()
+                    .sample_assets()
+                    .sources()
+                    .is_empty()
+            {
+                return Err(crate::state::StateError::Invalid);
+            }
+            state.version = 3;
+            state.values_for(&self.parameters, &self.runtime)?;
+        }
         crate::state::write(&state, output)
     }
     /// Validate and prepare complete bounded native state before publication.
@@ -421,14 +444,29 @@ impl ParameterController {
         if self.reserved_ends != 0 || !self.automation.is_empty() {
             return Err(StateError::Busy);
         }
+        if state.version == 3 {
+            let samples = Self::patch_samples(
+                &state.document,
+                &self.parameters,
+                &self.runtime,
+                &self.host.sample_catalog,
+            )
+            .map_err(|_| StateError::Invalid)?;
+            let patch = load_kernel_patch_str(&state.document).map_err(|_| StateError::Invalid)?;
+            if !samples.is_empty() || !patch.sample_assets().sample_sources.is_empty() {
+                return Err(StateError::Invalid);
+            }
+        }
         let values = state.values_for(&self.parameters, &self.runtime)?;
         let generation =
             crate::state::restored_generation(self.host.session().owner_snapshot().revision)?;
-        crate::PackagedResources::regular_file(
-            self.host.resource_root(),
-            crate::ADVANCED_DRUM_KIT_SAMPLE,
-        )
-        .map_err(|_| StateError::Invalid)?;
+        if state.version == 2 {
+            crate::PackagedResources::regular_file(
+                self.host.resource_root(),
+                crate::ADVANCED_DRUM_KIT_SAMPLE,
+            )
+            .map_err(|_| StateError::Invalid)?;
+        }
         let candidate = self
             .host
             .session()

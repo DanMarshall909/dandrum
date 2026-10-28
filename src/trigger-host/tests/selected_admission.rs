@@ -763,6 +763,7 @@ fn silent_empty_document_keeps_product_parameter_scopes_values_and_callback_owne
     use dandrum_trigger_host::runtime::{ControlEvent, TimedEvent};
     use serde_json::{Value, json};
     let mut fixture = Fixture::new();
+    let packaged_document = fixture.controller.session().owner_snapshot().yaml;
     let set = fixture.request("setParameter", json!(["drums.level", 0.5, 1]));
     fixture.controller.apply(&set).unwrap();
     let (mut left, mut right) = ([123.; 16], [123.; 16]);
@@ -785,6 +786,8 @@ fn silent_empty_document_keeps_product_parameter_scopes_values_and_callback_owne
         (-1.0, -1.0),
         "known signed nondefault control before Empty"
     );
+    let mut legacy_state = Vec::new();
+    fixture.controller.save_state(&mut legacy_state).unwrap();
     let read = fixture.request("getSamplerSession", json!([]));
     let before: Value =
         serde_json::from_str(&fixture.controller.sampler_session_reply(&read).unwrap()).unwrap();
@@ -887,4 +890,230 @@ fn silent_empty_document_keeps_product_parameter_scopes_values_and_callback_owne
             .unwrap()
             .is_empty()
     );
+    // Portable host state must represent a resource-free accepted instrument,
+    // independently of the original controller, view, package and history.
+    let mut saved = Vec::new();
+    fixture.controller.save_state(&mut saved).unwrap();
+    assert_eq!(&saved[..8], b"DTRGSTAT");
+    assert_eq!(u32::from_le_bytes(saved[8..12].try_into().unwrap()), 3);
+    let accepted = fixture.controller.session().owner_snapshot();
+    drop(fixture);
+    let mut fresh = Fixture::new();
+    std::fs::remove_file(fresh._root.path().join(ADVANCED_DRUM_KIT_SAMPLE)).unwrap();
+    fresh.controller.load_state(&mut saved.as_slice()).unwrap();
+    let restored = fresh.controller.session().owner_snapshot();
+    assert_eq!(restored.yaml, accepted.yaml);
+    assert_eq!((restored.undo_len, restored.redo_len), (0, 0));
+    let (mut left, mut right) = ([123.; 16], [123.; 16]);
+    fresh
+        ._audio
+        .process_events(
+            &mut left,
+            &mut right,
+            &[TimedEvent {
+                frame_offset: 0,
+                event: ControlEvent::NoteOn {
+                    note: 36,
+                    velocity: 127,
+                },
+            }],
+        )
+        .unwrap();
+    assert!(left.into_iter().chain(right).all(|sample| sample == 0.0));
+    let read = fresh.request("getSamplerSession", json!([]));
+    let restored: Value =
+        serde_json::from_str(&fresh.controller.sampler_session_reply(&read).unwrap()).unwrap();
+    assert_eq!(
+        restored["result"]["document"]["parameters"],
+        after["result"]["document"]["parameters"]
+    );
+
+    // Wire failures must retain the entire accepted document, history and values.
+    let accepted = fresh.controller.session().owner_snapshot();
+    let mut canonical = Vec::new();
+    fresh.controller.save_state(&mut canonical).unwrap();
+    let parameters = fresh.controller.parameter_state();
+    let metadata: Value = serde_json::from_slice(&saved[24..]).unwrap();
+    assert_eq!(metadata["resources"], json!([]));
+    assert_eq!(metadata["parameters"].as_array().unwrap().len(), 23);
+    let frame = |metadata: Value| {
+        let bytes = serde_json::to_vec(&metadata).unwrap();
+        [
+            b"DTRGSTAT".as_slice(),
+            &3u32.to_le_bytes(),
+            &(bytes.len() as u32).to_le_bytes(),
+            &0u64.to_le_bytes(),
+            &bytes,
+        ]
+        .concat()
+    };
+    use dandrum_trigger_host::state::StateError;
+    let mut invalid = Vec::new();
+    for length in [0, 1, 7, 8, 9, 12, 16, 23, 24, saved.len() - 1] {
+        invalid.push((
+            format!("truncated at {length}"),
+            saved[..length].to_vec(),
+            StateError::Invalid,
+        ));
+    }
+    for version in [0u32, 2, 4, u32::MAX] {
+        let mut bytes = saved.clone();
+        bytes[8..12].copy_from_slice(&version.to_le_bytes());
+        invalid.push((format!("version {version}"), bytes, StateError::Invalid));
+    }
+    for length in [1_048_577u32, u32::MAX] {
+        let mut bytes = saved[..24].to_vec();
+        bytes[12..16].copy_from_slice(&length.to_le_bytes());
+        invalid.push((
+            format!("metadata length {length}"),
+            bytes,
+            StateError::TooLarge,
+        ));
+    }
+    for payload in [1u64, u64::MAX] {
+        let mut bytes = saved[..24].to_vec();
+        bytes[16..24].copy_from_slice(&payload.to_le_bytes());
+        invalid.push((
+            format!("unsupported payload {payload}"),
+            bytes,
+            StateError::Invalid,
+        ));
+    }
+    let mut trailing = saved.clone();
+    trailing.push(0);
+    invalid.push(("trailing data".into(), trailing, StateError::Invalid));
+    let mut malformed = saved.clone();
+    malformed[24] = 255;
+    invalid.push(("invalid UTF-8".into(), malformed, StateError::Invalid));
+    for (name, key, value) in [
+        ("foreign product", "product", json!("foreign")),
+        ("unknown field", "unknown", json!(1)),
+        (
+            "unsupported manifest",
+            "resources",
+            json!([{
+                "path":"selected/forged.wav", "sha256":"forged", "encoded_bytes":1
+            }]),
+        ),
+        ("missing required manifest", "resources", Value::Null),
+        ("invalid document", "document", json!("not a patch")),
+        (
+            "package reference without payload",
+            "document",
+            json!(packaged_document),
+        ),
+        ("missing parameters", "parameters", json!([])),
+    ] {
+        let mut candidate = metadata.clone();
+        candidate[key] = value;
+        invalid.push((name.into(), frame(candidate), StateError::Invalid));
+    }
+    let mut wrong_values = metadata.clone();
+    wrong_values["parameters"][0]["value"] = json!(-999);
+    invalid.push((
+        "out-of-range value".into(),
+        frame(wrong_values),
+        StateError::Invalid,
+    ));
+    for (name, bytes, expected) in invalid {
+        assert_eq!(
+            fresh.controller.load_state(&mut bytes.as_slice()),
+            Err(expected),
+            "{name}"
+        );
+        assert_eq!(
+            fresh.controller.session().owner_snapshot(),
+            accepted,
+            "{name}"
+        );
+        assert_eq!(
+            fresh.controller.parameter_state(),
+            parameters,
+            "{name}: parameter values and feedback preserved"
+        );
+    }
+    let mut current = Vec::new();
+    fresh.controller.save_state(&mut current).unwrap();
+    assert_eq!(
+        current, canonical,
+        "all rejected frames preserve exact saved state"
+    );
+    struct FaultRead<'a> {
+        bytes: &'a [u8],
+        remaining: usize,
+    }
+    impl std::io::Read for FaultRead<'_> {
+        fn read(&mut self, output: &mut [u8]) -> std::io::Result<usize> {
+            if self.remaining == 0 {
+                return Err(std::io::Error::other("state reader failed"));
+            }
+            let count = self.remaining.min(self.bytes.len()).min(output.len());
+            output[..count].copy_from_slice(&self.bytes[..count]);
+            self.bytes = &self.bytes[count..];
+            self.remaining -= count;
+            Ok(count)
+        }
+    }
+    for offset in [0, 8, 12, 24, 25, saved.len()] {
+        let mut input = FaultRead {
+            bytes: &saved,
+            remaining: offset,
+        };
+        assert_eq!(
+            fresh.controller.load_state(&mut input),
+            Err(StateError::Io),
+            "reader at {offset}"
+        );
+        assert_eq!(fresh.controller.session().owner_snapshot(), accepted);
+    }
+    for offset in [8, 9, legacy_state.len()] {
+        let mut input = FaultRead {
+            bytes: &legacy_state,
+            remaining: offset,
+        };
+        assert_eq!(
+            fresh.controller.load_state(&mut input),
+            Err(StateError::Io),
+            "legacy reader at {offset}"
+        );
+        assert_eq!(fresh.controller.session().owner_snapshot(), accepted);
+    }
+    struct FaultWrite(usize);
+    impl std::io::Write for FaultWrite {
+        fn write(&mut self, input: &[u8]) -> std::io::Result<usize> {
+            if self.0 == 0 {
+                return Err(std::io::Error::other("state writer failed"));
+            }
+            let count = self.0.min(input.len());
+            self.0 -= count;
+            Ok(count)
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+    for offset in [0, 8, 12, 16, 24, canonical.len() - 1] {
+        assert_eq!(
+            fresh.controller.save_state(&mut FaultWrite(offset)),
+            Err(StateError::Io),
+            "writer at {offset}"
+        );
+        assert_eq!(fresh.controller.session().owner_snapshot(), accepted);
+    }
+    struct Chunked<'a>(&'a [u8]);
+    impl std::io::Read for Chunked<'_> {
+        fn read(&mut self, output: &mut [u8]) -> std::io::Result<usize> {
+            let count = self.0.len().min(output.len()).min(1);
+            output[..count].copy_from_slice(&self.0[..count]);
+            self.0 = &self.0[count..];
+            Ok(count)
+        }
+    }
+    fresh.controller.load_state(&mut Chunked(&saved)).unwrap();
+    assert_eq!(
+        fresh.controller.session().owner_snapshot().yaml,
+        accepted.yaml
+    );
+    fresh._audio.process(&mut left, &mut right).unwrap();
+    assert!(left.into_iter().chain(right).all(|sample| sample == 0.0));
 }
