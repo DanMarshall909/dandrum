@@ -1,0 +1,35 @@
+{
+  "base": "fa2230a6159ae27244f73f8cf563b17afd11ebc3",
+  "source": {
+    "web/trigger/engine/native-engine.mjs": "c82f343a9e34bf1d4a4e2a67c40fdf424b2b56db87c307277ae85e9e37294038",
+    "web/trigger/tests/native-fixture.mjs": "c61175f094fbc9a2ce3a0d6d69c5c671d871444d9463d4406eb072a5284eb28d",
+    "web/trigger/tests/native-transport.test.mjs": "9bc7821ba4dd14608fbabcbf23077c24fca499d1d168b153085cca17b6207092",
+    "web/trigger/tests/native-webview-bootstrap.test.mjs": "10ca383dd6f622d393fed20f46d2021a281960fdcced7b8e02c1864e31e37163",
+    "web/trigger/tests/presentation.test.mjs": "fa80f0efa3d03f9b2ac09cd1ae8fbb4303c32c72acbfad1c03a2c1a7aa79a762",
+    "web/trigger/tests/browser/native-transport.spec.mjs": "35ec3ac503d0dd0a0188c291409ba8a129c509721f7a08d716f63df9edcd77c2",
+    "src/clap-adapter/tests/internal/trigger_structural_native.rs": "e7e36bb9afb95b84c49f725f7ebd31653e2994898f31d11d5f1fcadc8e837bf4"
+  },
+  "raw_archive_sha256": "89b6f858376b7e9f0e830af352259e1104e6b82e80b1bc2d6bd36b4871ce4f92",
+  "native_replays": [
+    {
+      "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/frontend-consumer-native-red-replay.tar.gz",
+      "bytes": 9603680,
+      "sha256": "8f5125307d16e63b7563e193cec1ef79e7660dfb3bc6dd9c52a87b4f13255a56"
+    },
+    {
+      "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/frontend-consumer-native-green-replay.tar.gz",
+      "bytes": 9603405,
+      "sha256": "695cdce7a2f9f449a15ce805ebe4dd121beedacf147454a0cbda9e404c915348"
+    }
+  ],
+  "production_delta": "Only NativeEngine.initialize adds explicit juce-free profile negotiation before snapshot. Comparison backends stay on existing initialization. No Rust production/dependency change.",
+  "checks": {
+    "frontend": 156,
+    "browser_entrypoint": 12,
+    "native_clap": 30,
+    "native_engine_v8": "100% lines,86.22%branches,90.53%functions (whole existing module)",
+    "transport_v8": "100%lines/branches/functions",
+    "static": "fmt/type/component/strict alltarget adapterClippy PASS"
+  },
+  "limits": "No task/scenario/beta closure. Fullpatch/import/Empty/Redo consumer wiring, portable restoration, installed/offline/physical/DAW acceptance remain. Strict engineClippy129 baseline FAIL. Mutation excluded. Retention inventory incomplete for alias-bearing output parents, three cache roots complete; estimated64GiB retention exceeded, review required; caches/evidence preserved and no deletion authority inferred."
+}

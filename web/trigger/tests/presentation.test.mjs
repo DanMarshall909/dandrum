@@ -57,6 +57,6 @@ test('host-controlled native sizing preserves editor layout without optimistic c
   assert.equal(model.hostControlledSize,true);assert.equal(model.meteringAvailable,false);assert.equal(model.waveformAvailable,false);
   await model.setLayout('exp');await model.togglePerf();
   assert.equal(store.getSnapshot().editor.layout,before.layout);assert.equal(store.getSnapshot().editor.perf,before.perf);
-  assert.deepEqual(bridge.calls.map(call=>call[0]),['getSamplerSession']);
+  assert.deepEqual(bridge.calls.map(call=>call[0]),['negotiateEditorProtocol','getSamplerSession']);
   assert.match(model.backendDetail,/key mapping.*undo.*public controls/i);assert.match(model.backendDetail,/meters.*waveforms.*unavailable/i);
 });

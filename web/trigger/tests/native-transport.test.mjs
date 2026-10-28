@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {NativeEngine} from '../engine/native-engine.mjs';
-import {backend,session,connection,yaml} from './native-fixture.mjs';
+import {backend,session,connection,yaml,editorProfile} from './native-fixture.mjs';
 import {Store} from '../engine/store.mjs';
 import {selectNativeTransport} from '../engine/native-transport.mjs';
+import {createWebViewTransport} from '../engine/native-webview-transport.mjs';
 
 test('the comparison host default backend preserves native calls, feedback and cleanup',async t=>{
   const previous=globalThis.window,bridge=backend();
@@ -80,11 +81,11 @@ test('an explicitly absent optional profile initializes the accepted native sess
   await engine.initialize();
   assert.equal(engine.getPatch().name,'Advanced Drum Kit');
   assert.equal(engine.getPatch().params['drums.level'].value,.25);
-  assert.deepEqual(bridge.calls.map(call=>call[0]),['getSamplerSession']);
+  assert.deepEqual(bridge.calls.map(call=>call[0]),['negotiateEditorProtocol','getSamplerSession']);
   assert.deepEqual(engine.capabilities,{analysis:false,zeroCrossings:false,fx:false,modulation:false,wholeSourceAudition:false,metering:false,sourceWaveforms:false,windowTitle:false,editorResize:false});
   assert.throws(()=>{engine.capabilities.metering=true;},TypeError);
   engine.close();assert.equal(bridge.events.size,0);
-  assert.deepEqual(bridge.calls.map(call=>call[0]),['getSamplerSession']);
+  assert.deepEqual(bridge.calls.map(call=>call[0]),['negotiateEditorProtocol','getSamplerSession']);
 });
 
 
@@ -93,14 +94,14 @@ test('capability omission retains full services for every backend identity and i
   for(const backendId of ['juce-free','comparison','future-host'])for(const capabilities of [undefined,{}, {metering:true}]){
     const bridge=backend();globalThis.window={__DANDRUM__:{protocolVersion:1,backendId,backend:bridge,...(capabilities===undefined?{}:{capabilities})}};
     const engine=new NativeEngine({heartbeatMs:0});await engine.initialize();
-    assert.deepEqual(bridge.calls.map(call=>call[0]),['getSamplerSession','setTriggerWindowTitle','subscribeMeter']);
+    assert.deepEqual(bridge.calls.map(call=>call[0]),[...(backendId==='juce-free'?['negotiateEditorProtocol']:[]),'getSamplerSession','setTriggerWindowTitle','subscribeMeter']);
     assert.equal(engine.capabilities.sourceWaveforms,true);assert.equal(engine.capabilities.editorResize,true);
     engine.close();
   }
   for(const name of ['metering','sourceWaveforms','windowTitle','editorResize']){
     const bridge=backend();globalThis.window={__DANDRUM__:{protocolVersion:1,backendId:'juce-free',backend:bridge,capabilities:{[name]:false}}};
     const engine=new NativeEngine({heartbeatMs:0});await engine.initialize();
-    assert.deepEqual(bridge.calls.map(call=>call[0]),['getSamplerSession',...(name==='windowTitle'?[]:['setTriggerWindowTitle']),...(name==='metering'?[]:['subscribeMeter'])]);
+    assert.deepEqual(bridge.calls.map(call=>call[0]),['negotiateEditorProtocol','getSamplerSession',...(name==='windowTitle'?[]:['setTriggerWindowTitle']),...(name==='metering'?[]:['subscribeMeter'])]);
     for(const field of ['metering','sourceWaveforms','windowTitle','editorResize'])assert.equal(engine.capabilities[field],field!==name);
     engine.close();
   }
@@ -127,7 +128,7 @@ test('explicit absent waveform and resize requests preserve accepted state and r
   await assert.rejects(engine.resizeEditor('exp'),error=>error.code==='capabilityUnavailable'&&error.method==='resizeSamplerEditor');
   assert.deepEqual(Array.from(engine.getPeaks('drums',64)),[]);await engine.pollTelemetry();
   assert.deepEqual(engine.getPatch(),before);assert.deepEqual(engine.sessionHistory,history);assert.deepEqual(events,[]);
-  assert.deepEqual(bridge.calls.map(call=>call[0]),['getSamplerSession']);
+  assert.deepEqual(bridge.calls.map(call=>call[0]),['negotiateEditorProtocol','getSamplerSession']);
 });
 
 
@@ -184,4 +185,45 @@ test('accepted native voice-limit changes notify Store telemetry without a meter
     assert.deepEqual(bridge.calls.filter(call=>['subscribeMeter','getMeterPacket','ackMeterPacket','setMeterVisible','setTriggerWindowTitle','requestSourceWaveform','resizeSamplerEditor'].includes(call[0])),[]);
     store.close();engine.close();
   }
+});
+
+
+test('the production adapter negotiates before restoring a large retained document and native history',async t=>{
+  const previous=globalThis.window,sent=[];
+  const regions=Array.from({length:512},(_,index)=>`        - { id: retained_${index}, start_frame: ${index*32}, end_frame: ${index*32+16} }\n`).join('');
+  const text=yaml.replace('      regions:\n','      regions:\n'+regions);
+  const initial=session(text,19,connection({revision:'4',nextRequestId:'91',history:{undoCount:2,redoCount:1}}));
+  initial.document.parameters.find(parameter=>parameter.id==='drums.level').normalisedValue=.37;
+  assert.ok(Buffer.byteLength(text)<=65536);assert.ok(Buffer.byteLength(JSON.stringify(initial))>65536);
+  let transport;
+  transport=createWebViewTransport({instanceId:initial.connection.instanceId,attachmentId:initial.connection.attachmentId,postMessage:raw=>{
+    const request=JSON.parse(raw);sent.push(request);assert.ok(sent.length<=2,'initialization has two bounded native calls');
+    let result;
+    if(request.method==='negotiateEditorProtocol'){assert.equal(request.version,1);assert.deepEqual(request.args,[2]);result=editorProfile();}
+    else{
+      assert.equal(request.method,'getSamplerSession');
+      assert.equal(request.version,2,'large retained snapshot requires prior version-two negotiation');result=initial;
+    }
+    transport.receive(JSON.stringify({version:request.version,instanceId:initial.connection.instanceId,attachmentId:initial.connection.attachmentId,requestId:request.requestId,status:'accepted',result}));
+  }});
+  globalThis.window={__DANDRUM__:transport.descriptor};
+  const engine=new NativeEngine({heartbeatMs:0});
+  t.after(()=>{engine.close();transport.dispose();globalThis.window=previous;});
+  await engine.initialize();
+  assert.deepEqual(sent.map(({version,method})=>[version,method]),[[1,'negotiateEditorProtocol'],[2,'getSamplerSession']]);
+  assert.equal(engine.session.yaml,text);assert.equal(engine.generation,19);
+  assert.equal(engine.getPatch().params['drums.level'].value,.37);
+  assert.equal(engine.getPatch().regions.length,initial.document.sources.flatMap(source=>source.regions).length);
+  assert.equal(engine.sessionHistory.undoCount,2);assert.equal(engine.sessionHistory.redoCount,1);
+});
+
+test('failed native negotiation preserves its error and never queries or publishes a snapshot',async t=>{
+  const previous=globalThis.window,calls=[],failure={code:'capabilityUnavailable',message:'Editor profile unavailable'};
+  const bridge={addEventListener:()=>0,removeEventListener:()=>{},getNativeFunction:method=>async()=>{
+    calls.push(method);assert.equal(method,'negotiateEditorProtocol','negotiation failure must stop before snapshot');throw failure;
+  }};
+  globalThis.window={__DANDRUM__:{protocolVersion:1,backendId:'juce-free',backend:bridge}};
+  const engine=new NativeEngine({heartbeatMs:0});t.after(()=>{engine.close();globalThis.window=previous;});
+  const before=engine.getPatch();await assert.rejects(engine.initialize(),error=>error===failure);
+  assert.deepEqual(calls,['negotiateEditorProtocol']);assert.deepEqual(engine.getPatch(),before);
 });

@@ -2,6 +2,7 @@ import {readFileSync} from 'node:fs';
 import {parse} from 'yaml';
 
 export const yaml=readFileSync(new URL('../../../examples/patches/advanced-drum-kit.yaml',import.meta.url),'utf8');
+export const editorProfile=()=>({wireVersion:2,methods:['prepareInstrumentSessionPatch','getSamplerSession'],limits:{documentBytes:65536,requestBytes:524288,replyBytes:1048576,replayDocumentBytes:262144}});
 export const connection=(delta={})=>({version:1,instanceId:'18446744073709551615',attachmentId:'9007199254740993',revision:'0',nextRequestId:'1',limits:{attachments:16,history:100,outcomes:128,activeRequests:1},history:{undoCount:0,redoCount:0},...delta});
 export function session(text=yaml,generation=7,connectionState=connection()){
   const graph=parse(text),sources=(graph.assets?.sample_sources??[]).map(source=>({id:source.id,sampleRateHz:48000,channelCount:2,frameCount:'51000',regions:(source.regions??[]).map(region=>({id:region.id,startFrame:String(region.start_frame),endFrame:String(region.end_frame),reverse:region.reverse??false,fadeInMs:region.fade_in_ms??0,fadeOutMs:region.fade_out_ms??0,...(region.loop?{loop:{mode:region.loop.mode,startFrame:String(region.loop.start_frame),endFrame:String(region.loop.end_frame),crossfadeMs:region.loop.crossfade_ms??0}}:{})})),slices:[]}));
@@ -17,6 +18,7 @@ export function backend(initial=session()){
     attachmentId:String(9007199254740993n+BigInt(jobSequence)),
   });
   const functions={
+    negotiateEditorProtocol:()=>editorProfile(),
     getSamplerSession:()=>current,
     setTriggerWindowTitle:name=>({status:'accepted',title:'trigger - '+name}),
     prepareSampler:(text,generation)=>{if(generation!==current.document.generation)return 'Rejected stale instrument generation';const job_id=++jobSequence;jobs.set(job_id,{text,generation});return {status:'accepted',job_id,generation};},

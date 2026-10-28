@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {installNativeWebViewTransport} from '../engine/native-webview-bootstrap.mjs';
 import {selectNativeTransport} from '../engine/native-transport.mjs';
 import {NativeEngine} from '../engine/native-engine.mjs';
-import {session} from './native-fixture.mjs';
+import {session,editorProfile} from './native-fixture.mjs';
 
 function host(config={}){
   const calls=[];
@@ -94,14 +94,17 @@ test('production selector and NativeEngine consume the initialized session and r
   const handle=installNativeWebViewTransport();const engine=new NativeEngine({heartbeatMs:0});
   try{
     const initialized=engine.initialize();
-    assert.deepEqual(calls,[{version:1,attachmentId:'9007199254740993',requestId:'1',method:'getSamplerSession',args:[]}]);
-    deliver({requestId:'1',status:'accepted',result:session()});await initialized;
+    assert.deepEqual(calls,[{version:1,attachmentId:'9007199254740993',requestId:'1',method:'negotiateEditorProtocol',args:[2]}]);
+    deliver({requestId:'1',status:'accepted',result:editorProfile()});
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.deepEqual(calls[1],{version:2,attachmentId:'9007199254740993',requestId:'2',method:'getSamplerSession',args:[]});
+    deliver({version:2,requestId:'2',status:'accepted',result:session()});await initialized;
     assert.equal(engine.getPatch().name,'Advanced Drum Kit');assert.equal(engine.capabilities.metering,false);
     deliver({event:'parameterStateChanged',sequence:'1',payload:{generation:7,sequence:1,parameters:[{id:'drums.level',value:.23}]}});
     assert.equal(engine.getPatch().params['drums.level'].value,.23);
     const waiting=engine.invoke('getSamplerSession');const closed=assert.rejects(waiting,{code:'closed'});
     engine.close();assert.equal(handle.dispose(),true);await closed;
-    assert.equal(deliver({requestId:'2',status:'accepted',result:session()}),'ignored');
+    assert.equal(deliver({version:2,requestId:'3',status:'accepted',result:session()}),'ignored');
     assert.equal(engine.closed,true);assert.equal(handle.dispose(),false);
   }finally{engine.close();handle.dispose();globalThis.window=previous;}
 });

@@ -1,12 +1,15 @@
 import {test,expect} from '@playwright/test';
-import {session,yaml} from '../native-fixture.mjs';
+import {session,yaml,editorProfile} from '../native-fixture.mjs';
 import {parse,stringify} from 'yaml';
+
+test.beforeEach(async({page})=>{await page.addInitScript(profile=>{window.__TEST_EDITOR_PROFILE__=profile;},editorProfile());});
 
 test('the production entrypoint uses the versioned host instead of the comparison bridge',async({page})=>{
   await page.addInitScript(initial=>{
     window.nativeCalls=[];
     const backend={addEventListener:()=>0,removeEventListener:()=>{},getNativeFunction:name=>async(...args)=>{
       window.nativeCalls.push([name,...args]);
+      if(name==='negotiateEditorProtocol')return window.__TEST_EDITOR_PROFILE__;
       if(name==='getSamplerSession')return initial;
       if(name==='subscribeMeter'||name==='setMeterVisible')return true;
       if(name==='requestSourceWaveform')return {status:'accepted',job_id:'1',generation:initial.document.generation};
@@ -31,7 +34,8 @@ test('an incompatible declared native host displays an error and never opens the
 
 test('a rejected native snapshot displays its capability error without simulating an instrument',async({page})=>{
   await page.addInitScript(()=>{
-    window.__DANDRUM__={protocolVersion:1,backendId:'juce-free',backend:{addEventListener:()=>0,removeEventListener:()=>{},getNativeFunction:()=>async()=>{
+    window.__DANDRUM__={protocolVersion:1,backendId:'juce-free',backend:{addEventListener:()=>0,removeEventListener:()=>{},getNativeFunction:name=>async()=>{
+      if(name==='negotiateEditorProtocol')return window.__TEST_EDITOR_PROFILE__;
       throw Object.assign(new Error('Session snapshot capability unavailable'),{code:'capabilityUnavailable',method:'getSamplerSession'});
     }}};
   });
@@ -51,7 +55,7 @@ test('explicit absent services render accepted controls with unavailable measure
   await page.addInitScript(initial=>{
     window.nativeCalls=[];
     window.__DANDRUM__={protocolVersion:1,backendId:'juce-free',capabilities:{metering:false,sourceWaveforms:false,windowTitle:false,editorResize:false},backend:{addEventListener:()=>0,removeEventListener:()=>{},getNativeFunction:name=>async(...args)=>{
-      window.nativeCalls.push([name,...args]);if(name==='getSamplerSession')return initial;
+      window.nativeCalls.push([name,...args]);if(name==='negotiateEditorProtocol')return window.__TEST_EDITOR_PROFILE__;if(name==='getSamplerSession')return initial;
       throw Object.assign(new Error('Unsupported '+name),{code:'capabilityUnavailable',method:name});
     }}};
   },(()=>{const graph=parse(yaml);graph.assets.sample_sources[0].regions[0].loop={mode:'forward',start_frame:0,end_frame:10000,crossfade_ms:0};return session(stringify(graph));})());
@@ -71,7 +75,7 @@ test('explicit absent services render accepted controls with unavailable measure
   await page.getByRole('tab',{name:/^Slices/}).click();await expect(page.getByRole('img',{name:'Waveform unavailable'})).toHaveCount(1);
   await page.getByRole('tab',{name:'Routing',exact:true}).click();await expect(page.getByText('Meters unavailable',{exact:true})).toHaveCount(2);
   await expect(page.getByRole('alert')).toHaveCount(0);
-  expect(await page.evaluate(()=>window.nativeCalls.map(call=>call[0]))).toEqual(['getSamplerSession']);
+  expect(await page.evaluate(()=>window.nativeCalls.map(call=>call[0]))).toEqual(['negotiateEditorProtocol','getSamplerSession']);
   await page.screenshot({path:testInfo.outputPath('native-optional-unavailable.png'),animations:'disabled'});
   expect(errors).toEqual([]);
 });
@@ -81,7 +85,7 @@ test('accepted voice-limit refresh updates the rendered header while meters rema
     window.nativeCalls=[];window.nativeSession=initial;window.nativeEvents={};
     window.__DANDRUM__={protocolVersion:1,backendId:'juce-free',capabilities:{metering:false,sourceWaveforms:false,windowTitle:false,editorResize:false},backend:{
       addEventListener:(name,listener)=>{window.nativeEvents[name]=listener;return name;},removeEventListener:name=>{delete window.nativeEvents[name];},
-      getNativeFunction:name=>async(...args)=>{window.nativeCalls.push([name,...args]);if(name==='getSamplerSession')return window.nativeSession;throw Error('Unexpected '+name);},
+      getNativeFunction:name=>async(...args)=>{window.nativeCalls.push([name,...args]);if(name==='negotiateEditorProtocol')return window.__TEST_EDITOR_PROFILE__;if(name==='getSamplerSession')return window.nativeSession;throw Error('Unexpected '+name);},
     }};
   },session());
   await page.goto('/');const header=page.getByRole('banner');await expect(header).toContainText('Voices — / 8');
@@ -90,7 +94,7 @@ test('accepted voice-limit refresh updates the rendered header while meters rema
   },session(yaml.replace('max_voices: 8','max_voices: 12'),8));
   await expect(header).toContainText('Voices — / 12');
   await expect(header.getByText('Meters unavailable',{exact:true})).toBeVisible();
-  expect(await page.evaluate(()=>window.nativeCalls.map(call=>call[0]))).toEqual(['getSamplerSession','getSamplerSession']);
+  expect(await page.evaluate(()=>window.nativeCalls.map(call=>call[0]))).toEqual(['negotiateEditorProtocol','getSamplerSession','getSamplerSession']);
   await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
@@ -104,15 +108,15 @@ test('trusted Wry bootstrap connects the production entrypoint through correlate
       if(this!==window.ipc)throw Error('Wry IPC receiver was lost');
       const request=JSON.parse(message);window.nativeCalls.push(request);
       if(window.nativeCalls.length>2)throw Error('Unexpected repeated native request');
-      if(request.method!=='getSamplerSession')throw Error('Unexpected native method '+request.method);
-      window.__DANDRUM__.receiveNativeMessage(JSON.stringify({version:1,instanceId:initial.connection.instanceId,attachmentId:initial.connection.attachmentId,requestId:request.requestId,status:'accepted',result:initial}));
+      if(!['negotiateEditorProtocol','getSamplerSession'].includes(request.method))throw Error('Unexpected native method '+request.method);
+      window.__DANDRUM__.receiveNativeMessage(JSON.stringify({version:request.version,instanceId:initial.connection.instanceId,attachmentId:initial.connection.attachmentId,requestId:request.requestId,status:'accepted',result:request.method==='negotiateEditorProtocol'?window.__TEST_EDITOR_PROFILE__:initial}));
     }};
   },session());
   await page.goto('/');
   await expect(page.getByRole('banner').locator('[data-backend="native"]')).toBeVisible();
   await expect(page.locator('[data-knob="drums.level"]')).toBeVisible();
   await expect(page.getByRole('banner').getByTestId('backend-status')).toHaveText('Connected');
-  expect(await page.evaluate(()=>window.nativeCalls)).toEqual([{version:1,attachmentId:'9007199254740993',requestId:'41',method:'getSamplerSession',args:[]}]);
+  expect(await page.evaluate(()=>window.nativeCalls)).toEqual([{version:1,attachmentId:'9007199254740993',requestId:'41',method:'negotiateEditorProtocol',args:[2]},{version:2,attachmentId:'9007199254740993',requestId:'42',method:'getSamplerSession',args:[]}]);
   await expect(page.getByRole('alert')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
@@ -135,7 +139,7 @@ test('page disposal closes a pending native initialization once without renderin
   });
   await expect(page.getByRole('alert')).toHaveCount(0);
   await expect(page.getByTestId('trigger-editor')).toHaveCount(0);
-  expect(await page.evaluate(()=>({calls:window.nativeCalls,late:window.lateDelivery,closed:window.afterClose}))).toEqual({calls:[{version:1,attachmentId:'23',requestId:'1',method:'getSamplerSession',args:[]}],late:'ignored',closed:'closed'});
+  expect(await page.evaluate(()=>({calls:window.nativeCalls,late:window.lateDelivery,closed:window.afterClose}))).toEqual({calls:[{version:1,attachmentId:'23',requestId:'1',method:'negotiateEditorProtocol',args:[2]}],late:'ignored',closed:'closed'});
   expect(errors).toEqual([]);
 });
 
@@ -145,16 +149,19 @@ test('failed bootstrap initialization renders its native error and closes pendin
     window.__DANDRUM_NATIVE__={protocolVersion:1,instanceId:'17',attachmentId:'23'};
     window.ipc={postMessage(message){
       const request=JSON.parse(message);window.nativeCalls.push(request);
-      if(window.nativeCalls.length>2)throw Error('Unexpected native request after failure');
+      if(window.nativeCalls.length>3)throw Error('Unexpected native request after failure');
+      if(request.method==='negotiateEditorProtocol'){
+        window.__DANDRUM__.receiveNativeMessage(JSON.stringify({version:1,instanceId:'17',attachmentId:'23',requestId:request.requestId,status:'accepted',result:window.__TEST_EDITOR_PROFILE__}));return;
+      }
       if(request.method==='getSamplerSession'){
         window.pendingOutcome=window.__DANDRUM__.backend.getNativeFunction('pending')().catch(error=>error.code);
-        window.__DANDRUM__.receiveNativeMessage(JSON.stringify({version:1,instanceId:'17',attachmentId:'23',requestId:request.requestId,status:'rejected',error:{code:'capabilityUnavailable',message:'Session unavailable'}}));
+        window.__DANDRUM__.receiveNativeMessage(JSON.stringify({version:request.version,instanceId:'17',attachmentId:'23',requestId:request.requestId,status:'rejected',error:{code:'capabilityUnavailable',message:'Session unavailable'}}));
       }
     }};
   });
   await page.goto('/');await expect(page.getByRole('alert')).toHaveText('Native sampler failed: Session unavailable');
   expect(await page.evaluate(()=>window.pendingOutcome)).toBe('closed');
-  expect(await page.evaluate(()=>window.nativeCalls.map(call=>call.method))).toEqual(['getSamplerSession','pending']);
+  expect(await page.evaluate(()=>window.nativeCalls.map(call=>call.method))).toEqual(['negotiateEditorProtocol','getSamplerSession','pending']);
   await expect(page.getByTestId('trigger-editor')).toHaveCount(0);
 });
 
@@ -172,9 +179,9 @@ test('page disposal sends held-note cleanup before closing the local broker',asy
     window.__DANDRUM_NATIVE__={protocolVersion:1,instanceId:initial.connection.instanceId,attachmentId:initial.connection.attachmentId};
     window.ipc={postMessage(message){
       const request=JSON.parse(message);window.nativeCalls.push(request);
-      if(window.nativeCalls.length>4)throw Error('Repeated native cleanup');
-      if(!['getSamplerSession','noteOn','noteOff','noteHeartbeat'].includes(request.method))throw Error('Unexpected '+request.method);
-      window.__DANDRUM__.receiveNativeMessage(JSON.stringify({version:1,instanceId:initial.connection.instanceId,attachmentId:initial.connection.attachmentId,requestId:request.requestId,status:'accepted',result:request.method==='getSamplerSession'?initial:true}));
+      if(window.nativeCalls.length>5)throw Error('Repeated native cleanup');
+      if(!['negotiateEditorProtocol','getSamplerSession','noteOn','noteOff','noteHeartbeat'].includes(request.method))throw Error('Unexpected '+request.method);
+      window.__DANDRUM__.receiveNativeMessage(JSON.stringify({version:request.version,instanceId:initial.connection.instanceId,attachmentId:initial.connection.attachmentId,requestId:request.requestId,status:'accepted',result:request.method==='negotiateEditorProtocol'?window.__TEST_EDITOR_PROFILE__:request.method==='getSamplerSession'?initial:true}));
     }};
   },session());
   await page.goto('/');await expect(page.getByTestId('trigger-editor')).toBeVisible();
@@ -200,6 +207,6 @@ test('a code-only native protocol rejection displays its explicit capability fai
   });
   await page.goto('/');await expect(page.getByRole('alert')).toHaveText('Native sampler failed: capabilityUnavailable');
   await expect(page.getByTestId('trigger-editor')).toHaveCount(0);
-  expect(await page.evaluate(()=>window.nativeCalls)).toEqual([{version:1,attachmentId:'23',requestId:'1',method:'getSamplerSession',args:[]}]);
+  expect(await page.evaluate(()=>window.nativeCalls)).toEqual([{version:1,attachmentId:'23',requestId:'1',method:'negotiateEditorProtocol',args:[2]}]);
   expect(await page.evaluate(()=>window.__DANDRUM__.backend.getNativeFunction('getSamplerSession')().catch(error=>error.code))).toBe('closed');
 });

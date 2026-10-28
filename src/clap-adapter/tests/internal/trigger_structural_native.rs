@@ -29,7 +29,16 @@ pub(super) fn open_view(
     wait_dom(
         plugin,
         &browser,
-        "document.querySelector('[data-testid=trigger-editor]')",
+        "document.querySelector('[data-testid=trigger-editor]') || document.querySelector('[role=alert]')",
+    );
+    assert_eq!(
+        javascript(
+            plugin,
+            &browser,
+            "document.querySelector('[role=alert]')?.textContent ?? ''"
+        ),
+        "",
+        "native editor initializes from its accepted session"
     );
     browser
 }
@@ -507,9 +516,9 @@ fn native_structural_scenario() {
                 "oversized v{version} / forged={forged} frame ({bytes} bytes) must be dropped before dispatch"
             );
         };
-        rejected_frame(&mut plugin, browser_a.as_ref().unwrap(), 2, false, 20_000);
-        // Negotiate through the production browser transport; its own correlation
-        // and framing must carry the large patch, without a raw IPC bypass.
+        rejected_frame(&mut plugin, browser_a.as_ref().unwrap(), 3, false, 20_000);
+        // Initialization already negotiated. A supported retry keeps the same
+        // profile without changing the accepted session or native request cursor.
         let negotiation = invoke(
             &mut plugin,
             browser_a.as_ref().unwrap(),
@@ -529,7 +538,7 @@ fn native_structural_scenario() {
             );
         }
         let before_patch = undone["yaml"].as_str().unwrap();
-        let regions = (0..256)
+        let regions = (0..512)
             .map(|index| {
                 format!(
                     "        - {{ id: native_{index}, start_frame: {}, end_frame: {} }}\n",
@@ -545,7 +554,7 @@ fn native_structural_scenario() {
             .replace("key_range: [36, 36]", "key_range: [60, 60]");
         assert!(candidate.len() > 16_384 && candidate.len() < 65_536);
         assert!(
-            candidate.contains("id: native_255"),
+            candidate.contains("id: native_511"),
             "fixture contains the additional real regions"
         );
         dandrum_engine::kernel::document::load_kernel_patch_str(&candidate)
@@ -588,6 +597,31 @@ fn native_structural_scenario() {
         assert_eq!(note(audio_a.as_mut().unwrap(), 60), [-0.5, -0.5]);
         assert_eq!(note(audio_a.as_mut().unwrap(), 36), [0.0, 0.0]);
         return_audio(&mut plugin, audio_a.take().unwrap());
+        let large_snapshot = snapshot(&mut plugin, browser_a.as_ref().unwrap());
+        let snapshot_bytes = serde_json::to_vec(&large_snapshot).unwrap().len();
+        assert!(
+            snapshot_bytes > 65_536,
+            "large retained snapshot: {snapshot_bytes} bytes"
+        );
+        assert_eq!(large_snapshot["yaml"], candidate);
+        gui.destroy(&plugin.plugin_handle());
+        drop(browser_a.take());
+        assert!(parent.children().is_empty());
+        browser_a = Some(open_view(&mut plugin, &parent));
+        let recovered = snapshot(&mut plugin, browser_a.as_ref().unwrap());
+        assert_eq!(recovered["yaml"], candidate);
+        assert_eq!(
+            recovered["connection"]["instanceId"],
+            large_snapshot["connection"]["instanceId"]
+        );
+        assert_ne!(
+            recovered["connection"]["attachmentId"],
+            large_snapshot["connection"]["attachmentId"]
+        );
+        assert_eq!(
+            recovered["connection"]["history"],
+            large_snapshot["connection"]["history"]
+        );
         let undo = invoke(
             &mut plugin,
             browser_a.as_ref().unwrap(),

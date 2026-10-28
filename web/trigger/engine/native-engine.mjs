@@ -30,6 +30,7 @@ export class NativeEngine {
     this.native=true;this.capabilities=Object.freeze({analysis:false,zeroCrossings:false,fx:false,modulation:false,wholeSourceAudition:false,metering:true,sourceWaveforms:true,windowTitle:true,editorResize:true,...transport.capabilities});
   }
   async initialize(){
+    if(this.backendId==='juce-free')await this.invoke('negotiateEditorProtocol',2);
     this.session=await this.invoke('getSamplerSession');this.connection=parseSessionConnection(this.session.connection);this.patch=patchFromSession(this.session);this.generation=this.session.document.generation;
     this.sourcePath=this.session.sourcePath;this.samplerSession=this.session;this.loadedPreset='native';
     await this.publishWindowTitle();
