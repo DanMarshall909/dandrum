@@ -310,3 +310,112 @@ test('serialization callbacks cannot exceed pending capacity or the final transp
 test('missing or invalid connection options fail with the same explicit configuration error',()=>{
   for(const options of [undefined,null,1,'connection',[],{}])assert.throws(()=>createWebViewTransport(options),error=>error.code==='invalidConfiguration');
 });
+
+
+const patchProfile=()=>({wireVersion:2,methods:['prepareInstrumentSessionPatch','getSamplerSession'],limits:{documentBytes:65536,requestBytes:524288,replyBytes:1048576,replayDocumentBytes:262144}});
+
+test('a correlated negotiated profile carries large patch work alongside outstanding legacy replies and events',async t=>{
+  const broker=connection(),seen=[];
+  const call=(...args)=>{const result=broker.call(...args);result.catch(()=>{});return result;};
+  t.after(()=>broker.dispose());
+  broker.descriptor.backend.addEventListener('instrumentSessionChanged',value=>seen.push(value));
+  const legacy=call('getSamplerSession'),negotiation=call('negotiateEditorProtocol',2);
+  assert.deepEqual(broker.sent.map(JSON.parse),[
+    {version:1,attachmentId:'23',requestId:'1',method:'getSamplerSession',args:[]},
+    {version:1,attachmentId:'23',requestId:'2',method:'negotiateEditorProtocol',args:[2]},
+  ]);
+  assert.equal(broker.receive(reply('2',patchProfile(),{version:2})),'ignored');
+  assert.equal(broker.receive(reply('2',patchProfile())),'reply');
+  assert.deepEqual(await negotiation,patchProfile());
+  const yaml='é'.repeat(10000),patch=call('prepareInstrumentSessionPatch','17','23','91','0',yaml);
+  const posted=JSON.parse(broker.sent.at(-1));
+  assert.equal(posted.version,2);assert.equal(posted.method,'prepareInstrumentSessionPatch');
+  assert.deepEqual({...posted,args:posted.args.slice(0,4)},{version:2,attachmentId:'23',requestId:'3',method:'prepareInstrumentSessionPatch',args:['17','23','91','0']});
+  assert.equal(posted.args[4],yaml);
+  const snapshot=call('getSamplerSession'),parameter=call('getParameterState');
+  assert.deepEqual(broker.sent.slice(-2).map(JSON.parse).map(({version,requestId})=>[version,requestId]),[[2,'4'],[1,'5']]);
+  assert.equal(broker.receive(reply('3','wrong legacy version')),'ignored');
+  assert.equal(broker.receive(reply('4','wrong legacy version')),'ignored');
+  assert.equal(broker.receive(reply('5','wrong new version',{version:2})),'ignored');
+  assert.equal(broker.receive(event('1',{revision:'1'},{event:'instrumentSessionChanged'})),'event');
+  assert.equal(broker.receive(reply('1','x'.repeat(65536))),'ignored','old reply keeps its original bound');
+  assert.equal(broker.receive(reply('4','😀'.repeat(20000),{version:2})),'reply');
+  assert.equal(await snapshot,'😀'.repeat(20000));
+  assert.equal(broker.receive(reply('3',{status:'accepted',job_id:'91'},{version:2})),'reply');
+  assert.deepEqual(await patch,{status:'accepted',job_id:'91'});
+  assert.equal(broker.receive(reply('1','old snapshot')),'reply');assert.equal(await legacy,'old snapshot');
+  assert.equal(broker.receive(reply('5',{generation:9})),'reply');assert.deepEqual(await parameter,{generation:9});
+  assert.deepEqual(seen,[{revision:'1'}]);
+  const denied=call('prepareInstrumentSessionPatch','17','23','91','0',yaml);
+  const rejected=assert.rejects(denied,error=>error.code==='conflictingRequest'&&error.message==='Document identity changed');
+  assert.equal(broker.receive(reply('6',undefined,{version:2,status:'rejected',error:{code:'conflictingRequest',message:'Document identity changed'}})),'reply');
+  await rejected;
+});
+
+
+async function negotiate(broker){
+  const pending=broker.call('negotiateEditorProtocol',2),id=JSON.parse(broker.sent.at(-1)).requestId;
+  broker.receive(reply(id,patchProfile()));assert.deepEqual(await pending,patchProfile());
+}
+
+test('only an exact supported correlated negotiation enables the new profile on that attachment',async()=>{
+  const bad=[null,[],{},
+    {...patchProfile(),wireVersion:'2'}, {...patchProfile(),wireVersion:3},
+    {...patchProfile(),methods:null}, {...patchProfile(),methods:['getSamplerSession']},
+    {...patchProfile(),methods:[...patchProfile().methods,'setParameter']},
+    {...patchProfile(),methods:[...patchProfile().methods].reverse()},
+    {...patchProfile(),limits:null}, {...patchProfile(),limits:{...patchProfile().limits,documentBytes:65537}},
+    {...patchProfile(),limits:{...patchProfile().limits,requestBytes:'524288'}},
+    {...patchProfile(),limits:{...patchProfile().limits,replyBytes:2097152}},
+    {...patchProfile(),limits:{...patchProfile().limits,replayDocumentBytes:0}},
+  ];
+  for(const result of bad){
+    const broker=connection(),pending=broker.call('negotiateEditorProtocol',2);
+    const rejected=assert.rejects(pending,error=>error.code==='invalidProtocolProfile');
+    assert.equal(broker.receive(reply('1',result)),'reply');await rejected;
+    const snapshot=broker.call('getSamplerSession');
+    assert.equal(JSON.parse(broker.sent.at(-1)).version,1,'bad negotiation retains legacy framing');
+    broker.receive(reply('2',null));await snapshot;broker.dispose();
+  }
+  const broker=connection(),unrelated=broker.call('getParameterState');
+  broker.receive(reply('1',patchProfile()));await unrelated;
+  const denied=broker.call('negotiateEditorProtocol',2),rejected=assert.rejects(denied,error=>error.code==='capabilityUnavailable');
+  broker.receive(reply('2',undefined,{status:'rejected',error:{code:'capabilityUnavailable'}}));await rejected;
+  const legacy=broker.call('getSamplerSession');assert.equal(JSON.parse(broker.sent.at(-1)).version,1);
+  broker.receive(reply('3',null));await legacy;
+  await negotiate(broker);await negotiate(broker);
+  const fresh=connection({attachmentId:'24'}),snapshot=fresh.call('getSamplerSession');
+  assert.equal(JSON.parse(fresh.sent.at(-1)).version,1,'negotiation never spreads to another view');
+  fresh.receive(reply('1',null,{attachmentId:'24'}));await snapshot;fresh.dispose();broker.dispose();
+});
+
+test('negotiated framing enforces independent document, wire, reply and unchanged legacy budgets',async t=>{
+  const broker=connection();t.after(()=>broker.dispose());await negotiate(broker);
+  // A maximum UTF-8 document with worst-case JSON escaping still fits the
+  // independent request cap. Decoded bytes, not JavaScript code units, count.
+  for(const yaml of ['é'.repeat(32768),'\u0000'.repeat(65536)]){
+    const pending=broker.call('prepareInstrumentSessionPatch','17','23','9','0',yaml);
+    const frame=JSON.parse(broker.sent.at(-1));assert.equal(frame.version,2);
+    assert.equal(Buffer.byteLength(frame.args[4]),65536);assert.ok(Buffer.byteLength(broker.sent.at(-1))<=524288);
+    broker.receive(reply(frame.requestId,null,{version:2}));await pending;
+    const count=broker.sent.length;
+    await assert.rejects(broker.call('prepareInstrumentSessionPatch','17','23','9','0',yaml+'é'),error=>error.code==='oversized');
+    assert.equal(broker.sent.length,count,'decoded document overflow is unposted');
+  }
+  await assert.rejects(broker.call('setParameter','x'.repeat(16384)),error=>error.code==='oversized');
+  // Framing-only calibration: arbitrary arguments reach native validation;
+  // this does not claim the native snapshot method accepts arguments.
+  const nextId=String(BigInt(JSON.parse(broker.sent.at(-1)).requestId)+1n);
+  const empty=JSON.stringify({version:2,attachmentId:'23',requestId:nextId,method:'getSamplerSession',args:['']});
+  const exact='x'.repeat(524288-Buffer.byteLength(empty));
+  await assert.rejects(broker.call('getSamplerSession',exact+'x'),error=>error.code==='oversized');
+  const pending=broker.call('getSamplerSession',exact);assert.equal(Buffer.byteLength(broker.sent.at(-1)),524288);
+  const emptyReply=reply(nextId,'',{version:2}),value='x'.repeat(1048576-Buffer.byteLength(emptyReply));
+  assert.equal(Buffer.byteLength(reply(nextId,value,{version:2})),1048576);
+  assert.equal(broker.receive(reply(nextId,value+'x',{version:2})),'ignored');
+  assert.equal(broker.receive(event('1','x'.repeat(65536))),'ignored','events retain the legacy limit');
+  assert.equal(broker.receive(event('1',null,{version:2})),'ignored','events retain version one');
+  assert.equal(broker.receive(reply(nextId,value,{version:2})),'reply');assert.equal(await pending,value);
+  const retiring=broker.call('getSamplerSession'),closed=assert.rejects(retiring,error=>error.code==='closed');
+  broker.dispose();await closed;assert.equal(broker.receive(reply(String(BigInt(nextId)+1n),null,{version:2})),'ignored');
+});

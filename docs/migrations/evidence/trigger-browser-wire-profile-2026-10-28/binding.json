@@ -1,0 +1,24 @@
+{
+  "base": "75670196bde7a5acaf0261bb660cbd63684ca691",
+  "source": {
+    "web/trigger/engine/native-webview-transport.mjs": "cd7a08acf0c109080b1586da8a7e76267fb9cc9f7d01065d60c50b59e028c04a",
+    "web/trigger/tests/native-webview-transport.test.mjs": "019a69dd4f4bd990ca5617dd1c8c2c2f06de081c1323ef3b05ab4731828f946c",
+    "src/clap-adapter/tests/internal/trigger_structural_native.rs": "af4e23e7d1aa5146e5bfe35f190d58bc8e0c3fdbaf4d7a6040571af869ea8661"
+  },
+  "native_replay": {
+    "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/frontend-profile-native-replay.tar.gz",
+    "bytes": 9601243,
+    "sha256": "bfa5f1565d676885baf8f9804cc0c6b29c946a81e60a54f0385b8863fedcafa1"
+  },
+  "release_sha256": "33af9b9041165b6736a19829b53dcb6c15974f4e76129ec201e9d9f1c6749572",
+  "scope": "Browser negotiated v2 correlation/framing only; production NativeEngine initialization/document/import/recovery wiring remains future work. No beta task/scenario closure.",
+  "checks": {
+    "frontend": 154,
+    "native_clap": 30,
+    "browser_entrypoint": 12,
+    "transport_v8": "100% measured lines/branches/functions",
+    "static": "type/component/fmt/strict adapter all-target Clippy PASS"
+  },
+  "limits": "Headless X11 and browser component evidence, not physical/installed/DAW. Rust production unchanged from35a79. Strict engine Clippy129 baseline FAIL remains. Mutation excluded. Browser initial long-scratch socket launch failure retained separately.",
+  "raw_archive_sha256": "c2654fddeed1163ebc22749befc542412a24374d046d51f4afc4867cacc7fd86"
+}

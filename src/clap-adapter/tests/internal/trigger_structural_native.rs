@@ -508,10 +508,8 @@ fn native_structural_scenario() {
             );
         };
         rejected_frame(&mut plugin, browser_a.as_ref().unwrap(), 2, false, 20_000);
-        // Exercise real Wry IPC without presenting the legacy frontend as a
-        // v2 consumer. A calibrated unsupported call advances the broker while
-        // leaving its transport ID unadmitted; the raw frame uses that ID.
-        // Subsequent ordinary broker calls therefore remain aligned.
+        // Negotiate through the production browser transport; its own correlation
+        // and framing must carry the large patch, without a raw IPC bypass.
         let negotiation = invoke(
             &mut plugin,
             browser_a.as_ref().unwrap(),
@@ -552,69 +550,15 @@ fn native_structural_scenario() {
         );
         dandrum_engine::kernel::document::load_kernel_patch_str(&candidate)
             .expect("meaningful bounded sample-region document");
-        javascript(
-            &mut plugin,
-            browser_a.as_ref().unwrap(),
-            r#"(()=>{window.__G5_PATCH_REPLY__=null;window.__G5_PATCH_SLOT__=null;
-              const surface=window.__DANDRUM__,receive=surface.receiveNativeMessage;
-              surface.receiveNativeMessage=message=>{const frame=JSON.parse(message);
-                if(frame.version===2){window.__G5_PATCH_REPLY__=frame;return 'observed';}
-                if(frame.error?.code==='capabilityUnavailable')window.__G5_PATCH_SLOT__=frame.requestId;
-                return receive(message);};return 'observing';})()"#,
-        );
-        let unavailable = invoke(
-            &mut plugin,
-            browser_a.as_ref().unwrap(),
-            "window.__DANDRUM__.backend.getNativeFunction('requestSourceWaveform')('drums',0,8,4)",
-        );
-        assert_eq!(unavailable["code"], "capabilityUnavailable");
-        let slot = javascript(
-            &mut plugin,
-            browser_a.as_ref().unwrap(),
-            "String(window.__G5_PATCH_SLOT__)",
-        );
-        assert!(
-            slot.parse::<u64>().is_ok_and(|id| id != 0),
-            "bounded unadmitted transport identity: {slot}"
-        );
         let script = format!(
-            r#"(()=>{{const c=window.__DANDRUM_NATIVE__;
-          const frame={{version:2,attachmentId:c.attachmentId,requestId:window.__G5_PATCH_SLOT__,
-            method:'prepareInstrumentSessionPatch',args:[c.instanceId,c.attachmentId,'7003','3',{}]}};
-          const wire=JSON.stringify(frame);window.__G5_PATCH_BYTES__=new TextEncoder().encode(wire).length;
-          window.ipc.postMessage(wire);return 'sent';}})()"#,
+            "window.__DANDRUM__.backend.getNativeFunction('prepareInstrumentSessionPatch')(window.__DANDRUM_NATIVE__.instanceId,window.__DANDRUM_NATIVE__.attachmentId,'7003','3',{})",
             serde_json::to_string(&candidate).unwrap()
         );
-        javascript(&mut plugin, browser_a.as_ref().unwrap(), &script);
-        let bytes = javascript(
-            &mut plugin,
-            browser_a.as_ref().unwrap(),
-            "String(window.__G5_PATCH_BYTES__)",
-        )
-        .parse::<usize>()
-        .unwrap();
-        assert!(
-            bytes > 16_384 && bytes <= 524_288,
-            "actual UTF-8 wire bytes: {bytes}"
+        let admitted = invoke(&mut plugin, browser_a.as_ref().unwrap(), &script);
+        assert_eq!(
+            admitted["status"], "accepted",
+            "negotiated >16KiB patch must pass through the production browser transport and actual Wry/Core ingress: {admitted}"
         );
-        eprintln!("NATIVE_PATCH negotiated v2, {bytes} wire bytes, prior signed PCM [-0.5,-0.5]");
-        let deadline = Instant::now() + Duration::from_secs(5);
-        let admitted = loop {
-            let raw = javascript(
-                &mut plugin,
-                browser_a.as_ref().unwrap(),
-                "JSON.stringify(window.__G5_PATCH_REPLY__)",
-            );
-            if raw != "null" {
-                break serde_json::from_str::<serde_json::Value>(&raw).unwrap();
-            }
-            assert!(
-                Instant::now() < deadline,
-                "negotiated >16KiB patch must reach the actual Wry/Core ingress"
-            );
-        };
-        assert_eq!(admitted["version"], 2);
-        assert_eq!(admitted["status"], "accepted", "{admitted}");
         assert_eq!(admitted["result"]["job_id"], "7003");
         let deadline = Instant::now() + Duration::from_secs(5);
         loop {
