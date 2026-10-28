@@ -1,0 +1,22 @@
+{
+  "base": "c9e9fd8ac8deac9988775cd749b10ef30e3fa9c5",
+  "source": {
+    "web/trigger/engine/native-engine.mjs": "5ec8bb3681e438fad73d042d6aefb04c96e6498201a5e23704b62698916ad140",
+    "web/trigger/tests/native-session-edits.test.mjs": "d8dba515bd0e58dd7c7e21428979fde4463b78e5d5efb662c400bb3855a017bf"
+  },
+  "raw_archive_sha256": "ea8b708db5108af7eca00a3e2e39de4026a05475ee96d5c0469565939921860b",
+  "native_replay": {
+    "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/frontend-recovery-close-native-replay.tar.gz",
+    "sha256": "ec2852c98c0dd59f1eb77812f2d8d8d6e0c1299ed3466b6f13b5832f01b4f426",
+    "bytes": 8647275,
+    "reconstruction": "Replay retains declared pristine inputs using hash-verified source resource files; actual native tests intentionally mutate their private copies. Initial archive preflight caught that mutation and wrote no archive, not a product or test failure."
+  },
+  "checks": {
+    "frontend": 170,
+    "native_clap": 30,
+    "browser_entrypoint": 12,
+    "NativeEngine_V8": "100% lines /87.03% branches /90.82% functions",
+    "Store_V8": "100% lines /86.45% branches /88.89% functions"
+  },
+  "limits": "No beta task/scenario closure. Strict engine Clippy129 baseline errors remain FAIL; mutation excluded. Headless native component tests do not prove physical input, installed offline or named-DAW acceptance."
+}

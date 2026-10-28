@@ -179,3 +179,24 @@ for(const order of ['document-first','parameter-first'])test(`native document an
   assert.equal(engine.getPatch().name,'Mixed native name');assert.equal(engine.getPatch().params['drums.level'].value,.8);assert.equal(value,.8);
   assert.equal(store.undoCount,2);assert.equal(store.canRedo,false);
 });
+
+
+for(const action of ['document','undo','redo'])test(`closing during ${action} error recovery ignores the late snapshot`,async t=>{
+  const state=action==='document'?session():session(yaml,7,connection({revision:'2',nextRequestId:'3',history:{undoCount:action==='undo'?1:0,redoCount:action==='redo'?1:0}}));
+  const previous=globalThis.window,bridge=backend(state),failure={code:'sessionWorkerBusy'};
+  globalThis.window={__DANDRUM__:{protocolVersion:1,backendId:'juce-free',capabilities,backend:bridge}};
+  const engine=new NativeEngine({heartbeatMs:0,pollMs:0}),entered=Promise.withResolvers(),completion=Promise.withResolvers();
+  t.after(()=>{completion.resolve(state);engine.close();globalThis.window=previous;});await engine.initialize();
+  const before=engine.getPatch(),events=[];engine.on('patch',event=>events.push(event));
+  const method=action==='document'?'prepareInstrumentSessionPatch':action==='undo'?'undoInstrumentSession':'redoInstrumentSession';
+  bridge.functions[method]=()=>Promise.reject(failure);
+  bridge.functions.getSamplerSession=()=>{entered.resolve();return completion.promise;};
+  const pending=action==='document'?engine.renameNode('root','Rejected draft'):action==='undo'?engine.undoSession():engine.redoSession();
+  await Promise.race([entered.promise,pending.then(()=>assert.fail('edit finished before recovery'),()=>assert.fail('edit rejected before recovery'))]);
+  engine.close();
+  const late=session(yaml.replace('Advanced Drum Kit','Late native patch'),8,state.connection);
+  completion.resolve(late);
+  await assert.rejects(pending,error=>error===failure);
+  assert.deepEqual(engine.getPatch(),before,'closed editor ignores the recovered native document');
+  assert.deepEqual(events.map(event=>event.phase),['preparing']);
+});

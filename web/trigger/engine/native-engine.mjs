@@ -229,7 +229,10 @@ export class NativeEngine {
         this.emit('patch',{phase:'ready',patch:this.getPatch(),replacement:false});
       }catch(error){
         let failure=error;
-        if(!this.closed)try{this.acceptSessionCommandSnapshot(await this.invoke('getSamplerSession'),this.connection,fullDocument);}
+        if(!this.closed)try{
+          const session=await this.invoke('getSamplerSession');
+          if(!this.closed)this.acceptSessionCommandSnapshot(session,this.connection,fullDocument);
+        }
         catch(refreshError){failure=new Error(`${errorMessage(error)}; session refresh failed: ${errorMessage(refreshError)}`,{cause:error});}
         this.report(failure);throw failure;
       }
