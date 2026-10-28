@@ -60,7 +60,7 @@ export interface EngineAdapter {
   beginHostGesture?(id:Id):Promise<void>;endHostGesture?(id:Id):Promise<void>;
   /** Staged native-session adoption. Owned operations do not enter Store's closure journal. */
   ownsOperation?(method:string,...args:any[]):boolean;
-  undoSession?():Promise<void>;
+  undoSession?():Promise<void>;redoSession?():Promise<void>;
   readonly sessionHistory?:{undoCount:number;redoCount:number;undoLabel:string};
   /** Native editor sizing; browser previews retain their own viewport. */
   resizeEditor?(mode:'min'|'default'|'exp'|'perf'):Promise<void>;

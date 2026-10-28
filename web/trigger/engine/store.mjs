@@ -153,7 +153,13 @@ export class Store {
   }
   redo() {
     return this.run(()=>{
-      const entry=this.redoStack.at(-1);if(!entry)return;
+      const entry=this.redoStack.at(-1),nativeSequence=this.nativeRedoOrder.at(-1)??Infinity;
+      if(this.engine.redoSession&&(this.engine.sessionHistory?.redoCount??0)>0&&(!entry||nativeSequence<entry.sequence)){
+        const result=this.engine.redoSession();
+        const finish=()=>{if(this.nativeRedoOrder.at(-1)===nativeSequence)this.nativeRedoOrder.pop();this.reconcileNativeHistory();this.notify();};
+        return result instanceof Promise?result.then(finish):finish();
+      }
+      if(!entry)return;
       const result=entry.command.do(this.engine);
       const finish=()=>{
         this.redoStack.pop();this.undoStack.push({...entry,time:this.now(),gesture:null,sequence:++this.historySequence});this.notify();
@@ -162,9 +168,13 @@ export class Store {
     });
   }
   get canUndo(){return !this.pending&&this.undoCount>0;}
-  get canRedo(){return !this.pending&&this.redoStack.length>0;}
+  get canRedo(){return !this.pending&&(this.redoStack.length>0||!!this.engine.redoSession&&(this.engine.sessionHistory?.redoCount??0)>0);}
   get undoCount(){return this.undoStack.length+(this.engine.sessionHistory?.undoCount??0);}
   get undoLabel(){return (this.nativeUndoOrder.at(-1)??-1)>(this.undoStack.at(-1)?.sequence??-1)?this.engine.sessionHistory?.undoLabel??'':this.undoStack.at(-1)?.command.label||'';}
-  get redoLabel(){return this.redoStack.at(-1)?.command.label||'';}
+  get redoLabel(){
+    const entry=this.redoStack.at(-1);
+    if(this.engine.redoSession&&(this.engine.sessionHistory?.redoCount??0)>0&&(!entry||(this.nativeRedoOrder.at(-1)??Infinity)<entry.sequence))return this.engine.sessionHistory?.undoLabel??'';
+    return entry?.command.label||'';
+  }
   close(){this.closed=true;this.telemetryReader.close();for(const unsubscribe of this.unsubscribers)unsubscribe();this.listeners.clear();}
 }

@@ -792,7 +792,10 @@ fn two_instances() {
             );
             assert_eq!(saved_state(&mut pair.plugins[side]), saved);
             assert_eq!(pair.assert_level(side, [0.5, 2.0][side]), feedback);
-            pair.dom(side, "document.querySelector('header button[aria-label=\"Undo Change Key Range (Ctrl+Z)\"]:not(:disabled)')");
+            pair.dom(
+                side,
+                "document.querySelector('header button[aria-label^=\"Undo \"]:not(:disabled)')",
+            );
         }
         let setup_end = Instant::now();
         pair.operation(0, "setup complete", setup_end);
@@ -808,9 +811,12 @@ fn two_instances() {
         let b = Baseline::capture(&mut pair, 1);
         pair.command(1, Command::Autonomous);
         let b_worker = pair.workers[1].as_ref().unwrap().thread.thread().id();
-        pair.dom(0, "document.querySelector('header button[aria-label=\"Undo Change Key Range (Ctrl+Z)\"]:not(:disabled)')");
+        pair.dom(
+            0,
+            "document.querySelector('header button[aria-label^=\"Undo \"]:not(:disabled)')",
+        );
         let undo_start = Instant::now();
-        pair.js(0, r#"(()=>{window.__PAIR_UNDO__=null;const backend=window.__DANDRUM__.backend,get=backend.getNativeFunction;backend.getNativeFunction=method=>(...args)=>{const promise=get(method)(...args);if(method==='undoInstrumentSession')promise.then(result=>window.__PAIR_UNDO__={status:'accepted',result},error=>window.__PAIR_UNDO__={status:'rejected',code:error.code});return promise;};document.querySelector('header button[aria-label="Undo Change Key Range (Ctrl+Z)"]').click();return 'clicked';})()"#);
+        pair.js(0, r#"(()=>{window.__PAIR_UNDO__=null;const backend=window.__DANDRUM__.backend,get=backend.getNativeFunction;backend.getNativeFunction=method=>(...args)=>{const promise=get(method)(...args);if(method==='undoInstrumentSession')promise.then(result=>window.__PAIR_UNDO__={status:'accepted',result},error=>window.__PAIR_UNDO__={status:'rejected',code:error.code});return promise;};document.querySelector('header button[aria-label^="Undo "]').click();return 'clicked';})()"#);
         let undo: serde_json::Value = loop {
             let reply = pair.js(0, "JSON.stringify(window.__PAIR_UNDO__)");
             if reply != "null" {

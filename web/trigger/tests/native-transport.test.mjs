@@ -175,7 +175,18 @@ test('accepted native voice-limit changes notify Store telemetry without a meter
     if(publication==='generation'){
       bridge.setSession(session(yaml.replace('max_voices: 8','max_voices: 12'),8,engine.session.connection));
       await bridge.events.get('parameterStateChanged')({generation:8,sequence:0,parameters:[]});
-    }else await engine.setVoicePolicy({limit:12});
+    }else{
+      let document;
+      bridge.functions.prepareInstrumentSessionPatch=(instance,attachment,request,revision,text)=>{
+        assert.equal(instance,engine.connection.instanceId);assert.equal(attachment,engine.connection.attachmentId);
+        assert.equal(request,'1');assert.equal(revision,'0');document=text;return {status:'accepted',job_id:request};
+      };
+      bridge.functions.getInstrumentSessionJobStatus=request=>{
+        bridge.setSession(session(document,8,connection({...engine.connection,revision:'1',nextRequestId:'2',history:{undoCount:1,redoCount:0}})));
+        return {state:'completed',request_id:request,revision:'1'};
+      };
+      await engine.setVoicePolicy({limit:12});
+    }
     assert.equal(store.getSnapshot().patch.voicePolicy.limit,12,publication);
     assert.deepEqual(store.getTelemetry().voices,{active:null,max:12},publication);
     assert.equal(store.getTelemetry().voiceCountAvailable,false);assert.deepEqual(store.getTelemetry().meters,{});

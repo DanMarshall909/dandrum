@@ -1,0 +1,36 @@
+{
+  "base": "dcc1ae01db3aaf8a7fba5c691d42b1f86ca98b75",
+  "publication_upstream": "fa2230a6159ae27244f73f8cf563b17afd11ebc3",
+  "source": {
+    "web/trigger/engine/native-engine.mjs": "b51fa45ea061faaef02a1af22f4f749db62d81bf444f8a592fd1a20159a9a28c",
+    "web/trigger/engine/store.mjs": "5b857cffc3d0f8dbd884b0784acff58fc55f197c12bb90faf3f2f14dc2712f6b",
+    "web/trigger/engine/contract.ts": "ba67526d7a32e0fdad8ff84db1bfea3de886344bcc5a2f8d2906c4c9e9d24491",
+    "web/trigger/tests/native-session-edits.test.mjs": "6b99fc1734236546e6398c360a1a71464e0f983add26316b06869527f0616a5a",
+    "web/trigger/tests/native-transport.test.mjs": "8c6256ae16ccfd9963540a1b2313455bc4e5fd5898177a57ed1fe82085b1afa6",
+    "src/clap-adapter/tests/internal/trigger_structural_native.rs": "5836432f861c63965e81ee64aa60a419dbab176d04617972abe443831318a37f",
+    "src/clap-adapter/tests/internal/trigger_instances_native.rs": "89bfd70a95f8f3ddb9a08f962002cf1657fb139c1fb7cef662dde67cee8189d7"
+  },
+  "raw_archive_sha256": "f15721c5cb4d72c0c6b239eff76d1a80cf27148d86e58f3cbc47c7fd9fe0dff7",
+  "native_replays": [
+    {
+      "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/frontend-document-native-red-replay.tar.gz",
+      "bytes": 9607458,
+      "sha256": "464ee7930084f93a6931b78f30341db3f39a10cdf6be98bdca767308d969ab16"
+    },
+    {
+      "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/frontend-document-native-green-replay.tar.gz",
+      "bytes": 9607860,
+      "sha256": "766ea6bb985d25b352f7633452f8bd3061e9c673bf03b8fb988b57edd112d080"
+    }
+  ],
+  "release_sha256": "33af9b9041165b6736a19829b53dcb6c15974f4e76129ec201e9d9f1c6749572",
+  "checks": {
+    "frontend": 167,
+    "browser_entrypoint": 12,
+    "native_clap": 30,
+    "NativeEngine_v8": "100%lines/86.86%branches/90.82%functions",
+    "Store_v8": "100%lines/86.45%branches/88.89%functions",
+    "static": "fmt/type/component/strict all-target adapterClippy PASS"
+  },
+  "limits": "No beta task/scenario closure. Native selected-file consumer/normal mapping/Empty/recovery, portable state, installed/native-input/device/DAW proof remain. Strict engineClippy129 baseline FAIL. Mutation excluded; no wholeGUI/branch100%/newRustLLVM claim. Retention review in preceding initialization packet remains explicit; caches/evidence preserved."
+}

@@ -399,12 +399,12 @@ fn native_structural_scenario() {
         wait_dom(
             &mut plugin,
             browser_a.as_ref().unwrap(),
-            "document.querySelector('header button[aria-label=\"Undo Change Key Range (Ctrl+Z)\"]:not(:disabled)')",
+            "document.querySelector('header button[aria-label^=\"Undo \"]:not(:disabled)')",
         );
         javascript(
             &mut plugin,
             browser_a.as_ref().unwrap(),
-            r#"(()=>{window.__G3_UNDO__=null;window.__G3_UNDO_ARGS__=[];const backend=window.__DANDRUM__.backend,get=backend.getNativeFunction;backend.getNativeFunction=method=>(...args)=>{const promise=get(method)(...args);if(method==='undoInstrumentSession'){window.__G3_UNDO_ARGS__.push(args);promise.then(result=>window.__G3_UNDO__={status:'accepted',result},error=>window.__G3_UNDO__={status:'rejected',code:error.code});}return promise;};document.querySelector('header button[aria-label="Undo Change Key Range (Ctrl+Z)"]').click();return 'clicked';})()"#,
+            r#"(()=>{window.__G3_UNDO__=null;window.__G3_UNDO_ARGS__=[];const backend=window.__DANDRUM__.backend,get=backend.getNativeFunction;backend.getNativeFunction=method=>(...args)=>{const promise=get(method)(...args);if(method==='undoInstrumentSession'){window.__G3_UNDO_ARGS__.push(args);promise.then(result=>window.__G3_UNDO__={status:'accepted',result},error=>window.__G3_UNDO__={status:'rejected',code:error.code});}return promise;};document.querySelector('header button[aria-label^="Undo "]').click();return 'clicked';})()"#,
         );
         let deadline = Instant::now() + Duration::from_secs(15);
         let undo = loop {
@@ -654,6 +654,160 @@ fn native_structural_scenario() {
         assert_eq!(note(audio_a.as_mut().unwrap(), 36), [-0.5, -0.5]);
         assert_eq!(note(audio_a.as_mut().unwrap(), 60), [0.0, 0.0]);
         return_audio(&mut plugin, audio_a.take().unwrap());
+        // Start the production React interaction in a fresh attachment to the
+        // accepted native state after the preceding direct backend setup.
+        gui.destroy(&plugin.plugin_handle());
+        drop(browser_a.take());
+        assert!(parent.children().is_empty());
+        browser_a = Some(open_view(&mut plugin, &parent));
+        // A real production React control must serialize a whole document through
+        // the persistent worker; it may not fall back to the comparison bridge.
+        wait_dom(
+            &mut plugin,
+            browser_a.as_ref().unwrap(),
+            "document.querySelector('header button[aria-label=\"Nothing to undo\"]:disabled')",
+        );
+        let ui_before = snapshot(&mut plugin, browser_a.as_ref().unwrap());
+        let generation = ui_before["document"]["generation"].as_u64().unwrap();
+        let value = invoke(
+            &mut plugin,
+            browser_a.as_ref().unwrap(),
+            &format!(
+                "window.__DANDRUM__.backend.getNativeFunction('setParameter')('drums.level',0.5,{generation})"
+            ),
+        );
+        assert_eq!(value["status"], "accepted", "{value}");
+        audio_a = Some(start_audio(&mut plugin));
+        // Admission queues the UI value; a real block must apply it before
+        // note() intentionally resets/cancels any unconsumed queued activity.
+        let _ = render_audio(
+            audio_a.as_mut().unwrap(),
+            &EventBuffer::new(),
+            &mut Recorder::new(64),
+        );
+        assert_eq!(note(audio_a.as_mut().unwrap(), 36), [-1.0, -1.0]);
+        return_audio(&mut plugin, audio_a.take().unwrap());
+        javascript(
+            &mut plugin,
+            browser_a.as_ref().unwrap(),
+            r#"(()=>{window.__UI_DOC_CALLS__=[];const backend=window.__DANDRUM__.backend,get=backend.getNativeFunction;
+              backend.getNativeFunction=method=>(...args)=>{if(['prepareSampler','prepareInstrumentSessionPatch','undoInstrumentSession','redoInstrumentSession'].includes(method))window.__UI_DOC_CALLS__.push([method,...args]);return get(method)(...args);};
+              [...document.querySelectorAll('[role=tab]')].find(tab=>tab.textContent.trim()==='Voice').click();return 'voice';})()"#,
+        );
+        wait_dom(
+            &mut plugin,
+            browser_a.as_ref().unwrap(),
+            "document.querySelector('[role=spinbutton][aria-label=\"Voice limit\"][aria-valuenow=\"8\"]')",
+        );
+        javascript(
+            &mut plugin,
+            browser_a.as_ref().unwrap(),
+            r#"(()=>{document.querySelector('[role=spinbutton][aria-label="Voice limit"]').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowUp',bubbles:true}));return 'changed';})()"#,
+        );
+        wait_dom(
+            &mut plugin,
+            browser_a.as_ref().unwrap(),
+            "window.__UI_DOC_CALLS__.length > 0",
+        );
+        let calls: serde_json::Value = serde_json::from_str(&javascript(
+            &mut plugin,
+            browser_a.as_ref().unwrap(),
+            "JSON.stringify(window.__UI_DOC_CALLS__)",
+        ))
+        .unwrap();
+        assert_eq!(
+            calls[0][0], "prepareInstrumentSessionPatch",
+            "real React document edits use native history: {calls}"
+        );
+        wait_dom(
+            &mut plugin,
+            browser_a.as_ref().unwrap(),
+            "document.querySelector('[role=spinbutton][aria-label=\"Voice limit\"][aria-valuenow=\"9\"]')",
+        );
+        let edited = snapshot(&mut plugin, browser_a.as_ref().unwrap());
+        assert_eq!(edited["connection"]["revision"], "6");
+        assert_eq!(
+            edited["connection"]["history"],
+            serde_json::json!({"undoCount":1,"redoCount":0})
+        );
+        assert!(edited["yaml"].as_str().unwrap().contains("max_voices: 9"));
+        for (action, limit, revision) in [("Undo", 8, "7"), ("Redo", 9, "8")] {
+            let selector = format!("header button[aria-label^=\"{action} \"]:not(:disabled)");
+            wait_dom(
+                &mut plugin,
+                browser_a.as_ref().unwrap(),
+                &format!(
+                    "document.querySelector({})",
+                    serde_json::to_string(&selector).unwrap()
+                ),
+            );
+            javascript(
+                &mut plugin,
+                browser_a.as_ref().unwrap(),
+                &format!(
+                    "(()=>{{document.querySelector({}).click();return 'clicked';}})()",
+                    serde_json::to_string(&selector).unwrap()
+                ),
+            );
+            wait_dom(
+                &mut plugin,
+                browser_a.as_ref().unwrap(),
+                &format!(
+                    "document.querySelector('[role=spinbutton][aria-label=\"Voice limit\"][aria-valuenow=\"{limit}\"]')"
+                ),
+            );
+            let current = snapshot(&mut plugin, browser_a.as_ref().unwrap());
+            assert_eq!(current["connection"]["revision"], revision);
+            assert!(
+                current["yaml"]
+                    .as_str()
+                    .unwrap()
+                    .contains(&format!("max_voices: {limit}"))
+            );
+            let ids = |state: &serde_json::Value| {
+                state["document"]["parameters"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|parameter| parameter["id"].clone())
+                    .collect::<Vec<_>>()
+            };
+            assert_eq!(ids(&current), ids(&ui_before));
+            let values = feedback(&mut plugin, browser_a.as_ref().unwrap());
+            assert_eq!(
+                values["parameters"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .find(|parameter| parameter["id"] == "drums.level")
+                    .unwrap()["value"],
+                0.5
+            );
+            audio_a = Some(start_audio(&mut plugin));
+            assert_eq!(note(audio_a.as_mut().unwrap(), 36), [-1.0, -1.0]);
+            assert_eq!(note(audio_a.as_mut().unwrap(), 60), [0.0, 0.0]);
+            return_audio(&mut plugin, audio_a.take().unwrap());
+            baseline_b.check(&mut plugin_b, &parent_b, browser_b.as_ref().unwrap());
+        }
+        let calls: serde_json::Value = serde_json::from_str(&javascript(
+            &mut plugin,
+            browser_a.as_ref().unwrap(),
+            "JSON.stringify(window.__UI_DOC_CALLS__)",
+        ))
+        .unwrap();
+        assert_eq!(
+            calls
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|call| call[0].as_str().unwrap())
+                .collect::<Vec<_>>(),
+            vec![
+                "prepareInstrumentSessionPatch",
+                "undoInstrumentSession",
+                "redoInstrumentSession"
+            ]
+        );
         gui.destroy(&plugin.plugin_handle());
         drop(browser_a.take());
         assert!(parent.children().is_empty());
