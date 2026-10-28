@@ -513,7 +513,7 @@ if(DANDRUM_CLAP_PROOF)
                 timer-required timer-refused timer-delivery timer-rollback
                 source-credits feedback-undo callback-audit invalid-stopped-flush structural-session
                 note-hold note-heartbeat note-expiry note-destroy creation-failure
-                continuous-audio continuous-audio-audit two-instances selected-snapshot selected-import empty-import)
+                continuous-audio continuous-audio-audit two-instances selected-snapshot selected-import empty-import recovered-import)
             set(trigger_parameter_cases
                 copied_native_parameter_state_is_an_authenticated_numeric_dto
                 copied_native_parameter_flush_delivers_host_accepted_gestures
@@ -537,7 +537,8 @@ if(DANDRUM_CLAP_PROOF)
                 instances_native::copied_native_two_instances_keep_edits_audio_and_editors_independent
                 selection_native::copied_native_selection_retains_real_metadata_across_source_and_editor_loss
                 selection_native::copied_react_import_maps_selected_pcm_once_through_native_history
-                selection_native::copied_react_empty_retains_controls_and_imports_after_recreation)
+                selection_native::copied_react_empty_retains_controls_and_imports_after_recreation
+                selection_native::copied_react_recovers_selected_import_after_lost_reply_and_recreation)
             foreach(parameter_name parameter_case IN ZIP_LISTS trigger_parameter_names trigger_parameter_cases)
                 add_test(NAME trigger-clap-native-parameter-${parameter_name}
                     COMMAND ${CMAKE_COMMAND} -E env GDK_BACKEND=x11

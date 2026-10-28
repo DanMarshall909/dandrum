@@ -1,0 +1,25 @@
+{
+  "base": "ebba80a5597692ce45f39adc4260dfa09c508167",
+  "source": {
+    "CMakeLists.txt": "31df4a83779800f931855a66f429e90b79e65ecd9d94a6b049cb3d6814e027b4",
+    "src/clap-adapter/tests/internal/trigger_selection_native.rs": "15f5a73aab77dd1b368258f06e8843c63aeccdd76dd279d5faeebf602f44eb66"
+  },
+  "raw_archive_sha256": "8a327fefc46a1683e24ce987bdee24ef007f5ed3060ff620667141d54e93c12c",
+  "external_replays": [
+    {
+      "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/recovery-native-correlated-red-replay.tar.gz",
+      "sha256": "2658bdf37aa05ae521cd9ae7ec81129e04935e0662b1ceb3cd9e7331018977f5",
+      "bytes": 8711690
+    },
+    {
+      "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/recovery-native-final-replay.tar.gz",
+      "sha256": "4bb248de74fe1f22486cd0fd19361cd4464fce6f10443362497f4eb172ca4f56",
+      "bytes": 8691577
+    }
+  ],
+  "current_product_sha256": "2fe7909da6f10b68291e6e18b18f1769d010866d6b359c5811e34231200fafdc",
+  "current_browser_sha256": "fdc851e369e1567cc5fe0a919f9b388f2d156249078af1ebb5beba697c3aeed8",
+  "scope": "Actual copiedReact/Wry/GTK selected-import lost-reply/full-recreation recovery under real capacity-one runtime backpressure. Automatic current-job polling, one publication/native history, signed PCM, Undo/Redo and independent instance. Historical6ac frontend calibration is correlated after implementation, not falsely dated before it.",
+  "checks": "278Node and types/components from unchanged ebba; current33native122.14s,newcase2.01s,14Chromium7.0s,9sourcefree203.235s,fmt/strictalltargetadapterClippy,active+52canonicalstrictspec/map631/392/239,currentunfilteredofficial34success10explicitSKIP0FAIL. Exact host-owner192+2doctests/2object2profileLLVM unchanged7b separately committed.",
+  "limits": "Component/acquisition and real synthetic-host callback proof, not physical input/device, uninterrupted selected-audio, installed/offline, namedDAW or portable-state acceptance. No task/scenario closure. Mutation excluded, VST3/standalone deferred. StrictengineClippy129unchangedbaselineFAIL explicit."
+}

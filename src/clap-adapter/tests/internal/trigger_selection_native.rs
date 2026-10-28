@@ -484,3 +484,123 @@ fn copied_react_empty_retains_controls_and_imports_after_recreation() {
         gui.destroy(&plugin.plugin_handle());drop(browser);assert!(parent.children().is_empty());
     }).join().expect("real Empty/import host thread completes");
 }
+
+#[test]
+#[ignore = "native recovery boundary: copied React/Wry/GTK and real runtime backpressure; no physical-input claim"]
+fn copied_react_recovers_selected_import_after_lost_reply_and_recreation() {
+    std::thread::spawn(|| {
+        let parent = Parent::new();
+        let mut plugin = copied_plugin();
+        let mut independent = copied_plugin();
+        assert_packaged_audio(&mut independent);
+        let independent_state = saved_state(&mut independent);
+        let selected = tempfile::tempdir().unwrap();
+        let path = selected.path().join("recovered-selected.wav");
+        std::fs::write(&path, SELECTED_WAV).unwrap();
+        let mut browser = None;
+        let mut audio = None;
+        let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            browser = Some(structural_native::open_view(&mut plugin, &parent));
+            let view = browser.as_ref().unwrap();
+            let initial = structural_native::snapshot(&mut plugin, view);
+            let generation = initial["document"]["generation"].as_u64().unwrap();
+            assert_eq!(invoke(&mut plugin, view, &format!(
+                "window.__DANDRUM__.backend.getNativeFunction('setParameter')('drums.level',0.5,{generation})"))["status"], "accepted");
+            assert_import_audio(&mut plugin, false);
+            audio = Some(start_audio(&mut plugin));
+            // Publish an ordinary React edit without processing another audio block.
+            // Its real capacity-one runtime slot holds the subsequent import pending.
+            javascript(&mut plugin, view, r#"(()=>{[...document.querySelectorAll('[role=tab]')].find(tab=>tab.textContent.trim()==='Voice').click();return 'voice';})()"#);
+            wait_dom(&mut plugin, view, "document.querySelector('[role=spinbutton][aria-label=\"Voice limit\"][aria-valuenow=\"8\"]')");
+            javascript(&mut plugin, view, r#"(()=>{document.querySelector('[role=spinbutton][aria-label="Voice limit"]').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowUp',bubbles:true}));return 'changed';})()"#);
+            wait_dom(&mut plugin, view, "document.querySelector('header button[aria-label^=\"Undo \"]:not(:disabled)')");
+            let barrier = structural_native::snapshot(&mut plugin, view);
+            assert_eq!(barrier["connection"]["revision"], "1");
+            assert_eq!(barrier["connection"]["history"], serde_json::json!({"undoCount":1,"redoCount":0}));
+            assert!(barrier["yaml"].as_str().unwrap().contains("max_voices: 9"));
+            javascript(&mut plugin, view, r#"(()=>{
+                window.__LOST_IMPORT_REPLY__=null;const surface=window.__DANDRUM__,receive=surface.receiveNativeMessage;
+                surface.receiveNativeMessage=message=>{const frame=JSON.parse(message);if(frame.result?.job_id==='2'||frame.error){window.__LOST_IMPORT_REPLY__=frame;return 'withheld';}return receive(message);};
+                if(!document.querySelector('button[aria-label="Add source…"]'))document.querySelector('button[aria-label="Instrument tree"]').click();return 'observing';
+            })()"#);
+            wait_dom(&mut plugin, view, r#"document.querySelector('button[aria-label="Add source…"]')"#);
+            javascript(&mut plugin, view, r#"document.querySelector('button[aria-label="Add source…"]').click() || 'choose'"#);
+            gtk::init().expect("host joins GTK");
+            let chooser = native_dialog(&mut plugin);
+            assert!(chooser.set_filename(&path));
+            let deadline = Instant::now() + Duration::from_secs(5);
+            while chooser.filename().as_deref() != Some(path.as_path()) {
+                dispatch_context(&mut plugin);
+                assert!(Instant::now() < deadline, "real recovery chooser selects the WAV");
+                std::thread::sleep(Duration::from_millis(5));
+            }
+            chooser.response(gtk::ResponseType::Accept);
+            drop(chooser);
+            wait_dom(&mut plugin, view, "window.__LOST_IMPORT_REPLY__ !== null");
+            let admission: serde_json::Value = serde_json::from_str(&javascript(&mut plugin, view, "JSON.stringify(window.__LOST_IMPORT_REPLY__)")).unwrap();
+            assert_eq!(admission["status"], "accepted", "actual selected import admission: {admission}");
+            assert_eq!(admission["result"]["job_id"], "2");
+            let pending = structural_native::snapshot(&mut plugin, view);
+            assert_eq!(pending["connection"]["activeRequestId"], "2");
+            assert_eq!(pending["connection"]["revision"], "1");
+            std::fs::remove_file(&path).unwrap();
+            let gui = plugin.plugin_handle().get_extension::<PluginGui>().unwrap();
+            gui.destroy(&plugin.plugin_handle());
+            drop(browser.take());
+            assert!(parent.children().is_empty());
+            // Observe a real recreated view while production initialization is pending.
+            gui.create(&plugin.plugin_handle(), GuiConfiguration {api_type:GuiApiType::X11,is_floating:false}).unwrap();
+            unsafe {gui.set_parent(&plugin.plugin_handle(),Window::from_x11_handle(parent.id.into()))}.unwrap();
+            gui.show(&plugin.plugin_handle()).unwrap();
+            browser = Some(weak_browser_in_child(parent.children()[0]).upgrade().unwrap().downcast::<webkit2gtk::WebView>().unwrap());
+            let view = browser.as_ref().unwrap();
+            wait_dom(&mut plugin, view, "window.__DANDRUM__?.backend");
+            javascript(&mut plugin, view, r#"(()=>{window.__RECOVERY_CALLS__=[];const backend=window.__DANDRUM__.backend,get=backend.getNativeFunction;backend.getNativeFunction=method=>(...args)=>{window.__RECOVERY_CALLS__.push([method,...args]);return get(method)(...args);};return 'observing';})()"#);
+            wait_dom(&mut plugin, view, "window.__RECOVERY_CALLS__.some(([method])=>method==='getInstrumentSessionJobStatus') || document.querySelector('[data-testid=trigger-editor]') || document.querySelector('[role=alert]')");
+            assert_eq!(javascript(&mut plugin, view, "String(window.__RECOVERY_CALLS__.some(([method,id])=>method==='getInstrumentSessionJobStatus'&&id==='2'))"), "true", "recreated production editor must discover and follow the existing import without a manual status call");
+            assert_eq!(javascript(&mut plugin, view, "String(!!document.querySelector('[data-testid=trigger-editor]'))"), "false", "pending recovery does not expose stale editable state");
+            let recovering = structural_native::snapshot(&mut plugin, view);
+            assert_ne!(recovering["connection"]["attachmentId"], pending["connection"]["attachmentId"]);
+            assert_eq!(recovering["connection"]["activeRequestId"], "2");
+            // A real block consumes the earlier runtime; ordinary main-loop service
+            // then reclaims it and publishes the already-owned selected import.
+            let mut events = EventBuffer::new();
+            events.push(&MidiEvent::new(0,0,[0x90,36,127]));
+            let pcm = render_audio(audio.as_mut().unwrap(),&events,&mut Recorder::new(64));
+            assert_eq!([pcm[0][0],pcm[1][0]],[-1.0,-1.0]);
+            wait_dom(&mut plugin, view, "document.querySelector('[data-testid=trigger-editor]') || document.querySelector('[role=alert]')");
+            assert_eq!(javascript(&mut plugin, view, "document.querySelector('[role=alert]')?.textContent ?? ''"), "");
+            let recovered = structural_native::snapshot(&mut plugin, view);
+            assert_eq!(recovered["connection"]["revision"], "2");
+            assert_eq!(recovered["connection"]["nextRequestId"], "3");
+            assert!(recovered["connection"].get("activeRequestId").is_none());
+            assert_eq!(recovered["connection"]["history"],serde_json::json!({"undoCount":2,"redoCount":0}));
+            assert_eq!(recovered["document"]["parameters"],barrier["document"]["parameters"]);
+            assert!(recovered["yaml"].as_str().unwrap().contains(CONTENT_SHA256));
+            assert_eq!(javascript(&mut plugin, view, "String(window.__RECOVERY_CALLS__.some(([method])=>['prepareInstrumentSessionPatch','prepareSampler'].includes(method)))"), "false");
+            return_audio(&mut plugin,audio.take().unwrap());
+            assert_import_audio(&mut plugin,true);
+            for (action,revision,selected,undo,redo) in [("Undo","3",false,1,1),("Redo","4",true,2,0)] {
+                let selector=serde_json::to_string(&format!("header button[aria-label^=\"{action} \"]:not(:disabled)")).unwrap();
+                wait_dom(&mut plugin,view,&format!("document.querySelector({selector})"));
+                javascript(&mut plugin,view,&format!("document.querySelector({selector}).click() || 'clicked'"));
+                let deadline=Instant::now()+Duration::from_secs(5);
+                loop {
+                    let current=structural_native::snapshot(&mut plugin,view);
+                    if current["connection"]["revision"]==revision {
+                        assert_eq!(current["yaml"].as_str().unwrap().contains(CONTENT_SHA256),selected);
+                        assert_eq!(current["connection"]["history"],serde_json::json!({"undoCount":undo,"redoCount":redo}));break;
+                    }
+                    assert!(Instant::now()<deadline,"recovered native history completes once");std::thread::sleep(Duration::from_millis(5));
+                }
+                assert_import_audio(&mut plugin,selected);
+            }
+            assert_eq!(saved_state(&mut independent),independent_state);
+            assert_packaged_audio(&mut independent);
+        }));
+        if let Some(audio) = audio.take() {return_audio(&mut plugin,audio);}
+        if browser.is_some() {plugin.plugin_handle().get_extension::<PluginGui>().unwrap().destroy(&plugin.plugin_handle());drop(browser.take());}
+        assert!(parent.children().is_empty());
+        outcome.unwrap();
+    }).join().expect("native selected-import recovery host completes");
+}
