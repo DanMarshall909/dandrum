@@ -1,0 +1,15 @@
+{
+  "base": "7b149a50e5bca0f0866b9a982f168fcce830f113",
+  "source": {
+    "web/trigger/engine/contract.ts": "02dec73379b4c12ec32240c77f2293dff91b8eab72ecc78ea7eb9d17871a47c7",
+    "web/trigger/engine/native-engine.mjs": "9ce7fa33b8aabc3b3d277716f8f42c68f3a92992fbf5693d2c6b4e9d82f5249a",
+    "web/trigger/engine/native-live.mjs": "cd54f0d07692419554fe46e5a0f777c2de4ce17fee0f7978c3bf799b3db4342e",
+    "web/trigger/engine/session-connection.mjs": "25fab934473e523915878a6408a61fb5dd4cbb672d25efef24340fd569ee9030",
+    "web/trigger/engine/store.mjs": "403b564b2e61c879966ff8a227c1ead595409b1b0480c3a719003d14748e2df4",
+    "web/trigger/tests/session-connection.test.mjs": "273876b13f6b66a9c8c935b0cfd54e8cf6bb9cd2f118768bf845d1970dbc802a",
+    "web/trigger/tests/native-recovery.test.mjs": "e37beab2da8f40adda7569b0c1edda893c29824e0bb058388e5c14b1ee16333c"
+  },
+  "raw_archive_sha256": "71bfbc14e9788f0d7d44d9fb584df673138e945c95f9bd4d88b162605340708a",
+  "scope": "Production NativeEngine follows explicit native activeRequestId across lost reply/editor recreation, accepted history/failure usability and closed-init guards. Fast component evidence only; actual native/browser/current-product qualification and independent publication review remain pending.",
+  "limits": "Mutation excluded, no task/scenario closure. NewRust product not yet rebuilt; release1c770ba4 qualifies published6ac70423 only. StrictengineClippy129baselineFAIL remains explicit."
+}

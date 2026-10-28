@@ -17,7 +17,10 @@ export class NativeLive {
   resetMeter(){
     const engine=this.engine;
     if(!engine.capabilities.metering)return true;
-    this.meter=createMeterTransport((name,...args)=>engine.invoke(name,...args),packet=>{
+    this.meter=createMeterTransport((name,...args)=>{
+      if(engine.closed)throw new Error('Engine is closed');
+      return engine.invoke(name,...args);
+    },packet=>{
       if(engine.closed||packet.generation!==engine.generation||!packet.display_valid)return;
       this.telemetry={...this.telemetry,meters:{main:[...packet.display_peak]},voices:{active:null,max:engine.patch.voicePolicy.limit}};
       engine.emit('telemetry',structuredClone(this.telemetry));

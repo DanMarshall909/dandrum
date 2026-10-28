@@ -31,6 +31,11 @@ export function parseSessionConnection(value){
   };
   if(!Number.isSafeInteger(history.undoCount)||!Number.isSafeInteger(history.redoCount)
     ||history.undoCount<0||history.redoCount<0||history.undoCount+history.redoCount>parsed.limits.history)throw new Error('Invalid instrument session history bounds');
+  if(Object.hasOwn(value,'activeRequestId')){
+    const active=decimal(value.activeRequestId,'active request');
+    if(BigInt(active)>=BigInt(parsed.nextRequestId))throw new Error('Invalid session active request identity');
+    parsed.activeRequestId=active;
+  }
   return parsed;
 }
 

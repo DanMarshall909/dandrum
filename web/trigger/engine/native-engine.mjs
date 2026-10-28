@@ -44,14 +44,22 @@ export class NativeEngine {
     this.backend=backend;this.pollMs=pollMs;this.heartbeatMs=heartbeatMs;this.patch=emptyPatch();this.patch.macros=[];
     this.listeners=new Map();this.closed=false;this.sequence=0;this.pending=null;this.waits=new Set();this.eventTokens=[];
     this.pendingGeneration=0;this.preparing=false;this.reconciliation=null;
+    this.initializationError=null;
     this.native=true;this.capabilities=Object.freeze({analysis:false,zeroCrossings:false,fx:false,modulation:false,wholeSourceAudition:false,metering:true,sourceWaveforms:true,windowTitle:true,editorResize:true,...transport.capabilities});
   }
   async initialize(){
+    if(this.closed)throw new Error('Engine is closed');
     if(this.backendId==='juce-free')await this.invoke('negotiateEditorProtocol',2);
-    this.session=await this.invoke('getSamplerSession');this.connection=parseSessionConnection(this.session.connection);this.patch=patchFromSession(this.session);this.generation=this.session.document.generation;
+    if(this.closed)throw new Error('Engine is closed');
+    let session=await this.invoke('getSamplerSession');
+    if(this.backendId==='juce-free')session=await this.recoverPendingSession(session);
+    if(this.closed)throw new Error('Engine is closed');
+    this.session=session;this.connection=parseSessionConnection(session.connection);this.patch=patchFromSession(session);this.generation=session.document.generation;
     this.sourcePath=this.session.sourcePath;this.samplerSession=this.session;this.loadedPreset='native';
     await this.publishWindowTitle();
+    if(this.closed)throw new Error('Engine is closed');
     this.live=new NativeLive(this);await this.startFeedback();
+    if(this.closed)throw new Error('Engine is closed');
     this.parameters=createParameterController((name,...args)=>this.invoke(name,...args),state=>{
       if(this.closed)return;
       if(state.generation>this.generation){void this.requestGeneration(state.generation);return;}
@@ -69,8 +77,33 @@ export class NativeEngine {
     }
     return this;
   }
+  async recoverPendingSession(session){
+    for(let attempt=0;attempt<2000;attempt++){
+      if(this.closed)throw new Error('Engine is closed');
+      const before=parseSessionConnection(session.connection),request=before.activeRequestId;
+      if(!request)return session;
+      const outcome=await this.invoke('getInstrumentSessionJobStatus',request);
+      if(this.closed)throw new Error('Engine is closed');
+      if(outcome?.request_id!==request)throw new Error('Native recovery returned another request');
+      if(outcome.state==='running'){await this.wait();continue;}
+      if(!['completed','failed'].includes(outcome.state))throw new Error('Unknown native recovery state');
+      const current=await this.invoke('getSamplerSession');
+      if(this.closed)throw new Error('Engine is closed');
+      const after=parseSessionConnection(current.connection);
+      if(after.instanceId!==before.instanceId||after.attachmentId!==before.attachmentId
+        ||BigInt(after.nextRequestId)<BigInt(before.nextRequestId)
+        ||BigInt(after.revision)<BigInt(before.revision)
+        ||(outcome.state==='completed'&&(typeof outcome.revision!=='string'||!/^[1-9][0-9]{0,19}$/.test(outcome.revision)
+          ||BigInt(outcome.revision)<=BigInt(before.revision)||BigInt(outcome.revision)>BigInt(after.revision)))
+        ||(after.activeRequestId&&BigInt(after.activeRequestId)<=BigInt(request)))throw new Error('Native recovery returned incoherent session metadata');
+      if(outcome.state==='failed')this.initializationError=typeof outcome.error==='string'&&outcome.error?outcome.error:'Native preparation failed';
+      session=current;
+    }
+    throw new Error('Native recovery timed out');
+  }
   async startFeedback(changed=false){
     const started=changed?await this.live.changed():await this.live.resetMeter();
+    if(this.closed)throw new Error('Engine is closed');
     if(!started&&!await this.live.resetMeter())throw new Error('Native output meter subscription unavailable');
   }
   requestGeneration(generation){
@@ -110,7 +143,11 @@ export class NativeEngine {
     return value;
   }
   on(event,listener){if(!this.listeners.has(event))this.listeners.set(event,new Set());this.listeners.get(event).add(listener);return()=>this.listeners.get(event)?.delete(listener);}
-  emit(event,value){if(!this.closed)for(const listener of this.listeners.get(event)??[])listener(value);}
+  emit(event,value){
+    if(this.closed)return;
+    if(event==='patch'&&value?.phase==='ready')this.initializationError=null;
+    for(const listener of this.listeners.get(event)??[])listener(value);
+  }
   report(error){
     if(this.closed)return;
     const message=errorMessage(error);

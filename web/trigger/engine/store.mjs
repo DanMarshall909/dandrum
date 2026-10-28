@@ -12,10 +12,10 @@ export class Store {
     this.listeners=/** @type {Set<()=>void>} */(new Set());this.gesture=/** @type {{id:string,sequence:number,start:number}|null} */(null);this.gestureSequence=0;
     this.telemetryReader=telemetryReader(engine);
     this.pending=/** @type {Promise<unknown>|null} */(null);this.closed=false;
-    this.phase=/** @type {import('./contract').EventMap['patch']['phase']} */('ready');this.error=/** @type {string|null} */(null);this.jobs=/** @type {Record<string,import('./contract').Job>} */({});
+    this.error=engine.initializationError??null;this.phase=/** @type {import('./contract').EventMap['patch']['phase']} */(this.error?'failed':'ready');this.jobs=/** @type {Record<string,import('./contract').Job>} */({});
     this.editor=/** @type {Record<string,any>} */({page:'sample',st:'empty',ann:false,layout:'default',browser:false,
       selection:null,zoneSel:'k60f',zones:null,rrMode:null});
-    this.snapshot=/** @type {import('./store-types').StoreSnapshot} */({patch:engine.getPatch(),editor:this.editor,busy:false,phase:this.phase,error:null,jobs:this.jobs});
+    this.snapshot=/** @type {import('./store-types').StoreSnapshot} */({patch:engine.getPatch(),editor:this.editor,busy:false,phase:this.phase,error:this.error,jobs:this.jobs});
     this.unsubscribers=[engine.on('patch',payload=>{
       this.phase=payload.phase;this.error=payload.message??null;
       if(payload.replacement){

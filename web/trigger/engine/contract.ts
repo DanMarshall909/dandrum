@@ -41,6 +41,8 @@ export interface MockDiagnostics {getLog():LogEntry[];clearLog():void;setMockSwi
 /** Prepared edits publish only after validation succeeds; live writes are synchronous.
  * Telemetry subscriptions own their periodic stream; clients never start an internal simulator. */
 export interface EngineAdapter {
+  /** Recovered native failure; accepted editing remains usable. Cleared by a successful operation. */
+  readonly initializationError?:string|null;
   applyDelta(operands:UndoOperand[]):Promise<void>;
   getTelemetrySnapshot?():Telemetry;
   getPatch():Patch;newPatch():Promise<void>;loadPreset(id:string):Promise<void>;reload():Promise<void>;

@@ -37,3 +37,12 @@ test('native projection retains exact map and zone identities independently of i
   assert.equal(kick.nativeMapId,'kit');
   assert.equal(kick.nativeZoneId,'kick');
 });
+
+
+test('optional native active request preserves its u64 identity and rejects malformed or unconsumed IDs',()=>{
+  const pending={...valid,nextRequestId:'9007199254740994',activeRequestId:'9007199254740993'};
+  assert.deepEqual(parseSessionConnection(pending),pending);
+  for(const activeRequestId of [null,undefined,0,9007199254740993,'0','01','-1','18446744073709551616','9007199254740994','9007199254740995']){
+    assert.throws(()=>parseSessionConnection({...pending,activeRequestId}),/active|request|identity|decimal/i);
+  }
+});
