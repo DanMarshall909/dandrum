@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {setImmediate as nextTurn} from 'node:timers/promises';
 import {NativeEngine} from '../engine/native-engine.mjs';
 import {Store} from '../engine/store.mjs';
 import {backend,connection,session,yaml} from './native-fixture.mjs';
@@ -145,4 +146,30 @@ for(const phase of ['window title','feedback'])test(`closing during initializati
   held.resolve(phase==='feedback'?true:{status:'accepted'});await assert.rejects(initialization,/closed/);
   assert.equal(bridge.calls.length,calls,'closed feedback cannot issue a later visibility request');
   assert.equal(bridge.events.size,0,'closed initialization cannot register parameter feedback');
+});
+
+
+for(const terminal of ['completed','failed','running'])test(`native recovery ${terminal} on its last permitted probe`,{timeout:3000},async t=>{
+  t.mock.timers.enable({apis:['setTimeout']});
+  const previous=globalThis.window,initial=retained(yaml,7,{activeRequestId:'1',nextRequestId:'2'}),bridge=backend(initial);
+  const final=retained(yaml,terminal==='completed'?8:7,{revision:terminal==='completed'?'1':'0',nextRequestId:'2',history:{undoCount:terminal==='completed'?1:0,redoCount:0}});
+  globalThis.window={__DANDRUM__:{protocolVersion:1,backendId:'juce-free',capabilities,backend:bridge}};
+  const engine=new NativeEngine({heartbeatMs:0,pollMs:30});let store,probes=0,settled=false;
+  t.after(()=>{store?.close();engine.close();globalThis.window=previous;});
+  bridge.functions.getInstrumentSessionJobStatus=request=>{
+    assert.equal(request,'1');probes++;
+    if(probes<2000||terminal==='running')return {request_id:request,state:'running',revision:'0'};
+    bridge.setSession(final);
+    return {request_id:request,state:terminal,revision:terminal==='completed'?'1':undefined,error:'Terminal preparation failure'};
+  };
+  const initialization=engine.initialize();initialization.then(()=>{settled=true;},()=>{settled=true;});
+  for(let turn=0;!settled&&turn<2005;turn++){await nextTurn();t.mock.timers.runAll();}
+  assert.equal(settled,true,'bounded initialization settles without real polling delays');
+  assert.equal(probes,2000,'the existing status budget is unchanged');
+  if(terminal==='running'){await assert.rejects(initialization,/timed out/);return;}
+  await initialization;store=new Store(engine);
+  assert.equal(engine.getPatch().params['drums.level'].value,.5);assert.equal(store.undoCount,terminal==='completed'?1:0);
+  assert.equal(store.getSnapshot().phase,terminal==='failed'?'failed':'ready');
+  assert.equal(store.getSnapshot().error,terminal==='failed'?'Terminal preparation failure':null);
+  assert.equal(bridge.calls.some(([method])=>['prepareInstrumentSessionPatch','prepareSampler'].includes(method)),false);
 });

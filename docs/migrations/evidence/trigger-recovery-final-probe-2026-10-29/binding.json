@@ -1,0 +1,18 @@
+{
+  "base": "4980b495a3d0066a1c54371798920302bcce7017",
+  "source": {
+    "web/trigger/engine/native-engine.mjs": "9f3136ed2e609244b2ad7055a9f58c8946d85a31ba6d5e634d4bc935eb219402",
+    "web/trigger/tests/native-recovery.test.mjs": "84a37dfb90c31a2f0e5355f11e32c8157408b134a25b16bb1ce70bd50bf09875"
+  },
+  "raw_archive_sha256": "b20583d35631c057fb2dc71f8fd3dff014ec9cc908fb5e2a74d38d06dce5b310",
+  "native_replay": {
+    "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/recovery-last-probe-native-replay.tar.gz",
+    "sha256": "d6237558e0c19b160430d9647e7200a11138edcc58c1160bcb4837bfa891269c",
+    "bytes": 8691654
+  },
+  "current_product_sha256": "2fe7909da6f10b68291e6e18b18f1769d010866d6b359c5811e34231200fafdc",
+  "current_browser_sha256": "d157a01be9cc121d3e310b2b4ca099cddb36d355328d45170d02e406d6fa918e",
+  "scope": "Independent4980FAIL repair: completed/failed on status probe2000 return canonical idle snapshot; still-running on2000 and continuously renewed work still timeout at the unchanged bound.",
+  "checks": "281Node/types/components/V8,33native119.70s,newnative2.05s,14Chromium9.3s,currentunfilteredofficial34success10explicitSKIP0FAIL,active strictspec/map631/392/239. Reuse unchanged9sourcefree203.235s and Rust fmt/strictClippy/hostLLVM; owned spec receipt proves all source-free copied inputs unchanged.",
+  "limits": "No task/scenario closure or publication approval; renewed independent verdict pending. StrictengineClippy129baselineFAIL explicit. Mutation excluded, CLAPonly, main68dd655 preserved."
+}

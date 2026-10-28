@@ -97,6 +97,7 @@ export class NativeEngine {
           ||BigInt(outcome.revision)<=BigInt(before.revision)||BigInt(outcome.revision)>BigInt(after.revision)))
         ||(after.activeRequestId&&BigInt(after.activeRequestId)<=BigInt(request)))throw new Error('Native recovery returned incoherent session metadata');
       if(outcome.state==='failed')this.initializationError=typeof outcome.error==='string'&&outcome.error?outcome.error:'Native preparation failed';
+      if(!after.activeRequestId)return current;
       session=current;
     }
     throw new Error('Native recovery timed out');
