@@ -14,6 +14,7 @@ import {synchroniseModuleParameters} from './voice-defaults.mjs';
 import {parse} from 'yaml';
 import {parseSessionConnection,nextDecimalId} from './session-connection.mjs';
 import {selectNativeTransport} from './native-transport.mjs';
+import {chooseNativeSamples,releaseNativeFiles,withNativeFiles} from './native-selection.mjs';
 
 const operations={...structureOperations,...instrumentOperations,...historyOperations,...sliceOperations,...candidateOperations,...routingOperations};
 const unsupported=new Set(['collapseHistory','addModulator','setModulator','removeModulator','addRoute','updateRoute','removeRoute','setMacro','bindMacro','learnMidi','receiveMidi','addProcessor','moveProcessor','setProcessorParam','removeProcessor']);
@@ -298,15 +299,34 @@ export class NativeEngine {
   newPatch(){return this.prepared(draft=>{const next=emptyPatch();next.macros=[];next.modules=[{id:'sample',type:'Sample player',params:{mode:'once'},paramIds:{}}];Object.assign(draft,next);});}
   async loadPreset(id){if(id==='empty')return this.newPatch();if(id!=='felt-kit'&&id!=='native')throw new Error(`Unknown preset: ${id}`);const path=await this.invoke('getSamplerPresetPath');return this.prepared(()=>{}, {reloadPath:path});}
   reload(){return this.prepared(()=>{}, {reloadPath:this.sourcePath});}
-  chooseSamples(){return this.invoke('chooseSamplerFiles');}
+  chooseSamples(){return this.backendId==='juce-free'?chooseNativeSamples(this):this.invoke('chooseSamplerFiles');}
   importInto(draft,files){
     return files.map(file=>{
-      if(!file.uri?.startsWith('/')||!Number.isFinite(file.duration)||file.duration<=0||!Number.isInteger(file.sampleRate)||file.sampleRate<1||!Number.isInteger(file.channels)||file.channels<1)throw new Error('Native import requires an absolute path and decoded file metadata');
-      const asset={id:this.id('asset'),name:file.name,uri:file.uri,state:'loaded',cached:true,duration:file.duration,sampleRate:file.sampleRate,bits:file.bits??0,channels:file.channels,frameCount:Math.round(file.duration*file.sampleRate)};draft.assets.push(asset);return asset;
+      if((this.backendId==='juce-free'?file.uri!==file.resourceId:!file.uri?.startsWith('/'))||!Number.isFinite(file.duration)||file.duration<=0||!Number.isInteger(file.sampleRate)||file.sampleRate<1||!Number.isInteger(file.channels)||file.channels<1)throw new Error('Native import requires an absolute path and decoded file metadata');
+      const asset={id:this.id('asset'),name:file.name,uri:file.uri,state:'loaded',cached:true,duration:file.duration,sampleRate:file.sampleRate,bits:file.bits??0,channels:file.channels,frameCount:this.backendId==='juce-free'?file.frameCount:Math.round(file.duration*file.sampleRate)};draft.assets.push(asset);return asset;
     });
   }
   importAssets(files){if(this.backendId==='juce-free')return Promise.reject(new Error('Selected sample import and mapping are unsupported by this native consumer'));return this.prepared(draft=>this.importInto(draft,files));}
-  importSamples(files,options={}){if(this.backendId==='juce-free')return Promise.reject(new Error('Selected sample import and mapping are unsupported by this native consumer'));return this.prepared(draft=>{const assets=this.importInto(draft,files);if(options.replace){if(assets[0])structureOperations.replaceRegionAsset.call(this,draft,options.replace,assets[0].id);return {assets,rule:null};}return {assets,rule:assets.length?mapAssets.call(this,draft,assets.map(a=>a.id),options):null};});}
+  importSamples(files,options={}){
+    const native=this.backendId==='juce-free';
+    const prepare=(refs,assertOwner=()=>{})=>this.prepared(draft=>{
+      assertOwner();
+      const group=draft.nodes.find(node=>node.kind==='group');
+      if(native&&((options.group&&options.group!==group?.id)||(options.groupName&&options.groupName!==(group?.name??draft.name))))throw new Error('Custom import groups are unsupported by native document history');
+      const assets=this.importInto(draft,refs);
+      if(options.replace){if(assets[0])structureOperations.replaceRegionAsset.call(this,draft,options.replace,assets[0].id);return {assets,rule:null};}
+      return {assets,rule:assets.length?mapAssets.call(this,draft,assets.map(a=>a.id),native?{policy:'sequential',...options,group:options.group??group?.id}:options):null};
+    });
+    if(!native)return prepare(files);
+    return withNativeFiles(this,files,async(refs,assertOwner)=>{
+      const result=await prepare(refs,assertOwner),accepted=this.getPatch();
+      const assets=result.assets.map(asset=>accepted.assets.find(item=>item.id===asset.id));
+      const rule=result.rule?accepted.rules.find(item=>item.nativeZoneId===result.rule)?.id:null;
+      if(assets.some(asset=>!asset)||(result.rule&&!rule))throw new Error('Native import result is absent from the accepted session');
+      return {assets,rule};
+    });
+  }
+  releaseSamples(files){return this.backendId==='juce-free'?releaseNativeFiles(this,files):Promise.resolve();}
   mapAssets(ids,options){if(this.backendId==='juce-free')return Promise.reject(new Error('Selected sample import and mapping are unsupported by this native consumer'));return this.prepared(draft=>mapAssets.call(this,draft,ids,options));}
   relink(){return Promise.reject(new Error('Native relinking requires file selection with decoded metadata'));}
   getPeaks(id,bins){return this.live.getPeaks(id,bins);}

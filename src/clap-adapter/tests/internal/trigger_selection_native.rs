@@ -213,3 +213,124 @@ fn native_dialog(plugin: &mut PluginInstance<GuiHost>) -> gtk::FileChooserDialog
         std::thread::sleep(Duration::from_millis(5));
     }
 }
+
+#[test]
+#[ignore = "native production Import boundary: real React/Wry/GTK acquisition; no physical-input claim"]
+fn copied_react_import_maps_selected_pcm_once_through_native_history() {
+    std::thread::spawn(|| {
+        let parent = Parent::new();
+        let mut plugin = copied_plugin();
+        let mut independent = copied_plugin();
+        assert_packaged_audio(&mut plugin);
+        assert_packaged_audio(&mut independent);
+        let independent_state = saved_state(&mut independent);
+        let selected = tempfile::tempdir().unwrap();
+        let path = selected.path().join("distinct-selected.wav");
+        std::fs::write(&path, SELECTED_WAV).unwrap();
+        let mut browser = structural_native::open_view(&mut plugin, &parent);
+        let initial = structural_native::snapshot(&mut plugin, &browser);
+        let generation = initial["document"]["generation"].as_u64().unwrap();
+        let changed = invoke(&mut plugin, &browser, &format!(
+            "window.__DANDRUM__.backend.getNativeFunction('setParameter')('drums.level',0.5,{generation})"));
+        assert_eq!(changed["status"], "accepted");
+        assert_import_audio(&mut plugin, false);
+        let before = structural_native::snapshot(&mut plugin, &browser);
+        assert_eq!(before["document"]["parameters"].as_array().unwrap().iter()
+            .find(|parameter| parameter["id"] == "drums.level").unwrap()["normalisedValue"], 0.5);
+        javascript(&mut plugin, &browser, r#"(()=>{
+            if(!document.querySelector('button[aria-label="Add source…"]'))document.querySelector('button[aria-label="Instrument tree"]').click();
+            return 'tree';
+        })()"#);
+        wait_dom(&mut plugin, &browser, r#"document.querySelector('button[aria-label="Add source…"]')"#);
+        javascript(&mut plugin, &browser, r#"(()=>{document.querySelector('button[aria-label="Add source…"]').click();return 'choose';})()"#);
+        gtk::init().expect("host joins GTK after plugin initialization");
+        let chooser = native_dialog(&mut plugin);
+        assert!(chooser.set_filename(&path));
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while chooser.filename().as_deref() != Some(path.as_path()) {
+            dispatch_context(&mut plugin);
+            assert!(Instant::now() < deadline, "real chooser selects the requested WAV");
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        chooser.response(gtk::ResponseType::Accept);
+        drop(chooser);
+        let imported = loop {
+            let current = structural_native::snapshot(&mut plugin, &browser);
+            if current["yaml"].as_str().unwrap().contains(CONTENT_SHA256) {
+                break current;
+            }
+            assert!(Instant::now() < deadline,
+                "React Import must consume the real selected outcome and publish the admitted content; history={:?}, selections={:?}",
+                current["connection"]["history"], current["sampleSelections"]);
+            std::thread::sleep(Duration::from_millis(10));
+        };
+        assert_eq!(imported["connection"]["history"], serde_json::json!({"undoCount":1,"redoCount":0}));
+        assert_eq!(imported["document"]["parameters"], before["document"]["parameters"]);
+        assert_eq!(imported["document"]["sources"].as_array().unwrap().len(), 2);
+        let source = imported["document"]["sources"].as_array().unwrap().iter().find(|source| source["id"] != "drums").unwrap();
+        assert_eq!(source["sampleRateHz"], 32000);
+        assert_eq!(source["channelCount"], 2);
+        assert_eq!(source["frameCount"], "4");
+        std::fs::remove_file(&path).unwrap();
+        assert_import_audio(&mut plugin, true);
+        let gui = plugin.plugin_handle().get_extension::<PluginGui>().unwrap();
+        gui.destroy(&plugin.plugin_handle());
+        drop(browser);
+        assert!(parent.children().is_empty());
+        browser = structural_native::open_view(&mut plugin, &parent);
+        let recreated = structural_native::snapshot(&mut plugin, &browser);
+        assert_ne!(recreated["connection"]["attachmentId"], imported["connection"]["attachmentId"]);
+        assert_eq!(recreated["yaml"], imported["yaml"]);
+        assert_eq!(recreated["document"], imported["document"]);
+        for (action, wanted, revision, undo, redo) in [("Undo", false, "2", 0, 1), ("Redo", true, "3", 1, 0)] {
+            let selector = format!("header button[aria-label^=\"{action} \"]:not(:disabled)");
+            let selector = serde_json::to_string(&selector).unwrap();
+            wait_dom(&mut plugin, &browser, &format!("document.querySelector({selector})"));
+            javascript(&mut plugin, &browser, &format!("document.querySelector({selector}).click() || 'clicked'"));
+            let deadline = Instant::now() + Duration::from_secs(5);
+            loop {
+                let current = structural_native::snapshot(&mut plugin, &browser);
+                if current["connection"]["revision"] == revision {
+                    assert_eq!(current["yaml"].as_str().unwrap().contains(CONTENT_SHA256), wanted);
+                    assert_eq!(current["connection"]["history"], serde_json::json!({"undoCount":undo,"redoCount":redo}));
+                    assert_eq!(current["document"]["parameters"], before["document"]["parameters"]);
+                    break;
+                }
+                assert!(Instant::now() < deadline, "native UI history completes once");
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            assert_import_audio(&mut plugin, wanted);
+            assert_eq!(saved_state(&mut independent), independent_state);
+            assert_packaged_audio(&mut independent);
+        }
+        gui.destroy(&plugin.plugin_handle());
+        drop(browser);
+        assert!(parent.children().is_empty());
+    }).join().expect("production React selected import host completed");
+}
+
+fn assert_import_audio(plugin: &mut PluginInstance<GuiHost>, selected: bool) {
+    let mut audio = start_audio(plugin);
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        // Apply queued gain before reset deliberately cancels unconsumed activity.
+        let _ = render_audio(&mut audio, &EventBuffer::new(), &mut Recorder::new(64));
+        // Existing stereo playback mix: (-0.75 + 0.5) / 2, times physical gain2.
+        for (key, expected) in [
+            (48, if selected { [-0.25, -0.25] } else { [0.0, 0.0] }),
+            (36, [-1.0, -1.0]),
+            (60, [0.0, 0.0]),
+        ] {
+            std::thread::scope(|scope| scope.spawn(|| audio.reset()).join().unwrap());
+            let mut events = EventBuffer::new();
+            events.push(&MidiEvent::new(0, 0, [0x90, key, 127]));
+            let pcm = render_audio(&mut audio, &events, &mut Recorder::new(64));
+            assert_eq!(
+                [pcm[0][0], pcm[1][0]],
+                expected,
+                "known signed native mapping at MIDI{key}"
+            );
+        }
+    }));
+    return_audio(plugin, audio);
+    result.unwrap();
+}

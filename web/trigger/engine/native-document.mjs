@@ -4,6 +4,7 @@ import {emptyPatch} from './presets.mjs';
 const clone=value=>structuredClone(value);
 const readable=id=>id.replace(/[_.-]+/g,' ');
 const unsupported=feature=>{throw new Error(`${feature} is unsupported by the native sampler`);};
+const selectedResource=value=>typeof value==='string'&&/^selected\/[a-f0-9]{64}\.wav$/.test(value);
 const finite=(value,name)=>{if(!Number.isFinite(value))throw new Error(`Invalid ${name}`);return value;};
 export function compiledNativeZoneId(rule){
   return rule.nativeMapId&&rule.nativeZoneId
@@ -45,7 +46,8 @@ export function patchFromSession(session){
     if(!declared)throw new Error(`Native source ${source.id} has no file provenance`);
     const frameCount=Number(source.frameCount),duration=frameCount/source.sampleRateHz;
     if(!Number.isSafeInteger(frameCount)||frameCount<1||!Number.isFinite(duration)||duration<=0)throw new Error('Invalid native source geometry');
-    const uri=absoluteSamplePath(declared.path??declared.resource?.uri,sourcePath);
+    const reference=declared.path??declared.resource?.uri;
+    const uri=selectedResource(reference)?reference:absoluteSamplePath(reference,sourcePath);
     patch.assets.push({id:source.id,name:uri.split('/').at(-1),uri,state:'loaded',cached:true,duration,sampleRate:source.sampleRateHz,bits:0,channels:source.channelCount,frameCount});
     for(const region of source.regions??[]){
       patch.regions.push({id:`${source.id}.${region.id}`,nativeId:region.id,assetId:source.id,name:readable(region.id),kind:'sample',start:Number(region.startFrame)/frameCount,end:Number(region.endFrame)/frameCount,root:region.rootNote,reverse:region.reverse??false,gain:region.gainDb??0,pan:region.pan??0,fades:{in:(region.fadeInMs??0)/(duration*1000),out:(region.fadeOutMs??0)/(duration*1000)},playback:region.loop?({forward:'loop',ping_pong:'pp',sustain:'sus'}[region.loop.mode]??'loop'):'once',loop:region.loop?{mode:region.loop.mode,start:Number(region.loop.startFrame)/frameCount,end:Number(region.loop.endFrame)/frameCount,crossfade:(region.loop.crossfadeMs??0)/(duration*1000)}:null});
@@ -103,7 +105,7 @@ export function compileNativePatch(patch,session){
   graph.metadata={...graph.metadata,name:patch.name};
   const sourceIds=new Map(),regionRefs=new Map(),compiledRegions=new Map();
   const sources=patch.assets.map(asset=>{
-    if(asset.state!=='loaded'||!asset.uri.startsWith('/')||asset.render)throw new Error('Native sampler requires real decoded sample assets');
+    if(asset.state!=='loaded'||(!asset.uri.startsWith('/')&&!selectedResource(asset.uri))||asset.render)throw new Error('Native sampler requires real decoded sample assets');
     const id=asset.id.replace(/[^a-zA-Z0-9_-]/g,'_');if([...sourceIds.values()].includes(id))throw new Error('Duplicate native source ID');sourceIds.set(asset.id,id);
     const frames=asset.frameCount??Math.round(asset.duration*asset.sampleRate);
     if(!Number.isSafeInteger(frames)||frames<1)throw new Error('Invalid native sample frame count');
@@ -124,7 +126,7 @@ export function compileNativePatch(patch,session){
     });
     // An unassigned library file still needs a prepared region for real waveform decoding.
     if(!regions.length)regions.push({id:'whole',start_frame:0,end_frame:frames});
-    return {id,path:relativeSamplePath(asset.uri,session.sourcePath),regions};
+    return {id,path:selectedResource(asset.uri)?asset.uri:relativeSamplePath(asset.uri,session.sourcePath),regions};
   });
   const modes=new Set(),zones=[];
   function expand(source,path=[],controls={}){

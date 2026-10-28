@@ -19,7 +19,7 @@ export function DropPage({model}){
       </button>)}
     </div>
     <div style={{display:'flex',gap:12,alignItems:'center'}}>
-      <label style={{fontSize:12}}>Group <input aria-label="Import group name" value={options.groupName} onChange={e=>model.setImportOption('groupName',e.target.value)}/></label>
+      {model.importGroupNameEditable===false?<span style={{fontSize:12}}>Target {options.groupName}</span>:<label style={{fontSize:12}}>Group <input aria-label="Import group name" value={options.groupName} onChange={e=>model.setImportOption('groupName',e.target.value)}/></label>}
       <DD.NumericField label="Starting note" value={options.startNote} min={0} max={127} width={84} compact onChange={value=>model.setImportOption('startNote',value)}/>
     </div>
     <div className="import-preview" role="region" aria-label="Interpreted mapping">

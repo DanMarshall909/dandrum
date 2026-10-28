@@ -232,11 +232,12 @@ edits publish native operation history without a browser-only processing stack.
 Rejecting these edits preserves patch, request cursor and native Undo/Redo,
 including a recreated editor. Comparison-backend behavior is unchanged.
 
-Native selection/import/new mapping and New Empty remain pending in their owning
-tasks. Their production consumer entrypoints must not report successful imports
-before the admitted-resource and canonical-result flow is implemented. This
-restriction is not completion of those tasks, and does not restrict the existing
-native protocol's independently verified full-document endpoints. Broader editor
+Selected-resource `importSamples` uses the native choice described below.
+Independent asset-library import, later mapping and New Empty remain pending in
+their owning tasks. Their production consumer entrypoints must not report success
+before the admitted-resource and canonical-result flow exists. This restriction
+is not completion of those tasks, and does not restrict the existing native
+protocol's independently verified full-document endpoints. Broader editor
 metadata needs a deliberate bounded native representation before being enabled;
 retaining browser closures does not satisfy native history or recreation.
 
@@ -250,3 +251,39 @@ current values remain separately verified.
 Candidate origins are reused only for their containing original projected rule.
 Duplicated or authored rules, including rules without origin metadata, generate
 fresh zone identities rather than borrow another rule's native addresses.
+
+## Production selected-resource import consumer
+
+The JUCE-free chooser consumer polls the existing bounded native status without
+blocking the UI, validates actual ready metadata against the published selection
+limits, and returns only logical resource references carrying their instance and
+selection identity. User choice can wait until cancellation or editor closure;
+individual requests and retained metadata remain bounded. No browser File path,
+label or asserted decode grants content authority. Packaged and comparison-backend
+file handling keeps its existing contract.
+
+Normal single-file Import chooses one unused MIDI key, scanning from48 through127
+then0 through47, rather than overlapping occupied kit keys. An exhausted keyboard
+refuses explicitly and releases the choice; explicit replacement/target mapping
+retains its existing semantics. Multiple files keep the mapping dialog, with its
+native target naming the existing group rather than offering an unserialized
+rename or new group. Custom native group metadata rejects before preparation.
+
+An import consumes one same-instance choice. Validate its normalized metadata
+and recheck the live attachment when queued preparation actually starts. The
+native worker owns admitted work; accepted patch/history retain selected owners
+before the consumer releases the terminal choice. A failed attempt also releases
+its choice and requires re-selection for a new attempt. Cancellation releases the
+terminal outcome without history. Foreign-instance references never prepare or
+release another instance's resources. Editor retirement suppresses outgoing
+cleanup and late presentation; it does not revoke session-owned work.
+
+Publish only the canonical native accepted asset/rule identities and metadata.
+Preparation failure preserves accepted state and reports its primary error;
+cleanup failure is retained alongside it. If the edit already succeeded and only
+selection cleanup fails, show an explicit cleanup warning while retaining import
+success, rather than invite a duplicate edit by falsely reporting import failure.
+Once-only history, current physical values, source removal, editor recreation,
+Undo/Redo and independent-instance signed audio need real native component proof.
+Lost admission-reply recovery, New Empty, portable state, physical input and DAW
+acceptance remain separate open requirements.

@@ -2,7 +2,7 @@ export type Id = string;
 export type Json = null | boolean | number | string | Json[] | {[key:string]:Json};
 export type Config = {[key:string]:Json};
 export type ParamValue = number | boolean | string;
-export interface FileRef {name:string;uri?:string;duration?:number;type?:string}
+export interface FileRef {name:string;uri?:string;duration?:number;type?:string;instanceId?:Id;selectionId?:Id;resourceId?:Id;contentSha256?:string;encodedBytes?:number;sampleRate?:number;channels?:number;frameCount?:number;bits?:number}
 export interface ImportOptions {policy?:'sequential'|'root-velocity'|'stack'|'rr';startNote?:number;group?:Id;groupName?:string;replace?:Id;target?:Id}
 export interface Node {id:Id;name:string;kind:'instrument'|'group'|'sound';parent:Id|null;output?:Id|'inherit';sends?:Record<Id,number>;note?:number;root?:number;choke?:number}
 export interface Asset {id:Id;name:string;uri:string;state:'loading'|'loaded'|'missing'|'unsupported';progress?:number;duration:number;sampleRate:number;bits:number;channels:number;cached:boolean;group?:Id;analysis?:{note?:number;cents?:number;peak?:number;lufs?:number}}
@@ -46,8 +46,9 @@ export interface EngineAdapter {
   getPatch():Patch;newPatch():Promise<void>;loadPreset(id:string):Promise<void>;reload():Promise<void>;
   addNode(parent:Id,kind:'group'|'sound'):Promise<Id>;removeNode(id:Id):Promise<void>;renameNode(id:Id,name:string):Promise<void>;
   duplicateNode(id:Id):Promise<Id>;moveNode(id:Id,parent:Id,index:number):Promise<void>;
+  releaseSamples?(files:FileRef[]):Promise<void>;
   importAssets(files:FileRef[]):Promise<Asset[]>;relink(id:Id,uri:string):Promise<void>;getPeaks(id:Id,bins:number):Float32Array;
-  mapAssets(assets:Id[],options?:ImportOptions):Promise<Id|null>;importSamples(files:FileRef[],options?:ImportOptions):Promise<{assets:Asset[];rule:Id|null}>;
+  mapAssets(assets:Id[],options?:ImportOptions):Promise<Id|null>;importSamples(files:FileRef[],options?:ImportOptions):Promise<{assets:Asset[];rule:Id|null;warning?:string}>;
   setRegion(id:Id,delta:Partial<Region>):Promise<void>;splitSlice(id:Id,at:number):Promise<Id>;mergeSlices(a:Id,b:Id):Promise<void>;removeSlice(id:Id):Promise<void>;
   setSlices(asset:Id,markers:number[],options?:{group?:Id;startNote?:number;method?:string}):Promise<Id[]>;moveSliceBoundary(id:Id,start:number):Promise<void>;mapSlices(asset:Id,from:number):Promise<void>;editSlices(ids:Id[],delta:Partial<Region>):Promise<void>;removeSlices(ids:Id[]):Promise<void>;
   analyse(asset:Id,kind:AnalysisKind):Job;cancel(job:Id):void;

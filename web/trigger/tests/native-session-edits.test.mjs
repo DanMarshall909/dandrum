@@ -220,7 +220,6 @@ const unrepresentableEdits=[
   ['addHistory',p=>['Trim',{start:.01,end:.5},p.regions[0].id]],
   ['setSlices',p=>[p.assets[0].id,[0,.5],{startNote:70}]],
   ['importAssets',p=>[[{name:'kit.wav',uri:p.assets[0].uri,duration:1,sampleRate:48000,channels:2}]]],
-  ['importSamples',p=>[[{name:'kit.wav',uri:p.assets[0].uri,duration:1,sampleRate:48000,channels:2}],{policy:'sequential',startNote:70}]],
   ['mapAssets',p=>[[p.assets[0].id],{policy:'sequential',startNote:70}]],
   ['applyDelta',p=>{const next=structuredClone(p);next.nodes.find(n=>n.id==='kit').name='Delta rename';return [entityDelta(p,next)];}],
 ];
