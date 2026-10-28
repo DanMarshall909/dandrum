@@ -219,7 +219,11 @@ fn creation_failure_scenario() {
     )
     .unwrap();
     assert!(parent.children().is_empty());
-    let toplevels = gtk::Window::list_toplevels().len();
+    let baseline_toplevels = gtk::Window::list_toplevels()
+        .into_iter()
+        .map(|window| window.downgrade())
+        .collect::<Vec<_>>();
+    let toplevels = baseline_toplevels.len();
     let observation = Rc::new(RefCell::new(Observation::default()));
     let invalid = Rc::new(Cell::new(false));
     let messages = Rc::new(Cell::new(0));
@@ -343,10 +347,47 @@ fn creation_failure_scenario() {
         0.5
     );
     assert_retained(&mut plugin, &saved);
+    let owner = browser.toplevel().expect("native editor has a GTK owner");
+    let owner_weak = owner.downgrade();
+    let owner_destroyed = Rc::new(Cell::new(0_usize));
+    let counter = Rc::clone(&owner_destroyed);
+    owner.connect_destroy(move |_| counter.set(counter.get() + 1));
+    let child = children[0];
+    drop(owner);
     drop(browser);
     gui.destroy(&plugin.plugin_handle());
     assert!(weak.upgrade().is_none());
+    assert!(
+        owner_weak.upgrade().is_none(),
+        "editor container is finalized"
+    );
+    assert_eq!(
+        owner_destroyed.get(),
+        1,
+        "editor container is destroyed once"
+    );
     assert!(parent.children().is_empty());
-    assert_eq!(gtk::Window::list_toplevels().len(), toplevels);
+    assert!(
+        matches!(
+            parent.x.get_window_attributes(child).unwrap().reply(),
+            Err(x11rb::errors::ReplyError::X11Error(error))
+                if error.error_kind == x11rb::protocol::ErrorKind::Window
+        ),
+        "the editor's original X11 window no longer exists"
+    );
+    // GTK lazily creates a display-owned tooltip window during the loaded UI.
+    // It survives individual views. Reject every other new surviving toplevel
+    // while the exact editor owner above must be both destroyed and finalized.
+    for window in gtk::Window::list_toplevels() {
+        assert!(
+            baseline_toplevels
+                .iter()
+                .any(|weak| weak.upgrade().is_some_and(|old| old == window))
+                || window.type_().name() == "GtkTooltipWindow",
+            "unexpected surviving toplevel: {} ({})",
+            window.type_().name(),
+            window.widget_name()
+        );
+    }
     assert_retained(&mut plugin, &saved);
 }

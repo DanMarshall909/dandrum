@@ -1,0 +1,24 @@
+{
+  "base": "0856dee556f5cafcb118c88be2d78283b39d1cb0",
+  "production_commit": "35a79fba3de32407e81610661253d17d65491177",
+  "production_tree": "779a671c7223105cbbe701008d49e25b7c5061ef",
+  "source_delta": [
+    {
+      "path": "src/clap-adapter/tests/internal/trigger_structural_native.rs",
+      "sha256": "69e5589dbb4b6a742f9a2449c06bb22d5a5b384f6643509e51f60fabfc3203c3"
+    },
+    {
+      "path": "src/clap-adapter/tests/internal/trigger_creation_failure_native.rs",
+      "sha256": "9264652f6303e02b7ed6f099986a01368dd4faf177e9694f561070be855818e1"
+    }
+  ],
+  "tested_staged_source_tree": "d5e4d25a31cb3a8171a85712b29466f76d21a1c1",
+  "scope": "Bounded native editor wire v2/full-patch publication/Redo/reply budget/legacy-save refusal, plus test-only native framing and exact editor-owned lifecycle proofs. Tasks5.1\u20135.3 advance; no checkbox or scenario closure.",
+  "raw_archive_sha256": "b388294bcfcdbf8cfaccc0a37a26932edafd69248663554ba6f0e1a09fa8431a",
+  "external_replay": "raw.tar.gz:boundary-external-artifacts.json",
+  "source_replay": "raw.tar.gz:portable-boundary-source-replay.json",
+  "current_release_sha256": "33af9b9041165b6736a19829b53dcb6c15974f4e76129ec201e9d9f1c6749572",
+  "checks": "193host/23adapter unit tests, fmt/strict host+adapterClippy,1091engine tests/strictcoverage,30nativeCLAP checks,9source-free checks,packaged assets/dynamic host,52canonical+active strict specs/631scenarios392mapped239ratchet, current official34success10skip0fail.",
+  "explicit_failure": "Strict engineClippy FAIL129 preserved baseline diagnostics, translated through published8-line getter. No new diagnostic after source-line mapping. Not a waiver or passing lint gate.",
+  "limits": "Headless authenticated X11/WebKitGTK2.50.4; physical desktop/device/named-DAW/installed/portable-state and production frontend v2/import/Empty remain separate. Mutation excluded. No full-GUI/branch/MCDC/instantiation100% claim."
+}

@@ -462,6 +462,52 @@ fn native_structural_scenario() {
             serde_json::json!({"undoCount":0,"redoCount":1})
         );
         baseline_b.check(&mut plugin_b, &parent_b, browser_b.as_ref().unwrap());
+        // Observe raw frames before the broker: rejected oversized ingress is
+        // deliberately dropped, so it must not receive even an error reply.
+        javascript(
+            &mut plugin,
+            browser_a.as_ref().unwrap(),
+            r#"(()=>{window.__G5_DROPPED_REPLIES__=[];
+              const surface=window.__DANDRUM__,receive=surface.receiveNativeMessage;
+              surface.receiveNativeMessage=message=>{const frame=JSON.parse(message);
+                if(frame.requestId==='900000'){window.__G5_DROPPED_REPLIES__.push(frame);return 'observed';}
+                return receive(message);};return 'observing drops';})()"#,
+        );
+        let rejected_frame = |plugin: &mut PluginInstance<GuiHost>,
+                              browser: &webkit2gtk::WebView,
+                              version: u32,
+                              forged: bool,
+                              padding: usize| {
+            let script = format!(
+                r#"(()=>{{const c=window.__DANDRUM_NATIVE__;
+                  const frame={{version:{version},attachmentId:{attachment},requestId:'900000',
+                    method:'getSamplerSession',args:[]}};
+                  const wire=JSON.stringify(frame)+' '.repeat({padding});
+                  window.ipc.postMessage(wire);return String(new TextEncoder().encode(wire).length);}})()"#,
+                attachment = if forged {
+                    "'18446744073709551615'"
+                } else {
+                    "c.attachmentId"
+                },
+            );
+            let bytes = javascript(plugin, browser, &script)
+                .parse::<usize>()
+                .unwrap();
+            assert!(bytes > padding);
+            // A correlated ordinary request is a main-loop barrier as well as
+            // a complete unchanged-session oracle after the raw IPC frame.
+            assert_eq!(snapshot(plugin, browser), undone);
+            assert_eq!(
+                javascript(
+                    plugin,
+                    browser,
+                    "JSON.stringify(window.__G5_DROPPED_REPLIES__)"
+                ),
+                "[]",
+                "oversized v{version} / forged={forged} frame ({bytes} bytes) must be dropped before dispatch"
+            );
+        };
+        rejected_frame(&mut plugin, browser_a.as_ref().unwrap(), 2, false, 20_000);
         // Exercise real Wry IPC without presenting the legacy frontend as a
         // v2 consumer. A calibrated unsupported call advances the broker while
         // leaving its transport ID unadmitted; the raw frame uses that ID.
@@ -473,6 +519,17 @@ fn native_structural_scenario() {
         );
         assert_eq!(negotiation["status"], "accepted", "{negotiation}");
         assert_eq!(negotiation["result"]["wireVersion"], 2);
+        for (version, forged, padding) in
+            [(1, false, 20_000), (2, true, 20_000), (2, false, 524_289)]
+        {
+            rejected_frame(
+                &mut plugin,
+                browser_a.as_ref().unwrap(),
+                version,
+                forged,
+                padding,
+            );
+        }
         let before_patch = undone["yaml"].as_str().unwrap();
         let regions = (0..256)
             .map(|index| {
