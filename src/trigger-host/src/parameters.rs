@@ -413,25 +413,76 @@ impl ParameterController {
                 &self.host.sample_catalog,
             )
             .map_err(|_| crate::state::StateError::Invalid)?;
-            let ids = samples
-                .iter()
-                .map(|sample| std::path::Path::new(sample.resource_id()))
-                .collect::<std::collections::BTreeSet<_>>();
-            if self
-                .host
-                .session()
-                .prepared()
-                .sample_assets()
-                .sources()
-                .iter()
-                .any(|source| !ids.contains(source.declaration().resource.path()))
+            // This boundary adds mixed state while preserving the existing
+            // packaged-only v2 path and interim refusal for its changed defaults.
+            if samples.is_empty()
+                && !self
+                    .host
+                    .session()
+                    .prepared()
+                    .sample_assets()
+                    .sources()
+                    .is_empty()
             {
                 return Err(crate::state::StateError::Invalid);
             }
             state.version = 3;
             state.values_for(&self.parameters, &self.runtime)?;
         }
-        crate::state::write(&state, &samples, output)
+        let mut resources = samples
+            .into_iter()
+            .map(|sample| (sample.resource_id().to_owned(), sample))
+            .collect::<std::collections::BTreeMap<_, _>>();
+        if state.version == 3 {
+            for source in self.host.session().prepared().sample_assets().sources() {
+                let path = source.declaration().resource.path();
+                if path == std::path::Path::new("assets/advanced-drums.wav") {
+                    resources.insert(
+                        "assets/advanced-drums.wav".into(),
+                        self.packaged_state_sample(source.sample().content_revision())?,
+                    );
+                }
+            }
+        }
+        crate::state::write(&state, &resources.into_iter().collect::<Vec<_>>(), output)
+    }
+    fn packaged_state_sample(
+        &self,
+        expected: &[u8; 32],
+    ) -> Result<
+        std::sync::Arc<dandrum_engine::sample_snapshot::SampleSnapshot>,
+        crate::state::StateError,
+    > {
+        use crate::state::StateError;
+        use dandrum_engine::sample_snapshot::SampleSnapshot;
+        use std::io::Read;
+        let hex = expected
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+        let id = format!("selected/{hex}.wav");
+        if let Ok(sample) = self.host.sample_catalog.acquire(&id) {
+            return Ok(sample);
+        }
+        let path = crate::PackagedResources::regular_file(
+            self.host.resource_root(),
+            crate::ADVANCED_DRUM_KIT_SAMPLE,
+        )
+        .map_err(|_| StateError::Invalid)?;
+        let mut bytes = Vec::new();
+        std::fs::File::open(path)
+            .map_err(|_| StateError::Io)?
+            .take((crate::samples::MAX_ENCODED_SAMPLE_BYTES + 1) as u64)
+            .read_to_end(&mut bytes)
+            .map_err(|_| StateError::Io)?;
+        let actual =
+            SampleSnapshot::resource_id_for_encoded(&bytes).map_err(|_| StateError::TooLarge)?;
+        if actual != id {
+            return Err(StateError::Invalid);
+        }
+        SampleSnapshot::decode(bytes)
+            .map(std::sync::Arc::new)
+            .map_err(|_| StateError::Invalid)
     }
     /// Validate and prepare complete bounded native state before publication.
     /// Held gestures/outbound automation return Busy so no promised End is lost.
@@ -490,7 +541,14 @@ impl ParameterController {
             .map_err(|_| StateError::Invalid)?;
             self.host
                 .session()
-                .prepare_document_replacement_with_samples_owned(&state.document, samples)
+                .prepare_document_replacement_with_resources_owned(
+                    &state.document,
+                    saved
+                        .resources
+                        .iter()
+                        .map(|r| std::path::PathBuf::from(&r.path))
+                        .zip(samples),
+                )
         } else {
             self.host
                 .session()

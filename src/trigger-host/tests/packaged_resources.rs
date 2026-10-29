@@ -316,3 +316,60 @@ fn a_regular_corrupt_sample_fails_preparation_without_checkout_fallback_and_can_
     let rendered = render_note(host.session().prepared(), 36);
     assert_eq!((rendered[0][0], rendered[1][0]), (-0.5, -0.5));
 }
+
+#[test]
+fn explicit_package_reload_rereads_files_after_an_owned_state_association() {
+    use dandrum_engine::sample_snapshot::SampleSnapshot;
+    use dandrum_trigger_host::runtime::{PreparedRuntime, runtime_handoff};
+    use std::sync::Arc;
+    let (_temporary, root) = copied_package();
+    let mut host = TriggerHost::open(&root, configuration()).unwrap();
+    let (attachment, _) = host.session_mut().attach().unwrap();
+    let yaml = host.session().owner_snapshot().yaml;
+    let sample_path = root.join(ADVANCED_DRUM_KIT_SAMPLE);
+    let mut bytes = std::fs::read(&sample_path).unwrap();
+    let sample = Arc::new(SampleSnapshot::decode(bytes.clone()).unwrap());
+    let (mut control, mut audio) = runtime_handoff(
+        PreparedRuntime::new(host.session().prepared(), configuration()).unwrap(),
+        8,
+    )
+    .unwrap();
+    let candidate = host
+        .session()
+        .prepare_document_replacement_with_resources_owned(
+            &yaml,
+            [(PathBuf::from("assets/advanced-drums.wav"), sample)],
+        )
+        .unwrap();
+    host.session_mut()
+        .commit_document_replacement(candidate, &mut control)
+        .unwrap();
+    audio.process(&mut [0.; 16], &mut [0.; 16]).unwrap();
+    let before = host.session().owner_snapshot();
+    std::fs::write(&sample_path, b"not a WAV").unwrap();
+    assert!(host.prepare_resource_reload(&attachment).is_err());
+    assert_eq!(host.session().owner_snapshot(), before);
+    assert_eq!(render_note(host.session().prepared(), 36)[0][0], -0.5);
+    std::fs::remove_file(&sample_path).unwrap();
+    assert!(matches!(
+        host.prepare_resource_reload(&attachment),
+        Err(TriggerHostError::Resource(
+            PackagedResourceError::Missing { .. }
+        ))
+    ));
+    assert_eq!(host.session().owner_snapshot(), before);
+    assert_eq!(&bytes[36..40], b"data");
+    bytes[44..46].copy_from_slice(&8192i16.to_le_bytes());
+    std::fs::write(&sample_path, bytes).unwrap();
+    let candidate = host.prepare_resource_reload(&attachment).unwrap();
+    drop(control.reclaim());
+    host.session_mut()
+        .commit_document_replacement(candidate, &mut control)
+        .unwrap();
+    audio.process(&mut [0.; 16], &mut [0.; 16]).unwrap();
+    assert_eq!(
+        render_note(host.session().prepared(), 36)[0][0],
+        0.25,
+        "explicit reload must not keep playing the prior owned association"
+    );
+}

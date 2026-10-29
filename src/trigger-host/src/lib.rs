@@ -231,7 +231,7 @@ impl TriggerHost {
     ) -> Result<PreparedDocumentReplacement, TriggerHostError> {
         let document = self.resources.read_current_document()?;
         self.session
-            .prepare_document_replacement(attachment, &document)
+            .prepare_document_replacement_from_files(attachment, &document)
             .map_err(Into::into)
     }
 }

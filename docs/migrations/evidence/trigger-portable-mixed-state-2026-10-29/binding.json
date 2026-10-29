@@ -1,0 +1,26 @@
+{
+  "base": "853c25736333d8857b5e25d6e629871409a94f37",
+  "source": {
+    "openspec/changes/add-juce-free-trigger-beta-products/portable-state.md": "759808011b3ef3489c546b6d809e5801384af897cbc52b1fcbe9e27ca698abd6",
+    "src/instrument-session/src/lib.rs": "f80510f31e2226aec065731eb7bbafa771dc195c318b7abe22476ee5a85cad73",
+    "src/rust-engine/src/preparation.rs": "7adf216d83b7c1b73c9081bd8ab7dbdaeab812dfe2a4f4ccddcdbf80645e7a5c",
+    "src/rust-engine/tests/selected_snapshot.rs": "2bd2846c9e6983cac043a7e9deac825b2ef846be8597713d9af635de549231be",
+    "src/trigger-host/src/lib.rs": "33384514df05ed2558a741e543fc37db382f547629dfc14481cac33f5eee7328",
+    "src/trigger-host/src/parameters.rs": "9539c65be8c4e094d633a4a14d6930851561a2b9ac9e2547c23d0ca0747a3869",
+    "src/trigger-host/src/state.rs": "a59d27f833c5dcc2a079438f5e654d853cf903ca9d86ef0a35fedc74f981c9b2",
+    "src/trigger-host/tests/packaged_resources.rs": "b6a4f630ce5af4bd7231f13bd840ab889d993a867e63d327110679ee4113aeea",
+    "src/trigger-host/tests/selected_admission.rs": "fbf5017ca78fd3bac2568bc2dc5b735984c0bcfe5eb7607d5eec055a1e3080cb"
+  },
+  "archive": {
+    "path": "raw.tar.gz",
+    "bytes": 13033014,
+    "sha256": "729bb1754a118d979d045e06920f385eb20bff2643829bef0a6ade6600f8765a",
+    "members": 220
+  },
+  "external_replay": {
+    "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/portable-mixed-final-coverage/replay-objects.tar.gz",
+    "sha256": "f33e6574bccfe79e8907b18d2970fde700ed209752d2ace5db8397101a1bd4d9",
+    "bytes": 148346043
+  },
+  "scope": "Mixed packaged/selected host-state criterion; package-only v3, full payload qualification, CLAP stream, rebuilt product/GUI/official, installed/native-input/DAW remain open"
+}

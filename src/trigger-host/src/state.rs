@@ -69,7 +69,12 @@ impl ReadState {
         let descriptors = self
             .resources
             .iter()
-            .map(|r| (r.path.clone(), r.encoded_bytes as usize))
+            .map(|r| {
+                (
+                    format!("selected/{}.wav", r.sha256),
+                    r.encoded_bytes as usize,
+                )
+            })
             .collect::<Vec<_>>();
         let samples = catalog
             .restore(input, &descriptors)
@@ -109,7 +114,8 @@ fn validate_manifest(resources: &[ManifestResource], payload: u64) -> Result<(),
                 .sha256
                 .bytes()
                 .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
-            || resource.path != format!("selected/{}.wav", resource.sha256)
+            || (resource.path != "assets/advanced-drums.wav"
+                && resource.path != format!("selected/{}.wav", resource.sha256))
             || !seen.insert(&resource.path)
             || resource.encoded_bytes == 0
         {
@@ -196,14 +202,14 @@ fn read_error(error: std::io::Error) -> StateError {
 
 pub(crate) fn write(
     state: &SavedState,
-    samples: &[Arc<SampleSnapshot>],
+    samples: &[(String, Arc<SampleSnapshot>)],
     output: &mut impl Write,
 ) -> Result<(), StateError> {
     if state.version == 3 {
         let resources = samples
             .iter()
-            .map(|sample| ManifestResource {
-                path: sample.resource_id().to_owned(),
+            .map(|(path, sample)| ManifestResource {
+                path: path.clone(),
                 sha256: sample.content_sha256().to_owned(),
                 encoded_bytes: sample.encoded_bytes().len() as u64,
             })
@@ -230,7 +236,7 @@ pub(crate) fn write(
             .and_then(|()| output.write_all(&payload.to_le_bytes()))
             .and_then(|()| output.write_all(&metadata))
             .map_err(|_| StateError::Io)?;
-        for sample in samples {
+        for (_, sample) in samples {
             output
                 .write_all(sample.encoded_bytes())
                 .map_err(|_| StateError::Io)?;
@@ -367,8 +373,9 @@ mod tests {
             document: String::new(),
             parameters: Vec::new(),
         };
+        let resource = (sample.resource_id().to_owned(), sample);
         let mut complete = Vec::new();
-        write(&state, std::slice::from_ref(&sample), &mut complete).unwrap();
+        write(&state, std::slice::from_ref(&resource), &mut complete).unwrap();
         let start = 24 + u32::from_le_bytes(complete[12..16].try_into().unwrap()) as usize;
         assert_eq!(&complete[start..], wav);
         struct Short(Vec<u8>);
@@ -383,7 +390,7 @@ mod tests {
             }
         }
         let mut short = Short(Vec::new());
-        write(&state, std::slice::from_ref(&sample), &mut short).unwrap();
+        write(&state, std::slice::from_ref(&resource), &mut short).unwrap();
         assert_eq!(short.0, complete);
         struct Fault {
             bytes: Vec<u8>,
@@ -409,7 +416,7 @@ mod tests {
                 remaining: offset,
             };
             assert_eq!(
-                write(&state, std::slice::from_ref(&sample), &mut output),
+                write(&state, std::slice::from_ref(&resource), &mut output),
                 Err(StateError::Io)
             );
             assert_eq!(output.bytes, complete[..offset]);

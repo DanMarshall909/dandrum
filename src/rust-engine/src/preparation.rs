@@ -74,10 +74,13 @@ impl PreparationContext {
         mut self,
         samples: impl IntoIterator<Item = Arc<crate::sample_snapshot::SampleSnapshot>>,
     ) -> Self {
-        self.selected_samples = samples
-            .into_iter()
-            .map(|sample| (PathBuf::from(sample.resource_id()), sample))
-            .collect();
+        self.selected_samples
+            .retain(|path, sample| path != Path::new(sample.resource_id()));
+        self.selected_samples.extend(
+            samples
+                .into_iter()
+                .map(|sample| (PathBuf::from(sample.resource_id()), sample)),
+        );
         self
     }
 
@@ -86,7 +89,32 @@ impl PreparationContext {
     pub fn selected_samples(
         &self,
     ) -> impl Iterator<Item = &Arc<crate::sample_snapshot::SampleSnapshot>> {
-        self.selected_samples.values()
+        self.selected_samples
+            .iter()
+            .filter(|(path, sample)| path.as_path() == Path::new(sample.resource_id()))
+            .map(|(_, sample)| sample)
+    }
+
+    /// Trusted native owners may bind a document path to verified immutable
+    /// bytes. Ordinary contexts retain their existing filesystem resolution.
+    pub fn with_sample_resources(
+        mut self,
+        samples: impl IntoIterator<Item = (PathBuf, Arc<crate::sample_snapshot::SampleSnapshot>)>,
+    ) -> Self {
+        self.selected_samples = samples.into_iter().collect();
+        self
+    }
+    pub fn sample_resources(
+        &self,
+    ) -> impl Iterator<Item = (&Path, &Arc<crate::sample_snapshot::SampleSnapshot>)> {
+        self.selected_samples
+            .iter()
+            .map(|(path, sample)| (path.as_path(), sample))
+    }
+    pub fn without_sample_aliases(mut self) -> Self {
+        self.selected_samples
+            .retain(|path, sample| path == Path::new(sample.resource_id()));
+        self
     }
 
     pub fn with_sample_rate(mut self, sample_rate: SampleRate) -> Self {
@@ -176,7 +204,8 @@ impl<'a> ResourceResolver<'a> {
         }
 
         if matches!(reference.origin(), ResourceOrigin::Document)
-            && is_selected_reference(reference.path())
+            && (is_selected_reference(reference.path())
+                || self.context.selected_samples.contains_key(reference.path()))
         {
             let snapshot = self
                 .context
@@ -189,6 +218,15 @@ impl<'a> ResourceResolver<'a> {
                         "selected sample authority is unavailable",
                     )
                 })?;
+            if is_selected_reference(reference.path())
+                && reference.path() != Path::new(snapshot.resource_id())
+            {
+                return Err(resource_load_failed(
+                    reference,
+                    reference.path(),
+                    "selected content identity does not match its path",
+                ));
+            }
             if reference.kind() != ResourceKind::Sample {
                 return Err(resource_load_failed(
                     reference,

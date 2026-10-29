@@ -167,3 +167,106 @@ fn snapshots_reject_oversized_malformed_and_empty_samples_without_an_owner() {
         Err(SnapshotError::Empty)
     ));
 }
+
+#[test]
+fn trusted_document_sample_associations_preserve_content_and_leave_file_defaults_unchanged() {
+    use std::path::{Path, PathBuf};
+    let root = tempfile::tempdir().unwrap();
+    let path = PathBuf::from("assets/advanced-drums.wav");
+    std::fs::create_dir(root.path().join("assets")).unwrap();
+    std::fs::write(root.path().join(&path), WAV).unwrap();
+    let sample = Arc::new(SampleSnapshot::decode(WAV.to_vec()).unwrap());
+    let reference = ResourceRef::new(ResourceKind::Sample, &path, ResourceOrigin::Document);
+    let ordinary = PreparationContext::new(root.path(), 32_000);
+    let owned = ordinary
+        .clone()
+        .with_sample_resources([(path.clone(), sample.clone())]);
+    assert_eq!(
+        ResourceResolver::new(&ordinary)
+            .resolve(&reference)
+            .unwrap()
+            .sample()
+            .source_sample(0, 0),
+        Some(-0.75)
+    );
+    std::fs::write(root.path().join(&path), b"replaced").unwrap();
+    assert!(
+        ResourceResolver::new(&ordinary)
+            .resolve(&reference)
+            .is_err()
+    );
+    root.close().unwrap();
+    assert_eq!(
+        ResourceResolver::new(&owned)
+            .resolve(&reference)
+            .unwrap()
+            .sample()
+            .source_sample(1, 0),
+        Some(0.5)
+    );
+    assert_eq!(owned.selected_samples().count(), 0);
+    assert_eq!(
+        owned
+            .sample_resources()
+            .map(|(path, _)| path)
+            .collect::<Vec<_>>(),
+        [path.as_path()]
+    );
+    let combined = owned.with_selected_samples([sample.clone()]);
+    assert_eq!(combined.sample_resources().count(), 2);
+    assert_eq!(combined.selected_samples().count(), 1);
+    let selected = ResourceRef::new(
+        ResourceKind::Sample,
+        sample.resource_id(),
+        ResourceOrigin::Document,
+    );
+    let files = combined.clone().without_sample_aliases();
+    assert!(ResourceResolver::new(&files).resolve(&reference).is_err());
+    assert_eq!(
+        ResourceResolver::new(&files)
+            .resolve(&selected)
+            .unwrap()
+            .sample()
+            .source_sample(0, 0),
+        Some(-0.75)
+    );
+    let mismatch = combined
+        .clone()
+        .with_sample_rate(dandrum_engine::render_settings::SampleRate::new(48_000.).unwrap());
+    assert!(
+        ResourceResolver::new(&mismatch)
+            .resolve(&reference)
+            .is_err()
+    );
+    let wrong = format!("selected/{}.wav", "f".repeat(64));
+    let forged = ordinary
+        .clone()
+        .with_sample_resources([(PathBuf::from(&wrong), sample.clone())]);
+    assert!(
+        ResourceResolver::new(&forged)
+            .resolve(&ResourceRef::new(
+                ResourceKind::Sample,
+                &wrong,
+                ResourceOrigin::Document
+            ))
+            .is_err()
+    );
+    let escape = ordinary
+        .clone()
+        .with_sample_resources([(PathBuf::from("../escape.wav"), sample.clone())]);
+    assert!(
+        ResourceResolver::new(&escape)
+            .resolve(&ResourceRef::new(
+                ResourceKind::Sample,
+                "../escape.wav",
+                ResourceOrigin::Document
+            ))
+            .is_err()
+    );
+    let packaged = ResourceRef::new(
+        ResourceKind::Sample,
+        &path,
+        ResourceOrigin::Package(Path::new("/missing-native-package").to_owned()),
+    );
+    assert!(ResourceResolver::new(&combined).resolve(&packaged).is_err());
+}

@@ -1461,3 +1461,194 @@ fn portable_selected_state_restores_owned_pcm_and_values_after_the_source_instan
     assert_eq!(fresh.controller.session().owner_snapshot(), accepted);
     assert_eq!(fresh.state(), canonical);
 }
+
+#[test]
+fn portable_mixed_state_owns_both_packaged_and_selected_pcm_after_source_loss() {
+    use dandrum_trigger_host::runtime::{ControlEvent, TimedEvent};
+    use serde_json::{Value, json};
+    let render = |fixture: &mut Fixture, note| {
+        let audio = &mut fixture._audio;
+        std::thread::scope(|scope| {
+            scope
+                .spawn(move || {
+                    let (mut left, mut right) = ([123.; 16], [123.; 16]);
+                    let allocation = allocation_counter::measure(|| {
+                        audio
+                            .process_events(
+                                &mut left,
+                                &mut right,
+                                &[TimedEvent {
+                                    frame_offset: 0,
+                                    event: ControlEvent::NoteOn {
+                                        note,
+                                        velocity: 127,
+                                    },
+                                }],
+                            )
+                            .unwrap();
+                    });
+                    assert_eq!(allocation, allocation_counter::AllocationInfo::default());
+                    [left[0], right[0]]
+                })
+                .join()
+                .unwrap()
+        })
+    };
+    const WAV: &[u8] = &[
+        82, 73, 70, 70, 52, 0, 0, 0, 87, 65, 86, 69, 102, 109, 116, 32, 16, 0, 0, 0, 1, 0, 2, 0, 0,
+        125, 0, 0, 0, 244, 1, 0, 4, 0, 16, 0, 100, 97, 116, 97, 16, 0, 0, 0, 0, 160, 0, 64, 0, 32,
+        0, 224, 0, 192, 0, 16, 0, 64, 0, 160,
+    ];
+    let mut source = Fixture::new();
+    let packaged = std::fs::read(source._root.path().join(ADVANCED_DRUM_KIT_SAMPLE)).unwrap();
+    let mut selected_file = tempfile::tempfile().unwrap();
+    std::io::Write::write_all(&mut selected_file, WAV).unwrap();
+    let selected_file = NativeSampleFile::new("mixed.wav".into(), selected_file).unwrap();
+    let set = source.request("setParameter", json!(["drums.level", 0.5, 1]));
+    source.controller.apply(&set).unwrap();
+    assert_eq!(render(&mut source, 36), [-1., -1.]);
+    let choose = source.request("chooseSamplerFiles", json!([]));
+    let (permit, _) = source.controller.begin_sample_selection(&choose).unwrap();
+    source
+        .controller
+        .admit_selected_files(&permit, vec![selected_file])
+        .unwrap();
+    let deadline = Instant::now() + Duration::from_secs(5);
+    let selected = loop {
+        source.controller.service_session_jobs().unwrap();
+        let status = source.status("1");
+        if status["phase"] == "ready" {
+            break status;
+        }
+        assert_eq!(status["phase"], "preparing");
+        assert!(Instant::now() < deadline);
+        std::thread::sleep(Duration::from_millis(2));
+    };
+    let resource = selected["files"][0]["resourceId"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    const SHA: &str = "2e484972f38876c961b3c23fb4952487dce3e18501c7fb0efd1b8cb7011734d5";
+    assert_eq!(resource, format!("selected/{SHA}.wav"));
+    let mut graph: serde_yaml::Value =
+        serde_yaml::from_str(&source.controller.session().owner_snapshot().yaml).unwrap();
+    graph["assets"]["sample_sources"]
+        .as_sequence_mut()
+        .unwrap()
+        .push(
+            serde_yaml::to_value(json!({"id":"selected","path":resource,
+            "regions":[{"id":"hit","start_frame":0,"end_frame":4}]}))
+            .unwrap(),
+        );
+    graph["assets"]["sample_maps"][0]["zones"]
+        .as_sequence_mut()
+        .unwrap()
+        .push(
+            serde_yaml::to_value(json!({"id":"selected_hit","region":"selected.hit",
+            "key_range":[60,60],"velocity_range":[1,127],"control_group":1}))
+            .unwrap(),
+        );
+    let document = serde_yaml::to_string(&graph).unwrap();
+    let negotiate = source.request("negotiateEditorProtocol", json!([2]));
+    source
+        .controller
+        .negotiate_editor_protocol(&negotiate)
+        .unwrap();
+    let frame = json!({"version":2,"attachmentId":source.connection.attachment_id,
+        "requestId":source.next_request.to_string(),"method":"prepareInstrumentSessionPatch",
+        "args":["113",source.connection.attachment_id,"41","0",document]})
+    .to_string();
+    source.next_request += 1;
+    let Admission::New(request) = source.controller.admit(&frame).unwrap() else {
+        panic!("new native selected document")
+    };
+    source.controller.admit_session_command(&request).unwrap();
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while source.controller.session().owner_snapshot().revision != 1 {
+        source.controller.service_session_jobs().unwrap();
+        assert!(Instant::now() < deadline, "selected document publishes");
+        std::thread::sleep(Duration::from_millis(2));
+    }
+    // Selected stereo[-.75,+.5] averages to-.125; physicalgain2 gives-.25.
+    assert_eq!(render(&mut source, 60), [-0.25, -0.25]);
+    assert_eq!(render(&mut source, 36), [-1., -1.]);
+    let accepted = source.controller.session().owner_snapshot();
+    assert_eq!((accepted.undo_len, accepted.redo_len), (1, 0));
+    let parameters = source.controller.parameter_state().parameters;
+    let accepted_before_save = source.controller.session().owner_snapshot();
+    std::fs::write(
+        source._root.path().join(ADVANCED_DRUM_KIT_SAMPLE),
+        b"changed since preparation",
+    )
+    .unwrap();
+    let mut refused = Vec::new();
+    assert!(
+        source.controller.save_state(&mut refused).is_err(),
+        "saving cannot substitute new file bytes for accepted sound"
+    );
+    assert!(refused.is_empty());
+    assert_eq!(
+        source.controller.session().owner_snapshot(),
+        accepted_before_save
+    );
+    source._audio.reset();
+    assert_eq!(render(&mut source, 36), [-1., -1.]);
+    std::fs::write(
+        source._root.path().join(ADVANCED_DRUM_KIT_SAMPLE),
+        &packaged,
+    )
+    .unwrap();
+    let mut saved = Vec::new();
+    source.controller.save_state(&mut saved).unwrap();
+    assert_eq!(&saved[..8], b"DTRGSTAT");
+    assert_eq!(u32::from_le_bytes(saved[8..12].try_into().unwrap()), 3);
+    let original_root = source._root.path().to_owned();
+    drop(source);
+    assert!(!original_root.exists());
+
+    let mut independent = Fixture::with_worker(false);
+    let independent_state = independent.state();
+    let mut fresh = Fixture::with_worker(false);
+    fresh
+        .controller
+        .detach_editor(&fresh.connection.attachment_id)
+        .unwrap();
+    std::fs::remove_file(fresh._root.path().join(ADVANCED_DRUM_KIT_SAMPLE)).unwrap();
+    let decoy = fresh._root.path().join("instrument").join(&resource);
+    std::fs::create_dir_all(decoy.parent().unwrap()).unwrap();
+    std::fs::write(&decoy, b"not saved sample authority").unwrap();
+    fresh.controller.load_state(&mut saved.as_slice()).unwrap();
+    let restored = fresh.controller.session().owner_snapshot();
+    assert_eq!(restored.yaml, accepted.yaml);
+    assert_eq!((restored.undo_len, restored.redo_len), (0, 0));
+    assert_eq!(render(&mut fresh, 61), [0., 0.]);
+    assert_eq!(render(&mut fresh, 60), [-0.25, -0.25]);
+    assert_eq!(render(&mut fresh, 36), [-1., -1.]);
+    assert_eq!(fresh.controller.parameter_state().parameters, parameters);
+    assert_eq!(
+        fresh.state(),
+        saved,
+        "restored catalog can save its own identical content"
+    );
+    assert_eq!(std::fs::read(decoy).unwrap(), b"not saved sample authority");
+    assert_eq!(independent.state(), independent_state);
+    assert_eq!(render(&mut independent, 36), [-0.5, -0.5]);
+    let metadata_length = u32::from_le_bytes(saved[12..16].try_into().unwrap()) as usize;
+    let metadata: Value = serde_json::from_slice(&saved[24..24 + metadata_length]).unwrap();
+    assert_eq!(metadata["resources"].as_array().unwrap().len(), 2);
+    let payload = &saved[24 + metadata_length..];
+    assert!(
+        payload.windows(WAV.len()).any(|bytes| bytes == WAV),
+        "selected encoded source is embedded"
+    );
+    assert!(
+        payload
+            .windows(packaged.len())
+            .any(|bytes| bytes == packaged),
+        "accepted factory encoded source is embedded"
+    );
+    assert_eq!(
+        u64::from_le_bytes(saved[16..24].try_into().unwrap()) as usize,
+        packaged.len() + WAV.len()
+    );
+}

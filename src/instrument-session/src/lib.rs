@@ -323,16 +323,19 @@ impl MappingJob {
                 &self.settings,
                 self.host_buses.as_deref(),
             )
-            .map(|prepared| PreparedEdit {
-                yaml,
-                prepared,
-                context: *self.context,
-                entry: HistoryEntry::Document {
-                    version: 1,
-                    label: "Edit Instrument".into(),
-                },
-                owner: self.request.instance.clone(),
-                base_revision: self.request.expected_revision,
+            .and_then(|prepared| {
+                let context = InstrumentSession::context_for_document(&yaml, &self.context)?;
+                Ok(PreparedEdit {
+                    yaml,
+                    prepared,
+                    context,
+                    entry: HistoryEntry::Document {
+                        version: 1,
+                        label: "Edit Instrument".into(),
+                    },
+                    owner: self.request.instance.clone(),
+                    base_revision: self.request.expected_revision,
+                })
             }),
         };
         PreparedMappingJob {
@@ -788,15 +791,32 @@ impl InstrumentSession {
         self.prepare_replacement_in_context(yaml, context)
     }
 
-    /// Prepare externally owned sample state without consulting prior selected
-    /// authority or a disposable editor. Caller supplies native-validated owners.
-    pub fn prepare_document_replacement_with_samples_owned(
+    /// Native state supplies the complete document-path resource authority.
+    pub fn prepare_document_replacement_with_resources_owned(
         &self,
         yaml: &str,
-        samples: impl IntoIterator<Item = Arc<dandrum_engine::sample_snapshot::SampleSnapshot>>,
+        samples: impl IntoIterator<
+            Item = (
+                std::path::PathBuf,
+                Arc<dandrum_engine::sample_snapshot::SampleSnapshot>,
+            ),
+        >,
     ) -> Result<PreparedDocumentReplacement, SessionError> {
         self.ensure_idle()?;
-        let context = self.accepted.context.clone().with_selected_samples(samples);
+        let context = self.accepted.context.clone().with_sample_resources(samples);
+        self.prepare_replacement_in_context(yaml, context)
+    }
+    /// Explicit package reload rereads ordinary files instead of using a prior
+    /// portable state's document aliases. Selected authority remains native.
+    pub fn prepare_document_replacement_from_files(
+        &self,
+        attachment: &Attachment,
+        yaml: &str,
+    ) -> Result<PreparedDocumentReplacement, SessionError> {
+        self.attachment_index(attachment)
+            .ok_or(SessionError::InvalidAttachment)?;
+        self.ensure_idle()?;
+        let context = self.replacement_context(yaml)?.without_sample_aliases();
         self.prepare_replacement_in_context(yaml, context)
     }
 
@@ -817,6 +837,12 @@ impl InstrumentSession {
     }
 
     fn replacement_context(&self, yaml: &str) -> Result<PreparationContext, SessionError> {
+        Self::context_for_document(yaml, &self.accepted.context)
+    }
+    fn context_for_document(
+        yaml: &str,
+        context: &PreparationContext,
+    ) -> Result<PreparationContext, SessionError> {
         use dandrum_engine::kernel::{ResourceKind, ResourceOrigin, StaticArg, StaticValue};
         let patch = load_kernel_patch_str(yaml)
             .map_err(|error| SessionError::InvalidDocument(error.to_string()))?;
@@ -857,14 +883,12 @@ impl InstrumentSession {
             })
             .map(|resource| resource.path())
             .collect::<std::collections::BTreeSet<_>>();
-        let samples = self
-            .accepted
-            .context
-            .selected_samples()
-            .filter(|sample| required.contains(std::path::Path::new(sample.resource_id())))
-            .cloned()
+        let samples = context
+            .sample_resources()
+            .filter(|(path, _)| required.contains(path))
+            .map(|(path, sample)| (path.to_owned(), Arc::clone(sample)))
             .collect::<Vec<_>>();
-        Ok(self.accepted.context.clone().with_selected_samples(samples))
+        Ok(context.clone().with_sample_resources(samples))
     }
 
     /// Publish a prepared external document and retire incompatible recovery state.

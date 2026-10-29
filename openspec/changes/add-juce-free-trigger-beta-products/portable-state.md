@@ -25,7 +25,7 @@ array and payload length is zero. It restores the same document and all23 public
 physical values into a fresh controller, with fresh external-replacement history
 and exact silence. The selected-only extension below adds owned sample payloads.
 Existing representable packaged saves retain their version-2 encoding at this
-boundary; mixed packaged/selected portable state remains subsequent work.
+boundary; the mixed criterion below adds packaged content to selected patches.
 
 Sample payload bounds, content/manifest validation and fully self-contained
 packaged/selected saving are subsequent task-6 criteria. They must reuse the
@@ -60,12 +60,37 @@ fresh packaged WAV and plants a decoy at the logical selected path. Only saved
 bytes may restore MIDI60 signed[-1,-1]/unmapped MIDI36 silence, current values,
 fresh history, repeatable save and an unchanged independent instance.
 
-Mixed packaged/selected self-contained state, full payload-limit qualification
-and CLAP stream integration remain subsequent criteria. Neither task6.1 nor6.2
-closes on this selected-only tracer.
+The mixed criterion below builds on this selected-only tracer. Full payload-limit
+qualification and CLAP stream integration remain subsequent criteria. Neither
+task6.1 nor6.2 closes on these component criteria.
 
 A controller with an admitted native structural job returns Busy after validated
 metadata and before reading sample payloads. A live catalog acquisition also
 refuses a competing payload reservation before its first read. Content reuse
 still reads/verifies serialized bytes; a live hash never excuses missing/corrupt
 payload. Actual reader/writer errors and short progress remain explicit.
+
+## Mixed packaged/selected criterion
+
+A mixed manifest may additionally name exactly the known document-relative
+`assets/advanced-drums.wav` path. Its SHA/length/body are verified exactly like
+selected data. The logical YAML is unchanged. The trusted native preparation
+context can associate that explicit document path with its decoded owned
+snapshot; canonical selected paths must still match their snapshot identity.
+No missing selected authority can fall back to a file.
+
+Saving first reuses bytes retained in the catalog for the accepted prepared
+source's content revision. For an ordinary packaged source without encoded
+retention, read only the explicit packaged WAV within the existing per-asset
+bound and require its raw-content identity to equal the accepted prepared sample
+before including it. A changed/missing source is an explicit save failure, not
+permission to serialize different audio. After portable restore, the accepted
+snapshot/catalog retains those bytes and resaving needs no package file.
+
+The generic filesystem preparation default stays unchanged. Disposable native
+edits retain required trusted owned associations. Explicit Trigger package
+resource reload instead discards such noncanonical associations and rereads the
+package, preserving its missing/invalid-file refusal and rollback. No new decoder,
+resource cache, memory-budget exception or product format is introduced. Existing
+aggregate/decoded/live-union limits still apply; full boundary qualification and
+CLAP streaming remain subsequent work.
