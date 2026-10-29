@@ -84,9 +84,11 @@ source's content revision. For an ordinary packaged source without encoded
 retention, read only the explicit packaged WAV within the existing per-asset
 bound through the existing catalog reservation/hash/decoder/completion path.
 Require its raw-content identity to equal the accepted prepared sample before
-including it. Full live capacity returns TooLarge and an active acquisition
-reservation returns Busy before payload allocation/read. Neither may emit a
-partial state or change accepted playback. Save preparation borrows the main
+including it. Acquiring new content beyond the live allowance returns TooLarge
+without emitting state or changing accepted playback. The catalog may use its
+bounded encoded read/hash workspace before refusing new content, preserving
+verified deduplication at full capacity. A competing acquisition reservation
+returns Busy before payload allocation/read. Save preparation borrows the main
 controller mutably for this catalog bookkeeping; the audio endpoint remains
 independent and no controller borrow crosses a foreign host stream call. The
 temporary snapshot remains charged until writing finishes, then releases its

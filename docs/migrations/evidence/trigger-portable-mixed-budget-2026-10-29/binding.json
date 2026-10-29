@@ -27,5 +27,11 @@
     "sha256": "2df22b8e9dcfe2c9a3dbe9ffe47179db37700ecf797d121fbcbad6ee376c0efa",
     "bytes": 14005297
   },
-  "scope": "Mixed save live-budget review repair; no task6.1/6.2, current GUI/official/installed/native-input/DAW closure"
+  "scope": "Mixed save live-budget review repair; no task6.1/6.2, current GUI/official/installed/native-input/DAW closure",
+  "source_revision": "a69509312af01b3abc8a1dd0d694d3e268c3794a",
+  "current_contract": {
+    "path": "openspec/changes/add-juce-free-trigger-beta-products/portable-state.md",
+    "sha256": "bd988f776bc2ede65cdb52bf28c6a6fa3eb5086bb5e5d7190b1439dbc30bd6a2",
+    "clarification": "TooLarge may follow bounded encoded read/hash; competing-acquisition Busy precedes payload allocation/read. Rust inputs unchanged."
+  }
 }

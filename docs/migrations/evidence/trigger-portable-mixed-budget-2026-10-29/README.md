@@ -1,5 +1,10 @@
 # Account mixed-state exports in the existing catalog
 
+Source bindings pin verified code/evidence at a6950931. A subsequent contract
+clarification distinguishes capacity refusal after bounded encoded read/hash
+from competing-acquisition Busy before payload allocation/read. Rust inputs
+are unchanged; binding.json separately identifies the current clarified contract.
+
 Independent review rejected the initial mixed-state candidate
 `e854f0819b91e1198a8c2bc610f3943011c7823f`: packaged_state_sample decoded outside
 catalog reservation/live-union accounting. That checkpoint was not published.
