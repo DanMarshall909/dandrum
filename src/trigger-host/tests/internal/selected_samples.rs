@@ -408,3 +408,184 @@ fn untrusted_file_shapes_names_and_read_errors_never_publish_resources() {
     );
     assert_eq!(catalog.usage(), CatalogUsage::default());
 }
+
+#[test]
+fn portable_payloads_share_catalog_capacity_reuse_and_release_with_native_work() {
+    use crate::state::StateError;
+    use serde_json::json;
+    use std::io::Cursor;
+    // This tests the framing/catalog boundary; document/parameter admission is
+    // separately exercised through the complete controller in selected_admission.
+    fn stream(bytes: &[u8]) -> (crate::state::ReadState, Cursor<Vec<u8>>) {
+        let id = SampleSnapshot::resource_id_for_encoded(bytes).unwrap();
+        let sha = id
+            .strip_prefix("selected/")
+            .unwrap()
+            .strip_suffix(".wav")
+            .unwrap();
+        let metadata = serde_json::to_vec(&json!({"product":crate::state::PRODUCT_ID,
+            "document":"", "parameters":[],"resources":[{
+                "path":id,"sha256":sha,"encoded_bytes":bytes.len()}]}))
+        .unwrap();
+        let bytes = [
+            b"DTRGSTAT".as_slice(),
+            &3u32.to_le_bytes(),
+            &(metadata.len() as u32).to_le_bytes(),
+            &(bytes.len() as u64).to_le_bytes(),
+            &metadata,
+            bytes,
+        ]
+        .concat();
+        let mut input = Cursor::new(bytes);
+        let state = crate::state::read(&mut input).unwrap();
+        (state, input)
+    }
+    let bytes = wav();
+    let mut catalog = SampleCatalog::new();
+    catalog.limits = Limits {
+        encoded: bytes.len(),
+        decoded: 16,
+        resources: 1,
+    };
+    let (header, mut input) = stream(&bytes);
+    let first = header.read_samples(&mut input, &mut catalog).unwrap();
+    let used = CatalogUsage {
+        encoded_bytes: bytes.len(),
+        decoded_bytes: 16,
+        resource_count: 1,
+    };
+    assert_eq!(catalog.usage(), used);
+    let (header, mut input) = stream(&bytes);
+    let duplicate = header.read_samples(&mut input, &mut catalog).unwrap();
+    assert_eq!(
+        catalog.usage(),
+        used,
+        "full budgets still permit exact content reuse"
+    );
+    assert!(std::ptr::eq(first[0].sample(), duplicate[0].sample()));
+    assert_eq!(
+        first[0].encoded_bytes().as_ptr(),
+        duplicate[0].encoded_bytes().as_ptr()
+    );
+    assert_eq!(first[0].sample().source_sample(0, 0), Some(-0.75));
+    let mut changed = bytes.clone();
+    changed[44] ^= 1;
+    for limits in [
+        Limits {
+            encoded: bytes.len(),
+            decoded: 32,
+            resources: 2,
+        },
+        Limits {
+            encoded: 2 * bytes.len(),
+            decoded: 32,
+            resources: 1,
+        },
+        Limits {
+            encoded: 2 * bytes.len(),
+            decoded: 16,
+            resources: 2,
+        },
+    ] {
+        catalog.limits = limits;
+        let (header, mut input) = stream(&changed);
+        assert_eq!(
+            header.read_samples(&mut input, &mut catalog),
+            Err(StateError::TooLarge)
+        );
+        assert_eq!(
+            catalog.usage(),
+            used,
+            "failed capacity checks retain no candidate"
+        );
+    }
+    struct Fault;
+    impl Read for Fault {
+        fn read(&mut self, _: &mut [u8]) -> std::io::Result<usize> {
+            Err(std::io::Error::other("payload read failed"))
+        }
+    }
+    assert_eq!(
+        header.read_samples(&mut Fault, &mut catalog),
+        Err(StateError::Io)
+    );
+    assert_eq!(catalog.usage(), used);
+    let mut truncated = &bytes[..bytes.len() - 1];
+    assert_eq!(
+        header.read_samples(&mut truncated, &mut catalog),
+        Err(StateError::Invalid)
+    );
+    assert_eq!(catalog.usage(), used);
+    let (header, _) = stream(&bytes);
+    let mut changed_input = changed.as_slice();
+    assert_eq!(
+        header.read_samples(&mut changed_input, &mut catalog),
+        Err(StateError::Invalid)
+    );
+    assert_eq!(
+        catalog.usage(),
+        used,
+        "existing content never bypasses body hash validation"
+    );
+
+    let pending = catalog.begin(vec![self::input(&bytes)]).unwrap();
+    let charged = catalog.usage();
+    let mut body = Cursor::new(bytes.clone());
+    assert_eq!(
+        header.read_samples(&mut body, &mut catalog),
+        Err(StateError::Busy)
+    );
+    assert_eq!(
+        body.position(),
+        0,
+        "native reservation refuses before payload read"
+    );
+    assert_eq!(catalog.usage(), charged);
+    assert!(matches!(catalog.restore(&mut Fault, &[]), Ok(empty) if empty.is_empty()));
+    drop(pending);
+    assert_eq!(catalog.usage(), used);
+
+    let id = first[0].resource_id().to_owned();
+    let mut empty = &b""[..];
+    assert!(matches!(
+        catalog.restore(&mut empty, &vec![(id.clone(), 1); 257]),
+        Err(RestoreError::Sample(SampleError::ResourceLimit))
+    ));
+    for lengths in [
+        vec![0],
+        vec![MAX_ENCODED_SAMPLE_BYTES + 1],
+        vec![MAX_ENCODED_SAMPLE_BYTES; 5],
+    ] {
+        let resources = lengths
+            .into_iter()
+            .map(|length| (id.clone(), length))
+            .collect::<Vec<_>>();
+        assert!(matches!(
+            catalog.restore(&mut empty, &resources),
+            Err(RestoreError::Sample(SampleError::EncodedLimit))
+        ));
+        assert_eq!(catalog.usage(), used);
+    }
+    struct Bytewise<'a>(&'a [u8]);
+    impl Read for Bytewise<'_> {
+        fn read(&mut self, output: &mut [u8]) -> std::io::Result<usize> {
+            let count = self.0.len().min(output.len()).min(1);
+            output[..count].copy_from_slice(&self.0[..count]);
+            self.0 = &self.0[count..];
+            Ok(count)
+        }
+    }
+    let streamed = header
+        .read_samples(&mut Bytewise(&bytes), &mut catalog)
+        .unwrap();
+    assert_eq!(streamed[0].encoded_bytes(), bytes);
+    drop(first);
+    drop(duplicate);
+    drop(streamed);
+    assert_eq!(catalog.usage(), CatalogUsage::default());
+    let (header, mut input) = stream(&changed);
+    let replacement = header.read_samples(&mut input, &mut catalog).unwrap();
+    assert_eq!(catalog.usage(), used);
+    drop(replacement);
+    assert_eq!(catalog.usage(), CatalogUsage::default());
+}

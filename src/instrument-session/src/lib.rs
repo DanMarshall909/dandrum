@@ -785,6 +785,26 @@ impl InstrumentSession {
     ) -> Result<PreparedDocumentReplacement, SessionError> {
         self.ensure_idle()?;
         let context = self.replacement_context(yaml)?;
+        self.prepare_replacement_in_context(yaml, context)
+    }
+
+    /// Prepare externally owned sample state without consulting prior selected
+    /// authority or a disposable editor. Caller supplies native-validated owners.
+    pub fn prepare_document_replacement_with_samples_owned(
+        &self,
+        yaml: &str,
+        samples: impl IntoIterator<Item = Arc<dandrum_engine::sample_snapshot::SampleSnapshot>>,
+    ) -> Result<PreparedDocumentReplacement, SessionError> {
+        self.ensure_idle()?;
+        let context = self.accepted.context.clone().with_selected_samples(samples);
+        self.prepare_replacement_in_context(yaml, context)
+    }
+
+    fn prepare_replacement_in_context(
+        &self,
+        yaml: &str,
+        context: PreparationContext,
+    ) -> Result<PreparedDocumentReplacement, SessionError> {
         let prepared =
             Self::prepare_document(yaml, &context, &self.settings, self.host_buses.as_ref())?;
         Ok(PreparedDocumentReplacement {

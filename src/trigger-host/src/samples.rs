@@ -1,5 +1,7 @@
 //! Bounded, instance-owned selected content. All methods run away from audio.
 pub use dandrum_engine::sample_snapshot::MAX_ENCODED_SAMPLE_BYTES;
+pub(crate) const MAX_RETAINED_ENCODED_BYTES: usize = 256 * 1024 * 1024;
+pub(crate) const MAX_RESOURCE_COUNT: usize = 256;
 use dandrum_engine::sample_snapshot::{SampleSnapshot, SnapshotRetention};
 use std::{
     collections::BTreeMap,
@@ -84,9 +86,9 @@ impl SampleCatalog {
             active: Weak::new(),
             entries: BTreeMap::new(),
             limits: Limits {
-                encoded: 256 * 1024 * 1024,
+                encoded: MAX_RETAINED_ENCODED_BYTES,
                 decoded: 512 * 1024 * 1024,
-                resources: 256,
+                resources: MAX_RESOURCE_COUNT,
             },
             reserved: Limits::default(),
         }
@@ -125,30 +127,41 @@ impl SampleCatalog {
         if files.is_empty() || files.len() > 16 {
             return Err(SampleError::FileCount);
         }
+        let reservation = self.reserve(files.len())?;
+        Ok(SampleSelectionJob {
+            owner: Arc::clone(&self.owner),
+            token: reservation.token,
+            files,
+            existing: reservation.existing,
+            remaining: reservation.remaining,
+        })
+    }
+    fn reserve(&mut self, count: usize) -> Result<Reservation, SampleError> {
+        if self.active.strong_count() != 0 {
+            return Err(SampleError::Busy);
+        }
         let used = self.usage();
         self.reserved = Limits {
             encoded: self
                 .limits
                 .encoded
                 .saturating_sub(used.encoded_bytes)
-                .min(files.len() * MAX_ENCODED_SAMPLE_BYTES),
+                .min(count.saturating_mul(MAX_ENCODED_SAMPLE_BYTES)),
             decoded: self
                 .limits
                 .decoded
                 .saturating_sub(used.decoded_bytes)
-                .min(files.len() * 2 * MAX_ENCODED_SAMPLE_BYTES),
+                .min(count.saturating_mul(2 * MAX_ENCODED_SAMPLE_BYTES)),
             resources: self
                 .limits
                 .resources
                 .saturating_sub(used.resource_count)
-                .min(files.len()),
+                .min(count),
         };
         let token = Arc::new(());
         self.active = Arc::downgrade(&token);
-        Ok(SampleSelectionJob {
-            owner: Arc::clone(&self.owner),
+        Ok(Reservation {
             token,
-            files,
             existing: self
                 .entries
                 .iter()
@@ -156,6 +169,72 @@ impl SampleCatalog {
                 .collect(),
             remaining: self.reserved,
         })
+    }
+
+    /// Restore bounded state bytes under the same live-union reservation as
+    /// native file selection. The supplied IDs are verified before decoding.
+    pub(crate) fn restore(
+        &mut self,
+        input: &mut impl Read,
+        resources: &[(String, usize)],
+    ) -> Result<Vec<Arc<SampleSnapshot>>, RestoreError> {
+        if resources.is_empty() {
+            return Ok(Vec::new());
+        }
+        if resources.len() > MAX_RESOURCE_COUNT {
+            return Err(RestoreError::Sample(SampleError::ResourceLimit));
+        }
+        let mut total = 0usize;
+        for (_, length) in resources {
+            total = total
+                .checked_add(*length)
+                .ok_or(RestoreError::Sample(SampleError::EncodedLimit))?;
+            if *length == 0
+                || *length > MAX_ENCODED_SAMPLE_BYTES
+                || total > MAX_RETAINED_ENCODED_BYTES
+            {
+                return Err(RestoreError::Sample(SampleError::EncodedLimit));
+            }
+        }
+        let Reservation {
+            token,
+            existing,
+            mut remaining,
+        } = self
+            .reserve(resources.len())
+            .map_err(RestoreError::Sample)?;
+        let mut input_error = None;
+        let result = (|| {
+            let mut prepared = BTreeMap::new();
+            let mut files = Vec::with_capacity(resources.len());
+            for (id, length) in resources {
+                let mut bytes = vec![0; *length];
+                input.read_exact(&mut bytes).map_err(|error| {
+                    input_error = Some(error.kind());
+                    SampleError::Read
+                })?;
+                let sample =
+                    prepare_snapshot(bytes, Some(id), &mut prepared, &existing, &mut remaining)?;
+                files.push(SelectedFile {
+                    name: id.clone(),
+                    sample,
+                });
+            }
+            Ok(files)
+        })();
+        let result = self
+            .accept(SampleSelectionCompletion {
+                result,
+                owner: Arc::clone(&self.owner),
+                token,
+            })
+            .expect("completion belongs to this live catalog reservation");
+        if let Some(kind) = input_error {
+            return Err(RestoreError::Input(kind));
+        }
+        result
+            .map(|files| files.into_iter().map(|file| file.sample).collect())
+            .map_err(RestoreError::Sample)
     }
     pub fn accept(
         &mut self,
@@ -183,6 +262,16 @@ impl SampleCatalog {
         }
         Ok(completion.result)
     }
+}
+
+struct Reservation {
+    token: Arc<()>,
+    existing: BTreeMap<String, SnapshotRetention>,
+    remaining: Limits,
+}
+pub(crate) enum RestoreError {
+    Sample(SampleError),
+    Input(std::io::ErrorKind),
 }
 
 pub struct SampleSelectionJob {
@@ -240,41 +329,55 @@ fn prepare_files(
                     .read_to_end(&mut bytes)
             })
             .map_err(|_| SampleError::Read)?;
-        let id = SampleSnapshot::resource_id_for_encoded(&bytes)
-            .map_err(|_| SampleError::EncodedLimit)?;
-        let reusable = prepared
-            .get(&id)
-            .cloned()
-            .or_else(|| existing.get(&id).and_then(SnapshotRetention::upgrade));
-        let sample = if let Some(sample) = reusable {
-            if sample.encoded_bytes() != bytes {
-                return Err(SampleError::InvalidSample);
-            }
-            sample
-        } else {
-            if remaining.resources == 0 {
-                return Err(SampleError::ResourceLimit);
-            }
-            if bytes.len() > remaining.encoded {
-                return Err(SampleError::EncodedLimit);
-            }
-            let sample =
-                Arc::new(SampleSnapshot::decode(bytes).map_err(|_| SampleError::InvalidSample)?);
-            if sample.decoded_capacity_bytes() > remaining.decoded {
-                return Err(SampleError::DecodedLimit);
-            }
-            remaining.resources -= 1;
-            remaining.encoded -= sample.encoded_bytes().len();
-            remaining.decoded -= sample.decoded_capacity_bytes();
-            sample
-        };
-        prepared.insert(id, Arc::clone(&sample));
+        let sample = prepare_snapshot(bytes, None, &mut prepared, &existing, &mut remaining)?;
         selected.push(SelectedFile {
             name: file.name,
             sample,
         });
     }
     Ok(selected)
+}
+
+fn prepare_snapshot(
+    bytes: Vec<u8>,
+    expected: Option<&str>,
+    prepared: &mut BTreeMap<String, Arc<SampleSnapshot>>,
+    existing: &BTreeMap<String, SnapshotRetention>,
+    remaining: &mut Limits,
+) -> Result<Arc<SampleSnapshot>, SampleError> {
+    let id =
+        SampleSnapshot::resource_id_for_encoded(&bytes).map_err(|_| SampleError::EncodedLimit)?;
+    if expected.is_some_and(|expected| expected != id) {
+        return Err(SampleError::InvalidSample);
+    }
+    let reusable = prepared
+        .get(&id)
+        .cloned()
+        .or_else(|| existing.get(&id).and_then(SnapshotRetention::upgrade));
+    let sample = if let Some(sample) = reusable {
+        if sample.encoded_bytes() != bytes {
+            return Err(SampleError::InvalidSample);
+        }
+        sample
+    } else {
+        if remaining.resources == 0 {
+            return Err(SampleError::ResourceLimit);
+        }
+        if bytes.len() > remaining.encoded {
+            return Err(SampleError::EncodedLimit);
+        }
+        let sample =
+            Arc::new(SampleSnapshot::decode(bytes).map_err(|_| SampleError::InvalidSample)?);
+        if sample.decoded_capacity_bytes() > remaining.decoded {
+            return Err(SampleError::DecodedLimit);
+        }
+        remaining.resources -= 1;
+        remaining.encoded -= sample.encoded_bytes().len();
+        remaining.decoded -= sample.decoded_capacity_bytes();
+        sample
+    };
+    prepared.insert(id, Arc::clone(&sample));
+    Ok(sample)
 }
 
 #[cfg(test)]

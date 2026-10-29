@@ -14,22 +14,58 @@ an actual reader/writer failure remains an I/O error. No accepted publication
 occurs until the entire candidate passes validation/preparation.
 
 Metadata is strict JSON with product identity, accepted document, named physical
-parameters and a resource manifest. Manifest entries will identify canonical
+parameters and a resource manifest. Manifest entries identify canonical
 resource path, SHA-256 content identity and encoded byte length. The signature
 and explicit version select this representation; metadata is not legacy JSON.
 The metadata limit is 1 MiB, matching the qualified full-session projection bound;
 accepted document/profile/parameter limits remain independently enforced.
 
-The first bounded implementation criterion is a resource-free Empty frame:
-resources is exactly an empty array and payload length is zero. It restores the
-same document and all 23 public physical values into a fresh controller, with
-fresh external-replacement history and exact silent output. Nonempty manifests
-remain explicitly unsupported at this intermediate boundary; no selected-sample
-portable-state or whole-task completion is claimed. Existing representable
-packaged saves retain their version-2 encoding during this first criterion.
+The initial resource-free Empty subset remains readable: resources is an empty
+array and payload length is zero. It restores the same document and all23 public
+physical values into a fresh controller, with fresh external-replacement history
+and exact silence. The selected-only extension below adds owned sample payloads.
+Existing representable packaged saves retain their version-2 encoding at this
+boundary; mixed packaged/selected portable state remains subsequent work.
 
 Sample payload bounds, content/manifest validation and fully self-contained
 packaged/selected saving are subsequent task-6 criteria. They must reuse the
 qualified per-asset/catalog limits, enforce lengths before allocation and prove
 fresh-instance signed PCM after source removal. Do not advertise a candidate
 maximum payload or close task 6.1/6.2 before those criteria pass.
+
+## Selected-only payload criterion
+
+This criterion restores an accepted patch whose resources are all canonical
+selected-content references. The manifest contains each distinct required
+resource once, with path `selected/<lowercase SHA-256>.wav`, matching `sha256`
+and positive `encoded_bytes`. No ambient paths, unused entries or duplicate
+identities are accepted. Payload bytes follow in manifest order; their actual
+hashes and complete WAV decode must agree before accepted publication.
+
+Reuse the qualified catalog limits: at most256 resources,64MiB per encoded WAV,
+256MiB aggregate retained encoded content and512MiB decoded capacity per instance.
+Check manifest counts, per-entry lengths, checked sums and framing agreement
+before reading payload buffers. Decode one bounded source at a time through the
+same catalog reservation/hash/dedup/decoder/completion path used by native files;
+old accepted/history/pending/runtime owners remain charged. EOF/trailing data,
+content mismatch, decode/capacity/preparation/activation failure must preserve
+accepted resources, history, values and signed output. No base64 or second audio
+resource authority is added.
+
+A supplied-snapshot native session replacement prepares independently of the
+fresh instance's prior selected context. It uses the existing external-state
+history reset and atomic runtime restoration. The owning test first publishes
+real selected PCM, then saves, drops the original instance/root, removes the
+fresh packaged WAV and plants a decoy at the logical selected path. Only saved
+bytes may restore MIDI60 signed[-1,-1]/unmapped MIDI36 silence, current values,
+fresh history, repeatable save and an unchanged independent instance.
+
+Mixed packaged/selected self-contained state, full payload-limit qualification
+and CLAP stream integration remain subsequent criteria. Neither task6.1 nor6.2
+closes on this selected-only tracer.
+
+A controller with an admitted native structural job returns Busy after validated
+metadata and before reading sample payloads. A live catalog acquisition also
+refuses a competing payload reservation before its first read. Content reuse
+still reads/verifies serialized bytes; a live hash never excuses missing/corrupt
+payload. Actual reader/writer errors and short progress remain explicit.

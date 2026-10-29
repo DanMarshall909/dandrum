@@ -1,0 +1,25 @@
+{
+  "base": "bb5c36d3c1c5a5e16d24ea9e7f9587e9a74b1f1b",
+  "source": {
+    "src/trigger-host/src/state.rs": "9d04a7ea92059a77e383c739909d8e88dcfed224f5ba8e0c10e8f9f91d82c3b2",
+    "src/trigger-host/src/parameters.rs": "312ede095faea2a14dad3c1da68955130d55359829fa084362a0b4d49bcf186b",
+    "src/trigger-host/src/samples.rs": "5eba80e54c522ac84b03843dcc5ff5ce8ef2859f176a04b8736414875f92e9b7",
+    "src/instrument-session/src/lib.rs": "5218df4f3712878b6a2843b9885fb73700284c8b81cd4dbaee7b1e78af1a9e8d",
+    "src/trigger-host/tests/selected_admission.rs": "1d44557634dbb0386da83888997cf95aec7636ad71b671e23b336f32e0d6da39",
+    "src/trigger-host/tests/internal/selected_samples.rs": "9d03e75b0c3c7c0997edb9ada0e1b44dae6864687916a4f22bd74b8e1dca2bf4",
+    "openspec/changes/add-juce-free-trigger-beta-products/portable-state.md": "860c56436f76905b44cd67916bdc6e74c86205b03d9d5839946dbadfa914634a"
+  },
+  "archive": {
+    "path": "raw.tar.gz",
+    "bytes": 10563369,
+    "sha256": "ff71172aee78ef0ddb2f73695f60b47174c950a8982fd9d9ca2849ea5e325bda",
+    "members": 292
+  },
+  "external_replay": {
+    "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/portable-selected-current-coverage/replay-objects.tar.gz",
+    "sha256": "64a05086ee52c34b1244a8b816969b5d7c3789ab2d1115bb14840a8f91783ff9",
+    "bytes": 104604826
+  },
+  "source_free_command_logs": 46,
+  "scope": "Selected-only host-state criterion; mixed/package v3, complete6.1/6.2/current GUI/official/installed/native-input/DAW remain open"
+}

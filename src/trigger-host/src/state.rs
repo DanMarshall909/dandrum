@@ -1,8 +1,10 @@
 //! Bounded native Trigger state codec. Runtime/session policy stays with their owner.
 
+use dandrum_engine::sample_snapshot::SampleSnapshot;
 use dandrum_instrument_session::SessionError;
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
+use std::sync::Arc;
 
 pub const STATE_LIMIT: u64 = 65_536;
 const PORTABLE_MAGIC: &[u8; 8] = b"DTRGSTAT";
@@ -44,10 +46,92 @@ struct PortableMetadata {
     product: String,
     document: String,
     parameters: Vec<SavedParameter>,
-    resources: [(); 0],
+    resources: Vec<ManifestResource>,
 }
 
-pub(crate) fn read(input: &mut impl Read) -> Result<SavedState, StateError> {
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct ManifestResource {
+    pub path: String,
+    sha256: String,
+    encoded_bytes: u64,
+}
+pub(crate) struct ReadState {
+    pub state: SavedState,
+    pub resources: Vec<ManifestResource>,
+}
+impl ReadState {
+    pub(crate) fn read_samples(
+        &self,
+        input: &mut impl Read,
+        catalog: &mut crate::samples::SampleCatalog,
+    ) -> Result<Vec<Arc<SampleSnapshot>>, StateError> {
+        let descriptors = self
+            .resources
+            .iter()
+            .map(|r| (r.path.clone(), r.encoded_bytes as usize))
+            .collect::<Vec<_>>();
+        let samples = catalog
+            .restore(input, &descriptors)
+            .map_err(|error| match error {
+                crate::samples::RestoreError::Input(kind) => {
+                    if kind == std::io::ErrorKind::UnexpectedEof {
+                        StateError::Invalid
+                    } else {
+                        StateError::Io
+                    }
+                }
+                crate::samples::RestoreError::Sample(crate::samples::SampleError::Busy) => {
+                    StateError::Busy
+                }
+                crate::samples::RestoreError::Sample(
+                    crate::samples::SampleError::EncodedLimit
+                    | crate::samples::SampleError::DecodedLimit
+                    | crate::samples::SampleError::ResourceLimit,
+                ) => StateError::TooLarge,
+                crate::samples::RestoreError::Sample(_) => StateError::Invalid,
+            })?;
+        if input.take(1).read(&mut [0]).map_err(|_| StateError::Io)? != 0 {
+            return Err(StateError::Invalid);
+        }
+        Ok(samples)
+    }
+}
+fn validate_manifest(resources: &[ManifestResource], payload: u64) -> Result<(), StateError> {
+    if resources.len() > crate::samples::MAX_RESOURCE_COUNT {
+        return Err(StateError::TooLarge);
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    let mut total = 0u64;
+    for resource in resources {
+        if resource.sha256.len() != 64
+            || !resource
+                .sha256
+                .bytes()
+                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+            || resource.path != format!("selected/{}.wav", resource.sha256)
+            || !seen.insert(&resource.path)
+            || resource.encoded_bytes == 0
+        {
+            return Err(StateError::Invalid);
+        }
+        if resource.encoded_bytes > crate::samples::MAX_ENCODED_SAMPLE_BYTES as u64 {
+            return Err(StateError::TooLarge);
+        }
+        total = total
+            .checked_add(resource.encoded_bytes)
+            .ok_or(StateError::TooLarge)?;
+        if total > crate::samples::MAX_RETAINED_ENCODED_BYTES as u64 {
+            return Err(StateError::TooLarge);
+        }
+    }
+    if total != payload {
+        return Err(StateError::Invalid);
+    }
+    Ok(())
+}
+
+pub(crate) fn read(input: &mut impl Read) -> Result<ReadState, StateError> {
     let mut bytes = Vec::new();
     input
         .take(8)
@@ -59,7 +143,7 @@ pub(crate) fn read(input: &mut impl Read) -> Result<SavedState, StateError> {
         let version = u32::from_le_bytes(framing[..4].try_into().expect("four version bytes"));
         let length = u32::from_le_bytes(framing[4..8].try_into().expect("four length bytes"));
         let payload = u64::from_le_bytes(framing[8..].try_into().expect("eight payload bytes"));
-        if version != 3 || payload != 0 {
+        if version != 3 {
             return Err(StateError::Invalid);
         }
         if length > PORTABLE_METADATA_LIMIT {
@@ -67,20 +151,21 @@ pub(crate) fn read(input: &mut impl Read) -> Result<SavedState, StateError> {
         }
         let mut metadata = vec![0; length as usize];
         input.read_exact(&mut metadata).map_err(read_error)?;
-        if input.take(1).read(&mut [0]).map_err(|_| StateError::Io)? != 0 {
-            return Err(StateError::Invalid);
-        }
         let state: PortableMetadata =
             serde_json::from_slice(&metadata).map_err(|_| StateError::Invalid)?;
         if state.product != PRODUCT_ID {
             return Err(StateError::Invalid);
         }
-        return Ok(SavedState {
-            version: 3,
-            product: state.product,
-            resource: RESOURCE_ID.into(),
-            document: state.document,
-            parameters: state.parameters,
+        validate_manifest(&state.resources, payload)?;
+        return Ok(ReadState {
+            state: SavedState {
+                version: 3,
+                product: state.product,
+                resource: RESOURCE_ID.into(),
+                document: state.document,
+                parameters: state.parameters,
+            },
+            resources: state.resources,
         });
     }
     let remaining = STATE_LIMIT + 1 - bytes.len() as u64;
@@ -95,7 +180,10 @@ pub(crate) fn read(input: &mut impl Read) -> Result<SavedState, StateError> {
     if state.version != 2 || state.product != PRODUCT_ID || state.resource != RESOURCE_ID {
         return Err(StateError::Invalid);
     }
-    Ok(state)
+    Ok(ReadState {
+        state,
+        resources: Vec::new(),
+    })
 }
 
 fn read_error(error: std::io::Error) -> StateError {
@@ -106,13 +194,30 @@ fn read_error(error: std::io::Error) -> StateError {
     }
 }
 
-pub(crate) fn write(state: &SavedState, output: &mut impl Write) -> Result<(), StateError> {
+pub(crate) fn write(
+    state: &SavedState,
+    samples: &[Arc<SampleSnapshot>],
+    output: &mut impl Write,
+) -> Result<(), StateError> {
     if state.version == 3 {
+        let resources = samples
+            .iter()
+            .map(|sample| ManifestResource {
+                path: sample.resource_id().to_owned(),
+                sha256: sample.content_sha256().to_owned(),
+                encoded_bytes: sample.encoded_bytes().len() as u64,
+            })
+            .collect::<Vec<_>>();
+        let payload = resources
+            .iter()
+            .try_fold(0u64, |total, r| total.checked_add(r.encoded_bytes))
+            .ok_or(StateError::TooLarge)?;
+        validate_manifest(&resources, payload)?;
         let metadata = serde_json::to_vec(&PortableMetadata {
             product: state.product.clone(),
             document: state.document.clone(),
             parameters: state.parameters.clone(),
-            resources: [],
+            resources,
         })
         .expect("validated state contains finite scalar values");
         if metadata.len() > PORTABLE_METADATA_LIMIT as usize {
@@ -122,9 +227,15 @@ pub(crate) fn write(state: &SavedState, output: &mut impl Write) -> Result<(), S
             .write_all(PORTABLE_MAGIC)
             .and_then(|()| output.write_all(&3u32.to_le_bytes()))
             .and_then(|()| output.write_all(&(metadata.len() as u32).to_le_bytes()))
-            .and_then(|()| output.write_all(&0u64.to_le_bytes()))
+            .and_then(|()| output.write_all(&payload.to_le_bytes()))
             .and_then(|()| output.write_all(&metadata))
-            .map_err(|_| StateError::Io)
+            .map_err(|_| StateError::Io)?;
+        for sample in samples {
+            output
+                .write_all(sample.encoded_bytes())
+                .map_err(|_| StateError::Io)?;
+        }
+        Ok(())
     } else {
         let bytes =
             serde_json::to_vec(state).expect("validated state contains finite scalar values");
@@ -240,8 +351,69 @@ mod tests {
             parameters: Vec::new(),
         };
         let mut output = vec![7, 8, 9];
-        assert_eq!(write(&state, &mut output), Err(StateError::TooLarge));
+        assert_eq!(write(&state, &[], &mut output), Err(StateError::TooLarge));
         assert_eq!(output, [7, 8, 9], "oversize emits no framing or body");
+    }
+    #[test]
+    fn selected_payload_writes_retry_short_progress_and_report_stream_failure() {
+        let mut wav = Vec::new();
+        dandrum_engine::wav::write_wav_stereo_i16(&mut wav, 32_000, &[-0.75, -0.5], &[-0.25, -0.5])
+            .unwrap();
+        let sample = Arc::new(SampleSnapshot::decode(wav.clone()).unwrap());
+        let state = SavedState {
+            version: 3,
+            product: PRODUCT_ID.into(),
+            resource: RESOURCE_ID.into(),
+            document: String::new(),
+            parameters: Vec::new(),
+        };
+        let mut complete = Vec::new();
+        write(&state, std::slice::from_ref(&sample), &mut complete).unwrap();
+        let start = 24 + u32::from_le_bytes(complete[12..16].try_into().unwrap()) as usize;
+        assert_eq!(&complete[start..], wav);
+        struct Short(Vec<u8>);
+        impl Write for Short {
+            fn write(&mut self, input: &[u8]) -> std::io::Result<usize> {
+                let count = input.len().min(1);
+                self.0.extend_from_slice(&input[..count]);
+                Ok(count)
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
+            }
+        }
+        let mut short = Short(Vec::new());
+        write(&state, std::slice::from_ref(&sample), &mut short).unwrap();
+        assert_eq!(short.0, complete);
+        struct Fault {
+            bytes: Vec<u8>,
+            remaining: usize,
+        }
+        impl Write for Fault {
+            fn write(&mut self, input: &[u8]) -> std::io::Result<usize> {
+                if self.remaining == 0 {
+                    return Err(std::io::Error::other("payload write failed"));
+                }
+                let count = input.len().min(self.remaining);
+                self.bytes.extend_from_slice(&input[..count]);
+                self.remaining -= count;
+                Ok(count)
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
+            }
+        }
+        for offset in [start, start + 1, complete.len() - 1] {
+            let mut output = Fault {
+                bytes: Vec::new(),
+                remaining: offset,
+            };
+            assert_eq!(
+                write(&state, std::slice::from_ref(&sample), &mut output),
+                Err(StateError::Io)
+            );
+            assert_eq!(output.bytes, complete[..offset]);
+        }
     }
     #[test]
     fn restored_generation_is_checked_before_publication_can_wrap_or_lose_javascript_precision() {

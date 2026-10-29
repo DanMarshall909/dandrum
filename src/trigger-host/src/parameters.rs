@@ -402,33 +402,36 @@ impl ParameterController {
                 })
                 .collect(),
         };
-        // Interactive documents can exceed the legacy codec's resource/default
-        // contract. Refuse before writing a state a fresh instance cannot load.
+        // Preserve existing packaged v2 bytes; selected-only and resource-free
+        // accepted documents use the bounded content-owning representation.
+        let mut samples = Vec::new();
         if state.values_for(&self.parameters, &self.runtime).is_err() {
-            // Resource-free accepted patches have no external sample authority.
-            // Selected payload restoration is a subsequent portable-state boundary.
-            let samples = Self::patch_samples(
+            samples = Self::patch_samples(
                 &state.document,
                 &self.parameters,
                 &self.runtime,
                 &self.host.sample_catalog,
             )
             .map_err(|_| crate::state::StateError::Invalid)?;
-            if !samples.is_empty()
-                || !self
-                    .host
-                    .session()
-                    .prepared()
-                    .sample_assets()
-                    .sources()
-                    .is_empty()
+            let ids = samples
+                .iter()
+                .map(|sample| std::path::Path::new(sample.resource_id()))
+                .collect::<std::collections::BTreeSet<_>>();
+            if self
+                .host
+                .session()
+                .prepared()
+                .sample_assets()
+                .sources()
+                .iter()
+                .any(|source| !ids.contains(source.declaration().resource.path()))
             {
                 return Err(crate::state::StateError::Invalid);
             }
             state.version = 3;
             state.values_for(&self.parameters, &self.runtime)?;
         }
-        crate::state::write(&state, output)
+        crate::state::write(&state, &samples, output)
     }
     /// Validate and prepare complete bounded native state before publication.
     /// Held gestures/outbound automation return Busy so no promised End is lost.
@@ -440,20 +443,29 @@ impl ParameterController {
     ) -> Result<(), crate::state::StateError> {
         use crate::state::StateError;
         use dandrum_instrument_session::CommitError;
-        let state = crate::state::read(input)?;
-        if self.reserved_ends != 0 || !self.automation.is_empty() {
+        let saved = crate::state::read(input)?;
+        let state = &saved.state;
+        if self.reserved_ends != 0
+            || !self.automation.is_empty()
+            || (state.version == 3 && self.session_job.is_some())
+        {
             return Err(StateError::Busy);
         }
         if state.version == 3 {
-            let samples = Self::patch_samples(
-                &state.document,
-                &self.parameters,
-                &self.runtime,
-                &self.host.sample_catalog,
-            )
-            .map_err(|_| StateError::Invalid)?;
+            super::patch_budget::check(&state.document).map_err(|_| StateError::Invalid)?;
             let patch = load_kernel_patch_str(&state.document).map_err(|_| StateError::Invalid)?;
-            if !samples.is_empty() || !patch.sample_assets().sample_sources.is_empty() {
+            let required = patch
+                .sample_assets()
+                .sample_sources
+                .iter()
+                .map(|source| source.resource.path())
+                .collect::<std::collections::BTreeSet<_>>();
+            let declared = saved
+                .resources
+                .iter()
+                .map(|resource| std::path::Path::new(&resource.path))
+                .collect::<std::collections::BTreeSet<_>>();
+            if required != declared {
                 return Err(StateError::Invalid);
             }
         }
@@ -467,11 +479,24 @@ impl ParameterController {
             )
             .map_err(|_| StateError::Invalid)?;
         }
-        let candidate = self
-            .host
-            .session()
-            .prepare_document_replacement_owned(&state.document)
-            .map_err(StateError::Session)?;
+        let candidate = if state.version == 3 {
+            let samples = saved.read_samples(input, &mut self.host.sample_catalog)?;
+            Self::patch_samples(
+                &state.document,
+                &self.parameters,
+                &self.runtime,
+                &self.host.sample_catalog,
+            )
+            .map_err(|_| StateError::Invalid)?;
+            self.host
+                .session()
+                .prepare_document_replacement_with_samples_owned(&state.document, samples)
+        } else {
+            self.host
+                .session()
+                .prepare_document_replacement_owned(&state.document)
+        }
+        .map_err(StateError::Session)?;
         // A previous swap's retired runtime is destroyed only here, off audio.
         // An unconsumed candidate still has no retirement and remains Busy.
         drop(self.runtime.reclaim());
