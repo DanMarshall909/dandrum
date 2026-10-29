@@ -317,3 +317,80 @@ fn mixed_state_save_respects_unrelated_live_resources_and_native_reservations() 
         "temporary factory export ownership ends with the save"
     );
 }
+
+#[test]
+fn buffered_state_preflight_preserves_native_busy_ownership_and_rechecks_after_input() {
+    use crate::protocol::Admission;
+    use crate::samples::NativeSampleFile;
+    use serde_json::json;
+    let (_directory, mut controller, _audio) = fixture();
+    let legacy: serde_json::Value =
+        serde_json::from_slice(include_bytes!("../fixtures/trigger-v2-state.json")).unwrap();
+    let metadata = serde_json::to_vec(&json!({"product":legacy["product"],
+        "document":legacy["document"],"parameters":legacy["parameters"],
+        "resources":[{"path":"assets/advanced-drums.wav","encoded_bytes":102044,
+            "sha256":"22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503"}]}))
+    .unwrap();
+    let mut prefix = b"DTRGSTAT".to_vec();
+    prefix.extend(3_u32.to_le_bytes());
+    prefix.extend(u32::try_from(metadata.len()).unwrap().to_le_bytes());
+    prefix.extend(102_044_u64.to_le_bytes());
+    prefix.extend(metadata);
+    let header = || crate::state::read_header(&mut prefix.as_slice()).unwrap();
+    let accepted = controller.session().owner_snapshot();
+    let parameters = controller.parameter_state();
+    let path = controller
+        .host
+        .resource_root()
+        .join(ADVANCED_DRUM_KIT_SAMPLE);
+    let job = controller
+        .host
+        .sample_catalog
+        .begin(vec![
+            NativeSampleFile::new("pending.wav".into(), std::fs::File::open(&path).unwrap())
+                .unwrap(),
+        ])
+        .unwrap();
+    assert_eq!(controller.preflight_state(&header()), Err(StateError::Busy));
+    assert_eq!(controller.session().owner_snapshot(), accepted);
+    assert_eq!(controller.parameter_state(), parameters);
+    drop(job);
+    let ready = header();
+    controller.preflight_state(&ready).unwrap();
+    // A native edit may arrive during foreign I/O after that successful check.
+    let connection = controller.attach_editor().unwrap();
+    let negotiate = json!({"version":1,"attachmentId":connection.attachment_id,
+        "requestId":"1","method":"negotiateEditorProtocol","args":[2]})
+    .to_string();
+    let Admission::New(request) = controller.admit(&negotiate).unwrap() else {
+        panic!("new request")
+    };
+    controller.negotiate_editor_protocol(&request).unwrap();
+    let frame = json!({"version":2,"attachmentId":connection.attachment_id,
+        "requestId":"2","method":"prepareInstrumentSessionPatch",
+        "args":["1",connection.attachment_id,"71",accepted.revision.to_string(),accepted.yaml]})
+    .to_string();
+    let Admission::New(request) = controller.admit(&frame).unwrap() else {
+        panic!("new request")
+    };
+    controller.admit_session_command(&request).unwrap();
+    assert_eq!(controller.preflight_state(&header()), Err(StateError::Busy));
+    let mut payload = std::fs::File::open(path).unwrap();
+    let buffered = ready.buffer_payload(&mut payload).unwrap();
+    assert_eq!(
+        controller.load_buffered_state(buffered),
+        Err(StateError::Busy)
+    );
+    assert_eq!(controller.session().owner_snapshot(), accepted);
+    assert_eq!(controller.parameter_state(), parameters);
+    let query = json!({"version":1,"attachmentId":connection.attachment_id,
+        "requestId":"3","method":"getInstrumentSessionJobStatus","args":["71"]})
+    .to_string();
+    let Admission::New(query) = controller.admit(&query).unwrap() else {
+        panic!("new query")
+    };
+    let status: serde_json::Value =
+        serde_json::from_str(&controller.session_job_status(&query).unwrap()).unwrap();
+    assert_eq!(status["result"]["state"], "running");
+    assert_eq!(status["result"]["request_id"], "71");
+}

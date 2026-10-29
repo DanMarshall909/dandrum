@@ -93,6 +93,9 @@ impl SampleCatalog {
             reserved: Limits::default(),
         }
     }
+    pub(crate) fn acquisition_pending(&self) -> bool {
+        self.active.strong_count() != 0
+    }
     pub fn usage(&mut self) -> CatalogUsage {
         self.entries.retain(|_, entry| entry.retention.is_live());
         let mut usage = self
@@ -104,7 +107,7 @@ impl SampleCatalog {
                 usage.resource_count += 1;
                 usage
             });
-        if self.active.strong_count() != 0 {
+        if self.acquisition_pending() {
             usage.encoded_bytes += self.reserved.encoded;
             usage.decoded_bytes += self.reserved.decoded;
             usage.resource_count += self.reserved.resources;
@@ -121,7 +124,7 @@ impl SampleCatalog {
         &mut self,
         files: Vec<NativeSampleFile>,
     ) -> Result<SampleSelectionJob, SampleError> {
-        if self.active.strong_count() != 0 {
+        if self.acquisition_pending() {
             return Err(SampleError::Busy);
         }
         if files.is_empty() || files.len() > 16 {
@@ -137,7 +140,7 @@ impl SampleCatalog {
         })
     }
     fn reserve(&mut self, count: usize) -> Result<Reservation, SampleError> {
-        if self.active.strong_count() != 0 {
+        if self.acquisition_pending() {
             return Err(SampleError::Busy);
         }
         let used = self.usage();

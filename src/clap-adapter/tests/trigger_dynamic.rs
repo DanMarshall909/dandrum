@@ -1613,3 +1613,292 @@ fn supported_fractional_clocks_activate_and_keep_exact_signed_sample_timing() {
         deactivate(&mut plugin, processor);
     }
 }
+
+#[test]
+fn portable_state_larger_than_legacy_limit_restores_fresh_pcm_and_values_with_reentrant_short_reads()
+ {
+    use serde_json::json;
+    use std::io::Read;
+    const LEGACY: &[u8] = include_bytes!("../../trigger-host/tests/fixtures/trigger-v2-state.json");
+    const VALUES: [f64; 23] = [
+        1.5, 0.03125, 0.5, -0.25, 0.4375, 2., 0.09375, 0.75, 0.25, 2.5, 0.15625, 1.25, -0.375,
+        0.5625, 3., 0.21875, 1.75, -0.5, 3.5, 0.28125, 2.25, -0.625, 0.6875,
+    ];
+    // Independent literal PCM words/values also calibrate the fixed v2 input.
+    let render = |processor: &mut StartedPluginAudioProcessor<TestHost>| {
+        assert_eq!(
+            block(processor, 16, &note(0, 36), true),
+            [vec![0.; 16], vec![0.; 16]]
+        );
+        let output = block(processor, 16, &note(5, 60), true);
+        for channel in output {
+            assert_eq!(&channel[..5], &[0.; 5]);
+            assert_eq!(&channel[5..7], &[-0.145_368_58, -0.144_493_1]);
+        }
+    };
+    {
+        let mut legacy = load_at(&artifact()).unwrap();
+        assert!(
+            load_state(&mut legacy, LEGACY),
+            "fixed existing v2 representation stays readable"
+        );
+        for (index, value) in VALUES.iter().enumerate() {
+            assert_eq!(parameter(&mut legacy, index as u32 + 1), Some(*value));
+        }
+        let mut processor = activate(&mut legacy, 48_000., 16);
+        render(&mut processor);
+        deactivate(&mut legacy, processor);
+    }
+    let input: serde_json::Value = serde_json::from_slice(LEGACY).unwrap();
+    let wav = std::fs::read(
+        artifact()
+            .parent()
+            .unwrap()
+            .join("DandrumTrigger.resources/instrument/assets/advanced-drums.wav"),
+    )
+    .unwrap();
+    assert_eq!(wav.len(), 102_044);
+    for (frame, word) in [
+        (1499, -12734_i16),
+        (1500, -12698),
+        (1502, -12661),
+        (1503, -12621),
+    ] {
+        assert_eq!(
+            i16::from_le_bytes(wav[44 + frame * 2..46 + frame * 2].try_into().unwrap()),
+            word
+        );
+    }
+    let metadata = json!({"product":input["product"],
+        "document":input["document"],"parameters":input["parameters"],
+        "resources":[{"path":"assets/advanced-drums.wav",
+            "sha256":"22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503",
+            "encoded_bytes":102044}]});
+    let encode = |metadata: &serde_json::Value, payload: &[u8]| {
+        let metadata = serde_json::to_vec(metadata).unwrap();
+        let mut bytes = b"DTRGSTAT".to_vec();
+        bytes.extend(3_u32.to_le_bytes());
+        bytes.extend(u32::try_from(metadata.len()).unwrap().to_le_bytes());
+        bytes.extend(u64::try_from(payload.len()).unwrap().to_le_bytes());
+        bytes.extend(metadata);
+        bytes.extend(payload);
+        bytes
+    };
+    let frame = encode(&metadata, &wav);
+    assert!(frame.len() > 65_536);
+    // Calibrate valid framing/content against the existing format-neutral owner.
+    {
+        let (_directory, path) = copied_product();
+        let (mut controller, _audio) = dandrum_trigger_host::parameters::ParameterController::open(
+            path.parent().unwrap().join("DandrumTrigger.resources"),
+            dandrum_trigger_host::TriggerHostConfiguration {
+                sample_rate_hz: dandrum_trigger_host::SampleRate::new(48_000.).unwrap(),
+                max_block_frames: 16,
+            },
+            std::num::NonZeroU64::new(999).unwrap(),
+            32,
+            8,
+        )
+        .unwrap();
+        controller.load_state(&mut frame.as_slice()).unwrap();
+    }
+    let mut independent = load_at(&artifact()).unwrap();
+    let independent_state = save(&mut independent);
+    let (directory, path) = copied_product();
+    let mut fresh = load_at(&path).unwrap();
+    std::fs::remove_file(
+        directory
+            .path()
+            .join("DandrumTrigger.resources/instrument/assets/advanced-drums.wav"),
+    )
+    .unwrap();
+    struct Short<'a, F> {
+        bytes: &'a [u8],
+        check: F,
+        consumed: usize,
+    }
+    impl<F: FnMut()> Read for Short<'_, F> {
+        fn read(&mut self, target: &mut [u8]) -> std::io::Result<usize> {
+            (self.check)();
+            let count = target.len().min(self.bytes.len()).min(11);
+            target[..count].copy_from_slice(&self.bytes[..count]);
+            self.bytes = &self.bytes[count..];
+            self.consumed += count;
+            Ok(count)
+        }
+    }
+    {
+        let handle = fresh.plugin_handle();
+        let params = handle.get_extension::<PluginParams>().unwrap();
+        let state = handle
+            .get_extension::<clack_extensions::state::PluginState>()
+            .unwrap();
+        let mut reader = Short {
+            bytes: &frame,
+            consumed: 0,
+            check: || {
+                assert_eq!(
+                    params.get_value(&handle, ClapId::new(3)),
+                    Some(1.),
+                    "foreign reads must not cross a controller borrow"
+                );
+            },
+        };
+        assert!(
+            state.load(&handle, &mut reader).is_ok(),
+            "valid portable frame larger than legacy limit restores through actual CLAP"
+        );
+        assert_eq!(reader.consumed, frame.len());
+    }
+    for (index, value) in VALUES.iter().enumerate() {
+        assert_eq!(parameter(&mut fresh, index as u32 + 1), Some(*value));
+    }
+    let accepted = save(&mut fresh);
+    let mut refused_metadata = metadata.clone();
+    refused_metadata["document"] = format!(
+        "{}\n# rejected candidate must not publish\n",
+        input["document"].as_str().unwrap()
+    )
+    .into();
+    refused_metadata["parameters"][0]["value"] = 2.0.into();
+    let refused = encode(&refused_metadata, &wav);
+    let mut corrupted = refused.clone();
+    *corrupted.last_mut().unwrap() ^= 1;
+    let mut trailing = refused.clone();
+    trailing.push(0);
+    for bad in [refused[..refused.len() - 1].to_vec(), corrupted, trailing] {
+        assert!(!load_state(&mut fresh, &bad));
+        assert_eq!(save(&mut fresh), accepted);
+        for (index, value) in VALUES.iter().enumerate() {
+            assert_eq!(parameter(&mut fresh, index as u32 + 1), Some(*value));
+        }
+    }
+    struct FailingBody<'a> {
+        bytes: &'a [u8],
+        remaining: usize,
+    }
+    impl Read for FailingBody<'_> {
+        fn read(&mut self, output: &mut [u8]) -> std::io::Result<usize> {
+            if self.remaining == 0 {
+                return Err(std::io::ErrorKind::Other.into());
+            }
+            let count = output.len().min(self.bytes.len()).min(self.remaining);
+            output[..count].copy_from_slice(&self.bytes[..count]);
+            self.bytes = &self.bytes[count..];
+            self.remaining -= count;
+            Ok(count)
+        }
+    }
+    {
+        let handle = fresh.plugin_handle();
+        let state = handle
+            .get_extension::<clack_extensions::state::PluginState>()
+            .unwrap();
+        let metadata_length = u32::from_le_bytes(refused[12..16].try_into().unwrap()) as usize;
+        let mut reader = FailingBody {
+            bytes: &refused,
+            remaining: 24 + metadata_length + 53,
+        };
+        assert!(state.load(&handle, &mut reader).is_err());
+        assert_eq!(
+            reader.remaining, 0,
+            "actual host error occurs inside payload"
+        );
+    }
+    assert_eq!(save(&mut fresh), accepted);
+    for (index, value) in VALUES.iter().enumerate() {
+        assert_eq!(parameter(&mut fresh, index as u32 + 1), Some(*value));
+    }
+    let mut processor = activate(&mut fresh, 48_000., 16);
+    render(&mut processor);
+    deactivate(&mut fresh, processor);
+    assert_eq!(save(&mut independent), independent_state);
+    assert_eq!(parameter(&mut independent, 3), Some(1.));
+    let mut processor = activate(&mut independent, 48_000., 16);
+    let output = block(&mut processor, 16, &note(0, 36), true);
+    assert_eq!((output[0][0], output[1][0]), (-0.5, -0.5));
+    deactivate(&mut independent, processor);
+}
+
+#[test]
+fn invalid_portable_metadata_is_refused_before_any_foreign_payload_read() {
+    use serde_json::json;
+    use std::io::Read;
+    struct HeaderOnly {
+        prefix: Vec<u8>,
+        position: usize,
+        payload_attempted: bool,
+    }
+    impl Read for HeaderOnly {
+        fn read(&mut self, output: &mut [u8]) -> std::io::Result<usize> {
+            if self.position == self.prefix.len() {
+                self.payload_attempted = true;
+                return Err(std::io::ErrorKind::Other.into());
+            }
+            let count = output.len().min(13).min(self.prefix.len() - self.position);
+            output[..count].copy_from_slice(&self.prefix[self.position..self.position + count]);
+            self.position += count;
+            Ok(count)
+        }
+    }
+    let prefix = |version: u32, metadata: &[u8], payload: u64| {
+        let mut bytes = b"DTRGSTAT".to_vec();
+        bytes.extend(version.to_le_bytes());
+        bytes.extend(u32::try_from(metadata.len()).unwrap().to_le_bytes());
+        bytes.extend(payload.to_le_bytes());
+        bytes.extend(metadata);
+        bytes
+    };
+    let mut oversized = prefix(3, &[], 0);
+    oversized[12..16].copy_from_slice(&1_048_577_u32.to_le_bytes());
+    let legacy: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../trigger-host/tests/fixtures/trigger-v2-state.json"
+    ))
+    .unwrap();
+    let mut invalid_parameters = legacy["parameters"].clone();
+    invalid_parameters[0]["id"] = "foreign.control".into();
+    let invalid_surface = serde_json::to_vec(&json!({"product":"org.dandrum.trigger",
+        "document":legacy["document"],"parameters":invalid_parameters,
+        "resources":[{"path":"assets/advanced-drums.wav","encoded_bytes":102044,
+        "sha256":"22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503"}]}))
+    .unwrap();
+    let cases = [
+        ("unsupported version", prefix(4, &[], 0)),
+        ("metadata byte limit", oversized),
+        (
+            "foreign product",
+            prefix(
+                3,
+                br#"{"product":"foreign","document":"","parameters":[],"resources":[]}"#,
+                0,
+            ),
+        ),
+        (
+            "incompatible public surface",
+            prefix(3, &invalid_surface, 102_044),
+        ),
+    ];
+    let mut plugin = load_at(&artifact()).unwrap();
+    let before = save(&mut plugin);
+    for (name, bytes) in cases {
+        let mut reader = HeaderOnly {
+            prefix: bytes,
+            position: 0,
+            payload_attempted: false,
+        };
+        {
+            let handle = plugin.plugin_handle();
+            let state = handle
+                .get_extension::<clack_extensions::state::PluginState>()
+                .unwrap();
+            assert!(state.load(&handle, &mut reader).is_err(), "{name}");
+        }
+        assert!(
+            !reader.payload_attempted,
+            "{name}: refusal must precede payload I/O"
+        );
+        assert_eq!(reader.position, reader.prefix.len(), "{name}");
+        assert_eq!(save(&mut plugin), before, "{name}");
+        assert_eq!(parameter(&mut plugin, 3), Some(1.), "{name}");
+    }
+}

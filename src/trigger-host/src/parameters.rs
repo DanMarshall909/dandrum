@@ -497,9 +497,37 @@ impl ParameterController {
         &mut self,
         input: &mut impl std::io::Read,
     ) -> Result<(), crate::state::StateError> {
+        let saved = crate::state::read_header(input)?;
+        self.restore_state(saved, input)
+    }
+
+    /// Check current native admission before foreign payload I/O. Revalidate
+    /// after I/O: reentrant host callbacks may change the instrument meanwhile.
+    pub fn preflight_state(
+        &self,
+        saved: &crate::state::StateHeader,
+    ) -> Result<(), crate::state::StateError> {
+        self.state_restore_values(saved)?;
+        if !saved.resources.is_empty() && self.host.sample_catalog.acquisition_pending() {
+            return Err(crate::state::StateError::Busy);
+        }
+        Ok(())
+    }
+
+    /// Foreign reads have ended; the same native checks/catalog/publication own
+    /// this replacement, with no host callback under the main-owner borrow.
+    pub fn load_buffered_state(
+        &mut self,
+        buffered: crate::state::BufferedState,
+    ) -> Result<(), crate::state::StateError> {
+        self.restore_state(buffered.header, &mut buffered.payload.as_slice())
+    }
+
+    fn state_restore_values(
+        &self,
+        saved: &crate::state::StateHeader,
+    ) -> Result<(Vec<f64>, u64), crate::state::StateError> {
         use crate::state::StateError;
-        use dandrum_instrument_session::CommitError;
-        let saved = crate::state::read(input)?;
         let state = &saved.state;
         if self.reserved_ends != 0
             || !self.automation.is_empty()
@@ -535,6 +563,18 @@ impl ParameterController {
             )
             .map_err(|_| StateError::Invalid)?;
         }
+        Ok((values, generation))
+    }
+
+    fn restore_state(
+        &mut self,
+        saved: crate::state::StateHeader,
+        input: &mut impl std::io::Read,
+    ) -> Result<(), crate::state::StateError> {
+        use crate::state::StateError;
+        use dandrum_instrument_session::CommitError;
+        let (values, generation) = self.state_restore_values(&saved)?;
+        let state = &saved.state;
         let candidate = if state.version == 3 {
             let samples = saved.read_samples(input, &mut self.host.sample_catalog)?;
             Self::patch_samples(

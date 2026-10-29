@@ -1,0 +1,32 @@
+{
+  "base": "524be5c40766897bee1aa994cd62303533df33e6",
+  "source": {
+    "openspec/changes/add-juce-free-trigger-beta-products/portable-state.md": "78b94e78bfa23b3c591569e498096f90ca11d92fd8da754c7ed675b712841472",
+    "src/clap-adapter/src/trigger.rs": "af0574ead4461ff93f47b94192964917253dc429cf781149912f26e842ef3215",
+    "src/clap-adapter/tests/trigger_dynamic.rs": "5eeffd2c9f034b63a85c0cc4ebebed95084cb6d7fb2e38f3d3bc68387f8c4c17",
+    "src/trigger-host/src/parameters.rs": "727664497970af1774644982c1c897881792def9389349f6e53e4150f825a76c",
+    "src/trigger-host/src/samples.rs": "5171931e016f79a28d4e95e88d5a3a44324a8acb2ea47eda2fa0288b78f761af",
+    "src/trigger-host/src/state.rs": "00ac7a32161dcf59cd81b03928ece1f940aab15ef0e876c26b53f4b2d606b55c",
+    "src/trigger-host/tests/internal/selected_samples.rs": "d0b15507430c5f2216d29a6345ec0e9e37a3b92323f313b31c449fa0b02e8233",
+    "src/trigger-host/tests/internal/state.rs": "fd962c0ee123a9c6b5ef328b90b2c4677f7c92fedb4e47183407285c373f28c3",
+    "src/trigger-host/tests/fixtures/trigger-v2-state.json": "b674adc87f0ad922cec647578a2d71a925ef772d793e01cd21ef98cbc0b532f1",
+    "src/trigger-host/tests/fixtures/README.md": "9bf974c1a0d306346586eaf28e9785e018ef3e64f51f9904a30ee5ed533b6ba3"
+  },
+  "archive": {
+    "path": "raw.tar.gz",
+    "sha256": "8754f294d4fb09e4c9557c6754fad64f46572b785a86b7038a5ac9f91e87df16",
+    "bytes": 11099857,
+    "members": 195
+  },
+  "external_replay": {
+    "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/clap-portable-stream-coverage/replay-objects.tar.gz",
+    "sha256": "8347ff96670314ff5df2885a147b82978abae4ea4f1fc852a4ef9baa48ddbab2",
+    "bytes": 198646358
+  },
+  "dynamic_replay": {
+    "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/clap-portable-stream-dynamic-replay.tar.gz",
+    "sha256": "74f52fcf77c1fd359ef420a898afe6f6d563a8cdf23fc0f0d1a60309413a72ce",
+    "bytes": 15518138
+  },
+  "scope": "Bounded actual-CLAP foreign stream consumer; default packaged writer/full payload qualification/current GUI/official/installed/native-input/DAW remain open"
+}

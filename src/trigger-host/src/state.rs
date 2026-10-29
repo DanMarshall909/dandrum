@@ -56,11 +56,34 @@ pub(crate) struct ManifestResource {
     sha256: String,
     encoded_bytes: u64,
 }
-pub(crate) struct ReadState {
-    pub state: SavedState,
-    pub resources: Vec<ManifestResource>,
+/// Bounded framing/metadata only; native admission and sample content are pending.
+pub struct StateHeader {
+    pub(crate) state: SavedState,
+    pub(crate) resources: Vec<ManifestResource>,
+    payload_bytes: usize,
 }
-impl ReadState {
+
+/// Owned foreign input, still subject to current native admission and decoding.
+pub struct BufferedState {
+    pub(crate) header: StateHeader,
+    pub(crate) payload: Vec<u8>,
+}
+impl StateHeader {
+    /// Read only the validated payload extent, outside any controller borrow.
+    pub fn buffer_payload(self, input: &mut impl Read) -> Result<BufferedState, StateError> {
+        let mut payload = vec![0; self.payload_bytes];
+        if self.state.version == 3 {
+            input.read_exact(&mut payload).map_err(read_error)?;
+            if input.take(1).read(&mut [0]).map_err(|_| StateError::Io)? != 0 {
+                return Err(StateError::Invalid);
+            }
+        }
+        Ok(BufferedState {
+            header: self,
+            payload,
+        })
+    }
+
     pub(crate) fn read_samples(
         &self,
         input: &mut impl Read,
@@ -147,7 +170,8 @@ fn validate_manifest(resources: &[ManifestResource], payload: u64) -> Result<(),
     Ok(())
 }
 
-pub(crate) fn read(input: &mut impl Read) -> Result<ReadState, StateError> {
+/// Parse the existing bounded v2 input or just the v3 framing and metadata.
+pub fn read_header(input: &mut impl Read) -> Result<StateHeader, StateError> {
     let mut bytes = Vec::new();
     input
         .take(8)
@@ -173,7 +197,7 @@ pub(crate) fn read(input: &mut impl Read) -> Result<ReadState, StateError> {
             return Err(StateError::Invalid);
         }
         validate_manifest(&state.resources, payload)?;
-        return Ok(ReadState {
+        return Ok(StateHeader {
             state: SavedState {
                 version: 3,
                 product: state.product,
@@ -182,6 +206,7 @@ pub(crate) fn read(input: &mut impl Read) -> Result<ReadState, StateError> {
                 parameters: state.parameters,
             },
             resources: state.resources,
+            payload_bytes: payload as usize,
         });
     }
     let remaining = STATE_LIMIT + 1 - bytes.len() as u64;
@@ -196,9 +221,10 @@ pub(crate) fn read(input: &mut impl Read) -> Result<ReadState, StateError> {
     if state.version != 2 || state.product != PRODUCT_ID || state.resource != RESOURCE_ID {
         return Err(StateError::Invalid);
     }
-    Ok(ReadState {
+    Ok(StateHeader {
         state,
         resources: Vec::new(),
+        payload_bytes: 0,
     })
 }
 

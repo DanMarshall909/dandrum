@@ -416,7 +416,7 @@ fn portable_payloads_share_catalog_capacity_reuse_and_release_with_native_work()
     use std::io::Cursor;
     // This tests the framing/catalog boundary; document/parameter admission is
     // separately exercised through the complete controller in selected_admission.
-    fn stream(bytes: &[u8]) -> (crate::state::ReadState, Cursor<Vec<u8>>) {
+    fn stream(bytes: &[u8]) -> (crate::state::StateHeader, Cursor<Vec<u8>>) {
         let id = SampleSnapshot::resource_id_for_encoded(bytes).unwrap();
         let sha = id
             .strip_prefix("selected/")
@@ -437,7 +437,7 @@ fn portable_payloads_share_catalog_capacity_reuse_and_release_with_native_work()
         ]
         .concat();
         let mut input = Cursor::new(bytes);
-        let state = crate::state::read(&mut input).unwrap();
+        let state = crate::state::read_header(&mut input).unwrap();
         (state, input)
     }
     let bytes = wav();

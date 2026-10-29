@@ -17,7 +17,7 @@ use dandrum_trigger_host::{
     parameters::{ParameterController, PublicParameter},
     runtime::{ControlEvent, RuntimeAudio, TimedEvent},
 };
-use std::io::{Read, Write as IoWrite};
+use std::io::Write as IoWrite;
 use std::{
     cell::{Cell, RefCell},
     ffi::CStr,
@@ -590,14 +590,22 @@ impl PluginStateImpl for Main<'_> {
             .map_err(|_| PluginError::Message("Trigger state stream write failed"))
     }
     fn load(&self, input: &mut InputStream) -> Result<(), PluginError> {
-        let mut bytes = Vec::new();
-        input
-            .take(dandrum_trigger_host::state::STATE_LIMIT + 1)
-            .read_to_end(&mut bytes)
-            .map_err(|_| PluginError::Message("Trigger state stream read failed"))?;
-        if bytes.len() as u64 > dandrum_trigger_host::state::STATE_LIMIT {
-            return Err(PluginError::Message("Trigger state too large"));
+        let header = dandrum_trigger_host::state::read_header(input)
+            .map_err(|_| PluginError::Message("Invalid Trigger state input"))?;
+        {
+            let controller = self
+                .core
+                .controller
+                .try_borrow()
+                .map_err(|_| PluginError::Message("Trigger main owner busy"))?;
+            controller
+                .preflight_state(&header)
+                .map_err(|_| PluginError::Message("Invalid Trigger state"))?;
         }
+        // The host may reenter during payload reads. No controller borrow is live.
+        let buffered = header
+            .buffer_payload(input)
+            .map_err(|_| PluginError::Message("Invalid Trigger state input"))?;
         {
             let mut controller = self
                 .core
@@ -605,7 +613,7 @@ impl PluginStateImpl for Main<'_> {
                 .try_borrow_mut()
                 .map_err(|_| PluginError::Message("Trigger main owner busy"))?;
             controller
-                .load_state(&mut bytes.as_slice())
+                .load_buffered_state(buffered)
                 .map_err(|_| PluginError::Message("Invalid Trigger state"))?;
             if let Some(mut audio) = self.core.parked.take() {
                 let result = controller.service_quiescent(&mut audio);

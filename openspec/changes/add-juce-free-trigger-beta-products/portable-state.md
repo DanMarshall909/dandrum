@@ -103,3 +103,20 @@ package, preserving its missing/invalid-file refusal and rollback. No new decode
 resource cache, memory-budget exception or product format is introduced. Existing
 aggregate/decoded/live-union limits still apply; full boundary qualification and
 CLAP streaming remain subsequent work.
+
+## Bounded foreign stream projection
+
+The CLAP consumer must accept the already-supported portable frames beyond the
+legacy65KiB JSON limit. Parse bounded framing/metadata outside the main controller
+borrow, then preflight the same native metadata/admission checks. An already busy
+structural job, gesture/automation or nonempty-payload acquisition refuses before
+payload I/O. Read exactly the validated payload extent and check EOF with no
+controller borrow live. This transient byte buffer owns no instrument history,
+resource catalog or decoder.
+
+Foreign reads may reenter the plugin. After buffering, revalidate current native
+admission, values/revision/generation and resource reservation through the same
+atomic controller load path. A job acquired during reentrant reads may therefore
+cause a final Busy after input consumption; it must not cause partial publication.
+Retain legacy JSON's exact65,536-byte bound and existingv2 semantics. No new state
+format/limit or default-writer switch is introduced by this consumer criterion.
