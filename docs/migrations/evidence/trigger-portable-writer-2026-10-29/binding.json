@@ -1,0 +1,42 @@
+{
+  "base": "11a7f708e01a23d33a656e78989c00175ee8b192",
+  "source": {
+    "openspec/changes/add-juce-free-trigger-beta-products/portable-state.md": "311ee64520615f091087acabe3327ece2809fdfec8541883b7281a414dd2e230",
+    "src/clap-adapter/tests/internal/trigger_gui_dispatch.rs": "50cd85c3016fdf3d86381fcfef41933d6f7e8f177b019a54bcb3ffe66f21b34f",
+    "src/clap-adapter/tests/internal/trigger_structural_native.rs": "fb717910ffccbba8e5bbeac6451c987318540a31a3a03ff2a39b3688855b01a3",
+    "src/clap-adapter/tests/trigger_dynamic.rs": "6891607ea41e9faea6618de70b668cf4bbbe3d03f1a124c7ba97b3dcf7c5b949",
+    "src/clap-adapter/tests/trigger_parameters.rs": "d2619a0741c7f7488a925bb193373a65d98cf137d2d95fe596d8b6d43a9dd1ab",
+    "src/trigger-host/src/parameters.rs": "32673de6939e50d0ae6604db64073ac5804483daea8d4734ea321b8fd812af41",
+    "src/trigger-host/src/state.rs": "13b8f3af31788c860ce3dea871513141edd7729d73b30659ba6960f1be6879cc",
+    "src/trigger-host/tests/editor_note_controller.rs": "323c31694a92b9b5cee4ff841abe099b19e8e0f0fab453fad6097331f19bfea1",
+    "src/trigger-host/tests/internal/state.rs": "3a0b44b582cd5689731c8804b99e3566f056cac89207d8e244e6bf7a8c8a3857",
+    "src/trigger-host/tests/parameter_flush.rs": "ce6f4500a1037ef55550b7fbe2048db926bd0821e0d35f455a96fbef9abb935d",
+    "src/trigger-host/tests/selected_admission.rs": "dc0422e1ae2793a2a38dd8027183d871e01d5e2b4dcf5060981de8b0d832c4b5",
+    "src/trigger-host/tests/snapshot.rs": "60579f0e0320916467ae9efddd8fb2492f7c5fcfe5c32d2c81a772fa83272bad",
+    "src/trigger-host/tests/state.rs": "7819a1722b03a373cfd245979da3a7d63802c90916f8c575fc1918f728e5ace0",
+    "src/trigger-host/tests/support/portable_state.rs": "a947f810c1f9c2381ce71522ae6fad8b68022cf371e8c64c30e4259280fa149e",
+    "src/trigger-host/tests/support/portable_state_edit.rs": "61430ca48a396cf1a1ba3eec89974e5b62ef192ff556c45afccf36d0b0010cd4"
+  },
+  "archive": {
+    "path": "raw.tar.gz",
+    "sha256": "6f6b186b6f0800057be74db4b61a61e5c632c9adfb63ee84b4cccffd6c6c85c3",
+    "bytes": 13117438,
+    "members": 261
+  },
+  "external_replay": {
+    "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/portable-writer-coverage/replay-objects.tar.gz",
+    "sha256": "334460d0965131f48f80269764d65cc2166084f1fa44aac79fb69f488327ef6b",
+    "bytes": 265725449
+  },
+  "dynamic_replay": {
+    "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/portable-writer-dynamic-replay.tar.gz",
+    "sha256": "e67b5cfb031e88f13a72210f244f20c8a84b1db7555f8441133d9b54c1a1550b",
+    "bytes": 15517016
+  },
+  "native_replay": {
+    "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/portable-writer-native-replay.tar.gz",
+    "sha256": "cce616bfae1887cbeccaae63e1b1766962b7361733c87a18f500d94214bb34c5",
+    "bytes": 23515198
+  },
+  "scope": "All-new-saves self-contained v3 writer, legacy packaged-profile support and current-output test consumers. Full payload qualification/fresh selected CLAP/installed/native-input/DAW/final release remain open."
+}

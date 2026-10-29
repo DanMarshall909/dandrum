@@ -1,3 +1,5 @@
+#[path = "../../../trigger-host/tests/support/portable_state.rs"]
+mod portable_state;
 use super::dispatch;
 use dandrum_trigger_host::{
     ADVANCED_DRUM_KIT_DOCUMENT, ADVANCED_DRUM_KIT_SAMPLE, TriggerHostConfiguration,
@@ -182,14 +184,19 @@ fn whole_patch_publication_survives_view_loss_and_native_undo_preserves_physical
         (accepted.revision, accepted.undo_len, accepted.redo_len),
         (1, 1, 0)
     );
-    // Until the portable codec exists, legacy saving must refuse a document
-    // whose changed authored default cannot be restored by that same codec.
+    // Compatible authored defaults now save through the self-contained codec.
     let mut output = vec![0xa5, 0x5a];
-    assert_eq!(
-        host.save_state(&mut output),
-        Err(dandrum_trigger_host::state::StateError::Invalid)
-    );
-    assert_eq!(output, [0xa5, 0x5a], "no partial success bytes");
+    host.save_state(&mut output).unwrap();
+    assert_eq!(&output[..2], &[0xa5, 0x5a], "append at the writer position");
+    let wire = portable_state::metadata(&output[2..]);
+    assert_eq!(wire["document"], candidate);
+    assert_eq!(wire["parameters"][2]["value"], 0.5);
+    let (_fresh_package, mut restored, mut fresh_audio, _) = controller(8, 8);
+    restored.load_state(&mut &output[2..]).unwrap();
+    assert_eq!(restored.session().owner_snapshot().yaml, candidate);
+    let (left, right, swapped) = render(&mut fresh_audio, 60);
+    assert!(swapped);
+    assert_eq!((left[0], right[0]), (-0.25, -0.25));
     assert_eq!(host.session().owner_snapshot(), accepted);
     audio.reset();
     let (left, right, swapped) = render(&mut audio, 60);
@@ -239,8 +246,7 @@ fn whole_patch_publication_survives_view_loss_and_native_undo_preserves_physical
     assert_eq!(host.parameter_state().parameters[2].value, 0.125);
     let mut saved = Vec::new();
     host.save_state(&mut saved).unwrap();
-    let saved: Value = serde_json::from_slice(&saved).unwrap();
-    assert_eq!(saved["version"], 2);
+    let saved = portable_state::metadata(&saved);
     assert_eq!(saved["document"], original);
     let level = saved["parameters"]
         .as_array()

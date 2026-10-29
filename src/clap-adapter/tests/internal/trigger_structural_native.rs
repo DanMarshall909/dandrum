@@ -588,7 +588,7 @@ fn native_structural_scenario() {
                 _ => panic!("native patch failed: {status}"),
             }
         }
-        let saved: serde_json::Value = serde_json::from_slice(&saved_state(&mut plugin)).unwrap();
+        let saved = portable_state::metadata(&saved_state(&mut plugin));
         assert_eq!(
             saved["document"], candidate,
             "actual CLAP state owns the complete published document"
@@ -647,7 +647,7 @@ fn native_structural_scenario() {
                 _ => panic!("native patch Undo failed: {status}"),
             }
         }
-        let saved: serde_json::Value = serde_json::from_slice(&saved_state(&mut plugin)).unwrap();
+        let saved = portable_state::metadata(&saved_state(&mut plugin));
         assert_eq!(saved["document"], before_patch);
         baseline_b.check(&mut plugin_b, &parent_b, browser_b.as_ref().unwrap());
         audio_a = Some(start_audio(&mut plugin));

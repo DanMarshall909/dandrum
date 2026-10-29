@@ -1,3 +1,7 @@
+#[path = "support/portable_state.rs"]
+mod portable_state;
+#[path = "support/portable_state_edit.rs"]
+mod portable_state_edit;
 use dandrum_trigger_host::parameters::ParameterController;
 use dandrum_trigger_host::runtime::{ControlEvent, TimedEvent};
 use dandrum_trigger_host::{
@@ -111,18 +115,18 @@ fn native_state_restores_changed_mapping_all_named_physical_values_and_two_signe
         .unwrap();
     let mut saved = Vec::new();
     source.save_state(&mut saved).unwrap();
-    let wire: serde_json::Value = serde_json::from_slice(&saved).unwrap();
+    let wire = portable_state::metadata(&saved);
+    assert_eq!(wire["product"], "org.dandrum.trigger");
+    assert_eq!(wire["resources"].as_array().unwrap().len(), 1);
+    assert_eq!(wire["resources"][0]["path"], "assets/advanced-drums.wav");
     assert_eq!(
-        (
-            wire["version"].as_u64(),
-            wire["product"].as_str(),
-            wire["resource"].as_str()
-        ),
-        (
-            Some(2),
-            Some("org.dandrum.trigger"),
-            Some("dandrum.trigger.advanced-drums.v1")
-        )
+        wire["resources"][0]["sha256"],
+        "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503"
+    );
+    assert_eq!(wire["resources"][0]["encoded_bytes"], wav.len());
+    assert!(
+        saved.ends_with(&wav),
+        "the actual accepted WAV bytes are embedded"
     );
     assert_eq!(wire["document"].as_str(), Some(changed.as_str()));
     assert_eq!(wire["parameters"].as_array().unwrap().len(), VALUES.len());
@@ -140,8 +144,31 @@ fn native_state_restores_changed_mapping_all_named_physical_values_and_two_signe
     }
     drop(source_audio);
     drop(source);
+    _source_package.close().unwrap();
+    assert!(!source_root.exists());
     let (_fresh_package, fresh_root) = package();
+    let mut decoy = wav.clone();
+    for word in decoy[44..].chunks_exact_mut(2) {
+        word.copy_from_slice(&8192_i16.to_le_bytes());
+    }
+    std::fs::write(fresh_root.join(ADVANCED_DRUM_KIT_SAMPLE), decoy).unwrap();
     let (mut fresh, mut audio) = open(&fresh_root);
+    let (mut decoy_left, mut decoy_right) = ([0.; 16], [0.; 16]);
+    audio
+        .process_events(
+            &mut decoy_left,
+            &mut decoy_right,
+            &[TimedEvent {
+                frame_offset: 0,
+                event: ControlEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            }],
+        )
+        .unwrap();
+    assert_eq!((decoy_left[0], decoy_right[0]), (0.25, 0.25));
+    std::fs::remove_file(fresh_root.join(ADVANCED_DRUM_KIT_SAMPLE)).unwrap();
     fresh.load_state(&mut saved.as_slice()).unwrap();
     let accepted = fresh.session().owner_snapshot();
     assert_eq!(accepted.yaml, changed);
@@ -150,10 +177,7 @@ fn native_state_restores_changed_mapping_all_named_physical_values_and_two_signe
     // Native save/load also works before any disposable editor attachment exists.
     let mut restored = Vec::new();
     fresh.save_state(&mut restored).unwrap();
-    assert_eq!(
-        serde_json::from_slice::<serde_json::Value>(&restored).unwrap(),
-        wire
-    );
+    assert_eq!(portable_state::metadata(&restored), wire);
     let (mut left, mut right) = ([1.0; 16], [1.0; 16]);
     audio
         .process_events(
@@ -215,14 +239,14 @@ fn successful_restore_discards_old_pending_parameter_work_and_feedback_but_keeps
     let editor = controller.attach_editor().unwrap();
     let mut saved = Vec::new();
     controller.save_state(&mut saved).unwrap();
-    let mut state: serde_json::Value = serde_json::from_slice(&saved).unwrap();
-    state["document"] = state["document"]
-        .as_str()
-        .unwrap()
-        .replacen("key_range: [36, 36]", "key_range: [60, 60]", 1)
-        .into();
-    state["parameters"][2]["value"] = 0.5.into();
-    let saved = serde_json::to_vec(&state).unwrap();
+    let saved = portable_state_edit::edit(&saved, |state| {
+        state["document"] = state["document"]
+            .as_str()
+            .unwrap()
+            .replacen("key_range: [36, 36]", "key_range: [60, 60]", 1)
+            .into();
+        state["parameters"][2]["value"] = 0.5.into();
+    });
     audio
         .process_events(
             &mut [0.0; 16],
@@ -361,7 +385,7 @@ fn native_save_reads_a_complete_scalar_vector_while_audio_automates_without_sile
     for _ in 0..100 {
         let mut saved = Vec::new();
         controller.save_state(&mut saved).unwrap();
-        let state: serde_json::Value = serde_json::from_slice(&saved).unwrap();
+        let state = portable_state::metadata(&saved);
         let parameters = state["parameters"].as_array().unwrap();
         let value = parameters[0]["value"].as_f64().unwrap();
         if ![0.125, 0.25].contains(&value)
@@ -397,7 +421,8 @@ fn restore_rejects_existing_but_unrecognized_sample_resources_before_publication
     let (mut controller, mut audio) = open(&root);
     let mut saved = Vec::new();
     controller.save_state(&mut saved).unwrap();
-    let original: serde_json::Value = serde_json::from_slice(&saved).unwrap();
+    // These refusals specify the retained legacy resource policy.
+    let original = legacy_candidate();
     let before = controller.session().owner_snapshot();
     let document = original["document"].as_str().unwrap();
     for yaml in [
@@ -450,23 +475,11 @@ fn saved(controller: &mut ParameterController) -> Vec<u8> {
     controller.save_state(&mut bytes).unwrap();
     bytes
 }
-fn candidate(controller: &mut ParameterController) -> serde_json::Value {
-    let mut state: serde_json::Value = serde_json::from_slice(&saved(controller)).unwrap();
-    state["document"] = state["document"]
-        .as_str()
-        .unwrap()
-        .replacen("key_range: [36, 36]", "key_range: [60, 60]", 1)
-        .into();
-    for parameter in state["parameters"].as_array_mut().unwrap() {
-        parameter["value"] = VALUES
-            .iter()
-            .find(|(id, _)| parameter["id"] == *id)
-            .unwrap()
-            .1
-            .into();
-    }
-    state
+fn legacy_candidate() -> serde_json::Value {
+    // Fixed input is independent of the current version-3 writer.
+    serde_json::from_slice(include_bytes!("fixtures/trigger-v2-state.json")).unwrap()
 }
+
 #[test]
 fn invalid_states_and_failing_streams_preserve_every_accepted_field_and_pending_feedback_and_commands()
  {
@@ -492,7 +505,7 @@ fn invalid_states_and_failing_streams_preserve_every_accepted_field_and_pending_
     let before = controller.session().owner_snapshot();
     let parameters = controller.parameter_state();
     let before_save = saved(&mut controller);
-    let valid = candidate(&mut controller);
+    let valid = legacy_candidate();
     let mut invalids = Vec::new();
     for (field, value) in [
         ("version", serde_json::json!(1)),
@@ -631,7 +644,7 @@ fn native_save_and_load_work_at_full_editor_capacity_and_busy_automation_keeps_e
     use dandrum_trigger_host::state::StateError;
     let (_package, root) = package();
     let (mut controller, mut audio) = open(&root);
-    let state = candidate(&mut controller);
+    let state = legacy_candidate();
     let bytes = serde_json::to_vec(&state).unwrap();
     let editors: Vec<_> = (0..16)
         .map(|_| controller.attach_editor().unwrap())
@@ -693,7 +706,7 @@ fn named_parameter_permutations_and_repeated_restores_preserve_an_independent_ho
     let (_package, root) = package();
     let (mut a, mut audio_a) = open(&root);
     let (mut b, mut audio_b) = open(&root);
-    let mut state = candidate(&mut a);
+    let mut state = legacy_candidate();
     state["parameters"].as_array_mut().unwrap().reverse();
     let yaml = state["document"]
         .as_str()
@@ -725,7 +738,7 @@ fn named_parameter_permutations_and_repeated_restores_preserve_an_independent_ho
         )
         .unwrap();
     assert_eq!((left[0], right[0]), (-0.145_368_58, -0.145_368_58));
-    let roundtrip: serde_json::Value = serde_json::from_slice(&saved(&mut a)).unwrap();
+    let roundtrip = portable_state::metadata(&saved(&mut a));
     for (id, value) in VALUES {
         assert_eq!(
             roundtrip["parameters"]
@@ -785,7 +798,7 @@ fn state_byte_limits_short_reads_and_packaged_sample_failures_are_explicit_and_a
     use dandrum_trigger_host::state::{STATE_LIMIT, StateError};
     let (_package, root) = package();
     let (mut controller, mut audio) = open(&root);
-    let state = candidate(&mut controller);
+    let state = legacy_candidate();
     let bytes = serde_json::to_vec(&state).unwrap();
     let before = controller.session().owner_snapshot();
     let original = saved(&mut controller);
@@ -812,7 +825,9 @@ fn state_byte_limits_short_reads_and_packaged_sample_failures_are_explicit_and_a
     std::fs::rename(&sample, &hidden).unwrap();
     assert!(controller.load_state(&mut bytes.as_slice()).is_err());
     assert_eq!(controller.session().owner_snapshot(), before);
-    assert_eq!(saved(&mut controller), original);
+    let mut refused = Vec::new();
+    assert!(controller.save_state(&mut refused).is_err());
+    assert!(refused.is_empty(), "missing factory content emits no state");
     #[cfg(unix)]
     {
         std::os::unix::fs::symlink(&hidden, &sample).unwrap();
@@ -820,6 +835,7 @@ fn state_byte_limits_short_reads_and_packaged_sample_failures_are_explicit_and_a
         std::fs::remove_file(&sample).unwrap();
     }
     std::fs::rename(hidden, sample).unwrap();
+    assert_eq!(saved(&mut controller), original);
     let mut exact = bytes.clone();
     exact.resize(STATE_LIMIT as usize, b' ');
     let mut chunks = ShortRead { remaining: &exact };
@@ -847,15 +863,17 @@ fn state_byte_limits_short_reads_and_packaged_sample_failures_are_explicit_and_a
     let (mut large, _audio) = open(&large_root);
     let before = large.session().owner_snapshot();
     let mut output = Vec::new();
-    assert_eq!(large.save_state(&mut output), Err(StateError::TooLarge));
-    assert!(output.is_empty());
+    large.save_state(&mut output).unwrap();
+    let metadata = portable_state::metadata(&output);
+    assert_eq!(metadata["document"], before.yaml.as_ref());
+    assert!(u32::from_le_bytes(output[12..16].try_into().unwrap()) > STATE_LIMIT as u32);
     assert_eq!(large.session().owner_snapshot(), before);
 }
 #[test]
 fn restored_swaps_scalar_writes_and_reset_stamps_allocate_or_free_nothing_on_audio() {
     let (_package, root) = package();
     let (mut controller, mut audio) = open(&root);
-    let bytes = serde_json::to_vec(&candidate(&mut controller)).unwrap();
+    let bytes = serde_json::to_vec(&legacy_candidate()).unwrap();
     controller.load_state(&mut bytes.as_slice()).unwrap();
     let audio = std::thread::spawn(move || {
         let (mut left, mut right) = ([0.0; 16], [0.0; 16]);

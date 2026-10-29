@@ -120,3 +120,25 @@ atomic controller load path. A job acquired during reentrant reads may therefore
 cause a final Busy after input consumption; it must not cause partial publication.
 Retain legacy JSON's exact65,536-byte bound and existingv2 semantics. No new state
 format/limit or default-writer switch is introduced by this consumer criterion.
+
+
+## All new saves own their payload
+
+Every new save uses version 3, including ordinary packaged-only patches and
+compatible changed control defaults. Retain version-2 reading and its original
+validation/65,536-byte input bound; no production version-2 writer is needed.
+The existing mixed acquisition, live catalog budget and verified-content rules
+apply equally to factory-only saves. A fresh controller must restore all named
+physical values and independently known signed frames after the source instance
+and package disappear, even when its initial package contained different PCM.
+Current-output consumers inspect the binary framing; intentional legacy-input
+checks use independently fixed version-2 data. Full payload qualification and
+selected-content fresh CLAP acceptance still precede task-6 completion.
+
+The established packaged resource profile remains supported inside v3: a
+packaged graph accepted by legacy resource validation need not become an
+interactive-editor graph to save/restore. Reuse that exact path/definition
+resource validation and the counted YAML budget. Selected-content documents
+still require interactive admission; no new ambient path authority is added.
+Version 3 permits compatible mutable defaults while preserving parameter
+identity/ranges and all existing version-2 input checks.

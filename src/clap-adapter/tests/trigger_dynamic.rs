@@ -1,5 +1,9 @@
 //! The real Trigger product is tested only through an explicit copied artifact.
 #![cfg(feature = "trigger")]
+#[path = "../../trigger-host/tests/support/portable_state.rs"]
+mod portable_state;
+#[path = "../../trigger-host/tests/support/portable_state_edit.rs"]
+mod portable_state_edit;
 use clack_host::{entry::PluginEntry, factory::plugin::PluginFactory};
 use std::path::PathBuf;
 fn artifact() -> PathBuf {
@@ -567,7 +571,7 @@ fn save(plugin: &mut PluginInstance<TestHost>) -> Vec<u8> {
     let handle = plugin.plugin_handle();
     let state = handle
         .get_extension::<clack_extensions::state::PluginState>()
-        .expect("Trigger advertises replacement v2 state");
+        .expect("Trigger advertises self-contained state");
     let mut bytes = Vec::new();
     state.save(&handle, &mut bytes).unwrap();
     bytes
@@ -584,23 +588,35 @@ fn load_state(plugin: &mut PluginInstance<TestHost>, bytes: &[u8]) -> bool {
 fn state_restores_fresh_mapping_and_physical_values_and_invalid_tail_preserves_running_audio() {
     let mut original = load_at(&artifact()).unwrap();
     let initial = save(&mut original);
-    let mut changed: serde_json::Value = serde_json::from_slice(&initial).unwrap();
-    assert_eq!(changed["version"], 2);
-    assert_eq!(changed["product"], "org.dandrum.trigger");
-    assert_eq!(changed["resource"], "dandrum.trigger.advanced-drums.v1");
-    changed["document"] = changed["document"]
-        .as_str()
-        .unwrap()
-        .replace("key_range: [36, 36]", "key_range: [60, 60]")
-        .into();
-    changed["parameters"][2]["value"] = 0.5.into();
-    let bytes = serde_json::to_vec(&changed).unwrap();
+    assert_eq!(
+        portable_state::metadata(&initial)["product"],
+        "org.dandrum.trigger"
+    );
+    let bytes = portable_state_edit::edit(&initial, |changed| {
+        changed["document"] = changed["document"]
+            .as_str()
+            .unwrap()
+            .replace("key_range: [36, 36]", "key_range: [60, 60]")
+            .into();
+        changed["parameters"][2]["value"] = 0.5.into();
+    });
     assert!(load_state(&mut original, &bytes));
     let saved = save(&mut original);
     assert_eq!(
-        serde_json::from_slice::<serde_json::Value>(&saved).unwrap(),
-        changed
+        portable_state::metadata(&saved),
+        portable_state::metadata(&bytes)
     );
+    let payload = usize::try_from(u64::from_le_bytes(saved[16..24].try_into().unwrap())).unwrap();
+    assert_eq!(payload, 102_044);
+    assert!(
+        saved[saved.len() - payload..] == bytes[bytes.len() - payload..],
+        "WAV payload is unchanged"
+    );
+    // Keep malformed legacy inputs explicit; they are not current writer output.
+    let mut changed = portable_state::metadata(&saved);
+    changed.as_object_mut().unwrap().remove("resources");
+    changed["version"] = 2.into();
+    changed["resource"] = "dandrum.trigger.advanced-drums.v1".into();
     drop(original);
     let mut fresh = load_at(&artifact()).unwrap();
     assert!(load_state(&mut fresh, &saved));
@@ -1379,16 +1395,14 @@ fn allocator_audit_child() {
     plugin.access_shared_handler(|h| {
         assert_eq!(h.logs.load(std::sync::atomic::Ordering::Relaxed), 3)
     });
-    let mut changed: serde_json::Value = serde_json::from_slice(&save(&mut plugin)).unwrap();
-    changed["document"] = changed["document"]
-        .as_str()
-        .unwrap()
-        .replace("key_range: [36, 36]", "key_range: [60, 60]")
-        .into();
-    assert!(load_state(
-        &mut plugin,
-        &serde_json::to_vec(&changed).unwrap()
-    ));
+    let changed = portable_state_edit::edit(&save(&mut plugin), |state| {
+        state["document"] = state["document"]
+            .as_str()
+            .unwrap()
+            .replace("key_range: [36, 36]", "key_range: [60, 60]")
+            .into();
+    });
+    assert!(load_state(&mut plugin, &changed));
     let remapped = note(3, 60);
     let (status, swap_count) = std::thread::scope(|scope| {
         scope

@@ -1,3 +1,5 @@
+#[path = "support/portable_state.rs"]
+mod portable_state;
 use dandrum_engine::graph::PortDirection;
 use dandrum_engine::kernel::document::load_kernel_patch_str;
 use dandrum_engine::patch::RenderSettings;
@@ -607,7 +609,7 @@ fn controller_flush_preserves_real_epoch_history_save_snapshot_and_reset_settlem
     assert_eq!(host.session().owner_snapshot(), accepted);
     let mut saved = Vec::new();
     host.save_state(&mut saved).unwrap();
-    let saved: Value = serde_json::from_slice(&saved).unwrap();
+    let saved = portable_state::metadata(&saved);
     assert_eq!(saved["document"], accepted.yaml.as_ref());
     assert_eq!(saved["parameters"][2]["value"], 1.0);
     let output = render::<16>(

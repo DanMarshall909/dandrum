@@ -389,8 +389,8 @@ impl ParameterController {
         use crate::state::{PRODUCT_ID, RESOURCE_ID, SavedParameter, SavedState};
         let snapshot = self.host.session().owner_snapshot();
         let values = self.runtime.snapshot_state_values();
-        let mut state = SavedState {
-            version: 2,
+        let state = SavedState {
+            version: 3,
             product: PRODUCT_ID.into(),
             resource: RESOURCE_ID.into(),
             document: snapshot.yaml,
@@ -403,56 +403,38 @@ impl ParameterController {
                 })
                 .collect(),
         };
-        // Preserve existing packaged v2 bytes; selected-only and resource-free
-        // accepted documents use the bounded content-owning representation.
-        let mut samples = Vec::new();
-        if state.values_for(&self.parameters, &self.runtime).is_err() {
-            samples = Self::patch_samples(
-                &state.document,
-                &self.parameters,
-                &self.runtime,
-                &self.host.sample_catalog,
-            )
-            .map_err(|_| crate::state::StateError::Invalid)?;
-            // This boundary adds mixed state while preserving the existing
-            // packaged-only v2 path and interim refusal for its changed defaults.
-            if samples.is_empty()
-                && !self
-                    .host
-                    .session()
-                    .prepared()
-                    .sample_assets()
-                    .sources()
-                    .is_empty()
-            {
-                return Err(crate::state::StateError::Invalid);
-            }
-            state.version = 3;
-            state.values_for(&self.parameters, &self.runtime)?;
-        }
+        state.values_for(&self.parameters, &self.runtime)?;
+        let samples = Self::patch_samples(
+            &state.document,
+            &self.parameters,
+            &self.runtime,
+            &self.host.sample_catalog,
+        )
+        .or_else(|_| {
+            state.validate_packaged_document()?;
+            Ok(Vec::new())
+        })?;
         let mut resources = samples
             .into_iter()
             .map(|sample| (sample.resource_id().to_owned(), sample))
             .collect::<std::collections::BTreeMap<_, _>>();
-        if state.version == 3 {
-            let factory_revision = self
-                .host
-                .session()
-                .prepared()
-                .sample_assets()
-                .sources()
-                .iter()
-                .find(|source| {
-                    source.declaration().resource.path()
-                        == std::path::Path::new("assets/advanced-drums.wav")
-                })
-                .map(|source| *source.sample().content_revision());
-            if let Some(revision) = factory_revision {
-                resources.insert(
-                    "assets/advanced-drums.wav".into(),
-                    self.packaged_state_sample(&revision)?,
-                );
-            }
+        let factory_revision = self
+            .host
+            .session()
+            .prepared()
+            .sample_assets()
+            .sources()
+            .iter()
+            .find(|source| {
+                source.declaration().resource.path()
+                    == std::path::Path::new("assets/advanced-drums.wav")
+            })
+            .map(|source| *source.sample().content_revision());
+        if let Some(revision) = factory_revision {
+            resources.insert(
+                "assets/advanced-drums.wav".into(),
+                self.packaged_state_sample(&revision)?,
+            );
         }
         crate::state::write(&state, &resources.into_iter().collect::<Vec<_>>(), output)
     }
@@ -583,7 +565,10 @@ impl ParameterController {
                 &self.runtime,
                 &self.host.sample_catalog,
             )
-            .map_err(|_| StateError::Invalid)?;
+            .or_else(|_| {
+                state.validate_packaged_document()?;
+                Ok(Vec::new())
+            })?;
             self.host
                 .session()
                 .prepare_document_replacement_with_resources_owned(

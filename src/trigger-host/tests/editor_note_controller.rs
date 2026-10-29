@@ -1,3 +1,7 @@
+#[path = "support/portable_state.rs"]
+mod portable_state;
+#[path = "support/portable_state_edit.rs"]
+mod portable_state_edit;
 use dandrum_trigger_host::parameters::{ParameterController, ParameterError};
 use dandrum_trigger_host::protocol::{Admission, AdmittedRequest};
 use dandrum_trigger_host::runtime::{ControlEvent, RuntimeAudio, TimedEvent};
@@ -462,9 +466,9 @@ fn accepted_restore_clears_activity_preserves_dispatch_and_failed_restore_keeps_
     let mut during_note = Vec::new();
     host.save_state(&mut during_note).unwrap();
     assert_eq!(during_note, saved, "note policy is not serialized");
-    let mut invalid: Value = serde_json::from_slice(&saved).unwrap();
-    invalid["document"] = "modules: [".into();
-    let invalid = serde_json::to_vec(&invalid).unwrap();
+    let invalid = portable_state_edit::edit(&saved, |state| {
+        state["document"] = "modules: [".into();
+    });
     assert!(host.load_state(&mut invalid.as_slice()).is_err());
     tail(audio.render(&[]), -0.125);
     host.load_state(&mut saved.as_slice()).unwrap();

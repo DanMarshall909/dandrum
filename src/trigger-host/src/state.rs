@@ -241,51 +241,42 @@ pub(crate) fn write(
     samples: &[(String, Arc<SampleSnapshot>)],
     output: &mut impl Write,
 ) -> Result<(), StateError> {
-    if state.version == 3 {
-        let resources = samples
-            .iter()
-            .map(|(path, sample)| ManifestResource {
-                path: path.clone(),
-                sha256: sample.content_sha256().to_owned(),
-                encoded_bytes: sample.encoded_bytes().len() as u64,
-            })
-            .collect::<Vec<_>>();
-        let payload = resources
-            .iter()
-            .try_fold(0u64, |total, r| total.checked_add(r.encoded_bytes))
-            .ok_or(StateError::TooLarge)?;
-        validate_manifest(&resources, payload)?;
-        let metadata = serde_json::to_vec(&PortableMetadata {
-            product: state.product.clone(),
-            document: state.document.clone(),
-            parameters: state.parameters.clone(),
-            resources,
+    let resources = samples
+        .iter()
+        .map(|(path, sample)| ManifestResource {
+            path: path.clone(),
+            sha256: sample.content_sha256().to_owned(),
+            encoded_bytes: sample.encoded_bytes().len() as u64,
         })
-        .expect("validated state contains finite scalar values");
-        if metadata.len() > PORTABLE_METADATA_LIMIT as usize {
-            return Err(StateError::TooLarge);
-        }
-        output
-            .write_all(PORTABLE_MAGIC)
-            .and_then(|()| output.write_all(&3u32.to_le_bytes()))
-            .and_then(|()| output.write_all(&(metadata.len() as u32).to_le_bytes()))
-            .and_then(|()| output.write_all(&payload.to_le_bytes()))
-            .and_then(|()| output.write_all(&metadata))
-            .map_err(|_| StateError::Io)?;
-        for (_, sample) in samples {
-            output
-                .write_all(sample.encoded_bytes())
-                .map_err(|_| StateError::Io)?;
-        }
-        Ok(())
-    } else {
-        let bytes =
-            serde_json::to_vec(state).expect("validated state contains finite scalar values");
-        if bytes.len() as u64 > STATE_LIMIT {
-            return Err(StateError::TooLarge);
-        }
-        output.write_all(&bytes).map_err(|_| StateError::Io)
+        .collect::<Vec<_>>();
+    let payload = resources
+        .iter()
+        .try_fold(0u64, |total, r| total.checked_add(r.encoded_bytes))
+        .ok_or(StateError::TooLarge)?;
+    validate_manifest(&resources, payload)?;
+    let metadata = serde_json::to_vec(&PortableMetadata {
+        product: state.product.clone(),
+        document: state.document.clone(),
+        parameters: state.parameters.clone(),
+        resources,
+    })
+    .expect("validated state contains finite scalar values");
+    if metadata.len() > PORTABLE_METADATA_LIMIT as usize {
+        return Err(StateError::TooLarge);
     }
+    output
+        .write_all(PORTABLE_MAGIC)
+        .and_then(|()| output.write_all(&3u32.to_le_bytes()))
+        .and_then(|()| output.write_all(&(metadata.len() as u32).to_le_bytes()))
+        .and_then(|()| output.write_all(&payload.to_le_bytes()))
+        .and_then(|()| output.write_all(&metadata))
+        .map_err(|_| StateError::Io)?;
+    for (_, sample) in samples {
+        output
+            .write_all(sample.encoded_bytes())
+            .map_err(|_| StateError::Io)?;
+    }
+    Ok(())
 }
 
 /// A saved document may remap the packaged kit, but cannot expand the product's
@@ -327,6 +318,15 @@ fn validate_resources(
 }
 
 impl SavedState {
+    /// Preserve the established packaged profile when saving it in the new frame.
+    /// Selected content still needs the narrower interactive resource admission.
+    pub(crate) fn validate_packaged_document(&self) -> Result<(), StateError> {
+        super::patch_budget::check(&self.document).map_err(|_| StateError::Invalid)?;
+        let patch = dandrum_engine::kernel::document::load_kernel_patch_str(&self.document)
+            .map_err(|_| StateError::Invalid)?;
+        validate_resources(&patch)
+    }
+
     /// Private to this host crate; the controller owns both arguments together.
     pub(crate) fn values_for(
         &self,

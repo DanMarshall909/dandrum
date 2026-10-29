@@ -1,3 +1,7 @@
+#[path = "support/portable_state.rs"]
+mod portable_state;
+#[path = "support/portable_state_edit.rs"]
+mod portable_state_edit;
 use dandrum_trigger_host::parameters::{ParameterController, ParameterError};
 use dandrum_trigger_host::protocol::{
     Admission, AdmittedRequest, OUTBOUND_BYTES_LIMIT, ProtocolError,
@@ -487,16 +491,13 @@ fn accepted_authored_metadata_and_target_groups_survive_projection_and_state_rep
     assert_eq!(zone["pitchSemitones"], 7.0);
     let mut bytes = Vec::new();
     controller.save_state(&mut bytes).unwrap();
-    let mut state: Value = serde_json::from_slice(&bytes).unwrap();
-    state["document"] = yaml
-        .replace("Advanced Drum Kit", "Accepted replacement")
-        .replace("key_range: [36, 36]", "key_range: [60, 60]")
-        .into();
-    controller
-        .load_state(&mut std::io::Cursor::new(
-            serde_json::to_vec(&state).unwrap(),
-        ))
-        .unwrap();
+    let changed = portable_state_edit::edit(&bytes, |state| {
+        state["document"] = yaml
+            .replace("Advanced Drum Kit", "Accepted replacement")
+            .replace("key_range: [36, 36]", "key_range: [60, 60]")
+            .into();
+    });
+    controller.load_state(&mut changed.as_slice()).unwrap();
     audio.process(&mut [0.0; 16], &mut [0.0; 16]).unwrap();
     let restored = reply(&controller, &read);
     assert!(

@@ -1,3 +1,7 @@
+#[path = "../support/portable_state.rs"]
+mod portable_state;
+#[path = "../support/portable_state_edit.rs"]
+mod portable_state_edit;
 use super::*;
 use crate::runtime::{ControlEvent, TimedEvent};
 use crate::state::StateError;
@@ -73,10 +77,11 @@ fn rejected_native_state_preserves_nonempty_real_history_and_successful_external
     );
     let mut saved = Vec::new();
     controller.save_state(&mut saved).unwrap();
-    let mut invalid: serde_json::Value = serde_json::from_slice(&saved).unwrap();
-    invalid["parameters"][22]["value"] = 20.into();
+    let invalid = portable_state_edit::edit(&saved, |state| {
+        state["parameters"][22]["value"] = 20.into();
+    });
     assert_eq!(
-        controller.load_state(&mut serde_json::to_vec(&invalid).unwrap().as_slice()),
+        controller.load_state(&mut invalid.as_slice()),
         Err(StateError::Invalid)
     );
     assert_eq!(controller.host.session().owner_snapshot(), before);

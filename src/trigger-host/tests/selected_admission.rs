@@ -786,8 +786,8 @@ fn silent_empty_document_keeps_product_parameter_scopes_values_and_callback_owne
         (-1.0, -1.0),
         "known signed nondefault control before Empty"
     );
-    let mut legacy_state = Vec::new();
-    fixture.controller.save_state(&mut legacy_state).unwrap();
+    let mut packaged_state = Vec::new();
+    fixture.controller.save_state(&mut packaged_state).unwrap();
     let read = fixture.request("getSamplerSession", json!([]));
     let before: Value =
         serde_json::from_str(&fixture.controller.sampler_session_reply(&read).unwrap()).unwrap();
@@ -1066,9 +1066,9 @@ fn silent_empty_document_keeps_product_parameter_scopes_values_and_callback_owne
         );
         assert_eq!(fresh.controller.session().owner_snapshot(), accepted);
     }
-    for offset in [8, 9, legacy_state.len()] {
+    for offset in [8, 9, packaged_state.len()] {
         let mut input = FaultRead {
-            bytes: &legacy_state,
+            bytes: &packaged_state,
             remaining: offset,
         };
         assert_eq!(

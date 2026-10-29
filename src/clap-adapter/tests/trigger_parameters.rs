@@ -1,6 +1,9 @@
 //! Slow product-boundary tests use an explicitly copied, trusted release plugin.
 #![cfg(all(feature = "trigger-editor", target_os = "linux"))]
 
+#[path = "../../trigger-host/tests/support/portable_state.rs"]
+mod portable_state;
+
 use clack_extensions::gui::{
     GuiApiType, GuiConfiguration, GuiSize, HostGui, HostGuiImpl, PluginGui, Window,
 };
@@ -1049,7 +1052,12 @@ fn copied_native_host_feedback_updates_rendered_control_without_polling_or_undo_
         // Join accepted state rollback to this same live production view and audio
         // endpoint. Existing owner/DSO tests separately cover format categories.
         let mut invalids: Vec<(&str, Vec<u8>)> = Vec::new();
-        let wire: serde_json::Value = serde_json::from_slice(&accepted_bytes).unwrap();
+        // Explicit legacy inputs keep the established v2 rejection categories.
+        // Current saves are binary frames, inspected independently here.
+        let mut wire = portable_state::metadata(&accepted_bytes);
+        wire.as_object_mut().unwrap().remove("resources");
+        wire["version"] = 2.into();
+        wire["resource"] = "dandrum.trigger.advanced-drums.v1".into();
         let mut bad = wire.clone();
         bad["version"] = 1.into();
         invalids.push(("foreign version", serde_json::to_vec(&bad).unwrap()));
