@@ -1,0 +1,31 @@
+{
+  "base": "e854f0819b91e1198a8c2bc610f3943011c7823f",
+  "source": {
+    "docs/migrations/evidence/trigger-portable-mixed-state-2026-10-29/README.md": "feeacd60a5eba35c5f194973c6d99afc452a2a7aff6dd81bbbebb84db3b9d060",
+    "docs/migrations/evidence/trigger-portable-mixed-state-2026-10-29/binding.json": "f82bcc1630385d9930f3777c6463f7ad2e959050f420605e6f98cede459b7028",
+    "openspec/changes/add-juce-free-trigger-beta-products/portable-state.md": "0119bd1d39101301c8c3c7523ae4821804018315aabe85e57eea09321286b3e1",
+    "src/clap-adapter/src/trigger.rs": "2031ff05b9422258cd617c3235b3811cddd9d884b5472efcd21ce9557e5033d9",
+    "src/trigger-host/src/parameters.rs": "899e1e2d317417bf4a6d749230a1f13de5fcc1f6d50ba106ec2e41dc2ae1aa16",
+    "src/trigger-host/src/state.rs": "9a723c5f2e49385a2676841a1eabee2c3ed7732e76e2aea22e72cf5c98268161",
+    "src/trigger-host/tests/internal/state.rs": "a935833c5e4aef3173ca10648744d8a7aed941564bd88f44df1ef353c63755ba",
+    "src/trigger-host/tests/selected_admission.rs": "c83643feff7cdb229123d826de1a662635694cac8d24c74da2e46d77acd85f5d",
+    "src/trigger-host/tests/state.rs": "89887f7b882f9391f827393bc068c65c7da190ba186a0ea911c45ee2cda3ff20"
+  },
+  "archive": {
+    "path": "raw.tar.gz",
+    "bytes": 21456141,
+    "sha256": "41b3cf1361cb4d93067e79b3d58eb5d85231ffb1dbe276a6e063adacade564d6",
+    "members": 292
+  },
+  "external_replay": {
+    "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/portable-mixed-budget-refactor-coverage/replay-objects.tar.gz",
+    "sha256": "12b8b94531651481dfb9b3552b346095472059fb5f25a1a1648bec1a3c3a0a05",
+    "bytes": 184528175
+  },
+  "ordinary_dynamic_replay": {
+    "path": "/home/dan/code/dandrum/.git/codex/trigger-recovery-20261026/portable-mixed-budget-dynamic-replay.tar.gz",
+    "sha256": "2df22b8e9dcfe2c9a3dbe9ffe47179db37700ecf797d121fbcbad6ee376c0efa",
+    "bytes": 14005297
+  },
+  "scope": "Mixed save live-budget review repair; no task6.1/6.2, current GUI/official/installed/native-input/DAW closure"
+}

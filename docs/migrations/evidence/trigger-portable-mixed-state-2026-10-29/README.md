@@ -1,5 +1,11 @@
 # Mixed packaged and selected portable state
 
+The initial candidate e854f081 failed independent review because its packaged
+save decoded outside catalog accounting. The repair and renewed evidence are in
+[the budget repair packet](../trigger-portable-mixed-budget-2026-10-29/README.md).
+This packet retains the initial source-bound evidence; its source hashes identify
+that historical candidate, rather than the later repair.
+
 This task6.1 component extends the selected-only state at
 `853c25736333d8857b5e25d6e629871409a94f37` to patches that retain the packaged kit
 and add an imported sample. Tasks6.1/6.2 remain open: packaged-only version3,

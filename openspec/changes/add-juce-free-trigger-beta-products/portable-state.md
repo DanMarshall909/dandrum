@@ -82,8 +82,15 @@ No missing selected authority can fall back to a file.
 Saving first reuses bytes retained in the catalog for the accepted prepared
 source's content revision. For an ordinary packaged source without encoded
 retention, read only the explicit packaged WAV within the existing per-asset
-bound and require its raw-content identity to equal the accepted prepared sample
-before including it. A changed/missing source is an explicit save failure, not
+bound through the existing catalog reservation/hash/decoder/completion path.
+Require its raw-content identity to equal the accepted prepared sample before
+including it. Full live capacity returns TooLarge and an active acquisition
+reservation returns Busy before payload allocation/read. Neither may emit a
+partial state or change accepted playback. Save preparation borrows the main
+controller mutably for this catalog bookkeeping; the audio endpoint remains
+independent and no controller borrow crosses a foreign host stream call. The
+temporary snapshot remains charged until writing finishes, then releases its
+quota. A changed/missing source is an explicit save failure, not
 permission to serialize different audio. After portable restore, the accepted
 snapshot/catalog retains those bytes and resaving needs no package file.
 

@@ -22,5 +22,6 @@
     "sha256": "f33e6574bccfe79e8907b18d2970fde700ed209752d2ace5db8397101a1bd4d9",
     "bytes": 148346043
   },
-  "scope": "Mixed packaged/selected host-state criterion; package-only v3, full payload qualification, CLAP stream, rebuilt product/GUI/official, installed/native-input/DAW remain open"
+  "scope": "Mixed packaged/selected host-state criterion; package-only v3, full payload qualification, CLAP stream, rebuilt product/GUI/official, installed/native-input/DAW remain open",
+  "candidate_revision": "e854f0819b91e1198a8c2bc610f3943011c7823f"
 }

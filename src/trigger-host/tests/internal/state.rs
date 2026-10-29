@@ -193,3 +193,127 @@ fn rejected_restore_does_not_retire_an_admitted_native_mapping_job() {
         .unwrap();
     assert_eq!((left[0], right[0]), (-0.5, -0.5));
 }
+
+#[test]
+fn mixed_state_save_respects_unrelated_live_resources_and_native_reservations() {
+    use crate::samples::NativeSampleFile;
+    use serde_json::json;
+    use std::sync::Arc;
+    let input = |seed: u16| {
+        let mut file = tempfile::tempfile().unwrap();
+        dandrum_engine::wav::write_wav_stereo_i16(
+            &mut file,
+            32_000,
+            &[-0.25 + f32::from(seed) / 32768., -0.5],
+            &[-0.25, -0.5],
+        )
+        .unwrap();
+        NativeSampleFile::new(format!("retained-{seed}.wav"), file).unwrap()
+    };
+    let (_directory, mut controller, mut audio) = fixture();
+    let mut retained = Vec::new();
+    for batch in 0..16 {
+        let files = (batch * 16..batch * 16 + 16).map(input).collect();
+        let job = controller.host.sample_catalog.begin(files).unwrap();
+        retained.extend(
+            controller
+                .host
+                .sample_catalog
+                .accept(job.prepare())
+                .unwrap()
+                .unwrap(),
+        );
+    }
+    assert_eq!(controller.host.sample_catalog.usage().resource_count, 256);
+    let sample = Arc::clone(&retained[0].sample);
+    let mut graph: serde_yaml::Value =
+        serde_yaml::from_str(&controller.session().owner_snapshot().yaml).unwrap();
+    graph["assets"]["sample_sources"]
+        .as_sequence_mut()
+        .unwrap()
+        .push(
+            serde_yaml::to_value(json!({"id":"selected","path":sample.resource_id(),
+            "regions":[{"id":"hit","start_frame":0,"end_frame":2}]}))
+            .unwrap(),
+        );
+    graph["assets"]["sample_maps"][0]["zones"]
+        .as_sequence_mut()
+        .unwrap()
+        .push(
+            serde_yaml::to_value(json!({"id":"selected_hit","region":"selected.hit",
+            "key_range":[60,60],"velocity_range":[1,127],"control_group":1}))
+            .unwrap(),
+        );
+    let yaml = serde_yaml::to_string(&graph).unwrap();
+    let candidate = controller
+        .host
+        .session()
+        .prepare_document_replacement_with_resources_owned(
+            &yaml,
+            [(std::path::PathBuf::from(sample.resource_id()), sample)],
+        )
+        .unwrap();
+    controller
+        .host
+        .session_mut()
+        .commit_document_replacement(candidate, &mut controller.runtime)
+        .unwrap();
+    controller.generation =
+        document_generation(controller.session().owner_snapshot().revision).unwrap();
+    audio.process(&mut [0.; 16], &mut [0.; 16]).unwrap();
+    drop(controller.runtime.reclaim());
+    let accepted = controller.session().owner_snapshot();
+    let parameters = controller.parameter_state();
+    let mut output = Vec::new();
+    assert_eq!(
+        controller.save_state(&mut output),
+        Err(StateError::TooLarge),
+        "unrelated live resources leave no slot for an additional factory snapshot"
+    );
+    assert!(output.is_empty());
+    assert_eq!(controller.session().owner_snapshot(), accepted);
+    assert_eq!(controller.parameter_state(), parameters);
+    drop(retained);
+    assert_eq!(controller.host.sample_catalog.usage().resource_count, 1);
+    let pending = controller
+        .host
+        .sample_catalog
+        .begin(vec![input(256)])
+        .unwrap();
+    assert_eq!(
+        controller.save_state(&mut output),
+        Err(StateError::Busy),
+        "a native reservation cannot be bypassed by packaged save decoding"
+    );
+    assert!(output.is_empty());
+    assert_eq!(controller.session().owner_snapshot(), accepted);
+    assert_eq!(controller.parameter_state(), parameters);
+    for (note, expected) in [(36, -0.5), (60, -0.25)] {
+        audio.reset();
+        let (mut left, mut right) = ([0.; 16], [0.; 16]);
+        audio
+            .process_events(
+                &mut left,
+                &mut right,
+                &[TimedEvent {
+                    frame_offset: 0,
+                    event: ControlEvent::NoteOn {
+                        note,
+                        velocity: 127,
+                    },
+                }],
+            )
+            .unwrap();
+        assert_eq!((left[0], right[0]), (expected, expected));
+    }
+    drop(pending);
+    controller.save_state(&mut output).unwrap();
+    assert_eq!(&output[..8], b"DTRGSTAT");
+    assert_eq!(controller.session().owner_snapshot(), accepted);
+    assert_eq!(controller.parameter_state(), parameters);
+    assert_eq!(
+        controller.host.sample_catalog.usage().resource_count,
+        1,
+        "temporary factory export ownership ends with the save"
+    );
+}

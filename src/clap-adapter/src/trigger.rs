@@ -575,10 +575,10 @@ impl PluginStateImpl for Main<'_> {
     fn save(&self, output: &mut OutputStream) -> Result<(), PluginError> {
         let mut bytes = Vec::new();
         {
-            let controller = self
+            let mut controller = self
                 .core
                 .controller
-                .try_borrow()
+                .try_borrow_mut()
                 .map_err(|_| PluginError::Message("Trigger main owner busy"))?;
             controller
                 .save_state(&mut bytes)

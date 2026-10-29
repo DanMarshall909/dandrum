@@ -86,7 +86,7 @@ fn native_state_restores_changed_mapping_all_named_physical_values_and_two_signe
         let start = 44 + frame * 2;
         assert_eq!(i16::from_le_bytes([wav[start], wav[start + 1]]), word);
     }
-    let (source, mut source_audio) = open(&source_root);
+    let (mut source, mut source_audio) = open(&source_root);
     let events: Vec<_> = VALUES
         .iter()
         .enumerate()
@@ -306,7 +306,7 @@ fn native_save_reads_a_complete_scalar_vector_while_audio_automates_without_sile
         mpsc,
     };
     let (_package, root) = package();
-    let (controller, mut audio) = open(&root);
+    let (mut controller, mut audio) = open(&root);
     let stop = Arc::new(AtomicBool::new(false));
     let writer_stop = stop.clone();
     let (ready_tx, ready_rx) = mpsc::channel();
@@ -445,12 +445,12 @@ fn restore_rejects_existing_but_unrecognized_sample_resources_before_publication
     assert_eq!((left[0], right[0]), (-0.5, -0.5));
 }
 
-fn saved(controller: &ParameterController) -> Vec<u8> {
+fn saved(controller: &mut ParameterController) -> Vec<u8> {
     let mut bytes = Vec::new();
     controller.save_state(&mut bytes).unwrap();
     bytes
 }
-fn candidate(controller: &ParameterController) -> serde_json::Value {
+fn candidate(controller: &mut ParameterController) -> serde_json::Value {
     let mut state: serde_json::Value = serde_json::from_slice(&saved(controller)).unwrap();
     state["document"] = state["document"]
         .as_str()
@@ -491,8 +491,8 @@ fn invalid_states_and_failing_streams_preserve_every_accepted_field_and_pending_
     acknowledge_automation(&mut controller);
     let before = controller.session().owner_snapshot();
     let parameters = controller.parameter_state();
-    let before_save = saved(&controller);
-    let valid = candidate(&controller);
+    let before_save = saved(&mut controller);
+    let valid = candidate(&mut controller);
     let mut invalids = Vec::new();
     for (field, value) in [
         ("version", serde_json::json!(1)),
@@ -563,7 +563,7 @@ fn invalid_states_and_failing_streams_preserve_every_accepted_field_and_pending_
         assert!(controller.load_state(&mut invalid.as_slice()).is_err());
         assert_eq!(controller.session().owner_snapshot(), before);
         assert_eq!(controller.parameter_state(), parameters);
-        assert_eq!(saved(&controller), before_save);
+        assert_eq!(saved(&mut controller), before_save);
         assert!(controller.peek_automation().is_none());
     }
     struct BrokenRead;
@@ -584,7 +584,7 @@ fn invalid_states_and_failing_streams_preserve_every_accepted_field_and_pending_
     }
     assert_eq!(controller.save_state(&mut BrokenWrite), Err(StateError::Io));
     assert_eq!(controller.session().owner_snapshot(), before);
-    assert_eq!(saved(&controller), before_save);
+    assert_eq!(saved(&mut controller), before_save);
     let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
     audio
         .process_events(
@@ -631,13 +631,13 @@ fn native_save_and_load_work_at_full_editor_capacity_and_busy_automation_keeps_e
     use dandrum_trigger_host::state::StateError;
     let (_package, root) = package();
     let (mut controller, mut audio) = open(&root);
-    let state = candidate(&controller);
+    let state = candidate(&mut controller);
     let bytes = serde_json::to_vec(&state).unwrap();
     let editors: Vec<_> = (0..16)
         .map(|_| controller.attach_editor().unwrap())
         .collect();
     assert!(controller.attach_editor().is_err());
-    assert!(!saved(&controller).is_empty());
+    assert!(!saved(&mut controller).is_empty());
     let begin=serde_json::json!({"version":1,"attachmentId":editors[0].attachment_id,"requestId":"1","method":"beginGesture","args":["drums.level",1]}).to_string();
     let dandrum_trigger_host::protocol::Admission::New(request) = controller.admit(&begin).unwrap()
     else {
@@ -693,7 +693,7 @@ fn named_parameter_permutations_and_repeated_restores_preserve_an_independent_ho
     let (_package, root) = package();
     let (mut a, mut audio_a) = open(&root);
     let (mut b, mut audio_b) = open(&root);
-    let mut state = candidate(&a);
+    let mut state = candidate(&mut a);
     state["parameters"].as_array_mut().unwrap().reverse();
     let yaml = state["document"]
         .as_str()
@@ -708,7 +708,7 @@ fn named_parameter_permutations_and_repeated_restores_preserve_an_independent_ho
     let bytes = serde_json::to_vec(&state).unwrap();
     let b_before = b.session().owner_snapshot();
     let b_values = b.parameter_state();
-    let b_saved = saved(&b);
+    let b_saved = saved(&mut b);
     a.load_state(&mut bytes.as_slice()).unwrap();
     let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
     audio_a
@@ -725,7 +725,7 @@ fn named_parameter_permutations_and_repeated_restores_preserve_an_independent_ho
         )
         .unwrap();
     assert_eq!((left[0], right[0]), (-0.145_368_58, -0.145_368_58));
-    let roundtrip: serde_json::Value = serde_json::from_slice(&saved(&a)).unwrap();
+    let roundtrip: serde_json::Value = serde_json::from_slice(&saved(&mut a)).unwrap();
     for (id, value) in VALUES {
         assert_eq!(
             roundtrip["parameters"]
@@ -762,7 +762,7 @@ fn named_parameter_permutations_and_repeated_restores_preserve_an_independent_ho
     assert_eq!(a.parameter_state().generation, 3);
     assert_eq!(b.session().owner_snapshot(), b_before);
     assert_eq!(b.parameter_state(), b_values);
-    assert_eq!(saved(&b), b_saved);
+    assert_eq!(saved(&mut b), b_saved);
     assert!(b.take_feedback().is_none());
     audio_b
         .process_events(
@@ -785,10 +785,10 @@ fn state_byte_limits_short_reads_and_packaged_sample_failures_are_explicit_and_a
     use dandrum_trigger_host::state::{STATE_LIMIT, StateError};
     let (_package, root) = package();
     let (mut controller, mut audio) = open(&root);
-    let state = candidate(&controller);
+    let state = candidate(&mut controller);
     let bytes = serde_json::to_vec(&state).unwrap();
     let before = controller.session().owner_snapshot();
-    let original = saved(&controller);
+    let original = saved(&mut controller);
     struct ShortRead<'a> {
         remaining: &'a [u8],
     }
@@ -812,7 +812,7 @@ fn state_byte_limits_short_reads_and_packaged_sample_failures_are_explicit_and_a
     std::fs::rename(&sample, &hidden).unwrap();
     assert!(controller.load_state(&mut bytes.as_slice()).is_err());
     assert_eq!(controller.session().owner_snapshot(), before);
-    assert_eq!(saved(&controller), original);
+    assert_eq!(saved(&mut controller), original);
     #[cfg(unix)]
     {
         std::os::unix::fs::symlink(&hidden, &sample).unwrap();
@@ -844,7 +844,7 @@ fn state_byte_limits_short_reads_and_packaged_sample_failures_are_explicit_and_a
         format!("#{}\n{yaml}", "x".repeat(STATE_LIMIT as usize)),
     )
     .unwrap();
-    let (large, _audio) = open(&large_root);
+    let (mut large, _audio) = open(&large_root);
     let before = large.session().owner_snapshot();
     let mut output = Vec::new();
     assert_eq!(large.save_state(&mut output), Err(StateError::TooLarge));
@@ -855,7 +855,7 @@ fn state_byte_limits_short_reads_and_packaged_sample_failures_are_explicit_and_a
 fn restored_swaps_scalar_writes_and_reset_stamps_allocate_or_free_nothing_on_audio() {
     let (_package, root) = package();
     let (mut controller, mut audio) = open(&root);
-    let bytes = serde_json::to_vec(&candidate(&controller)).unwrap();
+    let bytes = serde_json::to_vec(&candidate(&mut controller)).unwrap();
     controller.load_state(&mut bytes.as_slice()).unwrap();
     let audio = std::thread::spawn(move || {
         let (mut left, mut right) = ([0.0; 16], [0.0; 16]);

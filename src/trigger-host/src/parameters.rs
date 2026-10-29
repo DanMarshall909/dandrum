@@ -381,8 +381,9 @@ impl ParameterController {
     /// Save accepted YAML and one coherent vector of applied physical values.
     /// This off-audio read never closes callback admission; only the reader may
     /// retry while audio writes. Queued editor values are not yet applied state.
+    /// Packaged payload acquisition uses the catalog under this main-owner borrow.
     pub fn save_state(
-        &self,
+        &mut self,
         output: &mut impl std::io::Write,
     ) -> Result<(), crate::state::StateError> {
         use crate::state::{PRODUCT_ID, RESOURCE_ID, SavedParameter, SavedState};
@@ -434,28 +435,35 @@ impl ParameterController {
             .map(|sample| (sample.resource_id().to_owned(), sample))
             .collect::<std::collections::BTreeMap<_, _>>();
         if state.version == 3 {
-            for source in self.host.session().prepared().sample_assets().sources() {
-                let path = source.declaration().resource.path();
-                if path == std::path::Path::new("assets/advanced-drums.wav") {
-                    resources.insert(
-                        "assets/advanced-drums.wav".into(),
-                        self.packaged_state_sample(source.sample().content_revision())?,
-                    );
-                }
+            let factory_revision = self
+                .host
+                .session()
+                .prepared()
+                .sample_assets()
+                .sources()
+                .iter()
+                .find(|source| {
+                    source.declaration().resource.path()
+                        == std::path::Path::new("assets/advanced-drums.wav")
+                })
+                .map(|source| *source.sample().content_revision());
+            if let Some(revision) = factory_revision {
+                resources.insert(
+                    "assets/advanced-drums.wav".into(),
+                    self.packaged_state_sample(&revision)?,
+                );
             }
         }
         crate::state::write(&state, &resources.into_iter().collect::<Vec<_>>(), output)
     }
     fn packaged_state_sample(
-        &self,
+        &mut self,
         expected: &[u8; 32],
     ) -> Result<
         std::sync::Arc<dandrum_engine::sample_snapshot::SampleSnapshot>,
         crate::state::StateError,
     > {
         use crate::state::StateError;
-        use dandrum_engine::sample_snapshot::SampleSnapshot;
-        use std::io::Read;
         let hex = expected
             .iter()
             .map(|byte| format!("{byte:02x}"))
@@ -469,20 +477,17 @@ impl ParameterController {
             crate::ADVANCED_DRUM_KIT_SAMPLE,
         )
         .map_err(|_| StateError::Invalid)?;
-        let mut bytes = Vec::new();
-        std::fs::File::open(path)
-            .map_err(|_| StateError::Io)?
-            .take((crate::samples::MAX_ENCODED_SAMPLE_BYTES + 1) as u64)
-            .read_to_end(&mut bytes)
-            .map_err(|_| StateError::Io)?;
-        let actual =
-            SampleSnapshot::resource_id_for_encoded(&bytes).map_err(|_| StateError::TooLarge)?;
-        if actual != id {
-            return Err(StateError::Invalid);
-        }
-        SampleSnapshot::decode(bytes)
-            .map(std::sync::Arc::new)
-            .map_err(|_| StateError::Invalid)
+        let mut file = std::fs::File::open(path).map_err(|_| StateError::Io)?;
+        let length = file.metadata().map_err(|_| StateError::Io)?.len();
+        let length = usize::try_from(length).map_err(|_| StateError::TooLarge)?;
+        let mut samples = crate::state::restore_samples(
+            &mut file,
+            &mut self.host.sample_catalog,
+            &[(id, length)],
+        )?;
+        Ok(samples
+            .pop()
+            .expect("one factory payload produces one snapshot"))
     }
     /// Validate and prepare complete bounded native state before publication.
     /// Held gestures/outbound automation return Busy so no promised End is lost.

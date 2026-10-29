@@ -76,32 +76,42 @@ impl ReadState {
                 )
             })
             .collect::<Vec<_>>();
-        let samples = catalog
-            .restore(input, &descriptors)
-            .map_err(|error| match error {
-                crate::samples::RestoreError::Input(kind) => {
-                    if kind == std::io::ErrorKind::UnexpectedEof {
-                        StateError::Invalid
-                    } else {
-                        StateError::Io
-                    }
-                }
-                crate::samples::RestoreError::Sample(crate::samples::SampleError::Busy) => {
-                    StateError::Busy
-                }
-                crate::samples::RestoreError::Sample(
-                    crate::samples::SampleError::EncodedLimit
-                    | crate::samples::SampleError::DecodedLimit
-                    | crate::samples::SampleError::ResourceLimit,
-                ) => StateError::TooLarge,
-                crate::samples::RestoreError::Sample(_) => StateError::Invalid,
-            })?;
-        if input.take(1).read(&mut [0]).map_err(|_| StateError::Io)? != 0 {
-            return Err(StateError::Invalid);
-        }
-        Ok(samples)
+        restore_samples(input, catalog, &descriptors)
     }
 }
+
+/// Complete bounded payload input is shared by restore and packaged export.
+pub(crate) fn restore_samples(
+    input: &mut impl Read,
+    catalog: &mut crate::samples::SampleCatalog,
+    descriptors: &[(String, usize)],
+) -> Result<Vec<Arc<SampleSnapshot>>, StateError> {
+    let samples = catalog
+        .restore(input, descriptors)
+        .map_err(|error| match error {
+            crate::samples::RestoreError::Input(kind) => {
+                if kind == std::io::ErrorKind::UnexpectedEof {
+                    StateError::Invalid
+                } else {
+                    StateError::Io
+                }
+            }
+            crate::samples::RestoreError::Sample(crate::samples::SampleError::Busy) => {
+                StateError::Busy
+            }
+            crate::samples::RestoreError::Sample(
+                crate::samples::SampleError::EncodedLimit
+                | crate::samples::SampleError::DecodedLimit
+                | crate::samples::SampleError::ResourceLimit,
+            ) => StateError::TooLarge,
+            crate::samples::RestoreError::Sample(_) => StateError::Invalid,
+        })?;
+    if input.take(1).read(&mut [0]).map_err(|_| StateError::Io)? != 0 {
+        return Err(StateError::Invalid);
+    }
+    Ok(samples)
+}
+
 fn validate_manifest(resources: &[ManifestResource], payload: u64) -> Result<(), StateError> {
     if resources.len() > crate::samples::MAX_RESOURCE_COUNT {
         return Err(StateError::TooLarge);

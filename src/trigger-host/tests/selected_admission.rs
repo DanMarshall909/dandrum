@@ -93,7 +93,7 @@ impl Fixture {
         .unwrap()["result"]
             .clone()
     }
-    fn state(&self) -> Vec<u8> {
+    fn state(&mut self) -> Vec<u8> {
         let mut bytes = Vec::new();
         self.controller.save_state(&mut bytes).unwrap();
         bytes
