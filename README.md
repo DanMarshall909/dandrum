@@ -166,15 +166,22 @@ The opt-in session-backed Trigger product builds beside the proof artifact:
 ```bash
 npm --prefix web/trigger run build:native
 cmake -S . -B build/engine-only -DDANDRUM_ENGINE_ONLY=ON -DDANDRUM_CLAP_PROOF=ON -DDANDRUM_TRIGGER_CLAP_EDITOR=ON -DDANDRUM_TRIGGER_EDITOR_BUNDLE_DIR="$PWD/web/trigger/dist-native" -DCMAKE_BUILD_TYPE=Release
-cmake --build build/engine-only --target dandrum-trigger-clap-editor --parallel 2
-ctest --test-dir build/engine-only --output-on-failure -R '^(clap-dynamic-host|trigger-clap-dynamic-host|trigger-host-tests|trigger-editor-tests)$'
+cmake --build build/engine-only --target dandrum-trigger-clap-product --parallel 1
+cmake --install build/engine-only --prefix /tmp/dandrum-trigger-beta --component trigger-clap
+ctest --test-dir build/engine-only --output-on-failure -R '^(trigger-clap-install-contract|clap-dynamic-host|trigger-clap-dynamic-host|trigger-host-tests|trigger-editor-tests)$'
 ```
 
+The `trigger-clap` install component places `DandrumTrigger.clap` and its sibling
+`DandrumTrigger.resources` under `lib/clap`, with pinned dependency notices under
+`share/doc/dandrum-trigger`. The package is a local beta installation proof;
+project distribution licensing remains pending. Initialization resolves only the
+sibling resource directory, with no checkout or cache fallback.
+
 `DandrumTrigger.clap` adds `org.dandrum.trigger` with the Advanced Drum Kit,
-23 physical host parameters and version-2 Trigger state. Keep its sibling
-`DandrumTrigger.resources` directory beside the plugin when copying it to another
-location. Initialization resolves that explicit directory only. Trigger accepts
-integral sample rates, float32 stereo output and at most 64 input events per block;
+23 physical host parameters and bounded portable state containing selected sample
+content. Existing version-2 packaged-kit state remains readable. Trigger accepts
+supported precise fractional sample rates, float32 stereo output and at most 64
+input events per block;
 invalid batches preserve accepted values and playback position while clearing output.
 The opt-in product includes the production React editor on the selected GNU Linux
 x86_64 X11 platform with WebKitGTK 2.50.4. It requires a host-owned X11 parent and

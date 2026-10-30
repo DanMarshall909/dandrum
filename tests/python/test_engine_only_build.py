@@ -36,6 +36,9 @@ class EngineBuildFixture(unittest.TestCase):
         assert not (cls.source / "third_party").exists()
         assert not (cls.source / "web").exists()
         assert not (cls.source / "ui").exists()
+        notices = cls.source / "docs/migrations/trigger-clap-beta-notices.json"
+        notices.parent.mkdir(parents=True)
+        shutil.copy2(ROOT / "docs/migrations/trigger-clap-beta-notices.json", notices)
 
     def command(self, label, args):
         result = subprocess.run(args, capture_output=True, text=True,
@@ -612,19 +615,25 @@ class ClapProofBuildTest(EngineBuildFixture):
         self.assertEqual(len(executables), 1, output)
 
         installed = self.fixture_root / "installed"
-        installed.mkdir()
-        shutil.copy2(default_artifact, installed / default_artifact.name)
-        shutil.copy2(artifact, installed / artifact.name)
-        shutil.copytree(resources, installed / resources.name)
+        code, output = self.command(
+            "trigger-product-install", [CMAKE, "--install", str(build),
+                                        "--prefix", str(installed),
+                                        "--component", "trigger-clap"])
+        self.assertEqual(code, 0, output)
+        installed_clap = installed / "lib/clap"
+        self.assertEqual((installed_clap / artifact.name).read_bytes(), trigger_binary)
+        self.assertEqual(
+            (installed / "share/doc/dandrum-trigger/THIRD_PARTY_NOTICES.json").read_bytes(),
+            (self.source / "docs/migrations/trigger-clap-beta-notices.json").read_bytes())
         shutil.rmtree(editor_input)
         shutil.rmtree(self.source / "examples/patches")
         for relative, contents in expected.items():
-            copied = installed / resources.name / relative
+            copied = installed_clap / resources.name / relative
             self.assertEqual(copied.read_bytes(), contents, relative)
             self.assertNotIn(str(self.source).encode(), copied.read_bytes(), relative)
         code, output = self.command(
             "trigger-installed-runtime", [CMAKE, "-E", "chdir", str(installed), CMAKE, "-E", "env",
-                "DANDRUM_TRIGGER_CLAP_PLUGIN_PATH=" + str(installed / artifact.name),
+                "DANDRUM_TRIGGER_CLAP_PLUGIN_PATH=" + str(installed_clap / artifact.name),
                 executables[0], "--test-threads=1"])
         self.assertEqual(code, 0, output)
         self.assertIn("test result: ok.", output)

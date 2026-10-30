@@ -296,6 +296,11 @@ target_compile_definitions(dandrum-filter-spike-engine-test PRIVATE DANDRUM_SOUR
 target_link_libraries(dandrum-filter-spike-engine-test PRIVATE dandrum_engine dl pthread m)
 add_test(NAME filter-spike-engine COMMAND dandrum-filter-spike-engine-test)
 
+add_test(NAME trigger-clap-install-contract
+    COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_trigger_clap_install.py)
+set_tests_properties(trigger-clap-install-contract PROPERTIES
+    LABELS "trigger-clap-boundary;fast" TIMEOUT 30)
+
 add_test(NAME engine-only-build
     COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1 python3
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_engine_only_build.py EngineOnlyBuildTest)
@@ -407,6 +412,13 @@ if(DANDRUM_CLAP_PROOF)
             VERBATIM)
         add_custom_target(dandrum-trigger-resources DEPENDS ${DANDRUM_TRIGGER_RESOURCE_STAMP})
         add_dependencies(dandrum-trigger-clap-product dandrum-trigger-resources)
+        install(FILES ${DANDRUM_TRIGGER_CLAP_ARTIFACT}
+            DESTINATION lib/clap COMPONENT trigger-clap)
+        install(DIRECTORY ${DANDRUM_TRIGGER_RESOURCE_DIR}
+            DESTINATION lib/clap COMPONENT trigger-clap)
+        install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/docs/migrations/trigger-clap-beta-notices.json
+            DESTINATION share/doc/dandrum-trigger
+            RENAME THIRD_PARTY_NOTICES.json COMPONENT trigger-clap)
         # This lane requires the complete production bundle, including local
         # fonts/notices. The Python source-free build fixture deliberately uses
         # a tiny build-only bundle and separately checks this test's registration.

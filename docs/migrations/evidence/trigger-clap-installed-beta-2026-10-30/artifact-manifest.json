@@ -1,0 +1,112 @@
+{
+  "files": [
+    {
+      "path": "lib/clap/DandrumTrigger.clap",
+      "bytes": 14217984,
+      "sha256": "d583fba55c1f61f9c914b9b269c334241904a98221b05501d69264c8a5710aaa"
+    },
+    {
+      "path": "lib/clap/DandrumTrigger.resources/.staged",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "lib/clap/DandrumTrigger.resources/editor/app.css",
+      "bytes": 11023,
+      "sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5"
+    },
+    {
+      "path": "lib/clap/DandrumTrigger.resources/editor/app.js",
+      "bytes": 828246,
+      "sha256": "d157a01be9cc121d3e310b2b4ca099cddb36d355328d45170d02e406d6fa918e"
+    },
+    {
+      "path": "lib/clap/DandrumTrigger.resources/editor/fonts/.gitattributes",
+      "bytes": 77,
+      "sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616"
+    },
+    {
+      "path": "lib/clap/DandrumTrigger.resources/editor/fonts/3386a05f6ece969e.ttf",
+      "bytes": 112204,
+      "sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160"
+    },
+    {
+      "path": "lib/clap/DandrumTrigger.resources/editor/fonts/6098b66ce7d608dc.ttf",
+      "bytes": 88644,
+      "sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef"
+    },
+    {
+      "path": "lib/clap/DandrumTrigger.resources/editor/fonts/74103fd6d41bc32c.ttf",
+      "bytes": 85776,
+      "sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154"
+    },
+    {
+      "path": "lib/clap/DandrumTrigger.resources/editor/fonts/91c841fdfa8e7b94.ttf",
+      "bytes": 81924,
+      "sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc"
+    },
+    {
+      "path": "lib/clap/DandrumTrigger.resources/editor/fonts/barlow-OFL.txt",
+      "bytes": 4377,
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+    },
+    {
+      "path": "lib/clap/DandrumTrigger.resources/editor/fonts/barlowsemicondensed-OFL.txt",
+      "bytes": 4377,
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+    },
+    {
+      "path": "lib/clap/DandrumTrigger.resources/editor/fonts/c15439e7a03af571.ttf",
+      "bytes": 85876,
+      "sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c"
+    },
+    {
+      "path": "lib/clap/DandrumTrigger.resources/editor/fonts/c2b046235fb4c2f8.ttf",
+      "bytes": 83412,
+      "sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9"
+    },
+    {
+      "path": "lib/clap/DandrumTrigger.resources/editor/fonts/cb75439ae401f776.ttf",
+      "bytes": 86708,
+      "sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da"
+    },
+    {
+      "path": "lib/clap/DandrumTrigger.resources/editor/fonts/df54dbfafba61d49.ttf",
+      "bytes": 112160,
+      "sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8"
+    },
+    {
+      "path": "lib/clap/DandrumTrigger.resources/editor/fonts/jetbrainsmono-OFL.txt",
+      "bytes": 4399,
+      "sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d"
+    },
+    {
+      "path": "lib/clap/DandrumTrigger.resources/editor/index.html",
+      "bytes": 326,
+      "sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26"
+    },
+    {
+      "path": "lib/clap/DandrumTrigger.resources/instrument/advanced-drum-kit.yaml",
+      "bytes": 6699,
+      "sha256": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008"
+    },
+    {
+      "path": "lib/clap/DandrumTrigger.resources/instrument/assets/advanced-drums.wav",
+      "bytes": 102044,
+      "sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503"
+    },
+    {
+      "path": "share/doc/dandrum-trigger/THIRD_PARTY_NOTICES.json",
+      "bytes": 110802,
+      "sha256": "709c51b9f15b9017ae2d9e7cb8cb74c2fc6c8a0ab41d05980e413197bc51c493"
+    }
+  ],
+  "base_head": "017e60185ffc69b40b7fcf48d75420c45fcb34c0",
+  "source_inputs_sha256": {
+    "CMakeLists.txt": "b89236d9f850840262f1772c588cbd609b718e1b44ab3448929029da69d52844",
+    "README.md": "f5a5ab82f2932e25a0b79e7c53088e910c8e2b3646bc42163422eefca5a31e9e",
+    "tests/python/test_engine_only_build.py": "741642f4754b26cfe829d9bbc9abe9b99ed1636b4b2fb28bbb509692bc0f679b",
+    "tests/python/test_trigger_clap_install.py": "c36b43c28dcc54209c35130f5eff446ffbe1ac54d040f17b44432ae64aa0a0fe",
+    "docs/migrations/trigger-clap-beta-notices.json": "709c51b9f15b9017ae2d9e7cb8cb74c2fc6c8a0ab41d05980e413197bc51c493"
+  }
+}

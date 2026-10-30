@@ -1,0 +1,32 @@
+SOURCE_AND_CACHE_HIDDEN_NETWORK_NAMESPACE_ACTIVE
+
+running 1 test
+test copied_native_editor_lifecycle_initializes_the_real_react_session_and_preserves_audio ... [CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+[CLAP_PLUGIN_ERROR] Unsupported Trigger editor operation or lifecycle
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 1.87s

@@ -1,0 +1,19 @@
+[ 20%] Staging copied Trigger editor and instrument resources
+[ 40%] Built target dandrum-trigger-editor-rust
+[ 60%] Built target dandrum-trigger-host-rust
+[ 60%] Built target dandrum-trigger-resources
+[ 80%] Building the experimental JUCE-free CLAP proof
+[100%] Building the session-backed JUCE-free Trigger CLAP product
+[100%] Built target dandrum-trigger-clap-product
+[100%] Built target dandrum-trigger-clap-editor
+warning: failed to connect to jobserver from environment variable `MAKEFLAGS="s -j2 --jobserver-auth=3,4"`: cannot open file descriptor 3 from the jobserver environment variable value: Bad file descriptor (os error 9)
+   Compiling dandrum_engine v0.1.0 (/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/build/engine-only-regression/fixture-zvp5s63e/source/src/rust-engine)
+   Compiling dandrum_clap_adapter v0.1.0 (/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/build/engine-only-regression/fixture-zvp5s63e/source/src/clap-adapter)
+    Finished `release` profile [optimized] target(s) in 48.84s
+warning: failed to connect to jobserver from environment variable `MAKEFLAGS="s -j2 --jobserver-auth=3,4"`: cannot open file descriptor 3 from the jobserver environment variable value: Bad file descriptor (os error 9)
+   Compiling dandrum_engine v0.1.0 (/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/build/engine-only-regression/fixture-zvp5s63e/source/src/rust-engine)
+   Compiling dandrum-trigger-editor v0.1.0 (/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/build/engine-only-regression/fixture-zvp5s63e/source/src/trigger-editor)
+   Compiling dandrum_instrument_session v0.1.0 (/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/build/engine-only-regression/fixture-zvp5s63e/source/src/instrument-session)
+   Compiling dandrum-trigger-host v0.1.0 (/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/build/engine-only-regression/fixture-zvp5s63e/source/src/trigger-host)
+   Compiling dandrum_clap_adapter v0.1.0 (/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/build/engine-only-regression/fixture-zvp5s63e/source/src/clap-adapter)
+    Finished `release` profile [optimized] target(s) in 1m 02s

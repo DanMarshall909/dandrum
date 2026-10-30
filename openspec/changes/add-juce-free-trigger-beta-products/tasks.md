@@ -32,7 +32,9 @@ Fresh CLAP restoration evidence: `docs/migrations/evidence/trigger-clap-fresh-st
 
 ## 7. Installed Native And Named-DAW Acceptance
 
-- [ ] 7.1 Build/install the intended beta artifact set outside the checkout with pinned notices and complete resource identities; prove source-hidden offline CLAP execution and no JUCE build/runtime/linkage requirement.
+- [x] 7.1 Build/install the intended beta artifact set outside the checkout with pinned notices and complete resource identities; prove source-hidden offline CLAP execution and no JUCE build/runtime/linkage requirement.
+
+Installed beta evidence: `docs/migrations/evidence/trigger-clap-installed-beta-2026-10-30/README.md`.
 - [ ] 7.2 Exercise installed CLAP with actual native input and host audio/MIDI callbacks during selected-sample mapping, public edits and complete editor loss/recreation; prove retained history, signed playback, callback safety and independent instances at their real boundaries.
 - [ ] 7.3 Qualify and run the named DAW acceptance on installed CLAP instances: balanced gestures, timed host automation/feedback, editor-absent servicing, two independently edited instances and saved-project fresh selected-sample/parameter restoration.
 

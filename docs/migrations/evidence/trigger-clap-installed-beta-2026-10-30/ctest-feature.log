@@ -1,0 +1,198 @@
+Start testing: Oct 30 16:10 AEST
+----------------------------------------------------------
+29/67 Testing: trigger-clap-dynamic-host
+29/67 Test: trigger-clap-dynamic-host
+Command: "/home/dan/.local/bin/cmake" "-E" "env" "CARGO_TARGET_DIR=/tmp/dandrum-trigger-7-1-build/rust-target" "DANDRUM_TRIGGER_CLAP_PLUGIN_PATH=/tmp/dandrum-trigger-7-1-build/clap/DandrumTrigger.clap" "/home/dan/.cargo/bin/cargo" "test" "--locked" "--jobs" "2" "--manifest-path" "/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/src/clap-adapter/Cargo.toml" "--features" "trigger" "--test" "trigger_dynamic"
+Directory: /tmp/dandrum-trigger-7-1-build
+"trigger-clap-dynamic-host" start time: Oct 30 16:10 AEST
+Output:
+----------------------------------------------------------
+   Compiling proc-macro2 v1.0.106
+   Compiling unicode-ident v1.0.24
+   Compiling quote v1.0.46
+   Compiling cfg-if v1.0.4
+   Compiling autocfg v1.5.1
+   Compiling libc v0.2.186
+   Compiling version_check v0.9.5
+   Compiling syn v2.0.118
+   Compiling num-traits v0.2.19
+   Compiling serde_core v1.0.228
+   Compiling num-integer v0.1.46
+   Compiling crunchy v0.2.4
+   Compiling serde v1.0.228
+   Compiling serde_derive v1.0.228
+   Compiling portable-atomic v1.13.1
+   Compiling memchr v2.8.3
+   Compiling tiny-keccak v2.0.2
+   Compiling bitflags v2.13.0
+   Compiling getrandom v0.2.17
+   Compiling getrandom v0.3.4
+   Compiling once_cell v1.21.4
+   Compiling zerocopy v0.8.52
+   Compiling const-random-macro v0.1.16
+   Compiling ahash v0.8.12
+   Compiling generic-array v0.14.7
+   Compiling foldhash v0.2.0
+   Compiling zmij v1.0.23
+   Compiling allocator-api2 v0.2.21
+   Compiling parking_lot_core v0.9.12
+   Compiling equivalent v1.0.2
+   Compiling smallvec v1.15.2
+   Compiling hashbrown v0.17.1
+   Compiling const-random v0.1.18
+   Compiling num-bigint v0.4.8
+   Compiling num-complex v0.4.6
+   Compiling syn v3.0.6
+   Compiling typenum v1.20.1
+   Compiling itoa v1.0.18
+   Compiling regex-syntax v0.8.11
+   Compiling serde_json v1.0.151
+   Compiling scopeguard v1.2.0
+   Compiling ref-cast v1.0.27
+   Compiling lock_api v0.4.14
+   Compiling ref-cast-impl v1.0.27
+   Compiling num-rational v0.4.2
+   Compiling aho-corasick v1.1.5
+   Compiling num-iter v0.1.46
+   Compiling errno v0.3.14
+   Compiling signal-hook v0.3.18
+   Compiling rustix v1.1.4
+   Compiling unicode-segmentation v1.13.3
+   Compiling convert_case v0.10.0
+   Compiling regex-automata v0.4.18
+   Compiling signal-hook-registry v1.4.8
+   Compiling num v0.4.3
+   Compiling parking_lot v0.12.5
+   Compiling smartstring v1.0.1
+   Compiling heck v0.5.0
+   Compiling log v0.4.33
+   Compiling bit-vec v0.8.0
+   Compiling linux-raw-sys v0.12.1
+   Compiling crc32fast v1.5.2
+   Compiling getrandom v0.4.3
+   Compiling unicode-general-category v1.1.0
+   Compiling borrow-or-share v0.2.4
+   Compiling jsonschema-value v0.58.2
+   Compiling fluent-uri v0.4.1
+   Compiling bit-set v0.8.0
+   Compiling mio v1.2.1
+   Compiling strum_macros v0.28.0
+   Compiling fraction v0.17.0
+   Compiling derive_more-impl v2.1.1
+   Compiling block-buffer v0.10.4
+   Compiling crypto-common v0.1.7
+   Compiling indexmap v2.14.0
+   Compiling micromap v0.3.0
+   Compiling bytecount v0.6.9
+   Compiling num-cmp v0.1.0
+   Compiling outref v0.5.2
+   Compiling percent-encoding v2.3.2
+   Compiling litrs v1.0.0
+   Compiling static_assertions v1.1.0
+   Compiling vsimd v0.8.0
+   Compiling strength_reduce v0.2.4
+   Compiling uuid-simd v0.8.0
+   Compiling transpose v0.2.3
+   Compiling document-features v0.2.12
+   Compiling referencing v0.58.2
+   Compiling derive_more v2.1.1
+   Compiling digest v0.10.7
+   Compiling signal-hook-mio v0.2.5
+   Compiling strum v0.28.0
+   Compiling fancy-regex v0.19.2
+   Compiling regex v1.13.1
+   Compiling jsonschema-regex v0.58.2
+   Compiling email_address v0.2.9
+   Compiling primal-check v0.3.4
+   Compiling rhai_codegen v3.2.0
+   Compiling ryu v1.0.23
+   Compiling thin-vec v0.2.18
+   Compiling cpufeatures v0.2.17
+   Compiling data-encoding v2.11.1
+   Compiling unsafe-libyaml v0.2.11
+   Compiling fastrand v2.5.0
+   Compiling clap-sys v0.5.0
+   Compiling typed-path v0.12.3
+   Compiling clack-common v0.2.0 (https://github.com/prokopyl/clack?rev=27ca28391b57a61bad4bb5099288a7bf9247350d#27ca2839)
+   Compiling serde_yaml v0.9.34+deprecated
+   Compiling zip v8.6.0
+   Compiling tempfile v3.27.0
+   Compiling rhai v1.25.1
+   Compiling jsonschema v0.58.2
+   Compiling sha2 v0.10.9
+   Compiling rustfft v6.4.1
+   Compiling crossterm v0.29.0
+   Compiling libloading v0.8.9
+   Compiling clack-host v0.2.0 (https://github.com/prokopyl/clack?rev=27ca28391b57a61bad4bb5099288a7bf9247350d#27ca2839)
+   Compiling dandrum_engine v0.1.0 (/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/src/rust-engine)
+   Compiling clack-plugin v0.2.0 (https://github.com/prokopyl/clack?rev=27ca28391b57a61bad4bb5099288a7bf9247350d#27ca2839)
+   Compiling rtrb v0.3.2
+   Compiling clack-extensions v0.2.0 (https://github.com/prokopyl/clack?rev=27ca28391b57a61bad4bb5099288a7bf9247350d#27ca2839)
+   Compiling dandrum_instrument_session v0.1.0 (/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/src/instrument-session)
+   Compiling dandrum-trigger-host v0.1.0 (/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/src/trigger-host)
+   Compiling dandrum_clap_adapter v0.1.0 (/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/src/clap-adapter)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 54.59s
+     Running tests/trigger_dynamic.rs (rust-target/debug/deps/trigger_dynamic-7b98d772f9292428)
+
+running 21 tests
+test allocator_audit_child ... ignored, launched by allocator parent with calibrated LD_PRELOAD; never a standalone skip claim
+test optional_product_discovers_stable_trigger_and_retains_fixture_identities ... ok
+test missing_and_oversized_lists_and_truncated_supported_payloads_are_bounded_and_atomic ... ok
+test real_sampler_ports_and_offset_midi_parameter_values_render_literal_signed_pcm ... ok
+test trigger_initializes_from_only_sibling_resources_and_exposes_frozen_physical_parameters ... ok
+test state_streams_support_short_io_reentrant_value_reads_and_fail_without_partial_publication ... ok
+test physical_text_conversion_and_unknown_metadata_indices_are_explicit ... ok
+test invalid_portable_metadata_is_refused_before_any_foreign_payload_read ... ok
+test active_and_inactive_flush_apply_exact_global_values_without_advancing_audio_and_reject_atomically ... ok
+test full_sixty_four_event_budget_and_velocity_zero_keep_signed_one_shot_semantics ... ok
+test rejected_audio_requests_main_service_and_reports_static_diagnostic_only_on_main ... ok
+test callback_rejects_complete_invalid_batches_without_parameter_or_dsp_progress ... ok
+test entry_preserves_non_utf8_plugin_path_and_fixture_descriptors_survive_missing_trigger_resources ... ok
+test optional_host_extensions_and_noncore_events_are_honest_and_unusable_entry_paths_reject ... ok
+test rejected_output_layouts_silence_all_writable_planes_and_preserve_atomic_values ... ok
+test state_restores_fresh_mapping_and_physical_values_and_invalid_tail_preserves_running_audio ... ok
+test persistent_endpoints_survive_failed_and_equal_reactivation_then_reconfigure_independently ... ok
+test fresh_clap_restores_selected_payload_without_a_package_file ... ok
+test supported_fractional_clocks_activate_and_keep_exact_signed_sample_timing ... ok
+test portable_state_larger_than_legacy_limit_restores_fresh_pcm_and_values_with_reentrant_short_reads ... ok
+test dynamic_callback_allocator_audit_observes_plugin_and_framework_dso ... ok
+
+test result: ok. 20 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.45s
+
+<end of output>
+Test time =  55.08 sec
+----------------------------------------------------------
+Test Passed.
+"trigger-clap-dynamic-host" end time: Oct 30 16:11 AEST
+"trigger-clap-dynamic-host" time elapsed: 00:00:55
+----------------------------------------------------------
+
+30/67 Testing: trigger-editor-packaged-assets
+30/67 Test: trigger-editor-packaged-assets
+Command: "/home/dan/.local/bin/cmake" "-E" "env" "CARGO_TARGET_DIR=/tmp/dandrum-trigger-7-1-build/rust-target" "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=/tmp/dandrum-trigger-7-1-build/clap/DandrumTrigger.resources/editor" "/home/dan/.cargo/bin/cargo" "test" "--locked" "--jobs" "2" "--manifest-path" "/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/src/trigger-editor/Cargo.toml" "--test" "packaged_assets" "--" "--ignored"
+Directory: /tmp/dandrum-trigger-7-1-build
+"trigger-editor-packaged-assets" start time: Oct 30 16:11 AEST
+Output:
+----------------------------------------------------------
+   Compiling dandrum-trigger-editor v0.1.0 (/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/src/trigger-editor)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.31s
+     Running tests/packaged_assets.rs (rust-target/debug/deps/packaged_assets-02c80eab849a81d6)
+
+running 1 test
+test copied_production_bundle_serves_all_root_assets_eight_fonts_and_three_notices_without_source_lookup ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+<end of output>
+Test time =   0.35 sec
+----------------------------------------------------------
+Test Passed.
+"trigger-editor-packaged-assets" end time: Oct 30 16:11 AEST
+"trigger-editor-packaged-assets" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Oct 30 16:11 AEST
+
+trigger-clap-boundary =  55.08 sec*proc
+
+trigger-editor-boundary =   0.35 sec*proc
