@@ -1,0 +1,28 @@
+   Compiling dandrum_clap_adapter v0.1.0 (/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/src/clap-adapter)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.14s
+     Running tests/trigger_dynamic.rs (src/clap-adapter/target/debug/deps/trigger_dynamic-7b98d772f9292428)
+
+running 21 tests
+test allocator_audit_child ... ignored, launched by allocator parent with calibrated LD_PRELOAD; never a standalone skip claim
+test optional_product_discovers_stable_trigger_and_retains_fixture_identities ... ok
+test rejected_audio_requests_main_service_and_reports_static_diagnostic_only_on_main ... ok
+test full_sixty_four_event_budget_and_velocity_zero_keep_signed_one_shot_semantics ... ok
+test real_sampler_ports_and_offset_midi_parameter_values_render_literal_signed_pcm ... ok
+test missing_and_oversized_lists_and_truncated_supported_payloads_are_bounded_and_atomic ... ok
+test physical_text_conversion_and_unknown_metadata_indices_are_explicit ... ok
+test active_and_inactive_flush_apply_exact_global_values_without_advancing_audio_and_reject_atomically ... ok
+test callback_rejects_complete_invalid_batches_without_parameter_or_dsp_progress ... ok
+test entry_preserves_non_utf8_plugin_path_and_fixture_descriptors_survive_missing_trigger_resources ... ok
+test invalid_portable_metadata_is_refused_before_any_foreign_payload_read ... ok
+test state_streams_support_short_io_reentrant_value_reads_and_fail_without_partial_publication ... ok
+test trigger_initializes_from_only_sibling_resources_and_exposes_frozen_physical_parameters ... ok
+test optional_host_extensions_and_noncore_events_are_honest_and_unusable_entry_paths_reject ... ok
+test rejected_output_layouts_silence_all_writable_planes_and_preserve_atomic_values ... ok
+test persistent_endpoints_survive_failed_and_equal_reactivation_then_reconfigure_independently ... ok
+test fresh_clap_restores_selected_payload_without_a_package_file ... ok
+test state_restores_fresh_mapping_and_physical_values_and_invalid_tail_preserves_running_audio ... ok
+test supported_fractional_clocks_activate_and_keep_exact_signed_sample_timing ... ok
+test portable_state_larger_than_legacy_limit_restores_fresh_pcm_and_values_with_reentrant_short_reads ... ok
+test dynamic_callback_allocator_audit_observes_plugin_and_framework_dso ... ok
+
+test result: ok. 20 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.44s

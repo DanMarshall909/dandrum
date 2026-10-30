@@ -1,0 +1,13 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.12s
+     Running tests/trigger_parameters.rs (src/clap-adapter/target/debug/deps/trigger_parameters-eed5ddd0dacecb2d)
+
+running 1 test
+test selection_native::copied_react_import_maps_selected_pcm_once_through_native_history ... libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Activate DRI3 at Xorg or build mesa with DRI2
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Activate DRI3 at Xorg or build mesa with DRI2
+CANCEL_CHOICES before=[{"phase":"ready","selectionId":"1"}], ready=[{"phase":"ready","selectionId":"1"},{"phase":"ready","selectionId":"2"}]
+CANCEL_DOM {"mapping":false,"text":"dandrum\nTRIGGER\n\n\n\nPatch\nAdvanced Drum Kit\nReady\n6 zones · 2 samples\nConnected\nVoices — / 8\nSize controlled by host\nLog\nMeters unavailable\nMACROS\nSAMPLE\nSLICES\n0\nMAPPING\nLAYERS\nVOICE\nMODULATION\n0\nROUTING\nEFFECTS\nBrowser\nINSTRUMENT\n\nAdvanced Drum Kit\n1 groups\nkit\n6 zones\nkick\n36 C2\nsnare soft\n38 D2\nhat closed\n42 F♯2\nhat open\n46 A♯2\nrule 2\n48 C3\nSOURCES\n\nIMPORTED\n2\nMODULATORS\n\nENVELOPES\n0 · 0\nLFOS\n0 · 0\nPERFORMANCE\n0 · 0\nMACROS\n0 · 0\nRANDOM\n0 · 0\nClick to preview a source. Drag sources onto pads or zones, modulators onto controls. Right-click a control for Modulation.\nSAMPLE\n\nadvanced-drums.wav\n\nONCE\nGATED\nLOOP\nPING-PONG\nSUSTAIN LOOP\n\nWaveform unavailable\nWaveform unavailable\nFormat 48 kHz · mono\nLength 1.063 s\nPeak Not analysed\nLoudness Not analysed\nPitch Not analysed\nSource external · cached\nREGION\nSTART\nEND\nFADE IN\nFADE OUT\nNATIVE CONTROLS\nPITCH RATIO\nSTART OFFSET\nLEVEL\nPAN\nVARIATION\nPITCH RATIO\nSTART OFFSET\nLEVEL\nPAN\nROOT\nROOT NOTE\n36 C2\nPitch not analysed\nAdvanced Drum Kit\n›\nkit\n›\nkick\nadvanced-drums.wav\nSAMPLE\nHISTORY\n1 of 1\n\n\nSource\nadvanced-drums.wav\nBottom to top. Uncheck to bypass, drag ⋮⋮ to reorder, click to edit.\nSAMPLE\nState\nloaded · cached\nFormat\n48 kHz · 0-bit\nChannels\nMono\nUsed by\n1 zone(s)\nREGION\nStart\n0.000 s\nEnd\n0.250 s\nLoop\nOff\nRoot\n60 C4\nANALYSIS\nPitch\nNot analysed\nLoudness\nNot analysed\nZero crossings\nReady\nAnalyse pitch\nAnalyse loudness\nAnalyse loops\nReplace…\nDrag markers to edit · double-click a value to type · Ctrl+wheel zooms · Space auditions\n1200 × 800"}
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 25 filtered out; finished in 2.18s

@@ -359,9 +359,54 @@ fn copied_react_import_maps_selected_pcm_once_through_native_history() {
             std::thread::sleep(Duration::from_millis(5));
         }
         assert_import_audio(&mut plugin, true);
+        let selected_state = saved_state(&mut plugin);
+        let selected_wire = portable_state::metadata(&selected_state);
+        assert_eq!(selected_wire["document"], before_cancel["yaml"]);
+        assert_eq!(selected_wire["resources"].as_array().unwrap().len(), 2);
+        assert!(selected_wire["resources"].as_array().unwrap().iter().any(|resource|
+            resource["path"] == format!("selected/{CONTENT_SHA256}.wav")
+                && resource["sha256"] == CONTENT_SHA256
+                && resource["encoded_bytes"] == SELECTED_WAV.len()));
+        assert_eq!(selected_wire["parameters"].as_array().unwrap().len(), 23);
+        assert_eq!(selected_wire["parameters"].as_array().unwrap().iter()
+            .find(|parameter| parameter["id"] == "drums.level").unwrap()["value"], 2.0);
         gui.destroy(&plugin.plugin_handle());
         drop(browser);
         assert!(parent.children().is_empty());
+        drop(plugin);
+        selected.close().unwrap();
+
+        // A different DSO inode has separate process statics. Its package is
+        // needed only for initialization and disappears before state loading.
+        let fresh_root = tempfile::tempdir().unwrap();
+        let fresh_path = fresh_root.path().join("DandrumTrigger.clap");
+        std::fs::copy(artifact(), &fresh_path).unwrap();
+        let source_resources = artifact().parent().unwrap().join("DandrumTrigger.resources");
+        let fresh_resources = fresh_root.path().join("DandrumTrigger.resources/instrument");
+        std::fs::create_dir_all(fresh_resources.join("assets")).unwrap();
+        for relative in ["advanced-drum-kit.yaml", "assets/advanced-drums.wav"] {
+            std::fs::copy(source_resources.join("instrument").join(relative),
+                fresh_resources.join(relative)).unwrap();
+        }
+        use std::os::unix::ffi::OsStrExt;
+        let declared = std::ffi::CString::new(fresh_path.as_os_str().as_bytes()).unwrap();
+        let provider = unsafe { clack_host::entry::LibraryEntry::load_from_path(&fresh_path) }.unwrap();
+        let entry = unsafe { PluginEntry::load_from(provider, &declared) }.unwrap();
+        let mut fresh = instantiate(&entry);
+        std::fs::remove_file(fresh_resources.join("assets/advanced-drums.wav")).unwrap();
+        let handle = fresh.plugin_handle();
+        handle.get_extension::<clack_extensions::state::PluginState>().unwrap()
+            .load(&handle, &mut selected_state.as_slice()).unwrap();
+        assert_eq!(saved_state(&mut fresh), selected_state,
+            "fresh CLAP retains the logical document, resource identities and named values");
+        let params = fresh.plugin_handle().get_extension::<PluginParams>().unwrap();
+        for (index, named) in selected_wire["parameters"].as_array().unwrap().iter().enumerate() {
+            assert_eq!(params.get_value(&fresh.plugin_handle(), ClapId::new(index as u32 + 1)),
+                named["value"].as_f64(), "restored physical value for {}", named["id"]);
+        }
+        assert_import_audio(&mut fresh, true);
+        assert_eq!(saved_state(&mut independent), independent_state);
+        assert_packaged_audio(&mut independent);
     }).join().expect("production React selected import host completed");
 }
 
