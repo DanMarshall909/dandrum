@@ -36,6 +36,15 @@ Fresh CLAP restoration evidence: `docs/migrations/evidence/trigger-clap-fresh-st
 
 Installed beta evidence: `docs/migrations/evidence/trigger-clap-installed-beta-2026-10-30/README.md`.
 - [ ] 7.2 Exercise installed CLAP with actual native input and host audio/MIDI callbacks during selected-sample mapping, public edits and complete editor loss/recreation; prove retained history, signed playback, callback safety and independent instances at their real boundaries.
+
+Desktop investigation (2026-10-30): the installed CLAP's X11 editor receives WebKit/React messages but
+paints a blank child on the real GNOME display, so physical selection and edits remain unproved.
+A minimal WebKitGTK top-level paints; both popup and top-level GTK windows reparented into a raw
+X11 parent paint solid gray. Wry 0.57 `build_as_child` paints, but a minimal drop probe retains its
+GTK toplevel after the WebView is dropped, and explicit GTK disposal in the editor prototype aborts
+in `gtk_widget_unregister_window`. The original editor implementation was restored. Resolve embedding
+and immediate teardown together, then rerun 7.2 with physical input. Installed callback and
+programmatic native boundary rehearsals passed separately; they do not close this task.
 - [ ] 7.3 Qualify and run the named DAW acceptance on installed CLAP instances: balanced gestures, timed host automation/feedback, editor-absent servicing, two independently edited instances and saved-project fresh selected-sample/parameter restoration.
 
 ## 8. CLAP Beta Completion
