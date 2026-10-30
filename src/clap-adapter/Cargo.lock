@@ -428,6 +428,7 @@ dependencies = [
  "rtrb",
  "serde",
  "serde_json",
+ "serde_yaml",
  "tempfile",
  "webkit2gtk",
  "x11rb",

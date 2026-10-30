@@ -1835,6 +1835,113 @@ fn portable_state_larger_than_legacy_limit_restores_fresh_pcm_and_values_with_re
 }
 
 #[test]
+fn fresh_clap_restores_selected_payload_without_a_package_file() {
+    use serde_json::json;
+    const SELECTED: &[u8] = &[
+        82, 73, 70, 70, 52, 0, 0, 0, 87, 65, 86, 69, 102, 109, 116, 32, 16, 0, 0, 0, 1, 0, 2, 0, 0,
+        125, 0, 0, 0, 244, 1, 0, 4, 0, 16, 0, 100, 97, 116, 97, 16, 0, 0, 0, 0, 160, 0, 64, 0, 32,
+        0, 224, 0, 192, 0, 16, 0, 64, 0, 160,
+    ];
+    // Native chooser admission is covered separately; this frame probes the CLAP state boundary.
+    const HASH: &str = "2e484972f38876c961b3c23fb4952487dce3e18501c7fb0efd1b8cb7011734d5";
+    assert_eq!(&SELECTED[44..48], &[0, 160, 0, 64]);
+    let (original_root, original_path) = copied_product();
+    let mut original = load_at(&original_path).unwrap();
+    let mut metadata = portable_state::metadata(&save(&mut original));
+    let package = std::fs::read(
+        original_root
+            .path()
+            .join("DandrumTrigger.resources/instrument/assets/advanced-drums.wav"),
+    )
+    .unwrap();
+    assert_eq!(metadata["resources"][0]["encoded_bytes"], package.len());
+    let mut document: serde_yaml::Value =
+        serde_yaml::from_str(metadata["document"].as_str().unwrap()).unwrap();
+    document["assets"]["sample_sources"]
+        .as_sequence_mut()
+        .unwrap()
+        .push(
+            serde_yaml::to_value(json!({"id":"chosen","path":format!("selected/{HASH}.wav"),
+            "regions":[{"id":"body","start_frame":0,"end_frame":4}]}))
+            .unwrap(),
+        );
+    document["assets"]["sample_maps"][0]["zones"]
+        .as_sequence_mut()
+        .unwrap()
+        .push(
+            serde_yaml::to_value(json!({"id":"chosen_hit","region":"chosen.body",
+            "key_range":[48,48],"velocity_range":[1,127],"control_group":1}))
+            .unwrap(),
+        );
+    metadata["document"] = serde_yaml::to_string(&document).unwrap().into();
+    metadata["resources"].as_array_mut().unwrap().push(json!({
+        "path":format!("selected/{HASH}.wav"), "sha256":HASH, "encoded_bytes":SELECTED.len()
+    }));
+    metadata["parameters"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|parameter| parameter["id"] == "drums.level")
+        .unwrap()["value"] = 2.0.into();
+    let encoded = serde_json::to_vec(&metadata).unwrap();
+    let mut input = b"DTRGSTAT".to_vec();
+    input.extend(3_u32.to_le_bytes());
+    input.extend(u32::try_from(encoded.len()).unwrap().to_le_bytes());
+    input.extend(
+        u64::try_from(package.len() + SELECTED.len())
+            .unwrap()
+            .to_le_bytes(),
+    );
+    input.extend(encoded);
+    input.extend(package);
+    input.extend(SELECTED);
+    assert!(load_state(&mut original, &input));
+    let saved = save(&mut original);
+    assert_eq!(portable_state::metadata(&saved), metadata);
+    assert!(saved.ends_with(SELECTED));
+    drop(original);
+    original_root.close().unwrap();
+
+    let (fresh_root, fresh_path) = copied_product();
+    let mut fresh = load_at(&fresh_path).unwrap();
+    std::fs::remove_file(
+        fresh_root
+            .path()
+            .join("DandrumTrigger.resources/instrument/assets/advanced-drums.wav"),
+    )
+    .unwrap();
+    assert!(load_state(&mut fresh, &saved));
+    assert_eq!(
+        save(&mut fresh),
+        saved,
+        "logical patch and content identities"
+    );
+    for (index, named) in metadata["parameters"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .enumerate()
+    {
+        assert_eq!(
+            parameter(&mut fresh, index as u32 + 1),
+            named["value"].as_f64(),
+            "physical value for {}",
+            named["id"]
+        );
+    }
+    let mut audio = activate(&mut fresh, 48_000.0, 16);
+    for (key, expected) in [(36, -1.0), (48, -0.25), (60, 0.0)] {
+        let output = block(&mut audio, 16, &note(0, key), true);
+        assert_eq!(
+            (output[0][0], output[1][0]),
+            (expected, expected),
+            "signed fresh CLAP output at MIDI {key}"
+        );
+    }
+    deactivate(&mut fresh, audio);
+}
+
+#[test]
 fn invalid_portable_metadata_is_refused_before_any_foreign_payload_read() {
     use serde_json::json;
     use std::io::Read;
