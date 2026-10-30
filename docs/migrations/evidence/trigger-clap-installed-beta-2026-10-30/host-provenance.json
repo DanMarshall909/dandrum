@@ -1,0 +1,37 @@
+{
+  "hosts": {
+    "dynamic": {
+      "build_jsonl_sha256": "be25e6d531bcc232a170ffb79f09ff882ffe63497b217a66acc9f3741a92c159",
+      "command": "python3 -m unittest tests.python.test_engine_only_build.ClapProofBuildTest.test_trigger_editor_scaffold_stages_copied_resources_without_host_sources -v (fixture ran cargo test --locked --jobs 2 --features trigger --test trigger_dynamic --no-run --message-format=json from a source snapshot without JUCE/web/ui)",
+      "compressed_build_log": "sourcefree-host-build.jsonl.gz",
+      "compressed_build_log_sha256": "25b4329bbcdcb9831e21a12c34d522f1a0c0963245a690bb7cb67871f89e68a1",
+      "executable": "/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/build/engine-only-regression/cargo-target/debug/deps/trigger_dynamic-1def899b3f4fbc7c",
+      "sha256": "980c6093a5a7771cec4ef1a3c45998e2ea797d5418e961ed16128b66378fa1d6",
+      "source_code_sha256": "9d1909dda22e70a5240cda1471da5f3eb930f5784244108ab4ae5792c029fea1",
+      "target": "trigger_dynamic"
+    },
+    "gui": {
+      "build_jsonl_sha256": "c657fd839fa7fed5a4e0be29ab05dde11c91f9be3c5a1eda673ca1987e16c007",
+      "command": "CARGO_NET_OFFLINE=true CARGO_TARGET_DIR=/tmp/dandrum-trigger-7-1-build/rust-target cargo test --release --locked --jobs 2 --manifest-path src/clap-adapter/Cargo.toml --features trigger-editor --test trigger_gui --no-run --message-format=json",
+      "compressed_build_log": "gui-host-build.jsonl.gz",
+      "compressed_build_log_sha256": "f195e695b2a34dcfec39ad389781910b87cf86c618a1204e17d5777c82070329",
+      "executable": "/tmp/dandrum-trigger-7-1-build/rust-target/release/deps/trigger_gui-ce29576c8b043017",
+      "sha256": "ee981fa15c1361fd39b1b842111f9415e3a500edd2bcb79f587167c0ed3e9549",
+      "source_code_sha256": "4e2e8695c41656ff62b1b62dcf1458967d785a92be319fb17f4fca0d9b73e68a",
+      "target": "trigger_gui"
+    }
+  },
+  "reviewed_source_checkpoint": "eac52f48d395f30b518d0159f12299765dd8858a",
+  "schema_version": 1,
+  "tool_versions": {
+    "bubblewrap": "0.6.1",
+    "cargo": "1.96.0",
+    "cmake": "3.30.9",
+    "rustc": "1.96.0"
+  },
+  "xvfb": {
+    "executable_sha256": "cf71d78eab8321f7c568271053af449f966a75422140117ea1f244bf72a7e81e",
+    "package_sha256": "f857020815dd091b4331cc45b37550a92480178c2931c76b486af2202e4271ec",
+    "package_version": "2:21.1.4-2ubuntu1.7~22.04.16"
+  }
+}

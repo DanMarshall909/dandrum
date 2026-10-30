@@ -1,0 +1,12 @@
+BOUND installed_files=20 plugin_sha256=d583fba55c1f61f9c914b9b269c334241904a98221b05501d69264c8a5710aaa
+BOUND executable_sha256=980c6093a5a7771cec4ef1a3c45998e2ea797d5418e961ed16128b66378fa1d6 path=/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/build/engine-only-regression/cargo-target/debug/deps/trigger_dynamic-1def899b3f4fbc7c
+BOUND executable_sha256=ee981fa15c1361fd39b1b842111f9415e3a500edd2bcb79f587167c0ed3e9549 path=/tmp/dandrum-trigger-7-1-build/rust-target/release/deps/trigger_gui-ce29576c8b043017
+BOUND executable_sha256=cf71d78eab8321f7c568271053af449f966a75422140117ea1f244bf72a7e81e path=/tmp/dandrum-trigger-7-1-xvfb/usr/bin/Xvfb
+OUTER host_net=net:[4026531833] cwd=/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters
+HEADLESS exit=0 exact_tests=3
+GUI exit=0 exact_tests=1
+BOUND installed_files=20 plugin_sha256=d583fba55c1f61f9c914b9b269c334241904a98221b05501d69264c8a5710aaa
+BOUND executable_sha256=980c6093a5a7771cec4ef1a3c45998e2ea797d5418e961ed16128b66378fa1d6 path=/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/build/engine-only-regression/cargo-target/debug/deps/trigger_dynamic-1def899b3f4fbc7c
+BOUND executable_sha256=ee981fa15c1361fd39b1b842111f9415e3a500edd2bcb79f587167c0ed3e9549 path=/tmp/dandrum-trigger-7-1-build/rust-target/release/deps/trigger_gui-ce29576c8b043017
+BOUND executable_sha256=cf71d78eab8321f7c568271053af449f966a75422140117ea1f244bf72a7e81e path=/tmp/dandrum-trigger-7-1-xvfb/usr/bin/Xvfb
+REPLAY exit=0 installed_bytes_unchanged=true

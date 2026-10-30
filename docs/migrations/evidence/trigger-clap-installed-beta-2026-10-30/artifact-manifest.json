@@ -108,5 +108,9 @@
     "tests/python/test_engine_only_build.py": "741642f4754b26cfe829d9bbc9abe9b99ed1636b4b2fb28bbb509692bc0f679b",
     "tests/python/test_trigger_clap_install.py": "c36b43c28dcc54209c35130f5eff446ffbe1ac54d040f17b44432ae64aa0a0fe",
     "docs/migrations/trigger-clap-beta-notices.json": "709c51b9f15b9017ae2d9e7cb8cb74c2fc6c8a0ab41d05980e413197bc51c493"
+  },
+  "proof_evidence_sha256": {
+    "replay-isolation.sh": "aa629c18558e69df7eb5e9b44b3d8acc4a8b92ab71ef212eec1ab89763558d30",
+    "host-provenance.json": "73c97c577afa079e51417404b1e5382a4fcbfb90961bffc69683970e35528ae2"
   }
 }

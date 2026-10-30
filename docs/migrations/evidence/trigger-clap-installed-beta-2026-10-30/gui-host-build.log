@@ -1,0 +1,5 @@
+   Compiling libloading v0.8.9
+   Compiling clack-host v0.2.0 (https://github.com/prokopyl/clack?rev=27ca28391b57a61bad4bb5099288a7bf9247350d#27ca2839)
+   Compiling clack-extensions v0.2.0 (https://github.com/prokopyl/clack?rev=27ca28391b57a61bad4bb5099288a7bf9247350d#27ca2839)
+   Compiling dandrum_clap_adapter v0.1.0 (/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/src/clap-adapter)
+    Finished `release` profile [optimized] target(s) in 14.26s

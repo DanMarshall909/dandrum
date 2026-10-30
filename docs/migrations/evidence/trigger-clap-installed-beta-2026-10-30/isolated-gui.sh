@@ -1,5 +1,8 @@
 #!/bin/sh
 set -eu
+test "$(pwd -P)" = /tmp/installed
+test -n "${DANDRUM_HOST_NET_NS:-}"
+test "$(readlink /proc/self/ns/net)" != "$DANDRUM_HOST_NET_NS"
 test ! -e /home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/CMakeLists.txt
 test ! -e /tmp/dandrum-trigger-7-1-build
 test ! -e /home/dan/.cargo/registry
@@ -20,5 +23,6 @@ while ! /usr/bin/xdpyinfo >/dev/null 2>&1; do
   test "$n" -lt 40 || { cat /tmp/xvfb.log; exit 1; }
   sleep .1
 done
-printf 'SOURCE_AND_CACHE_HIDDEN_NETWORK_NAMESPACE_ACTIVE\n'
+printf 'SOURCE_AND_CACHE_HIDDEN host_net=%s isolated_net=%s cwd=%s\n' \
+  "$DANDRUM_HOST_NET_NS" "$(readlink /proc/self/ns/net)" "$(pwd -P)"
 /tmp/host copied_native_editor_lifecycle_initializes_the_real_react_session_and_preserves_audio --ignored --exact --test-threads=1
