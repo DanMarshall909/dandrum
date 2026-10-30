@@ -159,6 +159,14 @@ if(DANDRUM_TRIGGER_CLAP_EDITOR)
             ${CARGO_BIN} test --locked --jobs 2
             --manifest-path ${RUST_TRIGGER_HOST_DIR}/Cargo.toml)
     set_tests_properties(trigger-host-tests PROPERTIES LABELS "trigger-host-fast" TIMEOUT 1200)
+    add_test(NAME trigger-host-state-payload-limits
+        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+            ${CARGO_BIN} test --locked --jobs 2
+            --manifest-path ${RUST_TRIGGER_HOST_DIR}/Cargo.toml --lib --
+            --ignored --exact
+            parameters::state_tests::payload_limits::maximum_portable_payload_restores_signed_tail_geometry_and_reclaims_every_owner)
+    set_tests_properties(trigger-host-state-payload-limits PROPERTIES
+        LABELS "slow;trigger-host-slow" RUN_SERIAL TRUE TIMEOUT 1200)
     add_custom_command(
         OUTPUT ${RUST_TRIGGER_EDITOR_LIB}
         COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target

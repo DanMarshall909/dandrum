@@ -22,10 +22,10 @@
         "trigger-beta-verification": {
           "reserveMiB": 8192,
           "outputGrowthMiB": 8192,
-          "tempGrowthMiB": 512,
+          "tempGrowthMiB": 1024,
           "retainedBudgetMiB": 65536,
           "basis": "estimated",
-          "estimateReason": "One serial Trigger Rust test, LLVM coverage or native verification build, using persistent disk-backed Cargo caches. Allows 8 GiB cache/output growth plus 512 MiB scratch and preserves an 8 GiB free-space reserve. Retained budget includes ordinary, LLVM and native build outputs; reusable caches require explicit direction before removal."
+          "estimateReason": "One serial Trigger Rust test, LLVM coverage or native verification build, using persistent disk-backed Cargo caches. Allows 8 GiB cache/output growth plus 1 GiB scratch, including two simultaneous 256 MiB portable-state files, and preserves an 8 GiB free-space reserve. Retained budget includes ordinary, LLVM and native build outputs; reusable caches require explicit direction before removal."
         }
       }
     }

@@ -25,7 +25,7 @@ The clause-to-evidence completion audit is recorded in `docs/migrations/evidence
 
 ## 6. Portable Patch Sample And Parameter State
 
-- [ ] 6.1 Specify and implement bounded self-contained versioned state framing/content validation, retaining version 2 packaged-kit reading and proving malformed/corrupt/oversized/short-reading rollback before publication.
+- [x] 6.1 Specify and implement bounded self-contained versioned state framing/content validation, retaining version 2 packaged-kit reading and proving malformed/corrupt/oversized/short-reading rollback before publication.
 - [ ] 6.2 Connect portable state through the existing CLAP projection; prove fresh instances restore selected PCM, logical patch/resource identity and named physical values after original instances/files disappear, without shared source/cache fallback.
 
 ## 7. Installed Native And Named-DAW Acceptance

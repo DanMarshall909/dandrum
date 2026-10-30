@@ -399,3 +399,6 @@ fn buffered_state_preflight_preserves_native_busy_ownership_and_rechecks_after_i
     assert_eq!(status["result"]["state"], "running");
     assert_eq!(status["result"]["request_id"], "71");
 }
+
+#[path = "state_payload_limits.rs"]
+mod payload_limits;

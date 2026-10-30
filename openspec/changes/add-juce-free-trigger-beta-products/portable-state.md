@@ -142,3 +142,32 @@ resource validation and the counted YAML budget. Selected-content documents
 still require interactive admission; no new ambient path authority is added.
 Version 3 permits compatible mutable defaults while preserving parameter
 identity/ranges and all existing version-2 input checks.
+
+
+## Production-limit qualification
+
+Qualify the declared inequalities with real valid content, not only synthetic
+oversize headers or reduced test budgets. Retain 256-resource acceptance and
+257-resource refusal, an exactly 1 MiB metadata save/restore and one-byte-larger
+refusal, 64 MiB per-asset acceptance and max-plus-one refusal, and an actual
+256 MiB encoded aggregate round trip. The framing ceiling is 24 header bytes,
+1 MiB metadata and 256 MiB raw bodies; document/profile/live-union limits remain
+independent and may refuse a candidate below that ceiling.
+
+For the supported mono/stereo PCM16 decoder, decoded capacity accounts for two
+bytes per encoded PCM data byte. At most 256 MiB encoded content with at least
+four 44-byte WAV headers reaches 536,870,560 decoded-capacity bytes, 352 bytes
+below the conservative 512 MiB ceiling. Four minimum-header 64 MiB WAVs attain
+that value; exact 512 MiB is not an attainable accepted fixture under these
+encoded/format constraints. Do not widen formats or limits to manufacture it.
+
+The maintained large fixture uses distinct independently hashed WAV recipes and
+near-end regions with literal signed two-frame oracles. Save, drop the original
+controller/audio/package, restore through the bounded header/preflight/buffered
+input path without a package WAV, and resave identical content. Prove live-union
+rejection, reuse at full capacity, a missing final serialized byte with unchanged
+accepted document/physical values/PCM, and release after the last runtime owner.
+Temporary generated WAV/state files belong to the owned run; never retain them
+as a new cache or checked-in corpus. Measure actual process time/RSS and keep
+this ordinary case in the canonical serial slow lane, separate from fast tests
+and all mutation execution. Its measurement is not a universal RSS guarantee.

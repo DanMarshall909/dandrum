@@ -518,6 +518,16 @@ class ClapProofBuildTest(EngineBuildFixture):
         self.assertEqual(code, 0, output)
         names = {test["name"] for test in json.loads(output)["tests"]}
         self.assertIn("trigger-host-tests", names)
+        slow = next((test for test in json.loads(output)["tests"]
+                     if test["name"] == "trigger-host-state-payload-limits"), None)
+        self.assertIsNotNone(slow, "the actual maximum payload has a maintained slow lane")
+        properties = {item["name"]: item["value"] for item in slow["properties"]}
+        self.assertIn("slow", properties["LABELS"])
+        self.assertTrue(properties["RUN_SERIAL"])
+        self.assertIn("--ignored", slow["command"])
+        self.assertIn("--exact", slow["command"])
+        self.assertIn("parameters::state_tests::payload_limits::maximum_portable_payload_restores_signed_tail_geometry_and_reclaims_every_owner",
+                      slow["command"])
         self.assertIn("trigger-editor-tests", names)
         self.assertIn("trigger-editor-packaged-assets", names)
 
