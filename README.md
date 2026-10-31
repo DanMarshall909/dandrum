@@ -196,9 +196,10 @@ production editor recovers the accepted result and native Undo history. Native t
 cover heartbeat/expiry, held note/gesture destruction, creation failure/retry,
 continuous signed callback audio across view replacement, invalid state with the same
 live editor, and two independently edited/rendering instances. These are synthetic-host
-checks. Sample import and other unimplemented editing/measurement services remain
-explicitly unavailable. VST3, standalone devices, physical input, named-DAW acceptance
-and installed release packaging remain beta gates.
+checks. Selected-sample import uses the native chooser and retains accepted content
+across editor recreation. The installed native overlap case below adds real server
+callbacks and native input. VST3, standalone devices, named-DAW acceptance and
+release distribution remain separate beta gates.
 
 Native initialization retains this plugin artifact and its linked native libraries
 in memory until the host process exits, so framework cleanup code remains valid.
@@ -219,6 +220,18 @@ record. Resource bindings record sorted relative-file hashes.
 A Cargo-test library can differ from the maintained product and is never a fallback.
 Each ignored native case runs in a bounded fresh process; ordinary `cargo test` skips
 these cases. This increment adds no editor demo or installed release package.
+
+The installed overlap acceptance additionally needs a running JACK-compatible audio
+server (qualified with PipeWire), `xdotool`, and a real X11 session. Configure
+`-DDANDRUM_TRIGGER_NATIVE_INSTALLED_CLAP=/absolute/install/lib/clap/DandrumTrigger.clap`
+and run `ctest --test-dir build/engine-only --output-on-failure -R '^trigger-clap-installed-native-overlap$'`.
+This slow opt-in case opens its own editor and uses native mouse/keyboard events;
+keep its window unobstructed while it runs. It connects only its own MIDI ports,
+keeps two installed CLAP instances active, audits their complete render calls,
+and verifies selected-sample edits and editor recreation against signed audio.
+It does not change device settings or connect audio outputs to speakers. Missing
+server, display, input tool or installed artifact fails explicitly. This is native
+host acceptance; named-DAW and physical MIDI/DAC evidence remain separate.
 
 ## Engine Development
 

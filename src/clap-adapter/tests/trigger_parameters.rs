@@ -1651,3 +1651,6 @@ mod instances_native;
 
 #[path = "internal/trigger_selection_native.rs"]
 mod selection_native;
+
+#[path = "internal/trigger_installed_native.rs"]
+mod installed_native;

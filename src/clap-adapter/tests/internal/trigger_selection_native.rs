@@ -1,13 +1,14 @@
 //! Native chooser acquisition; selection does not publish an instrument edit.
 use super::*;
 
-const SELECTED_WAV: &[u8] = &[
+pub(super) const SELECTED_WAV: &[u8] = &[
     82, 73, 70, 70, 52, 0, 0, 0, 87, 65, 86, 69, 102, 109, 116, 32, 16, 0, 0, 0, 1, 0, 2, 0, 0,
     125, 0, 0, 0, 244, 1, 0, 4, 0, 16, 0, 100, 97, 116, 97, 16, 0, 0, 0, 0, 160, 0, 64, 0, 32, 0,
     224, 0, 192, 0, 16, 0, 64, 0, 160,
 ];
 // Independently computed from the literal 60-byte WAV, not a decoder round trip.
-const CONTENT_SHA256: &str = "2e484972f38876c961b3c23fb4952487dce3e18501c7fb0efd1b8cb7011734d5";
+pub(super) const CONTENT_SHA256: &str =
+    "2e484972f38876c961b3c23fb4952487dce3e18501c7fb0efd1b8cb7011734d5";
 
 #[test]
 #[ignore = "real X11 installed CLAP paint boundary"]
@@ -340,7 +341,7 @@ fn assert_packaged_audio(plugin: &mut PluginInstance<GuiHost>) {
     result.unwrap();
 }
 
-fn native_dialog(plugin: &mut PluginInstance<GuiHost>) -> gtk::FileChooserDialog {
+pub(super) fn native_dialog(plugin: &mut PluginInstance<GuiHost>) -> gtk::FileChooserDialog {
     let deadline = Instant::now() + Duration::from_secs(5);
     loop {
         dispatch_context(plugin);

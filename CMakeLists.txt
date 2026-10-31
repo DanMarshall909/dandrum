@@ -572,6 +572,21 @@ if(DANDRUM_CLAP_PROOF)
                     FAIL_REGULAR_EXPRESSION "running 0 tests")
             endforeach()
         endif()
+        if(DANDRUM_TRIGGER_EDITOR_NATIVE_X11)
+            set(DANDRUM_TRIGGER_NATIVE_INSTALLED_CLAP "" CACHE FILEPATH
+                "External installed Trigger CLAP for native JACK/X11 acceptance")
+            add_test(NAME trigger-clap-installed-native-overlap
+                COMMAND ${CMAKE_COMMAND} -E env GDK_BACKEND=x11
+                    DANDRUM_TRIGGER_GUI_PLUGIN_PATH=${DANDRUM_TRIGGER_NATIVE_INSTALLED_CLAP}
+                    ${DANDRUM_TRIGGER_PARAMETERS_FIXTURE}/trigger-parameters-test
+                    installed_native::installed_native_edits_overlap_server_audio_and_midi
+                    --ignored --exact --nocapture --test-threads=1)
+            set_tests_properties(trigger-clap-installed-native-overlap PROPERTIES
+                LABELS "trigger-clap-boundary;native-x11;native-audio;slow"
+                FIXTURES_REQUIRED trigger-clap-parameters-compiled
+                RUN_SERIAL TRUE TIMEOUT 180
+                FAIL_REGULAR_EXPRESSION "running 0 tests")
+        endif()
         add_custom_target(dandrum-trigger-clap-editor)
         add_dependencies(dandrum-trigger-clap-editor
             dandrum-trigger-clap-product dandrum-trigger-host-rust dandrum-trigger-editor-rust dandrum-trigger-resources)
