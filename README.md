@@ -222,7 +222,7 @@ Each ignored native case runs in a bounded fresh process; ordinary `cargo test` 
 these cases. This increment adds no editor demo or installed release package.
 
 The installed overlap acceptance additionally needs a running JACK-compatible audio
-server (qualified with PipeWire), `xdotool`, and a real X11 session. Configure
+server (qualified with PipeWire), `xdotool`, and an unlocked real X11 session. Configure
 `-DDANDRUM_TRIGGER_NATIVE_INSTALLED_CLAP=/absolute/install/lib/clap/DandrumTrigger.clap`
 and run `ctest --test-dir build/engine-only --output-on-failure -R '^trigger-clap-installed-native-overlap$'`.
 This slow opt-in case opens its own editor and uses native mouse/keyboard events;

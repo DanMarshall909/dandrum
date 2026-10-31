@@ -1,7 +1,7 @@
 # Installed Trigger native callback overlap
 
 Scope: OpenSpec `add-juce-free-trigger-beta-products` task 7.2 only. Work began
-31 October and verification finished 1 November 2026 (Australia/Brisbane).
+31 October and verification continued 1 November 2026 (Australia/Brisbane).
 This adds a maintained acceptance host/test and CTest registration, with no
 production code, dependency, public behavior or canonical-spec change. The
 starting source/upstream was `f988aa0f4f6bc8d4eeac7b5cef91c685ec8f7176` on
@@ -29,7 +29,7 @@ before clicking, and mouse release is checked on success with an unwind guard.
 | Installed native selection, actual callback overlap, accepted public edit | `installed_native::installed_native_edits_overlap_server_audio_and_midi` and its isolated allocator child: external artifact, real server MIDI, native chooser import, level 1 to 0.5, balanced ordered parameter-3 Begin/Value/End through final shutdown. |
 | Signed selected playback, history and editor independence | The same test removes the original WAV; checks literal kit -0.5, selected mono mean -0.125 plus two independently resampled frames in both channels; destroys the entire child/WebView, proves it gone, renders with no editor, recreates with a new attachment and unchanged YAML, resets both real audio endpoints, and proves Undo silence/Redo selected audio at retained level 0.5. Every observed note onset, including allowed old/new transitions, is checked. |
 | Independent instance | Every note onset in instance B retains kit -0.5 and unmapped selected-note silence; its serialized state remains byte-identical after A's edits and view replacement. |
-| Callback allocation/ownership safety | Calibrated per-thread allocation/free interposition brackets every complete CLAP process call and both resets on the actual server thread. Callback data lives in stable boxes; successful JACK deactivation precedes owner reclamation. Continuous progress and a 500 ms operational watchdog detect stalls. |
+| Callback allocation/ownership safety | Calibrated per-thread allocation/free interposition brackets every complete CLAP process call and both resets on the actual server thread. Callback allocations transfer to explicit raw ownership before registration; successful JACK deactivation precedes reconstructed Box ownership and reclamation. Continuous progress and a 500 ms operational watchdog detect stalls. |
 | Held view activity, failed creation and stale-view cleanup | Complementary registered native cases `parameter-note-destroy`, `parameter-creation-failure`, `parameter-timer-rollback`, `parameter-continuous-audio-audit`, `parameter-two-instances` and selected recovery cases run on the same maintained product. The new overlap case finishes its drag before destruction; it does not replace their held-note/held-gesture assertions. |
 
 These map the active delta scenarios “Native editing survives complete editor
@@ -68,9 +68,23 @@ Cargo-selected acceptance executable. `raw.tar.gz` retains exact compiler
 invocations, CTest commands/output, setup attempts and checks; `raw-sha256.txt`
 identifies the archive.
 
-## Verified result
+## Independent review correction
 
-Final registered native run: **34/34 CTests passed in 123.91 seconds**; the installed
+The first independent review rejected checkpoint `73cc221ff16185bd0ed188925c48d864109c0bf7`:
+although heap addresses were stable, deriving C callback pointers and subsequently
+moving their owning `Box` values did not satisfy Rust's documented aliasing contract.
+The repaired fixture uses `Box::into_raw` before registration, retains a private
+raw-allocation guard, permits main-thread access only before activation or after
+successful quiescence, and reconstructs each Box only for reclamation. Failed
+initialization retains RAII cleanup; failed deactivation still aborts before any
+callback owner can be freed. This is a test-host ownership correction, not a plugin
+change. The original review and replacement candidate are retained in the existing
+review record. Final evidence below is superseded by the repair qualification when
+noted; the earlier raw archive is preserved.
+
+## Initial qualification before the ownership repair
+
+Pre-review registered native run: **34/34 CTests passed in 123.91 seconds**; the installed
 overlap case took 9.34 seconds. PipeWire/JACK supplied 48000 Hz, 1024-frame blocks.
 The two-instance host completed 385 callbacks and received 17 MIDI events, with
 zero reported callback failures, two audited endpoint resets and one ordered,
@@ -91,6 +105,25 @@ was then requalified by the complete 34-case run. One GTK
 final log (earlier versions emitted two). Its cause is not conclusively diagnosed;
 all chooser state, sound, destruction and cleanup assertions passed. No warning-free
 GTK or general GTK defect-freedom claim is made.
+
+## Repair verification status
+
+The raw-ownership repair passes strict Clippy. Its latest complete CTest attempt
+passes all 33 other native checks; installed overlap fails before the first click
+because the graphical desktop is locked. `loginctl show-session 34` reports
+`Type=x11`, `Active=yes`, `State=active`, `LockedHint=yes`, and GNOME's
+`org.gnome.ScreenSaver.GetActive` returns true. Browser queries and real server
+callbacks continued during these failures. Window-activation synchronization and
+fresh motion did not overcome the lock; these failures are not product RED evidence.
+The user has been asked to unlock the desktop for the remaining exact acceptance
+run. No unlock/authentication bypass is attempted. Task 7.2 is reopened pending
+that qualification and renewed independent review.
+
+Two earlier full-suite attempts each timed out in a different unchanged component
+case (invalid stopped flush, then parameter flush). The former passed unchanged
+on an isolated rerun in 1.17 seconds; both passed in the latest 33-case component
+result. Their causes remain undiagnosed; all attempts are retained in `repair-raw.tar.gz`, with the ready executable bound
+by `parameters-binding-repair.json`. They are not claimed fixed by the raw-ownership change.
 
 ## Interpretation and limits
 

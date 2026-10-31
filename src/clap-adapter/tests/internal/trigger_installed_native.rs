@@ -381,13 +381,38 @@ impl Processor {
         self.progress.callbacks.fetch_add(1, Ordering::Release);
     }
 }
+// Own callback allocations as raw pointers while C can use them. Moving a Box
+// after deriving its callback pointer would reassert unique ownership, even when
+// the heap address is unchanged: https://doc.rust-lang.org/std/boxed/index.html
+struct CallbackStorage<T>(std::ptr::NonNull<T>);
+impl<T> CallbackStorage<T> {
+    fn new(value: T) -> Self {
+        Self(std::ptr::NonNull::new(Box::into_raw(Box::new(value))).unwrap())
+    }
+    fn as_ptr(&self) -> *mut T {
+        self.0.as_ptr()
+    }
+    /// Caller must establish that no callback can access this allocation.
+    unsafe fn quiescent_mut(&mut self) -> &mut T {
+        unsafe { self.0.as_mut() }
+    }
+}
+impl<T> Drop for CallbackStorage<T> {
+    fn drop(&mut self) {
+        // NativeHost::drop establishes successful JACK quiescence first (or
+        // aborts). Construction can drop this guard before activation as well.
+        unsafe {
+            drop(Box::from_raw(self.0.as_ptr()));
+        }
+    }
+}
 struct NativeHost {
     first: PluginInstance<GuiHost>,
     second: PluginInstance<GuiHost>,
     receiver: Client,
     sender: Client,
-    processor: Box<Processor>,
-    source: Box<Source>,
+    processor: CallbackStorage<Processor>,
+    source: CallbackStorage<Source>,
     progress: Arc<Progress>,
     records: rtrb::Consumer<Observation>,
     observations: Vec<Observation>,
@@ -437,7 +462,7 @@ impl NativeHost {
             second: copied_plugin(),
             receiver,
             sender,
-            processor: Box::new(Processor {
+            processor: CallbackStorage::new(Processor {
                 api,
                 midi,
                 outputs,
@@ -456,7 +481,7 @@ impl NativeHost {
                 calibrated: false,
                 frames: 0,
             }),
-            source: Box::new(Source {
+            source: CallbackStorage::new(Source {
                 api,
                 port: source_port,
                 progress: progress.clone(),
@@ -473,7 +498,8 @@ impl NativeHost {
             _library: library,
         };
         for (index, plugin) in [&mut host.first, &mut host.second].into_iter().enumerate() {
-            host.processor.stopped[index] = Some(
+            // Neither client is active and callback registration has not begun.
+            unsafe { host.processor.quiescent_mut() }.stopped[index] = Some(
                 plugin
                     .activate(
                         |_, _| (),
@@ -491,7 +517,7 @@ impl NativeHost {
                 (api.callback)(
                     host.receiver.raw,
                     process_callback,
-                    (&mut *host.processor as *mut Processor).cast()
+                    host.processor.as_ptr().cast()
                 ),
                 0
             );
@@ -499,7 +525,7 @@ impl NativeHost {
                 (api.callback)(
                     host.sender.raw,
                     source_callback,
-                    (&mut *host.source as *mut Source).cast()
+                    host.source.as_ptr().cast()
                 ),
                 0
             );
@@ -686,16 +712,18 @@ impl NativeHost {
         }
         self.receiver.quiesce();
         self.sender.quiesce();
-        // Server callbacks have stopped. Return each endpoint through CLAP's ownership API.
+        // Successful deactivation proves neither callback can still access this state.
+        let processor = unsafe { self.processor.quiescent_mut() };
+        // Return each endpoint through CLAP's ownership API.
         for (i, plugin) in [&mut self.first, &mut self.second].into_iter().enumerate() {
-            if let Some(audio) = self.processor.audio[i].take() {
-                self.processor.stopped[i] = Some(
+            if let Some(audio) = processor.audio[i].take() {
+                processor.stopped[i] = Some(
                     std::thread::spawn(move || audio.stop_processing())
                         .join()
                         .unwrap(),
                 );
             }
-            if let Some(stopped) = self.processor.stopped[i].take() {
+            if let Some(stopped) = processor.stopped[i].take() {
                 plugin.deactivate(stopped);
             }
         }
@@ -781,15 +809,25 @@ fn click(
     let child = parent.children()[0];
     xdo(&[
         "windowactivate",
+        "--sync",
         &parent.id.to_string(),
         "windowfocus",
         &child.to_string(),
+    ]);
+    // A fresh view may appear under a stationary pointer. Generate real motion
+    // inside our child before targeting the control, even at repeated coordinates.
+    xdo(&["mousemove", "--window", &child.to_string(), "1", "1"]);
+    xdo(&[
         "mousemove",
         "--window",
         &child.to_string(),
         &(xy[0] as i32).to_string(),
         &(xy[1] as i32).to_string(),
     ]);
+    eprintln!(
+        "NATIVE_TARGET expected={xy:?} pointer={:?}",
+        parent.x.query_pointer(child).unwrap().reply().unwrap()
+    );
     wait_dom(
         plugin,
         browser,
