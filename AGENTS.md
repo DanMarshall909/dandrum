@@ -43,6 +43,10 @@
   the failure when feasible, then add the smallest production change that makes it pass.
 - Keep tests close to the behavior under development. Prefer Rust unit tests for engine core behavior and acceptance
   tests only for end-to-end CLI/rendering behavior.
+- Keep tests requiring human input or visual approval exceptional. Prefer automated assertions for interaction,
+  rendering and end-to-end behavior. Before requesting a manual run, identify the criterion automation cannot prove
+  and the evidence the run must capture. Reuse valid manual evidence; repeat a human or visual approval test only
+  when a relevant change or concrete evidence gap makes it necessary, and record that reason.
 - Before changing system behavior, explain what behavior is changing, why it should change, and which tests specify it.
 - Every new behavior must be specified by a test before implementation. Tests should describe externally observable
   behavior, not implementation minutia.
