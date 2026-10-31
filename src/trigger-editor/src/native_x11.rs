@@ -10,8 +10,9 @@ use std::{
 use webkit2gtk::{UserContentManagerExt, WebViewExt};
 use wry::{WebView, WebViewBuilder, WebViewBuilderExtUnix, WebViewExtUnix};
 use x11rb::{
+    COPY_DEPTH_FROM_PARENT,
     connection::Connection,
-    protocol::xproto::{ConnectionExt, WindowClass},
+    protocol::xproto::{ConnectionExt, CreateWindowAux, WindowClass},
     rust_connection::RustConnection,
 };
 
@@ -76,7 +77,8 @@ impl Drop for OwnedProtocol {
     }
 }
 
-struct OwnedWindow(gtk::Window);
+// The editor owns its foreign X11 child; a file chooser owns only its GTK window.
+struct OwnedWindow(gtk::Window, Option<(RustConnection, u32)>);
 impl Drop for OwnedWindow {
     fn drop(&mut self) {
         let display = self.0.display();
@@ -93,6 +95,15 @@ impl Drop for OwnedWindow {
         )]
         unsafe {
             gtk::prelude::WidgetExtManual::destroy(&self.0);
+        }
+        // GTK must finish unmapping before the connection that created the
+        // foreign child destroys it, or a late GDK UnmapWindow gets BadWindow.
+        display.sync();
+        if let Some((connection, child)) = self.1.take() {
+            if let Ok(request) = connection.destroy_window(child) {
+                let _ = request.check();
+            }
+            let _ = connection.flush();
         }
         // Order native destruction before the host queries or destroys its own
         // parent through another connection, without dispatching GTK work here.
@@ -135,7 +146,7 @@ impl NativeEditor {
         });
         let selection = NativeFileSelection {
             callback,
-            _window: OwnedWindow(dialog.clone().upcast()),
+            _window: OwnedWindow(dialog.clone().upcast(), None),
             dialog,
             handler: Some(handler),
         };
@@ -310,20 +321,60 @@ impl NativeEditor {
         connection: &RustConnection,
         builder: WebViewBuilder<'_>,
     ) -> Result<Self, NativeError> {
-        let window = OwnedWindow(gtk::Window::new(gtk::WindowType::Popup));
-        window
-            .0
-            .set_default_size(i32::from(Self::WIDTH), i32::from(Self::HEIGHT));
+        let display = gtk::gdk::Display::default().ok_or(NativeError::UnsupportedDisplay)?;
+        let x11_display = display
+            .clone()
+            .downcast::<gdkx11::X11Display>()
+            .map_err(|_| NativeError::UnsupportedDisplay)?;
+        let (child_connection, _) = RustConnection::connect(Some(display.name().as_str()))
+            .map_err(|error| NativeError::X11(error.to_string()))?;
+        let child = child_connection
+            .generate_id()
+            .map_err(|error| NativeError::X11(error.to_string()))?;
+        child_connection
+            .create_window(
+                COPY_DEPTH_FROM_PARENT,
+                child,
+                parent,
+                0,
+                0,
+                Self::WIDTH,
+                Self::HEIGHT,
+                0,
+                WindowClass::INPUT_OUTPUT,
+                0,
+                &CreateWindowAux::new(),
+            )
+            .map_err(|error| NativeError::X11(error.to_string()))?
+            .check()
+            .map_err(|error| NativeError::X11(error.to_string()))?;
+        // Reparenting a realized GTK toplevel leaves WebKit blank on real X11.
+        // Register the already-parented child so GTK paints and receives events.
+        let foreign = gdkx11::X11Window::foreign_new_for_display(&x11_display, child.into());
+        let window = gtk::Window::new(gtk::WindowType::Toplevel);
+        window.connect_realize(move |widget| {
+            let original = widget.window();
+            widget.set_window(foreign.clone().upcast());
+            widget.register_window(foreign.upcast_ref::<gtk::gdk::Window>());
+            // GTK creates a root toplevel during realize; replacing its GDK
+            // pointer does not destroy that original XID.
+            if let Some(original) = original {
+                original.destroy();
+            }
+        });
+        let window = OwnedWindow(window, Some((child_connection, child)));
         window.0.set_resizable(false);
         let fixed = gtk::Fixed::new();
+        window.0.set_has_window(true);
         window.0.add(&fixed);
         window.0.realize();
-        let native = window
-            .0
-            .window()
-            .and_then(|window| window.downcast::<gdkx11::X11Window>().ok())
-            .ok_or(NativeError::UnsupportedDisplay)?;
-        native.upcast_ref::<gtk::gdk::Window>().display().sync();
+        let scale = window.0.scale_factor().max(1);
+        // Wry's bounds are physical; GTK's default size and WebKit's CSS
+        // viewport are logical. Keep all three at the declared 1200x800 size.
+        window.0.set_default_size(
+            i32::from(Self::WIDTH) / scale,
+            i32::from(Self::HEIGHT) / scale,
+        );
         let view = builder
             .with_bounds(wry::Rect {
                 position: wry::dpi::PhysicalPosition::new(0, 0).into(),
@@ -331,6 +382,18 @@ impl NativeEditor {
             })
             .build_gtk(&fixed)
             .map_err(NativeError::WebView)?;
+        view.webview().set_size_request(
+            i32::from(Self::WIDTH) / scale,
+            i32::from(Self::HEIGHT) / scale,
+        );
+        let dpi = gtk::prelude::WidgetExt::screen(&window.0)
+            .map(|screen| screen.resolution())
+            .filter(|dpi| dpi.is_finite() && *dpi > 0.0)
+            .unwrap_or(96.0);
+        // The same 192-DPI desktop reports either GTK scale 1 / 192 DPI or
+        // scale 2 / 96 DPI. Both factors affect WebKit's CSS viewport.
+        view.webview()
+            .set_zoom_level(96.0 / (f64::from(scale) * dpi));
         let owner = Self {
             view,
             _window: window,
@@ -338,9 +401,7 @@ impl NativeEditor {
             protocol: None,
         };
         connection
-            .reparent_window(native.xid() as u32, parent, 0, 0)
-            .map_err(|error| NativeError::X11(error.to_string()))?
-            .check()
+            .flush()
             .map_err(|error| NativeError::X11(error.to_string()))?;
         Ok(owner)
     }

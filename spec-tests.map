@@ -2646,6 +2646,7 @@ AC juce-free-clap-proof :: Trigger instances remain independent across GUI and a
 
 AC juce-free-trigger-editor :: Production Trigger uses a versioned JUCE-free transport :: Copied production bundle connects to the JUCE-free backend
   fp bb48dd8e0fba
+  test rust:installed_react_editor_paints_and_releases_its_host_child
   test rust:copied_native_editor_lifecycle_initializes_the_real_react_session_and_preserves_audio
   test rust:copied_native_host_feedback_updates_rendered_control_without_polling_or_undo_pollution
   test rust:copied_native_mapping_survives_lost_reply_and_view_loss
@@ -2670,6 +2671,7 @@ AC juce-free-trigger-editor :: Production Trigger uses a versioned JUCE-free tra
 
 AC juce-free-trigger-editor :: Host-parented WebView lifecycle is disposable :: Actual X11 child follows the complete host lifecycle
   fp 9b0ecbdd7e3e
+  test rust:installed_react_editor_paints_and_releases_its_host_child
   test rust:copied_native_editor_lifecycle_initializes_the_real_react_session_and_preserves_audio
   test rust:copied_native_continuous_audio_survives_view_replacement
   test rust:real_child_loads_local_content_and_drops_without_owning_the_host_parent

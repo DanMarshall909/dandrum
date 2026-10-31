@@ -683,18 +683,9 @@ fn acquisition_errors_leave_no_owned_window(
         Err(NativeError::X11(_))
     ));
     let captured = captured.lock().unwrap();
-    assert_eq!(
-        captured.len(),
-        1,
-        "post-WebKit rollback container captured at resource release"
-    );
-    let reply = x.get_window_attributes(captured[0]).unwrap().reply();
-    eprintln!(
-        "immediate post-WebKit rollback: child={}, reply={reply:?}",
-        captured[0]
-    );
     assert!(
-        matches!(reply, Err(x11rb::errors::ReplyError::X11Error(ref error)) if error.error_code == 3 && error.bad_value == captured[0])
+        captured.is_empty(),
+        "a missing parent fails before acquiring a GTK child"
     );
     assert!(
         x.query_tree(root)
@@ -704,12 +695,12 @@ fn acquisition_errors_leave_no_owned_window(
             .children
             .iter()
             .all(|child| root_children.contains(child)),
-        "failed reparent leaves no added root child"
+        "failed child creation leaves no added root child"
     );
     assert_eq!(gtk::Window::list_toplevels().len(), baseline);
     assert!(
         weak_resource.upgrade().is_none(),
-        "post-WebKit reparent failure releases the registered resource callback"
+        "failed child creation releases its resource callback"
     );
 
     // Wry rejects a duplicate in its builder before allocating WebKit. The
@@ -979,8 +970,8 @@ fn destroy_releases_application_handlers_while_framework_context_remains() {
     );
     drop(context);
 
-    // Retain an actual framework context across a failure AFTER protocol registration.
-    // Parent validation succeeds first; the real X server then rejects reparenting.
+    // Parent validation succeeds first; the real X server then rejects child
+    // creation before GTK/WebKit or protocol registration can retain anything.
     let doomed = x.generate_id().unwrap();
     let root = x.setup().roots[screen].root;
     x.create_window(
@@ -1024,8 +1015,8 @@ fn destroy_releases_application_handlers_while_framework_context_remains() {
     );
     assert!(matches!(failed, Err(NativeError::X11(_))));
     assert!(
-        retained.is_custom_protocol_registered("dandrum"),
-        "failure follows actual registration in retained framework context"
+        !retained.is_custom_protocol_registered("dandrum"),
+        "failed child creation never registers a protocol"
     );
     assert!(
         assets_lifetime.upgrade().is_none(),

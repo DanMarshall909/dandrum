@@ -10,6 +10,85 @@ const SELECTED_WAV: &[u8] = &[
 const CONTENT_SHA256: &str = "2e484972f38876c961b3c23fb4952487dce3e18501c7fb0efd1b8cb7011734d5";
 
 #[test]
+#[ignore = "real X11 installed CLAP paint boundary"]
+fn installed_react_editor_paints_and_releases_its_host_child() {
+    std::thread::spawn(|| {
+        let parent = Parent::new();
+        let mut plugin = copied_plugin();
+        let browser = structural_native::open_view(&mut plugin, &parent);
+        let initial_viewport = javascript(
+            &mut plugin,
+            &browser,
+            "window.innerWidth + 'x' + window.innerHeight",
+        );
+        let child = parent.children()[0];
+        let geometry = parent.x.get_geometry(child).unwrap().reply().unwrap();
+        let child_size = (geometry.width, geometry.height);
+        let deadline = Instant::now() + Duration::from_secs(5);
+        let (painted, sampled, viewport) = loop {
+            dispatch_context(&mut plugin);
+            let viewport = javascript(
+                &mut plugin,
+                &browser,
+                "window.innerWidth + 'x' + window.innerHeight",
+            );
+            let sampled: Vec<_> = [(20, 20), (200, 100), (600, 400), (1000, 700)]
+                .map(|(x, y)| {
+                    parent
+                        .x
+                        .get_image(
+                            x11rb::protocol::xproto::ImageFormat::Z_PIXMAP,
+                            child,
+                            x,
+                            y,
+                            1,
+                            1,
+                            u32::MAX,
+                        )
+                        .unwrap()
+                        .reply()
+                        .unwrap()
+                        .data
+                })
+                .into();
+            if viewport == "1200x800"
+                && sampled
+                    .iter()
+                    .any(|pixel| pixel.len() >= 3 && pixel[0] != pixel[1])
+            {
+                break (true, sampled, viewport);
+            }
+            if Instant::now() >= deadline {
+                break (false, sampled, viewport);
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        };
+        let gui = plugin.plugin_handle().get_extension::<PluginGui>().unwrap();
+        gui.destroy(&plugin.plugin_handle());
+        drop(browser);
+        assert!(
+            parent.children().is_empty(),
+            "editor child closes immediately"
+        );
+        assert_eq!(
+            child_size,
+            (1200, 800),
+            "CLAP's advertised physical editor size"
+        );
+        assert_eq!(
+            viewport, "1200x800",
+            "complete React layout fits the editor; initial viewport={initial_viewport}"
+        );
+        assert!(
+            painted,
+            "installed React editor remained gray; sampled pixels={sampled:?}"
+        );
+    })
+    .join()
+    .expect("installed native paint host thread completed");
+}
+
+#[test]
 #[ignore = "native selection boundary: real X11, copied CLAP/React and GTK chooser; no physical-input claim"]
 fn copied_native_selection_retains_real_metadata_across_source_and_editor_loss() {
     std::thread::spawn(|| {
