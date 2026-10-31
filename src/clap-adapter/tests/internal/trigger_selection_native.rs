@@ -89,6 +89,72 @@ fn installed_react_editor_paints_and_releases_its_host_child() {
 }
 
 #[test]
+#[ignore = "manual desktop acceptance: use real mouse and keyboard input in the installed editor"]
+fn installed_react_accepts_physical_sample_selection_and_retains_native_history() {
+    std::thread::spawn(|| {
+        let selected = tempfile::tempdir().unwrap();
+        let path = selected.path().join("physical-selected.wav");
+        std::fs::write(&path, SELECTED_WAV).unwrap();
+        let parent = Parent::new();
+        let mut plugin = copied_plugin();
+        let mut independent = copied_plugin();
+        let independent_state = saved_state(&mut independent);
+        assert_packaged_audio(&mut plugin);
+        let mut browser = structural_native::open_view(&mut plugin, &parent);
+        let initial = structural_native::snapshot(&mut plugin, &browser);
+        eprintln!("MANUAL_READY select {} through Instrument tree > Add source in the visible Trigger window", path.display());
+
+        let deadline = Instant::now() + Duration::from_secs(180);
+        let imported = loop {
+            let current = structural_native::snapshot(&mut plugin, &browser);
+            if current["yaml"].as_str().unwrap().contains(CONTENT_SHA256) {
+                break current;
+            }
+            assert!(Instant::now() < deadline, "physical native selection and import timed out");
+            std::thread::sleep(Duration::from_millis(50));
+        };
+        assert_eq!(imported["connection"]["history"], serde_json::json!({"undoCount":1,"redoCount":0}));
+        assert_ne!(imported["connection"]["revision"], initial["connection"]["revision"]);
+        selected.close().unwrap(); // This test owns the temporary source directory.
+        assert_mapping_audio(&mut plugin, &[(48, [-0.125, -0.125]), (36, [-0.5, -0.5])]);
+
+        let gui = plugin.plugin_handle().get_extension::<PluginGui>().unwrap();
+        gui.destroy(&plugin.plugin_handle());
+        drop(browser);
+        assert!(parent.children().is_empty());
+        browser = structural_native::open_view(&mut plugin, &parent);
+        let recreated = structural_native::snapshot(&mut plugin, &browser);
+        assert_ne!(recreated["connection"]["attachmentId"], imported["connection"]["attachmentId"]);
+        assert_eq!(recreated["yaml"], imported["yaml"]);
+
+        for (action, revision, undo, redo, selected_audio) in
+            [("Undo", "2", 0, 1, false), ("Redo", "3", 1, 0, true)]
+        {
+            eprintln!("MANUAL_{action} click {action} in the reopened Trigger window");
+            let deadline = Instant::now() + Duration::from_secs(90);
+            loop {
+                let current = structural_native::snapshot(&mut plugin, &browser);
+                if current["connection"]["revision"] == revision {
+                    assert_eq!(current["connection"]["history"], serde_json::json!({"undoCount":undo,"redoCount":redo}));
+                    assert_eq!(current["yaml"].as_str().unwrap().contains(CONTENT_SHA256), selected_audio);
+                    break;
+                }
+                assert!(Instant::now() < deadline, "physical {action} timed out");
+                std::thread::sleep(Duration::from_millis(50));
+            }
+            assert_mapping_audio(&mut plugin, &[(48, if selected_audio { [-0.125, -0.125] } else { [0.0, 0.0] }), (36, [-0.5, -0.5])]);
+        }
+        assert_eq!(saved_state(&mut independent), independent_state);
+        assert_packaged_audio(&mut independent);
+        gui.destroy(&plugin.plugin_handle());
+        drop(browser);
+        assert!(parent.children().is_empty());
+    })
+    .join()
+    .expect("manual native input host thread completed");
+}
+
+#[test]
 #[ignore = "native selection boundary: real X11, copied CLAP/React and GTK chooser; no physical-input claim"]
 fn copied_native_selection_retains_real_metadata_across_source_and_editor_loss() {
     std::thread::spawn(|| {

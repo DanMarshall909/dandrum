@@ -41,8 +41,13 @@ Desktop investigation (2026-10-31): reparenting an already-realized GTK toplevel
 CLAP's WebKit/React editor gray on the real GNOME/X11 display. A host-parented foreign GDK window
 now paints the full 1200x800 React viewport at GTK scales 1 and 2, and the native lifecycle test
 proves immediate editor teardown without owning the host parent. Installed callback and programmatic
-native boundary rehearsals passed separately. The physical selection/edit run timed out without
-user input, so actual native input and the complete 7.2 acceptance remain unproved.
+native boundary rehearsals passed separately. A later hands-on installed CLAP run passed physical
+WAV selection, signed playback checks, complete editor recreation, Undo, Redo and independent-instance
+checks. The remaining host audio/MIDI callback overlap with those physical edits still needs a
+single acceptance run, so 7.2 stays open.
+The hands-on result was `selection_native::installed_react_accepts_physical_sample_selection_and_retains_native_history`
+against the copied CLAP SHA-256 `8cdd23f5023f7873729d837dd011d90012380ebf320900b09cd9088b98bb591e`
+on the GNOME/X11 display (passed in 145.07 seconds).
 - [ ] 7.3 Qualify and run the named DAW acceptance on installed CLAP instances: balanced gestures, timed host automation/feedback, editor-absent servicing, two independently edited instances and saved-project fresh selected-sample/parameter restoration.
 
 ## 8. CLAP Beta Completion
