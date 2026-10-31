@@ -1,5 +1,9 @@
 # Installed Trigger native callback overlap
 
+Task 7.2 is verified: the repaired installed/native acceptance passed in 9.31 seconds
+after the user unlocked the desktop. Together with the unchanged 33 passing native
+checks, it covers all 34 registered checks on the repaired source.
+
 Scope: OpenSpec `add-juce-free-trigger-beta-products` task 7.2 only. Work began
 31 October and verification continued 1 November 2026 (Australia/Brisbane).
 This adds a maintained acceptance host/test and CTest registration, with no
@@ -63,10 +67,12 @@ the accepted desktop embedding correction. `installed-manifest.json` binds all
 20 installed files; the editor `app.js` is
 `d157a01be9cc121d3e310b2b4ca099cddb36d355328d45170d02e406d6fa918e`.
 The production frontend is unchanged since its accepted foundation snapshot.
-`parameters-binding.json` separately binds the maintained product, resources and
-Cargo-selected acceptance executable. `raw.tar.gz` retains exact compiler
-invocations, CTest commands/output, setup attempts and checks; `raw-sha256.txt`
-identifies the archive.
+`parameters-binding.json` retains the initial binding;
+`parameters-binding-repair.json` binds the final maintained product, resources and
+Cargo-selected acceptance executable. `raw.tar.gz` and `repair-raw.tar.gz` retain
+compiler invocations, CTest output and earlier attempts. `unlocked-acceptance.log`
+and `acceptance-receipt.json` bind the successful final replay. `raw-sha256.txt`
+identifies the raw artifacts.
 
 ## Independent review correction
 
@@ -79,8 +85,8 @@ successful quiescence, and reconstructs each Box only for reclamation. Failed
 initialization retains RAII cleanup; failed deactivation still aborts before any
 callback owner can be freed. This is a test-host ownership correction, not a plugin
 change. The original review and replacement candidate are retained in the existing
-review record. Final evidence below is superseded by the repair qualification when
-noted; the earlier raw archive is preserved.
+review record. The final repair qualification below supersedes the initial run;
+the earlier raw archive is preserved.
 
 ## Initial qualification before the ownership repair
 
@@ -106,24 +112,41 @@ final log (earlier versions emitted two). Its cause is not conclusively diagnose
 all chooser state, sound, destruction and cleanup assertions passed. No warning-free
 GTK or general GTK defect-freedom claim is made.
 
-## Repair verification status
+## Final repair qualification
 
-The raw-ownership repair passes strict Clippy. Its latest complete CTest attempt
-passes all 33 other native checks; installed overlap fails before the first click
-because the graphical desktop is locked. `loginctl show-session 34` reports
-`Type=x11`, `Active=yes`, `State=active`, `LockedHint=yes`, and GNOME's
-`org.gnome.ScreenSaver.GetActive` returns true. Browser queries and real server
-callbacks continued during these failures. Window-activation synchronization and
-fresh motion did not overcome the lock; these failures are not product RED evidence.
-The user has been asked to unlock the desktop for the remaining exact acceptance
-run. No unlock/authentication bypass is attempted. Task 7.2 is reopened pending
-that qualification and renewed independent review.
+The unchanged repaired executable
+`4c851648615e1b4a600f550a880eec9e33fe6652d9079913a1d1415b0d69282b`
+passed the exact installed acceptance after the user unlocked graphical session 34.
+The pre-run query confirmed `Type=x11`, `Active=yes`, `State=active`, `LockedHint=no`.
+No code was changed or rebuilt for this replay. The registered case ran with
+`--fixture-exclude-any '.*'` to reuse the already qualified product/test binding.
+This is a composite result: all 33 other registered checks passed in
+`repair-raw.tar.gz:dandrum-7-2-native-repair3.log`; the remaining installed case
+passed in `unlocked-acceptance.log`. All 34 current checks are accounted for without
+claiming that the earlier locked-desktop attempt passed.
+
+The final host completed 385 callbacks, received 17 MIDI events, audited both resets,
+and reported zero callback failures with one ordered, balanced gesture. Fully
+contained callback/MIDI counts were 40/1 during chooser/import, 48/2 during public
+editing, and 66/2 during destruction/absence/recreation. Both instances retained
+expected signed output and isolation. The installed 20-file manifest remained
+unchanged, and no task-owned JACK output ports remained after cleanup.
+Two GTK `WIDGET_REALIZED_FOR_EVENT` warnings remain during the chooser transition;
+their cause is undiagnosed and the accepted state/audio/lifetime assertions pass.
+No warning-free GTK claim is made.
+
+The ownership repair passes strict Clippy; normal repair-checkpoint hooks passed
+1091 engine tests and strict engine coverage. Earlier native input retries failed
+before the first click while session 34 was locked and GNOME ScreenSaver.GetActive
+was true. Browser queries and audio callbacks continued. Activation synchronization
+and fresh motion did not overcome the lock. User unlock resolved the external
+prerequisite; no authentication bypass or weaker input path was used.
 
 Two earlier full-suite attempts each timed out in a different unchanged component
 case (invalid stopped flush, then parameter flush). The former passed unchanged
-on an isolated rerun in 1.17 seconds; both passed in the latest 33-case component
-result. Their causes remain undiagnosed; all attempts are retained in `repair-raw.tar.gz`, with the ready executable bound
-by `parameters-binding-repair.json`. They are not claimed fixed by the raw-ownership change.
+on an isolated rerun in 1.17 seconds; both passed in the final 33-case component
+result. Their causes remain undiagnosed; all attempts are retained in
+`repair-raw.tar.gz`. They are not claimed fixed by the raw-ownership change.
 
 ## Interpretation and limits
 

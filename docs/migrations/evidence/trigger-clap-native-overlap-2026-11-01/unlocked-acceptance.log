@@ -1,0 +1,85 @@
+Internal ctest changing into directory: /home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/build/engine-only
+UpdateCTestConfiguration  from :/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/build/engine-only/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/build/engine-only/DartConfiguration.tcl
+Test project /home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/build/engine-only
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 66
+    Start 66: trigger-clap-installed-native-overlap
+
+66: Test command: /home/dan/.local/bin/cmake "-E" "env" "GDK_BACKEND=x11" "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-7-2-native-installed/lib/clap/DandrumTrigger.clap" "/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/build/engine-only/trigger-clap-parameters-fixture/trigger-parameters-test" "installed_native::installed_native_edits_overlap_server_audio_and_midi" "--ignored" "--exact" "--nocapture" "--test-threads=1"
+66: Working Directory: /home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/build/engine-only
+66: Test timeout computed to be: 180
+66: 
+66: running 1 test
+66: test installed_native::installed_native_edits_overlap_server_audio_and_midi ... Audit fixture compilers: cc -shared -fPIC -std=c11 -O2 -Wall -Wextra -Werror; rustc --edition=2024 --crate-type=cdylib -Copt-level=1
+66: Explicit audit child: LD_PRELOAD=/tmp/.tmpjvsviu/allocator_interpose.so DANDRUM_ALLOCATOR_AUDIT_PROBE=/tmp/.tmpjvsviu/allocator_probe.so /home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/build/engine-only/.trigger-clap-native-fixture-_q1wtf4b/trigger-parameters-test --exact installed_native::installed_native_overlap_audit_child --ignored --show-output --test-threads=1
+66: 8cdd23f5023f7873729d837dd011d90012380ebf320900b09cd9088b98bb591e  /tmp/dandrum-7-2-native-installed/lib/clap/DandrumTrigger.clap
+66: 4c851648615e1b4a600f550a880eec9e33fe6652d9079913a1d1415b0d69282b  /home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters/build/engine-only/.trigger-clap-native-fixture-_q1wtf4b/trigger-parameters-test
+66: 93a0e737d1329e42387fdabb9e380657b1a994eaa650a7ea8c95b94bcb25de67  /tmp/.tmpjvsviu/allocator_interpose.so
+66: 8a34dc6bbd6059062f8672995ed5b3195cf603b6544ab5f4d0abfe6fdae156bd  /tmp/.tmpjvsviu/allocator_probe.so
+66: 6b80a560e2eded4276befd2252699c427fcdc7638387975c7c343e41d63c8dc9  /tmp/.tmpjvsviu/allocator_interpose.c
+66: 6ae6c66a02750fea4ed381e2d3088638c6b500eb21bb35b9c131897111a8a11e  /tmp/.tmpjvsviu/allocator_probe.rs
+66: 
+66: 
+66: running 1 test
+66: test installed_native::installed_native_overlap_audit_child ... ok
+66: 
+66: successes:
+66: 
+66: ---- installed_native::installed_native_overlap_audit_child stdout ----
+66: current-thread TLS calibration: allocation=(1, 0), deallocation=(0, 1), empty=(0, 0)
+66: REAL_SERVER rate=48000 quantum=1024 MIDI=dandrum-acceptance-midi:notes -> dandrum-acceptance-host:midi allocation_audited=true
+66: PHASE 1: selected=false level=1, callbacks=45
+66: NATIVE_TARGET expected=[192.0, 470.0] pointer=QueryPointerReply { .. }
+66: PHASE 2: selected=true level=1, callbacks=32
+66: NATIVE_TARGET expected=[454.8984375, 74.0] pointer=QueryPointerReply { .. }
+66: NATIVE_TARGET expected=[378.03125, 202.0] pointer=QueryPointerReply { .. }
+66: NATIVE_DRAG start={"value":"0.25","activeRole":"slider"}
+66: PHASE 3: selected=true level=0.5, callbacks=33
+66: PHASE 4: selected=true level=0.5, callbacks=48
+66: PHASE 5: selected=true level=0.5, callbacks=26
+66: NATIVE_TARGET expected=[195.890625, 23.0] pointer=QueryPointerReply { .. }
+66: PHASE 6: selected=false level=0.5, callbacks=40
+66: NATIVE_TARGET expected=[221.890625, 23.0] pointer=QueryPointerReply { .. }
+66: PHASE 7: selected=true level=0.5, callbacks=40
+66: OVERLAP native chooser/import: [1715508,2661042]us callbacks=40 MIDI=1
+66: OVERLAP native public edit: [3385892,4502624]us callbacks=48 MIDI=2
+66: OVERLAP destroy/absent/recreate: [4514405,6036982]us callbacks=66 MIDI=2
+66: NATIVE_CLEANUP callbacks=385 received_midi=17 failure=0
+66: NATIVE_ACCEPTANCE callbacks=385 MIDI=17 gestures=1/1
+66: 
+66: 
+66: successes:
+66:     installed_native::installed_native_overlap_audit_child
+66: 
+66: test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 29 filtered out; finished in 9.03s
+66: 
+66: 
+66: 
+66: (trigger-parameters-test:2124717): Gtk-CRITICAL **: 08:42:26.958: gtk_widget_event: assertion 'WIDGET_REALIZED_FOR_EVENT (widget, event)' failed
+66: 
+66: (trigger-parameters-test:2124717): Gtk-CRITICAL **: 08:42:26.965: gtk_widget_event: assertion 'WIDGET_REALIZED_FOR_EVENT (widget, event)' failed
+66: 
+66: ok
+66: 
+66: test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 29 filtered out; finished in 9.28s
+66: 
+1/1 Test #66: trigger-clap-installed-native-overlap ...   Passed    9.31 sec
+
+The following tests passed:
+	trigger-clap-installed-native-overlap
+
+100% tests passed, 0 tests failed out of 1
+
+Label Time Summary:
+native-audio             =   9.31 sec*proc (1 test)
+native-x11               =   9.31 sec*proc (1 test)
+slow                     =   9.31 sec*proc (1 test)
+trigger-clap-boundary    =   9.31 sec*proc (1 test)
+
+Total Test time (real) =   9.31 sec

@@ -1,0 +1,50 @@
+{
+  "source_commit": "61fc301424387a5a2301d13287acc67127c24331",
+  "source_tree": "303aecf406c022dbd8d8787cfe4a40b760d12581",
+  "cwd": "/home/dan/code/.worktrees/dandrum/feat-juce-free-host-adapters",
+  "command": [
+    "/home/dan/.local/bin/ctest",
+    "--test-dir",
+    "build/engine-only",
+    "--fixture-exclude-any",
+    ".*",
+    "--output-on-failure",
+    "-V",
+    "-R",
+    "^trigger-clap-installed-native-overlap$"
+  ],
+  "environment": {
+    "DISPLAY": ":1",
+    "XAUTHORITY": "/run/user/1000/gdm/Xauthority",
+    "GDK_SCALE": "1",
+    "GDK_DPI_SCALE": "1"
+  },
+  "desktop_precondition": {
+    "session": "34",
+    "Type": "x11",
+    "Active": "yes",
+    "State": "active",
+    "LockedHint": "no",
+    "observed_before_run": true
+  },
+  "exit_status": 0,
+  "elapsed_seconds": 9.31,
+  "test_sha256": "4c851648615e1b4a600f550a880eec9e33fe6652d9079913a1d1415b0d69282b",
+  "installed_manifest": "installed-manifest.json",
+  "installed_files_unchanged_after_run": 20,
+  "cleanup": {
+    "command": [
+      "pw-link",
+      "--output"
+    ],
+    "exit_status": 0,
+    "owned_ports_remaining": []
+  },
+  "raw_log": "unlocked-acceptance.log",
+  "callback_count": 385,
+  "midi_event_count": 17,
+  "gesture_begins": 1,
+  "gesture_ends": 1,
+  "callback_failures": 0,
+  "gtk_warning_count": 2
+}
