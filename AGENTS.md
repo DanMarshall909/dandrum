@@ -60,6 +60,9 @@
   from that run afterward. Preserve reusable `build/`, Cargo target directories, and installed dependencies during
   cleanup, even when Git ignores them. If reclaiming that space is necessary, explain the rebuild cost and get explicit
   direction before deleting it.
+- Dan authorizes deleting task artifacts confirmed to have no future use without further approval. Verify ownership,
+  stop their workers and retain required evidence before deletion. Preserve artifacts whose future value is uncertain;
+  reusable builds, caches and dependencies with an identified future use still follow the approval rule above.
 - For DSP and mixing tests, assert a known signed output value or waveform as well as relationships between renders.
   Relative comparisons alone can pass when both paths share the same incorrect transformation.
 - When testing a composed voice or graph, exercise a representative child module that produces the output or event;
