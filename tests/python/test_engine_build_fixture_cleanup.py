@@ -18,6 +18,9 @@ class EngineBuildFixtureCleanupTest(unittest.TestCase):
                 for name in (".githooks", "src", "tests", "examples", "schema", "scripts", "spikes"):
                     (root / name).mkdir()
                     (root / name / "input.txt").write_text(name)
+                notices = root / "docs/migrations/trigger-clap-beta-notices.json"
+                notices.parent.mkdir(parents=True)
+                notices.write_bytes((fixture.ROOT / "docs/migrations/trigger-clap-beta-notices.json").read_bytes())
                 work = root / "build/engine-only-regression"
                 cache = work / "cargo-target"
                 cache.mkdir(parents=True)
@@ -63,6 +66,9 @@ class EngineBuildFixtureCleanupTest(unittest.TestCase):
             for name in (".githooks", "src", "tests", "examples", "schema", "scripts", "spikes"):
                 (root / name).mkdir()
                 (root / name / "input.txt").write_text(name)
+            notices = root / "docs/migrations/trigger-clap-beta-notices.json"
+            notices.parent.mkdir(parents=True)
+            notices.write_bytes((fixture.ROOT / "docs/migrations/trigger-clap-beta-notices.json").read_bytes())
             scratch = root / "owned-run-scratch"
             scratch.mkdir()
             work = root / "build/engine-only-regression"

@@ -198,8 +198,8 @@ continuous signed callback audio across view replacement, invalid state with the
 live editor, and two independently edited/rendering instances. These are synthetic-host
 checks. Selected-sample import uses the native chooser and retains accepted content
 across editor recreation. The installed native overlap case below adds real server
-callbacks and native input. VST3, standalone devices, named-DAW acceptance and
-release distribution remain separate beta gates.
+callbacks and native input. Named-DAW acceptance and final release audits remain
+CLAP beta gates. VST3 and standalone devices are deferred to later increments.
 
 Native initialization retains this plugin artifact and its linked native libraries
 in memory until the host process exits, so framework cleanup code remains valid.

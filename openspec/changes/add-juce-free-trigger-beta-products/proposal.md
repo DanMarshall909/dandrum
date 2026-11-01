@@ -1,6 +1,6 @@
 ## Why
 
-The published JUCE-free Trigger CLAP editor foundation is not yet the first beta: real native selected-sample loading, portable restoration, named-DAW acceptance and installed release proof remain. The user revised the first beta to CLAP-only on 22 October 2026. VST3 and standalone are deferred to later increments and are not prerequisites for completing this beta.
+The published JUCE-free Trigger CLAP editor foundation alone did not establish the first beta: this change adds real native selected-sample loading, portable restoration, named-DAW acceptance and installed release proof. Current completion evidence is recorded in `tasks.md`. The user revised the first beta to CLAP-only on 22 October 2026. VST3 and standalone are deferred to later increments and are not prerequisites for completing this beta.
 
 ## What Changes
 
@@ -27,4 +27,4 @@ None. Existing CLAP, editor and session requirements remain in force. This incre
 
 Affected owners include `src/trigger-host`, `src/instrument-session`, engine render/preparation configuration, the existing CLAP/Wry edges, production Trigger import/document handling and build/install/verification fixtures. TriggerHost remains free of Clack, Wry, GTK, WebKit, VST3 and JUCE types. The current CLAP adapter and shared engine/session/runtime/parameter/state/editor machinery remain the architecture.
 
-The proof platform remains Linux x86_64 X11 with WebKitGTK 2.50.4. VST3, standalone/device ownership, other native platforms and broader plugin frameworks are outside this increment. The later VST3 preference and bounded feasibility gates are recorded in `future-products.md`; no VST3 or standalone implementation starts here. Main remains clean at `68dd655`. The CLAP beta closes only after every retained beta requirement is proven.
+The proof platform remains Linux x86_64 X11 with WebKitGTK 2.50.4. VST3, standalone/device ownership, other native platforms and broader plugin frameworks are outside this increment. The later VST3 preference and bounded feasibility gates are recorded in `future-products.md`; no VST3 or standalone implementation starts here. The 1 November 2026 landing request authorizes integration of verified work through task 7.2, superseding the earlier keep-main-unchanged instruction. Tasks 7.3, 8.1 and 8.2 remain open. The CLAP beta closes only after every retained beta requirement is proven.

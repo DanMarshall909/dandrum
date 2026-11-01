@@ -524,6 +524,9 @@ class OwnedVerificationTest(OwnedVerificationFixture):
         for name in ('.githooks', 'src', 'tests', 'examples', 'schema', 'scripts', 'spikes'):
             (checkout / name).mkdir()
             (checkout / name / 'input.txt').write_text(name)
+        notices = checkout / 'docs/migrations/trigger-clap-beta-notices.json'
+        notices.parent.mkdir(parents=True)
+        notices.write_bytes((ROOT / 'docs/migrations/trigger-clap-beta-notices.json').read_bytes())
         cache = checkout / 'build/engine-only-regression/cargo-target'
         cache.mkdir(parents=True)
         (cache / 'dependency').write_bytes(b'reusable binary')
