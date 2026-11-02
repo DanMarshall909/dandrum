@@ -92,14 +92,16 @@ if(NOT DANDRUM_ENGINE_ONLY)
 endif()
 
 set(RUST_ENGINE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/rust-engine)
-set(RUST_ENGINE_LIB ${CMAKE_CURRENT_BINARY_DIR}/rust-target/release/libdandrum_engine.a)
+set(RUST_ENGINE_LIB ${CMAKE_CURRENT_BINARY_DIR}/rust-products/release/libdandrum_engine.a)
 set(RUST_SESSION_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/instrument-session)
-set(RUST_SESSION_LIB ${CMAKE_CURRENT_BINARY_DIR}/rust-target/release/libdandrum_instrument_session.a)
+set(RUST_SESSION_LIB ${CMAKE_CURRENT_BINARY_DIR}/rust-products/release/libdandrum_instrument_session.a)
 set(RUST_TRIGGER_HOST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/trigger-host)
-set(RUST_TRIGGER_HOST_LIB ${CMAKE_CURRENT_BINARY_DIR}/rust-target/release/libdandrum_trigger_host.rlib)
+set(RUST_TRIGGER_HOST_LIB ${CMAKE_CURRENT_BINARY_DIR}/rust-products/release/libdandrum_trigger_host.rlib)
 set(RUST_TRIGGER_EDITOR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/trigger-editor)
-set(RUST_TRIGGER_EDITOR_LIB ${CMAKE_CURRENT_BINARY_DIR}/rust-target/release/libdandrum_trigger_editor.rlib)
-set(CARGO_BIN $ENV{HOME}/.cargo/bin/cargo)
+set(RUST_TRIGGER_EDITOR_LIB ${CMAKE_CURRENT_BINARY_DIR}/rust-products/release/libdandrum_trigger_editor.rlib)
+set(DANDRUM_RAW_CARGO "$ENV{HOME}/.cargo/bin/cargo" CACHE FILEPATH "Underlying Cargo executable")
+set(CARGO_BIN python3 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/cargo-cache.py"
+    --repo "${CMAKE_CURRENT_SOURCE_DIR}" --cargo "${DANDRUM_RAW_CARGO}" cargo --)
 set(RUST_ENGINE_MUTATION_EXCLUDE_ARGS
     --exclude src/bin/*.rs
     --exclude src/cli.rs)
@@ -109,20 +111,20 @@ file(GLOB_RECURSE RUST_SESSION_SOURCES CONFIGURE_DEPENDS ${RUST_SESSION_DIR}/src
 file(GLOB_RECURSE RUST_TRIGGER_HOST_SOURCES CONFIGURE_DEPENDS ${RUST_TRIGGER_HOST_DIR}/src/*.rs)
 file(GLOB_RECURSE RUST_TRIGGER_EDITOR_SOURCES CONFIGURE_DEPENDS ${RUST_TRIGGER_EDITOR_DIR}/src/*.rs)
 
-add_custom_command(
-    OUTPUT ${RUST_ENGINE_LIB}
-    COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target ${CARGO_BIN} build --release
+add_custom_target(dandrum-engine-rust
+    BYPRODUCTS ${RUST_ENGINE_LIB}
+    COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-products ${CARGO_BIN} build --release
     WORKING_DIRECTORY ${RUST_ENGINE_DIR}
     DEPENDS
         ${RUST_ENGINE_DIR}/Cargo.toml
         ${RUST_ENGINE_SOURCES}
     COMMENT "Building Rust audio engine")
 
-add_custom_target(dandrum-engine-rust DEPENDS ${RUST_ENGINE_LIB})
 
-add_custom_command(
-    OUTPUT ${RUST_SESSION_LIB}
-    COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+
+add_custom_target(dandrum-instrument-session-rust
+    BYPRODUCTS ${RUST_SESSION_LIB}
+    COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-products
         ${CARGO_BIN} build --release --locked --manifest-path ${RUST_SESSION_DIR}/Cargo.toml
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS
@@ -133,12 +135,12 @@ add_custom_command(
         ${RUST_ENGINE_SOURCES}
     COMMENT "Building Rust instrument session facade")
 
-add_custom_target(dandrum-instrument-session-rust DEPENDS ${RUST_SESSION_LIB})
+
 
 if(DANDRUM_TRIGGER_CLAP_EDITOR)
-    add_custom_command(
-        OUTPUT ${RUST_TRIGGER_HOST_LIB}
-        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+    add_custom_target(dandrum-trigger-host-rust
+        BYPRODUCTS ${RUST_TRIGGER_HOST_LIB}
+        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-products
             ${CARGO_BIN} build --release --locked --jobs 2
             --manifest-path ${RUST_TRIGGER_HOST_DIR}/Cargo.toml --lib
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -153,23 +155,23 @@ if(DANDRUM_TRIGGER_CLAP_EDITOR)
             ${RUST_ENGINE_DIR}/Cargo.lock
             ${RUST_ENGINE_SOURCES}
         COMMENT "Building the format-neutral Trigger host scaffold")
-    add_custom_target(dandrum-trigger-host-rust DEPENDS ${RUST_TRIGGER_HOST_LIB})
+
     add_test(NAME trigger-host-tests
-        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-products
             ${CARGO_BIN} test --locked --jobs 2
             --manifest-path ${RUST_TRIGGER_HOST_DIR}/Cargo.toml)
     set_tests_properties(trigger-host-tests PROPERTIES LABELS "trigger-host-fast" TIMEOUT 1200)
     add_test(NAME trigger-host-state-payload-limits
-        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-products
             ${CARGO_BIN} test --locked --jobs 2
             --manifest-path ${RUST_TRIGGER_HOST_DIR}/Cargo.toml --lib --
             --ignored --exact
             parameters::state_tests::payload_limits::maximum_portable_payload_restores_signed_tail_geometry_and_reclaims_every_owner)
     set_tests_properties(trigger-host-state-payload-limits PROPERTIES
         LABELS "slow;trigger-host-slow" RUN_SERIAL TRUE TIMEOUT 1200)
-    add_custom_command(
-        OUTPUT ${RUST_TRIGGER_EDITOR_LIB}
-        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+    add_custom_target(dandrum-trigger-editor-rust
+        BYPRODUCTS ${RUST_TRIGGER_EDITOR_LIB}
+        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-products
             ${CARGO_BIN} build --release --locked --jobs 2
             --manifest-path ${RUST_TRIGGER_EDITOR_DIR}/Cargo.toml --lib
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -178,9 +180,9 @@ if(DANDRUM_TRIGGER_CLAP_EDITOR)
             ${RUST_TRIGGER_EDITOR_DIR}/Cargo.lock
             ${RUST_TRIGGER_EDITOR_SOURCES}
         COMMENT "Building the concrete Trigger editor asset boundary")
-    add_custom_target(dandrum-trigger-editor-rust DEPENDS ${RUST_TRIGGER_EDITOR_LIB})
+
     add_test(NAME trigger-editor-tests
-        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-products
             ${CARGO_BIN} test --locked --jobs 2
             --manifest-path ${RUST_TRIGGER_EDITOR_DIR}/Cargo.toml --lib)
     set_tests_properties(trigger-editor-tests PROPERTIES LABELS "trigger-editor-fast" TIMEOUT 60)
@@ -199,12 +201,12 @@ add_test(
 
 add_test(
     NAME rust-engine-tests
-    COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target ${CARGO_BIN} test
+    COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-products ${CARGO_BIN} test
     WORKING_DIRECTORY ${RUST_ENGINE_DIR})
 
 add_test(
     NAME instrument-session-tests
-    COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+    COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-products
         ${CARGO_BIN} test --locked --jobs 2
         --manifest-path ${CMAKE_CURRENT_SOURCE_DIR}/src/instrument-session/Cargo.toml)
 set_tests_properties(instrument-session-tests PROPERTIES LABELS "session-fast" TIMEOUT 1200)
@@ -212,7 +214,8 @@ set_tests_properties(instrument-session-tests PROPERTIES LABELS "session-fast" T
 if(DANDRUM_ENABLE_MUTATION_CTEST)
     add_test(
         NAME rust-engine-mutation-tests
-        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target ${CARGO_BIN} mutants
+        COMMAND ${CMAKE_COMMAND} -E env --unset=CARGO_BUILD_BUILD_DIR
+            CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-mutation-target ${DANDRUM_RAW_CARGO} mutants
             ${RUST_ENGINE_MUTATION_EXCLUDE_ARGS}
         WORKING_DIRECTORY ${RUST_ENGINE_DIR})
     set_tests_properties(rust-engine-mutation-tests PROPERTIES TIMEOUT 1200)
@@ -312,6 +315,11 @@ add_test(NAME mutation-hook
             -p test_mutation_hook.py)
 set_tests_properties(mutation-hook PROPERTIES LABELS "fast")
 
+add_test(NAME cargo-cache-driver COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_cargo_cache.py)
+add_test(NAME cargo-cache-build-boundary COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_cargo_cache_build.py)
+set_tests_properties(cargo-cache-driver PROPERTIES LABELS "fast" TIMEOUT 60)
+set_tests_properties(cargo-cache-build-boundary PROPERTIES LABELS "slow;build-boundary" TIMEOUT 180)
+
 add_test(NAME engine-build-fixture-cleanup
     COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1 python3
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_engine_build_fixture_cleanup.py)
@@ -336,14 +344,15 @@ if(DANDRUM_CLAP_PROOF)
     set_tests_properties(trigger-clap-native-fixture-driver PROPERTIES
         LABELS "trigger-clap-boundary;fast" TIMEOUT 30)
     set(DANDRUM_CLAP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/clap-adapter)
-    set(DANDRUM_CLAP_LIBRARY ${CMAKE_CURRENT_BINARY_DIR}/rust-target/release/libdandrum_clap_adapter.so)
+    set(DANDRUM_CLAP_LIBRARY ${CMAKE_CURRENT_BINARY_DIR}/rust-products-clap-proof/release/libdandrum_clap_adapter.so)
+    set(DANDRUM_TRIGGER_CLAP_LIBRARY ${CMAKE_CURRENT_BINARY_DIR}/rust-products-clap-trigger/release/libdandrum_clap_adapter.so)
     set(DANDRUM_CLAP_ARTIFACT ${CMAKE_CURRENT_BINARY_DIR}/clap/DandrumHeadlessProof.clap)
     file(GLOB_RECURSE DANDRUM_CLAP_SOURCES CONFIGURE_DEPENDS
         ${DANDRUM_CLAP_DIR}/src/*.rs
         ${DANDRUM_CLAP_DIR}/fixtures/*.yaml)
-    add_custom_command(
-        OUTPUT ${DANDRUM_CLAP_ARTIFACT}
-        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+    add_custom_target(dandrum-clap-proof
+        BYPRODUCTS ${DANDRUM_CLAP_ARTIFACT}
+        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-products-clap-proof
             ${CARGO_BIN} build --locked --release --jobs 2 --manifest-path ${DANDRUM_CLAP_DIR}/Cargo.toml --lib
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/clap
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${DANDRUM_CLAP_LIBRARY} ${DANDRUM_CLAP_ARTIFACT}
@@ -355,18 +364,17 @@ if(DANDRUM_CLAP_PROOF)
             ${CMAKE_CURRENT_SOURCE_DIR}/examples/patches/tb303-acid.yaml
         COMMENT "Building the experimental JUCE-free CLAP proof"
         VERBATIM)
-    add_custom_target(dandrum-clap-proof DEPENDS ${DANDRUM_CLAP_ARTIFACT})
+
     if(DANDRUM_TRIGGER_CLAP_EDITOR)
         set(DANDRUM_TRIGGER_CLAP_ARTIFACT ${CMAKE_CURRENT_BINARY_DIR}/clap/DandrumTrigger.clap)
-        add_custom_command(
-            OUTPUT ${DANDRUM_TRIGGER_CLAP_ARTIFACT}
-            COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+        add_custom_target(dandrum-trigger-clap-product
+            BYPRODUCTS ${DANDRUM_TRIGGER_CLAP_ARTIFACT}
+            COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-products-clap-trigger
                 ${CARGO_BIN} build --locked --release --jobs 2
                 --manifest-path ${DANDRUM_CLAP_DIR}/Cargo.toml --features trigger-editor --lib
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${DANDRUM_CLAP_LIBRARY} ${DANDRUM_TRIGGER_CLAP_ARTIFACT}
-            # Both features reuse the warm Cargo directory. The copied default
-            # artifact must finish before this feature can overwrite its library.
+                ${DANDRUM_TRIGGER_CLAP_LIBRARY} ${DANDRUM_TRIGGER_CLAP_ARTIFACT}
+            # Product variants own separate final outputs and share only Cargo intermediates.
             DEPENDS ${DANDRUM_CLAP_ARTIFACT} ${DANDRUM_CLAP_SOURCES}
                 ${RUST_ENGINE_SOURCES} ${RUST_SESSION_SOURCES} ${RUST_TRIGGER_HOST_SOURCES}
                 ${RUST_TRIGGER_EDITOR_SOURCES}
@@ -376,10 +384,10 @@ if(DANDRUM_CLAP_PROOF)
                 ${RUST_TRIGGER_EDITOR_DIR}/Cargo.toml ${RUST_TRIGGER_EDITOR_DIR}/Cargo.lock
             COMMENT "Building the session-backed JUCE-free Trigger CLAP product"
             VERBATIM)
-        add_custom_target(dandrum-trigger-clap-product DEPENDS ${DANDRUM_TRIGGER_CLAP_ARTIFACT})
+        add_dependencies(dandrum-trigger-clap-product dandrum-clap-proof)
         add_test(NAME trigger-clap-dynamic-host
             COMMAND ${CMAKE_COMMAND} -E env
-                CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+                CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-products
                 DANDRUM_TRIGGER_CLAP_PLUGIN_PATH=${DANDRUM_TRIGGER_CLAP_ARTIFACT}
                 ${CARGO_BIN} test --locked --jobs 2
                 --manifest-path ${DANDRUM_CLAP_DIR}/Cargo.toml
@@ -423,7 +431,7 @@ if(DANDRUM_CLAP_PROOF)
         # fonts/notices. The Python source-free build fixture deliberately uses
         # a tiny build-only bundle and separately checks this test's registration.
         add_test(NAME trigger-editor-packaged-assets
-            COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+            COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-products
                 DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=${DANDRUM_TRIGGER_RESOURCE_DIR}/editor
                 ${CARGO_BIN} test --locked --jobs 2
                 --manifest-path ${RUST_TRIGGER_EDITOR_DIR}/Cargo.toml
@@ -433,7 +441,7 @@ if(DANDRUM_CLAP_PROOF)
         if(DANDRUM_TRIGGER_EDITOR_NATIVE_X11)
             # Prepare the native test binary before its bounded runtime checks.
             add_test(NAME trigger-editor-native-prepare
-                COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+                COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-products
                     ${CARGO_BIN} test --release --locked --jobs 2
                     --manifest-path ${RUST_TRIGGER_EDITOR_DIR}/Cargo.toml
                     --features native-x11 --lib --no-run)
@@ -442,7 +450,7 @@ if(DANDRUM_CLAP_PROOF)
                 FIXTURES_SETUP trigger-editor-native-compiled
                 RUN_SERIAL TRUE TIMEOUT 1200)
             add_test(NAME trigger-editor-native-x11
-                COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+                COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-products
                     GDK_BACKEND=x11
                     DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=${DANDRUM_TRIGGER_RESOURCE_DIR}/editor
                     ${CARGO_BIN} test --release --locked --jobs 2
@@ -451,7 +459,7 @@ if(DANDRUM_CLAP_PROOF)
                     native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent
                     -- --ignored --exact --nocapture --test-threads=1)
             add_test(NAME trigger-editor-native-handler-lifetime
-                COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+                COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-products
                     GDK_BACKEND=x11
                     DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=${DANDRUM_TRIGGER_RESOURCE_DIR}/editor
                     ${CARGO_BIN} test --release --locked --jobs 2
@@ -479,11 +487,14 @@ if(DANDRUM_CLAP_PROOF)
             # Tests may alter their private sidecars. Copy the exact product,
             # then select only the requested test executable from Cargo records.
             set(DANDRUM_TRIGGER_NATIVE_FIXTURE ${CMAKE_CURRENT_BINARY_DIR}/trigger-clap-native-fixture)
+            find_program(DANDRUM_FLOCK flock REQUIRED)
             add_test(NAME trigger-clap-native-prepare
-                COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/scripts/prepare-trigger-clap-native.py
-                    --cargo ${CARGO_BIN}
+                COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/scripts/cargo-cache.py
+                    --repo ${CMAKE_CURRENT_SOURCE_DIR} --cargo ${DANDRUM_RAW_CARGO} run --
+                    python3 ${CMAKE_CURRENT_SOURCE_DIR}/scripts/prepare-trigger-clap-native.py
+                    --cargo ${DANDRUM_RAW_CARGO}
                     --manifest ${DANDRUM_CLAP_DIR}/Cargo.toml
-                    --target-dir ${CMAKE_CURRENT_BINARY_DIR}/rust-target
+                    --target-dir ${CMAKE_CURRENT_BINARY_DIR}/rust-products
                     --resource-dir ${DANDRUM_TRIGGER_RESOURCE_DIR}
                     --product ${DANDRUM_TRIGGER_CLAP_ARTIFACT}
                     --output-dir ${DANDRUM_TRIGGER_NATIVE_FIXTURE})
@@ -501,7 +512,8 @@ if(DANDRUM_CLAP_PROOF)
                 copied_editor_failed_native_parent_attempt_retains_only_code_and_preserves_audio)
             foreach(native_name native_case IN ZIP_LISTS trigger_native_names trigger_native_cases)
                 add_test(NAME trigger-clap-native-${native_name}
-                    COMMAND ${CMAKE_COMMAND} -E env GDK_BACKEND=x11
+                    COMMAND ${DANDRUM_FLOCK} --shared ${DANDRUM_TRIGGER_NATIVE_FIXTURE}.lease
+                        ${CMAKE_COMMAND} -E env GDK_BACKEND=x11
                         DANDRUM_TRIGGER_GUI_PLUGIN_PATH=${DANDRUM_TRIGGER_NATIVE_FIXTURE}/DandrumTrigger.clap
                         ${DANDRUM_TRIGGER_NATIVE_FIXTURE}/trigger-gui-test
                         ${native_case} --ignored --exact --nocapture --test-threads=1)
@@ -515,10 +527,12 @@ if(DANDRUM_CLAP_PROOF)
             # the G1 loader fixture keeps its independent no-WebKit-host oracle.
             set(DANDRUM_TRIGGER_PARAMETERS_FIXTURE ${CMAKE_CURRENT_BINARY_DIR}/trigger-clap-parameters-fixture)
             add_test(NAME trigger-clap-native-parameters-prepare
-                COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/scripts/prepare-trigger-clap-native.py
-                    --cargo ${CARGO_BIN}
+                COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/scripts/cargo-cache.py
+                    --repo ${CMAKE_CURRENT_SOURCE_DIR} --cargo ${DANDRUM_RAW_CARGO} run --
+                    python3 ${CMAKE_CURRENT_SOURCE_DIR}/scripts/prepare-trigger-clap-native.py
+                    --cargo ${DANDRUM_RAW_CARGO}
                     --manifest ${DANDRUM_CLAP_DIR}/Cargo.toml
-                    --target-dir ${CMAKE_CURRENT_BINARY_DIR}/rust-target
+                    --target-dir ${CMAKE_CURRENT_BINARY_DIR}/rust-products
                     --resource-dir ${DANDRUM_TRIGGER_RESOURCE_DIR}
                     --product ${DANDRUM_TRIGGER_CLAP_ARTIFACT}
                     --output-dir ${DANDRUM_TRIGGER_PARAMETERS_FIXTURE}
@@ -561,7 +575,8 @@ if(DANDRUM_CLAP_PROOF)
                 selection_native::copied_react_recovers_selected_import_after_lost_reply_and_recreation)
             foreach(parameter_name parameter_case IN ZIP_LISTS trigger_parameter_names trigger_parameter_cases)
                 add_test(NAME trigger-clap-native-parameter-${parameter_name}
-                    COMMAND ${CMAKE_COMMAND} -E env GDK_BACKEND=x11
+                    COMMAND ${DANDRUM_FLOCK} --shared ${DANDRUM_TRIGGER_PARAMETERS_FIXTURE}.lease
+                        ${CMAKE_COMMAND} -E env GDK_BACKEND=x11
                         DANDRUM_TRIGGER_GUI_PLUGIN_PATH=${DANDRUM_TRIGGER_PARAMETERS_FIXTURE}/DandrumTrigger.clap
                         ${DANDRUM_TRIGGER_PARAMETERS_FIXTURE}/trigger-parameters-test
                         ${parameter_case} --ignored --exact --nocapture --test-threads=1)
@@ -576,7 +591,8 @@ if(DANDRUM_CLAP_PROOF)
             set(DANDRUM_TRIGGER_NATIVE_INSTALLED_CLAP "" CACHE FILEPATH
                 "External installed Trigger CLAP for native JACK/X11 acceptance")
             add_test(NAME trigger-clap-installed-native-overlap
-                COMMAND ${CMAKE_COMMAND} -E env GDK_BACKEND=x11
+                COMMAND ${DANDRUM_FLOCK} --shared ${DANDRUM_TRIGGER_PARAMETERS_FIXTURE}.lease
+                    ${CMAKE_COMMAND} -E env GDK_BACKEND=x11
                     DANDRUM_TRIGGER_GUI_PLUGIN_PATH=${DANDRUM_TRIGGER_NATIVE_INSTALLED_CLAP}
                     ${DANDRUM_TRIGGER_PARAMETERS_FIXTURE}/trigger-parameters-test
                     installed_native::installed_native_edits_overlap_server_audio_and_midi
@@ -593,7 +609,7 @@ if(DANDRUM_CLAP_PROOF)
     endif()
     add_test(NAME clap-dynamic-host
         COMMAND ${CMAKE_COMMAND} -E env
-            CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target
+            CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-products
             DANDRUM_CLAP_PLUGIN_PATH=${DANDRUM_CLAP_ARTIFACT}
             ${CARGO_BIN} test --locked --jobs 2 --manifest-path ${DANDRUM_CLAP_DIR}/Cargo.toml
                 --test clap_dynamic --test public_engine_baseline)

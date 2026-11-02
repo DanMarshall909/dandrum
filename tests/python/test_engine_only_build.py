@@ -1,11 +1,11 @@
 """Prove the actual engine build with the JUCE/browser source trees absent."""
 import json
+import fcntl
 import os
 from pathlib import Path
 import shutil
 import subprocess
 import sys
-import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -19,18 +19,31 @@ class EngineBuildFixture(unittest.TestCase):
     def setUpClass(cls):
         # Keep the task-local Cargo/build cache reusable across regression runs.
         cls.work = ROOT / "build" / "engine-only-regression"
+        if any(p.is_symlink() for p in (cls.work, *cls.work.parents)):
+            raise RuntimeError('snapshot-ownership: linked work path is preserved')
         cls.work.mkdir(parents=True, exist_ok=True)
-        # Fresh snapshots cannot retain removed source files or discovery caches.
-        # A supervisor owns crash-recoverable snapshots; reusable targets and
-        # command logs remain in work, outside that disposable scratch tree.
-        snapshot_parent = os.environ.get("DANDRUM_VERIFICATION_SCRATCH", cls.work)
-        cls.fixture_root = Path(tempfile.mkdtemp(prefix="fixture-", dir=snapshot_parent))
+        # Stable source identity retains Cargo reuse; an inherited lease keeps
+        # another run from resetting inputs while a compiler child still runs.
+        cls.snapshot_lease = os.open(cls.work / '.snapshot-lease', os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+        cls.addClassCleanup(os.close, cls.snapshot_lease)
+        fcntl.flock(cls.snapshot_lease, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        cls.fixture_root = cls.work / 'fixture-stable'
+        marker = cls.work / '.snapshot-owner.json'
+        if marker.is_symlink() or cls.fixture_root.is_symlink():
+            raise RuntimeError('snapshot-ownership: linked snapshot is preserved')
+        if cls.fixture_root.exists():
+            expected = [cls.fixture_root.stat().st_dev, cls.fixture_root.stat().st_ino]
+            if marker.is_symlink() or not marker.exists() or json.loads(marker.read_text()) != expected:
+                raise RuntimeError('snapshot-ownership: unknown snapshot is preserved')
+            shutil.rmtree(cls.fixture_root)
+        cls.fixture_root.mkdir()
+        with os.fdopen(os.open(marker, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600), 'w') as record:
+            json.dump([cls.fixture_root.stat().st_dev, cls.fixture_root.stat().st_ino], record)
         cls.addClassCleanup(shutil.rmtree, cls.fixture_root)
         cls.source = cls.fixture_root / "source"
         cls.source.mkdir()
-        cls.cargo_target = cls.work / "cargo-target"
-        cls.cargo_target.mkdir(exist_ok=True)
         shutil.copy2(ROOT / "CMakeLists.txt", cls.source / "CMakeLists.txt")
+        shutil.copy2(ROOT / ".ai-rules.json", cls.source / ".ai-rules.json")
         for name in (".githooks", "src", "tests", "examples", "schema", "scripts", "spikes"):
             shutil.copytree(ROOT / name, cls.source / name, ignore=shutil.ignore_patterns("target", "build", "__pycache__"))
         assert not (cls.source / "third_party").exists()
@@ -42,7 +55,8 @@ class EngineBuildFixture(unittest.TestCase):
 
     def command(self, label, args):
         result = subprocess.run(args, capture_output=True, text=True,
-                                env=dict(os.environ, CARGO_NET_OFFLINE="true"))
+                                env=dict(os.environ, CARGO_NET_OFFLINE="true"),
+                                pass_fds=(self.snapshot_lease,))
         output = result.stdout + result.stderr
         (self.work / (label + ".log")).write_text(output)
         return result.returncode, output
@@ -51,9 +65,6 @@ class EngineBuildFixture(unittest.TestCase):
         # DefaultPatch searches upward from CTest; keep it inside this snapshot.
         build = self.source / "build" / label
         build.mkdir(parents=True)
-        if "-DDANDRUM_ENGINE_ONLY=ON" in options:
-            # All fixtures belong to this task; CTest serializes this guard.
-            (build / "rust-target").symlink_to(self.cargo_target, target_is_directory=True)
         code, output = self.command(label, [CMAKE, "-S", str(self.source), "-B", str(build),
                                           "-DCMAKE_BUILD_TYPE=Release", *options])
         return build, code, output
@@ -118,7 +129,7 @@ class ClapProofBuildTest(EngineBuildFixture):
             with self.subTest(mode=mode):
                 code, output = self.command(
                     "clap-" + mode + "-development-dependencies",
-                    ["cargo", "tree", "--offline", "--locked", "--manifest-path",
+                    [str(self.source / "scripts/cargo"), "tree", "--offline", "--locked", "--manifest-path",
                      str(self.source / "src/clap-adapter/Cargo.toml"),
                      "--edges", "normal,build,dev", "--prefix", "none", *features])
                 self.assertEqual(code, 0, output)
@@ -150,7 +161,7 @@ class ClapProofBuildTest(EngineBuildFixture):
         command = [CMAKE, "--build", str(build), "--target", "dandrum-clap-proof", "--", "--dry-run"]
         code, output = self.command("clap-current-plan", command)
         self.assertEqual(code, 0, output)
-        self.assertNotIn("cargo build", output)
+        self.assertIn("cargo -- build", output)
         for relative in ("schema/patch.schema.yaml", "src/rust-engine/module-library/seed-1.0.0.zip"):
             with self.subTest(resource=relative):
                 resource = self.source / relative
@@ -160,7 +171,7 @@ class ClapProofBuildTest(EngineBuildFixture):
                 try:
                     code, output = self.command("clap-resource-plan-" + resource.name, command)
                     self.assertEqual(code, 0, output)
-                    self.assertIn("cargo build", output, relative + " must rebuild the packaged plugin")
+                    self.assertIn("cargo -- build", output, relative + " must rebuild the packaged plugin")
                 finally:
                     os.utime(resource, ns=(previous.st_atime_ns, previous.st_mtime_ns))
 
@@ -345,7 +356,7 @@ class ClapProofBuildTest(EngineBuildFixture):
         for name, case in cases.items():
             with self.subTest(native_case=name):
                 test = tests[name]
-                for argument in (str(fixture / "trigger-gui-test"), "GDK_BACKEND=x11",
+                for argument in ("--shared", str(fixture) + ".lease", str(fixture / "trigger-gui-test"), "GDK_BACKEND=x11",
                                  "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=" + str(fixture / "DandrumTrigger.clap"),
                                  case, "--ignored", "--exact", "--test-threads=1"):
                     self.assertIn(argument, test["command"])
@@ -450,7 +461,7 @@ class ClapProofBuildTest(EngineBuildFixture):
                    "dandrum-trigger-clap-product", "--", "--dry-run"]
         code, output = self.command("gui-product-current-plan", command)
         self.assertEqual(code, 0, output)
-        self.assertNotIn("cargo build", output)
+        self.assertIn("cargo -- build", output)
         for resource, rebuild in [
             *((source, True) for source in sorted(
                 (self.source / "src/trigger-editor/src").rglob("*.rs"))),
@@ -469,7 +480,7 @@ class ClapProofBuildTest(EngineBuildFixture):
                     if rebuild:
                         self.assertIn("--features trigger-editor --lib", output)
                     else:
-                        self.assertNotIn("cargo build", output)
+                        self.assertIn("cargo -- build", output)
                         self.assertIn("copy_directory", output)
                 finally:
                     os.utime(resource, ns=(previous.st_atime_ns, previous.st_mtime_ns))
@@ -582,7 +593,7 @@ class ClapProofBuildTest(EngineBuildFixture):
         self.assertEqual(artifact.read_bytes(), trigger_binary)
 
         code, output = self.command(
-            "trigger-host-dependencies", ["cargo", "tree", "--offline", "--locked",
+            "trigger-host-dependencies", [str(self.source / "scripts/cargo"), "tree", "--offline", "--locked",
                 "--manifest-path", str(self.source / "src/trigger-host/Cargo.toml"),
                 "--edges", "normal", "--prefix", "none"])
         self.assertEqual(code, 0, output)
@@ -602,9 +613,9 @@ class ClapProofBuildTest(EngineBuildFixture):
         # Resolve the already-tested host binary before hiding source assets.
         # Its installed run below loads only the supplied copied plugin tree.
         code, output = self.command(
-            "trigger-installed-test-binary", ["cargo", "test", "--locked", "--jobs", "2",
+            "trigger-installed-test-binary", [str(self.source / "scripts/cargo"), "test", "--locked", "--jobs", "2",
                 "--manifest-path", str(self.source / "src/clap-adapter/Cargo.toml"),
-                "--target-dir", str(self.cargo_target), "--features", "trigger",
+                "--target-dir", str(build / "rust-products"), "--features", "trigger",
                 "--test", "trigger_dynamic", "--no-run", "--message-format=json"])
         self.assertEqual(code, 0, output)
         artifacts = [json.loads(line) for line in output.splitlines() if line.startswith("{")]

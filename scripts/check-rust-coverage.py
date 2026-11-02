@@ -27,7 +27,7 @@ def main() -> int:
 
     result = subprocess.run(
         [
-            str(Path.home() / ".cargo" / "bin" / "cargo"),
+            str(ROOT / "scripts" / "cargo"),
             "llvm-cov",
             "--manifest-path",
             str(MANIFEST),

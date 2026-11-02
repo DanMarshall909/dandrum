@@ -521,6 +521,7 @@ class OwnedVerificationTest(OwnedVerificationFixture):
         checkout = self.root / 'checkout'
         checkout.mkdir()
         (checkout / 'CMakeLists.txt').write_text('# fixture source\n')
+        (checkout / '.ai-rules.json').write_text('{}')
         for name in ('.githooks', 'src', 'tests', 'examples', 'schema', 'scripts', 'spikes'):
             (checkout / name).mkdir()
             (checkout / name / 'input.txt').write_text(name)
@@ -543,11 +544,11 @@ class OwnedVerificationTest(OwnedVerificationFixture):
             ' def test_owned(self):\n'
             '  self.assertEqual(self.source.parent.parent,expected)\n'
             '  self.assertEqual((self.source/"src/input.txt").read_text(),"src")\n'
-            '  (self.source/"shared").symlink_to(self.cargo_target,target_is_directory=True)\n'
+            '  (self.source/"shared").symlink_to(expected/"cargo-target",target_is_directory=True)\n'
             'result=unittest.TextTestRunner().run(unittest.defaultTestLoader.loadTestsFromTestCase(Probe))\n'
             'sys.exit(not result.wasSuccessful())\n')
         result = self.invoke('run', '--directory', str(self.run), '--', sys.executable,
-                             str(probe), str(ROOT / 'tests/python'), str(checkout), str(self.run / 'scratch'))
+                             str(probe), str(ROOT / 'tests/python'), str(checkout), str(cache.parent))
         self.assertEqual(result.returncode, 0, (self.run / 'stderr.log').read_text())
         self.assertFalse((self.run / 'scratch').exists())
         self.assertEqual(list(cache.parent.glob('fixture-*')), [])
