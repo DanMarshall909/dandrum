@@ -1,0 +1,21 @@
+{
+  "scope": "engine-final",
+  "archive": "/home/dan/code/dandrum/.git/codex/trigger-beta-qualification-20261102/engine-final-replay.tar.gz",
+  "archive_bytes": 749704359,
+  "archive_sha256": "fdb86da223cf999c8608c79c94686eb41f0536c6c81a8147a737b6fd8fdd51f0",
+  "producer_report_sha256": "32455c93d1952025eecd5b59a275cf1e4e2eff33c1576a8b9f92e95155506381",
+  "replayed_report_sha256": "4607008cc1b09970e8ccf10f76325901482afbdf8151da9cdba4527c90194e74",
+  "all_counters_and_source_locations_match": true,
+  "percentages_verified_against_equal_counts": true,
+  "percentage_absolute_tolerance": 1e-10,
+  "cargo_llvm_cov_metadata_retained": {
+    "version": "0.8.7",
+    "manifest_path": "/home/dan/code/dandrum/src/rust-engine/Cargo.toml"
+  },
+  "replay_byte_exact_match": false,
+  "input_count": 28,
+  "input_bytes": 3342526228,
+  "source_commit": "7ea453e2510fdd3c40f40248699356b2440bcf16",
+  "source_tree": "27931fd3c9ba889b35302318268ffdb006470f14",
+  "llvm_cov_sha256": "db3a5f91495e98fa6e4ce9e2fd6f890f35ddeb17966fb10fe2fab332497388f6"
+}
