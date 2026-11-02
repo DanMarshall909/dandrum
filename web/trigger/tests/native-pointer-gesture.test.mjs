@@ -83,3 +83,18 @@ test('detaching during a native drag ends once and removes pointer listeners',as
   pointer(control,'pointerdown');pointer(control,'pointerup');dom.window.dispatchEvent(new dom.window.Event('blur'));await settled();
   assert.equal(gestures().length,3,'detached controls no longer reach native gestures');
 });
+
+test('a rejected cancellation rollback still ends the native gesture and reports the failure',async t=>{
+  const {bridge,engine,store,presenter,dom,pointer,settled,gestures}=await setup(t),control=dom.window.document.querySelector('[data-knob]');
+  pointer(control,'pointerdown');await settled();
+  const knob=presenter.buildModel().voiceSecs.flatMap(section=>section.knobs).find(knob=>knob.key==='drums.level');
+  await knob.set(.4);
+  bridge.functions.setParameter=()=>{throw new Error('rollback unavailable');};
+  pointer(control,'pointercancel');await settled();await settled();
+  assert.equal(presenter.state.modNote,'rollback unavailable');
+  assert.equal(engine.getPatch().params['drums.level'].value,.4,'failed rollback preserves the last accepted value');
+  assert.equal(store.canUndo,true,'the failed undo remains available for a later retry');
+  assert.deepEqual(gestures().at(-1),['endGesture','drums.level',7]);
+  pointer(control,'pointerup');presenter.detach();await settled();
+  assert.equal(gestures().filter(call=>call[0]==='endGesture').length,1);
+});
