@@ -446,6 +446,11 @@ unsafe fn ffi_name<'a>(pointer: &'a *const c_char) -> Option<&'a str> {
     unsafe { CStr::from_ptr(*pointer) }.to_str().ok()
 }
 
+/// # Safety
+/// A non-null `path` must point to a readable NUL-terminated C string
+/// that remains valid throughout the call; invalid UTF-8 is rejected.
+/// A nonempty `declarations` array must contain `declaration_count` initialized
+/// records with readable NUL-terminated `name` strings for this call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_prepare_file(
     path: *const c_char,
@@ -568,6 +573,10 @@ pub unsafe extern "C" fn dandrum_kernel_prepare_file(
     .unwrap_or(std::ptr::null_mut())
 }
 
+/// # Safety
+/// A non-null `engine` must point to a live kernel instrument.
+/// Access must be exclusive for this call, including against reads and
+/// destruction; the handle is not internally synchronized.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_set_public_numeric_parameter_by_slot(
     engine: *mut DandrumKernelInstrument,
@@ -590,6 +599,11 @@ pub unsafe extern "C" fn dandrum_kernel_set_public_numeric_parameter_by_slot(
     true
 }
 
+/// # Safety
+/// `engine` must be null or the original owning pointer to a live
+/// kernel instrument returned by its matching creation function.
+/// All access to this handle and its borrowed views must have ended. The
+/// non-null pointer is consumed exactly once and must not be used afterward.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_destroy(engine: *mut DandrumKernelInstrument) {
     if !engine.is_null() {
@@ -599,6 +613,9 @@ pub unsafe extern "C" fn dandrum_kernel_destroy(engine: *mut DandrumKernelInstru
 
 /// Call away from the audio callback while the engine is protected against
 /// replacement. The returned copy has no pointers into the engine or PCM.
+/// # Safety
+/// A non-null `engine` must point to a live kernel instrument.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_ui_snapshot_create(
     engine: *const DandrumKernelInstrument,
@@ -644,6 +661,11 @@ pub unsafe extern "C" fn dandrum_kernel_ui_snapshot_create(
     }))
 }
 
+/// # Safety
+/// `snapshot` must be null or the original owning pointer to a live
+/// UI snapshot returned by its matching creation function.
+/// All access to this handle and its borrowed views must have ended. The
+/// non-null pointer is consumed exactly once and must not be used afterward.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_ui_snapshot_destroy(
     snapshot: *mut DandrumKernelUiSnapshot,
@@ -654,6 +676,9 @@ pub unsafe extern "C" fn dandrum_kernel_ui_snapshot_destroy(
 }
 
 /// The caller protects `engine` against replacement during this off-audio call.
+/// # Safety
+/// A non-null `engine` must point to a live kernel instrument.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_waveform_source_create(
     engine: *const DandrumKernelInstrument,
@@ -669,6 +694,11 @@ pub unsafe extern "C" fn dandrum_kernel_waveform_source_create(
     }))
 }
 
+/// # Safety
+/// `source` must be null or the original owning pointer to a live
+/// retained waveform source returned by its matching creation function.
+/// All access to this handle and its borrowed views must have ended. The
+/// non-null pointer is consumed exactly once and must not be used afterward.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_waveform_source_destroy(
     source: *mut DandrumKernelWaveformSource,
@@ -678,25 +708,43 @@ pub unsafe extern "C" fn dandrum_kernel_waveform_source_destroy(
     }
 }
 
+/// # Safety
+/// A non-null `source` must point to a live retained waveform source.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `output` must designate aligned writable storage for one
+/// `DandrumKernelWaveformSourceInfo`, without overlapping a handle or its borrowed storage.
+/// Its previous contents need not be initialized.
+/// Returned string views borrow `source`-owned UTF-8 byte ranges,
+/// not C strings; keep `source` alive while reading them.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_waveform_source_info(
     source: *const DandrumKernelWaveformSource,
     output: *mut DandrumKernelWaveformSourceInfo,
 ) -> bool {
     ref_or!(source, source, false);
-    mut_or!(output, output, false);
-    *output = DandrumKernelWaveformSourceInfo {
-        source_id: ui_string_view(&source.source_id),
-        sample_rate_hz: source.sample.sample_rate_hz(),
-        channel_count: source.sample.source_channel_count(),
-        frame_count: source.sample.frame_count() as u64,
-        content_revision: *source.sample.content_revision(),
-    };
+    if output.is_null() {
+        return false;
+    }
+    unsafe {
+        output.write(DandrumKernelWaveformSourceInfo {
+            source_id: ui_string_view(&source.source_id),
+            sample_rate_hz: source.sample.sample_rate_hz(),
+            channel_count: source.sample.source_channel_count(),
+            frame_count: source.sample.frame_count() as u64,
+            content_revision: *source.sample.content_revision(),
+        });
+    }
     true
 }
 
 /// `output` must point to `bucket_count` writable elements. Invalid requests
 /// leave the caller buffer untouched.
+/// # Safety
+/// A non-null `source` must point to a live retained waveform source.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `output` must be aligned writable storage for `bucket_count`
+/// buckets, disjoint from the retained source. Prior initialization is not
+/// required; invalid requests leave the destination unchanged.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_waveform_reduce(
     source: *const DandrumKernelWaveformSource,
@@ -717,22 +765,27 @@ pub unsafe extern "C" fn dandrum_kernel_waveform_reduce(
     else {
         return false;
     };
-    for (destination, bucket) in unsafe { std::slice::from_raw_parts_mut(output, bucket_count) }
-        .iter_mut()
-        .zip(buckets)
-    {
-        *destination = DandrumKernelWaveformBucket {
-            start_frame: bucket.start_frame,
-            end_frame: bucket.end_frame,
-            minimum: bucket.minimum,
-            maximum: bucket.maximum,
-        };
+    for (index, bucket) in buckets.into_iter().enumerate() {
+        unsafe {
+            output.add(index).write(DandrumKernelWaveformBucket {
+                start_frame: bucket.start_frame,
+                end_frame: bucket.end_frame,
+                minimum: bucket.minimum,
+                maximum: bucket.maximum,
+            });
+        }
     }
     true
 }
 
 /// Copies contiguous, selected-channel source frames off the audio thread.
 /// `output` holds `frame_count` writable floats; invalid requests leave it untouched.
+/// # Safety
+/// A non-null `source` must point to a live retained waveform source.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `output` must be aligned writable storage for `frame_count`
+/// floats, disjoint from the retained source. Prior initialization is not
+/// required; invalid requests leave the destination unchanged.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_prepared_source_copy_channel(
     source: *const DandrumKernelWaveformSource,
@@ -763,6 +816,9 @@ pub unsafe extern "C" fn dandrum_kernel_prepared_source_copy_channel(
     true
 }
 
+/// # Safety
+/// A non-null `snapshot` must point to a live UI snapshot.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_ui_source_count(
     snapshot: *const DandrumKernelUiSnapshot,
@@ -771,6 +827,14 @@ pub unsafe extern "C" fn dandrum_kernel_ui_source_count(
     snapshot.sources.len()
 }
 
+/// # Safety
+/// A non-null `snapshot` must point to a live UI snapshot.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `output` must designate aligned writable storage for one
+/// `DandrumKernelUiSource`, without overlapping a handle or its borrowed storage.
+/// Its previous contents need not be initialized.
+/// Returned string views borrow `snapshot`-owned UTF-8 byte ranges,
+/// not C strings; keep `snapshot` alive while reading them.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_ui_source(
     snapshot: *const DandrumKernelUiSnapshot,
@@ -778,19 +842,26 @@ pub unsafe extern "C" fn dandrum_kernel_ui_source(
     output: *mut DandrumKernelUiSource,
 ) -> bool {
     ref_or!(snapshot, snapshot, false);
-    mut_or!(output, output, false);
+    if output.is_null() {
+        return false;
+    }
     let Some(source) = snapshot.sources.get(index) else {
         return false;
     };
-    *output = DandrumKernelUiSource {
-        id: ui_string_view(&source.declaration.id),
-        sample_rate_hz: source.sample_rate_hz,
-        channel_count: source.channel_count,
-        frame_count: source.frame_count,
-    };
+    unsafe {
+        output.write(DandrumKernelUiSource {
+            id: ui_string_view(&source.declaration.id),
+            sample_rate_hz: source.sample_rate_hz,
+            channel_count: source.channel_count,
+            frame_count: source.frame_count,
+        });
+    }
     true
 }
 
+/// # Safety
+/// A non-null `snapshot` must point to a live UI snapshot.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_ui_region_count(
     snapshot: *const DandrumKernelUiSnapshot,
@@ -803,6 +874,14 @@ pub unsafe extern "C" fn dandrum_kernel_ui_region_count(
         .map_or(0, |source| source.declaration.regions.len())
 }
 
+/// # Safety
+/// A non-null `snapshot` must point to a live UI snapshot.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `output` must designate aligned writable storage for one
+/// `DandrumKernelUiRegion`, without overlapping a handle or its borrowed storage.
+/// Its previous contents need not be initialized.
+/// Returned string views borrow `snapshot`-owned UTF-8 byte ranges,
+/// not C strings; keep `snapshot` alive while reading them.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_ui_region(
     snapshot: *const DandrumKernelUiSnapshot,
@@ -811,7 +890,9 @@ pub unsafe extern "C" fn dandrum_kernel_ui_region(
     output: *mut DandrumKernelUiRegion,
 ) -> bool {
     ref_or!(snapshot, snapshot, false);
-    mut_or!(output, output, false);
+    if output.is_null() {
+        return false;
+    }
     let Some(region) = snapshot
         .sources
         .get(source_index)
@@ -820,29 +901,34 @@ pub unsafe extern "C" fn dandrum_kernel_ui_region(
         return false;
     };
     let loop_settings = region.loop_settings.as_ref();
-    *output = DandrumKernelUiRegion {
-        id: ui_string_view(&region.id),
-        start_frame: region.start_frame,
-        end_frame: region.end_frame,
-        root_note: region.root_note.map_or(-1, i32::from),
-        has_gain_db: region.gain_db.is_some(),
-        gain_db: region.gain_db.unwrap_or(0.0),
-        has_pan: region.pan.is_some(),
-        pan: region.pan.unwrap_or(0.0),
-        reverse: region.reverse,
-        fade_in_ms: region.fade_in_ms.unwrap_or(0.0),
-        fade_out_ms: region.fade_out_ms.unwrap_or(0.0),
-        has_loop: loop_settings.is_some(),
-        loop_mode: ui_string_view(loop_settings.map_or("", |settings| &settings.mode)),
-        loop_start_frame: loop_settings.map_or(0, |settings| settings.start_frame),
-        loop_end_frame: loop_settings.map_or(0, |settings| settings.end_frame),
-        loop_crossfade_ms: loop_settings
-            .and_then(|settings| settings.crossfade_ms)
-            .unwrap_or(0.0),
-    };
+    unsafe {
+        output.write(DandrumKernelUiRegion {
+            id: ui_string_view(&region.id),
+            start_frame: region.start_frame,
+            end_frame: region.end_frame,
+            root_note: region.root_note.map_or(-1, i32::from),
+            has_gain_db: region.gain_db.is_some(),
+            gain_db: region.gain_db.unwrap_or(0.0),
+            has_pan: region.pan.is_some(),
+            pan: region.pan.unwrap_or(0.0),
+            reverse: region.reverse,
+            fade_in_ms: region.fade_in_ms.unwrap_or(0.0),
+            fade_out_ms: region.fade_out_ms.unwrap_or(0.0),
+            has_loop: loop_settings.is_some(),
+            loop_mode: ui_string_view(loop_settings.map_or("", |settings| &settings.mode)),
+            loop_start_frame: loop_settings.map_or(0, |settings| settings.start_frame),
+            loop_end_frame: loop_settings.map_or(0, |settings| settings.end_frame),
+            loop_crossfade_ms: loop_settings
+                .and_then(|settings| settings.crossfade_ms)
+                .unwrap_or(0.0),
+        });
+    }
     true
 }
 
+/// # Safety
+/// A non-null `snapshot` must point to a live UI snapshot.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_ui_slice_count(
     snapshot: *const DandrumKernelUiSnapshot,
@@ -855,6 +941,14 @@ pub unsafe extern "C" fn dandrum_kernel_ui_slice_count(
         .map_or(0, |source| source.declaration.slices.len())
 }
 
+/// # Safety
+/// A non-null `snapshot` must point to a live UI snapshot.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `output` must designate aligned writable storage for one
+/// `DandrumKernelUiSlice`, without overlapping a handle or its borrowed storage.
+/// Its previous contents need not be initialized.
+/// Returned string views borrow `snapshot`-owned UTF-8 byte ranges,
+/// not C strings; keep `snapshot` alive while reading them.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_ui_slice(
     snapshot: *const DandrumKernelUiSnapshot,
@@ -863,7 +957,9 @@ pub unsafe extern "C" fn dandrum_kernel_ui_slice(
     output: *mut DandrumKernelUiSlice,
 ) -> bool {
     ref_or!(snapshot, snapshot, false);
-    mut_or!(output, output, false);
+    if output.is_null() {
+        return false;
+    }
     let Some(slice) = snapshot
         .sources
         .get(source_index)
@@ -871,14 +967,19 @@ pub unsafe extern "C" fn dandrum_kernel_ui_slice(
     else {
         return false;
     };
-    *output = DandrumKernelUiSlice {
-        id: ui_string_view(&slice.id),
-        start_frame: slice.start_frame,
-        end_frame: slice.end_frame,
-    };
+    unsafe {
+        output.write(DandrumKernelUiSlice {
+            id: ui_string_view(&slice.id),
+            start_frame: slice.start_frame,
+            end_frame: slice.end_frame,
+        });
+    }
     true
 }
 
+/// # Safety
+/// A non-null `snapshot` must point to a live UI snapshot.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_ui_map_count(
     snapshot: *const DandrumKernelUiSnapshot,
@@ -887,6 +988,14 @@ pub unsafe extern "C" fn dandrum_kernel_ui_map_count(
     snapshot.maps.len()
 }
 
+/// # Safety
+/// A non-null `snapshot` must point to a live UI snapshot.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `output` must designate aligned writable storage for one
+/// `DandrumKernelUiMap`, without overlapping a handle or its borrowed storage.
+/// Its previous contents need not be initialized.
+/// Returned string views borrow `snapshot`-owned UTF-8 byte ranges,
+/// not C strings; keep `snapshot` alive while reading them.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_ui_map(
     snapshot: *const DandrumKernelUiSnapshot,
@@ -894,23 +1003,30 @@ pub unsafe extern "C" fn dandrum_kernel_ui_map(
     output: *mut DandrumKernelUiMap,
 ) -> bool {
     ref_or!(snapshot, snapshot, false);
-    mut_or!(output, output, false);
+    if output.is_null() {
+        return false;
+    }
     let Some(map) = snapshot.maps.get(index) else {
         return false;
     };
-    *output = DandrumKernelUiMap {
-        id: ui_string_view(&map.declaration.id),
-        selection_mode: ui_string_view(
-            map.declaration
-                .selection_mode
-                .as_deref()
-                .unwrap_or("first_match"),
-        ),
-        selection_seed: map.declaration.selection_seed,
-    };
+    unsafe {
+        output.write(DandrumKernelUiMap {
+            id: ui_string_view(&map.declaration.id),
+            selection_mode: ui_string_view(
+                map.declaration
+                    .selection_mode
+                    .as_deref()
+                    .unwrap_or("first_match"),
+            ),
+            selection_seed: map.declaration.selection_seed,
+        });
+    }
     true
 }
 
+/// # Safety
+/// A non-null `snapshot` must point to a live UI snapshot.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_ui_zone_count(
     snapshot: *const DandrumKernelUiSnapshot,
@@ -923,6 +1039,14 @@ pub unsafe extern "C" fn dandrum_kernel_ui_zone_count(
         .map_or(0, |map| map.zones.len())
 }
 
+/// # Safety
+/// A non-null `snapshot` must point to a live UI snapshot.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `output` must designate aligned writable storage for one
+/// `DandrumKernelUiZone`, without overlapping a handle or its borrowed storage.
+/// Its previous contents need not be initialized.
+/// Returned string views borrow `snapshot`-owned UTF-8 byte ranges,
+/// not C strings; keep `snapshot` alive while reading them.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_ui_zone(
     snapshot: *const DandrumKernelUiSnapshot,
@@ -931,7 +1055,9 @@ pub unsafe extern "C" fn dandrum_kernel_ui_zone(
     output: *mut DandrumKernelUiZone,
 ) -> bool {
     ref_or!(snapshot, snapshot, false);
-    mut_or!(output, output, false);
+    if output.is_null() {
+        return false;
+    }
     let Some(zone) = snapshot
         .maps
         .get(map_index)
@@ -939,32 +1065,40 @@ pub unsafe extern "C" fn dandrum_kernel_ui_zone(
     else {
         return false;
     };
-    *output = DandrumKernelUiZone {
-        id: ui_string_view(zone.declaration.id.as_deref().unwrap_or("")),
-        source_index: zone.source_index,
-        region_index: zone.region_index,
-        start_frame: zone.effective_region.start_frame,
-        end_frame: zone.effective_region.end_frame,
-        key_low: zone.declaration.key_range[0],
-        key_high: zone.declaration.key_range[1],
-        velocity_low: zone.declaration.velocity_range[0],
-        velocity_high: zone.declaration.velocity_range[1],
-        round_robin_group: ui_string_view(
-            zone.declaration.round_robin_group.as_deref().unwrap_or(""),
-        ),
-        choke_group: ui_string_view(zone.declaration.choke_group.as_deref().unwrap_or("")),
-        control_group: zone.declaration.control_group.map_or(-1, i32::from),
-        weight: zone.declaration.weight.unwrap_or(1),
-        has_gain_db: zone.declaration.gain_db.is_some(),
-        gain_db: zone.declaration.gain_db.unwrap_or(0.0),
-        has_pan: zone.declaration.pan.is_some(),
-        pan: zone.declaration.pan.unwrap_or(0.0),
-        has_pitch_semitones: zone.declaration.pitch_semitones.is_some(),
-        pitch_semitones: zone.declaration.pitch_semitones.unwrap_or(0.0),
-    };
+    unsafe {
+        output.write(DandrumKernelUiZone {
+            id: ui_string_view(zone.declaration.id.as_deref().unwrap_or("")),
+            source_index: zone.source_index,
+            region_index: zone.region_index,
+            start_frame: zone.effective_region.start_frame,
+            end_frame: zone.effective_region.end_frame,
+            key_low: zone.declaration.key_range[0],
+            key_high: zone.declaration.key_range[1],
+            velocity_low: zone.declaration.velocity_range[0],
+            velocity_high: zone.declaration.velocity_range[1],
+            round_robin_group: ui_string_view(
+                zone.declaration.round_robin_group.as_deref().unwrap_or(""),
+            ),
+            choke_group: ui_string_view(zone.declaration.choke_group.as_deref().unwrap_or("")),
+            control_group: zone.declaration.control_group.map_or(-1, i32::from),
+            weight: zone.declaration.weight.unwrap_or(1),
+            has_gain_db: zone.declaration.gain_db.is_some(),
+            gain_db: zone.declaration.gain_db.unwrap_or(0.0),
+            has_pan: zone.declaration.pan.is_some(),
+            pan: zone.declaration.pan.unwrap_or(0.0),
+            has_pitch_semitones: zone.declaration.pitch_semitones.is_some(),
+            pitch_semitones: zone.declaration.pitch_semitones.unwrap_or(0.0),
+        });
+    }
     true
 }
 
+/// # Safety
+/// A non-null `snapshot` must point to a live UI snapshot.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `output` must designate aligned writable storage for one
+/// `i32`, without overlapping a handle or its borrowed storage.
+/// Its previous contents need not be initialized.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_ui_public_control_group(
     snapshot: *const DandrumKernelUiSnapshot,
@@ -972,14 +1106,19 @@ pub unsafe extern "C" fn dandrum_kernel_ui_public_control_group(
     output: *mut i32,
 ) -> bool {
     ref_or!(snapshot, snapshot, false);
-    mut_or!(output, output, false);
+    if output.is_null() {
+        return false;
+    }
     let Some(group) = snapshot.public_control_groups.get(index) else {
         return false;
     };
-    *output = group.map_or(0, i32::from);
+    unsafe { output.write(group.map_or(0, i32::from)) };
     true
 }
 
+/// # Safety
+/// A non-null `engine` must point to a live kernel instrument.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_root_port_count(
     engine: *const DandrumKernelInstrument,
@@ -988,6 +1127,14 @@ pub unsafe extern "C" fn dandrum_kernel_root_port_count(
     engine.ports.len()
 }
 
+/// # Safety
+/// A non-null `engine` must point to a live kernel instrument.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `name` must be writable for `name_capacity` bytes
+/// and must not overlap storage borrowed from a handle.
+/// Non-null output pointers must be aligned and writable for their declared
+/// pointee types, disjoint from handles and their borrowed storage. Their prior
+/// contents need not be initialized.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_root_port(
     engine: *const DandrumKernelInstrument,
@@ -1030,6 +1177,9 @@ pub unsafe extern "C" fn dandrum_kernel_root_port(
     copy_string_to_c_buffer(port.name(), name, name_capacity)
 }
 
+/// # Safety
+/// A non-null `engine` must point to a live kernel instrument.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_total_latency_samples(
     engine: *const DandrumKernelInstrument,
@@ -1038,6 +1188,10 @@ pub unsafe extern "C" fn dandrum_kernel_total_latency_samples(
     engine.prepared.total_latency_samples()
 }
 
+/// # Safety
+/// A non-null `engine` must point to a live kernel instrument.
+/// Access must be exclusive for this call, including against reads and
+/// destruction; the handle is not internally synchronized.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_note_on_at(
     engine: *mut DandrumKernelInstrument,
@@ -1054,6 +1208,10 @@ pub unsafe extern "C" fn dandrum_kernel_note_on_at(
         .try_note_on_at(note, velocity, frame_offset as u32)
 }
 
+/// # Safety
+/// A non-null `engine` must point to a live kernel instrument.
+/// Access must be exclusive for this call, including against reads and
+/// destruction; the handle is not internally synchronized.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_note_off_at(
     engine: *mut DandrumKernelInstrument,
@@ -1067,6 +1225,10 @@ pub unsafe extern "C" fn dandrum_kernel_note_off_at(
     engine.runtime.try_note_off_at(note, frame_offset as u32)
 }
 
+/// # Safety
+/// A non-null `engine` must point to a live kernel instrument.
+/// Access must be exclusive for this call, including against reads and
+/// destruction; the handle is not internally synchronized.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_reset(engine: *mut DandrumKernelInstrument) -> bool {
     mut_or!(engine, engine, false);
@@ -1074,6 +1236,16 @@ pub unsafe extern "C" fn dandrum_kernel_reset(engine: *mut DandrumKernelInstrume
     true
 }
 
+/// # Safety
+/// A non-null `engine` must be a live kernel instrument, exclusively
+/// accessible for this call, including against metadata reads and destruction.
+/// Nonempty descriptor arrays must contain their declared number of initialized
+/// views; each channel-pointer array must contain `channel_count` initialized
+/// pointers. Accessed input channels must hold `frames` readable floats and
+/// output channels must hold `frames` aligned writable floats. Keep descriptor
+/// and pointer arrays unchanged, and output buffers disjoint from them and the
+/// instrument. All inputs are copied before outputs are written, so ordinary
+/// input/output sample-buffer reuse is allowed. Bus `name` fields are unused.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_render(
     engine: *mut DandrumKernelInstrument,
@@ -1185,6 +1357,9 @@ pub unsafe extern "C" fn dandrum_kernel_render(
     frames
 }
 
+/// # Safety
+/// A non-null `path` must point to a readable NUL-terminated C string
+/// that remains valid throughout the call; invalid UTF-8 is rejected.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_patch_public_numeric_parameter_count(
     path: *const c_char,
@@ -1198,6 +1373,11 @@ pub unsafe extern "C" fn dandrum_patch_public_numeric_parameter_count(
     patch.preset_surface().parameters().len()
 }
 
+/// # Safety
+/// A non-null `path` must point to a readable NUL-terminated C string
+/// that remains valid throughout the call; invalid UTF-8 is rejected.
+/// A non-null `buffer` must be writable for `capacity` bytes
+/// and must not overlap storage borrowed from a handle.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_patch_public_numeric_parameter_port_name(
     path: *const c_char,
@@ -1217,6 +1397,16 @@ pub unsafe extern "C" fn dandrum_patch_public_numeric_parameter_port_name(
     copy_string_to_c_buffer(alias.port_name(), buffer, capacity)
 }
 
+/// # Safety
+/// A non-null `path` must point to a readable NUL-terminated C string
+/// that remains valid throughout the call; invalid UTF-8 is rejected.
+/// A non-null `id_buffer` must be writable for `id_buffer_capacity` bytes
+/// and must not overlap storage borrowed from a handle.
+/// A non-null `name_buffer` must be writable for `name_buffer_capacity` bytes
+/// and must not overlap storage borrowed from a handle.
+/// Non-null output pointers must be aligned and writable for their declared
+/// pointee types, disjoint from handles and their borrowed storage. Their prior
+/// contents need not be initialized.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_patch_public_numeric_parameter_descriptor(
     path: *const c_char,
@@ -1260,6 +1450,11 @@ pub extern "C" fn dandrum_realtime_event_queue_create(
     }))
 }
 
+/// # Safety
+/// `queue` must be null or the original owning pointer to a live
+/// realtime event queue returned by its matching creation function.
+/// All access to this handle and its borrowed views must have ended. The
+/// non-null pointer is consumed exactly once and must not be used afterward.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_realtime_event_queue_destroy(
     queue: *mut DandrumRealtimeEventQueue,
@@ -1269,6 +1464,10 @@ pub unsafe extern "C" fn dandrum_realtime_event_queue_destroy(
     }
 }
 
+/// # Safety
+/// A non-null `queue` must point to a live realtime event queue.
+/// Access must be exclusive for this call, including against reads and
+/// destruction; the handle is not internally synchronized.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_realtime_event_queue_note_on(
     queue: *mut DandrumRealtimeEventQueue,
@@ -1278,6 +1477,10 @@ pub unsafe extern "C" fn dandrum_realtime_event_queue_note_on(
     submit_realtime_queue_event(queue, realtime::RealtimeEvent::NoteOn { note, velocity })
 }
 
+/// # Safety
+/// A non-null `queue` must point to a live realtime event queue.
+/// Access must be exclusive for this call, including against reads and
+/// destruction; the handle is not internally synchronized.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_realtime_event_queue_note_off(
     queue: *mut DandrumRealtimeEventQueue,
@@ -1286,6 +1489,9 @@ pub unsafe extern "C" fn dandrum_realtime_event_queue_note_off(
     submit_realtime_queue_event(queue, realtime::RealtimeEvent::NoteOff { note })
 }
 
+/// # Safety
+/// A non-null `queue` must point to a live realtime event queue.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_realtime_event_queue_dropped_count(
     queue: *const DandrumRealtimeEventQueue,
@@ -2500,6 +2706,77 @@ modules:
         assert_eq!((bucket[0].minimum, bucket[0].maximum), prior);
         unsafe { dandrum_kernel_waveform_source_destroy(source) };
         unsafe { dandrum_kernel_waveform_source_destroy(std::ptr::null_mut()) };
+    }
+
+    #[test]
+    fn ffi_output_buffers_initialize_caller_storage_and_preserve_invalid_destinations() {
+        let snapshot = DandrumKernelUiSnapshot {
+            sources: Vec::new(),
+            maps: Vec::new(),
+            public_control_groups: vec![Some(7), None],
+        };
+        assert!(!unsafe { dandrum_kernel_ui_source(&snapshot, 0, std::ptr::null_mut()) });
+        assert!(!unsafe { dandrum_kernel_ui_region(&snapshot, 0, 0, std::ptr::null_mut()) });
+        assert!(!unsafe { dandrum_kernel_ui_slice(&snapshot, 0, 0, std::ptr::null_mut()) });
+        assert!(!unsafe { dandrum_kernel_ui_map(&snapshot, 0, std::ptr::null_mut()) });
+        assert!(!unsafe { dandrum_kernel_ui_zone(&snapshot, 0, 0, std::ptr::null_mut()) });
+        assert!(!unsafe {
+            dandrum_kernel_ui_public_control_group(&snapshot, 0, std::ptr::null_mut())
+        });
+        for (index, expected) in [(0, 7), (1, 0)] {
+            let mut group = std::mem::MaybeUninit::<i32>::uninit();
+            assert!(unsafe {
+                dandrum_kernel_ui_public_control_group(&snapshot, index, group.as_mut_ptr())
+            });
+            assert_eq!(unsafe { group.assume_init() }, expected);
+        }
+        let mut group = 123;
+        assert!(!unsafe { dandrum_kernel_ui_public_control_group(&snapshot, 2, &mut group) });
+        assert_eq!(group, 123);
+        let source = DandrumKernelWaveformSource {
+            source_id: "signed".into(),
+            sample: Arc::new(LoadedSample::new(48_000, vec![-0.75, 0.5, -0.125, 1.0])),
+        };
+        let mut info = std::mem::MaybeUninit::<DandrumKernelWaveformSourceInfo>::uninit();
+        assert!(unsafe { dandrum_kernel_waveform_source_info(&source, info.as_mut_ptr()) });
+        let info = unsafe { info.assume_init() };
+        assert_eq!(ui_text(info.source_id), "signed");
+        assert_eq!(
+            (info.sample_rate_hz, info.channel_count, info.frame_count),
+            (48_000, 1, 4)
+        );
+        assert!(!unsafe { dandrum_kernel_waveform_source_info(&source, std::ptr::null_mut()) });
+        let mut buckets = [std::mem::MaybeUninit::<DandrumKernelWaveformBucket>::uninit(); 2];
+        assert!(unsafe {
+            dandrum_kernel_waveform_reduce(&source, 0, 0, 4, buckets.as_mut_ptr().cast(), 2)
+        });
+        let [first, second] = buckets.map(|bucket| unsafe { bucket.assume_init() });
+        assert_eq!(
+            (
+                first.start_frame,
+                first.end_frame,
+                first.minimum,
+                first.maximum
+            ),
+            (0, 2, -0.75, 0.5)
+        );
+        assert_eq!(
+            (
+                second.start_frame,
+                second.end_frame,
+                second.minimum,
+                second.maximum
+            ),
+            (2, 4, -0.125, 1.0)
+        );
+        let mut preserved = [first, second];
+        for (channel, end) in [(1, 4), (0, 5)] {
+            assert!(!unsafe {
+                dandrum_kernel_waveform_reduce(&source, channel, 0, end, preserved.as_mut_ptr(), 2)
+            });
+            assert_eq!((preserved[0].minimum, preserved[0].maximum), (-0.75, 0.5));
+            assert_eq!((preserved[1].minimum, preserved[1].maximum), (-0.125, 1.0));
+        }
     }
 
     #[test]
