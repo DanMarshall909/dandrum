@@ -58,11 +58,11 @@ pub(super) fn compiled_sum_audio_input(
     };
 
     for source in &compiled.nodes()[module_idx].input_routes[port_idx] {
-        if let Some(outputs) = all_outputs.get(&source.module_index) {
-            if let Some(buffer) = outputs.audio.get(&source.output_port_name) {
-                for (frame_idx, sample) in buffer.iter().enumerate().take(frames) {
-                    result[frame_idx] += sample;
-                }
+        if let Some(outputs) = all_outputs.get(&source.module_index)
+            && let Some(buffer) = outputs.audio.get(&source.output_port_name)
+        {
+            for (frame_idx, sample) in buffer.iter().enumerate().take(frames) {
+                result[frame_idx] += sample;
             }
         }
     }
@@ -88,11 +88,11 @@ pub(super) fn compiled_sum_control_input(
     }
 
     for source in &compiled.nodes()[module_idx].input_routes[port_idx] {
-        if let Some(outputs) = all_outputs.get(&source.module_index) {
-            if let Some(buffer) = outputs.control.get(&source.output_port_name) {
-                for (frame_idx, sample) in buffer.iter().enumerate().take(frames) {
-                    result[frame_idx] += sample;
-                }
+        if let Some(outputs) = all_outputs.get(&source.module_index)
+            && let Some(buffer) = outputs.control.get(&source.output_port_name)
+        {
+            for (frame_idx, sample) in buffer.iter().enumerate().take(frames) {
+                result[frame_idx] += sample;
             }
         }
     }

@@ -341,19 +341,19 @@ fn load_yaml(path: &str) -> Result<Sequencer, String> {
         }
         let map = step_val.as_mapping().ok_or("step not a map")?;
         let note = map
-            .get(&serde_yaml::Value::String("note".into()))
+            .get(serde_yaml::Value::String("note".into()))
             .and_then(|v| v.as_u64())
             .unwrap_or(60) as u8;
         let vel = map
-            .get(&serde_yaml::Value::String("velocity".into()))
+            .get(serde_yaml::Value::String("velocity".into()))
             .and_then(|v| v.as_u64())
             .unwrap_or(100) as u8;
         let gate = map
-            .get(&serde_yaml::Value::String("gate".into()))
+            .get(serde_yaml::Value::String("gate".into()))
             .and_then(|v| v.as_f64())
             .unwrap_or(0.5) as f32;
         let active = map
-            .get(&serde_yaml::Value::String("active".into()))
+            .get(serde_yaml::Value::String("active".into()))
             .and_then(|v| v.as_bool())
             .unwrap_or(true);
         seq.steps[i] = Step {
@@ -587,7 +587,7 @@ fn run_tui() -> io::Result<()> {
             }
             KeyCode::Char('S') => {
                 let patch_yaml = build_patch_yaml();
-                match std::fs::write("/tmp/pattern-patch.yaml", &patch_yaml) {
+                match std::fs::write("/tmp/pattern-patch.yaml", patch_yaml) {
                     Ok(_) => queue!(
                         stdout,
                         MoveTo(0, 10),
@@ -656,8 +656,8 @@ fn main() -> io::Result<()> {
             Ok(_) => {
                 let patch_yaml = build_patch_yaml();
                 let out_path = path.replace(".yaml", "-patch.yaml");
-                std::fs::write(&out_path, &patch_yaml)
-                    .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+                std::fs::write(&out_path, patch_yaml)
+                    .map_err(|e| io::Error::other(e.to_string()))?;
                 println!("Exported patch to {}", out_path);
             }
             Err(e) => eprintln!("Error loading {}: {e}", path),

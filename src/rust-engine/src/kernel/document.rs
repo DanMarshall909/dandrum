@@ -849,21 +849,21 @@ fn load_kernel_document_str(
         .unwrap_or(ROOT_DEFINITION_NAME);
 
     let mut registry = super::builtins::builtin_registry();
+    let mut declarations = Vec::with_capacity(document.module_definitions.len());
     for defined_module in &document.module_definitions {
-        registry = registry.with_definition(convert_declaration(
+        let declaration = convert_declaration(
             &defined_module.definition_type,
             defined_module.implementation.as_deref(),
             &defined_module.static_params,
             &defined_module.ports,
             &origin,
-        )?);
+        )?;
+        registry = registry.with_definition(declaration.clone());
+        declarations.push(declaration);
     }
-    for defined_module in &document.module_definitions {
+    for (defined_module, declaration) in document.module_definitions.iter().zip(declarations) {
         let definition = convert_graph(
-            &defined_module.definition_type,
-            defined_module.implementation.as_deref(),
-            &defined_module.static_params,
-            &defined_module.ports,
+            declaration,
             &defined_module.modules,
             &defined_module.connections,
             &registry,
@@ -873,10 +873,13 @@ fn load_kernel_document_str(
     }
 
     let root = convert_graph(
-        root_name,
-        None,
-        &document.static_params,
-        &document.ports,
+        convert_declaration(
+            root_name,
+            None,
+            &document.static_params,
+            &document.ports,
+            &origin,
+        )?,
         &document.modules,
         &document.connections,
         &registry,
@@ -1204,16 +1207,12 @@ fn string_field<'a>(mapping: &'a Mapping, field: &str) -> Option<&'a str> {
 }
 
 fn convert_graph(
-    name: &str,
-    implementation: Option<&str>,
-    static_params: &[StaticParamDocument],
-    ports: &[PortDocument],
+    mut graph: GraphDefinition,
     nodes: &[NodeDocument],
     connections: &[ConnectionDocument],
     registry: &DefinitionRegistry,
     origin: &ResourceOrigin,
 ) -> Result<GraphDefinition, Diagnostics> {
-    let mut graph = convert_declaration(name, implementation, static_params, ports, origin)?;
     for node in nodes {
         graph = graph.with_node(convert_node(node, registry, origin)?);
     }

@@ -1980,13 +1980,14 @@ impl GraphDefinition {
                 .or_insert(0) += 1;
         }
         for (destination, count) in &destination_counts {
-            if *count > 1 {
-                if let Some(node) = resolved_nodes.get(destination.node()) {
-                    if let Some(port) = node.ports.iter().find(|p| {
-                        p.name() == destination.port() && p.direction() == PortDirection::Input
-                    }) {
-                        if port.multiplicity() == Multiplicity::SingleSource {
-                            diagnostics.push(
+            if *count > 1
+                && let Some(node) = resolved_nodes.get(destination.node())
+                && let Some(port) = node.ports.iter().find(|p| {
+                    p.name() == destination.port() && p.direction() == PortDirection::Input
+                })
+                && port.multiplicity() == Multiplicity::SingleSource
+            {
+                diagnostics.push(
                                 Diagnostic::new(
                                     error_codes::KERNEL_MULTIPLE_SOURCES,
                                     Severity::Error,
@@ -1999,9 +2000,6 @@ impl GraphDefinition {
                                 .with_module_id(destination.node().as_str())
                                 .with_port_name(destination.port()),
                             );
-                        }
-                    }
-                }
             }
         }
 

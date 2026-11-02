@@ -437,7 +437,7 @@ fn build_kernel_instrument(
     }))
 }
 
-unsafe fn ffi_name<'a>(pointer: &'a *const c_char) -> Option<&'a str> {
+unsafe fn ffi_name(pointer: &*const c_char) -> Option<&str> {
     if pointer.is_null() {
         return None;
     }

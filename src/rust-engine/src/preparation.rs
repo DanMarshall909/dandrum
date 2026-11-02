@@ -9,7 +9,7 @@ use crate::compiled_patch::{
     self, CompileError, CompiledConstruction, CompiledNodeData, CompiledPatch,
     CompiledPolyOutputAccumulator, CompiledPolyRegion, CompiledPolyVoiceStorage, CompiledPortSpan,
     CompiledResourceHandles, CompiledRootPort, CompiledSampleZone, ImpulseResponseResourceHandle,
-    RootBusPlan, SampleChokeMode, SampleInterpolation, SampleMapKeyLookup, SampleResourceHandle,
+    RootBusPlan, SampleInterpolation, SampleMapKeyLookup, SampleResourceHandle,
     SampleSelectionMode,
 };
 use crate::diagnostics::{self, Diagnostic, Severity};
@@ -1089,23 +1089,22 @@ fn prepare_sample_assets(
                     ),
                 ));
             }
-            if let Some(grid) = &analysis.beat_grid {
-                if [&grid.beats, &grid.downbeats].into_iter().any(|markers| {
+            if let Some(grid) = &analysis.beat_grid
+                && ([&grid.beats, &grid.downbeats].into_iter().any(|markers| {
                     markers.iter().any(|frame| *frame >= frame_count)
                         || markers.windows(2).any(|pair| pair[0] >= pair[1])
                 }) || grid
                     .downbeats
                     .iter()
-                    .any(|frame| grid.beats.binary_search(frame).is_err())
-                {
-                    return Err(sample_preparation_error(
-                        diagnostics::error_codes::KERNEL_SAMPLE_INVALID_TIMING,
-                        format!(
-                            "sample source '{}' has an invalid explicit beat grid",
-                            declaration.id
-                        ),
-                    ));
-                }
+                    .any(|frame| grid.beats.binary_search(frame).is_err()))
+            {
+                return Err(sample_preparation_error(
+                    diagnostics::error_codes::KERNEL_SAMPLE_INVALID_TIMING,
+                    format!(
+                        "sample source '{}' has an invalid explicit beat grid",
+                        declaration.id
+                    ),
+                ));
             }
         }
         sources.push(PreparedSampleSource {
@@ -1713,28 +1712,41 @@ fn compile_poly_regions(
 ) -> Result<Vec<CompiledPolyRegion>, KernelPreparationError> {
     compile_poly_regions_with_path(
         flattened,
-        registry,
-        render_settings,
-        resource_resolver,
         parent,
-        sample_assets,
+        PolyCompilation {
+            registry,
+            render_settings,
+            resource_resolver,
+            sample_assets,
+            compensation_metadata,
+        },
         &mut Vec::new(),
         "",
-        compensation_metadata,
     )
+}
+
+struct PolyCompilation<'work, 'resources> {
+    registry: &'work mut DefinitionRegistry,
+    render_settings: &'work RealtimeRenderSettings,
+    resource_resolver: Option<&'work mut ResourceResolver<'resources>>,
+    sample_assets: &'work PreparedSampleAssets,
+    compensation_metadata: &'work mut Vec<PreparedCompensationMetadata>,
 }
 
 fn compile_poly_regions_with_path(
     flattened: &FlattenedGraph,
-    registry: &mut DefinitionRegistry,
-    render_settings: &RealtimeRenderSettings,
-    mut resource_resolver: Option<&mut ResourceResolver<'_>>,
     parent: &CompiledPatch,
-    sample_assets: &PreparedSampleAssets,
+    compilation: PolyCompilation<'_, '_>,
     path: &mut Vec<String>,
     location_prefix: &str,
-    compensation_metadata: &mut Vec<PreparedCompensationMetadata>,
 ) -> Result<Vec<CompiledPolyRegion>, KernelPreparationError> {
+    let PolyCompilation {
+        registry,
+        render_settings,
+        mut resource_resolver,
+        sample_assets,
+        compensation_metadata,
+    } = compilation;
     let mut compiled_regions = Vec::with_capacity(flattened.poly_regions().len());
     for region in flattened.poly_regions() {
         validate_poly_region_path(region, path)?;
@@ -1859,14 +1871,16 @@ fn compile_poly_regions_with_path(
         ));
         let nested_regions = compile_poly_regions_with_path(
             &child_flattened,
-            registry,
-            render_settings,
-            resource_resolver.as_deref_mut(),
             &child_patch,
-            sample_assets,
+            PolyCompilation {
+                registry: &mut *registry,
+                render_settings,
+                resource_resolver: resource_resolver.as_deref_mut(),
+                sample_assets,
+                compensation_metadata: &mut *compensation_metadata,
+            },
             path,
             &format!("{region_path}::"),
-            compensation_metadata,
         )?;
         path.pop();
         child_patch.set_poly_regions(nested_regions);
@@ -1958,17 +1972,7 @@ fn compile_poly_regions_with_path(
             })
             .collect();
         compiled_regions.push(CompiledPolyRegion::new(
-            region.node_id().as_str(),
-            region.max_voices(),
-            region.allocation_policy(),
-            region.sample_map_choke().map(|(mode, fade_ms)| {
-                let mode = match mode {
-                    "fade" => SampleChokeMode::Fade,
-                    "release" => SampleChokeMode::Release,
-                    _ => SampleChokeMode::Cut,
-                };
-                (mode, fade_ms)
-            }),
+            region,
             child_flattened,
             child_patch,
             voices,

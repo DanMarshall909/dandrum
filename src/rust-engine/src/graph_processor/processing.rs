@@ -71,6 +71,10 @@ pub(super) fn process_oscillator(
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Independent reference DSP consumes named control-port buffers without rebuilding state wrappers"
+)]
 pub(super) fn process_adsr(
     state: &mut PerModuleState,
     events_in: &[BlockEvent],
@@ -206,6 +210,10 @@ pub(super) fn process_vca(audio_in: Vec<f32>, gain_in: Vec<f32>) -> ModuleOutput
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Independent reference DSP consumes named control-port buffers without rebuilding state wrappers"
+)]
 pub(super) fn process_sampler(
     state: &mut PerModuleState,
     events_in: &[BlockEvent],
@@ -238,7 +246,7 @@ pub(super) fn process_sampler(
     events.sort_by_key(|event| event.frame_offset);
     let mut next_event = 0usize;
 
-    for frame in 0..frames {
+    for (frame, output) in audio.iter_mut().enumerate() {
         while next_event < events.len() && events[next_event].frame_offset as usize == frame {
             if matches!(events[next_event].event, ScriptEvent::NoteOn { .. }) {
                 *position = normalized_position(
@@ -260,7 +268,7 @@ pub(super) fn process_sampler(
             continue;
         }
 
-        audio[frame] = sample_frames[idx];
+        *output = sample_frames[idx];
 
         let rate = rate_in.get(frame).copied().unwrap_or(1.0).max(0.0);
         *position += rate;
@@ -341,6 +349,10 @@ pub(super) fn process_event_filter(
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Independent reference DSP consumes named control-port buffers without rebuilding state wrappers"
+)]
 pub(super) fn process_envelope_follower(
     state: &mut PerModuleState,
     audio_in: &[f32],
@@ -477,6 +489,10 @@ pub(super) fn event_matches_note(event: &BlockEvent, expected_note: Option<u8>) 
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Independent reference DSP consumes named control-port buffers without rebuilding state wrappers"
+)]
 pub(super) fn process_dynamics_processor(
     state: &mut PerModuleState,
     audio_in: &[f32],

@@ -134,10 +134,10 @@ impl Convolution {
             // Overlap-add into output buffer at the appropriate offset
             let offset = partition_idx * self.block_size;
             if offset < self.output_buffer.len() {
-                for j in 0..fft_size {
+                for (j, value) in product.iter().enumerate() {
                     let out_idx = offset + j;
                     if out_idx < self.output_buffer.len() {
-                        self.output_buffer[out_idx] += product[j].re * scale;
+                        self.output_buffer[out_idx] += value.re * scale;
                     }
                 }
             }

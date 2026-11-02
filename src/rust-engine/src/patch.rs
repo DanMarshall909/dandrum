@@ -324,7 +324,7 @@ pub enum PresetLoadError {
     },
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 #[cfg(test)]
 pub struct PatchValidationError {
     diagnostics: Diagnostics,
@@ -333,9 +333,7 @@ pub struct PatchValidationError {
 #[cfg(test)]
 impl PatchValidationError {
     pub fn new() -> Self {
-        Self {
-            diagnostics: Diagnostics::new(),
-        }
+        Self::default()
     }
 
     pub fn push(&mut self, diagnostic: Diagnostic) {
@@ -613,23 +611,23 @@ fn validate_preset_values(
             continue;
         }
 
-        if let (ParameterValue::Number(actual), Some(min)) = (value, target.min) {
-            if *actual < min {
-                diagnostics.push(Diagnostic::new(
-                    error_codes::VALIDATION_INVALID_VALUE,
-                    Severity::Error,
-                    format!("preset target {name} is below minimum {min}: {actual}"),
-                ));
-            }
+        if let (ParameterValue::Number(actual), Some(min)) = (value, target.min)
+            && *actual < min
+        {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_INVALID_VALUE,
+                Severity::Error,
+                format!("preset target {name} is below minimum {min}: {actual}"),
+            ));
         }
-        if let (ParameterValue::Number(actual), Some(max)) = (value, target.max) {
-            if *actual > max {
-                diagnostics.push(Diagnostic::new(
-                    error_codes::VALIDATION_INVALID_VALUE,
-                    Severity::Error,
-                    format!("preset target {name} is above maximum {max}: {actual}"),
-                ));
-            }
+        if let (ParameterValue::Number(actual), Some(max)) = (value, target.max)
+            && *actual > max
+        {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_INVALID_VALUE,
+                Severity::Error,
+                format!("preset target {name} is above maximum {max}: {actual}"),
+            ));
         }
     }
 }
@@ -709,11 +707,11 @@ pub fn resolve_module_parameters(
             values.insert(name.clone(), value.clone());
         }
 
-        if let Some(preset_modules) = selected_preset {
-            if let Some(overrides) = preset_modules.get(&module.id) {
-                for (name, value) in overrides {
-                    values.insert(name.clone(), value.clone());
-                }
+        if let Some(preset_modules) = selected_preset
+            && let Some(overrides) = preset_modules.get(&module.id)
+        {
+            for (name, value) in overrides {
+                values.insert(name.clone(), value.clone());
             }
         }
 
@@ -1035,9 +1033,7 @@ fn script_source(module: &ModuleDeclaration) -> Option<Result<&str, Diagnostic>>
         });
     }
 
-    let Some(source) = module.extra_fields.get(SCRIPT_SOURCE_FIELD) else {
-        return None;
-    };
+    let source = module.extra_fields.get(SCRIPT_SOURCE_FIELD)?;
     Some(match source.as_str() {
         Some(source) => Ok(source),
         None => Err(Diagnostic::new(
@@ -1167,27 +1163,24 @@ fn validate_parameter_value(
         return;
     }
 
-    if let Some(values) = metadata.enum_values() {
-        if let ParameterValue::Text(actual) = value {
-            if !values.iter().any(|allowed| allowed == actual) {
-                diagnostics.push(
-                    Diagnostic::new(
-                        error_codes::VALIDATION_INVALID_VALUE,
-                        Severity::Error,
-                        format!(
-                            "{source_label} {module_id}.{name} has invalid enum value {actual}"
-                        ),
-                    )
-                    .with_module_id(module_id)
-                    .with_expected(format!("one of [{}]", values.join(", ")))
-                    .with_actual(actual)
-                    .with_suggested_fix(format!(
-                        "set {module_id}.{name} to one of [{}]",
-                        values.join(", ")
-                    )),
-                );
-            }
-        }
+    if let Some(values) = metadata.enum_values()
+        && let ParameterValue::Text(actual) = value
+        && !values.iter().any(|allowed| allowed == actual)
+    {
+        diagnostics.push(
+            Diagnostic::new(
+                error_codes::VALIDATION_INVALID_VALUE,
+                Severity::Error,
+                format!("{source_label} {module_id}.{name} has invalid enum value {actual}"),
+            )
+            .with_module_id(module_id)
+            .with_expected(format!("one of [{}]", values.join(", ")))
+            .with_actual(actual)
+            .with_suggested_fix(format!(
+                "set {module_id}.{name} to one of [{}]",
+                values.join(", ")
+            )),
+        );
     }
 
     if let (ParameterValue::Number(actual), Some((min, max))) = (value, metadata.range()) {
@@ -1326,7 +1319,7 @@ fn validate_sampler_asset_reference(
             )
             .with_module_id(&module.id)
             .with_expected("sample")
-            .with_actual(&format!("{:?}", asset.kind)),
+            .with_actual(format!("{:?}", asset.kind)),
         );
     }
 }
@@ -1505,29 +1498,29 @@ fn validate_preset_surface(
             );
         }
 
-        if let (ParameterValue::Number(default), Some(min)) = (&target.default, target.min) {
-            if *default < min {
-                diagnostics.push(Diagnostic::new(
-                    error_codes::VALIDATION_INVALID_VALUE,
-                    Severity::Error,
-                    format!(
-                        "preset target {} default {} is below minimum {}",
-                        target.name, default, min
-                    ),
-                ));
-            }
+        if let (ParameterValue::Number(default), Some(min)) = (&target.default, target.min)
+            && *default < min
+        {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_INVALID_VALUE,
+                Severity::Error,
+                format!(
+                    "preset target {} default {} is below minimum {}",
+                    target.name, default, min
+                ),
+            ));
         }
-        if let (ParameterValue::Number(default), Some(max)) = (&target.default, target.max) {
-            if *default > max {
-                diagnostics.push(Diagnostic::new(
-                    error_codes::VALIDATION_INVALID_VALUE,
-                    Severity::Error,
-                    format!(
-                        "preset target {} default {} is above maximum {}",
-                        target.name, default, max
-                    ),
-                ));
-            }
+        if let (ParameterValue::Number(default), Some(max)) = (&target.default, target.max)
+            && *default > max
+        {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_INVALID_VALUE,
+                Severity::Error,
+                format!(
+                    "preset target {} default {} is above maximum {}",
+                    target.name, default, max
+                ),
+            ));
         }
 
         validate_preset_parameter_destination(patch, registry, target, diagnostics);

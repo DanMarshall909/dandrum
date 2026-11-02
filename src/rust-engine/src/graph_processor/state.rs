@@ -126,7 +126,7 @@ pub(super) enum PerModuleState {
         sample_rate: f64,
     },
     Reverb {
-        processor: Reverb,
+        processor: Box<Reverb>,
         #[cfg(test)]
         sample_rate: f64,
     },
@@ -169,7 +169,7 @@ pub(super) enum PerModuleState {
         curve: DecayCurve,
     },
     Script {
-        runtime: RhaiScriptRuntime,
+        runtime: Box<RhaiScriptRuntime>,
         state: ScriptModuleState,
         #[cfg(test)]
         control_inputs: Vec<String>,
@@ -406,7 +406,7 @@ impl PerModuleState {
                     panic!("script module {module_id} failed to prepare: {error}")
                 });
                 PerModuleState::Script {
-                    runtime,
+                    runtime: Box::new(runtime),
                     state: ScriptModuleState::default(),
                     #[cfg(test)]
                     control_inputs: Vec::new(),
@@ -642,7 +642,7 @@ impl PerModuleState {
                 let mut processor = Reverb::new(sample_rate as f64);
                 processor.set_interpolation(*interpolation);
                 PerModuleState::Reverb {
-                    processor,
+                    processor: Box::new(processor),
                     #[cfg(test)]
                     sample_rate: sample_rate as f64,
                 }
@@ -772,7 +772,7 @@ impl PerModuleState {
         });
 
         PerModuleState::Script {
-            runtime,
+            runtime: Box::new(runtime),
             state: ScriptModuleState::default(),
             #[cfg(test)]
             control_inputs,
