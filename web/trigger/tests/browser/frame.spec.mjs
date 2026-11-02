@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './fixtures.mjs';
 
 test('the supplied workspaces and frame controls remain reachable',async({page})=>{
   const errors=[];page.on('pageerror',error=>errors.push(error.message));

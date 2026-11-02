@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './fixtures.mjs';
 test('every public component renders independently in all nine catalog states, with editable props and width/background controls',async({page})=>{
  test.setTimeout(120000);const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/catalog.html');
  const nav=page.locator('.catalog-nav');await expect(nav.getByRole('button').first()).toBeVisible();const names=await nav.getByRole('button').allTextContents();expect(names.length).toBeGreaterThan(90);

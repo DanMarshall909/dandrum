@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './fixtures.mjs';
 import {session,yaml,editorProfile} from '../native-fixture.mjs';
 import {parse,stringify} from 'yaml';
 

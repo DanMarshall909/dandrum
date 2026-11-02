@@ -89,7 +89,7 @@ class EngineOnlyBuildTest(EngineBuildFixture):
         self.assertEqual(code, 0, output)
         names = {test["name"] for test in json.loads(output)["tests"]}
         self.assertNotIn("clap-dynamic-host", names)
-        self.assertTrue({"rust-engine-tests", "instrument-session-tests", "cxx-rust-engine-ffi-smoke",
+        self.assertTrue({"rust-engine-tests", "rust-engine-clippy", "instrument-session-tests", "cxx-rust-engine-ffi-smoke",
                          "cxx-rust-engine-sample-accurate-midi-smoke", "sound-lab-controller",
                          "cxx-plugin-waveform-service", "cxx-plugin-meter-capture",
                          "filter-spike-engine"}.issubset(names), names)
