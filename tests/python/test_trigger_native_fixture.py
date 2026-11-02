@@ -5,6 +5,7 @@ Cargo record shapes were calibrated against retained native build logs 120/127.
 """
 import contextlib
 import copy
+import fcntl
 import hashlib
 import importlib.util
 import io
@@ -61,6 +62,7 @@ class TriggerNativeFixtureTest(unittest.TestCase):
         self.cargo.write_text(
             f'#!{sys.executable}\n'
             'import json, os, pathlib, sys\n'
+            'if os.environ.get("DANDRUM_CARGO_CACHE_LEASE_FD"): os.fstat(int(os.environ["DANDRUM_CARGO_CACHE_LEASE_FD"]))\n'
             f'p = pathlib.Path({str(self.root)!r})\n'
             'invocation = p / "invocation.json"\n'
             'assert not invocation.exists(), "Cargo invoked more than once"\n'
@@ -70,6 +72,7 @@ class TriggerNativeFixtureTest(unittest.TestCase):
             'scenario = json.loads((p / "cargo-output.json").read_text())\n'
             'sys.stdout.buffer.write(scenario["stdout"].encode())\n'
             'sys.stderr.buffer.write(scenario["stderr"].encode())\n'
+            'if scenario["status"] < 0: os.kill(os.getpid(), -scenario["status"])\n'
             'sys.exit(scenario["status"])\n')
         self.cargo.chmod(0o755)
         # Shape copied from the real normal-library compiler-artifact record;
@@ -217,28 +220,82 @@ class TriggerNativeFixtureTest(unittest.TestCase):
         self.assertNotEqual(result, 0)
         self.assertIn('cargo-exit-status: 23', error)
         self.assertFalse(self.output.exists())
-        stages = list(self.root.glob('.trigger-clap-native-fixture-*'))
-        self.assertEqual(len(stages), 1)
-        evidence = stages[0] / 'evidence'
+        failure = Path(str(self.output) + '.last-failure')
+        evidence = failure / 'evidence'
         self.assertEqual((evidence / 'cargo.stdout.log').read_text(), raw_stdout)
         self.assertEqual((evidence / 'cargo.stderr.log').read_text(), 'retained cargo stderr\n')
         self.assertEqual(json.loads((evidence / 'invocation.json').read_text())['exit_status'], 23)
-        self.assertFalse((stages[0] / 'binding.json').exists())
+        self.assertFalse((failure / 'binding.json').exists())
+        self.assertNotEqual(self.run_driver(status=24)[0], 0)
+        self.assertEqual(list(self.root.glob('.trigger-clap-native-fixture-*')), [])
+        self.assertEqual(json.loads((evidence / 'invocation.json').read_text())['exit_status'], 24)
 
-    def test_repeated_prepare_publishes_new_complete_fixture_and_preserves_previous_stage(self):
+    def test_repeated_prepare_retires_previous_owned_stage_and_retains_binding(self):
         self.assertEqual(self.run_driver()[0], 0)
         previous = self.output.resolve()
         previous_binding = (previous / 'binding.json').read_bytes()
-        previous_plugin = (previous / 'DandrumTrigger.clap').read_bytes()
         self.product.write_bytes(b'next maintained product')
         (self.resources / 'next.bin').write_bytes(b'next resource')
         self.assertEqual(self.run_driver()[0], 0)
         self.assertNotEqual(self.output.resolve(), previous)
-        self.assertEqual((previous / 'binding.json').read_bytes(), previous_binding)
-        self.assertEqual((previous / 'DandrumTrigger.clap').read_bytes(), previous_plugin)
+        self.assertFalse(previous.exists())
+        self.assertEqual((self.output / 'evidence/previous-binding.json').read_bytes(), previous_binding)
         self.assertEqual((self.output / 'DandrumTrigger.clap').read_bytes(), b'next maintained product')
         self.assertEqual((self.output / 'DandrumTrigger.resources/next.bin').read_bytes(), b'next resource')
-        self.assertEqual(len(list(self.root.glob('.trigger-clap-native-fixture-*'))), 2)
+        self.assertEqual(len(list(self.root.glob('.trigger-clap-native-fixture-*'))), 1)
+
+    def test_active_fixture_reader_prevents_replacement(self):
+        self.assertEqual(self.run_driver()[0], 0)
+        accepted = self.output.resolve()
+        with Path(str(self.output) + '.lease').open('a') as lease:
+            fcntl.flock(lease, fcntl.LOCK_SH)
+            result, error, _ = self.run_driver()
+            self.assertNotEqual(result, 0)
+            self.assertIn('fixture-busy', error)
+            self.assertEqual(self.output.resolve(), accepted)
+            self.assertFalse(self.invocation.exists())
+
+    def test_cargo_child_inherits_the_outer_cache_lease(self):
+        with (self.root / 'cache-lease').open('w') as lease, patch.dict(
+                os.environ, {'DANDRUM_CARGO_CACHE_LEASE_FD': str(lease.fileno())}):
+            result, error, _ = self.run_driver()
+        self.assertEqual(result, 0, error)
+
+    def test_interrupted_preparation_refuses_growth_and_preserves_accepted_fixture(self):
+        self.assertEqual(self.run_driver()[0], 0)
+        accepted = self.output.resolve()
+        with patch.object(self.driver.subprocess, 'run', side_effect=KeyboardInterrupt), self.assertRaises(KeyboardInterrupt):
+            self.run_driver()
+        stages = set(self.root.glob('.trigger-clap-native-fixture-*'))
+        result, error, _ = self.run_driver()
+        self.assertNotEqual(result, 0)
+        self.assertIn('fixture-interrupted', error)
+        self.assertFalse(self.invocation.exists())
+        self.assertEqual(set(self.root.glob('.trigger-clap-native-fixture-*')), stages)
+        self.assertEqual(self.output.resolve(), accepted)
+
+    def test_signalled_cargo_keeps_interruption_evidence_and_refuses_another_attempt(self):
+        self.assertEqual(self.run_driver()[0], 0)
+        accepted = self.output.resolve()
+        result, error, _ = self.run_driver(status=-9)
+        self.assertEqual(result, 125)
+        self.assertIn('fixture-interrupted', error)
+        self.assertEqual(self.output.resolve(), accepted)
+        stages = set(self.root.glob('.trigger-clap-native-fixture-*'))
+        result, error, _ = self.run_driver()
+        self.assertIn('fixture-interrupted', error)
+        self.assertFalse(self.invocation.exists())
+        self.assertEqual(set(self.root.glob('.trigger-clap-native-fixture-*')), stages)
+
+    def test_changed_stage_owner_is_refused_before_publication(self):
+        self.assertEqual(self.run_driver()[0], 0)
+        accepted = self.output.resolve()
+        (accepted / '.owner.json').write_text('{}')
+        result, error, _ = self.run_driver()
+        self.assertNotEqual(result, 0)
+        self.assertIn('fixture-ownership', error)
+        self.assertEqual(self.output.resolve(), accepted)
+        self.assertFalse(self.invocation.exists())
 
     def test_every_preparation_failure_keeps_all_prior_accepted_bytes(self):
         self.assertEqual(self.run_driver()[0], 0)
@@ -301,8 +358,8 @@ class TriggerNativeFixtureTest(unittest.TestCase):
             preserves_failure('injected alias publication failure')
         self.assertEqual(self.run_driver()[0], 0)
         self.assertNotEqual(self.output.resolve(), accepted)
-        self.assertEqual({p.relative_to(accepted).as_posix(): p.read_bytes()
-                          for p in accepted.rglob('*') if p.is_file()}, prior)
+        self.assertFalse(accepted.exists())
+        self.assertEqual((self.output / 'evidence/previous-binding.json').read_bytes(), prior['binding.json'])
 
     def test_existing_directory_file_or_unowned_alias_is_refused_without_cargo(self):
         directory = self.root / 'existing-directory'

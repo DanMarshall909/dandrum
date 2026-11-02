@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ENGINE_DIR="$(git rev-parse --show-toplevel)/src/rust-engine"
-CARGO="${DANDRUM_CARGO:-$HOME/.cargo/bin/cargo}"
+CARGO="${DANDRUM_CARGO:-$(git rev-parse --show-toplevel)/scripts/cargo}"
 
 echo "=== Running Rust unit tests ==="
 "$CARGO" test --manifest-path "$ENGINE_DIR/Cargo.toml"

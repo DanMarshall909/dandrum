@@ -22,10 +22,14 @@
 - MIDI input commands: `./build/dandrum-drum-machine-demo_artefacts/dandrum-drum-machine-demo --list-midi-inputs`,
   `./build/dandrum-drum-machine-demo_artefacts/dandrum-drum-machine-demo --midi-input 0`.
 - Synthetic MIDI test command: `./build/dandrum-drum-machine-demo_artefacts/dandrum-drum-machine-demo --test-midi-note 60`.
-- CMake expects Cargo at `$HOME/.cargo/bin/cargo`.
+- CMake uses the managed Cargo driver with the underlying Cargo at `$HOME/.cargo/bin/cargo`.
 - JUCE configure needs native Linux dev packages from `README.md`; without them CMake can fail while building `juceaide`
   on missing headers such as `X11/Xlib.h`.
-- Rust unit tests: `$HOME/.cargo/bin/cargo test --manifest-path src/rust-engine/Cargo.toml`.
+- Rust unit tests: `./scripts/cargo test --manifest-path src/rust-engine/Cargo.toml`.
+  Use the managed driver for ordinary builds/tests and LLVM coverage so compatible intermediates remain warm
+  and the `.ai-rules.json` admission/retention budget applies. Current warm state is preserved when capacity
+  is insufficient. Investigate interrupted-producer markers and leases before recovery; never remove a marker
+  while its producer or children remain active. Raw Cargo and unrelated native outputs remain unmanaged.
 - Rust mutation tests (install once with `cargo install cargo-mutants`):
   `$HOME/.cargo/bin/cargo mutants --manifest-path src/rust-engine/Cargo.toml`. Record scope, tool version and elapsed
   time for the actual run; an earlier duration does not predict the current engine's full scope.

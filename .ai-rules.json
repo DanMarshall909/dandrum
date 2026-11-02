@@ -25,7 +25,7 @@
           "tempGrowthMiB": 1024,
           "retainedBudgetMiB": 65536,
           "basis": "estimated",
-          "estimateReason": "One serial Trigger Rust test, LLVM coverage or native verification build, using persistent disk-backed Cargo caches. Allows 8 GiB cache/output growth plus 1 GiB scratch, including two simultaneous 256 MiB portable-state files, and preserves an 8 GiB free-space reserve. Retained budget includes ordinary, LLVM and native build outputs; reusable caches require explicit direction before removal."
+          "estimateReason": "One serial Trigger Rust test, LLVM coverage or native verification build. Allows 8 GiB cache/output growth plus 1 GiB scratch and preserves an 8 GiB free-space reserve. The managed Cargo driver applies the 64 GiB admission/retention budget to owned ordinary and instrumented intermediates and registered private Cargo outputs. It preserves current warm state and retires only inactive owned generations when space is needed. Native fixtures retain the current copy and latest failure logs; other native/CMake outputs require separate storage review. Completion measurement detects overruns; this is not a filesystem quota."
         }
       }
     }
