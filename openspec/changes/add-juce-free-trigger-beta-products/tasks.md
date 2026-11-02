@@ -57,9 +57,9 @@ verification and remaining warning/timeout limits: `docs/migrations/evidence/tri
 
 - [x] 7.3 Qualify and run the named DAW acceptance on installed CLAP instances: balanced gestures, timed host automation/feedback, editor-absent servicing, two independently edited instances and saved-project fresh selected-sample/parameter restoration.
 
-Named DAW evidence: `docs/migrations/evidence/trigger-clap-daw-acceptance-2026-11-02/README.md`. REAPER 7.84 acceptance uses the recorded Linux/X11/GTK configuration; default REAPER settings and Qtractor AppImage remain unqualified. Tasks 8.1 and 8.2 remain open.
+Named DAW evidence: `docs/migrations/evidence/trigger-clap-daw-acceptance-2026-11-02/README.md`. REAPER 7.84 acceptance uses the recorded Linux/X11/GTK configuration; default REAPER settings and Qtractor AppImage remain unqualified. Task 8.2 remains open.
 
 ## 8. CLAP Beta Completion
 
-- [ ] 8.1 Complete current-source owner coverage/refactoring and all Rust/JavaScript/native/build/resource/dependency/licence/official-validator checks, retaining unsupported capabilities and unavoidable external gaps honestly with portable evidence.
+- [x] 8.1 Complete current-source owner coverage/refactoring and all Rust/JavaScript/native/build/resource/dependency/licence/official-validator checks, retaining unsupported capabilities and unavoidable external gaps honestly with portable evidence.
 - [ ] 8.2 Independently audit every retained CLAP beta requirement against actual artifacts/native/DAW evidence, earn scenario mappings and strict canonical validation, normally publish verified release boundaries and remove only owned disposable work; mark the CLAP beta complete only when all required outcomes are proven.
