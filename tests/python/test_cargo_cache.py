@@ -401,13 +401,24 @@ class CargoCacheTest(unittest.TestCase):
     def test_coverage_uses_separate_storage_and_preserves_ordinary_reuse(self):
         manifest = self.package('app', 'ready')
         normal = self.build(manifest)
-        result = self.invoke('cargo', '--', 'llvm-cov', '--manifest-path', str(manifest))
+        result = self.invoke('cargo', '--', 'llvm-cov', '--manifest-path', str(manifest),
+                             env={'CARGO_TARGET_DIR': normal['target']})
         self.assertEqual(result.returncode, 0, result.stderr)
         coverage = json.loads(result.stdout)
         self.assertNotEqual(coverage['build'], normal['build'])
         self.assertNotEqual(coverage['target'], normal['target'])
         self.assertFalse(coverage['fresh'])
         self.assertTrue(self.build(manifest)['fresh'])
+
+    def test_coverage_cli_target_cannot_override_its_managed_instrumented_output(self):
+        manifest = self.package('app', 'ready')
+        normal = self.build(manifest)
+        before = self.calls.read_bytes()
+        for option in (['--target-dir', normal['target']], ['--target-dir=' + normal['target']]):
+            result = self.invoke('cargo', '--', 'llvm-cov', '--manifest-path', str(manifest), *option)
+            self.assertIn('cache-options', result.stderr)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(self.calls.read_bytes(), before)
 
     def test_explicit_adoption_reuses_existing_cache_at_original_path(self):
         manifest = self.package('app', 'ready')

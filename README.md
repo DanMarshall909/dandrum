@@ -80,6 +80,8 @@ Compatible builds share intermediate artifacts under the common Git directory;
 final products stay private to their build directories. Ordinary source edits
 retain incremental state. Coverage has separate instrumented storage and fresh
 profiles. Compiler, dependency or Rust-flag changes select another generation.
+Coverage ignores an exported ordinary `CARGO_TARGET_DIR` and uses its own managed
+target; a coverage `--target-dir` override is refused to protect ordinary products.
 An existing warm target can be explicitly registered with
 `python3 scripts/cargo-cache.py --ordinary "$PWD/src/rust-engine/target" adopt`;
 registration preserves it at that path and requires an otherwise empty managed

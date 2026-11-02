@@ -214,7 +214,8 @@ set_tests_properties(instrument-session-tests PROPERTIES LABELS "session-fast" T
 if(DANDRUM_ENABLE_MUTATION_CTEST)
     add_test(
         NAME rust-engine-mutation-tests
-        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-products ${CARGO_BIN} mutants
+        COMMAND ${CMAKE_COMMAND} -E env --unset=CARGO_BUILD_BUILD_DIR
+            CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-mutation-target ${DANDRUM_RAW_CARGO} mutants
             ${RUST_ENGINE_MUTATION_EXCLUDE_ARGS}
         WORKING_DIRECTORY ${RUST_ENGINE_DIR})
     set_tests_properties(rust-engine-mutation-tests PROPERTIES TIMEOUT 1200)

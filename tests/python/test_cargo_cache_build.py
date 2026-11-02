@@ -1,4 +1,5 @@
 """Real CMake/Cargo boundary checks for managed Rust cache routing."""
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -55,19 +56,57 @@ class CargoCacheBuildTest(unittest.TestCase):
             self.assertEqual(subprocess.check_output([editor], text=True).strip(), '8:true')
             self.assertEqual(subprocess.check_output([ordinary], text=True).strip(), '8:false')
             report = repo / 'coverage.json'
+            def ordinary_products():
+                return {str(p.relative_to(repo / 'ordinary')): hashlib.sha256(p.read_bytes()).hexdigest()
+                        for p in (repo / 'ordinary').rglob('*') if p.is_file()}
+            published = ordinary_products()
+            env['CARGO_TARGET_DIR'] = str(repo / 'ordinary')
             run('llvm-cov', '--json', '--output-path', str(report))
             self.assertIn('old_source', report.read_text())
+            self.assertEqual(ordinary_products(), published,
+                             'coverage must preserve the explicitly selected ordinary product tree')
             source(2, 'new_source')
             os.utime(ordinary, (2000000000, 2000000000))
             edited, ordinary = build('ordinary')
             self.assertEqual(subprocess.check_output([ordinary], text=True).strip(), '9:false')
             self.assertTrue(next(r for r in edited if r['target']['name'] == 'cache_dependency')['fresh'])
+            published = ordinary_products()
             run('llvm-cov', '--json', '--output-path', str(report))
             current = report.read_text()
             self.assertIn('new_source', current)
             self.assertNotIn('old_source', current)
+            self.assertEqual(ordinary_products(), published)
             warm, _ = build('ordinary')
             self.assertTrue(all(r['fresh'] for r in warm))
+
+    def test_opt_in_mutation_registration_uses_a_separate_raw_cargo_workflow(self):
+        # This executes only a logging fake, never cargo-mutants.
+        with tempfile.TemporaryDirectory(prefix='cmake-mutation-registration-') as directory:
+            root = Path(directory)
+            calls = root / 'calls.json'
+            fake = root / 'cargo'
+            fake.write_text(f'#!{sys.executable}\n'
+                            'import json,os,pathlib,sys\n'
+                            'if sys.argv[1:]==["-vV"]:print("fixture cargo");sys.exit(0)\n'
+                            f'pathlib.Path({str(calls)!r}).write_text(json.dumps({{"arguments":sys.argv[1:],'
+                            '"target":os.environ.get("CARGO_TARGET_DIR"),'
+                            '"build":os.environ.get("CARGO_BUILD_BUILD_DIR")}))\n')
+            fake.chmod(0o755)
+            build = root / 'build'
+            env = dict(os.environ, DANDRUM_CARGO_CACHE_ROOT=str(root / 'cache'),
+                       CARGO_BUILD_BUILD_DIR=str(root / 'ordinary-intermediates'))
+            configured = subprocess.run([CMAKE, '-S', str(ROOT), '-B', str(build),
+                '-DDANDRUM_ENGINE_ONLY=ON', '-DDANDRUM_ENABLE_MUTATION_CTEST=ON',
+                '-DDANDRUM_RAW_CARGO=' + str(fake)], env=env, capture_output=True, text=True)
+            self.assertEqual(configured.returncode, 0, configured.stdout + configured.stderr)
+            result = subprocess.run([str(Path(CMAKE).with_name('ctest')), '--test-dir', str(build),
+                '-R', '^rust-engine-mutation-tests$', '--output-on-failure'],
+                env=env, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            row = json.loads(calls.read_text())
+            self.assertEqual(row['arguments'][0], 'mutants')
+            self.assertEqual(row['target'], str(build / 'rust-mutation-target'))
+            self.assertIsNone(row['build'])
 
     def test_cmake_checks_cargo_freshness_even_when_existing_output_is_newer(self):
         with tempfile.TemporaryDirectory(prefix='cmake cargo cache ') as directory:

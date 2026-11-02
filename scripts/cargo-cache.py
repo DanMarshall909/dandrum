@@ -306,10 +306,16 @@ def cargo_environment(generation, arguments, lane):
         manifest = Path(option('--manifest-path')).absolute()
     owner = hashlib.sha256(str(manifest).encode()).hexdigest()[:24]
     target = generation / 'targets' / owner / lane
-    if os.environ.get('CARGO_TARGET_DIR'):
-        target = Path(os.path.abspath(os.environ['CARGO_TARGET_DIR']))
-    if option('--target-dir'):
-        target = Path(os.path.abspath(option('--target-dir')))
+    if lane == 'coverage':
+        # An exported ordinary product directory must never receive profiles or
+        # instrumented products. Explicit CLI overrides outrank our environment.
+        if option('--target-dir'):
+            raise CacheError('cache-options: coverage owns its separate target; omit --target-dir')
+    else:
+        if os.environ.get('CARGO_TARGET_DIR'):
+            target = Path(os.path.abspath(os.environ['CARGO_TARGET_DIR']))
+        if option('--target-dir'):
+            target = Path(os.path.abspath(option('--target-dir')))
     data = generation_data(generation)[lane]
     environment = dict(os.environ, CARGO_BUILD_BUILD_DIR=str(data),
                 CARGO_TARGET_DIR=str(target), DANDRUM_CARGO_CACHE_ROOT=str(generation.parent.parent))
@@ -330,7 +336,6 @@ def main(argv=None):
     parser.add_argument('--lock-timeout', type=float, default=600)
     parser.add_argument('--ordinary', type=Path)
     parser.add_argument('--coverage', type=Path)
-    parser.add_argument('--lane', choices=['ordinary', 'coverage'])
     parser.add_argument('operation', choices=['cargo', 'adopt', 'run'])
     parser.add_argument('arguments', nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
@@ -353,7 +358,7 @@ def main(argv=None):
                 adopt(generation, repo, args.ordinary, args.coverage)
                 return 0
             environment = cargo_environment(generation, arguments,
-                                           args.lane or ('coverage' if arguments[:1] == ['llvm-cov'] else 'ordinary'))
+                                           'coverage' if arguments[:1] == ['llvm-cov'] else 'ordinary')
             environment['DANDRUM_CARGO_CACHE_LEASE_FD'] = str(lease)
             register_output(cache, Path(environment['CARGO_TARGET_DIR']))
             budget, before = admit(repo, cache, generation)
