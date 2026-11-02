@@ -2695,3 +2695,40 @@ AC juce-free-trigger-editor :: React parameter gestures use host automation :: R
 AC juce-free-trigger-editor :: Structural work survives complete editor loss :: Lost editor reconnects and undoes one accepted mapping
   fp 3ba5f02b8871
   test rust:copied_native_mapping_survives_lost_reply_and_view_loss
+
+# Bounded managed Rust build caches.
+
+AC rust-build-cache :: Compatible builds retain warm intermediates :: Unchanged and small-edit turnaround
+  fp 06c281b95601
+  test py:tests/python/test_cargo_cache_build.py
+
+AC rust-build-cache :: Compatible builds retain warm intermediates :: Product variants remain independently correct
+  fp b7361f9a5e4d
+  test py:tests/python/test_cargo_cache_build.py
+  test py:tests/python/test_engine_only_build.py
+
+AC rust-build-cache :: Coverage remains a fresh independent measurement :: Coverage does not contaminate normal reuse
+  fp 1108a49ba263
+  test py:tests/python/test_cargo_cache_build.py
+
+AC rust-build-cache :: Managed cache retention is bounded and preserves active work :: Obsolete generations can be retired
+  fp 8ddd67797e62
+  test py:tests/python/test_cargo_cache.py
+
+AC rust-build-cache :: Managed cache retention is bounded and preserves active work :: Current warm state cannot fit the budget
+  fp e28d9912f58a
+  test py:tests/python/test_cargo_cache.py
+
+AC rust-build-cache :: Managed cache retention is bounded and preserves active work :: Active or uncertain paths are preserved
+  fp 68a6745f9809
+  test py:tests/python/test_cargo_cache.py
+
+AC rust-build-cache :: Repeated verification does not accumulate source and fixture generations :: Repeated source-free verification uses clean stable inputs
+  fp 0ce28644745f
+  test py:tests/python/test_engine_build_fixture_cleanup.py
+  test py:tests/python/test_engine_only_build.py
+  test py:tests/python/test_owned_verification.py
+
+AC rust-build-cache :: Repeated verification does not accumulate source and fixture generations :: Native fixture replacement retains the current proof
+  fp b83ee4468f57
+  test py:tests/python/test_trigger_native_fixture.py

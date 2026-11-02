@@ -14,4 +14,4 @@
 
 - [x] 3.1 Adopt and qualify the warm cache, retire verified obsolete legacy targets, and record measured retained/reclaimed storage.
 - [x] 3.2 Prove real unchanged/small-edit dependency reuse, product separation, coverage freshness, source-free runtime and lifecycle/refusal behavior; inspect changed-owner coverage and refactoring opportunities.
-- [ ] 3.3 Update developer commands and cache-retention guidance, map every new scenario to a proving test, validate specs, obtain independent completion review and publish the verified change normally.
+- [x] 3.3 Update developer commands and cache-retention guidance, map every new scenario to a proving test, validate specs, obtain independent completion review and publish the verified change normally.
