@@ -119,10 +119,10 @@ pub(super) fn process_block_compiled_polyphonic(
     let mut voice_events: Vec<Vec<BlockEvent>> = vec![Vec::new(); allocator.max_voices()];
 
     for event in incoming_events {
-        if let ScriptEvent::NoteOn { note, velocity } = &event.event {
-            if let Some(slot) = allocator.note_on(*note, *velocity) {
-                voice_events[slot].push(event.clone());
-            }
+        if let ScriptEvent::NoteOn { note, velocity } = &event.event
+            && let Some(slot) = allocator.note_on(*note, *velocity)
+        {
+            voice_events[slot].push(event.clone());
         }
     }
 

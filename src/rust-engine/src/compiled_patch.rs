@@ -1158,13 +1158,13 @@ fn compile_internal(
                     module_id: module.id().as_str().to_string(),
                     parameter_name: "compiled_node_data".to_string(),
                 })?;
-            if let CompiledConstruction::FeedbackDelay { samples } = &data.construction {
-                if *samples < render_settings.block_size_frames as usize {
-                    return Err(CompileError::InvalidConstructionData {
-                        module_id: module.id().as_str().to_string(),
-                        parameter_name: DELAY_SAMPLES_PARAMETER.to_string(),
-                    });
-                }
+            if let CompiledConstruction::FeedbackDelay { samples } = &data.construction
+                && *samples < render_settings.block_size_frames as usize
+            {
+                return Err(CompileError::InvalidConstructionData {
+                    module_id: module.id().as_str().to_string(),
+                    parameter_name: DELAY_SAMPLES_PARAMETER.to_string(),
+                });
             }
             let input_channel_counts = module
                 .inputs()

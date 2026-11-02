@@ -967,10 +967,10 @@ impl RealtimeGraphProcessor {
                 let outputs = process_module(
                     step.module_index,
                     step.module_kind,
-                    &events_scratch,
+                    events_scratch,
                     voice_states,
                     &input_provider,
-                    &all_outputs,
+                    all_outputs,
                     frames,
                     block_start_frame,
                 );
@@ -1006,10 +1006,10 @@ impl RealtimeGraphProcessor {
             let outputs = process_module(
                 step.module_index,
                 step.module_kind,
-                &events_scratch,
+                events_scratch,
                 &mut states[0],
                 &input_provider,
-                &all_outputs,
+                all_outputs,
                 frames,
                 block_start_frame,
             );
@@ -1019,7 +1019,7 @@ impl RealtimeGraphProcessor {
             all_outputs.insert(step.module_index, outputs);
         }
 
-        collect_audio_output(&all_outputs, out_idx, frames, left_out, right_out);
+        collect_audio_output(all_outputs, out_idx, frames, left_out, right_out);
 
         for i in 0..allocator.max_voices() {
             if allocator.slot(i).is_none_or(|s| !s.active) {
@@ -2860,7 +2860,7 @@ pub(super) fn is_channel_arena_supported(step: &RenderStep) -> bool {
             step.input_buffers.len() == 3 && step.output_buffers.len() == 1
         }
         ModuleKind::FrequencySplitter => {
-            step.output_buffers.len() % 3 == 0
+            step.output_buffers.len().is_multiple_of(3)
                 && step.input_buffers.len() == step.output_buffers.len() / 3 + 1
         }
         ModuleKind::Echo => {

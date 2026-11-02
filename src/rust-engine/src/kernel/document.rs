@@ -233,10 +233,9 @@ impl KernelPatch {
             for root_port in &mut self.root.ports {
                 if root_port.maps_to.iter().any(|target| {
                     target.node().as_str() == module_id && target.port() == parameter_name
-                }) {
-                    if let Some(default) = root_port.control_default.as_mut() {
-                        default.default = number;
-                    }
+                }) && let Some(default) = root_port.control_default.as_mut()
+                {
+                    default.default = number;
                 }
             }
             return Ok(());

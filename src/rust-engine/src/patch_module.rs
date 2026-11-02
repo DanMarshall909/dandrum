@@ -294,17 +294,17 @@ fn validate_module_parameter_constraints(
 ) {
     let name = module_parameter_name(&parameter.name);
 
-    if let (Some(min), Some(max)) = (parameter.min, parameter.max) {
-        if min > max {
-            diagnostics.push(Diagnostic::new(
-                error_codes::VALIDATION_INVALID_VALUE,
-                Severity::Error,
-                format!(
-                    "module {} parameter {} has invalid range: min {} is greater than max {}",
-                    definition.module_type, name, min, max
-                ),
-            ));
-        }
+    if let (Some(min), Some(max)) = (parameter.min, parameter.max)
+        && min > max
+    {
+        diagnostics.push(Diagnostic::new(
+            error_codes::VALIDATION_INVALID_VALUE,
+            Severity::Error,
+            format!(
+                "module {} parameter {} has invalid range: min {} is greater than max {}",
+                definition.module_type, name, min, max
+            ),
+        ));
     }
 
     if matches!(
@@ -337,30 +337,30 @@ fn validate_module_numeric_range(
     };
     let name = module_parameter_name(&parameter.name);
 
-    if let Some(min) = parameter.min {
-        if *actual < min {
-            diagnostics.push(Diagnostic::new(
-                error_codes::VALIDATION_INVALID_VALUE,
-                Severity::Error,
-                format!(
-                    "module {} parameter {} {value_label} is below minimum {}: {}",
-                    definition.module_type, name, min, actual
-                ),
-            ));
-        }
+    if let Some(min) = parameter.min
+        && *actual < min
+    {
+        diagnostics.push(Diagnostic::new(
+            error_codes::VALIDATION_INVALID_VALUE,
+            Severity::Error,
+            format!(
+                "module {} parameter {} {value_label} is below minimum {}: {}",
+                definition.module_type, name, min, actual
+            ),
+        ));
     }
 
-    if let Some(max) = parameter.max {
-        if *actual > max {
-            diagnostics.push(Diagnostic::new(
-                error_codes::VALIDATION_INVALID_VALUE,
-                Severity::Error,
-                format!(
-                    "module {} parameter {} {value_label} is above maximum {}: {}",
-                    definition.module_type, name, max, actual
-                ),
-            ));
-        }
+    if let Some(max) = parameter.max
+        && *actual > max
+    {
+        diagnostics.push(Diagnostic::new(
+            error_codes::VALIDATION_INVALID_VALUE,
+            Severity::Error,
+            format!(
+                "module {} parameter {} {value_label} is above maximum {}: {}",
+                definition.module_type, name, max, actual
+            ),
+        ));
     }
 }
 

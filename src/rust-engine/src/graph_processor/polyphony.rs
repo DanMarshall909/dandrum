@@ -534,11 +534,10 @@ impl PreparedPolyRuntimeRegion {
                     buffer,
                     producer_step,
                 }) = self.done_binding
+                    && step_index == producer_step
                 {
-                    if step_index == producer_step {
-                        control_done =
-                            (0..frames).any(|frame| step_context.arena.sample(buffer, frame) > 0.0);
-                    }
+                    control_done =
+                        (0..frames).any(|frame| step_context.arena.sample(buffer, frame) > 0.0);
                 }
             }
 

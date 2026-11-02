@@ -650,20 +650,20 @@ pub(super) fn select_sample_map_zone(
                 }
             });
     }
-    if selection_mode == SampleSelectionMode::RoundRobin {
-        if let Some(group) = zones[first].round_robin_group {
-            let count = key_candidates
-                .iter()
-                .filter(|index| matches(**index) && zones[**index].round_robin_group == Some(group))
-                .count();
-            let turn = round_robin_counters[group] % count;
-            round_robin_counters[group] = round_robin_counters[group].wrapping_add(1);
-            return key_candidates
-                .iter()
-                .copied()
-                .filter(|index| matches(*index) && zones[*index].round_robin_group == Some(group))
-                .nth(turn);
-        }
+    if selection_mode == SampleSelectionMode::RoundRobin
+        && let Some(group) = zones[first].round_robin_group
+    {
+        let count = key_candidates
+            .iter()
+            .filter(|index| matches(**index) && zones[**index].round_robin_group == Some(group))
+            .count();
+        let turn = round_robin_counters[group] % count;
+        round_robin_counters[group] = round_robin_counters[group].wrapping_add(1);
+        return key_candidates
+            .iter()
+            .copied()
+            .filter(|index| matches(*index) && zones[*index].round_robin_group == Some(group))
+            .nth(turn);
     }
     Some(first)
 }
@@ -784,10 +784,10 @@ pub(super) fn process_note_to_rate_state(
 ) {
     for frame in 0..context.frames() {
         for event in events {
-            if event.frame_offset as usize == frame {
-                if let ScriptEvent::NoteOn { note, .. } = &event.event {
-                    *rate = 2.0f32.powf((f32::from(*note) - 60.0) / 12.0);
-                }
+            if event.frame_offset as usize == frame
+                && let ScriptEvent::NoteOn { note, .. } = &event.event
+            {
+                *rate = 2.0f32.powf((f32::from(*note) - 60.0) / 12.0);
             }
         }
         context

@@ -19,23 +19,24 @@ strict src/rust-engine/src/module_package.rs
 
 # The checked-in schema is compiled into the binary. Its construction failure
 # can occur only if that source asset is corrupted at build time.
-allow src/rust-engine/src/kernel/document.rs:933 embedded schema validator failure
-allow src/rust-engine/src/kernel/document.rs:936 embedded schema validator failure
+allow src/rust-engine/src/kernel/document.rs:932 embedded schema validator failure
 allow src/rust-engine/src/kernel/document.rs:935 embedded schema validator failure
-allow src/rust-engine/src/kernel/document.rs:938 embedded schema validator failure
+allow src/rust-engine/src/kernel/document.rs:934 embedded schema validator failure
+allow src/rust-engine/src/kernel/document.rs:937 embedded schema validator failure
 
 # The external schema rejects blank preset target names before alias resolution.
-allow src/rust-engine/src/kernel/document.rs:970 schema rejects blank parameter alias
-allow src/rust-engine/src/kernel/document.rs:972 schema rejects blank parameter alias
-allow src/rust-engine/src/kernel/document.rs:975 schema rejects blank parameter alias
-allow src/rust-engine/src/kernel/document.rs:1012 schema rejects blank asset alias
-allow src/rust-engine/src/kernel/document.rs:1014 schema rejects blank asset alias
-allow src/rust-engine/src/kernel/document.rs:1017 schema rejects blank asset alias
+allow src/rust-engine/src/kernel/document.rs:969 schema rejects blank parameter alias
+allow src/rust-engine/src/kernel/document.rs:971 schema rejects blank parameter alias
+allow src/rust-engine/src/kernel/document.rs:974 schema rejects blank parameter alias
+allow src/rust-engine/src/kernel/document.rs:1011 schema rejects blank asset alias
+allow src/rust-engine/src/kernel/document.rs:1013 schema rejects blank asset alias
+allow src/rust-engine/src/kernel/document.rs:1016 schema rejects blank asset alias
 
 # The resource arm is entered only after matching StaticType::Resource.
-allow src/rust-engine/src/kernel/document.rs:1033 resource type was already matched
+allow src/rust-engine/src/kernel/document.rs:1032 resource type was already matched
 
 # Legacy binding syntax is rejected by the earlier YAML-shape pass.
+allow src/rust-engine/src/kernel/document.rs:1355 earlier legacy binding validation
 allow src/rust-engine/src/kernel/document.rs:1356 earlier legacy binding validation
 allow src/rust-engine/src/kernel/document.rs:1357 earlier legacy binding validation
 allow src/rust-engine/src/kernel/document.rs:1358 earlier legacy binding validation
@@ -43,7 +44,6 @@ allow src/rust-engine/src/kernel/document.rs:1359 earlier legacy binding validat
 allow src/rust-engine/src/kernel/document.rs:1360 earlier legacy binding validation
 allow src/rust-engine/src/kernel/document.rs:1361 earlier legacy binding validation
 allow src/rust-engine/src/kernel/document.rs:1362 earlier legacy binding validation
-allow src/rust-engine/src/kernel/document.rs:1363 earlier legacy binding validation
 
 # Declared root inputs always have an interface entry, including empty targets.
 allow src/rust-engine/src/kernel/flatten.rs:400 declared root input has interface entry
@@ -71,8 +71,8 @@ allow src/rust-engine/src/module_package.rs:1077 assertion panic for allowed pat
 # Prepared graph indices, module kinds, and intrinsic bindings are validated
 # before callback rendering; the final entry is a test-only empty fallback.
 allow src/rust-engine/src/graph_processor/polyphony.rs:500 prepared parent event input queue exists
-allow src/rust-engine/src/graph_processor/polyphony.rs:810 synthesized voice intrinsics are bound
-allow src/rust-engine/src/graph_processor/polyphony.rs:813 active voice owns a prepared arena
-allow src/rust-engine/src/graph_processor/polyphony.rs:832 synthesized gate output is bound
-allow src/rust-engine/src/graph_processor/polyphony.rs:839 gate queue exists for prepared voice
-allow src/rust-engine/src/graph_processor/polyphony.rs:990 test-only fallback without intrinsics
+allow src/rust-engine/src/graph_processor/polyphony.rs:809 synthesized voice intrinsics are bound
+allow src/rust-engine/src/graph_processor/polyphony.rs:812 active voice owns a prepared arena
+allow src/rust-engine/src/graph_processor/polyphony.rs:831 synthesized gate output is bound
+allow src/rust-engine/src/graph_processor/polyphony.rs:838 gate queue exists for prepared voice
+allow src/rust-engine/src/graph_processor/polyphony.rs:989 test-only fallback without intrinsics

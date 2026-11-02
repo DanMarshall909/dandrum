@@ -109,16 +109,10 @@ fn compiled_control_input_or_default(
     default: f32,
 ) -> Vec<f32> {
     let port_idx = compiled_input_port_index(compiled, module_idx, port_name);
-    if let Some(port_idx) = port_idx {
-        if !compiled.nodes()[module_idx].input_port_map[port_idx].is_empty() {
-            return compiled_sum_control_input(
-                module_idx,
-                port_name,
-                compiled,
-                all_outputs,
-                frames,
-            );
-        }
+    if let Some(port_idx) = port_idx
+        && !compiled.nodes()[module_idx].input_port_map[port_idx].is_empty()
+    {
+        return compiled_sum_control_input(module_idx, port_name, compiled, all_outputs, frames);
     }
 
     if let Some(parameter_input) =

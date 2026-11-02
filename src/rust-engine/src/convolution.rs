@@ -98,8 +98,7 @@ impl Convolution {
             self.output_pos = 0;
         }
 
-        let out = dry * (1.0 - self.wet) + wet_sum * self.wet;
-        out
+        dry * (1.0 - self.wet) + wet_sum * self.wet
     }
 
     fn process_block(&mut self) {

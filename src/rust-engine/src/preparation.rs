@@ -873,20 +873,18 @@ fn sample_preparation_error(
 
 fn validate_sample_module_options(patch: &KernelPatch) -> Result<(), KernelPreparationError> {
     for node in patch.root().nodes() {
-        if node.definition_ref() == module_types::SAMPLE_MAP_PLAYER {
-            if let Some(StaticArg::Literal(StaticValue::Int(max_voices))) =
+        if node.definition_ref() == module_types::SAMPLE_MAP_PLAYER
+            && let Some(StaticArg::Literal(StaticValue::Int(max_voices))) =
                 node.static_args().get("max_voices")
-            {
-                if !(1..=128).contains(max_voices) {
-                    return Err(sample_preparation_error(
-                        diagnostics::error_codes::KERNEL_SAMPLE_INVALID_VOICE_LIMIT,
-                        format!(
-                            "sample_map_player '{}' max_voices must be 1..=128",
-                            node.id().as_str()
-                        ),
-                    ));
-                }
-            }
+            && !(1..=128).contains(max_voices)
+        {
+            return Err(sample_preparation_error(
+                diagnostics::error_codes::KERNEL_SAMPLE_INVALID_VOICE_LIMIT,
+                format!(
+                    "sample_map_player '{}' max_voices must be 1..=128",
+                    node.id().as_str()
+                ),
+            ));
         }
     }
     Ok(())
@@ -1954,9 +1952,9 @@ fn compile_poly_regions_with_path(
             .iter()
             .zip(boundary.output_port_types.iter())
             .zip(boundary.output_port_spans.iter())
-            .filter_map(|((name, signal_type), span)| {
-                (*signal_type != SignalType::Event)
-                    .then(|| CompiledPolyOutputAccumulator::new(name, *signal_type, *span))
+            .filter(|&((_, signal_type), _)| *signal_type != SignalType::Event)
+            .map(|((name, signal_type), span)| {
+                CompiledPolyOutputAccumulator::new(name, *signal_type, *span)
             })
             .collect();
         compiled_regions.push(CompiledPolyRegion::new(
@@ -2006,23 +2004,23 @@ fn validate_host_buses(
                     "declare a same-named host output bus with the root port's channel count",
                 ),
             );
-        } else if let Some(host_channels) = host_channels {
-            if *host_channels != port.channels() as usize {
-                diagnostics.push(
-                    Diagnostic::new(
-                        diagnostics::error_codes::KERNEL_HOST_BUS_CHANNEL_MISMATCH,
-                        Severity::Error,
-                        format!(
-                            "root port '{}' has {} channels but its host bus has {host_channels}",
-                            port.name(),
-                            port.channels()
-                        ),
-                    )
-                    .with_port_name(port.name())
-                    .with_expected(format!("{} channels", port.channels()))
-                    .with_actual(format!("{host_channels} channels")),
-                );
-            }
+        } else if let Some(host_channels) = host_channels
+            && *host_channels != port.channels() as usize
+        {
+            diagnostics.push(
+                Diagnostic::new(
+                    diagnostics::error_codes::KERNEL_HOST_BUS_CHANNEL_MISMATCH,
+                    Severity::Error,
+                    format!(
+                        "root port '{}' has {} channels but its host bus has {host_channels}",
+                        port.name(),
+                        port.channels()
+                    ),
+                )
+                .with_port_name(port.name())
+                .with_expected(format!("{} channels", port.channels()))
+                .with_actual(format!("{host_channels} channels")),
+            );
         }
     }
     if diagnostics.has_errors() {

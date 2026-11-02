@@ -3078,7 +3078,7 @@ connections:
 "#,
     );
     assert!(
-        left.len() > 0,
+        !left.is_empty(),
         "dynamics+saturator chain should produce output"
     );
     let has_signal = left.iter().any(|&s| s != 0.0);
@@ -4024,7 +4024,7 @@ fn synthetic_808_kick_example_has_808_like_spectral_shape() {
     let sub_band = average_band_db(&spectrum, 35.0, 90.0);
     let low_mid_band = average_band_db(&spectrum, 120.0, 400.0);
     let click_band = average_band_db(&spectrum, 1_500.0, 6_000.0);
-    let peak = peak_abs(&left);
+    let peak = peak_abs(left);
     let attack_rms = rms(&left[..480.min(left.len())]);
     let tail_start = 12_000.min(left.len());
     let tail_rms = rms(&left[tail_start..]);
@@ -5175,13 +5175,7 @@ fn slew_snaps_to_target_when_gate_closed() {
     let mut state = slew_state();
     let target = 0.75;
 
-    let outputs = process_slew(
-        &mut state,
-        &vec![target; 8],
-        &vec![0.0; 8],
-        &vec![60.0; 8],
-        8,
-    );
+    let outputs = process_slew(&mut state, &[target; 8], &[0.0; 8], &[60.0; 8], 8);
 
     assert!(
         outputs.control["value"]
