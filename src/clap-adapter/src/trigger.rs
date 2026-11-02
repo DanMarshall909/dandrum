@@ -660,33 +660,36 @@ impl Core {
 #[cfg(all(feature = "trigger-editor", target_os = "linux", target_env = "gnu"))]
 fn deliver_automation(delivery: &mut automation::Output, output: &mut OutputEvents) -> usize {
     use clack_plugin::events::{
-        Pckn,
+        Event, EventFlags, Pckn,
         event_types::{ParamGestureBeginEvent, ParamGestureEndEvent},
     };
     use dandrum_trigger_host::parameters::AutomationEvent;
     delivery.deliver(|event| match event {
         AutomationEvent::Begin { parameter_index } => output
-            .try_push(ParamGestureBeginEvent::new(
-                0,
-                ClapId::new(parameter_index as u32 + 1),
-            ))
+            .try_push(
+                ParamGestureBeginEvent::new(0, ClapId::new(parameter_index as u32 + 1))
+                    .with_flags(EventFlags::IS_LIVE),
+            )
             .is_ok(),
         AutomationEvent::Value {
             parameter_index,
             value,
         } => output
-            .try_push(ParamValueEvent::new(
-                0,
-                ClapId::new(parameter_index as u32 + 1),
-                Pckn::match_all(),
-                value,
-            ))
+            .try_push(
+                ParamValueEvent::new(
+                    0,
+                    ClapId::new(parameter_index as u32 + 1),
+                    Pckn::match_all(),
+                    value,
+                )
+                .with_flags(EventFlags::IS_LIVE),
+            )
             .is_ok(),
         AutomationEvent::End { parameter_index } => output
-            .try_push(ParamGestureEndEvent::new(
-                0,
-                ClapId::new(parameter_index as u32 + 1),
-            ))
+            .try_push(
+                ParamGestureEndEvent::new(0, ClapId::new(parameter_index as u32 + 1))
+                    .with_flags(EventFlags::IS_LIVE),
+            )
             .is_ok(),
     })
 }
