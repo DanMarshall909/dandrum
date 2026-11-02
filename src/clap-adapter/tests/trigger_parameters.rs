@@ -417,7 +417,7 @@ fn copied_native_parameter_state_is_an_authenticated_numeric_dto() {
 
 use clack_extensions::params::PluginParams;
 use clack_host::events::{
-    UnknownEvent,
+    EventFlags, UnknownEvent,
     event_types::{ParamGestureBeginEvent, ParamGestureEndEvent, ParamValueEvent},
     io::{OutputEventBuffer, TryPushError},
 };
@@ -465,6 +465,11 @@ impl OutputEventBuffer for Recorder {
         } else {
             return Err(TryPushError::new());
         };
+        assert_eq!(
+            event.header().flags(),
+            EventFlags::IS_LIVE,
+            "editor gestures and values identify live user automation"
+        );
         self.accepted[self.len] = Some(recorded);
         self.len += 1;
         self.remaining -= 1;

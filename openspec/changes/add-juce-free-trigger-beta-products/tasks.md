@@ -55,7 +55,9 @@ the desktop (9.31 seconds, 385 real callbacks, 17 MIDI events, balanced gestures
 allocation/free sentinels). The earlier physical-input result is reused. Evidence, composite
 verification and remaining warning/timeout limits: `docs/migrations/evidence/trigger-clap-native-overlap-2026-11-01/README.md`.
 
-- [ ] 7.3 Qualify and run the named DAW acceptance on installed CLAP instances: balanced gestures, timed host automation/feedback, editor-absent servicing, two independently edited instances and saved-project fresh selected-sample/parameter restoration.
+- [x] 7.3 Qualify and run the named DAW acceptance on installed CLAP instances: balanced gestures, timed host automation/feedback, editor-absent servicing, two independently edited instances and saved-project fresh selected-sample/parameter restoration.
+
+Named DAW evidence: `docs/migrations/evidence/trigger-clap-daw-acceptance-2026-11-02/README.md`. REAPER 7.84 acceptance uses the recorded Linux/X11/GTK configuration; default REAPER settings and Qtractor AppImage remain unqualified. Tasks 8.1 and 8.2 remain open.
 
 ## 8. CLAP Beta Completion
 

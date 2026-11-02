@@ -2691,6 +2691,7 @@ AC juce-free-trigger-editor :: Host-parented WebView lifecycle is disposable :: 
 AC juce-free-trigger-editor :: React parameter gestures use host automation :: Real control gesture and host feedback round trip
   fp a35e53079c77
   test rust:copied_native_host_feedback_updates_rendered_control_without_polling_or_undo_pollution
+  test js:tests/js/TriggerNativeAdapterTest.mjs
 
 AC juce-free-trigger-editor :: Structural work survives complete editor loss :: Lost editor reconnects and undoes one accepted mapping
   fp 3ba5f02b8871

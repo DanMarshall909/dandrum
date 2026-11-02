@@ -12,7 +12,7 @@ attach() {
     this.onR = () => this.forceUpdate();
     this.onMod = (e) => { const s = !!e.shiftKey; if (s !== this.shift) { this.shift = s; if (this.snap) this.setState({ dragShift: s }); } };
     this.onDown = e => {
-      const target=e.target?.closest?.('[data-knob],[data-reset^="macro|"],[role="slider"],[role="spinbutton"]');
+      const target=e.target?.closest?.('[data-knob],[data-reset^="macro|"]')??e.target?.closest?.('[role="slider"],[role="spinbutton"]');
       if(target&&e.button===0&&!e.altKey){this.controlGesture=target.getAttribute('data-knob')??target.getAttribute('data-reset')??target.getAttribute('aria-label');this.props.store.beginGesture(this.controlGesture);}
     };
     this.onUp = () => {

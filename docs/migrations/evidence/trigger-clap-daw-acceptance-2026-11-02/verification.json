@@ -1,0 +1,121 @@
+{
+  "scope": "task 7.3 and two gesture boundary repairs; tasks 8.1/8.2 remain open",
+  "checks": [
+    {
+      "name": "frontend unit/coverage",
+      "cwd": "web/trigger",
+      "command": "npm run test:coverage",
+      "exit_status": 0,
+      "passed_tests": 284,
+      "log": "exploration/frontend-coverage-green.log",
+      "log_sha256": "62d62b6513dae965b335c1391fd6feb2bb9cf17022e553626f0a69347d9d2247"
+    },
+    {
+      "name": "frontend authored component/type checks",
+      "cwd": "web/trigger",
+      "command": "npm run check",
+      "exit_status": 0,
+      "passed_tests": null,
+      "log": "exploration/frontend-check.log",
+      "log_sha256": "b0bab331c63867fa869f03aeff4aeef673d6ec90d098c5fd740844478ed683dc"
+    },
+    {
+      "name": "production browser native transport",
+      "cwd": "web/trigger",
+      "command": "npm run test:browser -- native-transport.spec.mjs",
+      "exit_status": 0,
+      "passed_tests": 15,
+      "log": "exploration/native-browser-suite-green.log",
+      "log_sha256": "db49425c020766806c19e92c4e2ff0b53854667fc99761fc4d62ca06760a2bc7"
+    },
+    {
+      "name": "normal CTest JavaScript entrypoint",
+      "cwd": ".",
+      "command": "node tests/js/TriggerNativeAdapterTest.mjs",
+      "exit_status": 0,
+      "passed_tests": 61,
+      "log": "exploration/adapter-js-final.log",
+      "log_sha256": "c03e7c40caa9ca4bbd15d439da7a4e4dc88b377fa7e59ef19baab675bcc5d5a1"
+    },
+    {
+      "name": "native parameter and installed overlap",
+      "cwd": ".",
+      "command": "DISPLAY=:93 GDK_BACKEND=x11 CARGO_NET_OFFLINE=true ctest --test-dir build/cache-native --output-on-failure -V -R \"^(trigger-clap-native-parameter-|trigger-clap-installed-native-overlap|demo-launcher|spec-coverage)\"",
+      "exit_status": 0,
+      "passed_tests": 27,
+      "log": "exploration/final-native-ctest.log",
+      "log_sha256": "37be6e1f807b95d3aa43715d99f36c9b3fa36c400182029d3a62862809a9e43d"
+    },
+    {
+      "name": "strict engine coverage",
+      "cwd": ".",
+      "command": "CARGO_NET_OFFLINE=true scripts/check-rust-coverage",
+      "exit_status": 0,
+      "passed_tests": 1091,
+      "log": "exploration/final-engine-coverage.log",
+      "log_sha256": "e5912d637fe1dda5bb2626497e9edc0c6e18234b19d6309fc0f4524c2dec761a"
+    },
+    {
+      "name": "OpenSpec active change",
+      "cwd": ".",
+      "command": "openspec validate add-juce-free-trigger-beta-products --strict",
+      "exit_status": 0,
+      "passed_tests": null,
+      "log": "exploration/openspec-final-validation.log",
+      "log_sha256": "69921c291db820ace9446e66aa364a5c483e097becc20165902e315b526d13bf"
+    },
+    {
+      "name": "canonical acceptance map",
+      "cwd": ".",
+      "command": "scripts/check-spec-coverage",
+      "exit_status": 0,
+      "passed_tests": null,
+      "log": "exploration/spec-final-coverage.log",
+      "log_sha256": "a867eded6b432250e978c7545c3f62c23c415eb29b25a5af4223d656dcb005dd"
+    },
+    {
+      "name": "adapter formatting",
+      "cwd": ".",
+      "command": "cargo fmt --manifest-path src/clap-adapter/Cargo.toml -- --check",
+      "exit_status": 0,
+      "passed_tests": null,
+      "log": "exploration/adapter-format.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "native_ctest_seconds": 140.56,
+  "coverage": {
+    "adapter": "changed crate only, actual copied native test host; function 4/4 mapped regions and conversion closure 26/26; generic delivery instance has one zero-hit region",
+    "frontend": "changed callback executed; input-actions 67.02% lines,55.56% branches,47.06% functions; whole owner remains partial",
+    "engine": "normal strict gate passes,1091 tests",
+    "mutation": "excluded by user direction; no jobs launched"
+  },
+  "red_evidence": [
+    "exploration/pointer-red-detailed.log",
+    "exploration/pointer-browser-old-behavior.log",
+    "exploration/live-flags-red.log"
+  ],
+  "green_evidence": [
+    "exploration/pointer-green.log",
+    "exploration/native-browser-suite-green.log",
+    "exploration/live-flags-green.log"
+  ],
+  "daw_receipts": [
+    "final/native-gesture-automation-result.txt",
+    "final/live-editor-lifecycle-result.txt",
+    "final/editor-feedback-receipt.txt",
+    "final/fresh-state-verification.json",
+    "final/render-verification.json",
+    "final/fresh-process-exit.json"
+  ],
+  "cleanup": "exploration/owned-process-cleanup.json",
+  "unqualified_or_incomplete": [
+    "REAPER default linux_ime configuration",
+    "Qtractor AppImage GTK loader",
+    "full current-source owners and beta checks in task8.1",
+    "full-beta audit/task8.2",
+    "no raw CLAP event counts in final uninstrumented DAW; gesture proof combines asserted boundaries and DAW held/released behavior"
+  ],
+  "artifact_root": "/tmp/dandrum-task-7-3/installed-fixed",
+  "normal_hooks": "active .githooks entrypoints inspected; checkpoint and publication hooks run normally; their command output is retained outside Git with the review/publication run"
+}
