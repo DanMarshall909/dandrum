@@ -4,6 +4,8 @@ The repository has five independent Rust packages, per-CMake targets, per-packag
 
 Dan explicitly accepted consolidation and retirement of obsolete caches while preserving fast turnaround. This maintenance change is separate from the pending sampler dependency PR and beta tasks 7.3/8.1/8.2.
 
+Dan subsequently selected a single primary checkout with no additional Git worktrees. Branches switch in place, implementation/builds are serialized, and independent review reads the same checkout. The stable disposable source-free fixture remains necessary test input. One checkout reduces duplication; the cache budget still controls compiler/dependency generations, product variants and coverage storage within it.
+
 ## Goals / Non-Goals
 
 **Goals:** reuse compatible dependencies, retain incremental development, keep final products correctly bound, remove recurring source-path churn, bound managed storage, preserve replay evidence and demonstrate actual warm/small-edit reuse.

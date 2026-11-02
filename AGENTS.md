@@ -40,6 +40,9 @@
 
 ## Development Practice
 
+- Use only the primary checkout; do not create additional Git worktrees. Switch branches in place after preserving
+  unfinished work, serialize implementation and heavy builds, and let independent reviewers use read-only access
+  to this checkout. Disposable source-free test snapshots remain test fixtures, not persistent development checkouts.
 - Ensure full coverage of changed code before making changes. Check existing test coverage first; if gaps exist, add
   tests that characterize the current behavior before modifying it. Only then make the change and verify everything
   passes.
