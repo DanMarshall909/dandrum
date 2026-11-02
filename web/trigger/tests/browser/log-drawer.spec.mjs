@@ -1,12 +1,4 @@
-import {test,expect} from '@playwright/test';
-import {writeFile} from 'node:fs/promises';
-test.beforeEach(async({page})=>{await page.coverage.startJSCoverage({resetOnNavigation:false});});
-test.afterEach(async({page},testInfo)=>{
-  const coverage=(await page.coverage.stopJSCoverage()).filter(entry=>entry.url.includes('/components/LogDrawer.jsx'));
-  const path=testInfo.outputPath('log-drawer-coverage.json');await writeFile(path,JSON.stringify(coverage));
-  await testInfo.attach('log-drawer-coverage',{path,contentType:'application/json'});
-});
-
+import {test,expect} from './fixtures.mjs';
 async function openLog(page){
   await page.goto('/');
   await page.getByRole('button',{name:/^Patch/}).click();

@@ -1,0 +1,145 @@
+{
+  "archive": "/home/dan/code/dandrum/.git/codex/trigger-beta-qualification-20261102/installed-native-replay.tar.gz",
+  "bytes": 26927608,
+  "sha256": "57db3b1f4216353ad71878f7794cb14bba991aa487ce589387e336ba8e090064",
+  "files": {
+    "installed/lib/clap/DandrumTrigger.clap": {
+      "bytes": 14248248,
+      "sha256": "da9fc60fa566ce77e882bf584cd5c9a00a905fa0929438374badc5ef04478186"
+    },
+    "installed/lib/clap/DandrumTrigger.resources/.staged": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "installed/lib/clap/DandrumTrigger.resources/instrument/advanced-drum-kit.yaml": {
+      "bytes": 6699,
+      "sha256": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008"
+    },
+    "installed/lib/clap/DandrumTrigger.resources/instrument/assets/advanced-drums.wav": {
+      "bytes": 102044,
+      "sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503"
+    },
+    "installed/lib/clap/DandrumTrigger.resources/editor/app.js": {
+      "bytes": 827445,
+      "sha256": "0f68c7f3f043a8a2b7ca92570c6fb5b0a3f7e5d53bf7913b6ef5e9cacbc9d74b"
+    },
+    "installed/lib/clap/DandrumTrigger.resources/editor/app.css": {
+      "bytes": 11023,
+      "sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5"
+    },
+    "installed/lib/clap/DandrumTrigger.resources/editor/index.html": {
+      "bytes": 326,
+      "sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26"
+    },
+    "installed/lib/clap/DandrumTrigger.resources/editor/fonts/c15439e7a03af571.ttf": {
+      "bytes": 85876,
+      "sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c"
+    },
+    "installed/lib/clap/DandrumTrigger.resources/editor/fonts/6098b66ce7d608dc.ttf": {
+      "bytes": 88644,
+      "sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef"
+    },
+    "installed/lib/clap/DandrumTrigger.resources/editor/fonts/74103fd6d41bc32c.ttf": {
+      "bytes": 85776,
+      "sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154"
+    },
+    "installed/lib/clap/DandrumTrigger.resources/editor/fonts/jetbrainsmono-OFL.txt": {
+      "bytes": 4399,
+      "sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d"
+    },
+    "installed/lib/clap/DandrumTrigger.resources/editor/fonts/3386a05f6ece969e.ttf": {
+      "bytes": 112204,
+      "sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160"
+    },
+    "installed/lib/clap/DandrumTrigger.resources/editor/fonts/.gitattributes": {
+      "bytes": 77,
+      "sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616"
+    },
+    "installed/lib/clap/DandrumTrigger.resources/editor/fonts/91c841fdfa8e7b94.ttf": {
+      "bytes": 81924,
+      "sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc"
+    },
+    "installed/lib/clap/DandrumTrigger.resources/editor/fonts/barlowsemicondensed-OFL.txt": {
+      "bytes": 4377,
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+    },
+    "installed/lib/clap/DandrumTrigger.resources/editor/fonts/cb75439ae401f776.ttf": {
+      "bytes": 86708,
+      "sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da"
+    },
+    "installed/lib/clap/DandrumTrigger.resources/editor/fonts/df54dbfafba61d49.ttf": {
+      "bytes": 112160,
+      "sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8"
+    },
+    "installed/lib/clap/DandrumTrigger.resources/editor/fonts/barlow-OFL.txt": {
+      "bytes": 4377,
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+    },
+    "installed/lib/clap/DandrumTrigger.resources/editor/fonts/c2b046235fb4c2f8.ttf": {
+      "bytes": 83412,
+      "sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9"
+    },
+    "installed/share/doc/dandrum-trigger/THIRD_PARTY_NOTICES.json": {
+      "bytes": 110905,
+      "sha256": "88de22f2e7af7a780fe24d52af9494be6ef4a55cfd397dbfda49a8ada75aa037"
+    },
+    "hosts/dynamic": {
+      "bytes": 60538384,
+      "sha256": "2944438742241e026685f823ba70d54d6794d87164253c00139171403290bccf"
+    },
+    "hosts/gui": {
+      "bytes": 1288312,
+      "sha256": "300ba26f2a98804cf6501a1dced77e9db8d5c1dd1b1baaee6d7ec11b83510731"
+    },
+    "hosts/proof.clap": {
+      "bytes": 12372552,
+      "sha256": "1fb23c06843dbd06726aed7bcc9e16402475a9c859993317ff2d51dd882feeda"
+    },
+    "tools/Xvfb": {
+      "bytes": 2073056,
+      "sha256": "cf71d78eab8321f7c568271053af449f966a75422140117ea1f244bf72a7e81e"
+    },
+    "evidence/installed-manifest.json": {
+      "bytes": 3982,
+      "sha256": "397972ffe7f24bf3390f560606e58febc179fc7ae4468720113ec88da70acba8"
+    },
+    "evidence/offline-host-provenance.json": {
+      "bytes": 9619,
+      "sha256": "b98ba0ec08c7b798d6620abaa84eb2fe610bc45bd3a1770a82268b2572b8f2d7"
+    },
+    "evidence/offline-checks.json": {
+      "bytes": 2393,
+      "sha256": "f2057d1c62f87f796fe7db73e77a70d7e4e7bd482843b20f6bc6c88332cc9cfa"
+    },
+    "evidence/isolated-gui.sh": {
+      "bytes": 1242,
+      "sha256": "0621f7ae4e4d2f50c6c3647358b385ee215fbaae0f713547cf61457323164e68"
+    },
+    "evidence/isolated-headless.sh": {
+      "bytes": 864,
+      "sha256": "0b1ff633378739ae107c57d49a02c15480e582f0f7834cf70ed20c6559ee97d3"
+    },
+    "evidence/tool-versions-final.json": {
+      "bytes": 1913,
+      "sha256": "4b467dbb7eda4d4ffe4f6104645c7fedae02a015f0e313ceb616cf3e0c177fff"
+    },
+    "glib-source/Cargo.toml": {
+      "bytes": 3127,
+      "sha256": "bcd52d812b4c111864ae8e88ba6c0a8311eb0cf781b5e81634950b4619592132"
+    },
+    "glib-source/src/variant.rs": {
+      "bytes": 77401,
+      "sha256": "b48295eca732e862b2c5347ee431c2f800c7b0c6b30f6a0f0879cd16fe13eb9b"
+    },
+    "glib-source/src/variant_iter.rs": {
+      "bytes": 9874,
+      "sha256": "1fd02859333761c45321b32f28b24233446b97d0022a90d3a937ed162585b90e"
+    },
+    "glib-source/src/lib.rs": {
+      "bytes": 6621,
+      "sha256": "70abc92bf0d02f3c4989034501065cdf64d70901e511f6720d8cd65fcbb662e1"
+    }
+  },
+  "all_archive_members_verified": true,
+  "policy": "Keep compiled beta/replay artifacts private/local; not a redistribution clearance."
+}

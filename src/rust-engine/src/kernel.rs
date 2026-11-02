@@ -786,14 +786,12 @@ impl GraphDefinition {
             if let Some(qualified) = local_names.get(&node.definition_ref) {
                 node.definition_ref = qualified.clone();
             }
-            if node.definition_ref == POLY_DEFINITION {
-                if let Some(StaticArg::Literal(StaticValue::String(wrapped))) =
+            if node.definition_ref == POLY_DEFINITION
+                && let Some(StaticArg::Literal(StaticValue::String(wrapped))) =
                     node.static_args.get_mut(POLY_WRAPPED_DEFINITION_PARAM)
-                {
-                    if let Some(qualified) = local_names.get(wrapped) {
-                        *wrapped = qualified.clone();
-                    }
-                }
+                && let Some(qualified) = local_names.get(wrapped)
+            {
+                *wrapped = qualified.clone();
             }
         }
         scoped
@@ -1096,7 +1094,7 @@ impl GraphDefinition {
     ) -> Option<BTreeMap<String, StaticValue>> {
         let mut ok = true;
 
-        for (name, _) in node.static_args() {
+        for name in node.static_args().keys() {
             if referenced.static_param(name).is_none() {
                 diagnostics.push(
                     Diagnostic::new(
@@ -1737,64 +1735,63 @@ impl GraphDefinition {
         let mut ok = true;
 
         for port in &self.ports {
-            if let ChannelCount::Param(name) = port.channels() {
-                if let Some(StaticValue::Int(value)) = static_args.get(name) {
-                    if *value < ChannelCount::MIN {
-                        diagnostics.push(
-                            Diagnostic::new(
-                                error_codes::KERNEL_INVALID_STATIC_REFERENCE_VALUE,
-                                Severity::Error,
-                                format!(
-                                    "definition '{}' resolves the channel count of port '{}' from static parameter '{name}' to {value}, but a channel count must be at least {}",
-                                    self.name(),
-                                    port.name(),
-                                    ChannelCount::MIN
-                                ),
-                            )
-                            .with_module_id(self.name())
-                            .with_port_name(port.name())
-                            .with_expected(format!("channel count >= {}", ChannelCount::MIN))
-                            .with_actual(value.to_string()),
-                        );
-                        ok = false;
-                    }
-                }
+            if let ChannelCount::Param(name) = port.channels()
+                && let Some(StaticValue::Int(value)) = static_args.get(name)
+                && *value < ChannelCount::MIN
+            {
+                diagnostics.push(
+                    Diagnostic::new(
+                        error_codes::KERNEL_INVALID_STATIC_REFERENCE_VALUE,
+                        Severity::Error,
+                        format!(
+                            "definition '{}' resolves the channel count of port '{}' from static parameter '{name}' to {value}, but a channel count must be at least {}",
+                            self.name(),
+                            port.name(),
+                            ChannelCount::MIN
+                        ),
+                    )
+                    .with_module_id(self.name())
+                    .with_port_name(port.name())
+                    .with_expected(format!("channel count >= {}", ChannelCount::MIN))
+                    .with_actual(value.to_string()),
+                );
+                ok = false;
             }
         }
 
-        if let LatencySpec::StaticParam { name, minus } = &self.latency {
-            if let Some(StaticValue::Int(value)) = static_args.get(name) {
-                if *value < 0 {
-                    diagnostics.push(
-                        Diagnostic::new(
-                            error_codes::KERNEL_INVALID_STATIC_REFERENCE_VALUE,
-                            Severity::Error,
-                            format!(
-                                "definition '{}' resolves its processing latency from static parameter '{name}' to {value}, but latency cannot be negative",
-                                self.name()
-                            ),
-                        )
-                        .with_module_id(self.name())
-                        .with_expected("latency >= 0")
-                        .with_actual(value.to_string()),
-                    );
-                    ok = false;
-                } else if (*value as u32) < *minus {
-                    diagnostics.push(
-                        Diagnostic::new(
-                            error_codes::KERNEL_INVALID_STATIC_REFERENCE_VALUE,
-                            Severity::Error,
-                            format!(
-                                "definition '{}' resolves its processing latency from static parameter '{name}' to {value}, which is smaller than the subtracted constant {minus}; latency would silently saturate to zero",
-                                self.name()
-                            ),
-                        )
-                        .with_module_id(self.name())
-                        .with_expected(format!("latency static value >= {minus}"))
-                        .with_actual(value.to_string()),
-                    );
-                    ok = false;
-                }
+        if let LatencySpec::StaticParam { name, minus } = &self.latency
+            && let Some(StaticValue::Int(value)) = static_args.get(name)
+        {
+            if *value < 0 {
+                diagnostics.push(
+                    Diagnostic::new(
+                        error_codes::KERNEL_INVALID_STATIC_REFERENCE_VALUE,
+                        Severity::Error,
+                        format!(
+                            "definition '{}' resolves its processing latency from static parameter '{name}' to {value}, but latency cannot be negative",
+                            self.name()
+                        ),
+                    )
+                    .with_module_id(self.name())
+                    .with_expected("latency >= 0")
+                    .with_actual(value.to_string()),
+                );
+                ok = false;
+            } else if (*value as u32) < *minus {
+                diagnostics.push(
+                    Diagnostic::new(
+                        error_codes::KERNEL_INVALID_STATIC_REFERENCE_VALUE,
+                        Severity::Error,
+                        format!(
+                            "definition '{}' resolves its processing latency from static parameter '{name}' to {value}, which is smaller than the subtracted constant {minus}; latency would silently saturate to zero",
+                            self.name()
+                        ),
+                    )
+                    .with_module_id(self.name())
+                    .with_expected(format!("latency static value >= {minus}"))
+                    .with_actual(value.to_string()),
+                );
+                ok = false;
             }
         }
 
@@ -1983,13 +1980,14 @@ impl GraphDefinition {
                 .or_insert(0) += 1;
         }
         for (destination, count) in &destination_counts {
-            if *count > 1 {
-                if let Some(node) = resolved_nodes.get(destination.node()) {
-                    if let Some(port) = node.ports.iter().find(|p| {
-                        p.name() == destination.port() && p.direction() == PortDirection::Input
-                    }) {
-                        if port.multiplicity() == Multiplicity::SingleSource {
-                            diagnostics.push(
+            if *count > 1
+                && let Some(node) = resolved_nodes.get(destination.node())
+                && let Some(port) = node.ports.iter().find(|p| {
+                    p.name() == destination.port() && p.direction() == PortDirection::Input
+                })
+                && port.multiplicity() == Multiplicity::SingleSource
+            {
+                diagnostics.push(
                                 Diagnostic::new(
                                     error_codes::KERNEL_MULTIPLE_SOURCES,
                                     Severity::Error,
@@ -2002,9 +2000,6 @@ impl GraphDefinition {
                                 .with_module_id(destination.node().as_str())
                                 .with_port_name(destination.port()),
                             );
-                        }
-                    }
-                }
             }
         }
 
@@ -2180,10 +2175,10 @@ impl GraphDefinition {
                 } else {
                     Some(referenced)
                 };
-                if let Some(next) = next {
-                    if let Some(diagnostic) = visit(next, registry, path) {
-                        return Some(diagnostic);
-                    }
+                if let Some(next) = next
+                    && let Some(diagnostic) = visit(next, registry, path)
+                {
+                    return Some(diagnostic);
                 }
             }
             path.pop();

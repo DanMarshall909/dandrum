@@ -1,0 +1,343 @@
+{
+  "totals": {
+    "branches": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0
+    },
+    "functions": {
+      "count": 405,
+      "covered": 400,
+      "percent": 98.76543209876544
+    },
+    "instantiations": {
+      "count": 1256,
+      "covered": 968,
+      "percent": 77.07006369426752
+    },
+    "lines": {
+      "count": 4442,
+      "covered": 4347,
+      "percent": 97.86132372805044
+    },
+    "mcdc": {
+      "count": 0,
+      "covered": 0,
+      "notcovered": 0,
+      "percent": 0
+    },
+    "regions": {
+      "count": 6463,
+      "covered": 6307,
+      "notcovered": 156,
+      "percent": 97.58626025065759
+    }
+  },
+  "owners": [
+    {
+      "filename": "/home/dan/code/dandrum/src/trigger-host/src/lib.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 21,
+          "covered": 21,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 104,
+          "covered": 71,
+          "percent": 68.26923076923077
+        },
+        "lines": {
+          "count": 129,
+          "covered": 128,
+          "percent": 99.2248062015504
+        },
+        "regions": {
+          "count": 174,
+          "covered": 173,
+          "notcovered": 1,
+          "percent": 99.42528735632182
+        }
+      }
+    },
+    {
+      "filename": "/home/dan/code/dandrum/src/trigger-host/src/parameters.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 128,
+          "covered": 125,
+          "percent": 97.65625
+        },
+        "instantiations": {
+          "count": 479,
+          "covered": 345,
+          "percent": 72.02505219206681
+        },
+        "lines": {
+          "count": 1376,
+          "covered": 1312,
+          "percent": 95.34883720930233
+        },
+        "regions": {
+          "count": 1954,
+          "covered": 1870,
+          "notcovered": 84,
+          "percent": 95.70112589559876
+        }
+      }
+    },
+    {
+      "filename": "/home/dan/code/dandrum/src/trigger-host/src/parameters/selection.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 27,
+          "covered": 27,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 54,
+          "covered": 29,
+          "percent": 53.70370370370371
+        },
+        "lines": {
+          "count": 258,
+          "covered": 251,
+          "percent": 97.28682170542635
+        },
+        "regions": {
+          "count": 339,
+          "covered": 321,
+          "notcovered": 18,
+          "percent": 94.69026548672566
+        }
+      }
+    },
+    {
+      "filename": "/home/dan/code/dandrum/src/trigger-host/src/patch_budget.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 20,
+          "covered": 20,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 42,
+          "covered": 33,
+          "percent": 78.57142857142857
+        },
+        "lines": {
+          "count": 143,
+          "covered": 143,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 190,
+          "covered": 190,
+          "notcovered": 0,
+          "percent": 100.0
+        }
+      }
+    },
+    {
+      "filename": "/home/dan/code/dandrum/src/trigger-host/src/protocol.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 38,
+          "covered": 38,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 92,
+          "covered": 75,
+          "percent": 81.52173913043478
+        },
+        "lines": {
+          "count": 527,
+          "covered": 527,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 755,
+          "covered": 751,
+          "notcovered": 4,
+          "percent": 99.47019867549668
+        }
+      }
+    },
+    {
+      "filename": "/home/dan/code/dandrum/src/trigger-host/src/runtime.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 113,
+          "covered": 113,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 199,
+          "covered": 185,
+          "percent": 92.96482412060301
+        },
+        "lines": {
+          "count": 1387,
+          "covered": 1380,
+          "percent": 99.49531362653208
+        },
+        "regions": {
+          "count": 2171,
+          "covered": 2157,
+          "notcovered": 14,
+          "percent": 99.355135882082
+        }
+      }
+    },
+    {
+      "filename": "/home/dan/code/dandrum/src/trigger-host/src/samples.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 27,
+          "covered": 27,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 102,
+          "covered": 76,
+          "percent": 74.50980392156865
+        },
+        "lines": {
+          "count": 277,
+          "covered": 275,
+          "percent": 99.27797833935017
+        },
+        "regions": {
+          "count": 352,
+          "covered": 347,
+          "notcovered": 5,
+          "percent": 98.57954545454545
+        }
+      }
+    },
+    {
+      "filename": "/home/dan/code/dandrum/src/trigger-host/src/state.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 31,
+          "covered": 29,
+          "percent": 93.54838709677419
+        },
+        "instantiations": {
+          "count": 184,
+          "covered": 154,
+          "percent": 83.69565217391305
+        },
+        "lines": {
+          "count": 345,
+          "covered": 331,
+          "percent": 95.94202898550724
+        },
+        "regions": {
+          "count": 528,
+          "covered": 498,
+          "notcovered": 30,
+          "percent": 94.31818181818183
+        }
+      }
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 // Run normally, then with SLOW_MO=700 --headed; the fixture exercises geometry only.
-import {test,expect} from '@playwright/test';
+import {test,expect} from './fixtures.mjs';
 import {session} from '../native-fixture.mjs';
 
 test.use({launchOptions:{executablePath:process.env.TRIGGER_CHROME??'/usr/bin/google-chrome',slowMo:Number(process.env.SLOW_MO??0)}});

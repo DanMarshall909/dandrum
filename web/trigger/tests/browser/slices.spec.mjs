@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './fixtures.mjs';
 const load=async page=>{await page.goto('/');await page.getByRole('button',{name:/^Patch/}).click();await page.getByRole('button',{name:'Load Felt Kit',exact:true}).click();await expect(page.getByRole('banner').getByRole('status')).toContainText('Ready');};
 test('transient results require explicit apply, undo restores eight slices and failed or cancelled jobs preserve them',async({page})=>{
   await load(page);await page.getByRole('tab',{name:/^Slices/}).click();

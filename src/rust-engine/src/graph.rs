@@ -417,16 +417,15 @@ impl Graph {
                     .find(|m| m.id() == cable.destination().module_id());
 
                 #[cfg(test)]
-                if let (Some(source_module), Some(dest_module)) = (source_module, dest_module) {
-                    if source_module.execution_scope() == ExecutionScope::Voice
-                        && dest_module.execution_scope() == ExecutionScope::Global
-                        && !destination.accepts_multiple_sources()
-                    {
-                        diagnostics.push(GraphDiagnostic::VoiceToGlobalDirectRouting {
-                            source: cable.source().clone(),
-                            destination: cable.destination().clone(),
-                        });
-                    }
+                if let (Some(source_module), Some(dest_module)) = (source_module, dest_module)
+                    && source_module.execution_scope() == ExecutionScope::Voice
+                    && dest_module.execution_scope() == ExecutionScope::Global
+                    && !destination.accepts_multiple_sources()
+                {
+                    diagnostics.push(GraphDiagnostic::VoiceToGlobalDirectRouting {
+                        source: cable.source().clone(),
+                        destination: cable.destination().clone(),
+                    });
                 }
             }
         }

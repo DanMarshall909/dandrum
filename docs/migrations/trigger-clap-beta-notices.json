@@ -13,36 +13,60 @@
       "sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d"
     }
   ],
-  "first_party_license_status": "Project distribution licence not yet chosen; local installed beta proof only.",
+  "first_party_license_status": "Private/local beta only, as directed by the project owner on 2026-11-02; no first-party distribution licence selected.",
   "inputs": {
-    "cargo_lock_sha256": "a1675f877d796043a76ebd6454784e5d7118fd0780016225f66750b2dd16b815",
+    "cargo_lock_sha256": "fbb7372934ea35e29cdb8c1dda65480d05b66dc33d0588d2376469f0bb42b46c",
     "clack_revision": "27ca28391b57a61bad4bb5099288a7bf9247350d",
     "feature": "trigger-editor",
-    "package_lock_sha256": "07d6d015bc9148c1f55f3146f38200f835727c0fc4bbe19cf7a415529ba342d9",
+    "package_lock_sha256": "54204a84325693d12087c7f0764c6cd4fa9e6c41168c61b47dc9ab867723faea",
     "target": "x86_64-unknown-linux-gnu"
   },
   "javascript_runtime_packages": [
     {
       "integrity": "sha512-E8LUcbtBWt20bbl2YoHfx4ZDBdxVTfOKtCZn9cDSJ4l6/nuoApcpIBcj47t2wZoVX8g2ZHuMHbiShgCR1T5Sog==",
       "license_declaration": "MIT",
+      "license_files": [
+        {
+          "name": "LICENSE",
+          "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+        }
+      ],
       "name": "react",
       "version": "19.3.0"
     },
     {
       "integrity": "sha512-JDk8dgif51OjFoDE70+OT9ICyYr+69HlmihNwp1+Nsfbna3t5sIiCa9ZJktDmQ4/1b/rn26hIAR2uYXDMr5r0Q==",
       "license_declaration": "MIT",
+      "license_files": [
+        {
+          "name": "LICENSE",
+          "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+        }
+      ],
       "name": "react-dom",
       "version": "19.3.0"
     },
     {
       "integrity": "sha512-juorfCmIkIw8tT+p5BXSm6PJjQF/ycEYmKyzURCIt/RaZIhL+PulbQ9Yu2z1HdOJDdqDTlxA1+xKBmHXJsczAw==",
       "license_declaration": "MIT",
+      "license_files": [
+        {
+          "name": "LICENSE",
+          "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+        }
+      ],
       "name": "scheduler",
       "version": "0.28.0"
     },
     {
       "integrity": "sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw==",
       "license_declaration": "ISC",
+      "license_files": [
+        {
+          "name": "LICENSE",
+          "sha256": "5bba27375d93e9119f76c1015f7672cf9ad5f70952296e0842fb2243d6376869"
+        }
+      ],
       "name": "yaml",
       "version": "2.9.1"
     }
@@ -1105,23 +1129,6 @@
       "version": "0.3.4"
     },
     {
-      "checksum": "300e883d756b2e4ec94e02791f39b04b522276138852cfc41d9fb7e904106099",
-      "license_declaration": "MIT OR Apache-2.0",
-      "license_files": [
-        {
-          "name": "LICENSE-APACHE",
-          "sha256": "aaff376532ea30a0cd5330b9502ad4a4c8bf769c539c87ffe78819d188a18ebf"
-        },
-        {
-          "name": "LICENSE-MIT",
-          "sha256": "523a42c25d245dde9c015f882cec7f4555aad883382a6cf19b4b7d9b2cd5419b"
-        }
-      ],
-      "name": "getrandom",
-      "source": "registry+https://github.com/rust-lang/crates.io-index",
-      "version": "0.4.3"
-    },
-    {
       "checksum": "d4fc8f532f87b79cbc51a79748f16a6828fb784be93145a322fa14d06d354c73",
       "license_declaration": "MIT",
       "license_files": [
@@ -2141,7 +2148,6 @@
       "version": "3.2.0"
     },
     {
-      "checksum": "ad8388ea1a9e0ea807e442e8263a699e7edcb320ecbcd21b4fa8ff859acce3ba",
       "license_declaration": "MIT OR Apache-2.0",
       "license_files": [
         {
@@ -2155,7 +2161,7 @@
       ],
       "name": "rtrb",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
-      "version": "0.3.2"
+      "version": "0.3.5"
     },
     {
       "checksum": "cfcb3a22ef46e85b45de6ee7e79d063319ebb6594faafcf1c225ea92ab6e9b92",
@@ -2466,7 +2472,12 @@
     {
       "checksum": "3fb72c633efbaa2dd666986505016c32c3044395ceaf881518399d2f4127ee29",
       "license_declaration": "MPL-2.0+",
-      "license_files": [],
+      "license_files": [
+        {
+          "name": "LICENCE.md",
+          "sha256": "e6b6566f085df5746515c6d7e2edcaec0d2b77d527ac40d91409d783fb6c8508"
+        }
+      ],
       "name": "smartstring",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "1.0.1"
@@ -3179,7 +3190,6 @@
       "version": "0.8.52"
     },
     {
-      "checksum": "2d04a6b5381502aa6087c94c669499eb1602eb9c5e8198e534de571f7154809b",
       "license_declaration": "MIT",
       "license_files": [
         {
@@ -3189,7 +3199,7 @@
       ],
       "name": "zip",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
-      "version": "8.6.0"
+      "version": "9.0.5"
     },
     {
       "checksum": "29666d0abbfad1e3dc4dcf6144730dd3a3ab225bbbdac83319345b1b44ccfc1b",

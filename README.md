@@ -69,6 +69,43 @@ $HOME/.local/bin/cmake --build build
 This uses JUCE as the wrapper/host side. The current binary links a Rust static library from `src/rust-engine/` and
 calls it from the JUCE audio callback.
 
+Rust commands use `./scripts/cargo`, for example
+`./scripts/cargo test --manifest-path src/rust-engine/Cargo.toml`. CMake, the
+pre-push hook and the coverage driver use the same managed cache. The qualified
+toolchain is Cargo/Rust 1.96 with cargo-llvm-cov 0.8.7. Put the Cargo subcommand
+first; command-line configuration and build-directory overrides are refused.
+Tool installation, destructive cleaning and mutation use their separate workflows.
+CTest's `rust-engine-clippy` checks all engine targets with warnings treated as errors.
+
+Compatible builds share intermediate artifacts under the common Git directory;
+final products stay private to their build directories. Ordinary source edits
+retain incremental state. Coverage has separate instrumented storage and fresh
+profiles. Compiler, dependency or Rust-flag changes select another generation.
+Coverage ignores an exported ordinary `CARGO_TARGET_DIR` and uses its own managed
+target; a coverage `--target-dir` override is refused to protect ordinary products.
+An existing warm target can be explicitly registered with
+`python3 scripts/cargo-cache.py --ordinary "$PWD/src/rust-engine/target" adopt`;
+registration preserves it at that path and requires an otherwise empty managed
+generation. New clones need no registration.
+
+The `.ai-rules.json` policy allows 64 GiB of retained managed Cargo data, reserves
+8 GiB of free disk, and admits a producer only when its 8 GiB growth allowance
+fits. Inactive owned generations are retired only when capacity is needed. If
+the current warm cache cannot fit, the command stops and explains the conflict.
+Completion measures actual growth; this is an admission limit, not a filesystem
+quota. Raw `$HOME/.cargo/bin/cargo` invocations and unrelated build directories
+are outside this policy. Use the managed commands consistently and serialize
+heavy builds.
+
+Interrupted commands leave an `active.json` marker and refuse further growth.
+Inspect the recorded process, inherited lease and output before recovery; remove
+the marker only after the producer and its children have stopped and its paths
+are accounted for. Native fixture preparation uses the same refusal rule,
+retains the current fixture plus the latest failed attempt's logs, and removes
+superseded owned copies after successful publication. Maintained CTest consumers
+hold a shared fixture lease, preventing replacement while they run. Preserve
+any fixture needed as durable replay evidence separately before replacing it.
+
 ## UI design
 
 The current [Dandrum design system](docs/design-system/README.md) includes the reviewed Das Sampler mockups, component references, tokens, SVG assets and JUCE handoff. See the [renderer-independent UI plan](openspec/changes/add-renderer-independent-plugin-ui/design.md) for the native/WebView architecture and implementation tasks.
@@ -90,7 +127,9 @@ ctest --test-dir build/engine-only --output-on-failure
 This builds the existing Rust static library and independent C++ tests for named buses, signed
 rendering, sample-offset MIDI, waveform services, meters, commands and Sound Lab. Its build
 regression uses a first-party source fixture that omits JUCE, browser assets and UI toolkits,
-and keeps the reusable build cache in `build/engine-only-regression/`. The existing JUCE build
+uses a clean, exclusively leased `build/engine-only-regression/fixture-stable/`
+source path with the managed shared Cargo cache. Command logs remain outside
+the disposable snapshot. The existing JUCE build
 separately checks that its comparison host/plugin targets and engine tests remain available.
 
 Leave `DANDRUM_ENGINE_ONLY` disabled for the existing JUCE host/plugins. It rejects combinations
@@ -287,7 +326,7 @@ From the repository root, render a checked-in kernel patch with host settings
 on the command line:
 
 ```bash
-CARGO_TARGET_DIR="$PWD/build/rust-target" $HOME/.cargo/bin/cargo run \
+CARGO_TARGET_DIR="$PWD/build/rust-products" ./scripts/cargo run \
   --manifest-path src/rust-engine/Cargo.toml --bin dandrum-cli -- \
   render examples/patches/event-routing-drum-machine.yaml \
   --output /tmp/dandrum-drum-machine.wav --duration-frames 4800 \
@@ -303,7 +342,7 @@ settings or `audio_output` module.
 Rust unit tests are the default home for core behavior:
 
 ```bash
-CARGO_TARGET_DIR="$PWD/build/rust-target" $HOME/.cargo/bin/cargo test \
+CARGO_TARGET_DIR="$PWD/build/rust-products" ./scripts/cargo test \
   --manifest-path src/rust-engine/Cargo.toml
 ```
 
@@ -311,7 +350,7 @@ For iterative sound design, render the checked-in TB-303 proof-of-concept
 fixture to an audition WAV and a spectral/level trajectory:
 
 ```bash
-CARGO_TARGET_DIR="$PWD/build/rust-target" $HOME/.cargo/bin/cargo run \
+CARGO_TARGET_DIR="$PWD/build/rust-products" ./scripts/cargo run \
   --manifest-path src/rust-engine/Cargo.toml \
   --bin dandrum-sound-workbench -- \
   render examples/sound-design/tb303-acid-poc.yaml \

@@ -46,7 +46,7 @@ impl From<patch::PatchLoadError> for LoadPatchError {
                 LoadPatchError::UnsupportedFormat(path.display().to_string())
             }
             patch::PatchLoadError::ReadFailed { message, .. } => {
-                LoadPatchError::Io(std::io::Error::new(std::io::ErrorKind::Other, message))
+                LoadPatchError::Io(std::io::Error::other(message))
             }
             patch::PatchLoadError::ParseFailed { message, .. } => LoadPatchError::Parse(message),
         }

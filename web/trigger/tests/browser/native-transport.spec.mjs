@@ -1,8 +1,36 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './fixtures.mjs';
 import {session,yaml,editorProfile} from '../native-fixture.mjs';
 import {parse,stringify} from 'yaml';
 
 test.beforeEach(async({page})=>{await page.addInitScript(profile=>{window.__TEST_EDITOR_PROFILE__=profile;},editorProfile());});
+
+test('dragging a rendered native slider keeps one public gesture open until release',async({page})=>{
+  await page.addInitScript(initial=>{
+    window.nativeCalls=[];
+    window.__DANDRUM__={protocolVersion:1,backendId:'juce-free',capabilities:{metering:false,sourceWaveforms:false,windowTitle:false,editorResize:false},backend:{
+      addEventListener:()=>0,removeEventListener:()=>{},getNativeFunction:name=>async(...args)=>{
+        window.nativeCalls.push([name,...args]);
+        if(name==='negotiateEditorProtocol')return window.__TEST_EDITOR_PROFILE__;
+        if(name==='getSamplerSession')return initial;
+        if(name==='getParameterState')return {generation:7,sequence:0,parameters:[]};
+        if(['beginGesture','setParameter','endGesture'].includes(name))return {status:'accepted',generation:7};
+        return true;
+      },
+    }};
+  },session());
+  await page.goto('/');
+  const slider=page.locator('[data-knob="drums.level"] [role="slider"]');
+  await expect(slider).toBeVisible();
+  const box=await slider.boundingBox();
+  await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();
+  await expect.poll(()=>page.evaluate(()=>window.nativeCalls.filter(call=>call[0]==='beginGesture'))).toEqual([['beginGesture','drums.level',7]]);
+  await page.mouse.move(box.x+box.width/2,box.y+box.height/2-30,{steps:5});
+  await expect.poll(()=>page.evaluate(()=>window.nativeCalls.filter(call=>call[0]==='setParameter').length)).toBeGreaterThan(0);
+  expect(await page.evaluate(()=>window.nativeCalls.filter(call=>call[0]==='endGesture'))).toEqual([]);
+  await page.mouse.up();
+  await expect.poll(()=>page.evaluate(()=>window.nativeCalls.filter(call=>call[0]==='endGesture'))).toEqual([['endGesture','drums.level',7]]);
+  expect(await page.evaluate(()=>window.nativeCalls.filter(call=>call[0]==='setParameter').every(call=>call[1]==='drums.level'))).toBe(true);
+});
 
 test('the production entrypoint uses the versioned host instead of the comparison bridge',async({page})=>{
   await page.addInitScript(initial=>{

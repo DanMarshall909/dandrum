@@ -3,6 +3,8 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+import os
+import fcntl
 from unittest.mock import patch
 
 import test_engine_only_build as fixture
@@ -10,11 +12,41 @@ import test_engine_only_build as fixture
 
 @unittest.skipUnless(sys.platform.startswith("linux"), "engine build fixture is Linux-specific")
 class EngineBuildFixtureCleanupTest(unittest.TestCase):
+    def test_unknown_linked_or_active_snapshot_is_preserved(self):
+        for case in ('unknown', 'linked-marker', 'active'):
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                work = root / 'build/engine-only-regression'
+                work.mkdir(parents=True)
+                sentinel = root / 'important'
+                sentinel.write_text('preserve')
+                if case == 'unknown':
+                    snapshot = work / 'fixture-stable'
+                    snapshot.mkdir()
+                    (snapshot / 'unknown').write_text('keep')
+                elif case == 'linked-marker':
+                    (work / '.snapshot-owner.json').symlink_to(sentinel)
+                with (work / '.snapshot-lease').open('a') as lease:
+                    if case == 'active':
+                        fcntl.flock(lease, fcntl.LOCK_EX)
+                    class Probe(fixture.EngineBuildFixture):
+                        def test_probe(self):
+                            self.fail('must not start')
+                    result = unittest.TestResult()
+                    with patch.object(fixture, 'ROOT', root):
+                        unittest.defaultTestLoader.loadTestsFromTestCase(Probe).run(result)
+                self.assertEqual(result.testsRun, 0)
+                self.assertEqual(len(result.errors), 1)
+                self.assertEqual(sentinel.read_text(), 'preserve')
+                if case == 'unknown':
+                    self.assertEqual((snapshot / 'unknown').read_text(), 'keep')
+
     def test_finished_snapshots_are_removed_but_shared_targets_and_logs_survive(self):
         for outcome in ("success", "failure", "setup-error"):
             with self.subTest(outcome=outcome), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 (root / "CMakeLists.txt").write_text("# minimal source snapshot\n")
+                (root / ".ai-rules.json").write_text('{}')
                 for name in (".githooks", "src", "tests", "examples", "schema", "scripts", "spikes"):
                     (root / name).mkdir()
                     (root / name / "input.txt").write_text(name)
@@ -33,7 +65,7 @@ class EngineBuildFixtureCleanupTest(unittest.TestCase):
                     def test_probe(self):
                         self.assertTrue(self.source.is_dir())
                         (self.source / "shared-target").symlink_to(
-                            self.cargo_target, target_is_directory=True)
+                            cache, target_is_directory=True)
                         if outcome == "failure":
                             self.fail("deliberate test failure")
 
@@ -59,10 +91,11 @@ class EngineBuildFixtureCleanupTest(unittest.TestCase):
                 self.assertEqual(log.read_bytes(), b"raw command evidence")
 
 
-    def test_supervised_snapshot_uses_owned_scratch_and_keeps_cache_and_logs_external(self):
+    def test_repeated_snapshot_has_stable_path_and_no_stale_source_or_cmake_state(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / "CMakeLists.txt").write_text("# source-free fixture\n")
+            (root / ".ai-rules.json").write_text('{}')
             for name in (".githooks", "src", "tests", "examples", "schema", "scripts", "spikes"):
                 (root / name).mkdir()
                 (root / name / "input.txt").write_text(name)
@@ -77,23 +110,30 @@ class EngineBuildFixtureCleanupTest(unittest.TestCase):
             (cache / "sentinel").write_bytes(b"retained compiled dependency")
             (work / "retained.log").write_bytes(b"retained command log")
 
+            paths = []
             class Probe(fixture.EngineBuildFixture):
                 def test_probe(self):
-                    snapshots = list(scratch.glob("fixture-*/source"))
-                    self.assertEqual(len(snapshots), 1,
-                                     "the supervisor must own the active source snapshot")
-                    self.assertEqual((snapshots[0] / "src/input.txt").read_text(), "src")
-                    self.assertEqual((snapshots[0] / ".githooks/input.txt").read_text(), ".githooks",
+                    paths.append(self.source)
+                    self.assertFalse((self.source / 'build/stale/CMakeCache.txt').exists())
+                    self.assertEqual((self.source / 'src/input.txt').exists(), len(paths) == 1)
+                    self.assertEqual((self.source / ".githooks/input.txt").read_text(), ".githooks",
                                      "registered hook checks need their authored hook in the snapshot")
-                    self.assertEqual(self.cargo_target, cache)
-                    (snapshots[0] / "shared-target").symlink_to(cache, target_is_directory=True)
+                    stale = self.source / 'build/stale'
+                    stale.mkdir(parents=True)
+                    (stale / 'CMakeCache.txt').write_text('stale')
+                    (self.source / "shared-target").symlink_to(cache, target_is_directory=True)
 
             result = unittest.TestResult()
             with patch.object(fixture, "ROOT", root), patch.dict(
                     fixture.os.environ, {"DANDRUM_VERIFICATION_SCRATCH": str(scratch)}):
                 unittest.defaultTestLoader.loadTestsFromTestCase(Probe).run(result)
+                self.assertTrue(result.wasSuccessful(), result.failures + result.errors)
+                (root / 'src/input.txt').unlink()
+                result = unittest.TestResult()
+                unittest.defaultTestLoader.loadTestsFromTestCase(Probe).run(result)
             self.assertTrue(result.wasSuccessful(), result.failures + result.errors)
             self.assertEqual(result.testsRun, 1)
+            self.assertEqual(paths[0], paths[1])
             self.assertEqual(list(scratch.iterdir()), [])
             self.assertEqual((cache / "sentinel").read_bytes(), b"retained compiled dependency")
             self.assertEqual((work / "retained.log").read_bytes(), b"retained command log")

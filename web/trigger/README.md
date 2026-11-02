@@ -52,12 +52,24 @@ npm run check
 npm test
 npm run test:coverage
 npm run test:browser
+npm run test:browser:coverage
 npm run build
 ```
 
 The browser suite uses `/usr/bin/google-chrome`. Set `TRIGGER_CHROME` to another
 installed Chromium executable when needed. The `trigger-react-shell` CTest runs
-check, unit, build and browser lanes; run `npm ci` and provide Chrome first.
+check, unit, build and browser coverage lanes; run `npm ci` and provide Chrome first.
+Unit coverage measures the Node `.mjs` scope. The browser coverage command uses
+the same Playwright suite and captures source-bound React/JSX line counts, raw V8
+data and a receipt for each selected test under `coverage/browser/<run-id>`.
+Set `TRIGGER_COVERAGE_DIR` to an empty directory to retain a particular run.
+Missing/stale maps, malformed ranges and missing test receipts fail the check.
+An actual JSX fixture calibrates called/uncalled callbacks, a missed branch,
+Unicode offsets and a never-imported owner. Never-loaded JSX and owners outside
+this browser profile remain explicit. Vite's plain-JavaScript import rewrites do
+not provide trustworthy original-column maps, so those are outside this browser
+measurement. These reports do not establish original-source function/branch
+coverage, whole-frontend coverage or native WebKit coverage.
 
 All 70 authored React files are below 200 lines. Components receive props and
 callbacks; presentation/model bindings live in `shell/`, and authoritative DTOs,

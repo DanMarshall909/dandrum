@@ -27,12 +27,15 @@ use super::polyphony::build_polyphonic_states_from_compiled;
 #[cfg(test)]
 use super::state::PerModuleState;
 
+/// Named root outputs, each containing its planar channel buffers.
+pub type NamedPlanarOutputs = Vec<(String, Vec<Vec<f32>>)>;
+
 /// Render each named root audio/control output as planar channels, in root-port order.
 pub fn render_kernel_offline_named(
     prepared: &PreparedKernelInstrument,
     events: Vec<TimedInputEvent>,
     sampler_assets: &PreparedSamplerAssets,
-) -> Result<Vec<(String, Vec<Vec<f32>>)>, &'static str> {
+) -> Result<NamedPlanarOutputs, &'static str> {
     render_kernel_offline_named_with_inputs(prepared, events, sampler_assets, &BTreeMap::new())
 }
 
@@ -43,7 +46,7 @@ pub fn render_kernel_offline_named_with_inputs(
     events: Vec<TimedInputEvent>,
     sampler_assets: &PreparedSamplerAssets,
     inputs: &BTreeMap<String, Vec<Vec<f32>>>,
-) -> Result<Vec<(String, Vec<Vec<f32>>)>, &'static str> {
+) -> Result<NamedPlanarOutputs, &'static str> {
     let compiled = prepared.compiled_patch();
     let settings = compiled.render_settings();
     if settings.block_size_frames == 0 {

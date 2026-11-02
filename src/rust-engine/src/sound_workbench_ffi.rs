@@ -41,6 +41,9 @@ pub struct DandrumGraphProposal {
     result: Result<crate::graph_proposal::ValidatedGraphProposal, String>,
 }
 
+/// # Safety
+/// A non-null `fixture_path` must point to a readable NUL-terminated C string
+/// that remains valid throughout the call; invalid UTF-8 is rejected.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_fixture_render_create(
     fixture_path: *const c_char,
@@ -56,6 +59,11 @@ pub unsafe extern "C" fn dandrum_sound_fixture_render_create(
     Box::into_raw(Box::new(DandrumSoundFixtureRender { result }))
 }
 
+/// # Safety
+/// `render` must be null or the original owning pointer to a live
+/// fixture-render result returned by its matching creation function.
+/// All access to this handle and its borrowed views must have ended. The
+/// non-null pointer is consumed exactly once and must not be used afterward.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_fixture_render_destroy(
     render: *mut DandrumSoundFixtureRender,
@@ -65,6 +73,9 @@ pub unsafe extern "C" fn dandrum_sound_fixture_render_destroy(
     }
 }
 
+/// # Safety
+/// A non-null `render` must point to a live fixture-render result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_fixture_render_is_ok(
     render: *const DandrumSoundFixtureRender,
@@ -72,6 +83,11 @@ pub unsafe extern "C" fn dandrum_sound_fixture_render_is_ok(
     unsafe { render.as_ref() }.is_some_and(|render| render.result.is_ok())
 }
 
+/// # Safety
+/// A non-null `render` must point to a live fixture-render result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `buffer` must be writable for `buffer_capacity` bytes
+/// and must not overlap storage borrowed from a handle.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_fixture_render_error_message(
     render: *const DandrumSoundFixtureRender,
@@ -85,6 +101,9 @@ pub unsafe extern "C" fn dandrum_sound_fixture_render_error_message(
     copy_string_to_c_buffer(message, buffer, buffer_capacity)
 }
 
+/// # Safety
+/// A non-null `render` must point to a live fixture-render result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_fixture_render_sample_rate_hz(
     render: *const DandrumSoundFixtureRender,
@@ -92,6 +111,9 @@ pub unsafe extern "C" fn dandrum_sound_fixture_render_sample_rate_hz(
     unsafe { artifact(render) }.map_or(0, |artifact| artifact.sample_rate_hz)
 }
 
+/// # Safety
+/// A non-null `render` must point to a live fixture-render result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_fixture_render_duration_frames(
     render: *const DandrumSoundFixtureRender,
@@ -99,6 +121,9 @@ pub unsafe extern "C" fn dandrum_sound_fixture_render_duration_frames(
     unsafe { artifact(render) }.map_or(0, |artifact| artifact.duration_frames)
 }
 
+/// # Safety
+/// A non-null `render` must point to a live fixture-render result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_fixture_render_metric_count(
     render: *const DandrumSoundFixtureRender,
@@ -106,6 +131,12 @@ pub unsafe extern "C" fn dandrum_sound_fixture_render_metric_count(
     unsafe { artifact(render) }.map_or(0, |artifact| artifact.metrics.len())
 }
 
+/// # Safety
+/// A non-null `render` must point to a live fixture-render result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// Non-null output pointers must be aligned and writable for their declared
+/// pointee types, disjoint from handles and their borrowed storage. Their prior
+/// contents need not be initialized.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_fixture_render_metric(
     render: *const DandrumSoundFixtureRender,
@@ -140,6 +171,9 @@ pub unsafe extern "C" fn dandrum_sound_fixture_render_metric(
     true
 }
 
+/// # Safety
+/// A non-null `render` must point to a live fixture-render result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_fixture_render_wav_size(
     render: *const DandrumSoundFixtureRender,
@@ -147,6 +181,11 @@ pub unsafe extern "C" fn dandrum_sound_fixture_render_wav_size(
     unsafe { artifact(render) }.map_or(0, |artifact| artifact.wav_bytes.len())
 }
 
+/// # Safety
+/// A non-null `render` must point to a live fixture-render result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `buffer` must be writable for `buffer_capacity` bytes
+/// and must not overlap storage borrowed from a handle.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_fixture_render_copy_wav(
     render: *const DandrumSoundFixtureRender,
@@ -170,6 +209,15 @@ pub unsafe extern "C" fn dandrum_sound_fixture_render_copy_wav(
     true
 }
 
+/// # Safety
+/// A non-null `fixture_path` must point to a readable NUL-terminated C string
+/// that remains valid throughout the call; invalid UTF-8 is rejected.
+/// A non-null `reference_path` must point to a readable NUL-terminated C string
+/// that remains valid throughout the call; invalid UTF-8 is rejected.
+/// Any callback and its `context` must remain valid until this synchronous
+/// call returns. Callbacks must not unwind across the C ABI or invalidate
+/// borrowed arguments. They are not retained after return. A null callback
+/// is allowed; a non-null callback must handle its supplied context.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_match_create(
     fixture_path: *const c_char,
@@ -192,6 +240,11 @@ pub unsafe extern "C" fn dandrum_sound_match_create(
     Box::into_raw(Box::new(DandrumSoundMatch { result }))
 }
 
+/// # Safety
+/// `matched` must be null or the original owning pointer to a live
+/// sound-match result returned by its matching creation function.
+/// All access to this handle and its borrowed views must have ended. The
+/// non-null pointer is consumed exactly once and must not be used afterward.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_match_destroy(matched: *mut DandrumSoundMatch) {
     if !matched.is_null() {
@@ -199,11 +252,19 @@ pub unsafe extern "C" fn dandrum_sound_match_destroy(matched: *mut DandrumSoundM
     }
 }
 
+/// # Safety
+/// A non-null `matched` must point to a live sound-match result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_match_is_ok(matched: *const DandrumSoundMatch) -> bool {
     unsafe { matched.as_ref() }.is_some_and(|matched| matched.result.is_ok())
 }
 
+/// # Safety
+/// A non-null `matched` must point to a live sound-match result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `buffer` must be writable for `buffer_capacity` bytes
+/// and must not overlap storage borrowed from a handle.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_match_error_message(
     matched: *const DandrumSoundMatch,
@@ -220,6 +281,9 @@ pub unsafe extern "C" fn dandrum_sound_match_error_message(
     )
 }
 
+/// # Safety
+/// A non-null `matched` must point to a live sound-match result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_match_was_cancelled(
     matched: *const DandrumSoundMatch,
@@ -229,6 +293,9 @@ pub unsafe extern "C" fn dandrum_sound_match_was_cancelled(
     })
 }
 
+/// # Safety
+/// A non-null `matched` must point to a live sound-match result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_match_sample_rate_hz(
     matched: *const DandrumSoundMatch,
@@ -236,6 +303,9 @@ pub unsafe extern "C" fn dandrum_sound_match_sample_rate_hz(
     unsafe { match_artifact(matched) }.map_or(0, |artifact| artifact.matched.sample_rate_hz)
 }
 
+/// # Safety
+/// A non-null `matched` must point to a live sound-match result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_match_duration_frames(
     matched: *const DandrumSoundMatch,
@@ -243,6 +313,9 @@ pub unsafe extern "C" fn dandrum_sound_match_duration_frames(
     unsafe { match_artifact(matched) }.map_or(0, |artifact| artifact.matched.duration_frames)
 }
 
+/// # Safety
+/// A non-null `matched` must point to a live sound-match result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_match_manifest_json_size(
     matched: *const DandrumSoundMatch,
@@ -250,6 +323,11 @@ pub unsafe extern "C" fn dandrum_sound_match_manifest_json_size(
     unsafe { match_artifact(matched) }.map_or(0, |artifact| artifact.manifest_json.len() + 1)
 }
 
+/// # Safety
+/// A non-null `matched` must point to a live sound-match result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `buffer` must be writable for `buffer_capacity` bytes
+/// and must not overlap storage borrowed from a handle.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_match_copy_manifest_json(
     matched: *const DandrumSoundMatch,
@@ -262,6 +340,9 @@ pub unsafe extern "C" fn dandrum_sound_match_copy_manifest_json(
     copy_complete_string_to_c_buffer(&artifact.manifest_json, buffer, buffer_capacity)
 }
 
+/// # Safety
+/// A non-null `matched` must point to a live sound-match result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_match_patch_yaml_size(
     matched: *const DandrumSoundMatch,
@@ -269,6 +350,11 @@ pub unsafe extern "C" fn dandrum_sound_match_patch_yaml_size(
     unsafe { match_artifact(matched) }.map_or(0, |artifact| artifact.matched.patch_yaml.len() + 1)
 }
 
+/// # Safety
+/// A non-null `matched` must point to a live sound-match result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `buffer` must be writable for `buffer_capacity` bytes
+/// and must not overlap storage borrowed from a handle.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_match_copy_patch_yaml(
     matched: *const DandrumSoundMatch,
@@ -281,6 +367,9 @@ pub unsafe extern "C" fn dandrum_sound_match_copy_patch_yaml(
     copy_complete_string_to_c_buffer(&artifact.matched.patch_yaml, buffer, buffer_capacity)
 }
 
+/// # Safety
+/// A non-null `matched` must point to a live sound-match result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_match_parameter_count(
     matched: *const DandrumSoundMatch,
@@ -290,6 +379,14 @@ pub unsafe extern "C" fn dandrum_sound_match_parameter_count(
     })
 }
 
+/// # Safety
+/// A non-null `matched` must point to a live sound-match result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `id_buffer` must be writable for `id_buffer_capacity` bytes
+/// and must not overlap storage borrowed from a handle.
+/// Non-null output pointers must be aligned and writable for their declared
+/// pointee types, disjoint from handles and their borrowed storage. Their prior
+/// contents need not be initialized.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_match_parameter(
     matched: *const DandrumSoundMatch,
@@ -324,6 +421,9 @@ pub unsafe extern "C" fn dandrum_sound_match_parameter(
     true
 }
 
+/// # Safety
+/// A non-null `matched` must point to a live sound-match result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_match_metric_count(
     matched: *const DandrumSoundMatch,
@@ -337,6 +437,12 @@ pub unsafe extern "C" fn dandrum_sound_match_metric_count(
     })
 }
 
+/// # Safety
+/// A non-null `matched` must point to a live sound-match result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// Non-null output pointers must be aligned and writable for their declared
+/// pointee types, disjoint from handles and their borrowed storage. Their prior
+/// contents need not be initialized.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_match_metric(
     matched: *const DandrumSoundMatch,
@@ -377,6 +483,9 @@ pub unsafe extern "C" fn dandrum_sound_match_metric(
     true
 }
 
+/// # Safety
+/// A non-null `matched` must point to a live sound-match result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_match_wav_size(
     matched: *const DandrumSoundMatch,
@@ -386,6 +495,11 @@ pub unsafe extern "C" fn dandrum_sound_match_wav_size(
         .map_or(0, |artifact| match_wav_bytes(artifact, reference).len())
 }
 
+/// # Safety
+/// A non-null `matched` must point to a live sound-match result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `buffer` must be writable for `buffer_capacity` bytes
+/// and must not overlap storage borrowed from a handle.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_match_copy_wav(
     matched: *const DandrumSoundMatch,
@@ -404,6 +518,13 @@ pub unsafe extern "C" fn dandrum_sound_match_copy_wav(
     true
 }
 
+/// # Safety
+/// A non-null `matched` must point to a live sound-match result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// Any callback and its `context` must remain valid until this synchronous
+/// call returns. Callbacks must not unwind across the C ABI or invalidate
+/// borrowed arguments. They are not retained after return. A null callback
+/// is allowed; a non-null callback must handle its supplied context.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_graph_proposal_create(
     matched: *const DandrumSoundMatch,
@@ -450,6 +571,11 @@ unsafe fn create_graph_proposal_with_provider(
     Box::into_raw(Box::new(DandrumGraphProposal { result }))
 }
 
+/// # Safety
+/// `proposal` must be null or the original owning pointer to a live
+/// graph-proposal result returned by its matching creation function.
+/// All access to this handle and its borrowed views must have ended. The
+/// non-null pointer is consumed exactly once and must not be used afterward.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_graph_proposal_destroy(proposal: *mut DandrumGraphProposal) {
     if !proposal.is_null() {
@@ -457,6 +583,9 @@ pub unsafe extern "C" fn dandrum_graph_proposal_destroy(proposal: *mut DandrumGr
     }
 }
 
+/// # Safety
+/// A non-null `proposal` must point to a live graph-proposal result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_graph_proposal_is_ok(
     proposal: *const DandrumGraphProposal,
@@ -464,6 +593,11 @@ pub unsafe extern "C" fn dandrum_graph_proposal_is_ok(
     unsafe { proposal.as_ref() }.is_some_and(|proposal| proposal.result.is_ok())
 }
 
+/// # Safety
+/// A non-null `proposal` must point to a live graph-proposal result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `buffer` must be writable for `buffer_capacity` bytes
+/// and must not overlap storage borrowed from a handle.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_graph_proposal_error_message(
     proposal: *const DandrumGraphProposal,
@@ -480,6 +614,11 @@ pub unsafe extern "C" fn dandrum_graph_proposal_error_message(
     )
 }
 
+/// # Safety
+/// A non-null `proposal` must point to a live graph-proposal result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `buffer` must be writable for `buffer_capacity` bytes
+/// and must not overlap storage borrowed from a handle.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_graph_proposal_patch_name(
     proposal: *const DandrumGraphProposal,
@@ -491,6 +630,11 @@ pub unsafe extern "C" fn dandrum_graph_proposal_patch_name(
     })
 }
 
+/// # Safety
+/// A non-null `proposal` must point to a live graph-proposal result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `buffer` must be writable for `buffer_capacity` bytes
+/// and must not overlap storage borrowed from a handle.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_graph_proposal_provider_id(
     proposal: *const DandrumGraphProposal,
@@ -502,6 +646,9 @@ pub unsafe extern "C" fn dandrum_graph_proposal_provider_id(
     })
 }
 
+/// # Safety
+/// A non-null `proposal` must point to a live graph-proposal result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_graph_proposal_explanation_size(
     proposal: *const DandrumGraphProposal,
@@ -509,6 +656,11 @@ pub unsafe extern "C" fn dandrum_graph_proposal_explanation_size(
     unsafe { proposal_artifact(proposal) }.map_or(0, |proposal| proposal.explanation.len() + 1)
 }
 
+/// # Safety
+/// A non-null `proposal` must point to a live graph-proposal result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `buffer` must be writable for `buffer_capacity` bytes
+/// and must not overlap storage borrowed from a handle.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_graph_proposal_copy_explanation(
     proposal: *const DandrumGraphProposal,
@@ -521,6 +673,9 @@ pub unsafe extern "C" fn dandrum_graph_proposal_copy_explanation(
     copy_complete_string_to_c_buffer(&proposal.explanation, buffer, buffer_capacity)
 }
 
+/// # Safety
+/// A non-null `proposal` must point to a live graph-proposal result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_graph_proposal_patch_yaml_size(
     proposal: *const DandrumGraphProposal,
@@ -528,6 +683,11 @@ pub unsafe extern "C" fn dandrum_graph_proposal_patch_yaml_size(
     unsafe { proposal_artifact(proposal) }.map_or(0, |proposal| proposal.patch_yaml.len() + 1)
 }
 
+/// # Safety
+/// A non-null `proposal` must point to a live graph-proposal result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `buffer` must be writable for `buffer_capacity` bytes
+/// and must not overlap storage borrowed from a handle.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_graph_proposal_copy_patch_yaml(
     proposal: *const DandrumGraphProposal,
@@ -540,6 +700,9 @@ pub unsafe extern "C" fn dandrum_graph_proposal_copy_patch_yaml(
     copy_complete_string_to_c_buffer(&proposal.patch_yaml, buffer, buffer_capacity)
 }
 
+/// # Safety
+/// A non-null `proposal` must point to a live graph-proposal result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_graph_proposal_parameter_count(
     proposal: *const DandrumGraphProposal,
@@ -548,6 +711,11 @@ pub unsafe extern "C" fn dandrum_graph_proposal_parameter_count(
         .map_or(0, |proposal| proposal.suggested_search_parameters.len())
 }
 
+/// # Safety
+/// A non-null `proposal` must point to a live graph-proposal result.
+/// Keep it alive and free of concurrent mutation or destruction during the call.
+/// A non-null `buffer` must be writable for `buffer_capacity` bytes
+/// and must not overlap storage borrowed from a handle.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_graph_proposal_parameter(
     proposal: *const DandrumGraphProposal,

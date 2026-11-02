@@ -799,7 +799,7 @@ connections:
         )
         .expect("drum map renders");
         let audio = &rendered[0].1[0];
-        let cursor_step = musical_pitch as f64 * 48_000.0 / f64::from(host_rate);
+        let cursor_step = musical_pitch * 48_000.0 / f64::from(host_rate);
         let position = cursor_step;
         let base = position.floor() as usize;
         let fraction = (position - base as f64) as f32;

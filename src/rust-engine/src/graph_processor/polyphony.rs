@@ -88,6 +88,8 @@ enum DoneBinding {
     },
 }
 
+type VoiceStepExecutors = Box<[Box<dyn super::realtime_graph_processor::PreparedStepExecutor>]>;
+
 pub struct PreparedPolyRuntimeRegion {
     node_id: String,
     #[cfg(test)]
@@ -109,8 +111,7 @@ pub struct PreparedPolyRuntimeRegion {
     silence_hold_frames: usize,
     release_timeout_frames: usize,
     child_render_plan: RenderPlan,
-    prepared_step_executors:
-        Box<[Box<[Box<dyn super::realtime_graph_processor::PreparedStepExecutor>]>]>,
+    prepared_step_executors: Box<[VoiceStepExecutors]>,
     shared_sample_map_selections: Box<[SharedSampleMapSelection]>,
     child_patch: Box<CompiledPatch>,
     forwarded_buffer_inputs: Box<[ForwardedBufferInput]>,
@@ -534,11 +535,10 @@ impl PreparedPolyRuntimeRegion {
                     buffer,
                     producer_step,
                 }) = self.done_binding
+                    && step_index == producer_step
                 {
-                    if step_index == producer_step {
-                        control_done =
-                            (0..frames).any(|frame| step_context.arena.sample(buffer, frame) > 0.0);
-                    }
+                    control_done =
+                        (0..frames).any(|frame| step_context.arena.sample(buffer, frame) > 0.0);
                 }
             }
 

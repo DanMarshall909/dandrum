@@ -124,11 +124,8 @@ fn validate_public_inputs(
                 diagnostics,
             );
             validate_module_mapping(
-                &definition.module_type,
-                "input",
                 &input.name,
                 input.signal_type.clone(),
-                "maps_to",
                 reference,
                 ModuleMappingDirection::PublicInputToInternalInput,
                 definition,
@@ -164,11 +161,8 @@ fn validate_public_outputs(
                 diagnostics,
             );
             validate_module_mapping(
-                &definition.module_type,
-                "output",
                 &output.name,
                 output.signal_type.clone(),
-                "maps_from",
                 reference,
                 ModuleMappingDirection::PublicOutputFromInternalOutput,
                 definition,
@@ -237,21 +231,21 @@ fn validate_module_parameter_default(
     };
     let name = module_parameter_name(&parameter.name);
 
-    if let Some(value_type) = parameter.value_type {
-        if !module_value_matches_type(default, value_type) {
-            diagnostics.push(Diagnostic::new(
-                error_codes::VALIDATION_TYPE_MISMATCH,
-                Severity::Error,
-                format!(
-                    "module {} parameter {} default has wrong type: expected {}, got {}",
-                    definition.module_type,
-                    name,
-                    module_parameter_type_name(value_type),
-                    parameter_value_type_name(default)
-                ),
-            ));
-            return;
-        }
+    if let Some(value_type) = parameter.value_type
+        && !module_value_matches_type(default, value_type)
+    {
+        diagnostics.push(Diagnostic::new(
+            error_codes::VALIDATION_TYPE_MISMATCH,
+            Severity::Error,
+            format!(
+                "module {} parameter {} default has wrong type: expected {}, got {}",
+                definition.module_type,
+                name,
+                module_parameter_type_name(value_type),
+                parameter_value_type_name(default)
+            ),
+        ));
+        return;
     }
 
     validate_module_numeric_range(definition, parameter, "default", default, diagnostics);
@@ -267,21 +261,21 @@ fn validate_module_parameter_literal_value(
     };
     let name = module_parameter_name(&parameter.name);
 
-    if let Some(value_type) = parameter.value_type {
-        if !module_value_matches_type(value, value_type) {
-            diagnostics.push(Diagnostic::new(
-                error_codes::VALIDATION_TYPE_MISMATCH,
-                Severity::Error,
-                format!(
-                    "module {} parameter {} literal value has wrong type: expected {}, got {}",
-                    definition.module_type,
-                    name,
-                    module_parameter_type_name(value_type),
-                    parameter_value_type_name(value)
-                ),
-            ));
-            return;
-        }
+    if let Some(value_type) = parameter.value_type
+        && !module_value_matches_type(value, value_type)
+    {
+        diagnostics.push(Diagnostic::new(
+            error_codes::VALIDATION_TYPE_MISMATCH,
+            Severity::Error,
+            format!(
+                "module {} parameter {} literal value has wrong type: expected {}, got {}",
+                definition.module_type,
+                name,
+                module_parameter_type_name(value_type),
+                parameter_value_type_name(value)
+            ),
+        ));
+        return;
     }
 
     validate_module_numeric_range(definition, parameter, "value", value, diagnostics);
@@ -294,17 +288,17 @@ fn validate_module_parameter_constraints(
 ) {
     let name = module_parameter_name(&parameter.name);
 
-    if let (Some(min), Some(max)) = (parameter.min, parameter.max) {
-        if min > max {
-            diagnostics.push(Diagnostic::new(
-                error_codes::VALIDATION_INVALID_VALUE,
-                Severity::Error,
-                format!(
-                    "module {} parameter {} has invalid range: min {} is greater than max {}",
-                    definition.module_type, name, min, max
-                ),
-            ));
-        }
+    if let (Some(min), Some(max)) = (parameter.min, parameter.max)
+        && min > max
+    {
+        diagnostics.push(Diagnostic::new(
+            error_codes::VALIDATION_INVALID_VALUE,
+            Severity::Error,
+            format!(
+                "module {} parameter {} has invalid range: min {} is greater than max {}",
+                definition.module_type, name, min, max
+            ),
+        ));
     }
 
     if matches!(
@@ -337,30 +331,30 @@ fn validate_module_numeric_range(
     };
     let name = module_parameter_name(&parameter.name);
 
-    if let Some(min) = parameter.min {
-        if *actual < min {
-            diagnostics.push(Diagnostic::new(
-                error_codes::VALIDATION_INVALID_VALUE,
-                Severity::Error,
-                format!(
-                    "module {} parameter {} {value_label} is below minimum {}: {}",
-                    definition.module_type, name, min, actual
-                ),
-            ));
-        }
+    if let Some(min) = parameter.min
+        && *actual < min
+    {
+        diagnostics.push(Diagnostic::new(
+            error_codes::VALIDATION_INVALID_VALUE,
+            Severity::Error,
+            format!(
+                "module {} parameter {} {value_label} is below minimum {}: {}",
+                definition.module_type, name, min, actual
+            ),
+        ));
     }
 
-    if let Some(max) = parameter.max {
-        if *actual > max {
-            diagnostics.push(Diagnostic::new(
-                error_codes::VALIDATION_INVALID_VALUE,
-                Severity::Error,
-                format!(
-                    "module {} parameter {} {value_label} is above maximum {}: {}",
-                    definition.module_type, name, max, actual
-                ),
-            ));
-        }
+    if let Some(max) = parameter.max
+        && *actual > max
+    {
+        diagnostics.push(Diagnostic::new(
+            error_codes::VALIDATION_INVALID_VALUE,
+            Severity::Error,
+            format!(
+                "module {} parameter {} {value_label} is above maximum {}: {}",
+                definition.module_type, name, max, actual
+            ),
+        ));
     }
 }
 
@@ -493,22 +487,22 @@ pub(super) fn validate_module_instance_bindings(
             continue;
         };
 
-        if let Some(value_type) = parameter.value_type {
-            if !module_value_matches_type(value, value_type) {
-                diagnostics.push(Diagnostic::new(
-                    error_codes::VALIDATION_TYPE_MISMATCH,
-                    Severity::Error,
-                    format!(
-                        "module {} instance {} parameter {} has wrong type: expected {}, got {}",
-                        definition.module_type,
-                        module.id,
-                        parameter.name,
-                        module_parameter_type_name(value_type),
-                        parameter_value_type_name(value)
-                    ),
-                ));
-                continue;
-            }
+        if let Some(value_type) = parameter.value_type
+            && !module_value_matches_type(value, value_type)
+        {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_TYPE_MISMATCH,
+                Severity::Error,
+                format!(
+                    "module {} instance {} parameter {} has wrong type: expected {}, got {}",
+                    definition.module_type,
+                    module.id,
+                    parameter.name,
+                    module_parameter_type_name(value_type),
+                    parameter_value_type_name(value)
+                ),
+            ));
+            continue;
         }
 
         validate_module_numeric_range(definition, parameter, "value", value, diagnostics);
@@ -522,11 +516,8 @@ enum ModuleMappingDirection {
 }
 
 fn validate_module_mapping(
-    definition_type: &str,
-    public_direction_label: &str,
     public_name: &str,
     public_signal_type: SignalType,
-    mapping_label: &str,
     reference: &PortReference,
     direction: ModuleMappingDirection,
     definition: &ModuleDefinitionDeclaration,
@@ -536,6 +527,12 @@ fn validate_module_mapping(
     if reference.module_id.trim().is_empty() || reference.port_name.trim().is_empty() {
         return;
     }
+
+    let definition_type = &definition.module_type;
+    let (public_direction_label, mapping_label) = match direction {
+        ModuleMappingDirection::PublicInputToInternalInput => ("input", "maps_to"),
+        ModuleMappingDirection::PublicOutputFromInternalOutput => ("output", "maps_from"),
+    };
 
     let resolved = resolve_internal_port_type(definition, reference, direction, registry);
     if resolved == InternalPortResolution::WrongDirection {

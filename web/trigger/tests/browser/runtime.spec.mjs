@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './fixtures.mjs';
 
 test('computer keys drive silent voice telemetry and the event drawer switches and filter work',async({page})=>{
   const errors=[];page.on('pageerror',error=>errors.push(error.message));

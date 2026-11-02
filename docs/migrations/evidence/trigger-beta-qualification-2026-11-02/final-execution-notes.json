@@ -1,0 +1,93 @@
+{
+  "source_commit": "7ea453e2510fdd3c40f40248699356b2440bcf16",
+  "host_coverage": {
+    "ordinary_exit_status": 0,
+    "combined_exit_status": 0,
+    "combined_command": [
+      "./scripts/cargo",
+      "llvm-cov",
+      "--manifest-path",
+      "src/trigger-host/Cargo.toml",
+      "--no-clean",
+      "--json",
+      "--output-path",
+      "host-final-coverage.json",
+      "-v",
+      "--",
+      "--ignored",
+      "--exact",
+      "parameters::state_tests::payload_limits::maximum_portable_payload_restores_signed_tail_geometry_and_reclaims_every_owner"
+    ],
+    "test_rows": [
+      [
+        "1",
+        "54.04"
+      ],
+      [
+        "0",
+        "0.00"
+      ],
+      [
+        "0",
+        "0.00"
+      ],
+      [
+        "0",
+        "0.00"
+      ],
+      [
+        "0",
+        "0.00"
+      ],
+      [
+        "0",
+        "0.00"
+      ],
+      [
+        "0",
+        "0.00"
+      ],
+      [
+        "0",
+        "0.00"
+      ],
+      [
+        "0",
+        "0.00"
+      ],
+      [
+        "0",
+        "0.00"
+      ],
+      [
+        "0",
+        "0.00"
+      ],
+      [
+        "0",
+        "0.00"
+      ],
+      [
+        "0",
+        "0.00"
+      ],
+      [
+        "0",
+        "0.00"
+      ],
+      [
+        "0",
+        "0.00"
+      ],
+      [
+        "0",
+        "0.00"
+      ]
+    ],
+    "command_wall_timing": "unavailable; libtest timings retained",
+    "initial_invalid_flags": "--no-report with --no-clean was rejected before execution; corrected supported invocation merged retained profiles"
+  },
+  "mutation": "excluded by user; no mutation jobs launched",
+  "private_archives": "compiled binaries/profdata retained only in .git/codex/trigger-beta-qualification-20261102",
+  "cache_retention": "The managed driver retired the inactive pre-update generation under the established64GiB retention policy. Current b89b1434d9a7550f72d31596 warm state and installed dependencies remain. No manual build/cache deletion."
+}

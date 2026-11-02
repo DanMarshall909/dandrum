@@ -1,0 +1,580 @@
+{
+  "configuration": "engine-only, CLAP proof + Trigger editor + native-X11; mutation OFF",
+  "tests": [
+    {
+      "name": "trigger-host-tests",
+      "status": "Passed",
+      "seconds": 6.39,
+      "labels": [
+        "trigger-host-fast"
+      ]
+    },
+    {
+      "name": "trigger-host-state-payload-limits",
+      "status": "Passed",
+      "seconds": 55.62,
+      "labels": [
+        "slow",
+        "trigger-host-slow"
+      ]
+    },
+    {
+      "name": "trigger-editor-tests",
+      "status": "Passed",
+      "seconds": 0.83,
+      "labels": [
+        "trigger-editor-fast"
+      ]
+    },
+    {
+      "name": "retired-engine-ffi-symbols",
+      "status": "Passed",
+      "seconds": 0.21,
+      "labels": []
+    },
+    {
+      "name": "retired-kernel-fields",
+      "status": "Passed",
+      "seconds": 0.04,
+      "labels": []
+    },
+    {
+      "name": "rust-engine-tests",
+      "status": "Passed",
+      "seconds": 12.13,
+      "labels": []
+    },
+    {
+      "name": "rust-engine-clippy",
+      "status": "Passed",
+      "seconds": 0.79,
+      "labels": []
+    },
+    {
+      "name": "instrument-session-tests",
+      "status": "Passed",
+      "seconds": 21.96,
+      "labels": [
+        "session-fast"
+      ]
+    },
+    {
+      "name": "cxx-rust-engine-ffi-smoke",
+      "status": "Passed",
+      "seconds": 0.01,
+      "labels": []
+    },
+    {
+      "name": "cxx-rust-engine-sample-accurate-midi-smoke",
+      "status": "Passed",
+      "seconds": 0.01,
+      "labels": []
+    },
+    {
+      "name": "realtime-callback-safety",
+      "status": "Passed",
+      "seconds": 0.04,
+      "labels": []
+    },
+    {
+      "name": "sound-lab-controller",
+      "status": "Passed",
+      "seconds": 0.74,
+      "labels": []
+    },
+    {
+      "name": "cxx-plugin-ui-command",
+      "status": "Passed",
+      "seconds": 0.0,
+      "labels": []
+    },
+    {
+      "name": "cxx-plugin-meter-capture",
+      "status": "Passed",
+      "seconds": 0.0,
+      "labels": []
+    },
+    {
+      "name": "cxx-plugin-live-capture",
+      "status": "Passed",
+      "seconds": 0.0,
+      "labels": []
+    },
+    {
+      "name": "cxx-plugin-meter-aggregation",
+      "status": "Passed",
+      "seconds": 0.0,
+      "labels": []
+    },
+    {
+      "name": "cxx-plugin-meter-delivery",
+      "status": "Passed",
+      "seconds": 0.0,
+      "labels": []
+    },
+    {
+      "name": "cxx-plugin-meter-display",
+      "status": "Passed",
+      "seconds": 0.0,
+      "labels": []
+    },
+    {
+      "name": "cxx-plugin-waveform-service",
+      "status": "Passed",
+      "seconds": 0.08,
+      "labels": []
+    },
+    {
+      "name": "cxx-plugin-waveform-geometry",
+      "status": "Passed",
+      "seconds": 0.0,
+      "labels": []
+    },
+    {
+      "name": "cxx-plugin-spectral-geometry",
+      "status": "Passed",
+      "seconds": 0.0,
+      "labels": []
+    },
+    {
+      "name": "filter-spike-engine",
+      "status": "Passed",
+      "seconds": 0.01,
+      "labels": []
+    },
+    {
+      "name": "trigger-clap-install-contract",
+      "status": "Passed",
+      "seconds": 0.69,
+      "labels": [
+        "fast",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "engine-only-build",
+      "status": "Passed",
+      "seconds": 34.22,
+      "labels": [
+        "build-boundary"
+      ]
+    },
+    {
+      "name": "mutation-hook",
+      "status": "Passed",
+      "seconds": 0.2,
+      "labels": [
+        "fast"
+      ]
+    },
+    {
+      "name": "cargo-cache-driver",
+      "status": "Passed",
+      "seconds": 6.55,
+      "labels": [
+        "fast"
+      ]
+    },
+    {
+      "name": "cargo-cache-build-boundary",
+      "status": "Passed",
+      "seconds": 2.48,
+      "labels": [
+        "build-boundary",
+        "slow"
+      ]
+    },
+    {
+      "name": "engine-build-fixture-cleanup",
+      "status": "Passed",
+      "seconds": 0.09,
+      "labels": [
+        "fast"
+      ]
+    },
+    {
+      "name": "owned-verification-fast",
+      "status": "Passed",
+      "seconds": 5.29,
+      "labels": [
+        "fast",
+        "process-boundary"
+      ]
+    },
+    {
+      "name": "owned-verification-slow",
+      "status": "Passed",
+      "seconds": 4.59,
+      "labels": [
+        "process-boundary",
+        "slow"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-fixture-driver",
+      "status": "Passed",
+      "seconds": 0.83,
+      "labels": [
+        "fast",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-dynamic-host",
+      "status": "Passed",
+      "seconds": 22.82,
+      "labels": [
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-editor-packaged-assets",
+      "status": "Passed",
+      "seconds": 1.0,
+      "labels": [
+        "trigger-editor-boundary"
+      ]
+    },
+    {
+      "name": "trigger-editor-native-prepare",
+      "status": "Passed",
+      "seconds": 63.04,
+      "labels": [
+        "native-x11",
+        "trigger-editor-boundary"
+      ]
+    },
+    {
+      "name": "trigger-editor-native-x11",
+      "status": "Passed",
+      "seconds": 5.14,
+      "labels": [
+        "native-x11",
+        "trigger-editor-boundary"
+      ]
+    },
+    {
+      "name": "trigger-editor-native-handler-lifetime",
+      "status": "Passed",
+      "seconds": 3.64,
+      "labels": [
+        "native-x11",
+        "trigger-editor-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-product-build",
+      "status": "Passed",
+      "seconds": 9.49,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-prepare",
+      "status": "Passed",
+      "seconds": 13.97,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-extension",
+      "status": "Passed",
+      "seconds": 0.04,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-lifecycle",
+      "status": "Passed",
+      "seconds": 2.38,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-configuration",
+      "status": "Passed",
+      "seconds": 0.09,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-loader-identity",
+      "status": "Passed",
+      "seconds": 0.06,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-failed-parent",
+      "status": "Passed",
+      "seconds": 0.05,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameters-prepare",
+      "status": "Passed",
+      "seconds": 59.81,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-state",
+      "status": "Passed",
+      "seconds": 1.1,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-flush",
+      "status": "Passed",
+      "seconds": 0.71,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-ownership",
+      "status": "Passed",
+      "seconds": 0.77,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-timer-required",
+      "status": "Passed",
+      "seconds": 0.04,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-timer-refused",
+      "status": "Passed",
+      "seconds": 0.04,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-timer-delivery",
+      "status": "Passed",
+      "seconds": 1.0,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-timer-rollback",
+      "status": "Passed",
+      "seconds": 0.04,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-source-credits",
+      "status": "Passed",
+      "seconds": 1.04,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-feedback-undo",
+      "status": "Passed",
+      "seconds": 1.5,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-callback-audit",
+      "status": "Passed",
+      "seconds": 1.2,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-invalid-stopped-flush",
+      "status": "Passed",
+      "seconds": 0.97,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-structural-session",
+      "status": "Passed",
+      "seconds": 4.17,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-note-hold",
+      "status": "Passed",
+      "seconds": 2.04,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-note-heartbeat",
+      "status": "Passed",
+      "seconds": 3.81,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-note-expiry",
+      "status": "Passed",
+      "seconds": 4.88,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-note-destroy",
+      "status": "Passed",
+      "seconds": 2.24,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-creation-failure",
+      "status": "Passed",
+      "seconds": 0.75,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-continuous-audio",
+      "status": "Passed",
+      "seconds": 3.24,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-continuous-audio-audit",
+      "status": "Passed",
+      "seconds": 3.4,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-two-instances",
+      "status": "Passed",
+      "seconds": 8.96,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-selected-snapshot",
+      "status": "Passed",
+      "seconds": 2.18,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-selected-import",
+      "status": "Passed",
+      "seconds": 2.14,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-empty-import",
+      "status": "Passed",
+      "seconds": 2.07,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-native-parameter-recovered-import",
+      "status": "Passed",
+      "seconds": 2.04,
+      "labels": [
+        "native-x11",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "trigger-clap-installed-native-overlap",
+      "status": "Passed",
+      "seconds": 9.36,
+      "labels": [
+        "native-audio",
+        "native-x11",
+        "slow",
+        "trigger-clap-boundary"
+      ]
+    },
+    {
+      "name": "clap-dynamic-host",
+      "status": "Passed",
+      "seconds": 3.29,
+      "labels": []
+    },
+    {
+      "name": "clap-build-boundary",
+      "status": "Passed",
+      "seconds": 295.71,
+      "labels": [
+        "build-boundary"
+      ]
+    }
+  ],
+  "total_seconds": 694.05
+}

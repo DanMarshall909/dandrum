@@ -163,12 +163,12 @@ fn decode_pcm_wav_with_expected_rate(
         return Err("unsupported format; sample rate must be positive".to_string());
     }
 
-    if let Some(expected_sample_rate_hz) = expected_sample_rate_hz {
-        if sample_rate != expected_sample_rate_hz {
-            return Err(format!(
-                "sample-rate mismatch: asset is {sample_rate} Hz, render is {expected_sample_rate_hz} Hz"
-            ));
-        }
+    if let Some(expected_sample_rate_hz) = expected_sample_rate_hz
+        && sample_rate != expected_sample_rate_hz
+    {
+        return Err(format!(
+            "sample-rate mismatch: asset is {sample_rate} Hz, render is {expected_sample_rate_hz} Hz"
+        ));
     }
     if channels == 0 || channels > 2 || bits_per_sample != 16 {
         return Err("unsupported format; expected mono/stereo 16-bit PCM WAV".to_string());

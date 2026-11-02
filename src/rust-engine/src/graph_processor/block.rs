@@ -20,22 +20,26 @@ pub(super) fn collect_audio_output(
     left_out: &mut Vec<f32>,
     right_out: &mut Vec<f32>,
 ) {
-    if let Some(idx) = out_idx {
-        if let Some(outputs) = all_outputs.get(&idx) {
-            if let Some(left) = outputs.audio.get(builtin_ports::LEFT) {
-                left_out.extend_from_slice(left);
-            } else {
-                left_out.extend(std::iter::repeat_n(0.0, frames));
-            }
-            if let Some(right) = outputs.audio.get(builtin_ports::RIGHT) {
-                right_out.extend_from_slice(right);
-            } else {
-                right_out.extend(std::iter::repeat_n(0.0, frames));
-            }
+    if let Some(idx) = out_idx
+        && let Some(outputs) = all_outputs.get(&idx)
+    {
+        if let Some(left) = outputs.audio.get(builtin_ports::LEFT) {
+            left_out.extend_from_slice(left);
+        } else {
+            left_out.extend(std::iter::repeat_n(0.0, frames));
+        }
+        if let Some(right) = outputs.audio.get(builtin_ports::RIGHT) {
+            right_out.extend_from_slice(right);
+        } else {
+            right_out.extend(std::iter::repeat_n(0.0, frames));
         }
     }
 }
 
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Allocating reference renderer keeps independent graph, state, event and output owners explicit"
+)]
 pub(super) fn process_block_compiled(
     compiled: &CompiledPatch,
     states: &mut [PerModuleState],
@@ -104,6 +108,10 @@ pub(super) fn process_block_compiled(
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Allocating reference renderer keeps independent graph, state, event and output owners explicit"
+)]
 pub(super) fn process_block_compiled_polyphonic(
     compiled: &CompiledPatch,
     states: &mut [Vec<PerModuleState>],
@@ -119,10 +127,10 @@ pub(super) fn process_block_compiled_polyphonic(
     let mut voice_events: Vec<Vec<BlockEvent>> = vec![Vec::new(); allocator.max_voices()];
 
     for event in incoming_events {
-        if let ScriptEvent::NoteOn { note, velocity } = &event.event {
-            if let Some(slot) = allocator.note_on(*note, *velocity) {
-                voice_events[slot].push(event.clone());
-            }
+        if let ScriptEvent::NoteOn { note, velocity } = &event.event
+            && let Some(slot) = allocator.note_on(*note, *velocity)
+        {
+            voice_events[slot].push(event.clone());
         }
     }
 
@@ -241,28 +249,28 @@ pub(super) fn process_block_compiled_polyphonic(
 
     collect_audio_output(&all_outputs, out_idx, frames, left_out, right_out);
 
-    for i in 0..allocator.max_voices() {
+    for (i, state) in states[..allocator.max_voices()].iter().enumerate() {
         if allocator.slot(i).is_none_or(|s| !s.active) {
             continue;
         }
-        let has_adsr = states[i]
+        let has_adsr = state
             .iter()
             .any(|s| matches!(s, PerModuleState::Adsr { .. }));
-        let has_sampler = states[i]
+        let has_sampler = state
             .iter()
             .any(|s| matches!(s, PerModuleState::Sampler { .. }));
         if !has_adsr && !has_sampler {
             continue;
         }
         let adsr_done = !has_adsr
-            || states[i].iter().any(|s| match s {
+            || state.iter().any(|s| match s {
                 PerModuleState::Adsr {
                     level, gate_active, ..
                 } => !gate_active && *level < 0.001,
                 _ => false,
             });
         let sampler_done = !has_sampler
-            || states[i].iter().any(|s| match s {
+            || state.iter().any(|s| match s {
                 PerModuleState::Sampler { active, .. } => !active,
                 _ => false,
             });

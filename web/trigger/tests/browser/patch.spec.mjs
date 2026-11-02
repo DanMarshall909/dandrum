@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './fixtures.mjs';
 
 test('New empty patch replaces the accepted preset and returns the editor to Empty',async({page})=>{
   await page.goto('/');

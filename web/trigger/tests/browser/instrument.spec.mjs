@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './fixtures.mjs';
 const load=async page=>{await page.goto('/');await page.getByRole('button',{name:/^Patch/}).click();await page.getByRole('button',{name:'Load Felt Kit',exact:true}).click();await expect(page.getByRole('banner').getByRole('status')).toContainText('Ready');};
 test('selector policies, crossfade and candidate mute/solo are accepted edits and undo updates their controls',async({page})=>{
   await load(page);await page.getByRole('tab',{name:'Layers',exact:true}).click();const width=page.getByRole('spinbutton',{name:'Width',exact:true});
