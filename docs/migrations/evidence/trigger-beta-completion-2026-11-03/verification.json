@@ -1,0 +1,492 @@
+{
+  "result": "PASS",
+  "scope": "all 72 configured cases, composite initial run plus environment-corrected failed-case retry and final affected historical replay case",
+  "runs": [
+    {
+      "report": "ctest.xml",
+      "tests": 72,
+      "failed": [
+        "trigger-editor-native-x11",
+        "trigger-editor-native-handler-lifetime",
+        "trigger-clap-native-lifecycle",
+        "trigger-clap-native-configuration",
+        "trigger-clap-native-loader-identity",
+        "trigger-clap-native-failed-parent",
+        "trigger-clap-native-parameter-state",
+        "trigger-clap-native-parameter-flush",
+        "trigger-clap-native-parameter-ownership",
+        "trigger-clap-native-parameter-timer-delivery",
+        "trigger-clap-native-parameter-source-credits",
+        "trigger-clap-native-parameter-feedback-undo",
+        "trigger-clap-native-parameter-callback-audit",
+        "trigger-clap-native-parameter-invalid-stopped-flush",
+        "trigger-clap-native-parameter-structural-session",
+        "trigger-clap-native-parameter-note-hold",
+        "trigger-clap-native-parameter-note-heartbeat",
+        "trigger-clap-native-parameter-note-expiry",
+        "trigger-clap-native-parameter-note-destroy",
+        "trigger-clap-native-parameter-creation-failure",
+        "trigger-clap-native-parameter-continuous-audio",
+        "trigger-clap-native-parameter-continuous-audio-audit",
+        "trigger-clap-native-parameter-two-instances",
+        "trigger-clap-native-parameter-selected-snapshot",
+        "trigger-clap-native-parameter-selected-import",
+        "trigger-clap-native-parameter-empty-import",
+        "trigger-clap-native-parameter-recovered-import",
+        "trigger-clap-installed-native-overlap"
+      ]
+    },
+    {
+      "report": "native-retry.xml",
+      "tests": 32,
+      "failed": []
+    },
+    {
+      "report": "final-daw-replay.xml",
+      "tests": 1,
+      "failed": []
+    }
+  ],
+  "latest_by_test": [
+    {
+      "name": "trigger-host-tests",
+      "status": "passed",
+      "seconds": 16.9532,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "trigger-host-state-payload-limits",
+      "status": "passed",
+      "seconds": 53.8573,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "trigger-editor-tests",
+      "status": "passed",
+      "seconds": 0.833737,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "retired-engine-ffi-symbols",
+      "status": "passed",
+      "seconds": 0.33325,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "retired-kernel-fields",
+      "status": "passed",
+      "seconds": 0.0482467,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "rust-engine-tests",
+      "status": "passed",
+      "seconds": 11.6459,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "rust-engine-clippy",
+      "status": "passed",
+      "seconds": 5.36025,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "instrument-session-tests",
+      "status": "passed",
+      "seconds": 8.62342,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "cxx-rust-engine-ffi-smoke",
+      "status": "passed",
+      "seconds": 0.0602771,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "cxx-rust-engine-sample-accurate-midi-smoke",
+      "status": "passed",
+      "seconds": 0.0588468,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "realtime-callback-safety",
+      "status": "passed",
+      "seconds": 0.0357399,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "sound-lab-controller",
+      "status": "passed",
+      "seconds": 0.974671,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "cxx-plugin-ui-command",
+      "status": "passed",
+      "seconds": 0.00256741,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "cxx-plugin-meter-capture",
+      "status": "passed",
+      "seconds": 0.00161868,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "cxx-plugin-live-capture",
+      "status": "passed",
+      "seconds": 0.00185846,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "cxx-plugin-meter-aggregation",
+      "status": "passed",
+      "seconds": 0.00189583,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "cxx-plugin-meter-delivery",
+      "status": "passed",
+      "seconds": 0.00189813,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "cxx-plugin-meter-display",
+      "status": "passed",
+      "seconds": 0.00173004,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "cxx-plugin-waveform-service",
+      "status": "passed",
+      "seconds": 0.138064,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "cxx-plugin-waveform-geometry",
+      "status": "passed",
+      "seconds": 0.00216701,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "cxx-plugin-spectral-geometry",
+      "status": "passed",
+      "seconds": 0.00247683,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "filter-spike-engine",
+      "status": "passed",
+      "seconds": 0.0602017,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "trigger-clap-install-contract",
+      "status": "passed",
+      "seconds": 1.00664,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "trigger-clap-daw-evidence",
+      "status": "passed",
+      "seconds": 0.422866,
+      "report": "final-daw-replay.xml"
+    },
+    {
+      "name": "engine-only-build",
+      "status": "passed",
+      "seconds": 112.361,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "mutation-hook",
+      "status": "passed",
+      "seconds": 0.190083,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "cargo-cache-driver",
+      "status": "passed",
+      "seconds": 6.50499,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "cargo-cache-build-boundary",
+      "status": "passed",
+      "seconds": 2.45596,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "engine-build-fixture-cleanup",
+      "status": "passed",
+      "seconds": 0.0882909,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "owned-verification-fast",
+      "status": "passed",
+      "seconds": 5.2474,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "owned-verification-slow",
+      "status": "passed",
+      "seconds": 4.58151,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "trigger-clap-native-fixture-driver",
+      "status": "passed",
+      "seconds": 0.807626,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "trigger-clap-dynamic-host",
+      "status": "passed",
+      "seconds": 6.79617,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "trigger-editor-packaged-assets",
+      "status": "passed",
+      "seconds": 0.600418,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "trigger-editor-native-prepare",
+      "status": "passed",
+      "seconds": 0.717692,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-editor-native-x11",
+      "status": "passed",
+      "seconds": 4.94301,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-editor-native-handler-lifetime",
+      "status": "passed",
+      "seconds": 2.53183,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-product-build",
+      "status": "passed",
+      "seconds": 8.11691,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-prepare",
+      "status": "passed",
+      "seconds": 12.3297,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-extension",
+      "status": "passed",
+      "seconds": 0.0376199,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "trigger-clap-native-lifecycle",
+      "status": "passed",
+      "seconds": 2.08241,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-configuration",
+      "status": "passed",
+      "seconds": 0.0908175,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-loader-identity",
+      "status": "passed",
+      "seconds": 0.0597618,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-failed-parent",
+      "status": "passed",
+      "seconds": 0.0531625,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameters-prepare",
+      "status": "passed",
+      "seconds": 57.3324,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-state",
+      "status": "passed",
+      "seconds": 0.780234,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-flush",
+      "status": "passed",
+      "seconds": 0.636791,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-ownership",
+      "status": "passed",
+      "seconds": 0.685027,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-timer-required",
+      "status": "passed",
+      "seconds": 0.0388765,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-timer-refused",
+      "status": "passed",
+      "seconds": 0.0418199,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-timer-delivery",
+      "status": "passed",
+      "seconds": 0.66649,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-timer-rollback",
+      "status": "passed",
+      "seconds": 0.0392801,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-source-credits",
+      "status": "passed",
+      "seconds": 0.74166,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-feedback-undo",
+      "status": "passed",
+      "seconds": 1.25399,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-callback-audit",
+      "status": "passed",
+      "seconds": 0.998781,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-invalid-stopped-flush",
+      "status": "passed",
+      "seconds": 0.727686,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-structural-session",
+      "status": "passed",
+      "seconds": 3.32422,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-note-hold",
+      "status": "passed",
+      "seconds": 1.73371,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-note-heartbeat",
+      "status": "passed",
+      "seconds": 3.5955,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-note-expiry",
+      "status": "passed",
+      "seconds": 4.7754,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-note-destroy",
+      "status": "passed",
+      "seconds": 2.01523,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-creation-failure",
+      "status": "passed",
+      "seconds": 0.689879,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-continuous-audio",
+      "status": "passed",
+      "seconds": 2.7112,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-continuous-audio-audit",
+      "status": "passed",
+      "seconds": 2.87408,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-two-instances",
+      "status": "passed",
+      "seconds": 8.13639,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-selected-snapshot",
+      "status": "passed",
+      "seconds": 1.67475,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-selected-import",
+      "status": "passed",
+      "seconds": 1.57675,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-empty-import",
+      "status": "passed",
+      "seconds": 1.44281,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-native-parameter-recovered-import",
+      "status": "passed",
+      "seconds": 1.55305,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "trigger-clap-installed-native-overlap",
+      "status": "passed",
+      "seconds": 8.09487,
+      "report": "native-retry.xml"
+    },
+    {
+      "name": "clap-dynamic-host",
+      "status": "passed",
+      "seconds": 1.86021,
+      "report": "ctest.xml"
+    },
+    {
+      "name": "clap-build-boundary",
+      "status": "passed",
+      "seconds": 203.858,
+      "report": "ctest.xml"
+    }
+  ],
+  "production": "unchanged from task8.1; current installed CLAP manifest and historical DAW manifest independently rehashed",
+  "mutation": "excluded by user; no mutation jobs",
+  "new_replay_tests": 5,
+  "initial_failure": "native GTK checks ran without DISPLAY; failed logs retained; no product behavior changed",
+  "source_free_builds": "current root CMake inputs, native/plugin build boundaries pass",
+  "canonical_proposal": "55/55 strict specs; 657 scenarios,418 mapped,239 unchanged backlog; exact patch applied only after independent PASS",
+  "retention": "owned supervisor cleanup receipts retained; no reusable cache/build/dependency deletion",
+  "storage_inventory_limitation": "installed Git does not support worktree list --porcelain -z, so skill inventory exits3 with partial attribution; linked native fixture generations also disclosed. Ordinary worktree --porcelain inventory succeeded. Direct du measurement supplements sizing."
+}

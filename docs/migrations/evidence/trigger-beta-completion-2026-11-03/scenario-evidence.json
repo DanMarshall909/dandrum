@@ -1,0 +1,204 @@
+{
+  "scope": "18 reviewed beta scenarios; canonical sync awaits independent PASS",
+  "scenarios": [
+    {
+      "capability": "juce-free-trigger-products",
+      "requirement": "Trigger CLAP uses the persistent instrument",
+      "scenario": "Installed CLAP renders the real Trigger instrument",
+      "fingerprint": "3c8e5bcc7c9a",
+      "tests": [
+        "rust:optional_product_discovers_stable_trigger_and_retains_fixture_identities",
+        "rust:real_sampler_ports_and_offset_midi_parameter_values_render_literal_signed_pcm",
+        "rust:state_restores_fresh_mapping_and_physical_values_and_invalid_tail_preserves_running_audio"
+      ]
+    },
+    {
+      "capability": "juce-free-trigger-products",
+      "requirement": "Supported host clocks retain their precision",
+      "scenario": "Fractional host clocks render at the requested rate",
+      "fingerprint": "2f3122e41a04",
+      "tests": [
+        "rust:supported_fractional_clocks_activate_and_keep_exact_signed_sample_timing",
+        "rust:fractional_reconfiguration_keeps_exact_identity_values_history_and_failure_rollback",
+        "rust:fractional_runtime_swaps_reclaim_on_control_and_preserve_reset_and_another_instance"
+      ]
+    },
+    {
+      "capability": "juce-free-trigger-products",
+      "requirement": "Supported host clocks retain their precision",
+      "scenario": "Failed configuration preserves accepted playback",
+      "fingerprint": "e340a5853c3b",
+      "tests": [
+        "rust:persistent_endpoints_survive_failed_and_equal_reactivation_then_reconfigure_independently",
+        "rust:missing_or_corrupt_resources_leave_the_loaded_runtime_and_configuration_accepted"
+      ]
+    },
+    {
+      "capability": "juce-free-trigger-products",
+      "requirement": "Native editor lifetime is independent of playback",
+      "scenario": "Native editing survives complete editor replacement",
+      "fingerprint": "5e552b86fbf1",
+      "tests": [
+        "rust:installed_native_edits_overlap_server_audio_and_midi",
+        "rust:copied_native_destroy_releases_held_activity_once_and_reconnects",
+        "rust:copied_react_recovers_selected_import_after_lost_reply_and_recreation"
+      ]
+    },
+    {
+      "capability": "juce-free-trigger-products",
+      "requirement": "Native editor lifetime is independent of playback",
+      "scenario": "Failed native creation leaves the instrument usable",
+      "fingerprint": "21e9457b220d",
+      "tests": [
+        "rust:copied_trigger_editor_exposes_the_actual_clap_gui_extension",
+        "rust:copied_editor_failed_native_parent_attempt_retains_only_code_and_preserves_audio",
+        "rust:copied_native_ipc_registration_failure_cleans_up_and_retries_preserving_state"
+      ]
+    },
+    {
+      "capability": "juce-free-trigger-products",
+      "requirement": "Complete render callbacks obey realtime ownership",
+      "scenario": "Native callbacks retain bounded ownership during replacement",
+      "fingerprint": "3bed98aa0f9d",
+      "tests": [
+        "rust:installed_native_edits_overlap_server_audio_and_midi",
+        "rust:copied_native_continuous_audio_callbacks_allocate_and_deallocate_nothing",
+        "rust:copied_native_two_instances_keep_edits_audio_and_editors_independent"
+      ]
+    },
+    {
+      "capability": "juce-free-trigger-products",
+      "requirement": "Named DAW acceptance proves automation and independence",
+      "scenario": "Two DAW instances retain automation and selected samples",
+      "fingerprint": "e88262215eb7",
+      "tests": [
+        "py:tests/python/test_trigger_clap_daw_evidence.py",
+        "rust:installed_native_edits_overlap_server_audio_and_midi",
+        "rust:copied_react_import_maps_selected_pcm_once_through_native_history"
+      ]
+    },
+    {
+      "capability": "juce-free-trigger-products",
+      "requirement": "Installed beta artifacts work offline without JUCE",
+      "scenario": "Source-hidden offline installation remains usable",
+      "fingerprint": "3606e15d1bd2",
+      "tests": [
+        "rust:fresh_clap_restores_selected_payload_without_a_package_file",
+        "rust:copied_native_editor_lifecycle_initializes_the_real_react_session_and_preserves_audio",
+        "py:tests/python/test_trigger_clap_install.py",
+        "py:tests/python/test_engine_only_build.py"
+      ]
+    },
+    {
+      "capability": "trigger-sample-resources",
+      "requirement": "Native sample selection uses real supported data",
+      "scenario": "A distinct selected sample is mapped and played natively",
+      "fingerprint": "a3e5f9e25f4e",
+      "tests": [
+        "rust:installed_native_edits_overlap_server_audio_and_midi",
+        "rust:copied_native_selection_retains_real_metadata_across_source_and_editor_loss",
+        "rust:copied_react_import_maps_selected_pcm_once_through_native_history"
+      ]
+    },
+    {
+      "capability": "trigger-sample-resources",
+      "requirement": "Native sample selection uses real supported data",
+      "scenario": "Cancelled or invalid selection preserves the instrument",
+      "fingerprint": "2e8b41856b64",
+      "tests": [
+        "rust:copied_native_selection_retains_real_metadata_across_source_and_editor_loss",
+        "rust:rejected_file_count_and_decode_preserve_state_and_allow_later_selection",
+        "rust:file_count_encoded_decoded_and_resource_limits_reject_atomically",
+        "rust:untrusted_file_shapes_names_and_read_errors_never_publish_resources",
+        "rust:rejected_native_acquisition_is_bounded_and_a_later_selection_remains_possible"
+      ]
+    },
+    {
+      "capability": "trigger-sample-resources",
+      "requirement": "Accepted samples have immutable instance ownership",
+      "scenario": "Original-file changes do not alter admitted playback",
+      "fingerprint": "e7fd83eb14da",
+      "tests": [
+        "rust:selected_runtime_pins_bytes_until_control_reclamation_without_callback_destruction",
+        "rust:copied_react_import_maps_selected_pcm_once_through_native_history",
+        "rust:installed_native_edits_overlap_server_audio_and_midi"
+      ]
+    },
+    {
+      "capability": "trigger-sample-resources",
+      "requirement": "Interactive patch publication preserves native authority",
+      "scenario": "Import preserves nondefault controls and native history",
+      "fingerprint": "030e72136a3a",
+      "tests": [
+        "rust:whole_patch_publication_survives_view_loss_and_native_undo_preserves_physical_values",
+        "rust:copied_react_import_maps_selected_pcm_once_through_native_history"
+      ]
+    },
+    {
+      "capability": "trigger-sample-resources",
+      "requirement": "Interactive patch publication preserves native authority",
+      "scenario": "Empty patch and ordinary import form a usable transition",
+      "fingerprint": "3c1eac2eafef",
+      "tests": [
+        "rust:copied_react_empty_retains_controls_and_imports_after_recreation",
+        "rust:silent_empty_document_keeps_product_parameter_scopes_values_and_callback_ownership"
+      ]
+    },
+    {
+      "capability": "trigger-sample-resources",
+      "requirement": "Interactive patch publication preserves native authority",
+      "scenario": "Failed patch candidates retain the accepted instrument",
+      "fingerprint": "35ce6dda9703",
+      "tests": [
+        "rust:whole_patch_rejects_unsupported_profile_before_owning_a_job",
+        "rust:transport_retries_never_repeat_admission_conflicting_or_retired_ids_are_rejected",
+        "rust:failed_preparation_reports_only_its_real_error_and_preserves_accepted_state",
+        "rust:failed_patch_retry_recovers_after_its_selected_content_is_released"
+      ]
+    },
+    {
+      "capability": "trigger-sample-resources",
+      "requirement": "Sample work survives disposable editor loss",
+      "scenario": "Lost editor recovers one admitted sample edit",
+      "fingerprint": "7e499066b270",
+      "tests": [
+        "rust:copied_react_recovers_selected_import_after_lost_reply_and_recreation",
+        "rust:admitted_selection_survives_view_loss_and_releases_only_its_outcome"
+      ]
+    },
+    {
+      "capability": "trigger-sample-resources",
+      "requirement": "Portable state owns patch samples and physical values",
+      "scenario": "Fresh instance restores selected content after source removal",
+      "fingerprint": "af51ca51308a",
+      "tests": [
+        "rust:fresh_clap_restores_selected_payload_without_a_package_file",
+        "rust:copied_react_import_maps_selected_pcm_once_through_native_history",
+        "py:tests/python/test_trigger_clap_daw_evidence.py"
+      ]
+    },
+    {
+      "capability": "trigger-sample-resources",
+      "requirement": "Portable state owns patch samples and physical values",
+      "scenario": "Corrupt portable state preserves the live instrument",
+      "fingerprint": "3bbc9e90894c",
+      "tests": [
+        "rust:portable_selected_state_restores_owned_pcm_and_values_after_the_source_instance_is_gone",
+        "rust:invalid_portable_metadata_is_refused_before_any_foreign_payload_read",
+        "rust:invalid_states_and_failing_streams_preserve_every_accepted_field_and_pending_feedback_and_commands",
+        "rust:rejected_native_state_preserves_nonempty_real_history_and_successful_external_restore_resets_it",
+        "rust:maximum_portable_payload_restores_signed_tail_geometry_and_reclaims_every_owner"
+      ]
+    },
+    {
+      "capability": "trigger-sample-resources",
+      "requirement": "Portable state owns patch samples and physical values",
+      "scenario": "Packaged-kit state remains readable",
+      "fingerprint": "da02e638aa91",
+      "tests": [
+        "rust:portable_state_larger_than_legacy_limit_restores_fresh_pcm_and_values_with_reentrant_short_reads",
+        "rust:invalid_states_and_failing_streams_preserve_every_accepted_field_and_pending_feedback_and_commands"
+      ]
+    }
+  ]
+}

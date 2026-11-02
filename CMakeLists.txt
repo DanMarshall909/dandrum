@@ -310,6 +310,11 @@ add_test(NAME trigger-clap-install-contract
 set_tests_properties(trigger-clap-install-contract PROPERTIES
     LABELS "trigger-clap-boundary;fast" TIMEOUT 30)
 
+add_test(NAME trigger-clap-daw-evidence
+    COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_trigger_clap_daw_evidence.py)
+set_tests_properties(trigger-clap-daw-evidence PROPERTIES
+    LABELS "trigger-clap-boundary;fast" TIMEOUT 30)
+
 add_test(NAME engine-only-build
     COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1 python3
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_engine_only_build.py EngineOnlyBuildTest)
