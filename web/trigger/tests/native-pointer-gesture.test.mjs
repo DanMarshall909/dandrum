@@ -13,7 +13,7 @@ async function setup(t){
   await engine.initialize();
   const store=new Store(engine),presenter=new ShellPresenter(store);presenter.attach();
   t.after(async()=>{presenter.detach();await store.close();await engine.close();dom.window.close();if(previous===undefined)delete globalThis.window;else globalThis.window=previous;});
-  return {bridge,presenter,dom,
+  return {bridge,engine,store,presenter,dom,
     pointer:(target,type,options={})=>target.dispatchEvent(new dom.window.MouseEvent(type,{bubbles:true,button:0,...options})),
     settled:()=>new Promise(setImmediate),
     gestures:()=>bridge.calls.filter(call=>['beginGesture','setParameter','endGesture'].includes(call[0])),
@@ -55,4 +55,31 @@ test('a nested slider uses its enclosing public parameter identity for the compl
     ['beginGesture','drums.level',7],['setParameter','drums.level',.4,7],
     ['setParameter','drums.level',.6,7],['endGesture','drums.level',7],
   ]);
+});
+
+for(const event of ['pointercancel','blur'])test(event+' rolls back a native drag and ends its gesture once',async t=>{
+  const {engine,presenter,dom,pointer,settled,gestures}=await setup(t),control=dom.window.document.querySelector('[data-knob]');
+  const before=engine.getPatch().params['drums.level'].value;
+  pointer(control,'pointerdown');await settled();
+  const knob=presenter.buildModel().voiceSecs.flatMap(section=>section.knobs).find(knob=>knob.key==='drums.level');
+  await knob.set(.4);
+  dom.window.dispatchEvent(new dom.window.Event(event));await settled();await settled();
+  assert.equal(engine.getPatch().params['drums.level'].value,before,'cancel restores the accepted value');
+  assert.deepEqual(gestures(),[
+    ['beginGesture','drums.level',7],['setParameter','drums.level',.4,7],
+    ['setParameter','drums.level',before,7],['endGesture','drums.level',7],
+  ]);
+  pointer(control,'pointerup');dom.window.dispatchEvent(new dom.window.Event(event));await settled();
+  assert.equal(gestures().filter(call=>call[0]==='endGesture').length,1);
+});
+
+test('detaching during a native drag ends once and removes pointer listeners',async t=>{
+  const {engine,presenter,dom,pointer,settled,gestures}=await setup(t),control=dom.window.document.querySelector('[data-knob]');
+  pointer(control,'pointerdown');await settled();
+  const knob=presenter.buildModel().voiceSecs.flatMap(section=>section.knobs).find(knob=>knob.key==='drums.level');
+  await knob.set(.4);presenter.detach();await settled();
+  assert.equal(engine.getPatch().params['drums.level'].value,.4);
+  assert.deepEqual(gestures(),[['beginGesture','drums.level',7],['setParameter','drums.level',.4,7],['endGesture','drums.level',7]]);
+  pointer(control,'pointerdown');pointer(control,'pointerup');dom.window.dispatchEvent(new dom.window.Event('blur'));await settled();
+  assert.equal(gestures().length,3,'detached controls no longer reach native gestures');
 });

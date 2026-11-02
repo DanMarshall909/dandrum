@@ -65,7 +65,7 @@ attach() {
   },
 detach() {
     this.velocityCleanup?.();
-    this.releaseKeyboard?.();clearTimeout(this.flashT);
+    clearTimeout(this.flashT);
     window.removeEventListener('resize', this.onR);
     window.removeEventListener('keydown', this.onKey); window.removeEventListener('keyup', this.onKey);
     window.removeEventListener('pointermove', this.onMod, true); window.removeEventListener('pointerdown', this.onMod, true);
@@ -74,21 +74,5 @@ detach() {
     window.removeEventListener('blur',this.onCancel);
     window.removeEventListener('pointerdown', this.onDown, true);
     if(this.controlGesture)this.props.store.endGesture(this.controlGesture);
-    clearInterval(this.pvT);
-  },
-onVelDown(e) {
-    const t = e.target.closest && e.target.closest('[data-vh]'); if (!t) return;
-    e.preventDefault();
-    const mode = t.getAttribute('data-vh'), rect = e.currentTarget.getBoundingClientRect();
-    const st0 = { lo: this.state.vHardLo ?? 90, hi: this.state.vSoftHi ?? 101 };
-    const v0 = 1 + (e.clientX - rect.left) / rect.width * 126;
-    const mv = (ev) => {
-      const v = 1 + (ev.clientX - rect.left) / rect.width * 126, cl = (x, a, b) => Math.max(a, Math.min(b, Math.round(x)));
-      if (mode === 'l') this.setState({ vHardLo: cl(v, 2, st0.hi + 1) });
-      else if (mode === 'r') this.setState({ vSoftHi: cl(v, (this.state.vHardLo ?? st0.lo) - 1, 126) });
-      else { let d = Math.round(v - v0); d = Math.max(2 - st0.lo, Math.min(126 - st0.hi, d)); this.setState({ vHardLo: st0.lo + d, vSoftHi: st0.hi + d }); }
-    };
-    const up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); };
-    window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up);
   }
 };
