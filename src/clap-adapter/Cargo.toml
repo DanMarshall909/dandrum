@@ -15,7 +15,7 @@ trigger = ["dep:dandrum_trigger_host"]
 trigger-editor = ["trigger", "dep:dandrum_trigger_editor", "dep:gtk", "dep:x11rb", "dep:libc", "dep:webkit2gtk", "dep:rtrb", "clack-extensions/gui", "clack-extensions/timer"]
 
 [dependencies]
-rtrb = { version = "=0.3.2", optional = true }
+rtrb = { version = "=0.3.5", optional = true }
 dandrum_trigger_host = { package = "dandrum-trigger-host", path = "../trigger-host", optional = true }
 dandrum_engine = { path = "../rust-engine" }
 clack-plugin = { git = "https://github.com/prokopyl/clack", rev = "27ca28391b57a61bad4bb5099288a7bf9247350d" }
