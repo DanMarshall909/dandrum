@@ -22,6 +22,13 @@ mod resource_policy;
 #[ignore = "requires real Linux X11, GTK3 and WebKitGTK; native boundary lane"]
 fn real_child_loads_local_content_and_drops_without_owning_the_host_parent() {
     gtk::init().expect("GTK on the host UI thread");
+    // Calibrate the ownership oracle: an unrelated application window must
+    // still be counted, even though GTK's own tooltip is excluded below.
+    let before = application_windows().len();
+    let extra = OwnedWindow(gtk::Window::new(gtk::WindowType::Toplevel), None);
+    assert_eq!(application_windows().len(), before + 1);
+    drop(extra);
+    assert_eq!(application_windows().len(), before);
     let (x, screen) = x11rb::connect(None).unwrap();
     let root = x.setup().roots[screen].root;
     let parent = x.generate_id().unwrap();
@@ -42,7 +49,7 @@ fn real_child_loads_local_content_and_drops_without_owning_the_host_parent() {
     .check()
     .unwrap();
     x.map_window(parent).unwrap().check().unwrap();
-    let baseline = gtk::Window::list_toplevels().len();
+    let baseline = application_windows().len();
     for cycle in 0..2 {
         let package = common::Package::new();
         for file in common::FILES {
@@ -178,9 +185,9 @@ fn real_child_loads_local_content_and_drops_without_owning_the_host_parent() {
             "owner drop releases its child"
         );
         assert_eq!(
-            gtk::Window::list_toplevels().len(),
+            application_windows().len(),
             baseline,
-            "no retained GTK toplevel"
+            "no retained application GTK toplevel"
         );
         assert!(
             weak.upgrade().is_none(),
@@ -321,7 +328,7 @@ fn exercise_visibility_and_fixed_size(
                 .map_state,
             MapState::VIEWABLE
         );
-        assert_eq!(gtk::Window::list_toplevels().len(), baseline + 1);
+        assert_eq!(application_windows().len(), baseline + 1);
         assert_eq!(owner.view.webview(), view, "same WebKit object throughout");
         assert_eq!(
             view.uri().as_deref(),
@@ -536,8 +543,18 @@ struct CaptureWindowOnDrop {
     before: Vec<u32>,
     captured: std::sync::Arc<std::sync::Mutex<Vec<u32>>>,
 }
-fn gtk_window_ids() -> Vec<u32> {
+// WebKit/GTK may lazily retain an invisible GtkTooltipWindow after showing a
+// view. It belongs to the toolkit, not NativeEditor. Keep all application
+// windows (including arbitrary popups) in the lifetime and rollback oracle.
+fn application_windows() -> Vec<gtk::Widget> {
     gtk::Window::list_toplevels()
+        .into_iter()
+        .filter(|window| window.type_().name() != "GtkTooltipWindow")
+        .collect()
+}
+
+fn gtk_window_ids() -> Vec<u32> {
+    application_windows()
         .iter()
         .filter_map(|window| window.window())
         .filter_map(|window| window.downcast::<gdkx11::X11Window>().ok())
@@ -612,7 +629,7 @@ fn acquisition_errors_leave_no_owned_window(
                 .children
                 .is_empty()
         );
-        assert_eq!(gtk::Window::list_toplevels().len(), baseline);
+        assert_eq!(application_windows().len(), baseline);
     }
     let input_only = x.generate_id().unwrap();
     x.create_window(
@@ -697,7 +714,7 @@ fn acquisition_errors_leave_no_owned_window(
             .all(|child| root_children.contains(child)),
         "failed child creation leaves no added root child"
     );
-    assert_eq!(gtk::Window::list_toplevels().len(), baseline);
+    assert_eq!(application_windows().len(), baseline);
     assert!(
         weak_resource.upgrade().is_none(),
         "failed child creation releases its resource callback"
@@ -762,7 +779,7 @@ fn acquisition_errors_leave_no_owned_window(
         children
     );
     assert_eq!(
-        gtk::Window::list_toplevels().len(),
+        application_windows().len(),
         baseline + 1,
         "only the deliberately retained first owner"
     );
@@ -796,7 +813,7 @@ fn acquisition_errors_leave_no_owned_window(
         "acquisition final cleanup: parent={parent}, children={remaining:?}, ticks={ticks:?}, elapsed={:?}",
         cleanup_started.elapsed()
     );
-    assert_eq!(gtk::Window::list_toplevels().len(), baseline);
+    assert_eq!(application_windows().len(), baseline);
     assert!(remaining.is_empty());
 }
 
