@@ -169,7 +169,7 @@ fn render_with_events(
         Ok(rendered) => rendered,
         Err(message) => return error(format!("failed to render patch: {message}")),
     };
-    return match write_kernel_output_wavs(&render_args.output, settings.sample_rate_hz, &rendered) {
+    match write_kernel_output_wavs(&render_args.output, settings.sample_rate_hz, &rendered) {
         Ok(paths) => {
             let mut result = render_success(&render_args);
             for path in paths.into_iter().skip(1) {
@@ -180,7 +180,7 @@ fn render_with_events(
             result
         }
         Err(message) => error(format!("failed to write wav: {message}")),
-    };
+    }
 }
 
 fn render_success(render_args: &RenderArgs) -> CliResult {

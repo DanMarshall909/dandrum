@@ -183,6 +183,7 @@ fn seed_standard_library_zip(
     let lock_path = root.join(format!(".{version}.seed.lock"));
     let lock_file = fs::File::options()
         .create(true)
+        .truncate(false)
         .write(true)
         .open(&lock_path)
         .map_err(|error| io_error(&lock_path, error))?;
@@ -258,13 +259,14 @@ fn write_seed_archive(library: &SeededLibrary) -> Result<Vec<u8>, ModuleLibraryS
 
 fn read_seed_archive(archive: &[u8]) -> Result<Vec<SeededLibraryFile>, ModuleLibrarySeedError> {
     let mut reader = zip::ZipArchive::new(Cursor::new(archive)).map_err(archive_error)?;
+    reader.validate_header_consistency().map_err(archive_error)?;
     let mut files = Vec::new();
     for index in 0..reader.len() {
         let mut entry = reader.by_index(index).map_err(archive_error)?;
         if entry.is_dir() {
             continue;
         }
-        let path = entry.name().to_string();
+        let path = entry.name().map_err(archive_error)?.into_owned();
         reject_file_path_escape(&path)?;
         let mut contents = Vec::new();
         entry
@@ -318,6 +320,7 @@ fn publish_version_directory(
 fn remove_seeded_directory(path: &Path) -> Result<(), ModuleLibrarySeedError> {
     // Windows cannot delete read-only files. Only walk real directories and
     // regular files; remove_dir_all itself unlinks symlinks without following them.
+    #[cfg(windows)]
     if !fs::symlink_metadata(path)
         .map_err(|error| io_error(path, error))?
         .file_type()
@@ -328,6 +331,7 @@ fn remove_seeded_directory(path: &Path) -> Result<(), ModuleLibrarySeedError> {
     fs::remove_dir_all(path).map_err(|error| io_error(path, error))
 }
 
+#[cfg(windows)]
 fn clear_seeded_file_readonly(directory: &Path) -> Result<(), ModuleLibrarySeedError> {
     for entry in fs::read_dir(directory).map_err(|error| io_error(directory, error))? {
         let entry = entry.map_err(|error| io_error(directory, error))?;
@@ -551,6 +555,37 @@ mod tests {
             }
         );
         assert!(!root.path().join("1.0.0").exists());
+    }
+
+    #[test]
+    fn inconsistent_seed_member_names_preserve_the_published_version() {
+        let root = tempfile::tempdir().unwrap();
+        seed_standard_library(root.path(), &library("1.0.0", b"old\n")).unwrap();
+        let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        writer
+            .start_file("broken.yaml", zip::write::SimpleFileOptions::default())
+            .unwrap();
+        writer.write_all(b"new\n").unwrap();
+        let mut archive = writer.finish().unwrap().into_inner();
+        let names: Vec<_> = archive
+            .windows(b"broken.yaml".len())
+            .enumerate()
+            .filter_map(|(offset, bytes)| (bytes == b"broken.yaml").then_some(offset))
+            .collect();
+        assert_eq!(names.len(), 2, "local and central names must agree");
+        archive[names[0]] = b'X';
+
+        let error = seed_standard_library_zip(root.path(), "1.0.0", &archive)
+            .expect_err("inconsistent member headers must fail before publishing");
+        assert!(matches!(error, ModuleLibrarySeedError::Archive { .. }));
+        assert_eq!(
+            error.to_diagnostic().error_code(),
+            error_codes::LIBRARY_SEED_FAILED
+        );
+        assert_eq!(
+            fs::read(root.path().join("1.0.0/drum_voice/drum_voice.yaml")).unwrap(),
+            b"old\n"
+        );
     }
 
     #[test]
@@ -1054,6 +1089,26 @@ mod tests {
         assert_eq!(
             fs::read(root.path().join("1.0.0/drum_voice/drum_voice.yaml")).unwrap(),
             b"new\n"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn replacing_seeded_files_preserves_external_hard_link_permissions() {
+        let root = tempfile::tempdir().unwrap();
+        seed_standard_library(root.path(), &library("1.0.0", b"old\n")).unwrap();
+        let seeded = root.path().join("1.0.0/drum_voice/drum_voice.yaml");
+        let outside = root.path().join("retained.yaml");
+        fs::hard_link(&seeded, &outside).unwrap();
+        assert!(fs::metadata(&outside).unwrap().permissions().readonly());
+
+        seed_standard_library(root.path(), &library("1.0.0", b"new\n")).unwrap();
+
+        assert_eq!(fs::read(&seeded).unwrap(), b"new\n");
+        assert_eq!(fs::read(&outside).unwrap(), b"old\n");
+        assert!(
+            fs::metadata(&outside).unwrap().permissions().readonly(),
+            "replacing a seed must not grant write access through an external hard link"
         );
     }
 

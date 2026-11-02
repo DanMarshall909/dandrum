@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './fixtures.mjs';
 test('a visible parameter edit enables named undo and restores the previous value',async({page})=>{
   await page.goto('/');
   await page.getByRole('button',{name:/^Patch/}).click();

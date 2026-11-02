@@ -22,6 +22,10 @@ fn default_control(module_kind: ModuleKind, port_name: &str) -> f32 {
         .unwrap_or_else(|| panic!("missing default control value for {module_kind:?}.{port_name}"))
 }
 
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Reference dispatch keeps module state, port inputs and block coordinates explicit"
+)]
 pub(super) fn process_module(
     module_idx: usize,
     module_kind: ModuleKind,

@@ -685,15 +685,14 @@ impl RealtimeGraphProcessor {
             for channel in 0..span.channel_count {
                 let buffer = super::render_plan::BufferId(span.first_buffer + channel);
                 self.audio_arena.clear(buffer, frames);
-                if planned.is_bound() {
-                    if let Some(source) = inputs.get(input_index).and_then(|bus| bus.get(channel)) {
-                        if let Some(remaining) = source.get(segment_start..) {
-                            let actual = frames.min(remaining.len());
-                            self.audio_arena
-                                .slice_mut(buffer, actual)
-                                .copy_from_slice(&remaining[..actual]);
-                        }
-                    }
+                if planned.is_bound()
+                    && let Some(source) = inputs.get(input_index).and_then(|bus| bus.get(channel))
+                    && let Some(remaining) = source.get(segment_start..)
+                {
+                    let actual = frames.min(remaining.len());
+                    self.audio_arena
+                        .slice_mut(buffer, actual)
+                        .copy_from_slice(&remaining[..actual]);
                 }
             }
         }
@@ -806,10 +805,8 @@ impl RealtimeGraphProcessor {
                 .len()
                 .min(self.scratch_right.len())
                 .min(frames);
-            for i in 0..actual {
-                left[i] = self.scratch_left[i];
-                right[i] = self.scratch_right[i];
-            }
+            left[..actual].copy_from_slice(&self.scratch_left[..actual]);
+            right[..actual].copy_from_slice(&self.scratch_right[..actual]);
             for i in actual..frames {
                 left[i] = 0.0;
                 right[i] = 0.0;
@@ -841,10 +838,8 @@ impl RealtimeGraphProcessor {
                 .len()
                 .min(self.scratch_right.len())
                 .min(frames);
-            for i in 0..actual {
-                left[i] = self.scratch_left[i];
-                right[i] = self.scratch_right[i];
-            }
+            left[..actual].copy_from_slice(&self.scratch_left[..actual]);
+            right[..actual].copy_from_slice(&self.scratch_right[..actual]);
             for i in actual..frames {
                 left[i] = 0.0;
                 right[i] = 0.0;
@@ -910,6 +905,10 @@ impl RealtimeGraphProcessor {
     }
 
     #[cfg(test)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "Reference renderer borrows allocator, voice queues, global queues and scratch storage independently"
+    )]
     fn render_polyphonic_from_plan(
         compiled: &CompiledPatch,
         states: &mut [Vec<PerModuleState>],
@@ -924,7 +923,7 @@ impl RealtimeGraphProcessor {
         global_event_queues: &mut PreparedEventQueues,
         all_outputs: &mut HashMap<usize, ModuleOutputs>,
         voice_event_queues: &mut Vec<Vec<BlockEvent>>,
-        voice_queues: &mut Vec<PreparedEventQueues>,
+        voice_queues: &mut [PreparedEventQueues],
         accum: &mut Vec<Option<ModuleOutputs>>,
         events_scratch: &mut Vec<BlockEvent>,
     ) {
@@ -967,10 +966,10 @@ impl RealtimeGraphProcessor {
                 let outputs = process_module(
                     step.module_index,
                     step.module_kind,
-                    &events_scratch,
+                    events_scratch,
                     voice_states,
                     &input_provider,
-                    &all_outputs,
+                    all_outputs,
                     frames,
                     block_start_frame,
                 );
@@ -1006,10 +1005,10 @@ impl RealtimeGraphProcessor {
             let outputs = process_module(
                 step.module_index,
                 step.module_kind,
-                &events_scratch,
+                events_scratch,
                 &mut states[0],
                 &input_provider,
-                &all_outputs,
+                all_outputs,
                 frames,
                 block_start_frame,
             );
@@ -1019,30 +1018,30 @@ impl RealtimeGraphProcessor {
             all_outputs.insert(step.module_index, outputs);
         }
 
-        collect_audio_output(&all_outputs, out_idx, frames, left_out, right_out);
+        collect_audio_output(all_outputs, out_idx, frames, left_out, right_out);
 
-        for i in 0..allocator.max_voices() {
+        for (i, state) in states[..allocator.max_voices()].iter().enumerate() {
             if allocator.slot(i).is_none_or(|s| !s.active) {
                 continue;
             }
-            let has_adsr = states[i]
+            let has_adsr = state
                 .iter()
                 .any(|s| matches!(s, PerModuleState::Adsr { .. }));
-            let has_sampler = states[i]
+            let has_sampler = state
                 .iter()
                 .any(|s| matches!(s, PerModuleState::Sampler { .. }));
             if !has_adsr && !has_sampler {
                 continue;
             }
             let adsr_done = !has_adsr
-                || states[i].iter().any(|s| match s {
+                || state.iter().any(|s| match s {
                     PerModuleState::Adsr {
                         level, gate_active, ..
                     } => !gate_active && *level < 0.001,
                     _ => false,
                 });
             let sampler_done = !has_sampler
-                || states[i].iter().any(|s| match s {
+                || state.iter().any(|s| match s {
                     PerModuleState::Sampler { active, .. } => !active,
                     _ => false,
                 });
@@ -1113,14 +1112,14 @@ fn prepare_voice_event_queues(
 
     for event in events {
         if let ScriptEvent::NoteOff { note } = &event.event {
-            for slot_idx in 0..max_voices {
+            for (slot_idx, pending) in voice_events[..max_voices].iter_mut().enumerate() {
                 if allocator
                     .slot(slot_idx)
                     .filter(|slot| slot.active)
                     .map(|slot| slot.note)
                     == Some(*note)
                 {
-                    voice_events[slot_idx].push(event.clone());
+                    pending.push(event.clone());
                 }
             }
         }
@@ -1138,11 +1137,11 @@ fn route_voice_input_events(
     voice_events: &mut Vec<BlockEvent>,
     voice_queues: &mut PreparedEventQueues,
 ) {
-    if let Some(midi_queue) = midi_input {
-        if let Some(queue) = voice_queues.queue_mut(midi_queue.0) {
-            for event in voice_events.drain(..) {
-                let _ = queue.push_at(event.event, event.frame_offset);
-            }
+    if let Some(midi_queue) = midi_input
+        && let Some(queue) = voice_queues.queue_mut(midi_queue.0)
+    {
+        for event in voice_events.drain(..) {
+            let _ = queue.push_at(event.event, event.frame_offset);
         }
     }
 }
@@ -1225,7 +1224,7 @@ fn accumulate_voice_outputs(
 
 #[cfg(test)]
 fn collect_accumulated_outputs(
-    accum: &mut Vec<Option<ModuleOutputs>>,
+    accum: &mut [Option<ModuleOutputs>],
     all_outputs: &mut HashMap<usize, ModuleOutputs>,
 ) {
     all_outputs.clear();
@@ -1308,11 +1307,11 @@ fn process_offline_script_step(
             }
             output_buffer += span.channel_count;
         } else {
-            if let Some(output_events) = rendered.event_ports.get(name) {
-                if let Some(queue) = event_queues.queue_mut(step.event_outputs[event_output].0) {
-                    for event in output_events {
-                        let _ = queue.push_at(event.event.clone(), event.frame_offset);
-                    }
+            if let Some(output_events) = rendered.event_ports.get(name)
+                && let Some(queue) = event_queues.queue_mut(step.event_outputs[event_output].0)
+            {
+                for event in output_events {
+                    let _ = queue.push_at(event.event.clone(), event.frame_offset);
                 }
             }
             event_output += 1;
@@ -2287,9 +2286,9 @@ pub(super) fn bind_prepared_step_executors(
                     sample_rate,
                 }),
                 PerModuleState::Echo { processor, .. } => Box::new(EchoStepExecutor { processor }),
-                PerModuleState::Reverb { processor, .. } => {
-                    Box::new(ReverbStepExecutor { processor })
-                }
+                PerModuleState::Reverb { processor, .. } => Box::new(ReverbStepExecutor {
+                    processor: *processor,
+                }),
                 PerModuleState::Adsr {
                     level,
                     gate_active,
@@ -2331,9 +2330,10 @@ pub(super) fn bind_prepared_step_executors(
                     sample_rate,
                     curve,
                 }),
-                PerModuleState::Script { runtime, state, .. } => {
-                    Box::new(ScriptStepExecutor { runtime, state })
-                }
+                PerModuleState::Script { runtime, state, .. } => Box::new(ScriptStepExecutor {
+                    runtime: *runtime,
+                    state,
+                }),
                 PerModuleState::Vca
                 | PerModuleState::ControlToAudio
                 | PerModuleState::Poly
@@ -2860,7 +2860,7 @@ pub(super) fn is_channel_arena_supported(step: &RenderStep) -> bool {
             step.input_buffers.len() == 3 && step.output_buffers.len() == 1
         }
         ModuleKind::FrequencySplitter => {
-            step.output_buffers.len() % 3 == 0
+            step.output_buffers.len().is_multiple_of(3)
                 && step.input_buffers.len() == step.output_buffers.len() / 3 + 1
         }
         ModuleKind::Echo => {

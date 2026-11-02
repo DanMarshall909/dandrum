@@ -276,26 +276,26 @@ fn ffi_symbols_and_signatures_were_unchanged_by_module_rename() {
             .arg(format!("{commit}:src/rust-engine/src/ffi.rs"))
             .current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."))
             .output();
-        if let Ok(output) = output {
-            if output.status.success() {
-                let source = String::from_utf8(output.stdout).unwrap();
-                let mut signatures = source
-                    .split("#[unsafe(no_mangle)]")
-                    .skip(1)
-                    .filter_map(|block| {
-                        let declaration = block.split('{').next()?;
-                        let start = declaration.find("pub unsafe extern \"C\" fn")?;
-                        Some(
-                            declaration[start..]
-                                .chars()
-                                .filter(|character| !character.is_whitespace())
-                                .collect::<String>(),
-                        )
-                    })
-                    .collect::<Vec<_>>();
-                signatures.sort();
-                assert_eq!(format!("{}\n", signatures.join("\n")), expected, "{commit}");
-            }
+        if let Ok(output) = output
+            && output.status.success()
+        {
+            let source = String::from_utf8(output.stdout).unwrap();
+            let mut signatures = source
+                .split("#[unsafe(no_mangle)]")
+                .skip(1)
+                .filter_map(|block| {
+                    let declaration = block.split('{').next()?;
+                    let start = declaration.find("pub unsafe extern \"C\" fn")?;
+                    Some(
+                        declaration[start..]
+                            .chars()
+                            .filter(|character| !character.is_whitespace())
+                            .collect::<String>(),
+                    )
+                })
+                .collect::<Vec<_>>();
+            signatures.sort();
+            assert_eq!(format!("{}\n", signatures.join("\n")), expected, "{commit}");
         }
     }
 }

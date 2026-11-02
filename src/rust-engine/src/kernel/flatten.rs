@@ -811,10 +811,10 @@ fn compose_interface(
             PortDirection::Input => {
                 let mut targets = Vec::new();
                 for internal in port.internal_targets() {
-                    if let Some(child) = child_interfaces.get(internal.node()) {
-                        if let Some(refs) = child.inputs.get(internal.port()) {
-                            targets.extend(refs.iter().cloned());
-                        }
+                    if let Some(child) = child_interfaces.get(internal.node())
+                        && let Some(refs) = child.inputs.get(internal.port())
+                    {
+                        targets.extend(refs.iter().cloned());
                     }
                 }
                 interface.inputs.insert(port.name().to_string(), targets);
@@ -822,10 +822,10 @@ fn compose_interface(
             PortDirection::Output => {
                 let mut sources = Vec::new();
                 for internal in port.internal_sources() {
-                    if let Some(child) = child_interfaces.get(internal.node()) {
-                        if let Some(refs) = child.outputs.get(internal.port()) {
-                            sources.extend(refs.iter().cloned());
-                        }
+                    if let Some(child) = child_interfaces.get(internal.node())
+                        && let Some(refs) = child.outputs.get(internal.port())
+                    {
+                        sources.extend(refs.iter().cloned());
                     }
                 }
                 interface.outputs.insert(port.name().to_string(), sources);

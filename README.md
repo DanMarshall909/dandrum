@@ -75,6 +75,7 @@ pre-push hook and the coverage driver use the same managed cache. The qualified
 toolchain is Cargo/Rust 1.96 with cargo-llvm-cov 0.8.7. Put the Cargo subcommand
 first; command-line configuration and build-directory overrides are refused.
 Tool installation, destructive cleaning and mutation use their separate workflows.
+CTest's `rust-engine-clippy` checks all engine targets with warnings treated as errors.
 
 Compatible builds share intermediate artifacts under the common Git directory;
 final products stay private to their build directories. Ordinary source edits

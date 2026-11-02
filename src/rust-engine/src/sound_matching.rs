@@ -387,7 +387,7 @@ where
             .collect();
         if phase < parameters.len() * 2 {
             let parameter = phase / 2;
-            let direction = if phase % 2 == 0 { 1.0 } else { -1.0 };
+            let direction = if phase.is_multiple_of(2) { 1.0 } else { -1.0 };
             normalized[parameter] = (normalized[parameter] + direction * radius).clamp(0.0, 1.0);
         } else {
             for value in &mut normalized {

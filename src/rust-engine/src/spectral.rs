@@ -70,7 +70,7 @@ impl SpectralProcessor {
         self.write_pos += 1;
 
         if self.write_pos >= self.frame_size
-            && (self.write_pos - self.frame_size) % self.hop_size == 0
+            && (self.write_pos - self.frame_size).is_multiple_of(self.hop_size)
         {
             self.process_frame();
             self.frames_processed += 1;

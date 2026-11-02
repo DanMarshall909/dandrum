@@ -70,9 +70,24 @@ class TriggerClapInstallTest(unittest.TestCase):
         pinned_rust = {(item["name"], item["version"])
                        for item in notices["rust_packages"]}
         self.assertEqual(pinned_rust, actual_rust)
+        metadata = subprocess.run(
+            ["cargo", "metadata", "--offline", "--locked", "--manifest-path",
+             str(ROOT / "src/clap-adapter/Cargo.toml"), "--features", "trigger-editor",
+             "--filter-platform", "x86_64-unknown-linux-gnu", "--format-version", "1"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(metadata.returncode, 0, metadata.stdout + metadata.stderr)
+        source_roots = {(item["name"], item["version"]): Path(item["manifest_path"]).parent
+                        for item in json.loads(metadata.stdout)["packages"]}
         for item in notices["rust_packages"]:
             if item["source"] != "first-party":
                 self.assertTrue(item["license_declaration"])
+                source = source_roots[item["name"], item["version"]]
+                for license_file in item["license_files"]:
+                    self.assertEqual(
+                        license_file["sha256"], digest(source / license_file["name"]),
+                        "runtime Rust licence text changed: " + item["name"] + "/" + license_file["name"],
+                    )
         npm = json.loads((ROOT / "web/trigger/package-lock.json").read_text())
         actual_js = {(path.removeprefix("node_modules/"), item["version"])
                      for path, item in npm["packages"].items()
@@ -80,6 +95,13 @@ class TriggerClapInstallTest(unittest.TestCase):
         pinned_js = {(item["name"], item["version"])
                      for item in notices["javascript_runtime_packages"]}
         self.assertEqual(pinned_js, actual_js)
+        for item in notices["javascript_runtime_packages"]:
+            for license_file in item["license_files"]:
+                self.assertEqual(
+                    license_file["sha256"],
+                    digest(ROOT / "web/trigger/node_modules" / item["name"] / license_file["name"]),
+                    "runtime JavaScript licence text changed: " + item["name"] + "/" + license_file["name"],
+                )
         for item in notices["bundled_font_notices"]:
             self.assertEqual(item["sha256"],
                              digest(ROOT / "web/trigger/public" / item["path"].removeprefix("editor/")))

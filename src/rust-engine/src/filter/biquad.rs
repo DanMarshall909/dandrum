@@ -25,29 +25,35 @@ pub struct BiquadFilter {
 
 impl BiquadFilter {
     pub fn new_lowpass(cutoff_norm: f64, q: f64) -> Self {
-        let mut filter = Self::default();
-        filter.mode = BiquadMode::Lowpass;
-        filter.cutoff_norm = cutoff_norm;
-        filter.q = q;
+        let mut filter = Self {
+            mode: BiquadMode::Lowpass,
+            cutoff_norm,
+            q,
+            ..Self::default()
+        };
         filter.set_coefficients_lowpass(cutoff_norm, q);
         filter
     }
 
     pub fn new_highpass(cutoff_norm: f64, q: f64) -> Self {
-        let mut filter = Self::default();
-        filter.mode = BiquadMode::Highpass;
-        filter.cutoff_norm = cutoff_norm;
-        filter.q = q;
+        let mut filter = Self {
+            mode: BiquadMode::Highpass,
+            cutoff_norm,
+            q,
+            ..Self::default()
+        };
         filter.set_coefficients_highpass(cutoff_norm, q);
         filter
     }
 
     pub fn new_peaking(cutoff_norm: f64, q: f64, gain_db: f64) -> Self {
-        let mut filter = Self::default();
-        filter.mode = BiquadMode::Peaking;
-        filter.cutoff_norm = cutoff_norm;
-        filter.q = q;
-        filter.gain_db = gain_db;
+        let mut filter = Self {
+            mode: BiquadMode::Peaking,
+            cutoff_norm,
+            q,
+            gain_db,
+            ..Self::default()
+        };
         filter.set_coefficients_peaking(cutoff_norm, q, gain_db);
         filter
     }

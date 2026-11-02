@@ -57,7 +57,7 @@ pub enum ModulePackageError {
     /// The entry file name does not mirror its folder name.
     NameMismatch { path: PathBuf, expected: String },
     /// Kernel graph-definition parsing or validation failed.
-    Kernel(Diagnostic),
+    Kernel(Box<Diagnostic>),
 }
 
 impl ModulePackageError {
@@ -81,7 +81,7 @@ impl ModulePackageError {
                     path.display()
                 ),
             ),
-            Self::Kernel(diagnostic) => diagnostic.clone(),
+            Self::Kernel(diagnostic) => diagnostic.as_ref().clone(),
         }
     }
 }
@@ -201,13 +201,13 @@ fn load_kernel_entry(
         ResourceOrigin::Package(root.to_path_buf()),
     )
     .map_err(|diagnostics| {
-        ModulePackageError::Kernel(
+        ModulePackageError::Kernel(Box::new(
             diagnostics
                 .all()
                 .first()
                 .cloned()
                 .expect("kernel parse failures always include a diagnostic"),
-        )
+        ))
     })?;
     let local_names = package
         .local_definition_names()

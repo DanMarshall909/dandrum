@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './fixtures.mjs';
 import {mkdir,writeFile} from 'node:fs/promises';
 test('all 24 supplied states are reached through ordinary actions and mock switches, with actual loading and recovery',async({page})=>{
  test.setTimeout(60000);const errors=[],captures=[],out=process.env.TRIGGER_CAPTURE;

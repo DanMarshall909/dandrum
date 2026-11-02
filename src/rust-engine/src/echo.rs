@@ -68,8 +68,15 @@ impl Echo {
     }
 
     pub fn set_delay_ms(&mut self, left_ms: f64, right_ms: f64) {
-        self.delay_ms_l = left_ms.max(1.0).min(2000.0);
-        self.delay_ms_r = right_ms.max(1.0).min(2000.0);
+        let bounded = |value: f64| {
+            if value.is_nan() {
+                1.0
+            } else {
+                value.clamp(1.0, 2000.0)
+            }
+        };
+        self.delay_ms_l = bounded(left_ms);
+        self.delay_ms_r = bounded(right_ms);
     }
 
     pub fn set_feedback(&mut self, fb: f32) {
@@ -172,6 +179,36 @@ mod tests {
 
         assert_eq!(left, 0.25);
         assert_eq!(right, -0.25);
+    }
+
+    #[test]
+    fn delay_bounds_preserve_signed_echo_timing_for_nonfinite_controls() {
+        for (left_ms, right_ms, left_frame, right_frame) in [
+            (f64::NAN, f64::NAN, 2, 2),
+            (f64::NEG_INFINITY, f64::INFINITY, 2, 2001),
+            (-10.0, 5000.0, 2, 2001),
+        ] {
+            let mut echo = Echo::new(1000.0);
+            echo.set_delay_ms(left_ms, right_ms);
+            echo.set_feedback(0.0);
+            echo.set_wet_dry(1.0, 0.0);
+            for frame in 0..2003 {
+                let input = if frame == 0 {
+                    (-0.75, 0.25)
+                } else {
+                    (0.0, 0.0)
+                };
+                let actual = echo.process(input.0, input.1);
+                let expected = (
+                    if frame == left_frame { -0.75 } else { 0.0 },
+                    if frame == right_frame { 0.25 } else { 0.0 },
+                );
+                assert_eq!(
+                    actual, expected,
+                    "delays {left_ms}/{right_ms}, frame {frame}"
+                );
+            }
+        }
     }
 
     #[test]

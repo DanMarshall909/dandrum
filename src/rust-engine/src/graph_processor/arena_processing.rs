@@ -123,6 +123,10 @@ pub(super) fn process_sampler_state(
     }
 }
 
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Shared signal kernel borrows independent prepared and reference state fields"
+)]
 pub(super) fn process_sample_player_state(
     sample: &Option<crate::compiled_patch::SampleResourceHandle>,
     region: &SampleRegion,
@@ -320,6 +324,10 @@ fn sample_region_boundary_gain(
     fade(from_start, fade_in_frames) * fade(to_end, fade_out_frames)
 }
 
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Shared signal kernel borrows independent prepared and reference state fields"
+)]
 pub(super) fn process_sample_slicer_state(
     sample: &Option<crate::compiled_patch::SampleResourceHandle>,
     slices: &[SampleSlice],
@@ -418,6 +426,10 @@ fn next_sample_selection_random(state: &mut u64) -> u64 {
     value ^ (value >> 31)
 }
 
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Shared signal kernel borrows independent prepared and reference state fields"
+)]
 pub(super) fn process_sample_map_player_state(
     zones: &[crate::compiled_patch::CompiledSampleZone],
     key_candidates: &crate::compiled_patch::SampleMapKeyLookup,
@@ -641,29 +653,29 @@ pub(super) fn select_sample_map_zone(
             .iter()
             .copied()
             .filter(|index| matches(*index))
-            .find_map(|index| {
-                if ticket < u64::from(zones[index].weight) {
-                    Some(index)
+            .find(|index| {
+                if ticket < u64::from(zones[*index].weight) {
+                    true
                 } else {
-                    ticket -= u64::from(zones[index].weight);
-                    None
+                    ticket -= u64::from(zones[*index].weight);
+                    false
                 }
             });
     }
-    if selection_mode == SampleSelectionMode::RoundRobin {
-        if let Some(group) = zones[first].round_robin_group {
-            let count = key_candidates
-                .iter()
-                .filter(|index| matches(**index) && zones[**index].round_robin_group == Some(group))
-                .count();
-            let turn = round_robin_counters[group] % count;
-            round_robin_counters[group] = round_robin_counters[group].wrapping_add(1);
-            return key_candidates
-                .iter()
-                .copied()
-                .filter(|index| matches(*index) && zones[*index].round_robin_group == Some(group))
-                .nth(turn);
-        }
+    if selection_mode == SampleSelectionMode::RoundRobin
+        && let Some(group) = zones[first].round_robin_group
+    {
+        let count = key_candidates
+            .iter()
+            .filter(|index| matches(**index) && zones[**index].round_robin_group == Some(group))
+            .count();
+        let turn = round_robin_counters[group] % count;
+        round_robin_counters[group] = round_robin_counters[group].wrapping_add(1);
+        return key_candidates
+            .iter()
+            .copied()
+            .filter(|index| matches(*index) && zones[*index].round_robin_group == Some(group))
+            .nth(turn);
     }
     Some(first)
 }
@@ -784,10 +796,10 @@ pub(super) fn process_note_to_rate_state(
 ) {
     for frame in 0..context.frames() {
         for event in events {
-            if event.frame_offset as usize == frame {
-                if let ScriptEvent::NoteOn { note, .. } = &event.event {
-                    *rate = 2.0f32.powf((f32::from(*note) - 60.0) / 12.0);
-                }
+            if event.frame_offset as usize == frame
+                && let ScriptEvent::NoteOn { note, .. } = &event.event
+            {
+                *rate = 2.0f32.powf((f32::from(*note) - 60.0) / 12.0);
             }
         }
         context
@@ -826,7 +838,10 @@ pub(super) fn process_note_to_control(
     );
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Shared signal kernel borrows independent prepared and reference state fields"
+)]
 pub(super) fn process_note_to_control_state(
     gate_active: &mut bool,
     current_note: &mut Option<u8>,
@@ -921,7 +936,6 @@ pub(super) fn process_decay(
     );
 }
 
-#[allow(clippy::too_many_arguments)]
 pub(super) fn process_decay_state(
     level: &mut f32,
     triggered: &mut bool,
@@ -984,83 +998,6 @@ pub(super) fn process_spectral_processor_state(
         context
             .set_output_sample(0, frame, processed * mix + audio * (1.0 - mix))
             .expect("spectral output is present in a supported arena step");
-    }
-}
-
-#[cfg(test)]
-mod sampler_tests {
-    use super::super::audio_arena::AudioArena;
-    use super::super::render_plan::{AudioBufferPlan, BufferId};
-    use super::*;
-
-    #[test]
-    fn nonfinite_variation_keeps_the_authored_hit() {
-        let zone = crate::compiled_patch::CompiledSampleZone {
-            sample: crate::compiled_patch::SampleResourceHandle::new(
-                crate::sample::LoadedSample::new(48_000, vec![0.5]),
-            ),
-            region: SampleRegion {
-                id: "hit".to_string(),
-                start_frame: 0,
-                end_frame: 1,
-                root_note: None,
-                gain_db: None,
-                pan: None,
-                reverse: false,
-                fade_in_ms: None,
-                fade_out_ms: None,
-                loop_settings: None,
-            },
-            key_range: [36, 36],
-            velocity_range: [1, 127],
-            round_robin_group: Some(0),
-            choke_group: None,
-            control_group: None,
-            weight: 1,
-            gain: 1.0,
-            pan: 0.0,
-            pitch_ratio: 1.0,
-            playback_rate_scale: 1.0,
-            fade_in_frames: 0,
-            fade_out_frames: 0,
-        };
-        let zones = [zone.clone(), zone];
-        for variation in [f32::INFINITY, f32::NEG_INFINITY, f32::NAN] {
-            assert_eq!(
-                sample_zone_with_variation(&zones, &[0, 1], 0, 100, variation),
-                0
-            );
-        }
-        assert_eq!(sample_zone_with_variation(&zones, &[0, 1], 0, 100, 1.0), 1);
-    }
-
-    #[test]
-    fn sampler_without_decoded_frames_clears_its_output_span() {
-        let mut arena = AudioArena::new(AudioBufferPlan {
-            buffer_count: 6,
-            max_block_frames: 4,
-            max_voices: 1,
-        });
-        arena.fill(BufferId(5), 4, 0.75);
-        let inputs = [
-            BufferId(0),
-            BufferId(1),
-            BufferId(2),
-            BufferId(3),
-            BufferId(4),
-        ];
-        let outputs = [BufferId(5)];
-        let mut context = ProcessContext::new(&mut arena, &inputs, &outputs, 4);
-        let mut state = PerModuleState::Sampler {
-            sample: None,
-            position: 0.0,
-            active: false,
-        };
-
-        process_sampler(&mut state, &mut context, &[]);
-
-        assert_eq!(arena.sample(BufferId(5), 0), 0.0);
-        assert_eq!(arena.sample(BufferId(5), 3), 0.0);
     }
 }
 
@@ -1226,7 +1163,10 @@ pub(super) fn process_adsr(
     );
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Shared signal kernel borrows independent prepared and reference state fields"
+)]
 pub(super) fn process_adsr_state(
     level: &mut f32,
     gate_active: &mut bool,
@@ -1670,4 +1610,81 @@ fn lerp(min: f32, max: f32, normalized: f32) -> f32 {
 
 fn finite_or_zero(value: f32) -> f32 {
     if value.is_finite() { value } else { 0.0 }
+}
+
+#[cfg(test)]
+mod sampler_tests {
+    use super::super::audio_arena::AudioArena;
+    use super::super::render_plan::{AudioBufferPlan, BufferId};
+    use super::*;
+
+    #[test]
+    fn nonfinite_variation_keeps_the_authored_hit() {
+        let zone = crate::compiled_patch::CompiledSampleZone {
+            sample: crate::compiled_patch::SampleResourceHandle::new(
+                crate::sample::LoadedSample::new(48_000, vec![0.5]),
+            ),
+            region: SampleRegion {
+                id: "hit".to_string(),
+                start_frame: 0,
+                end_frame: 1,
+                root_note: None,
+                gain_db: None,
+                pan: None,
+                reverse: false,
+                fade_in_ms: None,
+                fade_out_ms: None,
+                loop_settings: None,
+            },
+            key_range: [36, 36],
+            velocity_range: [1, 127],
+            round_robin_group: Some(0),
+            choke_group: None,
+            control_group: None,
+            weight: 1,
+            gain: 1.0,
+            pan: 0.0,
+            pitch_ratio: 1.0,
+            playback_rate_scale: 1.0,
+            fade_in_frames: 0,
+            fade_out_frames: 0,
+        };
+        let zones = [zone.clone(), zone];
+        for variation in [f32::INFINITY, f32::NEG_INFINITY, f32::NAN] {
+            assert_eq!(
+                sample_zone_with_variation(&zones, &[0, 1], 0, 100, variation),
+                0
+            );
+        }
+        assert_eq!(sample_zone_with_variation(&zones, &[0, 1], 0, 100, 1.0), 1);
+    }
+
+    #[test]
+    fn sampler_without_decoded_frames_clears_its_output_span() {
+        let mut arena = AudioArena::new(AudioBufferPlan {
+            buffer_count: 6,
+            max_block_frames: 4,
+            max_voices: 1,
+        });
+        arena.fill(BufferId(5), 4, 0.75);
+        let inputs = [
+            BufferId(0),
+            BufferId(1),
+            BufferId(2),
+            BufferId(3),
+            BufferId(4),
+        ];
+        let outputs = [BufferId(5)];
+        let mut context = ProcessContext::new(&mut arena, &inputs, &outputs, 4);
+        let mut state = PerModuleState::Sampler {
+            sample: None,
+            position: 0.0,
+            active: false,
+        };
+
+        process_sampler(&mut state, &mut context, &[]);
+
+        assert_eq!(arena.sample(BufferId(5), 0), 0.0);
+        assert_eq!(arena.sample(BufferId(5), 3), 0.0);
+    }
 }

@@ -31,7 +31,7 @@ use crate::graph::{Graph, ModuleId, ModuleNode, SignalType};
 use crate::kernel::PolyAllocationPolicy;
 use crate::kernel::StaticValue;
 use crate::kernel::document::{SampleRegion, SampleSlice};
-use crate::kernel::flatten::FlattenedGraph;
+use crate::kernel::flatten::{FlattenedGraph, FlattenedPolyRegion};
 use crate::oscillator::Waveform;
 #[cfg(test)]
 use crate::patch::RenderSettings;
@@ -93,10 +93,7 @@ pub struct CompiledPolyOutputAccumulator {
 
 impl CompiledPolyRegion {
     pub(crate) fn new(
-        node_id: impl Into<String>,
-        max_voices: usize,
-        allocation_policy: PolyAllocationPolicy,
-        sample_map_choke: Option<(SampleChokeMode, u32)>,
+        declaration: &FlattenedPolyRegion,
         flattened_voice: FlattenedGraph,
         child_patch: CompiledPatch,
         voices: Vec<CompiledPolyVoiceStorage>,
@@ -105,10 +102,17 @@ impl CompiledPolyRegion {
     ) -> Self {
         let child_schedule = child_patch.execution_order().to_vec().into_boxed_slice();
         Self {
-            node_id: node_id.into(),
-            max_voices,
-            allocation_policy,
-            sample_map_choke,
+            node_id: declaration.node_id().as_str().to_owned(),
+            max_voices: declaration.max_voices(),
+            allocation_policy: declaration.allocation_policy(),
+            sample_map_choke: declaration.sample_map_choke().map(|(mode, fade_ms)| {
+                let mode = match mode {
+                    "fade" => SampleChokeMode::Fade,
+                    "release" => SampleChokeMode::Release,
+                    _ => SampleChokeMode::Cut,
+                };
+                (mode, fade_ms)
+            }),
             flattened_voice,
             child_patch: Box::new(child_patch),
             child_schedule,
@@ -1158,13 +1162,13 @@ fn compile_internal(
                     module_id: module.id().as_str().to_string(),
                     parameter_name: "compiled_node_data".to_string(),
                 })?;
-            if let CompiledConstruction::FeedbackDelay { samples } = &data.construction {
-                if *samples < render_settings.block_size_frames as usize {
-                    return Err(CompileError::InvalidConstructionData {
-                        module_id: module.id().as_str().to_string(),
-                        parameter_name: DELAY_SAMPLES_PARAMETER.to_string(),
-                    });
-                }
+            if let CompiledConstruction::FeedbackDelay { samples } = &data.construction
+                && *samples < render_settings.block_size_frames as usize
+            {
+                return Err(CompileError::InvalidConstructionData {
+                    module_id: module.id().as_str().to_string(),
+                    parameter_name: DELAY_SAMPLES_PARAMETER.to_string(),
+                });
             }
             let input_channel_counts = module
                 .inputs()

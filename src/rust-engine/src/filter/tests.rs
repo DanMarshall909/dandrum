@@ -1,4 +1,6 @@
-use super::{BiquadFilter, CombFilter, CombType, FilterAlgorithm, MoogLadder, OnePoleFilter};
+use super::{
+    BiquadFilter, BiquadMode, CombFilter, CombType, FilterAlgorithm, MoogLadder, OnePoleFilter,
+};
 use crate::filter::one_pole::OnePoleMode;
 
 fn run_filter_response<F>(filter: &mut F, sample_rate: f64, impulse_len: usize) -> Vec<(f64, f64)>
@@ -6,9 +8,9 @@ where
     F: FilterAlgorithm,
 {
     let mut out = vec![0.0f32; impulse_len];
-    for i in 0..impulse_len {
+    for (i, output) in out.iter_mut().enumerate() {
         let impulse = if i == 0 { 1.0 } else { 0.0 };
-        out[i] = filter.process(impulse);
+        *output = filter.process(impulse);
     }
     filter.reset();
     crate::fft::compute_magnitude_response(&out, sample_rate).bins
@@ -25,6 +27,38 @@ fn magnitude_at(bins: &[(f64, f64)], target_norm: f64, sample_rate: f64) -> f64 
         })
         .map(|&(_, db)| db)
         .unwrap_or(-100.0)
+}
+
+#[test]
+fn biquad_constructors_retain_signed_impulses_when_controls_refresh() {
+    // At one quarter of the sample rate and Q=1/2 the low/high-pass
+    // impulse coefficients are [1/4, +/-1/2, 1/4]. The peaking gain
+    // 20*log10(4) gives A=2, b0=2, b2=-2/3 and a2=1/3.
+    for (mode, expected) in [
+        (BiquadMode::Lowpass, [-0.1875, -0.375, -0.1875, 0.0, 0.0]),
+        (BiquadMode::Highpass, [-0.1875, 0.375, -0.1875, 0.0, 0.0]),
+        (BiquadMode::Peaking, [-1.5, 0.0, 1.0, 0.0, -1.0 / 3.0]),
+    ] {
+        for refresh in 0..3 {
+            let mut filter = match mode {
+                BiquadMode::Lowpass => BiquadFilter::new_lowpass(0.25, 0.5),
+                BiquadMode::Highpass => BiquadFilter::new_highpass(0.25, 0.5),
+                BiquadMode::Peaking => BiquadFilter::new_peaking(0.25, 0.5, 20.0 * 4.0_f64.log10()),
+            };
+            if refresh == 1 {
+                filter.set_cutoff(12_000.0, 48_000.0);
+            } else if refresh == 2 {
+                filter.set_resonance(0.5);
+            }
+            for (frame, expected) in expected.into_iter().enumerate() {
+                let actual = filter.process(if frame == 0 { -0.75 } else { 0.0 });
+                assert!(
+                    (actual - expected).abs() < 1e-6,
+                    "{mode:?} refresh {refresh}, frame {frame}: {actual} != {expected}"
+                );
+            }
+        }
+    }
 }
 
 #[test]
@@ -295,9 +329,9 @@ fn fft_moog_resonance_peak_at_cutoff() {
     filter.set_resonance(0.8);
     let impulse_len = 8192;
     let mut out = vec![0.0f32; impulse_len];
-    for i in 0..impulse_len {
+    for (i, output) in out.iter_mut().enumerate() {
         let impulse = if i == 0 { 1.0 } else { 0.0 };
-        out[i] = filter.process(impulse);
+        *output = filter.process(impulse);
     }
     filter.reset();
     let response = crate::fft::compute_magnitude_response(&out, 48000.0).bins;
@@ -319,9 +353,9 @@ fn fft_moog_rolloff_slope() {
     filter.set_resonance(0.0);
     let impulse_len = 16384;
     let mut out = vec![0.0f32; impulse_len];
-    for i in 0..impulse_len {
+    for (i, output) in out.iter_mut().enumerate() {
         let impulse = if i == 0 { 1.0 } else { 0.0 };
-        out[i] = filter.process(impulse);
+        *output = filter.process(impulse);
     }
     filter.reset();
     let response = crate::fft::compute_magnitude_response(&out, 48000.0).bins;

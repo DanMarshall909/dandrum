@@ -95,7 +95,20 @@ export class Store {
   }
   /** @param {string} id */
   beginGesture(id){this.gesture={id,sequence:++this.gestureSequence,start:this.undoStack.length};return this.hostGesture('beginHostGesture',id);}
-  cancelGesture(){const gesture=this.gesture;this.gesture=null;if(!gesture)return;return this.run(async()=>{while(true){const entry=this.undoStack.at(-1);if(!entry||entry.gesture!==gesture.sequence)break;await entry.command.undo(this.engine);this.undoStack.pop();}if(this.engine.getPatch().params[gesture.id])await this.engine.endHostGesture?.(gesture.id);this.notify();});}
+  cancelGesture(){
+    const gesture=this.gesture;this.gesture=null;if(!gesture)return;
+    return this.run(async()=>{
+      try{
+        while(true){
+          const entry=this.undoStack.at(-1);if(!entry||entry.gesture!==gesture.sequence)break;
+          await entry.command.undo(this.engine);this.undoStack.pop();
+        }
+      }finally{
+        if(this.engine.getPatch().params[gesture.id])await this.engine.endHostGesture?.(gesture.id);
+        this.notify();
+      }
+    });
+  }
   /** @param {string} id */
   endGesture(id){if(this.gesture?.id!==id)return;this.gesture=null;return this.hostGesture('endHostGesture',id);}
   /** @param {'beginHostGesture'|'endHostGesture'} method @param {string} id */
