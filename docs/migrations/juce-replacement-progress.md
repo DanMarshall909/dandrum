@@ -7,8 +7,9 @@ Scope: [JUCE replacement](https://github.com/DanMarshall909/dandrum/issues/24), 
 Tasks 7.3 and 8.1 passed named-DAW and current-source qualification after the
 1 November integration described below. Task 8.2 now has a
 [complete requirement/evidence audit](evidence/trigger-beta-completion-2026-11-03/README.md)
-and proposed mappings for all 18 beta scenarios, awaiting independent completion
-review and exact canonical synchronization/publication. Current criterion
+and independently reviewed canonical mappings for all 18 beta scenarios. All
+17 retained beta tasks are complete; strict canonical validation and the exact
+reviewed publication envelope passed. Current criterion
 completion is recorded in the [task list](../../openspec/changes/add-juce-free-trigger-beta-products/tasks.md).
 The beta remains private/local; historical REAPER evidence and current native
 qualification keep their separate artifact identities and documented limits.

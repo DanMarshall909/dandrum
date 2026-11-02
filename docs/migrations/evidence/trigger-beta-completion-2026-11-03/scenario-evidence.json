@@ -1,5 +1,5 @@
 {
-  "scope": "18 reviewed beta scenarios; canonical sync awaits independent PASS",
+  "scope": "18 reviewed beta scenarios; canonical sync approved and validated",
   "scenarios": [
     {
       "capability": "juce-free-trigger-products",

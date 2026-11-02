@@ -1,8 +1,9 @@
 # Trigger CLAP beta final acceptance audit — 3 November 2026
 
 Scope: task **8.2** of `add-juce-free-trigger-beta-products`, the private/local
-Linux x86_64 X11 Trigger CLAP beta. This candidate awaits independent completion
-review and the exact canonical-sync/publication envelope. The task checkbox is
+Linux x86_64 X11 Trigger CLAP beta. Independent completion review and the exact
+canonical synchronization/validation envelope passed: all 18 beta scenarios are
+proven and all 17 retained tasks are complete. The task checkbox is
 the criterion-completion authority; `.git/codex/deferred-work.md` owns workflow
 status. The broader JUCE migration, VST3, AU, standalone and other OS/host support
 remain outside this completion claim.
@@ -122,13 +123,13 @@ were caused by this task.
 
 ## Canonical synchronization and completion gate
 
-[`canonical-sync.patch`](canonical-sync.patch) is the exact proposed post-review
+[`canonical-sync.patch`](canonical-sync.patch) records the exact reviewed
 transformation: add the two canonical specs without changing any accepted
 requirement/scenario body, and append 18 genuine test mappings. No existing
-fingerprint or ratchet entry is rewritten. The proposed result already passes
+fingerprint or ratchet entry is rewritten. The synchronized result passes
 strict validation of all **55** canonical specs and the mapping check:
-**657 scenarios / 418 mapped / 239 unchanged backlog**. Canonical files remain
-unchanged until independent PASS. The active change remains available for a
+**657 scenarios / 418 mapped / 239 unchanged backlog**. Canonical files were synchronized only after independent PASS, using the
+reviewed patch verbatim. The active change remains available for a
 separate archive operation after completion.
 
 The publication envelope records the candidate/base IDs, exact content hashes,
