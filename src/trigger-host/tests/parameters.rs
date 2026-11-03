@@ -1339,3 +1339,154 @@ fn public_index_reads_exact_applied_physical_atoms_without_allocating() {
         (0, 0, 0)
     );
 }
+
+#[test]
+fn every_public_descriptor_and_normalized_write_retains_named_physical_policy() {
+    let (_package, root) = package();
+    let (mut owner, mut audio) =
+        ParameterController::open(root, configuration(), NonZeroU64::new(51).unwrap(), 64, 256)
+            .unwrap();
+    let expected = [
+        ("drums.pitch_ratio", 0.125, 8.0, 1.0, None),
+        ("drums.start_offset", 0.0, 1.0, 0.0, None),
+        ("drums.level", 0.0, 4.0, 1.0, None),
+        ("drums.pan", -1.0, 1.0, 0.0, None),
+        ("drums.variation", 0.0, 1.0, 0.0, None),
+        ("drums.kick.pitch_ratio", 0.125, 8.0, 1.0, Some(1)),
+        ("drums.kick.start_offset", 0.0, 1.0, 0.0, Some(1)),
+        ("drums.kick.level", 0.0, 4.0, 1.0, Some(1)),
+        ("drums.kick.pan", -1.0, 1.0, 0.0, Some(1)),
+        ("drums.snare.pitch_ratio", 0.125, 8.0, 1.0, Some(2)),
+        ("drums.snare.start_offset", 0.0, 1.0, 0.0, Some(2)),
+        ("drums.snare.level", 0.0, 4.0, 1.0, Some(2)),
+        ("drums.snare.pan", -1.0, 1.0, 0.0, Some(2)),
+        ("drums.snare.variation", 0.0, 1.0, 0.0, Some(2)),
+        ("drums.closed_hat.pitch_ratio", 0.125, 8.0, 1.0, Some(3)),
+        ("drums.closed_hat.start_offset", 0.0, 1.0, 0.0, Some(3)),
+        ("drums.closed_hat.level", 0.0, 4.0, 1.0, Some(3)),
+        ("drums.closed_hat.pan", -1.0, 1.0, 0.0, Some(3)),
+        ("drums.open_hat.pitch_ratio", 0.125, 8.0, 1.0, Some(4)),
+        ("drums.open_hat.start_offset", 0.0, 1.0, 0.0, Some(4)),
+        ("drums.open_hat.level", 0.0, 4.0, 1.0, Some(4)),
+        ("drums.open_hat.pan", -1.0, 1.0, 0.0, Some(4)),
+        ("drums.open_hat.variation", 0.0, 1.0, 0.0, Some(4)),
+    ];
+    assert_eq!(owner.parameters().len(), expected.len());
+    let editor = owner.attach_editor().unwrap();
+    let before = owner.session().owner_snapshot();
+    for (index, (id, min, max, default, group)) in expected.iter().enumerate() {
+        let p = &owner.parameters()[index];
+        assert_eq!(
+            (
+                &*p.id,
+                p.root_index,
+                p.physical_min,
+                p.physical_max,
+                p.physical_default,
+                p.control_group
+            ),
+            (*id, index, *min, *max, *default, *group)
+        );
+        let normalized = (index + 1) as f64 / 32.0;
+        let command = request(
+            &mut owner,
+            &editor.attachment_id,
+            index as u64 + 1,
+            "setParameter",
+            json!([id, normalized, 1]),
+        );
+        owner.apply(&command).unwrap();
+    }
+    audio.flush_parameters(&[]).unwrap();
+    for (index, (_, min, max, _, _)) in expected.iter().enumerate() {
+        let value = min + (max - min) * (index + 1) as f64 / 32.0;
+        assert_eq!(owner.physical_value(index), Some(value));
+    }
+    assert_eq!(
+        owner.session().owner_snapshot(),
+        before,
+        "scalar controls never create native history"
+    );
+}
+
+#[test]
+fn metadata_only_public_surface_matches_the_owner_without_decoding_or_creating_sound() {
+    use dandrum_trigger_host::parameters::public_parameters_from_resources;
+    let (_package, root) = package();
+    let (owner, mut audio) = ParameterController::open(
+        &root,
+        configuration(),
+        NonZeroU64::new(53).unwrap(),
+        64,
+        256,
+    )
+    .unwrap();
+    let snapshot = owner.session().owner_snapshot();
+    std::fs::write(root.join(ADVANCED_DRUM_KIT_SAMPLE), b"not playable PCM").unwrap();
+    let descriptors = public_parameters_from_resources(&root).unwrap();
+    assert_eq!(descriptors, owner.parameters());
+    for (index, p) in descriptors.iter().enumerate() {
+        let normalized = (index + 1) as f64 / 32.0;
+        let expected = p.physical_min + (p.physical_max - p.physical_min) * normalized;
+        assert_eq!(p.normalized_to_physical(normalized), Some(expected));
+        assert!((p.physical_to_normalized(expected).unwrap() - normalized).abs() < 1e-14);
+        assert_eq!(p.normalized_to_physical(0.0), Some(p.physical_min));
+        assert_eq!(p.normalized_to_physical(1.0), Some(p.physical_max));
+        for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, -0.1, 1.1] {
+            assert_eq!(p.normalized_to_physical(bad), None);
+        }
+        for bad in [
+            f64::NAN,
+            f64::INFINITY,
+            p.physical_min - 1.0,
+            p.physical_max + 1.0,
+        ] {
+            assert_eq!(p.physical_to_normalized(bad), None);
+        }
+    }
+    assert!(
+        ParameterController::open(
+            &root,
+            configuration(),
+            NonZeroU64::new(54).unwrap(),
+            64,
+            256
+        )
+        .is_err(),
+        "a sound owner must decode the actual resource"
+    );
+    audio
+        .process_events(&mut [0.0; 16], &mut [0.0; 16], &[])
+        .unwrap();
+    let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
+    audio
+        .process_events(
+            &mut left,
+            &mut right,
+            &[TimedEvent {
+                frame_offset: 0,
+                event: ControlEvent::NoteOn {
+                    note: 36,
+                    velocity: 127,
+                },
+            }],
+        )
+        .unwrap();
+    assert_eq!((left[0], right[0]), (-0.5, -0.5));
+    assert_eq!(owner.session().owner_snapshot(), snapshot);
+    assert!(public_parameters_from_resources(&root.join("missing")).is_err());
+    let doc = root.join(ADVANCED_DRUM_KIT_DOCUMENT);
+    let original = std::fs::read_to_string(&doc).unwrap();
+    std::fs::write(
+        &doc,
+        original.replacen(", maps_to: player.pitch_ratio", "", 1),
+    )
+    .unwrap();
+    let unconnected = public_parameters_from_resources(&root).unwrap();
+    assert_eq!(
+        unconnected[0], descriptors[0],
+        "an unconnected global control retains its descriptor without a group"
+    );
+    std::fs::write(doc, "this is not a kernel document").unwrap();
+    assert!(public_parameters_from_resources(&root).is_err());
+}

@@ -10,7 +10,15 @@
         "date": "2026-09-29",
         "evidence": "docs/resource-measurements/2026-09-29-rust-coverage.json",
         "durationSeconds": 60,
-        "completedRunDurationsSeconds": [60, 59, 60, 57, 57, 59, 58],
+        "completedRunDurationsSeconds": [
+          60,
+          59,
+          60,
+          57,
+          57,
+          59,
+          58
+        ],
         "taskConcurrency": 1,
         "minimumAvailableMiB": 17861,
         "peakTaskSwapMiB": 0,
@@ -23,9 +31,9 @@
           "reserveMiB": 8192,
           "outputGrowthMiB": 8192,
           "tempGrowthMiB": 1024,
-          "retainedBudgetMiB": 65536,
+          "retainedBudgetMiB": 81920,
           "basis": "estimated",
-          "estimateReason": "One serial Trigger Rust test, LLVM coverage or native verification build. Allows 8 GiB cache/output growth plus 1 GiB scratch and preserves an 8 GiB free-space reserve. The managed Cargo driver applies the 64 GiB admission/retention budget to owned ordinary and instrumented intermediates and registered private Cargo outputs. It preserves current warm state and retires only inactive owned generations when space is needed. Native fixtures retain the current copy and latest failure logs; other native/CMake outputs require separate storage review. Completion measurement detects overruns; this is not a filesystem quota."
+          "estimateReason": "One serial Trigger Rust test, LLVM coverage or native verification build. Allows 8 GiB cache/output growth plus 1 GiB scratch and preserves an 8 GiB free-space reserve. The managed Cargo driver applies the configured admission/retention budget to owned ordinary and instrumented intermediates and registered private Cargo outputs. It preserves current warm state and retires only inactive owned generations when space is needed. Native fixtures retain the current copy and latest failure logs; other native/CMake outputs require separate storage review. Completion measurement detects overruns; this is not a filesystem quota. For the approved 2026-11-03 VST3 proof, retain up to 80 GiB to prevent automatic eviction of the 34.14 GiB starting cache while admitting a single 8 GiB job. Actual cumulative new output remains capped separately at the approved 32 GiB; this retention ceiling grants no additional output growth."
         },
         "trigger-vst3-proof": {
           "reserveMiB": 8192,
@@ -33,7 +41,7 @@
           "tempGrowthMiB": 2048,
           "retainedBudgetMiB": 8192,
           "basis": "estimated",
-          "estimateReason": "Dan approved the Linux/REAPER VST3 proof on 2026-11-03: at most 12 active execution hours before reassessment, one heavy producer, at most four compiler jobs, 32 GiB incremental outputs (raised from 16 GiB by Dan's explicit go-ahead after reassessment) plus 2 GiB scratch and an 8 GiB available RAM/free-disk floor. This workload covers VST3-specific native outputs/evidence (8 GiB retained); the existing managed Cargo workload retains its independent 64 GiB shared-cache policy. Preserve reusable caches and dependencies. Mutation excluded. Estimates are admission allowances, not a quota or measured peak."
+          "estimateReason": "Dan approved the Linux/REAPER VST3 proof on 2026-11-03: at most 12 active execution hours before reassessment, one heavy producer, at most four compiler jobs, 32 GiB incremental outputs (raised from 16 GiB by Dan's explicit go-ahead after reassessment) plus 2 GiB scratch and an 8 GiB available RAM/free-disk floor. This workload covers VST3-specific native outputs/evidence (8 GiB retained); the existing managed Cargo workload retains its shared-cache admission policy, temporarily raised to an 80 GiB retention ceiling to preserve all starting generations within the separate 32 GiB incremental-output cap. Preserve reusable caches and dependencies. Mutation excluded. Estimates are admission allowances, not a quota or measured peak."
         }
       }
     }

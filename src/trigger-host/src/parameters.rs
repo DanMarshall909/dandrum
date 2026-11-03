@@ -11,7 +11,7 @@ use crate::protocol::{
 use crate::runtime::{
     PreparedRuntime, QuiescentReport, RuntimeAudio, RuntimeControl, RuntimeError, runtime_handoff,
 };
-use crate::{TriggerHost, TriggerHostConfiguration};
+use crate::{PackagedResources, TriggerHost, TriggerHostConfiguration};
 use dandrum_engine::kernel::document::load_kernel_patch_str;
 use std::{collections::VecDeque, num::NonZeroU64, path::Path};
 
@@ -66,13 +66,102 @@ pub struct PublicParameter {
 }
 
 impl PublicParameter {
+    /// Shared linear conversion. No allocation or DSP precision narrowing.
+    pub fn normalized_to_physical(&self, normalized: f64) -> Option<f64> {
+        (0.0..=1.0).contains(&normalized).then(|| {
+            (self.physical_min + normalized * (self.physical_max - self.physical_min))
+                .clamp(self.physical_min, self.physical_max)
+        })
+    }
+    pub fn physical_to_normalized(&self, physical: f64) -> Option<f64> {
+        (self.physical_min..=self.physical_max)
+            .contains(&physical)
+            .then(|| self.normalized_scalar(physical))
+    }
+    fn normalized_scalar(&self, physical: f64) -> f64 {
+        (physical - self.physical_min) / (self.physical_max - self.physical_min)
+    }
     fn project(&self, physical: f64) -> ParameterValue {
         ParameterValue {
             id: self.id.clone(),
             name: self.id.clone(),
-            value: (physical - self.physical_min) / (self.physical_max - self.physical_min),
+            value: self.normalized_scalar(physical),
         }
     }
+}
+
+/// Read immutable product descriptors without creating an InstrumentSession or
+/// decoding samples. Playability remains the processor-owned host's decision.
+pub fn public_parameters_from_resources(
+    root: &Path,
+) -> Result<Vec<PublicParameter>, ParameterError> {
+    let resources =
+        PackagedResources::open(root).map_err(|error| ParameterError::Host(error.to_string()))?;
+    public_parameters_from_document(resources.document())
+}
+fn public_parameters_from_document(document: &str) -> Result<Vec<PublicParameter>, ParameterError> {
+    let patch =
+        load_kernel_patch_str(document).map_err(|error| ParameterError::Host(error.to_string()))?;
+    let mut parameters = Vec::new();
+    for alias in patch.preset_surface().parameters() {
+        let range = alias.control_default();
+        let (Some(min), Some(max)) = (range.min(), range.max()) else {
+            return Err(ParameterError::InvalidSurface);
+        };
+        if min >= max || !(min as f32).is_finite() || !(max as f32).is_finite() {
+            return Err(ParameterError::InvalidSurface);
+        }
+        let (root_index, root_port) = patch
+            .root()
+            .ports()
+            .iter()
+            .filter(|port| port.direction() == dandrum_engine::graph::PortDirection::Input)
+            .enumerate()
+            .find(|(_, port)| port.name() == alias.port_name())
+            .expect("kernel parser resolves aliases to root control inputs");
+        if parameters
+            .iter()
+            .any(|parameter: &PublicParameter| parameter.root_index == root_index)
+        {
+            return Err(ParameterError::InvalidSurface);
+        }
+        let control_group = match root_port.internal_targets() {
+            [target] => Some(target),
+            _ => None,
+        }
+        .and_then(|target| {
+            patch
+                .root()
+                .nodes()
+                .iter()
+                .find(|node| node.id() == target.node())
+                .filter(|node| node.definition_ref() == "sample_map_player")
+                .map(|_| target)
+        })
+        .and_then(|target| target.port().strip_prefix("group_"))
+        .and_then(|suffix| suffix.split_once('_'))
+        .and_then(|(group, _)| group.parse::<u8>().ok())
+        .filter(|group| *group > 0);
+        parameters.push(PublicParameter {
+            id: alias.name().into(),
+            root_index,
+            physical_min: min,
+            physical_max: max,
+            physical_default: range.default(),
+            control_group,
+        });
+    }
+    if parameters.len()
+        != patch
+            .root()
+            .ports()
+            .iter()
+            .filter(|port| port.direction() == dandrum_engine::graph::PortDirection::Input)
+            .count()
+    {
+        return Err(ParameterError::InvalidSurface);
+    }
+    Ok(parameters)
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -883,69 +972,7 @@ impl ParameterController {
             .map_err(ParameterError::Runtime)?;
         let (runtime, audio) =
             runtime_handoff(prepared, event_capacity).map_err(ParameterError::Runtime)?;
-        // The freshly opened host has prepared this immutable cached document.
-        let patch = load_kernel_patch_str(host.resources.document())
-            .expect("fresh Trigger document was prepared");
-        let mut parameters = Vec::new();
-        for alias in patch.preset_surface().parameters() {
-            let range = alias.control_default();
-            let (Some(min), Some(max)) = (range.min(), range.max()) else {
-                return Err(ParameterError::InvalidSurface);
-            };
-            if min >= max || !(min as f32).is_finite() || !(max as f32).is_finite() {
-                return Err(ParameterError::InvalidSurface);
-            }
-            let root_index = runtime
-                .parameter_index(alias.port_name())
-                .expect("prepared alias names a mono root control");
-            if parameters
-                .iter()
-                .any(|parameter: &PublicParameter| parameter.root_index == root_index)
-            {
-                return Err(ParameterError::InvalidSurface);
-            }
-            let control_group = patch
-                .root()
-                .ports()
-                .iter()
-                .find(|port| port.name() == alias.port_name())
-                .and_then(|port| match port.internal_targets() {
-                    [target] => Some(target),
-                    _ => None,
-                })
-                .and_then(|target| {
-                    patch
-                        .root()
-                        .nodes()
-                        .iter()
-                        .find(|node| node.id() == target.node())
-                        .filter(|node| node.definition_ref() == "sample_map_player")
-                        .map(|_| target)
-                })
-                .and_then(|target| target.port().strip_prefix("group_"))
-                .and_then(|suffix| suffix.split_once('_'))
-                .and_then(|(group, _)| group.parse::<u8>().ok())
-                .filter(|group| *group > 0);
-            parameters.push(PublicParameter {
-                id: alias.name().into(),
-                root_index,
-                physical_min: min,
-                physical_max: max,
-                physical_default: range.default(),
-                control_group,
-            });
-        }
-        if parameters.len()
-            != host
-                .session()
-                .prepared()
-                .root_port_metadata()
-                .iter()
-                .filter(|port| port.direction() == dandrum_engine::graph::PortDirection::Input)
-                .count()
-        {
-            return Err(ParameterError::InvalidSurface);
-        }
+        let parameters = public_parameters_from_document(host.resources.document())?;
         let gestures = vec![None; parameters.len()];
         Ok((
             Self {
@@ -1602,9 +1629,9 @@ impl ParameterController {
                 let parameter = &self.parameters[index];
                 // Rounding can otherwise put normalized endpoints just outside
                 // an accepted nonbinary physical interval (for example -0.1..0.3).
-                let physical = (parameter.physical_min
-                    + value * (parameter.physical_max - parameter.physical_min))
-                    .clamp(parameter.physical_min, parameter.physical_max);
+                let physical = parameter
+                    .normalized_to_physical(*value)
+                    .expect("sealed protocol admission validates normalized values");
                 // Both producers are exclusively owned here. The audio consumer
                 // can only free runtime slots, and no caller can fill our main
                 // queue between this check and publication of the complete value.

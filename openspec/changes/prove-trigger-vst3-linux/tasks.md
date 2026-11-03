@@ -22,7 +22,7 @@ implementation until repaired or explicitly refined.
 ## 2. Share Boundaries, Discover And Render Through The Real Processor
 
 - [x] 2.1 Characterize and extract the format-neutral command routing/reply encoding and control orchestration needed by both adapters; retain existing shared state/parameter/runtime owners, require full coverage for newly extracted modules and prove CLAP uses the common implementation before adding the VST3 consumer.
-- [ ] 2.2 Specify/implement stable class and explicit public-parameter identities, factory/module lifecycle and bundle-relative resources; prove actual dynamic discovery, missing-resource failure and all public normalized/physical conversions.
+- [x] 2.2 Specify/implement stable class and explicit public-parameter identities, factory/module lifecycle and bundle-relative resources; prove actual dynamic discovery, missing-resource failure and all public normalized/physical conversions.
 - [ ] 2.3 Specify/implement processor-owned Trigger coordination and bounded standard-message controller projection attachment over shared services; prove standard-interface-only host proxy operation, inline/reentrant reply/disconnect safety, failed sends/capacity preservation, processor-only initialization/restoration/service, independent instances, disconnect/reconnect, foreign/stale rejection and termination/reference cleanup through the real COM boundary.
 - [ ] 2.4 Specify/implement bus/setup/process/reset and timed note translation through the existing runtime; assert literal signed stereo samples, exact offsets/fractional clocks, failed-configuration preservation and complete callback alloc/free/ownership boundaries.
 
