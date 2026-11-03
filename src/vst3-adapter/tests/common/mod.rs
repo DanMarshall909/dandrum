@@ -1,8 +1,10 @@
 #![allow(dead_code)]
 pub mod audio;
 pub mod message;
+pub mod owner;
 pub mod parameters;
 pub mod runloop;
+pub mod stream;
 use libloading::Library;
 use std::{ffi::c_void, marker::PhantomData, mem::ManuallyDrop, ops::Deref, path::PathBuf};
 use vst3::{ComPtr, Interface, Steinberg::*};

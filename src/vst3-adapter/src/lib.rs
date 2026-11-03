@@ -12,6 +12,7 @@ mod audio;
 mod components;
 mod parameters;
 mod platform;
+mod stream;
 mod transport;
 use std::{
     cell::RefCell,

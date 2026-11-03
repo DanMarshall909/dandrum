@@ -1,0 +1,68 @@
+{
+  "status": "processor state boundary verified; controller projection and full proof incomplete",
+  "tests": {
+    "processorState": 4,
+    "processorOwner": 4,
+    "streamUnit": 2,
+    "clippy": "pass",
+    "clapDynamic": "current shared flush source,20 pass; calibrated child executed by parent"
+  },
+  "streamSourceCoverage": {
+    "stream.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "functions": {
+        "count": 7,
+        "covered": 7,
+        "percent": 100.0
+      },
+      "instantiations": {
+        "count": 12,
+        "covered": 12,
+        "percent": 100.0
+      },
+      "lines": {
+        "count": 65,
+        "covered": 65,
+        "percent": 100.0
+      },
+      "regions": {
+        "count": 157,
+        "covered": 157,
+        "notcovered": 0,
+        "percent": 100.0
+      }
+    }
+  },
+  "sources": {
+    "src/vst3-adapter/src/components.rs": "006ff03632113b242a5bdc4891947354ffd8015784c66c346882d5f1b12e46a1",
+    "src/vst3-adapter/src/lib.rs": "4c27b321b7156929d67e4533785e90ef3a545efc6a71c758b3a3225d0475700d",
+    "src/vst3-adapter/src/stream.rs": "8607a21d7ab63769c058d072e2c542c2d460d48af8f2aafbe3d6305821467d4b",
+    "src/vst3-adapter/tests/state.rs": "b1d0ce6df47a66ddab6117b1c44d7a2a273ad2f578de6654f3651bda78691828",
+    "src/vst3-adapter/tests/processor_owner.rs": "7a740723280821ed4df00a32d712244a748e32aae154ab26a56109d4b3b71238",
+    "src/vst3-adapter/tests/common/mod.rs": "175275908500858de352f1b0fe7c6461c98d2b23750b83ab79e7928fbbc0d1bb",
+    "src/vst3-adapter/tests/common/owner.rs": "e75748f39c5f1b902dc8ab1f1f10a577c7d113b57c3b313c8b78a03e9d0fc0b0",
+    "src/vst3-adapter/tests/common/stream.rs": "35b8d45ed950108769447138a93ffdc722c687b78e60fcc6ae08596e23ffb6c2"
+  },
+  "clapProduct": {
+    "source": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/fafc0b7c77a511cff6f8ed44/targets/09632a2a31c68bcfb7bc1337/ordinary/debug/libdandrum_clap_adapter.so",
+    "artifact": "/tmp/dandrum-vst3-proof-20261103/clap-curve-check/DandrumTrigger.clap",
+    "sha256": "46552aea1145683b2aa486fecc6bbbfe17892ec2d22a724811e2944a39d4e8c7"
+  },
+  "limits": [
+    "C setComponentState remains pending",
+    "native picker not exercised by wire-level selected-payload fixture",
+    "native editor/REAPER/full validator/current combined coverage/review/publication still required"
+  ],
+  "coverageLimit": "accumulated TDD profiles; final fresh-profile candidate gate pending"
+}

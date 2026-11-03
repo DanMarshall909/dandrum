@@ -292,11 +292,82 @@ impl IComponentTrait for Processor {
         self.audio.active.store(active != 0, Ordering::Release);
         kResultOk
     }
-    unsafe fn setState(&self, _state: *mut IBStream) -> tresult {
-        kNotImplemented
+    unsafe fn setState(&self, state: *mut IBStream) -> tresult {
+        if !self.live() {
+            return kNotInitialized;
+        }
+        let Some(mut input) = (unsafe { crate::stream::Stream::from_raw(state) }) else {
+            return kInvalidArgument;
+        };
+        let Ok(header) = dandrum_trigger_host::state::read_header(&mut input) else {
+            return kResultFalse;
+        };
+        if !self.live() {
+            return kNotInitialized;
+        }
+        {
+            let owner = self.owner.borrow();
+            if owner
+                .as_ref()
+                .expect("live owner")
+                .preflight_state(&header)
+                .is_err()
+            {
+                return kResultFalse;
+            }
+        }
+        // No owner/endpoint borrow crosses any foreign read. The shared owner
+        // revalidates admission after reentrant host code has finished.
+        let Ok(buffered) = header.buffer_payload(&mut input) else {
+            return kResultFalse;
+        };
+        if !self.live() {
+            return kNotInitialized;
+        }
+        {
+            let mut owner = self.owner.borrow_mut();
+            if owner
+                .as_mut()
+                .expect("live owner")
+                .load_buffered_state(buffered)
+                .is_err()
+            {
+                return kResultFalse;
+            }
+        }
+        self.service();
+        kResultOk
     }
-    unsafe fn getState(&self, _state: *mut IBStream) -> tresult {
-        kNotImplemented
+    unsafe fn getState(&self, state: *mut IBStream) -> tresult {
+        use std::io::Write;
+        if !self.live() {
+            return kNotInitialized;
+        }
+        let Some(mut output) = (unsafe { crate::stream::Stream::from_raw(state) }) else {
+            return kInvalidArgument;
+        };
+        let mut bytes = Vec::new();
+        {
+            let mut owner = self.owner.borrow_mut();
+            if owner
+                .as_mut()
+                .expect("live owner")
+                .save_state(&mut bytes)
+                .is_err()
+            {
+                return kResultFalse;
+            }
+        }
+        // All foreign writes observe an owned coherent snapshot; musical state
+        // stays accepted even if the stream fails after a written prefix.
+        if output
+            .write_all(&bytes)
+            .and_then(|_| output.flush())
+            .is_err()
+        {
+            return kResultFalse;
+        }
+        kResultOk
     }
 }
 struct Projection {
