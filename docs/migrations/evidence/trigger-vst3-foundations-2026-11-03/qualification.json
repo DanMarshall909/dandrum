@@ -1,0 +1,85 @@
+{
+  "sdk": {
+    "tag": "v3.8.0_build_66",
+    "revision": "9fad9770f2ae8542ab1a548a68c1ad1ac690abe0",
+    "submodules": {
+      "base": "3d2e82f8e6bff59c1d8b7a27491a29c2286b5206",
+      "cmake": "de6e54eeaaab35b7145f5c32c279b5e892146e04",
+      "pluginterfaces": "31d6eeba6daaa3e2a8bfbe3e7a90ca0b7fbfbc1c",
+      "public.sdk": "a3911a4615dabbfdfd9d181ee26b05c70c289a95"
+    }
+  },
+  "bindings": [
+    {
+      "name": "vst3",
+      "version": "0.3.0",
+      "bytes": 61475,
+      "sha256": "e31e3fe7a6f028ded8c5a9984cf283319e6dc63572c9b71da1d4ee9d71d3b6bf",
+      "vcs": {
+        "git": {
+          "sha1": "2d86c810be3e22367f92438800cd96a3e9cd3a37"
+        },
+        "path_in_vcs": ""
+      },
+      "license_declaration": "MIT OR Apache-2.0",
+      "root_license_files": [
+        "LICENSE-APACHE",
+        "LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "com-scrape-types",
+      "version": "0.1.1",
+      "bytes": 9463,
+      "sha256": "5ce183b975b8fc736a20919c4002717255fbd867df575c792aeefa9a56a73ad0",
+      "vcs": {
+        "git": {
+          "sha1": "33f1859fbdcfa247c1fdd17d565cb5285860e4ce"
+        },
+        "path_in_vcs": "com-scrape-types"
+      },
+      "license_declaration": "MIT OR Apache-2.0",
+      "root_license_files": []
+    }
+  ],
+  "validator": {
+    "sha256": "a5408259dc966076e2e2f321ebe3e0427c22867efb73b570f41e68657ffb7f7a",
+    "selftests": {
+      "passed": 43,
+      "failed": 0
+    },
+    "candidate_validation": "not yet run; no product candidate exists",
+    "build_seconds": 8.57,
+    "max_build_rss_kib": 213708,
+    "rss_limit": "GNU time reported the largest child, not aggregate concurrent RSS"
+  },
+  "reaper": {
+    "version": "7.84/linux-x86_64",
+    "revision": "4b6323",
+    "executable_sha256": "44ec7a34daecd0472eca5e1ae058352339babf8a42938e87914cacc8522c0a56",
+    "gtk_init": "linux_ime=1",
+    "service_probe": {
+      "factory_context_runloop": true,
+      "processor_initialize_context_runloop": false,
+      "editor_created": false,
+      "main_thread_os_tid_matches_pid": true,
+      "timer_callbacks": 212,
+      "register_result": 0,
+      "unregister_result": 0,
+      "exit": 0
+    },
+    "limits": [
+      "Disposable gain-derived ABI/service probe only; not real Trigger acceptance.",
+      "REAPER immediately released the separate processor when its controller class was deliberately unavailable. Dynamic-host processor-only proof remains required.",
+      "First scan used wrong vstpath64 instead of Linux vstpath; no plugin discovery.",
+      "First successful service probe timed out at a disposable-project save dialog after clean processor/timer teardown. Both failures retained."
+    ]
+  },
+  "probe_binary_sha256": "9808c9fed327ba318af9253539def921040a27d49716f0ab50a395418939f4e1",
+  "cargo_lock_sha256": "6db79bb911581ec3d96d98a9a49060cf045ea1aec63d48ed29c35ec3f3bd89bd",
+  "scaffold_check": {
+    "command": "CARGO_BUILD_JOBS=4 ./scripts/cargo check --manifest-path src/vst3-adapter/Cargo.toml --locked --jobs 4 --lib",
+    "exit": 0,
+    "scope": "dependency scaffold only; no product factory"
+  }
+}

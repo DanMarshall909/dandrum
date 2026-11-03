@@ -1,0 +1,28 @@
+PFactoryInfo 452 4
+PClassInfo 116 4
+PClassInfo2 440 4
+PClassInfoW 696 4
+BusInfo 276 4
+ProcessSetup 24 8
+ProcessData 80 8
+AudioBusBuffers 24 8
+Event 48 8
+NoteOnEvent 20 4
+NoteOffEvent 16 4
+ParameterInfo 792 8
+ViewRect 16 4
+IPluginFactory3 4555a2abc1234e579b12291036878931
+IComponent e831ff31f2d54301928ebbee25697802
+IAudioProcessor 42043f99b7da453ca569e79d9aaec33d
+IEditController dcd7bbe37742448da874aacc979c759e
+IConnectionPoint 70a4156f6e6e4026989148bfaa60d8d1
+IMessage 936f033bc6c047dbbb0882f813c1e613
+Linux::IRunLoop 18c3536697764f1a9c5b83857a871389
+Linux::ITimerHandler 10bdd94f41424774821fad8feca72ca9
+ProcessData.numSamples 8
+ProcessData.inputs 24
+ProcessData.inputParameterChanges 40
+Event.noteOn 24
+kResultOk 0
+kNoInterface -1
+kInvalidArgument 2

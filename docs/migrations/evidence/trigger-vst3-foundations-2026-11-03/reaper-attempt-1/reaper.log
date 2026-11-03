@@ -1,0 +1,8 @@
+jack: created client
+jack: jack_client_real_time_priority() returned error: -508746358
+jack: non-realtime threads
+swell-generic-gdk: initialized GTK+ on request.
+LC_NUMERIC / LANG is set to 'en_AU.UTF-8', overriding LC_NUMERIC environment to POSIX
+jack: activated client
+jack: deactivated client
+jack: close client

@@ -1,0 +1,36 @@
+[package]
+name = "dandrum-vst3-adapter"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+name = "dandrum_vst3_adapter"
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+trigger-editor = ["dep:dandrum_trigger_editor", "dep:gtk", "dep:x11rb"]
+
+[dependencies]
+# The adapter owns lifecycle, translation and safety; this crate supplies the ABI.
+vst3 = "=0.3.0"
+dandrum_trigger_host = { package = "dandrum-trigger-host", path = "../trigger-host" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+libloading = "0.8"
+rtrb = "=0.3.5"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+dandrum_trigger_editor = { package = "dandrum-trigger-editor", path = "../trigger-editor", features = ["native-x11"], optional = true }
+gtk = { version = "=0.18.2", optional = true }
+x11rb = { version = "=0.13.2", default-features = false, optional = true }
+libc = "=0.2.186"
+
+[dev-dependencies]
+tempfile = "3"
+allocation-counter = "=0.8.1"
+
+[profile.release]
+codegen-units = 1
+lto = true

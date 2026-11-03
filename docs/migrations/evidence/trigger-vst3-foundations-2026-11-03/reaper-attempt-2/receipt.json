@@ -1,0 +1,19 @@
+{
+  "reaper_exit": null,
+  "timed_out": true,
+  "children": [
+    {
+      "pid": 1927968,
+      "exit": 0
+    },
+    {
+      "pid": 1927971,
+      "exit": 0
+    },
+    {
+      "pid": 1927972,
+      "exit": -15
+    }
+  ],
+  "elapsed_seconds": 40.56163088302128
+}

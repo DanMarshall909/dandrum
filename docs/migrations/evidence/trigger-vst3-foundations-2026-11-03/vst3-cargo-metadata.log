@@ -1,0 +1,8 @@
+    Updating crates.io index
+     Locking 3 packages to latest Rust 1.96.0 compatible versions
+      Adding allocation-counter v0.8.1
+      Adding com-scrape-types v0.1.1
+      Adding vst3 v0.3.0
+ Downloading crates ...
+  Downloaded com-scrape-types v0.1.1
+  Downloaded vst3 v0.3.0

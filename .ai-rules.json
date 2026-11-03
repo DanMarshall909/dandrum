@@ -26,6 +26,14 @@
           "retainedBudgetMiB": 65536,
           "basis": "estimated",
           "estimateReason": "One serial Trigger Rust test, LLVM coverage or native verification build. Allows 8 GiB cache/output growth plus 1 GiB scratch and preserves an 8 GiB free-space reserve. The managed Cargo driver applies the 64 GiB admission/retention budget to owned ordinary and instrumented intermediates and registered private Cargo outputs. It preserves current warm state and retires only inactive owned generations when space is needed. Native fixtures retain the current copy and latest failure logs; other native/CMake outputs require separate storage review. Completion measurement detects overruns; this is not a filesystem quota."
+        },
+        "trigger-vst3-proof": {
+          "reserveMiB": 8192,
+          "outputGrowthMiB": 16384,
+          "tempGrowthMiB": 2048,
+          "retainedBudgetMiB": 8192,
+          "basis": "estimated",
+          "estimateReason": "Dan approved the Linux/REAPER VST3 proof on 2026-11-03: at most 12 active execution hours before reassessment, one heavy producer, at most four compiler jobs, 16 GiB incremental outputs plus 2 GiB scratch and an 8 GiB available RAM/free-disk floor. This workload covers VST3-specific native outputs/evidence (8 GiB retained); the existing managed Cargo workload retains its independent 64 GiB shared-cache policy. Preserve reusable caches and dependencies. Mutation excluded. Estimates are admission allowances, not a quota or measured peak."
         }
       }
     }

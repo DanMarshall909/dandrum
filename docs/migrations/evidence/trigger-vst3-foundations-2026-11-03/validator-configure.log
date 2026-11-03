@@ -1,0 +1,4 @@
+-- Could NOT find LIBJACK (missing: LIBJACK_LIBRARIES LIBJACK_INCLUDE_DIR) 
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/dandrum-vst3-proof-20261103/validator-build
