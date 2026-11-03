@@ -2,6 +2,16 @@
 
 Scope: [JUCE replacement](https://github.com/DanMarshall909/dandrum/issues/24), retaining the existing Rust engine and canonical React UI. The [investigation](../investigations/juce-replacement-investigation.md) records the broader migration; no legacy JUCE state/project/ID compatibility is required. The dated receipts below describe the inputs and scope at each checkpoint, not the current workflow status.
 
+## Accepted VST3 architecture — 3 November 2026
+
+[ADR 0001](../decisions/0001-direct-rust-vst3-adapter.md) records the accepted
+direct Rust VST3 adapter using pinned `vst3-rs` bindings, without an external
+CLAP wrapper. Linux comes first; native Windows and macOS support are mandatory.
+REAPER is the initial acceptance host, with Ableton and Bitwig qualification
+closer to release. This supersedes the historical VST3 wrapper-candidate/fallback
+direction. Implementation qualification and the remaining refinement items stay
+open; the completed CLAP beta's scope and evidence are unchanged.
+
 ## Final CLAP beta audit — 3 November 2026
 
 Tasks 7.3 and 8.1 passed named-DAW and current-source qualification after the
