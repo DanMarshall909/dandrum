@@ -5,6 +5,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod editor_commands;
 pub mod parameters;
 mod patch_budget;
 pub mod protocol;

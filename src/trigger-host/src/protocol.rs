@@ -34,7 +34,8 @@
 //! local to an attachment. Only `parameterStateChanged` and
 //! `instrumentSessionChanged` events are supported. Encoded output is at most
 //! 64 KiB; failure returns no partial message and consumes no event sequence.
-//! Snapshot/result projection and actual command dispatch belong to adapters.
+//! Snapshot/result projection and command dispatch use the shared editor_commands
+//! boundary; native choosers and host callbacks remain adapter capabilities.
 
 use dandrum_instrument_session::{Attachment, InstrumentSession, SessionError, SessionSnapshot};
 

@@ -23,7 +23,9 @@ on the measured sizes/alignment of 13 boundary structures, four critical field
 positions, Linux result constants and eight interface IDs (see `abi-*.txt`).
 This is Linux x86_64 ABI evidence; it does not establish other platforms or
 validate arbitrary foreign memory. `probe-sources.tar.gz` retains the one-off
-measurement/probe source, without compiled binaries.
+measurement/probe source and upstream MIT/Apache notices, without compiled
+binaries. Published log copies strip trailing whitespace; unmodified raw logs
+remain in the private proof directory.
 
 The adapter must borrow input interface arguments with `ComRef`, retain them
 with `to_com_ptr` only when needed beyond the call, and adopt returned references

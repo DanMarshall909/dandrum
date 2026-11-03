@@ -4,11 +4,12 @@ use clack_extensions::gui::{GuiApiType, GuiConfiguration, GuiSize, PluginGuiImpl
 use clack_plugin::prelude::PluginError;
 use dandrum_trigger_editor::{EditorAssets, NativeEditor, NativeFileSelection};
 use dandrum_trigger_host::{
+    editor_commands::{command_error, dispatch, parameter_values},
     parameters::{
-        NativeSelectionPermit, ParameterController, ParameterError, ParameterReply, ParameterValue,
-        SessionJobProgress, SessionServiceWake,
+        NativeSelectionPermit, ParameterController, ParameterError, SessionJobProgress,
+        SessionServiceWake,
     },
-    protocol::{Admission, EditorCommand, PATCH_MESSAGE_BYTES_LIMIT, ProtocolError},
+    protocol::{Admission, PATCH_MESSAGE_BYTES_LIMIT, ProtocolError},
     samples::{NativeSampleFile, SampleError},
 };
 use std::{
@@ -535,107 +536,6 @@ fn native_sample_files(paths: Vec<PathBuf>) -> Result<Vec<NativeSampleFile>, Sam
         })
         .collect()
 }
-fn dispatch(
-    controller: &mut dandrum_trigger_host::parameters::ParameterController,
-    attachment: &str,
-    request_id: &str,
-    message: &str,
-) -> Result<String, ParameterError> {
-    let result = match controller.admit(message) {
-        Ok(Admission::New(request)) => match request.command {
-            EditorCommand::NegotiateEditorProtocol => {
-                match controller.negotiate_editor_protocol(&request) {
-                    Ok(reply) => return Ok(reply),
-                    Err(error) => Err(command_error(error)),
-                }
-            }
-            EditorCommand::GetSamplerSession => match controller.sampler_session_reply(&request) {
-                Ok(reply) => return Ok(reply),
-                Err(ParameterError::Protocol(error)) => Err(error),
-                Err(error) => Err(command_error(error)),
-            },
-            EditorCommand::GetSamplerSelectionStatus { .. }
-            | EditorCommand::ReleaseSamplerSelection { .. } => {
-                return controller.sample_selection_reply(&request);
-            }
-            EditorCommand::ChooseSamplerFiles => Err(ProtocolError::CapabilityUnavailable),
-            EditorCommand::GetInstrumentSessionJobStatus { .. } => {
-                match controller.session_job_status(&request) {
-                    Ok(reply) => return Ok(reply),
-                    Err(error) => Err(command_error(error)),
-                }
-            }
-            EditorCommand::SetZoneKeyRange { .. }
-            | EditorCommand::UndoInstrumentSession { .. }
-            | EditorCommand::RedoInstrumentSession { .. }
-            | EditorCommand::PrepareInstrumentSessionPatch { .. } => {
-                match controller.admit_session_command(&request) {
-                    Ok(reply) => return Ok(reply),
-                    Err(error) => Err(command_error(error)),
-                }
-            }
-            EditorCommand::NoteOn { .. }
-            | EditorCommand::NoteOff { .. }
-            | EditorCommand::NoteHeartbeat => controller
-                .apply_editor_note(&request, Instant::now())
-                .map(|()| serde_json::Value::Null)
-                .map_err(|error| match error {
-                    ParameterError::Protocol(error) => error,
-                    _ => ProtocolError::InvalidArguments,
-                }),
-            EditorCommand::GetParameterState
-            | EditorCommand::BeginGesture { .. }
-            | EditorCommand::SetParameter { .. }
-            | EditorCommand::EndGesture { .. } => controller
-                .apply(&request)
-                .map(parameter_reply)
-                .map_err(command_error),
-        },
-        Ok(Admission::Duplicate { .. }) => Err(ProtocolError::DuplicateRequest),
-        Err(ParameterError::Protocol(error)) => Err(error),
-        Err(_) => Err(ProtocolError::InvalidArguments),
-    };
-    match result {
-        Ok(value) => controller.encode_editor_reply(attachment, request_id, Ok(value)),
-        Err(error) => controller.encode_editor_rejection(attachment, request_id, message, error),
-    }
-}
-
-fn parameter_values(parameters: Vec<ParameterValue>) -> serde_json::Value {
-    parameters
-        .into_iter()
-        .map(|parameter| {
-            serde_json::json!({
-                "id": parameter.id, "name": parameter.name, "value": parameter.value,
-            })
-        })
-        .collect()
-}
-fn parameter_reply(reply: ParameterReply) -> serde_json::Value {
-    match reply {
-        ParameterReply::Accepted {
-            generation,
-            sequence,
-        } => serde_json::json!({
-            "status": "accepted", "generation": generation, "sequence": sequence,
-        }),
-        ParameterReply::State(state) => serde_json::json!({
-            "generation": state.generation, "sequence": state.sequence,
-            "reset_cancelled": state.reset_cancelled,
-            "parameters": parameter_values(state.parameters),
-        }),
-    }
-}
-fn command_error(error: ParameterError) -> ProtocolError {
-    match error {
-        ParameterError::QueueFull | ParameterError::SessionWorkerBusy => ProtocolError::Busy,
-        ParameterError::Session(dandrum_trigger_host::SessionError::StaleRequest) => {
-            ProtocolError::StaleRequest
-        }
-        _ => ProtocolError::CommandRejected,
-    }
-}
-
 impl Drop for Core {
     fn drop(&mut self) {
         self.cancel_service_source();

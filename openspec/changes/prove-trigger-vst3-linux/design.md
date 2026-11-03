@@ -250,7 +250,7 @@ resource budget." Initial implementation/verification allowance:
   read-only. One heavy native/Cargo/coverage producer at a time, at most four
   compiler jobs. No paid services/hosted CI or newly purchased host licences.
 - Keep at least 8 GiB MemAvailable and 8 GiB free disk before each heavy run.
-  Approved incremental output allowance 16 GiB plus 2 GiB temporary growth on
+  Approved incremental output allowance 32 GiB plus 2 GiB temporary growth on
   the observed shared filesystem. Reuse the managed Cargo 64 GiB retention
   policy; budget retained VST3-specific native outputs/evidence at 8 GiB and
   measure them separately. No approval to delete reusable caches/dependencies.
@@ -266,6 +266,13 @@ resource budget." Initial implementation/verification allowance:
 - Preserve the recorded mutation exclusion; ordinary tests, coverage, CLAP
   regression, official validator and independent review remain required. No
   mutation job is started or implied by this proposal.
+
+Resource reassessment, 3 November 2026: after 15.59 GiB of retained Cargo
+output growth, Dan asked about current RAM/disk availability and replied
+"ok go" to the proposed 32 GiB output allowance. This raises only incremental
+output growth from 16 to 32 GiB. All other limits, cache/dependency preservation,
+mutation exclusion and acceptance criteria remain unchanged. The initial
+observations and foundation evidence retain their original 16 GiB envelope.
 
 Planning observations: Pop!_OS 22.04 x86_64, Ryzen 5900X, 32 GiB RAM;
 MemAvailable about 19 GiB; shared checkout/tmp free about 132 GiB; root `build/`
