@@ -9,8 +9,8 @@ Tasks 7.3 and 8.1 passed named-DAW and current-source qualification after the
 [complete requirement/evidence audit](evidence/trigger-beta-completion-2026-11-03/README.md)
 and independently reviewed canonical mappings for all 18 beta scenarios. All
 17 retained beta tasks are complete; strict canonical validation and the exact
-reviewed publication envelope passed. Current criterion
-completion is recorded in the [task list](../../openspec/changes/add-juce-free-trigger-beta-products/tasks.md).
+reviewed publication envelope passed. The completed change is archived; criterion
+completion is recorded in the [task list](../../openspec/changes/archive/2026-11-03-add-juce-free-trigger-beta-products/tasks.md).
 The beta remains private/local; historical REAPER evidence and current native
 qualification keep their separate artifact identities and documented limits.
 This does not close the broader JUCE migration, issues #23/#24, deferred formats
@@ -19,9 +19,9 @@ dated checkpoint receipts, not competing current status.
 
 ## Accepted scope and integration boundary — 1 November 2026
 
-The user narrowed the first beta to **Linux CLAP only** on 22 October. That decision supersedes the 20 October continuation's VST3/standalone stopping condition. The accepted [beta proposal](../../openspec/changes/add-juce-free-trigger-beta-products/proposal.md), [design](../../openspec/changes/add-juce-free-trigger-beta-products/design.md), and [future products](../../openspec/changes/add-juce-free-trigger-beta-products/future-products.md) retain the exact boundary. VST3, standalone/devices and broader OS/AU migration are deferred, not completed or silently removed from the broader migration.
+The user narrowed the first beta to **Linux CLAP only** on 22 October. That decision supersedes the 20 October continuation's VST3/standalone stopping condition. The accepted [beta proposal](../../openspec/changes/archive/2026-11-03-add-juce-free-trigger-beta-products/proposal.md), [design](../../openspec/changes/archive/2026-11-03-add-juce-free-trigger-beta-products/design.md), and [future products](../../openspec/changes/archive/2026-11-03-add-juce-free-trigger-beta-products/future-products.md) retain the exact boundary. VST3, standalone/devices and broader OS/AU migration are deferred, not completed or silently removed from the broader migration.
 
-The 1 November request to land the completed work authorizes integration of the verified increments through task 7.2. It supersedes the earlier continuation's instruction to leave main unchanged. It does not authorize starting task 7.3 or declare the full beta complete. The shared `.git/codex/deferred-work.md` remains the live workflow authority; the [OpenSpec task list](../../openspec/changes/add-juce-free-trigger-beta-products/tasks.md) records criterion completion and evidence.
+The 1 November request to land the completed work authorizes integration of the verified increments through task 7.2. It supersedes the earlier continuation's instruction to leave main unchanged. It does not authorize starting task 7.3 or declare the full beta complete. The shared `.git/codex/deferred-work.md` remains the live workflow authority; the [OpenSpec task list](../../openspec/changes/archive/2026-11-03-add-juce-free-trigger-beta-products/tasks.md) records criterion completion and evidence.
 
 | Delivered increment | Evidence and limits |
 | --- | --- |
