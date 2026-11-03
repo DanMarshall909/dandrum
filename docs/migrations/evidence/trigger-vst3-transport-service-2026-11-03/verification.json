@@ -1,0 +1,241 @@
+{
+  "date": "2026-11-03",
+  "scope": "Task2.3 transport/service core checkpoint; state-dependent restoration remains pending task3.3",
+  "sources": {
+    "src/vst3-adapter/src/transport.rs": "1d12afc102f25fd0e036b81d193719adcaa6e786fbc751e7801194c11c302d30",
+    "src/vst3-adapter/src/components.rs": "f4ba13c54dee58f7123b77a42989fd6860eee9bb765f885a607eb497009388f6",
+    "src/vst3-adapter/src/parameters.rs": "3370e51f404b20211b293948d8f16481c995dd436c09b39c7b953a86b7f42628",
+    "src/vst3-adapter/src/lib.rs": "a44bba2f475a4363cd5801fcf59c7663302ba6c61294328e7d900a992299151c",
+    "src/vst3-adapter/src/platform/mod.rs": "5bdf3595319beb0adf81e30709eb180b08bfbb9d708400e2a095dd9309f80d6e",
+    "src/vst3-adapter/src/platform/linux.rs": "13f2e0520305c91ac334b8a03809cbbdca5ab2831222e75bd4f02991cbfd0191",
+    "src/vst3-adapter/tests/service.rs": "8c8a4ebad6ec6be94f89868be10aef2fb599d2167d1f0228669dbea44c977049",
+    "src/vst3-adapter/tests/discovery.rs": "a7423313a253f7070f01ec742f591591ba317195e886a881cf1745a65b91cd91",
+    "src/vst3-adapter/tests/connection.rs": "6753f4591c55d98d499a40f42224e986576198f64b39810c129de3c76b8f541a",
+    "src/vst3-adapter/tests/processor_owner.rs": "2a32b0eb55de7f3dba9c6aefc104a0bed08db0ae66bc3c6b6e486fa2ad1eb550",
+    "src/vst3-adapter/tests/common/message.rs": "c038a2199ee447f337bc054a899536739c4844be4822b8284848866ff0761fc2",
+    "src/vst3-adapter/tests/common/mod.rs": "a081ab69f3e237b3f1c56967785392efb547a08f6d1f46943239dd8328b78538",
+    "src/vst3-adapter/tests/common/runloop.rs": "f71927546cac45c1a80c08d7f908e941acaf2629db0af06f00caa49ed759f50c"
+  },
+  "tests": {
+    "discovery": 7,
+    "connection": 11,
+    "processor_owner": 4,
+    "service": 5,
+    "slow_lane": "Empty for these current headless suites. Processor completion cases use finite real-worker deadlines and observed suite0.31s. The repeated resource-layout fixture owns12 images and takes about1.7s under instrumentation; retain boundary coverage."
+  },
+  "coverage": [
+    {
+      "file": "src/vst3-adapter/src/components.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 66,
+          "covered": 57,
+          "percent": 86.36363636363636
+        },
+        "instantiations": {
+          "count": 66,
+          "covered": 57,
+          "percent": 86.36363636363636
+        },
+        "lines": {
+          "count": 700,
+          "covered": 637,
+          "percent": 91
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 988,
+          "covered": 926,
+          "notcovered": 62,
+          "percent": 93.7246963562753
+        }
+      }
+    },
+    {
+      "file": "src/vst3-adapter/src/lib.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 14,
+          "covered": 14,
+          "percent": 100
+        },
+        "instantiations": {
+          "count": 18,
+          "covered": 18,
+          "percent": 100
+        },
+        "lines": {
+          "count": 141,
+          "covered": 141,
+          "percent": 100
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 220,
+          "covered": 220,
+          "notcovered": 0,
+          "percent": 100
+        }
+      }
+    },
+    {
+      "file": "src/vst3-adapter/src/parameters.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 5,
+          "covered": 5,
+          "percent": 100
+        },
+        "instantiations": {
+          "count": 5,
+          "covered": 5,
+          "percent": 100
+        },
+        "lines": {
+          "count": 20,
+          "covered": 20,
+          "percent": 100
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 26,
+          "covered": 26,
+          "notcovered": 0,
+          "percent": 100
+        }
+      }
+    },
+    {
+      "file": "src/vst3-adapter/src/platform/linux.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 3,
+          "covered": 3,
+          "percent": 100
+        },
+        "instantiations": {
+          "count": 3,
+          "covered": 3,
+          "percent": 100
+        },
+        "lines": {
+          "count": 70,
+          "covered": 64,
+          "percent": 91.42857142857143
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 108,
+          "covered": 97,
+          "notcovered": 11,
+          "percent": 89.81481481481481
+        }
+      }
+    },
+    {
+      "file": "src/vst3-adapter/src/transport.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 32,
+          "covered": 24,
+          "percent": 75
+        },
+        "instantiations": {
+          "count": 32,
+          "covered": 24,
+          "percent": 75
+        },
+        "lines": {
+          "count": 274,
+          "covered": 242,
+          "percent": 88.32116788321169
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 379,
+          "covered": 346,
+          "notcovered": 33,
+          "percent": 91.2928759894459
+        }
+      }
+    }
+  ],
+  "coverage_method": "All27 dynamic behavior tests ran. Export explicitly selects the instrumented cdylib with the managed vst3-adapter.profdata. Cargo combined-object reports also include an unused library test harness with duplicate C export names, which lowers its factory source aggregate; raw combined reports retained. Actual cdylib reports factory141/141 lines and220/220 regions. Profiles are accumulated TDD diagnostics; final fresh-profile candidate coverage remains required. Branch/MC-DC unavailable.",
+  "refactoring": {
+    "production": "Keep transport packets and session authority separate; Rc snapshots keep foreign COM calls outside local borrows. Registration.unregister returns ownership on refusal. Initialize remains unpublished until registration succeeds; shutdown disables callbacks before foreign calls. Idempotent confirmation drives both endpoints from one processor timer.",
+    "tests": "Share actual standard-message and run-loop fixtures; retain independent literal public-value and native mapping/history assertions. YAML formatting and refused FIFO-head assumptions were corrected after inspecting existing shared behavior; their failed trials are not production RED."
+  },
+  "resources": {
+    "managed_baseline_bytes": 36657377280,
+    "managed_latest_bytes": 59471097856,
+    "private_proof_allocated_bytes": 497582080,
+    "incremental_cap_bytes": 34359738368,
+    "scratch_cap_bytes": 2147483648,
+    "available_ram_last_bytes": 21020659712,
+    "free_disk_last_bytes": 111856414720,
+    "reusable_caches_preserved": true,
+    "fixture_note": "Debug images197MiB each could exceed the2GiB transient allowance across repeated NODELETE copies; previous peak not sampled. Disposable copies now strip only debug sections to59MiB, with all allocated and coverage sections verified identical. Cached binaries remain intact; release candidates copy byte-for-byte."
+  },
+  "remaining": [
+    "IAudioProcessor buses/setup/render/reset and signed callback proof",
+    "Curves/stopped delivery/host gestures",
+    "IBStream portable state and processor-only restore",
+    "Production React/Wry lifecycle and installed native REAPER proof",
+    "Final fresh owner coverage/full gates/official validator/independent Astra PASS/publication"
+  ]
+}

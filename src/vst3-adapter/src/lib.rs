@@ -11,8 +11,17 @@ compile_error!(
 mod components;
 mod parameters;
 mod platform;
-use std::ffi::{c_char, c_void};
-use vst3::{Class, ComWrapper, Steinberg::*};
+mod transport;
+use std::{
+    cell::RefCell,
+    ffi::{c_char, c_void},
+    rc::Rc,
+    thread::ThreadId,
+};
+use vst3::{
+    Class, ComPtr, ComRef, ComWrapper,
+    Steinberg::{Linux::IRunLoop, *},
+};
 
 pub const PROCESSOR_CLASS_ID: TUID = vst3::uid(0x2AA22A2B, 0xCCBA463A, 0x9029A89C, 0xCCF306A4);
 pub const CONTROLLER_CLASS_ID: TUID = vst3::uid(0x440ABDC9, 0xBABB41E5, 0xB87AE823, 0x6F36C2CC);
@@ -49,7 +58,10 @@ fn class(index: i32) -> Option<(TUID, &'static str, &'static str, &'static str)>
         _ => None,
     }
 }
-struct Factory;
+struct Factory {
+    thread: ThreadId,
+    runloop: RefCell<Option<Rc<ComPtr<IRunLoop>>>>,
+}
 impl Class for Factory {
     type Interfaces = (IPluginFactory3,);
 }
@@ -104,7 +116,8 @@ impl IPluginFactoryTrait for Factory {
         }
         // SAFETY: non-null IDs each designate16 readable bytes for this call.
         let cid = unsafe { &*cid.cast::<TUID>() };
-        let instance = match components::create(cid) {
+        let runloop = { self.runloop.borrow().clone() };
+        let instance = match components::create(cid, runloop) {
             Ok(instance) => instance,
             Err(error) => return error,
         };
@@ -157,7 +170,16 @@ impl IPluginFactory3Trait for Factory {
         utf16(&mut info.sdkVersion, SDK_VERSION);
         kResultOk
     }
-    unsafe fn setHostContext(&self, _context: *mut FUnknown) -> tresult {
+    unsafe fn setHostContext(&self, context: *mut FUnknown) -> tresult {
+        if self.thread != std::thread::current().id() {
+            return kResultFalse;
+        }
+        // No factory borrow crosses queryInterface/addRef/release.
+        let runloop = unsafe { ComRef::from_raw(context) }
+            .and_then(|c| c.cast::<IRunLoop>())
+            .map(Rc::new);
+        let old = self.runloop.replace(runloop);
+        drop(old);
         kResultOk
     }
 }
@@ -177,8 +199,11 @@ extern "system" fn ModuleExit() -> bool {
 }
 #[unsafe(no_mangle)]
 extern "system" fn GetPluginFactory() -> *mut IPluginFactory {
-    ComWrapper::new(Factory)
-        .to_com_ptr::<IPluginFactory>()
-        .expect("factory includes the standard base interface")
-        .into_raw()
+    ComWrapper::new(Factory {
+        thread: std::thread::current().id(),
+        runloop: RefCell::new(None),
+    })
+    .to_com_ptr::<IPluginFactory>()
+    .expect("factory includes the standard base interface")
+    .into_raw()
 }

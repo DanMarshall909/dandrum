@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+pub mod message;
+pub mod runloop;
 use libloading::Library;
 use std::{ffi::c_void, marker::PhantomData, mem::ManuallyDrop, ops::Deref, path::PathBuf};
 use vst3::{ComPtr, Interface, Steinberg::*};
@@ -23,7 +25,24 @@ impl Bundle {
         std::fs::create_dir_all(resources.join("instrument/assets")).unwrap();
         let source = std::env::var_os("DANDRUM_VST3_TEST_LIBRARY")
             .expect("set DANDRUM_VST3_TEST_LIBRARY to the freshly built private cdylib");
-        std::fs::copy(source, &binary).unwrap();
+        // Debug DWARF is ~170MiB per copy and NODELETE keeps each fixture's
+        // backing inode until process exit. Keep code, symbols and LLVM maps,
+        // stripping only disposable debug sections to respect the2GiB scratch
+        // envelope. Normal release candidates are copied byte-for-byte.
+        let source = PathBuf::from(source);
+        if source.metadata().unwrap().len() > 80 * 1024 * 1024 {
+            assert!(
+                std::process::Command::new("objcopy")
+                    .arg("--strip-debug")
+                    .arg(&source)
+                    .arg(&binary)
+                    .status()
+                    .expect("GNU objcopy for bounded debug fixtures")
+                    .success()
+            );
+        } else {
+            std::fs::copy(&source, &binary).unwrap();
+        }
         let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
         std::fs::copy(
             repository.join("examples/patches/advanced-drum-kit.yaml"),
@@ -98,6 +117,13 @@ impl Module<'_> {
     }
     pub fn class<T: Interface>(&self, cid: &TUID) -> Handle<'_, T> {
         let factory = self.factory();
+        self.class_from(&factory, cid)
+    }
+    pub fn class_from<T: Interface>(
+        &self,
+        factory: &ComPtr<IPluginFactory>,
+        cid: &TUID,
+    ) -> Handle<'_, T> {
         let mut object = std::ptr::null_mut();
         let iid = T::IID.map(|b| b as i8);
         // SAFETY: IDs each contain16 readable bytes; out pointer is writable.

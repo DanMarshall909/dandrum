@@ -86,3 +86,11 @@ pub(crate) unsafe fn retain_code(handle: *mut libc::c_void) -> bool {
     };
     !promoted.is_null() && unsafe { libc::dlclose(promoted) } == 0
 }
+
+pub(crate) fn scope() -> Option<[u8; 16]> {
+    let mut value = [0; 16];
+    // Fresh routing identity, not a pointer, global registry key or secret.
+    // Short/failed OS reads reject the connection before publishing anything.
+    let length = unsafe { libc::getrandom(value.as_mut_ptr().cast(), value.len(), 0) };
+    (length == value.len() as isize && value != [0; 16]).then_some(value)
+}
