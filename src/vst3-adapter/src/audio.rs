@@ -376,14 +376,8 @@ impl Endpoint {
         }
         let left = unsafe { *channels };
         let right = unsafe { *channels.add(1) };
-        let length = frames * std::mem::size_of::<f32>();
-        if left.is_null() || right.is_null() || !left.is_aligned() || !right.is_aligned() {
-            return kInvalidArgument;
-        }
-        let (Some(lend), Some(rend)) = (
-            (left as usize).checked_add(length),
-            (right as usize).checked_add(length),
-        ) else {
+        let (Some(lend), Some(rend)) = (channel_end(left, frames), channel_end(right, frames))
+        else {
             return kInvalidArgument;
         };
         if (left as usize) < rend && (right as usize) < lend {
@@ -412,6 +406,16 @@ impl Endpoint {
         kResultOk
     }
 }
+/// Numeric extent checks only. Callers bound frames to16384 and instantiate
+/// this helper only for f32/f64, so byte lengths fit isize. Memory accessibility
+/// and writable allocation ownership remain the host's ABI preconditions.
+fn channel_end<T>(pointer: *mut T, frames: usize) -> Option<usize> {
+    if pointer.is_null() || !pointer.is_aligned() {
+        return None;
+    }
+    (pointer as usize).checked_add(frames * std::mem::size_of::<T>())
+}
+
 /// Touch only the declared plugin bus/channels and bounded frame extent. The
 /// foreign ABI must supply valid storage for each non-null declared extent.
 unsafe fn clear(data: &mut ProcessData) {
@@ -427,7 +431,7 @@ unsafe fn clear(data: &mut ProcessData) {
             if !pointers.is_null() {
                 for i in 0..channels {
                     let p = unsafe { *pointers.add(i) };
-                    if !p.is_null() && p.is_aligned() {
+                    if channel_end(p, frames).is_some() {
                         unsafe { std::slice::from_raw_parts_mut(p, frames) }.fill(0.0);
                     }
                 }
@@ -438,7 +442,7 @@ unsafe fn clear(data: &mut ProcessData) {
             if !pointers.is_null() {
                 for i in 0..channels {
                     let p = unsafe { *pointers.add(i) };
-                    if !p.is_null() && p.is_aligned() {
+                    if channel_end(p, frames).is_some() {
                         unsafe { std::slice::from_raw_parts_mut(p, frames) }.fill(0.0);
                     }
                 }

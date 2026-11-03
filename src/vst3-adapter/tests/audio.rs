@@ -109,6 +109,18 @@ fn rejected_configuration_and_malformed_batches_preserve_the_sounding_cursor() {
     let mut bad = note_on(0, 36, 1.0);
     bad.__field0.noteOn.channel = 16;
     batches.push(vec![bad]);
+    for (pitch, channel, velocity, tuning) in [
+        (128, 0, 0.0, 0.0),
+        (36, 16, 0.0, 0.0),
+        (36, 0, f32::NAN, 0.0),
+        (36, 0, 0.0, 1.0),
+    ] {
+        let mut bad = note_off(0, pitch);
+        bad.__field0.noteOff.channel = channel;
+        bad.__field0.noteOff.velocity = velocity;
+        bad.__field0.noteOff.tuning = tuning;
+        batches.push(vec![bad]);
+    }
     for batch in batches {
         let notes = events(batch);
         let mut block = Block::new(16);
@@ -235,6 +247,9 @@ fn invalid_output_layouts_clear_only_accessible_planes_and_preserve_pending_note
     for fault in [
         "channels",
         "null",
+        "pointer_array",
+        "misaligned",
+        "outputs_null",
         "overlap",
         "size64",
         "negative",
@@ -247,6 +262,11 @@ fn invalid_output_layouts_clear_only_accessible_planes_and_preserve_pending_note
         match fault {
             "channels" => block.bus.numChannels = 1,
             "null" => block.pointers[0] = std::ptr::null_mut(),
+            "pointer_array" => block.bus.__field0.channelBuffers32 = std::ptr::null_mut(),
+            "misaligned" => {
+                block.pointers[0] = block.left.as_mut_ptr().cast::<u8>().wrapping_add(1).cast()
+            }
+            "outputs_null" => data.outputs = std::ptr::null_mut(),
             "overlap" => block.pointers[1] = block.pointers[0],
             "size64" => {
                 data.symbolicSampleSize = 2;

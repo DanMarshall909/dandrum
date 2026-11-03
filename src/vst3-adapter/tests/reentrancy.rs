@@ -1,3 +1,4 @@
+#![cfg(target_os = "linux")]
 mod common;
 use common::{audio::*, *};
 use std::{cell::Cell, io::Write};
@@ -6,16 +7,18 @@ use vst3::{
     Steinberg::{Vst::*, *},
 };
 
-#[test]
-fn stopped_flush_foreign_callback_cannot_destroy_its_borrowed_endpoint() {
+fn child_case(name: &str) {
+    // Parent owns the complete disposable namespace even after a failed child.
+    let scratch = tempfile::tempdir().unwrap();
     let child = std::process::Command::new(std::env::current_exe().unwrap())
         .args([
             "--exact",
-            "stopped_flush_reentrant_termination_child",
+            name,
             "--ignored",
             "--nocapture",
             "--test-threads=1",
         ])
+        .env("TMPDIR", scratch.path())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .spawn()
@@ -23,10 +26,19 @@ fn stopped_flush_foreign_callback_cannot_destroy_its_borrowed_endpoint() {
     let output = finish_child(child, 3, "callback");
     assert!(
         output.status.success(),
-        "reentrant callback: {}{}",
+        "{name}: {}: {}{}",
+        output.status,
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
+}
+#[test]
+fn stopped_flush_foreign_callback_cannot_destroy_its_borrowed_endpoint() {
+    child_case("stopped_flush_reentrant_termination_child");
+}
+#[test]
+fn numeric_output_extent_rejection_clears_only_valid_planes_and_preserves_time() {
+    child_case("invalid_extent_child");
 }
 
 struct ReentrantEvents {
@@ -128,4 +140,78 @@ fn stopped_flush_reentrant_termination_child() {
         kResultOk,
         "callback returned audio ownership"
     );
+}
+
+#[test]
+#[ignore = "only the owned callback deadline parent launches this exact child"]
+fn invalid_extent_child() {
+    // Deliberately fail an existing arithmetic guard; retain diagnostics, not a
+    // crash dump. No unknown nonwrapping host pointer is dereferenced by design.
+    assert_eq!(
+        unsafe {
+            libc::setrlimit(
+                libc::RLIMIT_CORE,
+                &libc::rlimit {
+                    rlim_cur: 0,
+                    rlim_max: 0,
+                },
+            )
+        },
+        0
+    );
+    assert_eq!(unsafe { libc::prctl(libc::PR_SET_DUMPABLE, 0, 0, 0, 0) }, 0);
+    let bundle = Bundle::new();
+    let module = bundle.load();
+    let p = module.class::<IComponent>(&PROCESSOR);
+    let a = p.cast::<IAudioProcessor>().unwrap();
+    assert_eq!(unsafe { p.initialize(std::ptr::null_mut()) }, kResultOk);
+    start(&p, &a, 48000.0, 16);
+    let notes = events(vec![note_on(0, 36, 1.0)]);
+    let mut first = Block::new(16);
+    let mut data = first.data();
+    data.inputEvents = notes.as_ptr();
+    assert_eq!(unsafe { a.process(&mut data) }, kResultOk);
+    assert_eq!(first.left[0], -0.5);
+    let mut invalid = Block::new(16);
+    invalid.pointers[0] = (usize::MAX & !3usize) as *mut f32;
+    println!("entering f32 overflow rejection with one accessible plane");
+    std::io::stdout().flush().unwrap();
+    assert_eq!(unsafe { a.process(&mut invalid.data()) }, kInvalidArgument);
+    assert_eq!(invalid.left, [123.0; 16]);
+    assert_eq!(invalid.right, [0.0; 16]);
+    let mut right = [123.0f64; 16];
+    let mut pointers = [(usize::MAX & !7usize) as *mut f64, right.as_mut_ptr()];
+    let mut bus = AudioBusBuffers {
+        numChannels: 2,
+        silenceFlags: 0,
+        __field0: AudioBusBuffers__type0 {
+            channelBuffers64: pointers.as_mut_ptr(),
+        },
+    };
+    for pointer in [
+        pointers[0],
+        std::ptr::null_mut(),
+        right.as_mut_ptr().cast::<u8>().wrapping_add(1).cast(),
+    ] {
+        pointers[0] = pointer;
+        right.fill(123.0);
+        let mut data = first.data();
+        data.symbolicSampleSize = 1;
+        data.outputs = &mut bus;
+        assert_eq!(unsafe { a.process(&mut data) }, kInvalidArgument);
+        assert_eq!(right, [0.0; 16]);
+    }
+    bus.__field0.channelBuffers64 = std::ptr::null_mut();
+    let mut data = first.data();
+    data.symbolicSampleSize = 1;
+    data.outputs = &mut bus;
+    assert_eq!(unsafe { a.process(&mut data) }, kInvalidArgument);
+    let mut next = Block::new(16);
+    assert_eq!(unsafe { a.process(&mut next.data()) }, kResultOk);
+    assert_eq!(
+        (next.left[0], next.right[0]),
+        (11869.0 / 32768.0, 11869.0 / 32768.0)
+    );
+    assert_eq!(unsafe { a.setProcessing(0) }, kResultOk);
+    assert_eq!(unsafe { p.terminate() }, kResultOk);
 }

@@ -1,0 +1,60 @@
+{
+  "scope": "numeric arithmetic guard consistency, not arbitrary host-memory validation",
+  "red": "owned child exits SIGSEGV after entering the f32 overflowing-extent rejection; setup selection error retained separately",
+  "green": "2 callback boundary parents,7 audio,5 curve tests and calibrated malloc/free parent pass; intentional children execute under parents; strict Clippy pass",
+  "coverage": {
+    "audio.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 20,
+        "covered": 20,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 25,
+        "covered": 25,
+        "percent": 100
+      },
+      "lines": {
+        "count": 348,
+        "covered": 344,
+        "percent": 98.85057471264368
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 476,
+        "covered": 471,
+        "notcovered": 5,
+        "percent": 98.94957983193278
+      }
+    }
+  },
+  "channelEndInstantiations": [
+    {
+      "calls": 12,
+      "regions": 10,
+      "uncoveredRegions": 0
+    },
+    {
+      "calls": 340,
+      "regions": 10,
+      "uncoveredRegions": 0
+    }
+  ],
+  "coverageLimit": "accumulated TDD profiles, exact dynamic artifact; final fresh-profile gate pending",
+  "sources": {
+    "src/vst3-adapter/src/audio.rs": "a6a2e73d3d01d07eb9ad82b5bd8e471c1c46db6f05c7c3b593846fbefa1e793f",
+    "src/vst3-adapter/tests/audio.rs": "204269bdfb84585a1a2290e2d7b669a6af085abd91ae7bcbc7349b2de413eb77",
+    "src/vst3-adapter/tests/reentrancy.rs": "9d74288890822cb02d428211ac0c28b730ca46bce0f9506ce9f6bbf3723472a6"
+  }
+}
