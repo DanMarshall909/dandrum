@@ -1,0 +1,270 @@
+--- /dev/null
++++ b/openspec/specs/juce-free-trigger-products/spec.md
+@@ -0,0 +1,71 @@
++# juce-free-trigger-products Specification
++
++## Purpose
++
++Qualify the private Linux CLAP Trigger beta, including precise clocks, native ownership, named-host acceptance and installed offline execution.
++
++## Requirements
++
++### Requirement: Trigger CLAP uses the persistent instrument
++
++The first JUCE-free Trigger beta SHALL provide a CLAP product using the production React editor, existing Rust engine and persistent format-neutral TriggerHost/session behavior. The CLAP adapter SHALL NOT introduce independent instrument history or a JUCE dependency. VST3 and standalone are outside this beta increment.
++
++#### Scenario: Installed CLAP renders the real Trigger instrument
++
++- **WHEN** a host loads the installed CLAP, instantiates Trigger and sends a mapped note and nondefault public value at documented offsets
++- **THEN** it SHALL discover the intended identity and render the independently expected signed sample waveform through the persistent instrument, with usable parameter and state interfaces
++
++### Requirement: Supported host clocks retain their precision
++
++Trigger SHALL retain supported requested floating-point host sample rates through preparation, reconfiguration and playback without integer rounding or truncation. Invalid or unavailable configurations SHALL fail explicitly without partially changing an existing instance.
++
++#### Scenario: Fractional host clocks render at the requested rate
++
++- **WHEN** Trigger activates and reconfigures at supported fractional rates including 1234.5678 Hz and 48000.5 Hz
++- **THEN** its accepted configuration and sample timing SHALL correspond to the requested clocks, preserve independent instance state and pass the previously failing official fractional-rate case
++
++#### Scenario: Failed configuration preserves accepted playback
++
++- **WHEN** a running or inactive instrument receives an invalid clock, incompatible configuration or failed candidate preparation
++- **THEN** it SHALL retain its prior accepted patch, public values and usable signed output without disturbing another instance
++
++### Requirement: Native editor lifetime is independent of playback
++
++The CLAP product SHALL honor its host native parent/main-loop responsibilities and dispose of its editor without destroying the persistent instrument. Admitted work, accepted edits and undo/redo SHALL survive editor loss, while view-owned notes, gestures and callbacks SHALL be released exactly once.
++
++#### Scenario: Native editing survives complete editor replacement
++
++- **WHEN** native input loads/maps a sample and edits controls, then the editor is destroyed during continuing audio and recreated
++- **THEN** audio SHALL remain usable with the expected signed waveform, the accepted edits and undo/redo SHALL remain available, and no stuck note, gesture or stale application callback SHALL survive
++
++#### Scenario: Failed native creation leaves the instrument usable
++
++- **WHEN** the CLAP product receives invalid GUI ordering/parenting or actual native creation fails
++- **THEN** it SHALL report failure, release partial view resources and preserve accepted state and signed audio, with a later valid creation remaining possible
++
++### Requirement: Complete render callbacks obey realtime ownership
++
++The complete CLAP render callback SHALL use bounded event/parameter handoffs and prepared runtimes without locks, allocation/deallocation, file I/O, serialization, browser access or resource destruction. Runtime construction and reclamation SHALL occur under off-audio ownership.
++
++#### Scenario: Native callbacks retain bounded ownership during replacement
++
++- **WHEN** actual CLAP callbacks process notes/automation while accepted runtime replacement, reset and editor lifecycle changes occur
++- **THEN** allocation/deallocation sentinels and ownership checks SHALL remain clean for the complete callback, signed output SHALL follow accepted transitions, and an independent instance SHALL retain its own state and sound
++
++### Requirement: Named DAW acceptance proves automation and independence
++
++The beta SHALL be exercised in a named DAW with recorded CLAP support, version and configuration. Real host automation, editor-absent servicing, independent instances and fresh host-state restoration SHALL be proven through that DAW rather than inferred from an instrumented synthetic host.
++
++#### Scenario: Two DAW instances retain automation and selected samples
++
++- **WHEN** two differently edited Trigger CLAP instances receive DAW automation, one editor is closed/reopened and the DAW project is saved and reopened into fresh instances
++- **THEN** each SHALL retain its own selected sample, patch and public values with expected signed playback, balanced editor gestures and later host feedback, without cross-instance mutation or stalled admitted work
++
++### Requirement: Installed beta artifacts work offline without JUCE
++
++The release artifact set SHALL install outside the source checkout and contain the CLAP product, local editor/sample resources and notices. Its build and runtime dependency/linkage evidence SHALL show no JUCE requirement, and execution SHALL require neither checkout/caches nor a runtime asset download.
++
++#### Scenario: Source-hidden offline installation remains usable
++
++- **WHEN** the installed artifact set runs from an unrelated working directory with the checkout/build caches unavailable and network fallback disabled
++- **THEN** the CLAP product SHALL load its intended resources and real editor, play/restore selected samples and expose audited dependencies/notices without loading or building JUCE
+--- /dev/null
++++ b/openspec/specs/trigger-sample-resources/spec.md
+@@ -0,0 +1,77 @@
++# trigger-sample-resources Specification
++
++## Purpose
++
++Own native selected samples, atomic patch history and portable patch/sample/physical-parameter state independently of disposable editors.
++
++## Requirements
++
++### Requirement: Native sample selection uses real supported data
++
++Trigger SHALL let the production native editor select supported WAV files and obtain truthful decoded metadata. Selection, decoding and retention SHALL remain outside the render callback and within documented bounds; cancellation or invalid input SHALL preserve the accepted instrument.
++
++#### Scenario: A distinct selected sample is mapped and played natively
++
++- **WHEN** native input selects a distinct supported WAV and accepts a valid mapping through the production editor
++- **THEN** the accepted patch SHALL refer to that sample's real metadata/content identity and render its independently known signed waveform only at the accepted mapping, without substituting the packaged kit or mock data
++
++#### Scenario: Cancelled or invalid selection preserves the instrument
++
++- **WHEN** selection is cancelled or a selected file is malformed, unreadable, unsupported or beyond the documented limits
++- **THEN** no partial patch/resource publication SHALL occur and the prior patch, public values, history and signed audio SHALL remain usable
++
++### Requirement: Accepted samples have immutable instance ownership
++
++Each instance SHALL retain immutable owned sample content needed by its accepted, pending and historical patch states. Resource identity SHALL be based on verified owned content rather than a browser assertion, ambient path or shared mutable file.
++
++#### Scenario: Original-file changes do not alter admitted playback
++
++- **WHEN** a selected file is admitted and its original path is subsequently replaced or removed
++- **THEN** accepted playback and native undo/redo SHALL continue from the admitted content, and another instance's resources and output SHALL remain independent
++
++### Requirement: Interactive patch publication preserves native authority
++
++Supported full-patch edits SHALL use bounded native admission, validation/preparation, atomic runtime publication and native history. They SHALL preserve stable supported public identities and current host-owned physical values; malformed, stale, conflicting or busy work SHALL not partially mutate accepted state.
++
++#### Scenario: Import preserves nondefault controls and native history
++
++- **WHEN** a sample import or related patch edit is accepted while public controls have nondefault host values, then the user invokes undo and redo
++- **THEN** each accepted patch/resource transition SHALL occur once with the corresponding signed output and native history, while public identities and host-owned values remain intact
++
++#### Scenario: Empty patch and ordinary import form a usable transition
++
++- **WHEN** the production editor creates an empty patch and then imports one supported sample with its normal mapping flow
++- **THEN** the empty patch SHALL be accepted and silent, the valid import SHALL publish without an accidental overlap/layout failure, and the new mapping SHALL play the selected signed waveform with the supported public surface intact
++
++#### Scenario: Failed patch candidates retain the accepted instrument
++
++- **WHEN** a full-patch request has invalid resource authority, incompatible ports/ranges, stale ownership, conflicting identity, backpressure or failed preparation
++- **THEN** it SHALL return an explicit bounded result and preserve the complete accepted patch, resources, public feedback/history and signed audio, permitting a later valid request
++
++### Requirement: Sample work survives disposable editor loss
++
++Admitted sample/patch work and its retained outcomes SHALL belong to the instrument rather than its WebView. Unadmitted cancelled work and retired callbacks SHALL release their own resources without changing accepted state or another instance.
++
++#### Scenario: Lost editor recovers one admitted sample edit
++
++- **WHEN** an admitted selected-sample edit loses its reply and the editor is destroyed before a new editor reconnects
++- **THEN** the result SHALL be recoverable exactly once with the selected sample, accepted history and signed playback, and native undo SHALL remain usable without a late callback to the destroyed view
++
++### Requirement: Portable state owns patch samples and physical values
++
++CLAP host state SHALL use a bounded versioned representation of the accepted patch, verified sample content and named physical parameter values. Fresh restoration SHALL not depend on the original selected paths, the original instance or a shared checkout/cache resource directory.
++
++#### Scenario: Fresh instance restores selected content after source removal
++
++- **WHEN** an edited selected-sample patch and nondefault parameters are saved, the original instance and selected files are removed, and a fresh instance loads that state
++- **THEN** it SHALL restore the same logical patch/resource identities and public values and render the independently expected signed waveform from the restored mapping, with no original-path or packaged-sample fallback
++
++#### Scenario: Corrupt portable state preserves the live instrument
++
++- **WHEN** state has corrupt or mismatched sample content, unsupported version, incompatible parameters, invalid lengths/counts, excessive size or short-reading data
++- **THEN** loading SHALL fail before partial publication and the prior accepted patch, resources, feedback/history and signed audio SHALL remain usable
++
++#### Scenario: Packaged-kit state remains readable
++
++- **WHEN** a valid existing version 2 packaged-kit state is loaded into the beta
++- **THEN** its accepted mapping, packaged sample and named physical values SHALL restore with the same known signed playback and explicit rejection of invalid legacy state
+--- a/spec-tests.map
++++ b/spec-tests.map
+@@ -2733,3 +2733,113 @@
+ AC rust-build-cache :: Repeated verification does not accumulate source and fixture generations :: Native fixture replacement retains the current proof
+   fp b83ee4468f57
+   test py:tests/python/test_trigger_native_fixture.py
++
++AC juce-free-trigger-products :: Trigger CLAP uses the persistent instrument :: Installed CLAP renders the real Trigger instrument
++  fp 3c8e5bcc7c9a
++  test rust:optional_product_discovers_stable_trigger_and_retains_fixture_identities
++  test rust:real_sampler_ports_and_offset_midi_parameter_values_render_literal_signed_pcm
++  test rust:state_restores_fresh_mapping_and_physical_values_and_invalid_tail_preserves_running_audio
++
++AC juce-free-trigger-products :: Supported host clocks retain their precision :: Fractional host clocks render at the requested rate
++  fp 2f3122e41a04
++  test rust:supported_fractional_clocks_activate_and_keep_exact_signed_sample_timing
++  test rust:fractional_reconfiguration_keeps_exact_identity_values_history_and_failure_rollback
++  test rust:fractional_runtime_swaps_reclaim_on_control_and_preserve_reset_and_another_instance
++
++AC juce-free-trigger-products :: Supported host clocks retain their precision :: Failed configuration preserves accepted playback
++  fp e340a5853c3b
++  test rust:persistent_endpoints_survive_failed_and_equal_reactivation_then_reconfigure_independently
++  test rust:missing_or_corrupt_resources_leave_the_loaded_runtime_and_configuration_accepted
++
++AC juce-free-trigger-products :: Native editor lifetime is independent of playback :: Native editing survives complete editor replacement
++  fp 5e552b86fbf1
++  test rust:installed_native_edits_overlap_server_audio_and_midi
++  test rust:copied_native_destroy_releases_held_activity_once_and_reconnects
++  test rust:copied_react_recovers_selected_import_after_lost_reply_and_recreation
++
++AC juce-free-trigger-products :: Native editor lifetime is independent of playback :: Failed native creation leaves the instrument usable
++  fp 21e9457b220d
++  test rust:copied_trigger_editor_exposes_the_actual_clap_gui_extension
++  test rust:copied_editor_failed_native_parent_attempt_retains_only_code_and_preserves_audio
++  test rust:copied_native_ipc_registration_failure_cleans_up_and_retries_preserving_state
++
++AC juce-free-trigger-products :: Complete render callbacks obey realtime ownership :: Native callbacks retain bounded ownership during replacement
++  fp 3bed98aa0f9d
++  test rust:installed_native_edits_overlap_server_audio_and_midi
++  test rust:copied_native_continuous_audio_callbacks_allocate_and_deallocate_nothing
++  test rust:copied_native_two_instances_keep_edits_audio_and_editors_independent
++
++AC juce-free-trigger-products :: Named DAW acceptance proves automation and independence :: Two DAW instances retain automation and selected samples
++  fp e88262215eb7
++  test py:tests/python/test_trigger_clap_daw_evidence.py
++  test rust:installed_native_edits_overlap_server_audio_and_midi
++  test rust:copied_react_import_maps_selected_pcm_once_through_native_history
++
++AC juce-free-trigger-products :: Installed beta artifacts work offline without JUCE :: Source-hidden offline installation remains usable
++  fp 3606e15d1bd2
++  test rust:fresh_clap_restores_selected_payload_without_a_package_file
++  test rust:copied_native_editor_lifecycle_initializes_the_real_react_session_and_preserves_audio
++  test py:tests/python/test_trigger_clap_install.py
++  test py:tests/python/test_engine_only_build.py
++
++AC trigger-sample-resources :: Native sample selection uses real supported data :: A distinct selected sample is mapped and played natively
++  fp a3e5f9e25f4e
++  test rust:installed_native_edits_overlap_server_audio_and_midi
++  test rust:copied_native_selection_retains_real_metadata_across_source_and_editor_loss
++  test rust:copied_react_import_maps_selected_pcm_once_through_native_history
++
++AC trigger-sample-resources :: Native sample selection uses real supported data :: Cancelled or invalid selection preserves the instrument
++  fp 2e8b41856b64
++  test rust:copied_native_selection_retains_real_metadata_across_source_and_editor_loss
++  test rust:rejected_file_count_and_decode_preserve_state_and_allow_later_selection
++  test rust:file_count_encoded_decoded_and_resource_limits_reject_atomically
++  test rust:untrusted_file_shapes_names_and_read_errors_never_publish_resources
++  test rust:rejected_native_acquisition_is_bounded_and_a_later_selection_remains_possible
++
++AC trigger-sample-resources :: Accepted samples have immutable instance ownership :: Original-file changes do not alter admitted playback
++  fp e7fd83eb14da
++  test rust:selected_runtime_pins_bytes_until_control_reclamation_without_callback_destruction
++  test rust:copied_react_import_maps_selected_pcm_once_through_native_history
++  test rust:installed_native_edits_overlap_server_audio_and_midi
++
++AC trigger-sample-resources :: Interactive patch publication preserves native authority :: Import preserves nondefault controls and native history
++  fp 030e72136a3a
++  test rust:whole_patch_publication_survives_view_loss_and_native_undo_preserves_physical_values
++  test rust:copied_react_import_maps_selected_pcm_once_through_native_history
++
++AC trigger-sample-resources :: Interactive patch publication preserves native authority :: Empty patch and ordinary import form a usable transition
++  fp 3c1eac2eafef
++  test rust:copied_react_empty_retains_controls_and_imports_after_recreation
++  test rust:silent_empty_document_keeps_product_parameter_scopes_values_and_callback_ownership
++
++AC trigger-sample-resources :: Interactive patch publication preserves native authority :: Failed patch candidates retain the accepted instrument
++  fp 35ce6dda9703
++  test rust:whole_patch_rejects_unsupported_profile_before_owning_a_job
++  test rust:transport_retries_never_repeat_admission_conflicting_or_retired_ids_are_rejected
++  test rust:failed_preparation_reports_only_its_real_error_and_preserves_accepted_state
++  test rust:failed_patch_retry_recovers_after_its_selected_content_is_released
++
++AC trigger-sample-resources :: Sample work survives disposable editor loss :: Lost editor recovers one admitted sample edit
++  fp 7e499066b270
++  test rust:copied_react_recovers_selected_import_after_lost_reply_and_recreation
++  test rust:admitted_selection_survives_view_loss_and_releases_only_its_outcome
++
++AC trigger-sample-resources :: Portable state owns patch samples and physical values :: Fresh instance restores selected content after source removal
++  fp af51ca51308a
++  test rust:fresh_clap_restores_selected_payload_without_a_package_file
++  test rust:copied_react_import_maps_selected_pcm_once_through_native_history
++  test py:tests/python/test_trigger_clap_daw_evidence.py
++
++AC trigger-sample-resources :: Portable state owns patch samples and physical values :: Corrupt portable state preserves the live instrument
++  fp 3bbc9e90894c
++  test rust:portable_selected_state_restores_owned_pcm_and_values_after_the_source_instance_is_gone
++  test rust:invalid_portable_metadata_is_refused_before_any_foreign_payload_read
++  test rust:invalid_states_and_failing_streams_preserve_every_accepted_field_and_pending_feedback_and_commands
++  test rust:rejected_native_state_preserves_nonempty_real_history_and_successful_external_restore_resets_it
++  test rust:maximum_portable_payload_restores_signed_tail_geometry_and_reclaims_every_owner
++
++AC trigger-sample-resources :: Portable state owns patch samples and physical values :: Packaged-kit state remains readable
++  fp da02e638aa91
++  test rust:portable_state_larger_than_legacy_limit_restores_fresh_pcm_and_values_with_reentrant_short_reads
++  test rust:invalid_states_and_failing_streams_preserve_every_accepted_field_and_pending_feedback_and_commands
++

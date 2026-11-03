@@ -1,0 +1,30 @@
+{
+  "base_commit": "5a9de6be86d27d1e69517dbe823c595784887b6f",
+  "qualification_source": "7ea453e2510fdd3c40f40248699356b2440bcf16",
+  "unchanged_committed_input_paths": [
+    "src",
+    "schema",
+    "examples",
+    "web/trigger",
+    "cmake",
+    "scripts"
+  ],
+  "artifacts": [
+    {
+      "packet": "trigger-clap-daw-acceptance-2026-11-02",
+      "archive_sha256": "f76f971497b1b7bc5d7c01593cf42de1c3ce67b7cdf8af76bb5478e8a04620f7",
+      "verified_archive_members": 448,
+      "verified_installed_files": 20,
+      "installed_clap_sha256": "fd24495233b94466a72de31ec302fd0089f9a4293077766ee533cda77aa552d8"
+    },
+    {
+      "packet": "trigger-beta-qualification-2026-11-02",
+      "archive_sha256": "1cfe7978873c387e3c112e0079071b6d5bb4670c1b28d028c40a9973c1e5615b",
+      "verified_archive_members": 342,
+      "verified_installed_files": 20,
+      "installed_clap_sha256": "da9fc60fa566ce77e882bf584cd5c9a00a905fa0929438374badc5ef04478186"
+    }
+  ],
+  "result": "PASS",
+  "limits": "Historical DAW and current qualification binaries are distinct; this audit does not rerun REAPER or physical human input."
+}

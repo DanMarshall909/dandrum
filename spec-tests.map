@@ -2733,3 +2733,112 @@ AC rust-build-cache :: Repeated verification does not accumulate source and fixt
 AC rust-build-cache :: Repeated verification does not accumulate source and fixture generations :: Native fixture replacement retains the current proof
   fp b83ee4468f57
   test py:tests/python/test_trigger_native_fixture.py
+
+AC juce-free-trigger-products :: Trigger CLAP uses the persistent instrument :: Installed CLAP renders the real Trigger instrument
+  fp 3c8e5bcc7c9a
+  test rust:optional_product_discovers_stable_trigger_and_retains_fixture_identities
+  test rust:real_sampler_ports_and_offset_midi_parameter_values_render_literal_signed_pcm
+  test rust:state_restores_fresh_mapping_and_physical_values_and_invalid_tail_preserves_running_audio
+
+AC juce-free-trigger-products :: Supported host clocks retain their precision :: Fractional host clocks render at the requested rate
+  fp 2f3122e41a04
+  test rust:supported_fractional_clocks_activate_and_keep_exact_signed_sample_timing
+  test rust:fractional_reconfiguration_keeps_exact_identity_values_history_and_failure_rollback
+  test rust:fractional_runtime_swaps_reclaim_on_control_and_preserve_reset_and_another_instance
+
+AC juce-free-trigger-products :: Supported host clocks retain their precision :: Failed configuration preserves accepted playback
+  fp e340a5853c3b
+  test rust:persistent_endpoints_survive_failed_and_equal_reactivation_then_reconfigure_independently
+  test rust:missing_or_corrupt_resources_leave_the_loaded_runtime_and_configuration_accepted
+
+AC juce-free-trigger-products :: Native editor lifetime is independent of playback :: Native editing survives complete editor replacement
+  fp 5e552b86fbf1
+  test rust:installed_native_edits_overlap_server_audio_and_midi
+  test rust:copied_native_destroy_releases_held_activity_once_and_reconnects
+  test rust:copied_react_recovers_selected_import_after_lost_reply_and_recreation
+
+AC juce-free-trigger-products :: Native editor lifetime is independent of playback :: Failed native creation leaves the instrument usable
+  fp 21e9457b220d
+  test rust:copied_trigger_editor_exposes_the_actual_clap_gui_extension
+  test rust:copied_editor_failed_native_parent_attempt_retains_only_code_and_preserves_audio
+  test rust:copied_native_ipc_registration_failure_cleans_up_and_retries_preserving_state
+
+AC juce-free-trigger-products :: Complete render callbacks obey realtime ownership :: Native callbacks retain bounded ownership during replacement
+  fp 3bed98aa0f9d
+  test rust:installed_native_edits_overlap_server_audio_and_midi
+  test rust:copied_native_continuous_audio_callbacks_allocate_and_deallocate_nothing
+  test rust:copied_native_two_instances_keep_edits_audio_and_editors_independent
+
+AC juce-free-trigger-products :: Named DAW acceptance proves automation and independence :: Two DAW instances retain automation and selected samples
+  fp e88262215eb7
+  test py:tests/python/test_trigger_clap_daw_evidence.py
+  test rust:installed_native_edits_overlap_server_audio_and_midi
+  test rust:copied_react_import_maps_selected_pcm_once_through_native_history
+
+AC juce-free-trigger-products :: Installed beta artifacts work offline without JUCE :: Source-hidden offline installation remains usable
+  fp 3606e15d1bd2
+  test rust:fresh_clap_restores_selected_payload_without_a_package_file
+  test rust:copied_native_editor_lifecycle_initializes_the_real_react_session_and_preserves_audio
+  test py:tests/python/test_trigger_clap_install.py
+  test py:tests/python/test_engine_only_build.py
+
+AC trigger-sample-resources :: Native sample selection uses real supported data :: A distinct selected sample is mapped and played natively
+  fp a3e5f9e25f4e
+  test rust:installed_native_edits_overlap_server_audio_and_midi
+  test rust:copied_native_selection_retains_real_metadata_across_source_and_editor_loss
+  test rust:copied_react_import_maps_selected_pcm_once_through_native_history
+
+AC trigger-sample-resources :: Native sample selection uses real supported data :: Cancelled or invalid selection preserves the instrument
+  fp 2e8b41856b64
+  test rust:copied_native_selection_retains_real_metadata_across_source_and_editor_loss
+  test rust:rejected_file_count_and_decode_preserve_state_and_allow_later_selection
+  test rust:file_count_encoded_decoded_and_resource_limits_reject_atomically
+  test rust:untrusted_file_shapes_names_and_read_errors_never_publish_resources
+  test rust:rejected_native_acquisition_is_bounded_and_a_later_selection_remains_possible
+
+AC trigger-sample-resources :: Accepted samples have immutable instance ownership :: Original-file changes do not alter admitted playback
+  fp e7fd83eb14da
+  test rust:selected_runtime_pins_bytes_until_control_reclamation_without_callback_destruction
+  test rust:copied_react_import_maps_selected_pcm_once_through_native_history
+  test rust:installed_native_edits_overlap_server_audio_and_midi
+
+AC trigger-sample-resources :: Interactive patch publication preserves native authority :: Import preserves nondefault controls and native history
+  fp 030e72136a3a
+  test rust:whole_patch_publication_survives_view_loss_and_native_undo_preserves_physical_values
+  test rust:copied_react_import_maps_selected_pcm_once_through_native_history
+
+AC trigger-sample-resources :: Interactive patch publication preserves native authority :: Empty patch and ordinary import form a usable transition
+  fp 3c1eac2eafef
+  test rust:copied_react_empty_retains_controls_and_imports_after_recreation
+  test rust:silent_empty_document_keeps_product_parameter_scopes_values_and_callback_ownership
+
+AC trigger-sample-resources :: Interactive patch publication preserves native authority :: Failed patch candidates retain the accepted instrument
+  fp 35ce6dda9703
+  test rust:whole_patch_rejects_unsupported_profile_before_owning_a_job
+  test rust:transport_retries_never_repeat_admission_conflicting_or_retired_ids_are_rejected
+  test rust:failed_preparation_reports_only_its_real_error_and_preserves_accepted_state
+  test rust:failed_patch_retry_recovers_after_its_selected_content_is_released
+
+AC trigger-sample-resources :: Sample work survives disposable editor loss :: Lost editor recovers one admitted sample edit
+  fp 7e499066b270
+  test rust:copied_react_recovers_selected_import_after_lost_reply_and_recreation
+  test rust:admitted_selection_survives_view_loss_and_releases_only_its_outcome
+
+AC trigger-sample-resources :: Portable state owns patch samples and physical values :: Fresh instance restores selected content after source removal
+  fp af51ca51308a
+  test rust:fresh_clap_restores_selected_payload_without_a_package_file
+  test rust:copied_react_import_maps_selected_pcm_once_through_native_history
+  test py:tests/python/test_trigger_clap_daw_evidence.py
+
+AC trigger-sample-resources :: Portable state owns patch samples and physical values :: Corrupt portable state preserves the live instrument
+  fp 3bbc9e90894c
+  test rust:portable_selected_state_restores_owned_pcm_and_values_after_the_source_instance_is_gone
+  test rust:invalid_portable_metadata_is_refused_before_any_foreign_payload_read
+  test rust:invalid_states_and_failing_streams_preserve_every_accepted_field_and_pending_feedback_and_commands
+  test rust:rejected_native_state_preserves_nonempty_real_history_and_successful_external_restore_resets_it
+  test rust:maximum_portable_payload_restores_signed_tail_geometry_and_reclaims_every_owner
+
+AC trigger-sample-resources :: Portable state owns patch samples and physical values :: Packaged-kit state remains readable
+  fp da02e638aa91
+  test rust:portable_state_larger_than_legacy_limit_restores_fresh_pcm_and_values_with_reentrant_short_reads
+  test rust:invalid_states_and_failing_streams_preserve_every_accepted_field_and_pending_feedback_and_commands

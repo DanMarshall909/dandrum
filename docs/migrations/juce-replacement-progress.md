@@ -2,6 +2,21 @@
 
 Scope: [JUCE replacement](https://github.com/DanMarshall909/dandrum/issues/24), retaining the existing Rust engine and canonical React UI. The [investigation](../investigations/juce-replacement-investigation.md) records the broader migration; no legacy JUCE state/project/ID compatibility is required. The dated receipts below describe the inputs and scope at each checkpoint, not the current workflow status.
 
+## Final CLAP beta audit — 3 November 2026
+
+Tasks 7.3 and 8.1 passed named-DAW and current-source qualification after the
+1 November integration described below. Task 8.2 now has a
+[complete requirement/evidence audit](evidence/trigger-beta-completion-2026-11-03/README.md)
+and independently reviewed canonical mappings for all 18 beta scenarios. All
+17 retained beta tasks are complete; strict canonical validation and the exact
+reviewed publication envelope passed. Current criterion
+completion is recorded in the [task list](../../openspec/changes/add-juce-free-trigger-beta-products/tasks.md).
+The beta remains private/local; historical REAPER evidence and current native
+qualification keep their separate artifact identities and documented limits.
+This does not close the broader JUCE migration, issues #23/#24, deferred formats
+or other platform/device support. Earlier remaining-gate statements below are
+dated checkpoint receipts, not competing current status.
+
 ## Accepted scope and integration boundary — 1 November 2026
 
 The user narrowed the first beta to **Linux CLAP only** on 22 October. That decision supersedes the 20 October continuation's VST3/standalone stopping condition. The accepted [beta proposal](../../openspec/changes/add-juce-free-trigger-beta-products/proposal.md), [design](../../openspec/changes/add-juce-free-trigger-beta-products/design.md), and [future products](../../openspec/changes/add-juce-free-trigger-beta-products/future-products.md) retain the exact boundary. VST3, standalone/devices and broader OS/AU migration are deferred, not completed or silently removed from the broader migration.
@@ -19,7 +34,7 @@ The 1 November request to land the completed work authorizes integration of the 
 
 The CLAP/editor CMake options remain default-off. Shared engine, session, frontend and JUCE comparison changes still require integration regression checks; default-off products do not isolate those changes. The [integration verification packet](evidence/trigger-integration-2026-11-01/README.md) records refreshed shared-consumer checks, fixture repairs and explicit evidence reuse.
 
-## Remaining release gates
+## Release gates at the 1 November integration checkpoint
 
 - **7.3:** named-DAW automation/feedback, editor-absent servicing, independent instances and saved-project fresh selected-sample/parameter restoration.
 - **8.1:** final current-owner coverage/refactoring, dependency/licence and complete build/validator audits. The recorded 129-diagnostic strict-engine-Clippy baseline failure, partial owner coverage and four default-branch high dependency advisories are unresolved evidence, not passing or waived checks. Local installed proof does not establish redistribution clearance.
