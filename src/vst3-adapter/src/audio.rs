@@ -70,6 +70,9 @@ impl Slot {
             .ok()
             .map(|_| Borrow(&self.borrowed))
     }
+    pub fn in_use(&self) -> bool {
+        self.borrowed.load(Ordering::Acquire)
+    }
     pub fn with<R>(&self, f: impl FnOnce(&mut Endpoint) -> R) -> Option<R> {
         let _guard = self.acquire()?;
         unsafe { (&mut *self.value.get()).as_mut().map(f) }

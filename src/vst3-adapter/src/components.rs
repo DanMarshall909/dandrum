@@ -165,7 +165,9 @@ impl IPluginBaseTrait for Processor {
         kResultOk
     }
     unsafe fn terminate(&self) -> tresult {
-        if self.audio.processing.load(Ordering::Acquire) {
+        // A stopped/zero-sample callback may be inside a foreign event/point
+        // getter. Reject reentrant teardown before acquiring/destroying audio.
+        if self.audio.processing.load(Ordering::Acquire) || self.audio.in_use() {
             return kResultFalse;
         }
         if self.thread != platform::thread_id() {

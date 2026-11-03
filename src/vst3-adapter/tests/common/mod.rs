@@ -173,3 +173,25 @@ pub fn utf16(value: &[char16]) -> String {
     )
     .unwrap()
 }
+
+/// Bound an owned test child and retain its diagnostic output on every exit.
+pub fn finish_child(
+    mut child: std::process::Child,
+    seconds: u64,
+    label: &str,
+) -> std::process::Output {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(seconds);
+    while child.try_wait().unwrap().is_none() {
+        if std::time::Instant::now() >= deadline {
+            child.kill().unwrap();
+            let output = child.wait_with_output().unwrap();
+            panic!(
+                "{label}-return-deadline: {}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    child.wait_with_output().unwrap()
+}

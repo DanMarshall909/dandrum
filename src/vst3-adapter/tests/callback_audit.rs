@@ -68,21 +68,7 @@ fn complete_callbacks_use_the_real_allocator_sentinel() {
         .stderr(std::process::Stdio::piped())
         .spawn()
         .unwrap();
-    let mut child = output;
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(20);
-    while child.try_wait().unwrap().is_none() {
-        if std::time::Instant::now() >= deadline {
-            child.kill().unwrap();
-            let output = child.wait_with_output().unwrap();
-            panic!(
-                "callback-return-deadline: {}{}",
-                String::from_utf8_lossy(&output.stdout),
-                String::from_utf8_lossy(&output.stderr)
-            );
-        }
-        std::thread::sleep(std::time::Duration::from_millis(10));
-    }
-    let output = child.wait_with_output().unwrap();
+    let output = finish_child(output, 20, "callback");
     if let Some(root) = std::env::var_os("DANDRUM_VST3_AUDIT_EVIDENCE_DIR") {
         let root = std::path::PathBuf::from(root);
         std::fs::create_dir_all(&root).unwrap();
