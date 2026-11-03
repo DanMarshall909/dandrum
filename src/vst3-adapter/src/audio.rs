@@ -1,7 +1,11 @@
 //! Unique prebuilt audio endpoint. Audio never borrows the main-thread owner.
 use dandrum_trigger_host::{
     TriggerHostConfiguration,
-    runtime::{ControlEvent, MAX_BLOCK_FRAMES, MAX_EVENTS, RuntimeAudio, TimedEvent},
+    parameters::PublicParameter,
+    runtime::{
+        ControlEvent, MAX_BLOCK_FRAMES, MAX_CURVES, MAX_EVENTS, NormalizedPoint, ParameterCurve,
+        RuntimeAudio, TimedEvent,
+    },
 };
 use std::{
     cell::UnsafeCell,
@@ -22,9 +26,27 @@ pub(crate) struct Endpoint {
     pub audio_enabled: bool,
     pub events_enabled: bool,
     events: Box<[TimedEvent; MAX_EVENTS]>,
+    points: Box<[NormalizedPoint; MAX_EVENTS]>,
+    parameters: Vec<PublicParameter>,
+}
+#[derive(Clone, Copy, Default)]
+struct CurveRange {
+    parameter: usize,
+    begin: usize,
+    end: usize,
+}
+
+struct CurveBatch {
+    ranges: [CurveRange; MAX_CURVES],
+    curve_count: usize,
+    point_count: usize,
 }
 impl Endpoint {
-    pub fn new(runtime: RuntimeAudio, configuration: TriggerHostConfiguration) -> Self {
+    pub fn new(
+        runtime: RuntimeAudio,
+        configuration: TriggerHostConfiguration,
+        parameters: Vec<PublicParameter>,
+    ) -> Self {
         Self {
             runtime,
             configuration,
@@ -32,6 +54,8 @@ impl Endpoint {
             audio_enabled: true,
             events_enabled: true,
             events: Box::new([EMPTY; MAX_EVENTS]),
+            points: Box::new([NormalizedPoint::default(); MAX_EVENTS]),
+            parameters,
         }
     }
 }
@@ -146,6 +170,68 @@ impl Slot {
     }
 }
 impl Endpoint {
+    /// Only scratch changes until the complete standard host batch is validated.
+    unsafe fn read_curves(&mut self, data: &ProcessData, frames: usize) -> Option<CurveBatch> {
+        let mut ranges = [CurveRange::default(); MAX_CURVES];
+        let mut curve_count = 0;
+        let mut point_count = 0;
+        let mut seen = [false; MAX_CURVES];
+        if let Some(parameters) = unsafe { ComRef::from_raw(data.inputParameterChanges) } {
+            let count = unsafe { parameters.getParameterCount() };
+            if !(0..=MAX_CURVES as i32).contains(&count) {
+                return None;
+            }
+            for i in 0..count {
+                let queue = unsafe { ComRef::from_raw(parameters.getParameterData(i)) }?;
+                let parameter = crate::parameters::index(unsafe { queue.getParameterId() })?;
+                if seen[parameter] {
+                    return None;
+                }
+                seen[parameter] = true;
+                let count = unsafe { queue.getPointCount() };
+                if count < 0 || count as usize > MAX_EVENTS - point_count {
+                    return None;
+                }
+                if count == 0 {
+                    continue;
+                }
+                let begin = point_count;
+                let mut previous = -1;
+                for i in 0..count {
+                    let (mut offset, mut value) = (0, 0.0);
+                    if unsafe { queue.getPoint(i, &mut offset, &mut value) } != kResultOk
+                        || offset < 0
+                        || offset <= previous
+                        || !(0.0..=1.0).contains(&value)
+                        || if frames == 0 {
+                            offset != 0
+                        } else {
+                            offset as usize >= frames
+                        }
+                    {
+                        return None;
+                    }
+                    self.points[point_count] = NormalizedPoint {
+                        frame_offset: offset as u32,
+                        value,
+                    };
+                    point_count += 1;
+                    previous = offset;
+                }
+                ranges[curve_count] = CurveRange {
+                    parameter,
+                    begin,
+                    end: point_count,
+                };
+                curve_count += 1;
+            }
+        }
+        Some(CurveBatch {
+            ranges,
+            curve_count,
+            point_count,
+        })
+    }
     unsafe fn process(
         &mut self,
         data: &mut ProcessData,
@@ -164,16 +250,20 @@ impl Endpoint {
         {
             return kInvalidArgument;
         }
-        if let Some(parameters) = unsafe { ComRef::from_raw(data.inputParameterChanges) }
-            && unsafe { parameters.getParameterCount() } != 0
-        {
-            return kNotImplemented;
-        }
         let no_audio = data.numSamples == 0 || data.numOutputs == 0 || !self.audio_enabled;
         if !no_audio && (!active || !processing || !configured) {
             return kNotInitialized;
         }
         let frames = data.numSamples as usize;
+        let Some(CurveBatch {
+            ranges,
+            curve_count,
+            point_count,
+        }) = (unsafe { self.read_curves(data, frames) })
+        else {
+            return kInvalidArgument;
+        };
+        let mut admitted = point_count;
         let mut count = 0;
         let mut previous = 0;
         if let Some(events) = unsafe { ComRef::from_raw(data.inputEvents) } {
@@ -235,6 +325,10 @@ impl Endpoint {
                     return kInvalidArgument;
                 }
                 previous = event.sampleOffset;
+                admitted += 1;
+                if admitted > MAX_EVENTS {
+                    return kInvalidArgument;
+                }
                 if !no_audio && self.events_enabled {
                     self.events[count] = TimedEvent {
                         frame_offset: event.sampleOffset as u32,
@@ -245,8 +339,25 @@ impl Endpoint {
             }
         }
         if no_audio {
+            let mut scalars = [ControlEvent::Parameter {
+                index: 0,
+                value: 0.0,
+            }; MAX_CURVES];
+            for (range, scalar) in ranges[..curve_count].iter().zip(&mut scalars) {
+                let parameter = &self.parameters[range.parameter];
+                *scalar = ControlEvent::Parameter {
+                    index: parameter.root_index,
+                    value: parameter
+                        .normalized_to_physical(self.points[range.end - 1].value)
+                        .expect("validated normalized point"),
+                };
+            }
             unsafe { clear(data) };
-            return if self.runtime.flush_parameters(&[]).is_ok() {
+            return if self
+                .runtime
+                .flush_parameters(&scalars[..curve_count])
+                .is_ok()
+            {
                 kResultOk
             } else {
                 kResultFalse
@@ -282,9 +393,16 @@ impl Endpoint {
         // overlap was rejected before constructing simultaneous Rust borrows.
         let left = unsafe { std::slice::from_raw_parts_mut(left, frames) };
         let right = unsafe { std::slice::from_raw_parts_mut(right, frames) };
+        let curves: [ParameterCurve<'_>; MAX_CURVES] = std::array::from_fn(|i| {
+            let range = ranges[i];
+            ParameterCurve {
+                index: self.parameters[range.parameter].root_index,
+                points: &self.points[range.begin..range.end],
+            }
+        });
         if self
             .runtime
-            .process_events(left, right, &self.events[..count])
+            .process_curves(left, right, &self.events[..count], &curves[..curve_count])
             .is_err()
         {
             return kResultFalse;

@@ -1,0 +1,250 @@
+{
+  "status": "live curve boundary verified; whole Linux proof incomplete",
+  "sourceSha256": {
+    "src/vst3-adapter/src/audio.rs": "33067f80b4f5e39ad9d65046e3df1c2f16e6364b4cc8799adbb4d28ff346303f",
+    "src/vst3-adapter/src/components.rs": "f9dbcd62870617e570bf596b2401c98b3d2867000ff00a493283ae151df05fd8",
+    "src/vst3-adapter/tests/curves.rs": "bffc6e91a55e8e7a037a90ab432cf025bd9b495677316afd56f89e0b9ef85438",
+    "src/vst3-adapter/tests/reentrancy.rs": "b3cce57b2cc3820cfe453fe672e60dab837de13c1e901fb6785869746d3203b6",
+    "src/vst3-adapter/tests/callback_audit.rs": "1e469b040d33dede70c3a8c1e95b0530a411d8990381ee34c2d69c6a15c056b4",
+    "src/vst3-adapter/tests/common/mod.rs": "fbbab5ff3b12ecf651de2e201deb546f4ceb929b7c40a8221e089a8cb7eb2d86",
+    "src/vst3-adapter/tests/common/parameters.rs": "8903e54d640b88a17ec77b6e78bd9aada70fb3664bc4cde5a2e7ab306ce6fe93"
+  },
+  "actualCdylibCoverage": {
+    "audio.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 19,
+        "covered": 19,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 23,
+        "covered": 23,
+        "percent": 100
+      },
+      "lines": {
+        "count": 348,
+        "covered": 339,
+        "percent": 97.41379310344827
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 476,
+        "covered": 465,
+        "notcovered": 11,
+        "percent": 97.68907563025209
+      }
+    },
+    "components.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 77,
+        "covered": 70,
+        "percent": 90.9090909090909
+      },
+      "instantiations": {
+        "count": 77,
+        "covered": 70,
+        "percent": 90.9090909090909
+      },
+      "lines": {
+        "count": 838,
+        "covered": 780,
+        "percent": 93.07875894988067
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 1153,
+        "covered": 1090,
+        "notcovered": 63,
+        "percent": 94.5359930615785
+      }
+    },
+    "lib.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 14,
+        "covered": 14,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 18,
+        "covered": 18,
+        "percent": 100
+      },
+      "lines": {
+        "count": 141,
+        "covered": 141,
+        "percent": 100
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 218,
+        "covered": 218,
+        "notcovered": 0,
+        "percent": 100
+      }
+    },
+    "parameters.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 5,
+        "covered": 5,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 5,
+        "covered": 5,
+        "percent": 100
+      },
+      "lines": {
+        "count": 20,
+        "covered": 20,
+        "percent": 100
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 26,
+        "covered": 26,
+        "notcovered": 0,
+        "percent": 100
+      }
+    },
+    "platform/linux.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 4,
+        "covered": 4,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 4,
+        "covered": 4,
+        "percent": 100
+      },
+      "lines": {
+        "count": 73,
+        "covered": 67,
+        "percent": 91.78082191780823
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 111,
+        "covered": 100,
+        "notcovered": 11,
+        "percent": 90.09009009009009
+      }
+    },
+    "transport.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 32,
+        "covered": 24,
+        "percent": 75
+      },
+      "instantiations": {
+        "count": 32,
+        "covered": 24,
+        "percent": 75
+      },
+      "lines": {
+        "count": 274,
+        "covered": 242,
+        "percent": 88.32116788321169
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 379,
+        "covered": 346,
+        "notcovered": 33,
+        "percent": 91.2928759894459
+      }
+    }
+  },
+  "pointDecoder": [
+    {
+      "calls": 68,
+      "regions": 79,
+      "uncovered": 0
+    }
+  ],
+  "scope": "accumulated TDD profiles; exact dynamic-library object; final fresh-profile/full-lane candidate run pending",
+  "tests": {
+    "vst3Combined": "all27 previous discovery/connection/service tests,7 audio,5 curves,calibrated allocator parent and reentry parent pass; intentional children run by their parents",
+    "clippy": "pass",
+    "clapDynamic": "fresh native-editor-enabled product,20 pass,1 intentional allocator child run by parent",
+    "clapProduct": {
+      "source": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/fafc0b7c77a511cff6f8ed44/targets/09632a2a31c68bcfb7bc1337/ordinary/debug/libdandrum_clap_adapter.so",
+      "copy": "/tmp/dandrum-vst3-proof-20261103/clap-curve-check/DandrumTrigger.clap",
+      "sha256": "9dedb13f25b10e22ff335e82590e1f4dc1bd743e74d71d6ff8ba247bf9446da4"
+    }
+  },
+  "open": [
+    "stopped normalized endpoint precision",
+    "stopped feedback and host gestures",
+    "portable VST3 state",
+    "actual production editor and installed REAPER acceptance",
+    "complete official validator",
+    "final exact combined review/publication"
+  ]
+}

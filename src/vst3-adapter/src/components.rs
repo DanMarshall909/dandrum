@@ -130,15 +130,18 @@ impl IPluginBaseTrait for Processor {
         ) else {
             return kResultFalse;
         };
-        if parameters::ordered(owner.parameters()).is_err() {
+        let Ok(parameters) = parameters::ordered(owner.parameters()) else {
             return kResultFalse;
-        }
+        };
         let runloop = { self.runloop.borrow().clone() };
         if runloop.is_some() && owner.start_session_worker(self.wake.clone()).is_err() {
             return kResultFalse;
         }
-        self.audio
-            .install(crate::audio::Endpoint::new(audio, configuration));
+        self.audio.install(crate::audio::Endpoint::new(
+            audio,
+            configuration,
+            parameters,
+        ));
         *self.owner.borrow_mut() = Some(owner);
         if let Some(runloop) = runloop {
             let timer = ComWrapper::new(Timer(self.thread, Rc::downgrade(&self.0)))

@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 pub mod audio;
 pub mod message;
+pub mod parameters;
 pub mod runloop;
 use libloading::Library;
 use std::{ffi::c_void, marker::PhantomData, mem::ManuallyDrop, ops::Deref, path::PathBuf};

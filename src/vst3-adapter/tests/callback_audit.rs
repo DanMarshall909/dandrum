@@ -153,26 +153,42 @@ fn allocator_audit_child() {
     }
     let a = p.cast::<IAudioProcessor>().unwrap();
     unsafe {
-        assert_eq!(a.setupProcessing(&mut setup(48_000.0, 16)), kResultOk);
+        assert_eq!(a.setupProcessing(&mut setup(48_000.0, 1024)), kResultOk);
         assert_eq!(p.setActive(1), kResultOk);
     }
     let audio = a.clone();
-    std::thread::spawn(move||{
-    let notes = events(vec![note_on(5, 36, 1.0)]);
-    let invalid = events(vec![note_off(0, 36), note_on(16, 36, 1.0)]);
-    let off = events(vec![note_off(0, 36)]);
-    let mut block = Block::new(16);
-    let mut zero = Block::new(0);
-
-        assert_eq!(audit.measure(||unsafe{audio.setProcessing(1)}),(kResultOk,(0,0)));
-        let mut data=block.data();data.inputEvents=notes.as_ptr();assert_eq!(audit.measure(||unsafe{audio.process(&mut data)}),(kResultOk,(0,0)));assert_eq!((block.left[5],block.right[5]),(-0.5,-0.5));
-        let mut data=block.data();data.inputEvents=invalid.as_ptr();assert_eq!(audit.measure(||unsafe{audio.process(&mut data)}),(kInvalidArgument,(0,0)));assert_eq!(block.left,[0.0;16]);
-        let mut data=zero.data();assert_eq!(audit.measure(||unsafe{audio.process(&mut data)}),(kResultOk,(0,0)));
-        let mut data=block.data();data.inputEvents=off.as_ptr();assert_eq!(audit.measure(||unsafe{audio.process(&mut data)}),(kResultOk,(0,0)));
-        assert_eq!(audit.measure(||unsafe{audio.setProcessing(0)}),(kResultOk,(0,0)));assert_eq!(audit.measure(||unsafe{audio.setProcessing(1)}),(kResultOk,(0,0)));
-        let mut data=block.data();assert_eq!(audit.measure(||unsafe{audio.process(&mut data)}),(kResultOk,(0,0)));assert_eq!(block.left,[0.0;16]);
-        assert_eq!(audit.measure(||unsafe{audio.process(std::ptr::null_mut())}),(kInvalidArgument,(0,0)));assert_eq!(audit.measure(||unsafe{audio.setProcessing(0)}),(kResultOk,(0,0)));
-        println!("calibrated real DSO malloc/free sentinel: full valid/invalid/zero/note-off/reset callbacks each0 allocations and0 deallocations");
+    std::thread::spawn(move || {
+        use common::parameters::{changes,queue};
+        macro_rules! clean {
+            ($call:expr,$expected:expr) => {assert_eq!(audit.measure(||unsafe{$call}),($expected,(0,0)));};
+        }
+        let notes=events(vec![note_on(5,36,1.0)]);
+        let invalid=events(vec![note_off(0,36),note_on(16,36,1.0)]);
+        let off=events(vec![note_off(0,36)]);
+        let start=events(vec![note_on(0,36,1.0)]);
+        let curves=changes(vec![queue(0x1003,(0..1023).map(|i|(i,0.25)).collect())]);
+        let bad=changes(vec![queue(0x1003,vec![(0,0.0)]),queue(0x1004,vec![(0,f64::NAN)])]);
+        let scalar=changes(vec![queue(0x1003,vec![(0,0.125)])]);
+        let mut block=Block::new(16);
+        let mut large=Block::new(1024);
+        let mut zero=Block::new(0);
+        clean!(audio.setProcessing(1),kResultOk);
+        let mut data=block.data();data.inputEvents=notes.as_ptr();
+        clean!(audio.process(&mut data),kResultOk);
+        assert_eq!((block.left[5],block.right[5]),(-0.5,-0.5));
+        let mut data=block.data();data.inputEvents=invalid.as_ptr();
+        clean!(audio.process(&mut data),kInvalidArgument);assert_eq!(block.left,[0.0;16]);
+        clean!(audio.process(&mut zero.data()),kResultOk);
+        let mut data=block.data();data.inputEvents=off.as_ptr();clean!(audio.process(&mut data),kResultOk);
+        clean!(audio.setProcessing(0),kResultOk);clean!(audio.setProcessing(1),kResultOk);
+        clean!(audio.process(&mut block.data()),kResultOk);assert_eq!(block.left,[0.0;16]);
+        let mut data=large.data();data.inputEvents=start.as_ptr();data.inputParameterChanges=curves.as_ptr();
+        clean!(audio.process(&mut data),kResultOk);assert_eq!((large.left[0],large.right[0]),(-0.5,-0.5));
+        let mut data=block.data();data.inputParameterChanges=bad.as_ptr();
+        clean!(audio.process(&mut data),kInvalidArgument);assert_eq!(block.left,[0.0;16]);
+        let mut data=zero.data();data.inputParameterChanges=scalar.as_ptr();clean!(audio.process(&mut data),kResultOk);
+        clean!(audio.process(std::ptr::null_mut()),kInvalidArgument);clean!(audio.setProcessing(0),kResultOk);
+        println!("calibrated real DSO malloc/free sentinel: complete valid/error/zero/note-off/reset and1024-input curve callbacks each0 allocations and0 deallocations");
     }).join().unwrap();
     unsafe {
         assert_eq!(p.terminate(), kResultOk);
