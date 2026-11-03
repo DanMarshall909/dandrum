@@ -1892,3 +1892,80 @@ fn normalized_endpoint_retains_precision_and_reseeds_after_a_physical_write() {
     assert_eq!(left, [-0.5, sample_at(expected_pitch)]);
     assert_eq!(left, right);
 }
+
+#[test]
+fn stopped_normalized_flush_is_atomic_preserves_native_history_and_consumes_no_dsp_time() {
+    use dandrum_trigger_host::runtime::RuntimeError;
+    let (_package, root) = package();
+    let (mut owner, mut audio) =
+        ParameterController::open(root, configuration(), NonZeroU64::new(605).unwrap(), 4, 6)
+            .unwrap();
+    let level = owner
+        .parameters()
+        .iter()
+        .find(|p| p.id == "drums.level")
+        .unwrap()
+        .root_index;
+    let before = owner.session().owner_snapshot();
+    let editor = owner.attach_editor().unwrap();
+    let command = request(
+        &mut owner,
+        &editor.attachment_id,
+        1,
+        "setParameter",
+        json!(["drums.level", 0.125, 1]),
+    );
+    owner.apply(&command).unwrap();
+    for invalid in [
+        vec![(level, 0.0), (usize::MAX, 0.5)],
+        vec![(level, 0.0), (level, 0.5)],
+        vec![(level, f64::NAN)],
+        vec![(level, -0.1)],
+        vec![(level, 1.1)],
+        vec![(level, 0.5); 5],
+        vec![(level, 0.5); 24],
+    ] {
+        let audit = allocation_counter::measure(|| {
+            assert_eq!(
+                audio.flush_normalized(&invalid),
+                Err(RuntimeError::InvalidEvent)
+            )
+        });
+        assert_eq!(audit, allocation_counter::AllocationInfo::default());
+        assert_eq!(
+            owner.parameter_state().sequence,
+            0,
+            "invalid host batch preserves queued UI settlement"
+        );
+    }
+    let audit = allocation_counter::measure(|| {
+        assert_eq!(
+            audio
+                .flush_normalized(&[(level, 0.5)])
+                .unwrap()
+                .parameter_updates,
+            2
+        )
+    });
+    assert_eq!(audit, allocation_counter::AllocationInfo::default());
+    assert_eq!(
+        owner.session().owner_snapshot(),
+        before,
+        "scalar host work creates no native history"
+    );
+    let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
+    audio
+        .process_events(
+            &mut left,
+            &mut right,
+            &[TimedEvent {
+                frame_offset: 0,
+                event: ControlEvent::NoteOn {
+                    note: 36,
+                    velocity: 127,
+                },
+            }],
+        )
+        .unwrap();
+    assert_eq!((left[0], right[0]), (-1.0, -1.0));
+}

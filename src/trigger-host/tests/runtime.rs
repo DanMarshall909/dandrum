@@ -1121,6 +1121,10 @@ fn normalized_curves_require_declared_finite_physical_bounds() {
         let session = planar_session(&yaml.replace("default: 1, min: 0, max: 4", replacement));
         let prepared = PreparedRuntime::new(session.prepared(), configuration()).unwrap();
         let (_, mut audio) = runtime_handoff(prepared, 4).unwrap();
+        assert_eq!(
+            audio.flush_normalized(&[(2, 0.5)]),
+            Err(RuntimeError::InvalidEvent)
+        );
         let points = [NormalizedPoint {
             frame_offset: 0,
             value: 0.5,

@@ -917,11 +917,16 @@ impl RuntimeAudio {
         {
             return Err(RuntimeError::InvalidEvent);
         }
+        Ok(self.apply_scalar_batch(host))
+    }
+
+    /// Both public entrypoints validate the entire scalar batch first.
+    fn apply_scalar_batch(&mut self, host: &[ControlEvent]) -> ParameterFlushReport {
         let Some(_admission) = CallbackAdmission::enter(&self.admission) else {
-            return Ok(ParameterFlushReport {
+            return ParameterFlushReport {
                 admission_closed: true,
                 ..ParameterFlushReport::default()
-            });
+            };
         };
         let _write = ScalarWrite::begin(&self.scalar_stamp);
         let mut report = ParameterFlushReport::default();
@@ -951,8 +956,47 @@ impl RuntimeAudio {
                     usize::from(self.state.apply_parameter(index, value, 0, 0));
             }
         }
+        report
+    }
+    /// Apply stopped normalized host scalars without advancing DSP. Preserve
+    /// exact normalized endpoints so the following ramp has the same origin.
+    pub fn flush_normalized(
+        &mut self,
+        host: &[(usize, f64)],
+    ) -> Result<ParameterFlushReport, RuntimeError> {
+        if host.len() > MAX_CURVES || host.len() > self.state.event_capacity {
+            return Err(RuntimeError::InvalidEvent);
+        }
+        let mut scalars = [ControlEvent::Parameter {
+            index: 0,
+            value: 0.0,
+        }; MAX_CURVES];
+        let mut applied_bits = [0; MAX_CURVES];
+        for (position, &(index, normalized)) in host.iter().enumerate() {
+            if !(0.0..=1.0).contains(&normalized)
+                || host[..position].iter().any(|(prior, _)| *prior == index)
+            {
+                return Err(RuntimeError::InvalidEvent);
+            }
+            let (min, max) = self
+                .state
+                .current
+                .0
+                .range(index)
+                .ok_or(RuntimeError::InvalidEvent)?;
+            let value = crate::control_values::physical(min, max, normalized);
+            scalars[position] = ControlEvent::Parameter { index, value };
+            applied_bits[position] = value.to_bits();
+        }
+        let report = self.apply_scalar_batch(&scalars[..host.len()]);
+        if !report.admission_closed {
+            for (&(index, normalized), bits) in host.iter().zip(applied_bits) {
+                self.state.normalized[index] = (bits, normalized);
+            }
+        }
         Ok(report)
     }
+
     pub fn reset(&mut self) -> ResetReport {
         let Some(_admission) = CallbackAdmission::enter(&self.admission) else {
             return ResetReport {
@@ -1566,6 +1610,16 @@ mod admission_tests {
                     },
                     ControlEvent::NoteOff { note: 36 }
                 ]),
+                Err(RuntimeError::InvalidEvent)
+            );
+            assert!(
+                audio
+                    .flush_normalized(&[(2, 0.25)])
+                    .unwrap()
+                    .admission_closed
+            );
+            assert_eq!(
+                audio.flush_normalized(&[(usize::MAX, 0.25)]),
                 Err(RuntimeError::InvalidEvent)
             );
             assert!(audio.reset().admission_closed);

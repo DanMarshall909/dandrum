@@ -140,7 +140,7 @@ impl IPluginBaseTrait for Processor {
         self.audio.install(crate::audio::Endpoint::new(
             audio,
             configuration,
-            parameters,
+            std::array::from_fn(|i| parameters[i].root_index),
         ));
         *self.owner.borrow_mut() = Some(owner);
         if let Some(runloop) = runloop {

@@ -1,7 +1,6 @@
 //! Unique prebuilt audio endpoint. Audio never borrows the main-thread owner.
 use dandrum_trigger_host::{
     TriggerHostConfiguration,
-    parameters::PublicParameter,
     runtime::{
         ControlEvent, MAX_BLOCK_FRAMES, MAX_CURVES, MAX_EVENTS, NormalizedPoint, ParameterCurve,
         RuntimeAudio, TimedEvent,
@@ -27,11 +26,11 @@ pub(crate) struct Endpoint {
     pub events_enabled: bool,
     events: Box<[TimedEvent; MAX_EVENTS]>,
     points: Box<[NormalizedPoint; MAX_EVENTS]>,
-    parameters: Vec<PublicParameter>,
+    root_indices: [usize; MAX_CURVES],
 }
 #[derive(Clone, Copy, Default)]
 struct CurveRange {
-    parameter: usize,
+    root_index: usize,
     begin: usize,
     end: usize,
 }
@@ -45,7 +44,7 @@ impl Endpoint {
     pub fn new(
         runtime: RuntimeAudio,
         configuration: TriggerHostConfiguration,
-        parameters: Vec<PublicParameter>,
+        root_indices: [usize; MAX_CURVES],
     ) -> Self {
         Self {
             runtime,
@@ -55,7 +54,7 @@ impl Endpoint {
             events_enabled: true,
             events: Box::new([EMPTY; MAX_EVENTS]),
             points: Box::new([NormalizedPoint::default(); MAX_EVENTS]),
-            parameters,
+            root_indices,
         }
     }
 }
@@ -219,7 +218,7 @@ impl Endpoint {
                     previous = offset;
                 }
                 ranges[curve_count] = CurveRange {
-                    parameter,
+                    root_index: self.root_indices[parameter],
                     begin,
                     end: point_count,
                 };
@@ -339,23 +338,14 @@ impl Endpoint {
             }
         }
         if no_audio {
-            let mut scalars = [ControlEvent::Parameter {
-                index: 0,
-                value: 0.0,
-            }; MAX_CURVES];
+            let mut scalars = [(0, 0.0); MAX_CURVES];
             for (range, scalar) in ranges[..curve_count].iter().zip(&mut scalars) {
-                let parameter = &self.parameters[range.parameter];
-                *scalar = ControlEvent::Parameter {
-                    index: parameter.root_index,
-                    value: parameter
-                        .normalized_to_physical(self.points[range.end - 1].value)
-                        .expect("validated normalized point"),
-                };
+                *scalar = (range.root_index, self.points[range.end - 1].value);
             }
             unsafe { clear(data) };
             return if self
                 .runtime
-                .flush_parameters(&scalars[..curve_count])
+                .flush_normalized(&scalars[..curve_count])
                 .is_ok()
             {
                 kResultOk
@@ -390,7 +380,7 @@ impl Endpoint {
         let curves: [ParameterCurve<'_>; MAX_CURVES] = std::array::from_fn(|i| {
             let range = ranges[i];
             ParameterCurve {
-                index: self.parameters[range.parameter].root_index,
+                index: range.root_index,
                 points: &self.points[range.begin..range.end],
             }
         });

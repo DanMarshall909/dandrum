@@ -323,3 +323,43 @@ fn standard_host_curves_are_invariant_under_equivalent_block_partitioning() {
         assert_eq!(unsafe { p.terminate() }, kResultOk);
     }
 }
+
+#[test]
+fn stopped_normalized_points_retain_exact_endpoint_without_playing_or_advancing() {
+    let bundle = Bundle::new();
+    let module = bundle.load();
+    let p = module.class::<IComponent>(&PROCESSOR);
+    let a = p.cast::<IAudioProcessor>().unwrap();
+    assert_eq!(unsafe { p.initialize(std::ptr::null_mut()) }, kResultOk);
+    let previous = 0.5602572770128127;
+    let next = 0.8871297522414345;
+    let stopped = changes(vec![queue(0x1001, vec![(0, previous)])]);
+    let notes = events(vec![note_on(0, 36, 1.0)]);
+    let mut zero = Block::new(0);
+    let mut data = zero.data();
+    data.inputParameterChanges = stopped.as_ptr();
+    data.inputEvents = notes.as_ptr();
+    assert_eq!(unsafe { a.process(&mut data) }, kResultOk);
+    start(&p, &a, 48000.0, 16);
+    let following = changes(vec![queue(0x1001, vec![(1, next)])]);
+    let mut block = Block::new(2);
+    let mut data = block.data();
+    data.inputParameterChanges = following.as_ptr();
+    data.inputEvents = notes.as_ptr();
+    assert_eq!(unsafe { a.process(&mut data) }, kResultOk);
+    let pitch = (0.125 + 7.875 * (previous + (next - previous) / 2.0)) as f32;
+    let a_pcm = f32::from(CURVE_PCM[5]) / 32768.0;
+    let b_pcm = f32::from(CURVE_PCM[6]) / 32768.0;
+    let expected = a_pcm + (b_pcm - a_pcm) * (pitch - 5.0);
+    assert_eq!(
+        block.left[0], -0.5,
+        "stopped note must not play or advance a voice"
+    );
+    assert_eq!(
+        block.left[1], expected,
+        "stopped point retains raw normalized precision"
+    );
+    assert_eq!(block.left, block.right);
+    assert_eq!(unsafe { a.setProcessing(0) }, kResultOk);
+    assert_eq!(unsafe { p.terminate() }, kResultOk);
+}
