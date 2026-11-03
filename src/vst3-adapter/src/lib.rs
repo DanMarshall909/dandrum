@@ -8,6 +8,7 @@
 compile_error!(
     "The VST3 feasibility proof currently targets native GNU Linux x86_64; native Windows/macOS milestones remain required."
 );
+mod audio;
 mod components;
 mod parameters;
 mod platform;
@@ -16,7 +17,6 @@ use std::{
     cell::RefCell,
     ffi::{c_char, c_void},
     rc::Rc,
-    thread::ThreadId,
 };
 use vst3::{
     Class, ComPtr, ComRef, ComWrapper,
@@ -59,7 +59,7 @@ fn class(index: i32) -> Option<(TUID, &'static str, &'static str, &'static str)>
     }
 }
 struct Factory {
-    thread: ThreadId,
+    thread: libc::pid_t,
     runloop: RefCell<Option<Rc<ComPtr<IRunLoop>>>>,
 }
 impl Class for Factory {
@@ -171,7 +171,7 @@ impl IPluginFactory3Trait for Factory {
         kResultOk
     }
     unsafe fn setHostContext(&self, context: *mut FUnknown) -> tresult {
-        if self.thread != std::thread::current().id() {
+        if self.thread != platform::thread_id() {
             return kResultFalse;
         }
         // No factory borrow crosses queryInterface/addRef/release.
@@ -200,7 +200,7 @@ extern "system" fn ModuleExit() -> bool {
 #[unsafe(no_mangle)]
 extern "system" fn GetPluginFactory() -> *mut IPluginFactory {
     ComWrapper::new(Factory {
-        thread: std::thread::current().id(),
+        thread: platform::thread_id(),
         runloop: RefCell::new(None),
     })
     .to_com_ptr::<IPluginFactory>()

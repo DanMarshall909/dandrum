@@ -1,0 +1,256 @@
+{
+  "checkpoint": "audio, not complete Linux proof",
+  "timeUtc": "2026-11-03T09:21:57.831486+00:00",
+  "tests": {
+    "audio": 7,
+    "previousDynamic": 27,
+    "allocatorParent": 1,
+    "allocatorChild": "executed by calibrated parent; 0 allocation/0 deallocation in measured complete callbacks",
+    "clippy": "pass"
+  },
+  "coverage": {
+    "audio.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 16,
+        "covered": 16,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 20,
+        "covered": 20,
+        "percent": 100
+      },
+      "lines": {
+        "count": 253,
+        "covered": 242,
+        "percent": 95.65217391304348
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 354,
+        "covered": 340,
+        "notcovered": 14,
+        "percent": 96.045197740113
+      }
+    },
+    "components.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 77,
+        "covered": 70,
+        "percent": 90.9090909090909
+      },
+      "instantiations": {
+        "count": 77,
+        "covered": 70,
+        "percent": 90.9090909090909
+      },
+      "lines": {
+        "count": 837,
+        "covered": 779,
+        "percent": 93.0704898446834
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 1151,
+        "covered": 1088,
+        "notcovered": 63,
+        "percent": 94.5264986967854
+      }
+    },
+    "lib.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 14,
+        "covered": 14,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 18,
+        "covered": 18,
+        "percent": 100
+      },
+      "lines": {
+        "count": 141,
+        "covered": 141,
+        "percent": 100
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 218,
+        "covered": 218,
+        "notcovered": 0,
+        "percent": 100
+      }
+    },
+    "parameters.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 5,
+        "covered": 5,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 5,
+        "covered": 5,
+        "percent": 100
+      },
+      "lines": {
+        "count": 20,
+        "covered": 20,
+        "percent": 100
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 26,
+        "covered": 26,
+        "notcovered": 0,
+        "percent": 100
+      }
+    },
+    "platform/linux.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 4,
+        "covered": 4,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 4,
+        "covered": 4,
+        "percent": 100
+      },
+      "lines": {
+        "count": 73,
+        "covered": 67,
+        "percent": 91.78082191780823
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 111,
+        "covered": 100,
+        "notcovered": 11,
+        "percent": 90.09009009009009
+      }
+    },
+    "transport.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 32,
+        "covered": 24,
+        "percent": 75
+      },
+      "instantiations": {
+        "count": 32,
+        "covered": 24,
+        "percent": 75
+      },
+      "lines": {
+        "count": 274,
+        "covered": 242,
+        "percent": 88.32116788321169
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 379,
+        "covered": 346,
+        "notcovered": 33,
+        "percent": 91.2928759894459
+      }
+    }
+  },
+  "coverageLimit": "Cumulative TDD profiles and exact dynamic library object; final fresh-source/full-lane coverage remains required. Branch/MC-DC not measured.",
+  "sources": {
+    "src/trigger-host/src/parameters.rs": "cd82bbc14e6409a3decd2884daedc8f44a2857044d6a4c3eab568b0261a0bd8e",
+    "src/trigger-host/src/runtime.rs": "aa147ccff3dc2c55ad2302d1e77982e7e01fa7e0698e8b207f0853e03037f550",
+    "src/trigger-host/tests/parameters.rs": "d4a159e87d81374fe7d9c1b215c0eeca742558b841b50d145ccd3ca57cd5b6bc",
+    "src/trigger-host/tests/runtime.rs": "0206183352cbffd73079b4ed8985e63ed52b032b899f5baa078264e3ef5ebe53",
+    "src/vst3-adapter/src/audio.rs": "389ed68ec926f2ef1529a0f87945642a229f9421dd9ed03c5c34b422f8b04108",
+    "src/vst3-adapter/src/components.rs": "bed78651e3822d3639b36da33ff21b139114531ac11404f1d33608a47dbf7c9b",
+    "src/vst3-adapter/src/lib.rs": "a7d8d5ea2141d19360e270ae45f85ad5e39a6d4b246204ea20b8398b5c30db0a",
+    "src/vst3-adapter/src/parameters.rs": "3370e51f404b20211b293948d8f16481c995dd436c09b39c7b953a86b7f42628",
+    "src/vst3-adapter/src/platform/linux.rs": "ee9a3004d1e8d58f3f5a92047aa0bd5d34e4db181df838638ef62e973412cace",
+    "src/vst3-adapter/src/platform/mod.rs": "30731d3c95b799abd9382d7a04fff96c6ef7f398438d26521696cf9f44fd0432",
+    "src/vst3-adapter/src/transport.rs": "1d12afc102f25fd0e036b81d193719adcaa6e786fbc751e7801194c11c302d30",
+    "src/vst3-adapter/tests/audio.rs": "6506f006c483c9bbfd7c49aca14771d352f38261cb017ba7a754ec3c6f8a1156",
+    "src/vst3-adapter/tests/callback_audit.rs": "3192a8ab481566bc424e4e1756874f4cacd77d96d032d35490b94cc5819d2905",
+    "src/vst3-adapter/tests/common/audio.rs": "33dd4672f376c00fe8ca2212e6ffb4617a3169522a8f6322b12bf64f2e2928ef",
+    "src/vst3-adapter/tests/common/message.rs": "c038a2199ee447f337bc054a899536739c4844be4822b8284848866ff0761fc2",
+    "src/vst3-adapter/tests/common/mod.rs": "f2ff92201576d5c74d48adb7bee8900533b263929c821721a0340d7a582058c0",
+    "src/vst3-adapter/tests/common/runloop.rs": "f71927546cac45c1a80c08d7f908e941acaf2629db0af06f00caa49ed759f50c",
+    "src/vst3-adapter/tests/connection.rs": "6753f4591c55d98d499a40f42224e986576198f64b39810c129de3c76b8f541a",
+    "src/vst3-adapter/tests/discovery.rs": "a7423313a253f7070f01ec742f591591ba317195e886a881cf1745a65b91cd91",
+    "src/vst3-adapter/tests/processor_owner.rs": "2a32b0eb55de7f3dba9c6aefc104a0bed08db0ae66bc3c6b6e486fa2ad1eb550",
+    "src/vst3-adapter/tests/service.rs": "8c8a4ebad6ec6be94f89868be10aef2fb599d2167d1f0228669dbea44c977049"
+  },
+  "open": [
+    "full callback/reentrancy coverage",
+    "automation curves and stopped feedback",
+    "portable state",
+    "native production editor lifecycle",
+    "installed REAPER acceptance",
+    "official Trigger validator",
+    "final combined Astra completion review/publication"
+  ]
+}

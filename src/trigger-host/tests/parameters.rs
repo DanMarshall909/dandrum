@@ -1085,10 +1085,18 @@ fn constructor_rejects_invalid_capacity_resources_and_nonbijective_or_unbounded_
         ),
         Err(ParameterError::Host(_))
     ));
-    assert!(matches!(
-        ParameterController::open(&root, configuration(), NonZeroU64::new(1).unwrap(), 0, 8),
-        Err(ParameterError::Runtime(_))
-    ));
+    for events in [0, 1025] {
+        assert!(matches!(
+            ParameterController::open(
+                &root,
+                configuration(),
+                NonZeroU64::new(1).unwrap(),
+                events,
+                8
+            ),
+            Err(ParameterError::Runtime(_))
+        ));
+    }
     let document = root.join(ADVANCED_DRUM_KIT_DOCUMENT);
     let yaml = std::fs::read_to_string(&document).unwrap();
     let invalids = [
@@ -1489,4 +1497,90 @@ fn metadata_only_public_surface_matches_the_owner_without_decoding_or_creating_s
     );
     std::fs::write(doc, "this is not a kernel document").unwrap();
     assert!(public_parameters_from_resources(&root).is_err());
+}
+
+#[test]
+fn a_short_host_block_accepts_the_declared_event_capacity_and_preserves_it_after_reconfiguration() {
+    let (_package, root) = package();
+    for events in [0, 1025] {
+        assert!(
+            ParameterController::open_with_reserved_events(
+                &root,
+                configuration(),
+                NonZeroU64::new(100).unwrap(),
+                events,
+                1024
+            )
+            .is_err()
+        );
+    }
+    let (small, mut small_audio) = ParameterController::open_with_reserved_events(
+        &root,
+        configuration(),
+        NonZeroU64::new(99).unwrap(),
+        4,
+        8,
+    )
+    .unwrap();
+    let (mut left, mut right) = ([1.0; 16], [1.0; 16]);
+    small_audio
+        .process_events(
+            &mut left,
+            &mut right,
+            &[TimedEvent {
+                frame_offset: 0,
+                event: ControlEvent::NoteOn {
+                    note: 36,
+                    velocity: 127,
+                },
+            }],
+        )
+        .unwrap();
+    assert_eq!((left[0], right[0]), (-0.5, -0.5));
+    drop((small, small_audio));
+    let (mut controller, mut audio) = ParameterController::open_with_reserved_events(
+        &root,
+        configuration(),
+        NonZeroU64::new(101).unwrap(),
+        1024,
+        1024,
+    )
+    .expect("1024 admitted events must not depend on a long host block");
+    let mut notes = vec![
+        TimedEvent {
+            frame_offset: 0,
+            event: ControlEvent::NoteOff { note: 36 }
+        };
+        1024
+    ];
+    notes[1023].event = ControlEvent::NoteOn {
+        note: 36,
+        velocity: 127,
+    };
+    for frames in [16, 8] {
+        let config = TriggerHostConfiguration {
+            max_block_frames: frames,
+            ..configuration()
+        };
+        controller
+            .reconfigure_quiescent(&mut audio, config)
+            .unwrap();
+        let (mut left, mut right) = (vec![123.0; frames as usize], vec![123.0; frames as usize]);
+        let audit = allocation_counter::measure(|| {
+            audio.process_events(&mut left, &mut right, &notes).unwrap();
+        });
+        assert_eq!(audit, allocation_counter::AllocationInfo::default());
+        assert_eq!((left[0], right[0]), (-0.5, -0.5));
+        audio.reset();
+    }
+    let mut saved = Vec::new();
+    controller.save_state(&mut saved).unwrap();
+    controller.load_state(&mut saved.as_slice()).unwrap();
+    controller.service_quiescent(&mut audio).unwrap();
+    let (mut left, mut right) = ([123.0; 8], [123.0; 8]);
+    let audit = allocation_counter::measure(|| {
+        audio.process_events(&mut left, &mut right, &notes).unwrap();
+    });
+    assert_eq!(audit, allocation_counter::AllocationInfo::default());
+    assert_eq!((left[0], right[0]), (-0.5, -0.5));
 }

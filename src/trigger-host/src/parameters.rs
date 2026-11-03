@@ -963,13 +963,58 @@ impl ParameterController {
         event_capacity: usize,
         automation_capacity: usize,
     ) -> Result<(Self, RuntimeAudio), ParameterError> {
+        Self::open_impl(
+            root.as_ref(),
+            configuration,
+            instance_id,
+            event_capacity,
+            automation_capacity,
+            false,
+        )
+    }
+
+    /// Reserve a fixed event budget independently of host block length. The
+    /// original entrypoint retains existing adapters' admission/shrink policy.
+    pub fn open_with_reserved_events(
+        root: &Path,
+        configuration: TriggerHostConfiguration,
+        instance_id: NonZeroU64,
+        event_capacity: usize,
+        automation_capacity: usize,
+    ) -> Result<(Self, RuntimeAudio), ParameterError> {
+        Self::open_impl(
+            root,
+            configuration,
+            instance_id,
+            event_capacity,
+            automation_capacity,
+            true,
+        )
+    }
+
+    fn open_impl(
+        root: &Path,
+        configuration: TriggerHostConfiguration,
+        instance_id: NonZeroU64,
+        event_capacity: usize,
+        automation_capacity: usize,
+        reserve_events: bool,
+    ) -> Result<(Self, RuntimeAudio), ParameterError> {
         if !(3..=MAX_AUTOMATION_EVENTS).contains(&automation_capacity) {
             return Err(ParameterError::InvalidCapacity);
         }
         let host = TriggerHost::open(root, configuration)
             .map_err(|error| ParameterError::Host(error.to_string()))?;
-        let prepared = PreparedRuntime::new(host.session().prepared(), configuration)
-            .map_err(ParameterError::Runtime)?;
+        let prepared = if reserve_events {
+            PreparedRuntime::new_for_events(
+                host.session().prepared(),
+                configuration,
+                event_capacity,
+            )
+        } else {
+            PreparedRuntime::new(host.session().prepared(), configuration)
+        }
+        .map_err(ParameterError::Runtime)?;
         let (runtime, audio) =
             runtime_handoff(prepared, event_capacity).map_err(ParameterError::Runtime)?;
         let parameters = public_parameters_from_document(host.resources.document())?;

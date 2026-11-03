@@ -88,6 +88,19 @@ fn prepared(note: u8) -> PreparedRuntime {
 
 #[test]
 fn invalid_configuration_or_foreign_layout_cannot_replace_the_running_runtime() {
+    let reference = session(36);
+    assert!(matches!(
+        PreparedRuntime::new_for_events(
+            reference.prepared(),
+            TriggerHostConfiguration {
+                sample_rate_hz: dandrum_trigger_host::SampleRate::new(44_100.0).unwrap(),
+                ..configuration()
+            },
+            4
+        ),
+        Err(RuntimeError::InvalidConfiguration)
+    ));
+
     let session = session(36);
     for configuration in [
         TriggerHostConfiguration {

@@ -9,7 +9,6 @@ use dandrum_trigger_host::{
     parameters::{
         ParameterController, PublicParameter, SessionServiceWake, public_parameters_from_resources,
     },
-    runtime::RuntimeAudio,
 };
 use std::{
     cell::{Cell, RefCell},
@@ -23,7 +22,6 @@ use std::{
         Arc,
         atomic::{AtomicBool, AtomicU64, Ordering},
     },
-    thread::ThreadId,
 };
 use vst3::{
     Class, ComPtr, ComWrapper,
@@ -41,9 +39,10 @@ pub(crate) fn create(
     if *cid == PROCESSOR_CLASS_ID {
         Ok(ComWrapper::new(Processor(Rc::new(ProcessorCore {
             root,
-            thread: std::thread::current().id(),
+            thread: platform::thread_id(),
             terminated: Cell::new(false),
             owner: RefCell::new(None),
+            audio: crate::audio::Slot::default(),
             initialized: Cell::new(false),
             transport: Transport::default(),
             attachment: RefCell::new(None),
@@ -59,7 +58,7 @@ pub(crate) fn create(
     } else {
         Ok(ComWrapper::new(Controller {
             root,
-            thread: std::thread::current().id(),
+            thread: platform::thread_id(),
             terminated: Cell::new(false),
             projection: RefCell::new(None),
             transport: Transport::default(),
@@ -82,11 +81,12 @@ impl Deref for Processor {
 struct ProcessorCore {
     initialized: Cell<bool>,
     root: PathBuf,
-    thread: ThreadId,
+    thread: libc::pid_t,
     terminated: Cell<bool>,
-    // One tuple owns the session/control side and its unique audio endpoint. It
-    // stays off audio until the later setup/process boundary transfers the endpoint.
-    owner: RefCell<Option<(ParameterController, RuntimeAudio)>>,
+    // Main-thread session/history authority stays separate from the unique
+    // prebuilt audio endpoint; callbacks never borrow the session controller.
+    owner: RefCell<Option<ParameterController>>,
+    audio: crate::audio::Slot,
     transport: Transport,
     attachment: RefCell<Option<String>>,
     runloop: RefCell<Option<Rc<ComPtr<IRunLoop>>>>,
@@ -97,11 +97,11 @@ struct ProcessorCore {
     processed: RefCell<VecDeque<Processed>>,
 }
 impl Class for Processor {
-    type Interfaces = (IComponent, IConnectionPoint);
+    type Interfaces = (IComponent, IAudioProcessor, IConnectionPoint);
 }
 impl ProcessorCore {
     fn main(&self) -> bool {
-        self.thread == std::thread::current().id() && !self.terminated.get()
+        self.thread == platform::thread_id() && !self.terminated.get()
     }
     fn live(&self) -> bool {
         self.main() && self.initialized.get() && self.owner.borrow().is_some()
@@ -121,11 +121,11 @@ impl IPluginBaseTrait for Processor {
             sample_rate_hz: SampleRate::new(48_000.0).expect("fixed supported clock"),
             max_block_frames: 16,
         };
-        let Ok((mut owner, audio)) = ParameterController::open(
+        let Ok((mut owner, audio)) = ParameterController::open_with_reserved_events(
             &self.root,
             configuration,
             NonZeroU64::new(id).expect("counter starts nonzero"),
-            64,
+            1024,
             1024,
         ) else {
             return kResultFalse;
@@ -137,7 +137,9 @@ impl IPluginBaseTrait for Processor {
         if runloop.is_some() && owner.start_session_worker(self.wake.clone()).is_err() {
             return kResultFalse;
         }
-        *self.owner.borrow_mut() = Some((owner, audio));
+        self.audio
+            .install(crate::audio::Endpoint::new(audio, configuration));
+        *self.owner.borrow_mut() = Some(owner);
         if let Some(runloop) = runloop {
             let timer = ComWrapper::new(Timer(self.thread, Rc::downgrade(&self.0)))
                 .to_com_ptr::<ITimerHandler>()
@@ -146,6 +148,7 @@ impl IPluginBaseTrait for Processor {
             if result != kResultOk {
                 let owner = self.owner.borrow_mut().take();
                 drop(owner);
+                self.audio.clear_main();
                 return kResultFalse;
             }
             let registration = Registration { runloop, timer };
@@ -158,10 +161,14 @@ impl IPluginBaseTrait for Processor {
             *self.registration.borrow_mut() = Some(registration);
         }
         self.initialized.set(true);
+        self.audio.live.store(true, Ordering::Release);
         kResultOk
     }
     unsafe fn terminate(&self) -> tresult {
-        if self.thread != std::thread::current().id() {
+        if self.audio.processing.load(Ordering::Acquire) {
+            return kResultFalse;
+        }
+        if self.thread != platform::thread_id() {
             return kResultFalse;
         }
         if self.shutdown() {
@@ -243,15 +250,42 @@ impl IComponentTrait for Processor {
     }
     unsafe fn activateBus(
         &self,
-        _media: MediaType,
-        _direction: BusDirection,
-        _index: i32,
-        _active: TBool,
+        media: MediaType,
+        direction: BusDirection,
+        index: i32,
+        active: TBool,
     ) -> tresult {
-        kNotImplemented
+        if !self.live() {
+            return kNotInitialized;
+        }
+        if index != 0 || active > 1 {
+            return kInvalidArgument;
+        }
+        self.audio
+            .with(|audio| {
+                if media == 0 && direction == 1 {
+                    audio.audio_enabled = active != 0;
+                } else if media == 1 && direction == 0 {
+                    audio.events_enabled = active != 0;
+                } else {
+                    return kInvalidArgument;
+                }
+                kResultOk
+            })
+            .unwrap_or(kResultFalse)
     }
-    unsafe fn setActive(&self, _active: TBool) -> tresult {
-        kNotImplemented
+    unsafe fn setActive(&self, active: TBool) -> tresult {
+        if !self.live() {
+            return kNotInitialized;
+        }
+        if active > 1 {
+            return kInvalidArgument;
+        }
+        if self.audio.processing.load(Ordering::Acquire) {
+            return kResultFalse;
+        }
+        self.audio.active.store(active != 0, Ordering::Release);
+        kResultOk
     }
     unsafe fn setState(&self, _state: *mut IBStream) -> tresult {
         kNotImplemented
@@ -266,7 +300,7 @@ struct Projection {
 }
 struct Controller {
     root: PathBuf,
-    thread: ThreadId,
+    thread: libc::pid_t,
     terminated: Cell<bool>,
     projection: RefCell<Option<Projection>>,
     transport: Transport,
@@ -280,7 +314,7 @@ impl Class for Controller {
 }
 impl Controller {
     fn main(&self) -> bool {
-        self.thread == std::thread::current().id() && !self.terminated.get()
+        self.thread == platform::thread_id() && !self.terminated.get()
     }
     fn plain(&self, id: u32, value: f64) -> Option<f64> {
         if !self.main() {
@@ -319,7 +353,7 @@ impl IPluginBaseTrait for Controller {
         kResultOk
     }
     unsafe fn terminate(&self) -> tresult {
-        if self.thread != std::thread::current().id() {
+        if self.thread != platform::thread_id() {
             return kResultFalse;
         }
         self.terminated.set(true);
@@ -482,7 +516,7 @@ impl ProcessorCore {
         self.last_request.set(0);
         let attachment = self.attachment.borrow_mut().take();
         if let Some(attachment) = attachment
-            && let Some((owner, _)) = self.owner.borrow_mut().as_mut()
+            && let Some(owner) = self.owner.borrow_mut().as_mut()
         {
             let _ = owner.detach_editor(&attachment);
         }
@@ -496,7 +530,7 @@ impl ProcessorCore {
         }
         let frame = {
             let mut owner = self.owner.borrow_mut();
-            let Some((owner, _)) = owner.as_mut() else {
+            let Some(owner) = owner.as_mut() else {
                 return;
             };
             let Ok(connection) = owner.attach_editor() else {
@@ -642,13 +676,13 @@ impl Registration {
         }
     }
 }
-struct Timer(ThreadId, Weak<ProcessorCore>);
+struct Timer(libc::pid_t, Weak<ProcessorCore>);
 impl Class for Timer {
     type Interfaces = (ITimerHandler,);
 }
 impl ITimerHandlerTrait for Timer {
     unsafe fn onTimer(&self) {
-        if self.0 != std::thread::current().id() {
+        if self.0 != platform::thread_id() {
             return;
         }
         if let Some(core) = self.1.upgrade() {
@@ -673,12 +707,17 @@ impl ProcessorCore {
             let Ok(mut owner) = self.owner.try_borrow_mut() else {
                 return;
             };
-            let Some((owner, audio)) = owner.as_mut() else {
+            let Some(owner) = owner.as_mut() else {
                 return;
             };
             let _ = owner.service_editor_notes(std::time::Instant::now());
             let _ = owner.service_session_jobs();
-            let _ = owner.service_quiescent(audio);
+            if !self.audio.processing.load(Ordering::Acquire) {
+                let _ = self.audio.with(|audio| {
+                    let _ = owner.service_quiescent(&mut audio.runtime);
+                    let _ = audio.runtime.flush_parameters(&[]);
+                });
+            }
         }
         self.projection();
         self.transport.pump();
@@ -693,6 +732,7 @@ impl ProcessorCore {
     fn shutdown(&self) -> bool {
         self.terminated.set(true);
         self.initialized.set(false);
+        self.audio.live.store(false, Ordering::Release);
         let registration = self.registration.borrow_mut().take();
         if let Some(registration) = registration
             && let Err(registration) = registration.unregister()
@@ -705,6 +745,7 @@ impl ProcessorCore {
         self.transport.close();
         let owner = self.owner.borrow_mut().take();
         drop(owner);
+        self.audio.clear_main();
         let runloop = self.runloop.borrow_mut().take();
         drop(runloop);
         self.registration.borrow().is_none()
@@ -767,7 +808,7 @@ impl ProcessorCore {
             let Ok(mut owner) = self.owner.try_borrow_mut() else {
                 return kResultFalse;
             };
-            let Some((owner, _)) = owner.as_mut() else {
+            let Some(owner) = owner.as_mut() else {
                 return kNotInitialized;
             };
             match dandrum_trigger_host::editor_commands::dispatch(
@@ -913,5 +954,106 @@ impl Controller {
         self.awaiting.set(None);
         *self.last_reply.borrow_mut() = Some((sequence, frame));
         kResultOk
+    }
+}
+
+impl IAudioProcessorTrait for Processor {
+    unsafe fn setBusArrangements(
+        &self,
+        _inputs: *mut SpeakerArrangement,
+        num_inputs: i32,
+        outputs: *mut SpeakerArrangement,
+        num_outputs: i32,
+    ) -> tresult {
+        if !self.live() {
+            return kNotInitialized;
+        }
+        if num_inputs != 0 || num_outputs != 1 || outputs.is_null() {
+            return kInvalidArgument;
+        }
+        if unsafe { *outputs } != 3 {
+            return kResultFalse;
+        }
+        kResultOk
+    }
+    unsafe fn getBusArrangement(
+        &self,
+        direction: BusDirection,
+        index: i32,
+        output: *mut SpeakerArrangement,
+    ) -> tresult {
+        if !self.live() {
+            return kNotInitialized;
+        }
+        if direction != 1 || index != 0 || output.is_null() {
+            return kInvalidArgument;
+        }
+        unsafe {
+            *output = 3;
+        }
+        kResultOk
+    }
+    unsafe fn canProcessSampleSize(&self, size: i32) -> tresult {
+        if size == 0 { kResultOk } else { kResultFalse }
+    }
+    unsafe fn getLatencySamples(&self) -> u32 {
+        0
+    }
+    unsafe fn setupProcessing(&self, setup: *mut ProcessSetup) -> tresult {
+        if !self.live() {
+            return kNotInitialized;
+        }
+        if setup.is_null() {
+            return kInvalidArgument;
+        }
+        let setup = unsafe { *setup };
+        if setup.symbolicSampleSize != 0
+            || !(0..=2).contains(&setup.processMode)
+            || !(1..=16_384).contains(&setup.maxSamplesPerBlock)
+        {
+            return kInvalidArgument;
+        }
+        let Ok(rate) = SampleRate::new(setup.sampleRate) else {
+            return kInvalidArgument;
+        };
+        if self.audio.processing.load(Ordering::Acquire)
+            || self.audio.active.load(Ordering::Acquire)
+        {
+            return kResultFalse;
+        }
+        let configuration = TriggerHostConfiguration {
+            sample_rate_hz: rate,
+            max_block_frames: setup.maxSamplesPerBlock as u32,
+        };
+        self.audio
+            .with(|audio| {
+                let mut owner = self.owner.borrow_mut();
+                let Some(owner) = owner.as_mut() else {
+                    return kNotInitialized;
+                };
+                if owner
+                    .reconfigure_quiescent(&mut audio.runtime, configuration)
+                    .is_err()
+                {
+                    return kResultFalse;
+                }
+                audio.configuration = configuration;
+                audio.mode = setup.processMode;
+                self.audio
+                    .max_frames
+                    .store(configuration.max_block_frames, Ordering::Release);
+                self.audio.configured.store(true, Ordering::Release);
+                kResultOk
+            })
+            .unwrap_or(kResultFalse)
+    }
+    unsafe fn setProcessing(&self, state: TBool) -> tresult {
+        self.audio.set_processing(state)
+    }
+    unsafe fn process(&self, data: *mut ProcessData) -> tresult {
+        unsafe { self.audio.process(data) }
+    }
+    unsafe fn getTailSamples(&self) -> u32 {
+        u32::MAX
     }
 }

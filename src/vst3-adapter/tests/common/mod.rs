@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+pub mod audio;
 pub mod message;
 pub mod runloop;
 use libloading::Library;

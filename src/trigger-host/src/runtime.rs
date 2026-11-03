@@ -65,6 +65,7 @@ pub struct TimedEvent {
 pub struct PreparedRuntime(Box<Processor>);
 
 struct Processor {
+    reserve_events: bool,
     graph: RealtimeGraphProcessor,
     configuration: TriggerHostConfiguration,
     layout: Vec<PortMetadata>,
@@ -76,6 +77,43 @@ impl PreparedRuntime {
     pub fn new(
         prepared: &PreparedKernelInstrument,
         configuration: TriggerHostConfiguration,
+    ) -> Result<Self, RuntimeError> {
+        Self::build(
+            prepared,
+            configuration,
+            configuration.max_block_frames as usize,
+        )
+    }
+
+    /// Reserve the declared note budget independently of a short host block.
+    /// Existing sufficient preparation is reused; larger event scratch is built
+    /// off audio, without changing accepted render settings or CLAP's defaults.
+    pub fn new_for_events(
+        prepared: &PreparedKernelInstrument,
+        configuration: TriggerHostConfiguration,
+        events: usize,
+    ) -> Result<Self, RuntimeError> {
+        if events == 0 || events > MAX_EVENTS {
+            return Err(RuntimeError::InvalidConfiguration);
+        }
+        let mut initial = Self::new(prepared, configuration)?;
+        if events <= initial.0.graph.pending_event_capacity() / 2 {
+            initial.0.reserve_events = true;
+            return Ok(initial);
+        }
+        drop(initial); // Reclaim the smaller preparation on this control thread.
+        let mut prepared = Self::build(
+            prepared,
+            configuration,
+            (events * 2).max(configuration.max_block_frames as usize),
+        )?;
+        prepared.0.reserve_events = true;
+        Ok(prepared)
+    }
+    fn build(
+        prepared: &PreparedKernelInstrument,
+        configuration: TriggerHostConfiguration,
+        graph_frames: usize,
     ) -> Result<Self, RuntimeError> {
         if !(1..=MAX_BLOCK_FRAMES).contains(&configuration.max_block_frames)
             || prepared.compiled_patch().render_settings().sample_rate_hz
@@ -123,11 +161,12 @@ impl PreparedRuntime {
             })
             .collect();
         let mut processor = Processor {
+            reserve_events: false,
             graph: RealtimeGraphProcessor::from_compiled_patch(
                 prepared.compiled_patch().clone(),
                 configuration.sample_rate_hz.hz() as f32,
                 &PreparedSamplerAssets::empty(),
-                frames,
+                graph_frames,
             ),
             configuration,
             layout,
@@ -198,6 +237,7 @@ struct QueuedFeedback {
 }
 
 pub struct RuntimeControl {
+    reserve_events: bool,
     pending: Producer<PreparedRuntime>,
     retired: Consumer<PreparedRuntime>,
     events: Producer<QueuedEvent>,
@@ -295,7 +335,15 @@ impl ActivationHost for QuiescentControl<'_> {
     ) -> Result<Self::Lease<'a>, Self::Error> {
         // Session has not published yet: construction, probing and every
         // fallible check belong before its infallible publication boundary.
-        let candidate = PreparedRuntime::new(prepared, self.configuration)?;
+        let candidate = if self.control.reserve_events {
+            PreparedRuntime::new_for_events(
+                prepared,
+                self.configuration,
+                self.audio.state.event_capacity,
+            )?
+        } else {
+            PreparedRuntime::new(prepared, self.configuration)?
+        };
         if !compatible_layout(&candidate.0.layout, &self.control.layout)
             || self.audio.state.event_capacity > candidate.0.graph.pending_event_capacity() / 2
         {
@@ -414,6 +462,7 @@ pub fn runtime_handoff(
     let (pending_tx, pending_rx) = RingBuffer::new(1);
     let (retired_tx, retired_rx) = RingBuffer::new(1);
     let control = RuntimeControl {
+        reserve_events: initial.0.reserve_events,
         pending: pending_tx,
         retired: retired_rx,
         events: event_tx,
@@ -585,7 +634,15 @@ impl RuntimeControl {
         if !self.activation_available() {
             return Err(RuntimeError::Busy);
         }
-        let candidate = PreparedRuntime::new(prepared, self.configuration)?;
+        let candidate = if self.reserve_events {
+            PreparedRuntime::new_for_events(
+                prepared,
+                self.configuration,
+                self.events.buffer().capacity(),
+            )?
+        } else {
+            PreparedRuntime::new(prepared, self.configuration)?
+        };
         if !self.compatible(&candidate) {
             return Err(RuntimeError::IncompatibleRuntime);
         }

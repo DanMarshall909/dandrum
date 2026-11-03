@@ -94,3 +94,8 @@ pub(crate) fn scope() -> Option<[u8; 16]> {
     let length = unsafe { libc::getrandom(value.as_mut_ptr().cast(), value.len(), 0) };
     (length == value.len() as isize && value != [0; 16]).then_some(value)
 }
+
+/// An allocation-free affinity check, including rejection from an audio thread.
+pub(crate) fn thread_id() -> libc::pid_t {
+    unsafe { libc::gettid() }
+}
