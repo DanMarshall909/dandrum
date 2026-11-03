@@ -6,7 +6,7 @@ React editor, actual native file selection and XTest pointer input.
 
 The complete qualification, oracle, failed-probe dispositions and portable raw
 receipts are indexed in
-[`trigger-clap-daw-acceptance-2026-11-02`](../../../docs/migrations/evidence/trigger-clap-daw-acceptance-2026-11-02/README.md).
+[`trigger-clap-daw-acceptance-2026-11-02`](../../../../docs/migrations/evidence/trigger-clap-daw-acceptance-2026-11-02/README.md).
 That record identifies the tested package, required REAPER configuration,
 composite gesture evidence, fresh project restoration and signed renders.
 
