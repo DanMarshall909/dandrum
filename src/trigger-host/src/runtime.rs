@@ -61,6 +61,24 @@ pub struct TimedEvent {
     pub event: ControlEvent,
 }
 
+/// A normalized host endpoint, interpreted before physical unit conversion.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct NormalizedPoint {
+    pub frame_offset: u32,
+    pub value: f64,
+}
+
+/// One nonempty normalized curve over a bounded physical root control.
+/// Offsets increase strictly; an omitted frame zero interpolates from the
+/// previous applied endpoint at frame -1. The last point holds through the tail.
+#[derive(Clone, Copy, Debug)]
+pub struct ParameterCurve<'a> {
+    pub index: usize,
+    pub points: &'a [NormalizedPoint],
+}
+
+pub const MAX_CURVES: usize = 23;
+
 /// Fully constructed processor and scratch storage; moving it does not allocate.
 pub struct PreparedRuntime(Box<Processor>);
 
@@ -272,6 +290,7 @@ struct AudioState {
     settlement: Arc<AtomicU64>,
     epoch: Arc<AtomicU64>,
     event_capacity: usize,
+    normalized: Vec<(u64, f64)>,
     editor_intent: Arc<[AtomicU64; 128]>,
     editor_gates: [u64; 128],
     editor_seen: [u64; 128],
@@ -479,8 +498,10 @@ pub fn runtime_handoff(
         configuration: initial.0.configuration,
         layout: initial.0.layout.clone(),
     };
+    let normalized = vec![(u64::MAX, 0.0); values.len()];
     let audio = RuntimeAudio {
         state: AudioState {
+            normalized,
             current: initial,
             pending: pending_rx,
             retired: retired_tx,
@@ -950,11 +971,27 @@ impl RuntimeAudio {
         self.process_events(left, right, &[])
     }
 
+    /// Notes retain list order. Curves supply normalized controls before DSP
+    /// consumes each sample, including controls sampled at note onset.
     pub fn process_events(
         &mut self,
         left: &mut [f32],
         right: &mut [f32],
         events: &[TimedEvent],
+    ) -> Result<ProcessReport, RuntimeError> {
+        self.process_curves(left, right, events, &[])
+    }
+
+    /// Validate the complete batch before consuming queued work. At most23
+    /// unique curves and the endpoint's total point/note capacity are accepted.
+    /// Curved batches contain notes only; discrete parameter batches retain
+    /// their existing ordered-step semantics through `process_events`.
+    pub fn process_curves(
+        &mut self,
+        left: &mut [f32],
+        right: &mut [f32],
+        events: &[TimedEvent],
+        curves: &[ParameterCurve<'_>],
     ) -> Result<ProcessReport, RuntimeError> {
         let Some(_admission) = CallbackAdmission::enter(&self.admission) else {
             left.fill(0.0);
@@ -965,7 +1002,7 @@ impl RuntimeAudio {
             });
         };
         let _write = ScalarWrite::begin(&self.scalar_stamp);
-        self.state.process_events(left, right, events)
+        self.state.process_curves(left, right, events, curves)
     }
 }
 
@@ -1013,18 +1050,20 @@ impl AudioState {
     }
     /// Control-thread events are applied at the next block boundary; host events
     /// carry ordered offsets in this block. A rejected batch changes no state.
-    pub fn process_events(
+    fn process_curves(
         &mut self,
         left: &mut [f32],
         right: &mut [f32],
         events: &[TimedEvent],
+        curves: &[ParameterCurve<'_>],
     ) -> Result<ProcessReport, RuntimeError> {
         let error = if left.len() != right.len()
             || left.is_empty()
             || left.len() > self.current.0.configuration.max_block_frames as usize
         {
             Some(RuntimeError::InvalidBlock)
-        } else if events.len() > self.event_capacity
+        } else if !self.valid_curves(curves, events, left.len())
+            || events.len() > self.event_capacity
             || events.iter().any(|event| {
                 event.frame_offset as usize >= left.len()
                     || !event.event.valid(&self.current.0.layout)
@@ -1112,21 +1151,92 @@ impl AudioState {
         }
         self.start_editor_notes(&intents, &touched, &mut budget);
         self.editor_cursor = (self.editor_cursor + 1) % 128;
+        let mut cursors = [CurveCursor::default(); MAX_CURVES];
+        for (curve, cursor) in curves.iter().zip(&mut cursors) {
+            let bits = self.values[curve.index].load(Ordering::Relaxed);
+            let value = f64::from_bits(bits);
+            let (min, max) = self.current.0.range(curve.index).expect("validated range");
+            let previous = self.normalized[curve.index];
+            cursor.value = if previous.0 == bits {
+                previous.1
+            } else {
+                crate::control_values::normalized(min, max, value)
+            };
+            cursor.frame = -1;
+        }
         let mut start = 0;
         for event in events {
             let end = event.frame_offset as usize;
             if end > start {
-                self.current
-                    .0
-                    .render(&self.values, &mut left[start..end], &mut right[start..end]);
+                self.current.0.render(
+                    &self.values,
+                    &mut left[start..end],
+                    &mut right[start..end],
+                    curves,
+                    &mut cursors,
+                    start,
+                );
             }
             self.apply_event(event.event, event.frame_offset, 0, &mut report)?;
             start = end;
         }
-        self.current
-            .0
-            .render(&self.values, &mut left[start..], &mut right[start..]);
+        self.current.0.render(
+            &self.values,
+            &mut left[start..],
+            &mut right[start..],
+            curves,
+            &mut cursors,
+            start,
+        );
+        for curve in curves {
+            let point = curve.points.last().expect("validated nonempty curve");
+            let (min, max) = self.current.0.range(curve.index).expect("validated range");
+            let physical = crate::control_values::physical(min, max, point.value);
+            report.parameter_updates += 1;
+            report.dropped_feedback +=
+                usize::from(self.apply_parameter(curve.index, physical, point.frame_offset, 0));
+            self.normalized[curve.index] = (physical.to_bits(), point.value);
+        }
         Ok(report)
+    }
+
+    fn valid_curves(
+        &self,
+        curves: &[ParameterCurve<'_>],
+        events: &[TimedEvent],
+        frames: usize,
+    ) -> bool {
+        if curves.len() > MAX_CURVES
+            || (!curves.is_empty()
+                && events
+                    .iter()
+                    .any(|e| matches!(e.event, ControlEvent::Parameter { .. })))
+        {
+            return false;
+        }
+        let mut total = events.len();
+        for (position, curve) in curves.iter().enumerate() {
+            if curve.points.is_empty()
+                || curves[..position].iter().any(|c| c.index == curve.index)
+                || self.current.0.range(curve.index).is_none()
+            {
+                return false;
+            }
+            total += curve.points.len();
+            if total > self.event_capacity
+                || curve
+                    .points
+                    .iter()
+                    .any(|p| p.frame_offset as usize >= frames || !(0.0..=1.0).contains(&p.value))
+                || curve
+                    .points
+                    .windows(2)
+                    .any(|p| p[0].frame_offset >= p[1].frame_offset)
+            {
+                return false;
+            }
+        }
+        true
     }
 
     fn release_editor_notes(
@@ -1247,12 +1357,66 @@ impl AudioState {
     }
 }
 
+#[derive(Clone, Copy, Default)]
+struct CurveCursor {
+    next: usize,
+    frame: i64,
+    value: f64,
+}
+impl CurveCursor {
+    fn at(&mut self, points: &[NormalizedPoint], frame: usize) -> f64 {
+        let frame = frame as i64;
+        while let Some(point) = points.get(self.next) {
+            if i64::from(point.frame_offset) > frame {
+                break;
+            }
+            self.frame = i64::from(point.frame_offset);
+            self.value = point.value;
+            self.next += 1;
+        }
+        if let Some(next) = points.get(self.next) {
+            self.value
+                + (next.value - self.value) * (frame - self.frame) as f64
+                    / (i64::from(next.frame_offset) - self.frame) as f64
+        } else {
+            self.value
+        }
+    }
+}
 impl Processor {
-    fn render(&mut self, values: &[AtomicU64], left: &mut [f32], right: &mut [f32]) {
+    fn range(&self, index: usize) -> Option<(f64, f64)> {
+        let range = self
+            .layout
+            .iter()
+            .filter(|p| p.direction() == PortDirection::Input)
+            .nth(index)?
+            .control_default()?;
+        let (min, max) = (range.min()?, range.max()?);
+        (min < max && (min as f32).is_finite() && (max as f32).is_finite()).then_some((min, max))
+    }
+    fn render(
+        &mut self,
+        values: &[AtomicU64],
+        left: &mut [f32],
+        right: &mut [f32],
+        curves: &[ParameterCurve<'_>],
+        cursors: &mut [CurveCursor; MAX_CURVES],
+        start: usize,
+    ) {
         for (plane, value) in self.inputs.iter_mut().flatten().zip(values) {
             let value = f64::from_bits(value.load(Ordering::Relaxed)) as f32;
             plane.resize(left.len(), value);
             plane.fill(value);
+        }
+        for (curve, cursor) in curves.iter().zip(cursors) {
+            let (min, max) = self.range(curve.index).expect("validated range");
+            for (offset, value) in self.inputs[curve.index][0].iter_mut().enumerate() {
+                *value = crate::control_values::physical(
+                    min,
+                    max,
+                    cursor.at(curve.points, start + offset),
+                ) as f32;
+            }
         }
         for plane in self.outputs.iter_mut().flatten() {
             plane.resize(left.len(), 0.0);

@@ -1584,3 +1584,311 @@ fn a_short_host_block_accepts_the_declared_event_capacity_and_preserves_it_after
     assert_eq!(audit, allocation_counter::AllocationInfo::default());
     assert_eq!((left[0], right[0]), (-0.5, -0.5));
 }
+
+#[test]
+fn normalized_curves_render_every_sample_with_implicit_endpoint_and_adjacent_jump() {
+    use dandrum_trigger_host::runtime::{NormalizedPoint, ParameterCurve};
+    let (_package, root) = package();
+    let (mut owner, mut audio) =
+        ParameterController::open(root, configuration(), NonZeroU64::new(600).unwrap(), 64, 64)
+            .unwrap();
+    let level = owner
+        .parameters()
+        .iter()
+        .find(|p| p.id == "drums.level")
+        .unwrap()
+        .root_index;
+    let points = [
+        NormalizedPoint {
+            frame_offset: 7,
+            value: 0.75,
+        },
+        NormalizedPoint {
+            frame_offset: 8,
+            value: 0.125,
+        },
+        NormalizedPoint {
+            frame_offset: 12,
+            value: 0.625,
+        },
+    ];
+    let curves = [ParameterCurve {
+        index: level,
+        points: &points,
+    }];
+    let notes = [TimedEvent {
+        frame_offset: 0,
+        event: ControlEvent::NoteOn {
+            note: 36,
+            velocity: 127,
+        },
+    }];
+    let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
+    let audit = allocation_counter::measure(|| {
+        audio
+            .process_curves(&mut left, &mut right, &notes, &curves)
+            .unwrap();
+    });
+    assert_eq!(audit, allocation_counter::AllocationInfo::default());
+    let pcm = CURVE_PCM;
+    for frame in 0..16 {
+        let normalized = match frame {
+            0..=7 => 0.25 + 0.5 * (frame + 1) as f64 / 8.0,
+            8..=12 => 0.125 + 0.5 * (frame - 8) as f64 / 4.0,
+            _ => 0.625,
+        };
+        let expected = f32::from(pcm[frame]) / 32768.0 * (4.0 * normalized) as f32;
+        assert_eq!(left[frame], expected, "left signed curve frame {frame}");
+        assert_eq!(right[frame], expected, "right signed curve frame {frame}");
+    }
+    assert_eq!(owner.take_feedback().unwrap().parameters[0].value, 0.625);
+}
+
+#[test]
+fn normalized_curves_keep_the_previous_endpoint_across_equivalent_block_partitions() {
+    use dandrum_trigger_host::runtime::{NormalizedPoint, ParameterCurve};
+    let (_package, root) = package();
+    let (_, mut whole) = ParameterController::open(
+        &root,
+        configuration(),
+        NonZeroU64::new(601).unwrap(),
+        64,
+        64,
+    )
+    .unwrap();
+    let (owner, mut split) = ParameterController::open(
+        &root,
+        configuration(),
+        NonZeroU64::new(602).unwrap(),
+        64,
+        64,
+    )
+    .unwrap();
+    let level = owner
+        .parameters()
+        .iter()
+        .find(|p| p.id == "drums.level")
+        .unwrap()
+        .root_index;
+    let notes = [TimedEvent {
+        frame_offset: 0,
+        event: ControlEvent::NoteOn {
+            note: 36,
+            velocity: 127,
+        },
+    }];
+    let (mut left, mut right, mut split_left, mut split_right) =
+        ([0.0; 16], [0.0; 16], [0.0; 16], [0.0; 16]);
+    whole
+        .process_curves(
+            &mut left,
+            &mut right,
+            &notes,
+            &[ParameterCurve {
+                index: level,
+                points: &[NormalizedPoint {
+                    frame_offset: 15,
+                    value: 0.75,
+                }],
+            }],
+        )
+        .unwrap();
+    split
+        .process_curves(
+            &mut split_left[..8],
+            &mut split_right[..8],
+            &notes,
+            &[ParameterCurve {
+                index: level,
+                points: &[NormalizedPoint {
+                    frame_offset: 7,
+                    value: 0.5,
+                }],
+            }],
+        )
+        .unwrap();
+    split
+        .process_curves(
+            &mut split_left[8..],
+            &mut split_right[8..],
+            &[],
+            &[ParameterCurve {
+                index: level,
+                points: &[NormalizedPoint {
+                    frame_offset: 7,
+                    value: 0.75,
+                }],
+            }],
+        )
+        .unwrap();
+    let pcm = CURVE_PCM;
+    for i in 0..16 {
+        let expected = f32::from(pcm[i]) / 32768.0 * (1.0 + 2.0 * (i + 1) as f32 / 16.0);
+        assert_eq!(
+            (left[i], right[i], split_left[i], split_right[i]),
+            (expected, expected, expected, expected),
+            "partition sample {i}"
+        );
+    }
+}
+
+#[test]
+fn normalized_onset_control_precedes_the_note_at_its_exact_frame() {
+    use dandrum_trigger_host::runtime::{NormalizedPoint, ParameterCurve};
+    let (_package, root) = package();
+    let (owner, mut audio) = ParameterController::open(
+        &root,
+        configuration(),
+        NonZeroU64::new(603).unwrap(),
+        64,
+        64,
+    )
+    .unwrap();
+    let offset = owner
+        .parameters()
+        .iter()
+        .find(|p| p.id == "drums.start_offset")
+        .unwrap()
+        .root_index;
+    let points = [
+        NormalizedPoint {
+            frame_offset: 4,
+            value: 0.0,
+        },
+        NormalizedPoint {
+            frame_offset: 5,
+            value: 1.0,
+        },
+    ];
+    let notes = [TimedEvent {
+        frame_offset: 5,
+        event: ControlEvent::NoteOn {
+            note: 36,
+            velocity: 127,
+        },
+    }];
+    let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
+    audio
+        .process_curves(
+            &mut left,
+            &mut right,
+            &notes,
+            &[ParameterCurve {
+                index: offset,
+                points: &points,
+            }],
+        )
+        .unwrap();
+    assert_eq!(&left[..5], &[0.0; 5]);
+    assert_eq!(
+        (left[5], right[5]),
+        (105.0 / 32768.0, 105.0 / 32768.0),
+        "last signed PCM frame at note onset"
+    );
+    assert_eq!(&left[6..], &[0.0; 10]);
+    assert_eq!(left, right);
+}
+
+const CURVE_PCM: [i16; 16] = [
+    -16384, -358, 1554, 4137, -2136, 1664, 6324, 4571, -441, 6389, 2934, 5159, 7331, 10268, 4721,
+    12612,
+];
+
+#[test]
+fn normalized_endpoint_retains_precision_and_reseeds_after_a_physical_write() {
+    use dandrum_trigger_host::runtime::{NormalizedPoint, ParameterCurve};
+    let (_package, root) = package();
+    let (owner, mut audio) = ParameterController::open(
+        &root,
+        configuration(),
+        NonZeroU64::new(604).unwrap(),
+        64,
+        64,
+    )
+    .unwrap();
+    let pitch = owner
+        .parameters()
+        .iter()
+        .find(|p| p.id == "drums.pitch_ratio")
+        .unwrap()
+        .root_index;
+    let previous = 0.5602572770128127;
+    let next = 0.8871297522414345;
+    audio
+        .process_curves(
+            &mut [0.0; 16],
+            &mut [0.0; 16],
+            &[],
+            &[ParameterCurve {
+                index: pitch,
+                points: &[NormalizedPoint {
+                    frame_offset: 0,
+                    value: previous,
+                }],
+            }],
+        )
+        .unwrap();
+    let sample_at = |position: f32| {
+        let base = position.floor() as usize;
+        let a = f32::from(CURVE_PCM[base]) / 32768.0;
+        let b = f32::from(CURVE_PCM[base + 1]) / 32768.0;
+        a + (b - a) * (position - base as f32)
+    };
+    let exact_pitch = (0.125 + 7.875 * (previous + (next - previous) / 2.0)) as f32;
+    let round_tripped = ((0.125 + 7.875 * previous) - 0.125) / 7.875;
+    let wrong_pitch = (0.125 + 7.875 * (round_tripped + (next - round_tripped) / 2.0)) as f32;
+    assert_ne!(
+        sample_at(exact_pitch),
+        sample_at(wrong_pitch),
+        "oracle distinguishes lost normalized endpoint precision"
+    );
+    let notes = [TimedEvent {
+        frame_offset: 0,
+        event: ControlEvent::NoteOn {
+            note: 36,
+            velocity: 127,
+        },
+    }];
+    let (mut left, mut right) = ([0.0; 2], [0.0; 2]);
+    audio
+        .process_curves(
+            &mut left,
+            &mut right,
+            &notes,
+            &[ParameterCurve {
+                index: pitch,
+                points: &[NormalizedPoint {
+                    frame_offset: 1,
+                    value: next,
+                }],
+            }],
+        )
+        .unwrap();
+    assert_eq!(left, [-0.5, sample_at(exact_pitch)]);
+    assert_eq!(left, right);
+    audio.reset();
+    audio
+        .flush_parameters(&[ControlEvent::Parameter {
+            index: pitch,
+            value: 1.0,
+        }])
+        .unwrap();
+    let reseeded = (1.0 - 0.125) / 7.875;
+    let expected_pitch = (0.125 + 7.875 * (reseeded + (next - reseeded) / 2.0)) as f32;
+    audio
+        .process_curves(
+            &mut left,
+            &mut right,
+            &notes,
+            &[ParameterCurve {
+                index: pitch,
+                points: &[NormalizedPoint {
+                    frame_offset: 1,
+                    value: next,
+                }],
+            }],
+        )
+        .unwrap();
+    assert_eq!(left, [-0.5, sample_at(expected_pitch)]);
+    assert_eq!(left, right);
+}

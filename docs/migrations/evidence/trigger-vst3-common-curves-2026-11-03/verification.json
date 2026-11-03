@@ -1,0 +1,211 @@
+{
+  "status": "shared curve boundary verified; VST3 queue consumer and full proof pending",
+  "testResultGroups": [
+    [
+      "33",
+      "0",
+      "1"
+    ],
+    [
+      "13",
+      "0",
+      "0"
+    ],
+    [
+      "4",
+      "0",
+      "0"
+    ],
+    [
+      "14",
+      "0",
+      "0"
+    ],
+    [
+      "17",
+      "0",
+      "0"
+    ],
+    [
+      "10",
+      "0",
+      "0"
+    ],
+    [
+      "7",
+      "0",
+      "0"
+    ],
+    [
+      "24",
+      "0",
+      "0"
+    ],
+    [
+      "2",
+      "0",
+      "0"
+    ],
+    [
+      "17",
+      "0",
+      "0"
+    ],
+    [
+      "11",
+      "0",
+      "0"
+    ],
+    [
+      "20",
+      "0",
+      "0"
+    ],
+    [
+      "7",
+      "0",
+      "0"
+    ],
+    [
+      "15",
+      "0",
+      "0"
+    ],
+    [
+      "15",
+      "0",
+      "0"
+    ],
+    [
+      "6",
+      "0",
+      "0"
+    ],
+    [
+      "9",
+      "0",
+      "0"
+    ]
+  ],
+  "coverage": {
+    "control_values.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "functions": {
+        "count": 2,
+        "covered": 2,
+        "percent": 100.0
+      },
+      "instantiations": {
+        "count": 4,
+        "covered": 3,
+        "percent": 75.0
+      },
+      "lines": {
+        "count": 6,
+        "covered": 6,
+        "percent": 100.0
+      },
+      "regions": {
+        "count": 12,
+        "covered": 12,
+        "notcovered": 0,
+        "percent": 100.0
+      }
+    },
+    "parameters.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "functions": {
+        "count": 139,
+        "covered": 139,
+        "percent": 100.0
+      },
+      "instantiations": {
+        "count": 397,
+        "covered": 259,
+        "percent": 65.23929471032746
+      },
+      "lines": {
+        "count": 1436,
+        "covered": 1410,
+        "percent": 98.18941504178274
+      },
+      "regions": {
+        "count": 2023,
+        "covered": 1971,
+        "notcovered": 52,
+        "percent": 97.42956005931785
+      }
+    },
+    "runtime.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0.0
+      },
+      "functions": {
+        "count": 124,
+        "covered": 124,
+        "percent": 100.0
+      },
+      "instantiations": {
+        "count": 221,
+        "covered": 199,
+        "percent": 90.04524886877829
+      },
+      "lines": {
+        "count": 1555,
+        "covered": 1545,
+        "percent": 99.35691318327974
+      },
+      "regions": {
+        "count": 2415,
+        "covered": 2397,
+        "notcovered": 18,
+        "percent": 99.25465838509317
+      }
+    }
+  },
+  "coverageLimit": "accumulated TDD profiles; final clean-profile full candidate evidence remains required; branch/MC-DC unavailable",
+  "sources": {
+    "src/trigger-host/src/lib.rs": "8b861e9100a44a3818c75fbc871f0b6b2307f8ce8059892753e81eef1388e986",
+    "src/trigger-host/src/control_values.rs": "ad95014944e2088937aa9088330f9778e852e24ca53fa08deea160a4adda6905",
+    "src/trigger-host/src/runtime.rs": "08d17b042535af10926c4e16161731b3872751ae7d746d600237bb50a218d631",
+    "src/trigger-host/src/parameters.rs": "fac66c55330e46ec9d68e1fe14945da6b1b060408699a040ef45c9af2e6023a1",
+    "src/trigger-host/tests/runtime.rs": "1f0c3ab8e20f8dd6b7c5b19bb4b5bad41598f8bfe2d77c9a20d30b8368409c31",
+    "src/trigger-host/tests/parameters.rs": "966b17bbc2dbed854a0376ebb911de20506cd1a3f4ad309556d75bd1b4eba16d"
+  },
+  "clapEditorUnit": "11 pass; intentional FIFO child ignored directly and run by its boundary parent",
+  "refactor": {
+    "production": "Shared linear conversion extracted; full module line/region/function coverage. Simplified redundant finite range checks after independent reader inspection.",
+    "tests": "Consolidated repeated 16-frame authoritative PCM literals. Retained separate every-sample, partition, onset, normalized-precision/reseed and atomic rejection witnesses."
+  }
+}

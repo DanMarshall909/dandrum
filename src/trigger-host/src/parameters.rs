@@ -69,8 +69,7 @@ impl PublicParameter {
     /// Shared linear conversion. No allocation or DSP precision narrowing.
     pub fn normalized_to_physical(&self, normalized: f64) -> Option<f64> {
         (0.0..=1.0).contains(&normalized).then(|| {
-            (self.physical_min + normalized * (self.physical_max - self.physical_min))
-                .clamp(self.physical_min, self.physical_max)
+            crate::control_values::physical(self.physical_min, self.physical_max, normalized)
         })
     }
     pub fn physical_to_normalized(&self, physical: f64) -> Option<f64> {
@@ -79,7 +78,7 @@ impl PublicParameter {
             .then(|| self.normalized_scalar(physical))
     }
     fn normalized_scalar(&self, physical: f64) -> f64 {
-        (physical - self.physical_min) / (self.physical_max - self.physical_min)
+        crate::control_values::normalized(self.physical_min, self.physical_max, physical)
     }
     fn project(&self, physical: f64) -> ParameterValue {
         ParameterValue {
