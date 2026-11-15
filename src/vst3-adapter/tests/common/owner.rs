@@ -38,6 +38,19 @@ impl IConnectionPointTrait for Probe {
             );
             return unsafe { self.processor.notify(response.as_ptr()) };
         }
+        // This processor-only host has no edit controller or accepted host
+        // Begins. The real-controller contract tests calibrate these terminal
+        // certificates; it can close its empty gesture set immediately.
+        let terminal = match frame["body"]["type"].as_str() {
+            Some("goodbye" | "disconnect") => Some("closed"),
+            Some("retired") => Some("retiredAck"),
+            _ => None,
+        };
+        if let Some(kind) = terminal {
+            let response = message::packet(&json!({"version":1,"source":self.scope,
+                "target":frame["source"],"sequence":0,"body":{"type":kind}}));
+            return unsafe { self.processor.notify(response.as_ptr()) };
+        }
         if frame["body"]["type"] == "reply" && self.refuse_reply.get() {
             kResultFalse
         } else {

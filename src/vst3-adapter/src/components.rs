@@ -1,14 +1,14 @@
 //! Separate COM components: one processor sound owner and a metadata projection.
 use crate::{
     CONTROLLER_CLASS_ID, PROCESSOR_CLASS_ID, parameters, platform,
-    transport::{Body, Transport},
+    transport::{Body, HostAutomation, Transport},
     utf16,
 };
 use dandrum_trigger_host::{
     SampleRate, TriggerHostConfiguration,
     parameters::{
-        ParameterController, ParameterFeedback, PublicParameter, SessionServiceWake,
-        public_parameters_from_resources,
+        AutomationEvent, ParameterController, ParameterFeedback, PublicParameter,
+        SessionServiceWake, public_parameters_from_resources,
     },
 };
 use std::{
@@ -25,7 +25,7 @@ use std::{
     },
 };
 use vst3::{
-    Class, ComPtr, ComWrapper,
+    Class, ComPtr, ComRef, ComWrapper,
     Steinberg::{Linux::*, Vst::*, *},
 };
 
@@ -53,6 +53,11 @@ pub(crate) fn create(
             servicing: Cell::new(false),
             last_request: Cell::new(0),
             processed: RefCell::new(VecDeque::with_capacity(crate::transport::PENDING)),
+            automation: RefCell::new(None),
+            next_automation: Cell::new(1),
+            closing: Cell::new(false),
+            shutdown_close: Cell::new(false),
+            connection_busy: Cell::new(false),
         })))
         .to_com_ptr::<FUnknown>()
         .expect("component includes FUnknown"))
@@ -69,6 +74,13 @@ pub(crate) fn create(
             last_reply: RefCell::new(None),
             feedback_cutoff: Cell::new(None),
             feedback_refresh: Cell::new(false),
+            handler: RefCell::new(None),
+            host_busy: Cell::new(false),
+            host_gestures: RefCell::new(std::array::from_fn(|_| None)),
+            host_receipt: RefCell::new(None),
+            closing: Cell::new(false),
+            release_peer_on_retirement: Cell::new(false),
+            retired_proof: Cell::new(false),
         })
         .to_com_ptr::<FUnknown>()
         .expect("controller includes FUnknown"))
@@ -98,6 +110,17 @@ struct ProcessorCore {
     servicing: Cell<bool>,
     last_request: Cell<u64>,
     processed: RefCell<VecDeque<Processed>>,
+    automation: RefCell<Option<AutomationFlight>>,
+    next_automation: Cell<u64>,
+    closing: Cell<bool>,
+    shutdown_close: Cell<bool>,
+    connection_busy: Cell<bool>,
+}
+#[derive(Clone)]
+struct AutomationFlight {
+    delivery: u64,
+    shared: AutomationEvent,
+    event: HostAutomation,
 }
 impl Class for Processor {
     type Interfaces = (IComponent, IAudioProcessor, IConnectionPoint);
@@ -171,12 +194,20 @@ impl IPluginBaseTrait for Processor {
         kResultOk
     }
     unsafe fn terminate(&self) -> tresult {
-        // A stopped/zero-sample callback may be inside a foreign event/point
-        // getter. Reject reentrant teardown before acquiring/destroying audio.
-        if self.audio.processing.load(Ordering::Acquire) || self.audio.in_use() {
+        // Reject foreign threads before reading any main-thread Cell/RefCell.
+        if self.thread != platform::thread_id() {
             return kResultFalse;
         }
-        if self.thread != platform::thread_id() {
+        // A stopped/zero-sample callback may be inside a foreign event/point
+        // getter. Reject reentrant teardown before acquiring/destroying audio.
+        if self.audio.processing.load(Ordering::Acquire)
+            || self.audio.in_use()
+            || self.connection_busy.get()
+            || (self.transport.normal_active() && self.automation.borrow().is_some())
+        {
+            return kResultFalse;
+        }
+        if !self.request_projection_close(true) {
             return kResultFalse;
         }
         if self.shutdown() {
@@ -402,6 +433,19 @@ struct Controller {
     last_reply: RefCell<Option<(u64, String, u64)>>,
     feedback_cutoff: Cell<Option<u64>>,
     feedback_refresh: Cell<bool>,
+    handler: RefCell<Option<Rc<ComPtr<IComponentHandler>>>>,
+    host_busy: Cell<bool>,
+    host_gestures: RefCell<[Option<Rc<ComPtr<IComponentHandler>>>; 23]>,
+    host_receipt: RefCell<Option<(u64, HostAutomation)>>,
+    closing: Cell<bool>,
+    release_peer_on_retirement: Cell<bool>,
+    retired_proof: Cell<bool>,
+}
+struct HostCall<'a>(&'a Cell<bool>);
+impl Drop for HostCall<'_> {
+    fn drop(&mut self) {
+        self.0.set(false);
+    }
 }
 impl Class for Controller {
     type Interfaces = (IEditController, IConnectionPoint);
@@ -448,14 +492,30 @@ impl IPluginBaseTrait for Controller {
         kResultOk
     }
     unsafe fn terminate(&self) -> tresult {
-        if self.thread != platform::thread_id() {
+        if self.thread != platform::thread_id() || self.host_busy.get() {
+            return kResultFalse;
+        }
+        self.closing.set(true);
+        self.release_peer_on_retirement.set(true);
+        self.transport.begin_closing();
+        if !self.retired_proof.get() {
+            let _ = self.transport.terminal(Body::Closing);
+        }
+        if !self.close_host_gestures() {
             return kResultFalse;
         }
         self.terminated.set(true);
-        self.transport.terminate_peer();
-        self.transport.close();
+        // Local safety is balanced/fenced callbacks. Keep the scoped terminal
+        // responder alive for a peer whose certificate delivery was deferred.
+        if self.retired_proof.get() || self.transport.bound().is_none() {
+            self.transport.release_peer();
+        } else {
+            let _ = self.transport.terminal(Body::Closed);
+        }
         self.clear_correlation();
         self.projection.borrow_mut().take();
+        let handler = self.handler.borrow_mut().take();
+        drop(handler);
         kResultOk
     }
 }
@@ -647,8 +707,20 @@ impl IEditControllerTrait for Controller {
         p.values[index] = value;
         kResultOk
     }
-    unsafe fn setComponentHandler(&self, _handler: *mut IComponentHandler) -> tresult {
-        if self.main() { kResultOk } else { kResultFalse }
+    unsafe fn setComponentHandler(&self, handler: *mut IComponentHandler) -> tresult {
+        if !self.main() || self.host_busy.replace(true) {
+            return kResultFalse;
+        }
+        let _call = HostCall(&self.host_busy);
+        if self.host_gestures.borrow().iter().any(Option::is_some) {
+            return kResultFalse;
+        }
+        // AddRef and Release are foreign calls too. Rc snapshots permit calls
+        // outside affine borrows without another foreign reference operation.
+        let handler = unsafe { ComRef::from_raw(handler) }.map(|h| Rc::new(h.to_com_ptr()));
+        let old = self.handler.replace(handler);
+        drop(old);
+        kResultOk
     }
     unsafe fn createView(&self, _name: *const c_char) -> *mut IPlugView {
         std::ptr::null_mut()
@@ -656,6 +728,135 @@ impl IEditControllerTrait for Controller {
 }
 
 impl ProcessorCore {
+    fn request_projection_close(&self, shutdown: bool) -> bool {
+        if self.transport.retired_pending() {
+            let _ = self.transport.terminal_retired(Body::Retired);
+            return !self.closing.get();
+        }
+        if self.transport.bound().is_none() {
+            return true;
+        }
+        self.closing.set(true);
+        self.shutdown_close
+            .set(self.shutdown_close.get() || shutdown);
+        self.transport.begin_closing();
+        let _ = self.transport.terminal(if self.shutdown_close.get() {
+            Body::Goodbye
+        } else {
+            Body::Disconnect
+        });
+        !self.closing.get()
+    }
+    fn service_automation(&self) {
+        if self.closing.get() {
+            return;
+        }
+        let Some(scope) = self.transport.bound() else {
+            return;
+        };
+        for _ in 0..64 {
+            if self.transport.bound() != Some(scope) || self.attachment.borrow().is_none() {
+                return;
+            }
+            if self.automation.borrow().is_none() {
+                let delivery = self.next_automation.get();
+                let Some(next) = delivery.checked_add(1) else {
+                    return;
+                };
+                let event = {
+                    let owner = self.owner.borrow();
+                    let Some(owner) = owner.as_ref() else {
+                        return;
+                    };
+                    let Some(shared) = owner.peek_automation() else {
+                        return;
+                    };
+                    let index = match shared {
+                        AutomationEvent::Begin { parameter_index }
+                        | AutomationEvent::Value {
+                            parameter_index, ..
+                        }
+                        | AutomationEvent::End { parameter_index } => parameter_index,
+                    };
+                    let descriptor = &owner.parameters()[index];
+                    let Some((parameter, _)) = parameters::IDS
+                        .iter()
+                        .find(|(_, name)| *name == descriptor.id)
+                    else {
+                        return;
+                    };
+                    let event = match shared {
+                        AutomationEvent::Begin { .. } => HostAutomation::Begin {
+                            parameter: *parameter,
+                        },
+                        AutomationEvent::Value { value, .. } => {
+                            let Some(value) = descriptor.physical_to_normalized(value) else {
+                                return;
+                            };
+                            HostAutomation::Value {
+                                parameter: *parameter,
+                                value,
+                            }
+                        }
+                        AutomationEvent::End { .. } => HostAutomation::End {
+                            parameter: *parameter,
+                        },
+                    };
+                    AutomationFlight {
+                        delivery,
+                        shared,
+                        event,
+                    }
+                };
+                *self.automation.borrow_mut() = Some(event);
+                self.next_automation.set(next);
+            }
+            let flight = self
+                .automation
+                .borrow()
+                .as_ref()
+                .expect("staged event")
+                .clone();
+            let body = Body::Automation {
+                delivery: flight.delivery,
+                event: flight.event,
+            };
+            if !self.transport.queued(0, &body) && self.transport.send(0, body) != kResultOk {
+                return;
+            }
+            // The receiver's notify result only releases transport storage.
+            // Only a correlated application acknowledgement retires the ledger.
+            self.transport.pump();
+            if self.automation.borrow().is_some() {
+                return;
+            }
+        }
+    }
+    fn acknowledge_automation(&self, delivery: u64) -> tresult {
+        let flight = self.automation.borrow().clone();
+        let Some(flight) = flight.filter(|flight| flight.delivery == delivery) else {
+            return if delivery != 0 && delivery < self.next_automation.get() {
+                kResultOk
+            } else {
+                kResultFalse
+            };
+        };
+        let Ok(mut owner) = self.owner.try_borrow_mut() else {
+            return kResultFalse;
+        };
+        let Some(owner) = owner.as_mut() else {
+            return kNotInitialized;
+        };
+        if owner.peek_automation() != Some(flight.shared) {
+            return kResultFalse;
+        }
+        assert!(
+            owner.acknowledge_automation(),
+            "correlated host success owns one ledger head"
+        );
+        self.automation.borrow_mut().take();
+        kResultOk
+    }
     fn service_parameter_feedback(&self) {
         for _ in 0..64 {
             if !self.transport.has_space() {
@@ -729,14 +930,20 @@ impl ProcessorCore {
             }
         }
     }
-    fn disconnect_projection(&self) {
+    fn disconnect_projection(&self, cancel_automation: bool) {
+        self.automation.borrow_mut().take();
+        self.next_automation.set(1);
         self.processed.borrow_mut().clear();
         self.last_request.set(0);
         let attachment = self.attachment.borrow_mut().take();
         if let Some(attachment) = attachment
             && let Some(owner) = self.owner.borrow_mut().as_mut()
         {
-            let _ = owner.detach_editor(&attachment);
+            if cancel_automation {
+                let _ = owner.detach_editor_and_cancel_automation(&attachment);
+            } else {
+                let _ = owner.detach_editor(&attachment);
+            }
         }
     }
     fn projection(&self) {
@@ -765,7 +972,14 @@ impl IConnectionPointTrait for Processor {
         if !self.live() {
             return kNotInitialized;
         }
-        let result = unsafe { self.transport.connect(other) };
+        if self.connection_busy.get() || self.closing.get() || self.transport.terminal_active() {
+            return kResultFalse;
+        }
+        let result = {
+            self.connection_busy.set(true);
+            let _call = HostCall(&self.connection_busy);
+            unsafe { self.transport.connect(other) }
+        };
         if result == kResultOk {
             self.transport.pump();
             self.projection();
@@ -774,12 +988,34 @@ impl IConnectionPointTrait for Processor {
         result
     }
     unsafe fn disconnect(&self, other: *mut IConnectionPoint) -> tresult {
-        if !self.main() {
+        if !self.main()
+            || self.connection_busy.get()
+            || (self.transport.normal_active() && self.automation.borrow().is_some())
+        {
             return kResultFalse;
+        }
+        self.connection_busy.set(true);
+        let _call = HostCall(&self.connection_busy);
+        if self.transport.retired_peer_matches(other) {
+            // Explicit local disconnection ends the final-Ack retention window.
+            self.transport.release_retired();
+            self.closing.set(false);
+            self.shutdown_close.set(false);
+            return kResultOk;
+        }
+        if !self.transport.peer_matches(other) {
+            return kInvalidArgument;
+        }
+        if self.attachment.borrow().is_some() && self.transport.bound().is_some() {
+            return if self.request_projection_close(false) {
+                kResultOk
+            } else {
+                kResultFalse
+            };
         }
         let result = self.transport.disconnect(other);
         if result == kResultOk {
-            self.disconnect_projection();
+            self.disconnect_projection(false);
         }
         result
     }
@@ -794,15 +1030,42 @@ impl IConnectionPointTrait for Processor {
             }
             Ok(None) => {}
             Ok(Some(packet)) => match packet.body {
-                Body::Goodbye if packet.sequence == 0 => {
-                    self.disconnect_projection();
-                    self.transport.close();
+                Body::Closing | Body::Goodbye if packet.sequence == 0 => {
+                    self.closing.set(true);
+                    self.transport.begin_closing();
+                    return kResultOk;
+                }
+                Body::Closed if packet.sequence == 0 => {
+                    if self.transport.is_current(&packet) {
+                        self.closing.set(true);
+                        self.disconnect_projection(true);
+                        self.transport.retire();
+                    }
+                    let _ = self.transport.terminal_retired(Body::Retired);
+                    return kResultOk;
+                }
+                Body::RetiredAck if packet.sequence == 0 => {
+                    if !self.transport.is_retired(&packet) {
+                        return kResultFalse;
+                    }
+                    if !self.transport.retired_pending() {
+                        return kResultOk;
+                    }
+                    self.transport.release_retired();
+                    self.closing.set(false);
+                    self.shutdown_close.set(false);
                     return kResultOk;
                 }
                 Body::Request { frame } => {
                     let result = self.request(packet.sequence, &frame);
                     if result != kResultOk {
                         self.transport.pump();
+                        return result;
+                    }
+                }
+                Body::AutomationAck { delivery } if packet.sequence == 0 => {
+                    let result = self.acknowledge_automation(delivery);
+                    if result != kResultOk {
                         return result;
                     }
                 }
@@ -816,27 +1079,101 @@ impl IConnectionPointTrait for Processor {
 }
 impl IConnectionPointTrait for Controller {
     unsafe fn connect(&self, other: *mut IConnectionPoint) -> tresult {
-        if !self.main() || self.projection.borrow().is_none() {
+        if !self.main()
+            || self.host_busy.get()
+            || self.transport.terminal_active()
+            || self.projection.borrow().is_none()
+        {
             return kNotInitialized;
         }
-        let result = unsafe { self.transport.connect(other) };
+        if self.retired_proof.get() && self.transport.bound().is_none() {
+            self.closing.set(false);
+            self.retired_proof.set(false);
+            self.release_peer_on_retirement.set(false);
+        }
+        let result = {
+            self.host_busy.set(true);
+            let _call = HostCall(&self.host_busy);
+            unsafe { self.transport.connect(other) }
+        };
         if result == kResultOk {
             self.transport.pump();
         }
         result
     }
     unsafe fn disconnect(&self, other: *mut IConnectionPoint) -> tresult {
-        if !self.main() {
+        if self.thread != platform::thread_id() || self.host_busy.get() {
             return kResultFalse;
         }
-        let result = self.transport.disconnect(other);
-        if result == kResultOk {
-            self.clear_correlation();
+        if !self.transport.peer_matches(other) {
+            return kInvalidArgument;
         }
-        result
+        if self.retired_proof.get() || self.transport.bound().is_none() {
+            self.host_busy.set(true);
+            let _call = HostCall(&self.host_busy);
+            let result = self.transport.disconnect(other);
+            if result == kResultOk {
+                self.clear_correlation();
+                self.closing.set(false);
+                self.retired_proof.set(false);
+                self.release_peer_on_retirement.set(false);
+            }
+            return result;
+        }
+        self.closing.set(true);
+        self.release_peer_on_retirement.set(true);
+        self.transport.begin_closing();
+        let _ = self.transport.terminal(Body::Closing);
+        if !self.close_host_gestures() {
+            return kResultFalse;
+        }
+        let _ = self.transport.terminal(Body::Closed);
+        if self.retired_proof.get() {
+            self.clear_correlation();
+            self.closing.set(false);
+            self.retired_proof.set(false);
+            self.release_peer_on_retirement.set(false);
+            return kResultOk;
+        }
+        kResultFalse
     }
     unsafe fn notify(&self, message: *mut IMessage) -> tresult {
-        if !self.main() || self.projection.borrow().is_none() {
+        if self.thread == platform::thread_id() && !self.host_busy.get() {
+            self.transport.pump_terminal();
+        }
+        if self.thread == platform::thread_id()
+            && !self.host_busy.get()
+            && (self.closing.get() || self.terminated.get())
+        {
+            // Retained terminal scope still authenticates retries after logical
+            // termination; ordinary callbacks remain fenced.
+            return match unsafe { self.transport.receive(message) } {
+                Ok(Some(packet))
+                    if matches!(packet.body, Body::Retired) && packet.sequence == 0 =>
+                {
+                    self.receive_retirement()
+                }
+                Ok(Some(packet)) => {
+                    let close_request = packet.sequence == 0
+                        && matches!(packet.body, Body::Goodbye | Body::Disconnect);
+                    if close_request && matches!(packet.body, Body::Goodbye) {
+                        self.release_peer_on_retirement.set(true);
+                    }
+                    let closed = self.close_host_gestures();
+                    if closed {
+                        let _ = self.transport.terminal(Body::Closed);
+                    }
+                    if close_request {
+                        if closed { kResultOk } else { kResultFalse }
+                    } else {
+                        kNotInitialized
+                    }
+                }
+                Err(error) => error,
+                Ok(None) => kResultFalse,
+            };
+        }
+        if !self.main() || self.host_busy.get() || self.projection.borrow().is_none() {
             return kNotInitialized;
         }
         let mut retry_awaiting = false;
@@ -854,11 +1191,20 @@ impl IConnectionPointTrait for Controller {
                         return result;
                     }
                 }
-                Body::Goodbye if packet.sequence == 0 => {
+                Body::Goodbye | Body::Disconnect if packet.sequence == 0 => {
+                    if matches!(packet.body, Body::Goodbye) {
+                        self.release_peer_on_retirement.set(true);
+                    }
+                    self.closing.set(true);
+                    self.transport.begin_closing();
+                    if !self.close_host_gestures() {
+                        return kResultFalse;
+                    }
                     self.clear_correlation();
-                    self.transport.close();
+                    let _ = self.transport.terminal(Body::Closed);
                     return kResultOk;
                 }
+                Body::Retired if packet.sequence == 0 => return self.receive_retirement(),
                 Body::Reply { frame, publication } => {
                     let result = self.receive_parameter_reply(packet.sequence, frame, publication);
                     if result != kResultOk {
@@ -872,6 +1218,13 @@ impl IConnectionPointTrait for Controller {
                     origins,
                 } if packet.sequence == 0 => {
                     let result = self.receive_parameter_event(frame, publication, origins);
+                    if result != kResultOk {
+                        self.transport.pump();
+                        return result;
+                    }
+                }
+                Body::Automation { delivery, event } if packet.sequence == 0 => {
+                    let result = self.receive_automation(delivery, event);
                     if result != kResultOk {
                         self.transport.pump();
                         return result;
@@ -934,6 +1287,7 @@ impl ProcessorCore {
         }
         let _servicing = Servicing(&self.servicing);
         self.wake.0.store(false, Ordering::Release);
+        self.transport.pump_terminal();
         {
             let Ok(mut owner) = self.owner.try_borrow_mut() else {
                 return;
@@ -954,9 +1308,18 @@ impl ProcessorCore {
                 });
             }
         }
+        if self.closing.get() {
+            if self.transport.retired_pending() {
+                let _ = self.transport.terminal_retired(Body::Retired);
+            } else {
+                let _ = self.request_projection_close(self.shutdown_close.get());
+            }
+            return;
+        }
         self.projection();
         self.service_parameter_feedback();
         self.transport.pump();
+        self.service_automation();
         if self.transport.bound().is_some()
             && self.transport.has_space()
             && !self.transport.queued(0, &Body::Confirm)
@@ -976,7 +1339,7 @@ impl ProcessorCore {
             // Disabled weak token is retained for an explicit cleanup retry.
             *self.registration.borrow_mut() = Some(registration);
         }
-        self.disconnect_projection();
+        self.disconnect_projection(false);
         self.transport.terminate_peer();
         self.transport.close();
         let owner = self.owner.borrow_mut().take();
@@ -1000,6 +1363,9 @@ struct Processed {
 }
 impl ProcessorCore {
     fn request(&self, sequence: u64, frame: &str) -> tresult {
+        if self.closing.get() {
+            return kResultFalse;
+        }
         if sequence == 0 || frame.len() > dandrum_trigger_host::protocol::PATCH_MESSAGE_BYTES_LIMIT
         {
             return kInvalidArgument;
@@ -1098,7 +1464,121 @@ impl Bootstrap {
     }
 }
 impl Controller {
+    fn receive_retirement(&self) -> tresult {
+        if !self.closing.get()
+            || self.host_busy.get()
+            || self.host_gestures.borrow().iter().any(Option::is_some)
+        {
+            return kResultFalse;
+        }
+        self.host_busy.set(true);
+        let _call = HostCall(&self.host_busy);
+        self.retired_proof.set(true);
+        // The pending terminal slot owns this exact return channel even when
+        // the current terminal send is still on-stack or the peer is released.
+        let _ = self.transport.terminal(Body::RetiredAck);
+        if self.release_peer_on_retirement.get() {
+            self.transport.release_peer();
+        }
+        self.clear_correlation();
+        kResultOk
+    }
+    fn close_host_gestures(&self) -> bool {
+        if self.host_busy.replace(true) {
+            return false;
+        }
+        let _call = HostCall(&self.host_busy);
+        let mut closed = true;
+        for index in 0..23 {
+            let handler = { self.host_gestures.borrow()[index].clone() };
+            let Some(handler) = handler else {
+                continue;
+            };
+            if unsafe { handler.endEdit(parameters::IDS[index].0) } == kResultOk {
+                let old = { self.host_gestures.borrow_mut()[index].take() };
+                drop(old);
+            } else {
+                closed = false;
+            }
+        }
+        closed
+    }
+    fn acknowledge_host_delivery(&self, delivery: u64) -> tresult {
+        let body = Body::AutomationAck { delivery };
+        if self.transport.queued(0, &body) {
+            kResultOk
+        } else {
+            self.transport.send(0, body)
+        }
+    }
+    fn receive_automation(&self, delivery: u64, event: HostAutomation) -> tresult {
+        if delivery == 0 {
+            return kInvalidArgument;
+        }
+        let parameter = match &event {
+            HostAutomation::Begin { parameter }
+            | HostAutomation::Value { parameter, .. }
+            | HostAutomation::End { parameter } => *parameter,
+        };
+        let Some(index) = parameters::index(parameter) else {
+            return kInvalidArgument;
+        };
+        if let HostAutomation::Value { value, .. } = &event
+            && !(0.0..=1.0).contains(value)
+        {
+            return kInvalidArgument;
+        }
+        let receipt = self.host_receipt.borrow().clone();
+        if let Some((last, previous)) = &receipt {
+            if delivery < *last || (delivery == *last && event == *previous) {
+                return self.acknowledge_host_delivery(delivery);
+            }
+            if delivery == *last {
+                return kResultFalse;
+            }
+        }
+        if delivery != receipt.map_or(1, |(last, _)| last.saturating_add(1)) {
+            return kResultFalse;
+        }
+        if self.host_busy.replace(true) {
+            return kResultFalse;
+        }
+        let _call = HostCall(&self.host_busy);
+        let handler = match &event {
+            HostAutomation::Begin { .. } => {
+                if self.host_gestures.borrow()[index].is_some() {
+                    return kResultFalse;
+                }
+                self.handler.borrow().clone()
+            }
+            _ => self.host_gestures.borrow()[index].clone(),
+        };
+        let Some(handler) = handler else {
+            return kResultFalse;
+        };
+        let result = unsafe {
+            match &event {
+                HostAutomation::Begin { .. } => handler.beginEdit(parameter),
+                HostAutomation::Value { value, .. } => handler.performEdit(parameter, *value),
+                HostAutomation::End { .. } => handler.endEdit(parameter),
+            }
+        };
+        if result != kResultOk {
+            return result;
+        }
+        match &event {
+            HostAutomation::Begin { .. } => self.host_gestures.borrow_mut()[index] = Some(handler),
+            HostAutomation::End { .. } => {
+                let old = self.host_gestures.borrow_mut()[index].take();
+                drop(old);
+            }
+            _ => {}
+        }
+        *self.host_receipt.borrow_mut() = Some((delivery, event));
+        self.acknowledge_host_delivery(delivery)
+    }
     fn clear_correlation(&self) {
+        self.host_receipt.borrow_mut().take();
         self.bootstrap.borrow_mut().take();
         self.awaiting.set(None);
         self.last_reply.borrow_mut().take();

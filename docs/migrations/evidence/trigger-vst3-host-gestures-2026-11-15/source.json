@@ -1,0 +1,13 @@
+{
+  "baseCommit": "c2a37d8f0939be959c3bd6c2da763ec61d7dae6f",
+  "intendedUpstream": "79efd72078260dc67c068456a10a7c0b830347ed",
+  "files": {
+    "src/trigger-host/src/parameters.rs": "af436fdd62cb93c80632056e610d333b27124d2a2d8c2deba6a50a48af546a92",
+    "src/trigger-host/tests/parameters.rs": "547c397b6fda617cf601f5cfac354ac01b0e3bd626455a91cafe14b28e06d922",
+    "src/vst3-adapter/src/components.rs": "ade4987aafc6968eaf0b6ca4def89cd129bb3f6c0445b79344e0787e32d6a92d",
+    "src/vst3-adapter/src/transport.rs": "f32b429780c3c9a8e078b5c22c7396e166b1ab1ec8d106182517fd501dd3ee61",
+    "src/vst3-adapter/tests/common/owner.rs": "a625ddafabe91fc8e371b07c77854b0fba2b4576a13d7e7a555216889950a1fd",
+    "src/vst3-adapter/tests/connection.rs": "2720bd17a61297f25f1bb88baa94b6f8c373c5ec9c5de2dc533c7a09a675a801"
+  },
+  "patchSha256": "28655d2124a92cbdc424f9a5d939994f2ac486f85f18446066fc0ba912702404"
+}

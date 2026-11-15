@@ -205,6 +205,11 @@ pub enum AutomationEvent {
     Value { parameter_index: usize, value: f64 },
     End { parameter_index: usize },
 }
+#[derive(Clone, Copy)]
+struct QueuedAutomation {
+    owner: u64,
+    event: AutomationEvent,
+}
 
 /// A native job can leave the controller for preparation without an editor.
 /// Its private identity must return with the completion to the same active slot.
@@ -370,7 +375,7 @@ pub struct ParameterController {
     parameters: Vec<PublicParameter>,
     generation: u64,
     admitted_sequence: u64,
-    automation: VecDeque<AutomationEvent>,
+    automation: VecDeque<QueuedAutomation>,
     automation_capacity: usize,
     gestures: Vec<Option<u64>>,
     reserved_ends: usize,
@@ -695,6 +700,21 @@ impl ParameterController {
         }
         Ok(())
     }
+    /// Retire an editor and explicitly cancel its undelivered host automation.
+    /// The adapter must first close host-accepted Begins and retire its staged
+    /// delivery mirror. Cancellation never acknowledges host acceptance.
+    pub fn detach_editor_and_cancel_automation(
+        &mut self,
+        attachment_id: &str,
+    ) -> Result<usize, ParameterError> {
+        self.detach_editor(attachment_id)?;
+        let owner = attachment_id
+            .parse::<u64>()
+            .expect("validated retired attachment");
+        let before = self.automation.len();
+        self.automation.retain(|entry| entry.owner != owner);
+        Ok(before - self.automation.len())
+    }
     fn clear_editor_notes(&mut self, owner: NonZeroU64) {
         self.runtime.detach_editor_notes(owner);
         for press in &mut self.editor_presses {
@@ -847,9 +867,14 @@ impl ParameterController {
 
     fn end_gestures(&mut self, owner: Option<u64>) {
         for (index, gesture) in self.gestures.iter_mut().enumerate() {
-            if gesture.is_some() && owner.is_none_or(|owner| *gesture == Some(owner)) {
-                self.automation.push_back(AutomationEvent::End {
-                    parameter_index: index,
+            if let Some(gesture_owner) = *gesture
+                && owner.is_none_or(|owner| gesture_owner == owner)
+            {
+                self.automation.push_back(QueuedAutomation {
+                    owner: gesture_owner,
+                    event: AutomationEvent::End {
+                        parameter_index: index,
+                    },
                 });
                 *gesture = None;
                 self.reserved_ends -= 1;
@@ -1648,8 +1673,11 @@ impl ParameterController {
                 if self.automation_slots() < 2 {
                     return Err(ParameterError::QueueFull);
                 }
-                self.automation.push_back(AutomationEvent::Begin {
-                    parameter_index: index,
+                self.automation.push_back(QueuedAutomation {
+                    owner: context.attachment_id,
+                    event: AutomationEvent::Begin {
+                        parameter_index: index,
+                    },
                 });
                 self.gestures[index] = Some(context.attachment_id);
                 self.reserved_ends += 1;
@@ -1662,8 +1690,11 @@ impl ParameterController {
                 if !self.gesture_owned(index, context.attachment_id)? {
                     return Err(ParameterError::GestureNotActive);
                 }
-                self.automation.push_back(AutomationEvent::End {
-                    parameter_index: index,
+                self.automation.push_back(QueuedAutomation {
+                    owner: context.attachment_id,
+                    event: AutomationEvent::End {
+                        parameter_index: index,
+                    },
                 });
                 self.gestures[index] = None;
                 self.reserved_ends -= 1;
@@ -1696,17 +1727,26 @@ impl ParameterController {
                     .send_parameter(parameter.root_index, physical, sequence)
                     .map_err(ParameterError::Runtime)?;
                 if !active {
-                    self.automation.push_back(AutomationEvent::Begin {
-                        parameter_index: index,
+                    self.automation.push_back(QueuedAutomation {
+                        owner: context.attachment_id,
+                        event: AutomationEvent::Begin {
+                            parameter_index: index,
+                        },
                     });
                 }
-                self.automation.push_back(AutomationEvent::Value {
-                    parameter_index: index,
-                    value: physical,
+                self.automation.push_back(QueuedAutomation {
+                    owner: context.attachment_id,
+                    event: AutomationEvent::Value {
+                        parameter_index: index,
+                        value: physical,
+                    },
                 });
                 if !active {
-                    self.automation.push_back(AutomationEvent::End {
-                        parameter_index: index,
+                    self.automation.push_back(QueuedAutomation {
+                        owner: context.attachment_id,
+                        event: AutomationEvent::End {
+                            parameter_index: index,
+                        },
                     });
                 }
                 self.admitted_sequence = sequence;
@@ -1796,12 +1836,12 @@ impl ParameterController {
 
     /// Read pending events in delivery order without acknowledging them.
     pub fn pending_automation(&self) -> impl Iterator<Item = AutomationEvent> + '_ {
-        self.automation.iter().copied()
+        self.automation.iter().map(|entry| entry.event)
     }
 
     /// A format adapter acknowledges only after its host accepts this event.
     pub fn peek_automation(&self) -> Option<AutomationEvent> {
-        self.automation.front().copied()
+        self.automation.front().map(|entry| entry.event)
     }
     pub fn acknowledge_automation(&mut self) -> bool {
         self.automation.pop_front().is_some()

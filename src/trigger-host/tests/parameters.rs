@@ -2115,3 +2115,137 @@ fn stopped_normalized_flush_is_atomic_preserves_native_history_and_consumes_no_d
         .unwrap();
     assert_eq!((left[0], right[0]), (-1.0, -1.0));
 }
+
+#[test]
+fn cancelling_detachment_removes_only_that_editors_automation_and_preserves_admitted_values() {
+    let (_package, root) = package();
+    let (mut controller, mut audio) =
+        ParameterController::open(root, configuration(), NonZeroU64::new(701).unwrap(), 16, 8)
+            .unwrap();
+    let a = controller.attach_editor().unwrap();
+    let b = controller.attach_editor().unwrap();
+    let history = controller.session().owner_snapshot();
+    let level = controller
+        .parameters()
+        .iter()
+        .position(|p| p.id == "drums.level")
+        .unwrap();
+    let pan = controller
+        .parameters()
+        .iter()
+        .position(|p| p.id == "drums.pan")
+        .unwrap();
+    for (editor, serial, method, args) in [
+        (&a, 1, "beginGesture", json!(["drums.level", 1])),
+        (&b, 1, "beginGesture", json!(["drums.pan", 1])),
+        (&a, 2, "setParameter", json!(["drums.level", 0.5, 1])),
+        (&b, 2, "setParameter", json!(["drums.pan", 0.25, 1])),
+    ] {
+        let command = request(&mut controller, &editor.attachment_id, serial, method, args);
+        controller.apply(&command).unwrap();
+    }
+    assert_eq!(
+        controller.pending_automation().collect::<Vec<_>>(),
+        vec![
+            AutomationEvent::Begin {
+                parameter_index: level
+            },
+            AutomationEvent::Begin {
+                parameter_index: pan
+            },
+            AutomationEvent::Value {
+                parameter_index: level,
+                value: 2.0
+            },
+            AutomationEvent::Value {
+                parameter_index: pan,
+                value: -0.5
+            },
+        ]
+    );
+    // The adapter has separately closed any host-accepted Begin. Cancellation
+    // is explicit; it must never masquerade as acknowledge_automation success.
+    assert_eq!(
+        controller
+            .detach_editor_and_cancel_automation(&a.attachment_id)
+            .unwrap(),
+        3
+    );
+    let retained = vec![
+        AutomationEvent::Begin {
+            parameter_index: pan,
+        },
+        AutomationEvent::Value {
+            parameter_index: pan,
+            value: -0.5,
+        },
+    ];
+    assert_eq!(
+        controller.pending_automation().collect::<Vec<_>>(),
+        retained
+    );
+    assert_eq!(controller.peek_automation(), retained.first().copied());
+    assert!(matches!(
+        controller.detach_editor_and_cancel_automation(&a.attachment_id),
+        Err(ParameterError::Protocol(ProtocolError::StaleAttachment))
+    ));
+    assert!(
+        controller
+            .detach_editor_and_cancel_automation("01")
+            .is_err()
+    );
+    assert_eq!(
+        controller.pending_automation().collect::<Vec<_>>(),
+        retained
+    );
+    assert_eq!(audio.flush_parameters(&[]).unwrap().parameter_updates, 2);
+    let state = controller.parameter_state();
+    assert_eq!(state.parameters[level].value, 0.5);
+    assert_eq!(state.parameters[pan].value, 0.25);
+    assert_eq!(controller.session().owner_snapshot(), history);
+    let finish_b = request(
+        &mut controller,
+        &b.attachment_id,
+        3,
+        "endGesture",
+        json!(["drums.pan", 1]),
+    );
+    controller.apply(&finish_b).unwrap();
+    assert_eq!(
+        controller.pending_automation().last(),
+        Some(AutomationEvent::End {
+            parameter_index: pan
+        })
+    );
+    let c = controller.attach_editor().unwrap();
+    let begin_c = request(
+        &mut controller,
+        &c.attachment_id,
+        1,
+        "beginGesture",
+        json!(["drums.level", 1]),
+    );
+    controller.apply(&begin_c).unwrap();
+    assert_eq!(
+        controller
+            .detach_editor_and_cancel_automation(&c.attachment_id)
+            .unwrap(),
+        2,
+        "cancelled owner releases its gesture and reserved End capacity"
+    );
+    assert_eq!(
+        controller.pending_automation().collect::<Vec<_>>(),
+        vec![
+            AutomationEvent::Begin {
+                parameter_index: pan
+            },
+            AutomationEvent::Value {
+                parameter_index: pan,
+                value: -0.5
+            },
+            AutomationEvent::End {
+                parameter_index: pan
+            }
+        ]
+    );
+}

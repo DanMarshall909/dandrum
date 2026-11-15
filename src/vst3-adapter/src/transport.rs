@@ -14,6 +14,24 @@ use vst3::{
 pub(crate) const PENDING: usize = 8;
 const MAX_WIRE: usize = 2 * dandrum_trigger_host::protocol::PATCH_OUTBOUND_BYTES_LIMIT + 4096;
 pub(crate) type Scope = [u8; 16];
+fn terminal_phase(body: &Body) -> u8 {
+    match body {
+        Body::Closing => 0,
+        Body::Disconnect => 1,
+        Body::Goodbye => 2,
+        Body::Closed => 3,
+        Body::Retired => 4,
+        Body::RetiredAck => 5,
+        _ => unreachable!("terminal slot carries only close phases"),
+    }
+}
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "phase", rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) enum HostAutomation {
+    Begin { parameter: u32 },
+    Value { parameter: u32, value: f64 },
+    End { parameter: u32 },
+}
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type", rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) enum Body {
@@ -37,6 +55,18 @@ pub(crate) enum Body {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         origins: Option<Vec<String>>,
     },
+    Automation {
+        delivery: u64,
+        event: HostAutomation,
+    },
+    AutomationAck {
+        delivery: u64,
+    },
+    Closed,
+    Closing,
+    Disconnect,
+    Retired,
+    RetiredAck,
     Goodbye,
 }
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -53,16 +83,30 @@ struct Outbound {
     packet: Packet,
     bytes: Vec<u8>,
 }
+struct RetiredPeer {
+    local: Scope,
+    remote: Scope,
+    peer: Option<Rc<ComPtr<IConnectionPoint>>>,
+}
+struct Terminal {
+    peer: Rc<ComPtr<IConnectionPoint>>,
+    packet: Packet,
+    bytes: Vec<u8>,
+}
 struct State {
     peer: Option<Rc<ComPtr<IConnectionPoint>>>,
     local: Option<Scope>,
     remote: Option<Scope>,
     next: u64,
     outbox: VecDeque<Rc<Outbound>>,
+    closing: bool,
+    retired: Option<RetiredPeer>,
 }
 pub(crate) struct Transport {
     state: RefCell<State>,
     sending: Cell<bool>,
+    terminal_sending: Cell<bool>,
+    terminal_pending: RefCell<Option<Rc<Terminal>>>,
 }
 impl Default for Transport {
     fn default() -> Self {
@@ -73,12 +117,95 @@ impl Default for Transport {
                 remote: None,
                 next: 0,
                 outbox: VecDeque::with_capacity(PENDING),
+                closing: false,
+                retired: None,
             }),
             sending: Cell::new(false),
+            terminal_sending: Cell::new(false),
+            terminal_pending: RefCell::new(None),
         }
     }
 }
 impl Transport {
+    pub fn peer_matches(&self, peer: *mut IConnectionPoint) -> bool {
+        self.state
+            .borrow()
+            .peer
+            .as_ref()
+            .is_some_and(|p| p.as_ptr() == peer)
+    }
+    pub fn retired_peer_matches(&self, peer: *mut IConnectionPoint) -> bool {
+        self.state
+            .borrow()
+            .retired
+            .as_ref()
+            .and_then(|r| r.peer.as_ref())
+            .is_some_and(|p| p.as_ptr() == peer)
+    }
+    pub fn retired_pending(&self) -> bool {
+        self.state
+            .borrow()
+            .retired
+            .as_ref()
+            .is_some_and(|r| r.peer.is_some())
+    }
+    pub fn terminal_active(&self) -> bool {
+        self.terminal_sending.get()
+    }
+    pub fn normal_active(&self) -> bool {
+        self.sending.get()
+    }
+    pub fn is_current(&self, packet: &Packet) -> bool {
+        self.bound()
+            .is_some_and(|(local, remote)| packet.target == Some(local) && packet.source == remote)
+    }
+    pub fn is_retired(&self, packet: &Packet) -> bool {
+        self.state
+            .borrow()
+            .retired
+            .as_ref()
+            .is_some_and(|r| packet.target == Some(r.local) && packet.source == r.remote)
+    }
+    pub fn retire(&self) {
+        let old = {
+            let mut state = self.state.borrow_mut();
+            let Some((local, remote)) = state.local.zip(state.remote) else {
+                return;
+            };
+            let peer = state.peer.take();
+            state.local = None;
+            state.remote = None;
+            state.outbox.clear();
+            state.retired.replace(RetiredPeer {
+                local,
+                remote,
+                peer,
+            })
+        };
+        drop(old);
+    }
+    pub fn release_retired(&self) {
+        let (old, scope) = {
+            let mut state = self.state.borrow_mut();
+            let Some(retired) = state.retired.as_mut() else {
+                return;
+            };
+            (retired.peer.take(), (retired.local, retired.remote))
+        };
+        let pending = {
+            let mut pending = self.terminal_pending.borrow_mut();
+            if pending
+                .as_ref()
+                .is_some_and(|p| p.packet.source == scope.0 && p.packet.target == Some(scope.1))
+            {
+                pending.take()
+            } else {
+                None
+            }
+        };
+        drop(old);
+        drop(pending);
+    }
     pub fn bound(&self) -> Option<(Scope, Scope)> {
         let state = self.state.borrow();
         Some((state.local?, state.remote?))
@@ -100,6 +227,10 @@ impl Transport {
         if self.state.borrow().peer.is_some() {
             return kResultFalse;
         }
+        self.pump_terminal();
+        if self.terminal_pending.borrow().is_some() {
+            return kResultFalse;
+        }
         let Some(local) = crate::platform::scope() else {
             return kResultFalse;
         };
@@ -118,6 +249,7 @@ impl Transport {
             state.peer = Some(peer);
             state.local = Some(local);
             state.remote = None;
+            state.closing = false;
         }
         self.queue(0, Body::Offer, None)
     }
@@ -159,7 +291,108 @@ impl Transport {
             let _ = unsafe { peer.notify(message.as_ptr()) };
         }
     }
-    pub fn close(&self) {
+    /// Closing supersedes ordinary traffic, but retains the scoped peer for
+    /// terminal retries until explicit disconnect/final COM lifetime.
+    pub fn begin_closing(&self) {
+        let mut state = self.state.borrow_mut();
+        state.closing = true;
+        state.outbox.clear();
+    }
+    pub fn terminal(&self, body: Body) -> tresult {
+        self.stage_terminal(body, false)
+    }
+    pub fn terminal_retired(&self, body: Body) -> tresult {
+        self.stage_terminal(body, true)
+    }
+    fn stage_terminal(&self, body: Body, retired: bool) -> tresult {
+        let target = {
+            let state = self.state.borrow();
+            if retired {
+                state
+                    .retired
+                    .as_ref()
+                    .and_then(|r| r.peer.as_ref().map(|p| (p.clone(), r.local, r.remote)))
+            } else {
+                state
+                    .peer
+                    .as_ref()
+                    .zip(state.local.zip(state.remote))
+                    .map(|(peer, (source, target))| (peer.clone(), source, target))
+            }
+        };
+        let Some((peer, source, target)) = target else {
+            return self.pump_terminal();
+        };
+        let packet = Packet {
+            version: 1,
+            source,
+            target: Some(target),
+            sequence: 0,
+            body,
+        };
+        let bytes = serde_json::to_vec(&packet).expect("bounded terminal packet");
+        let item = Rc::new(Terminal {
+            peer,
+            packet,
+            bytes,
+        });
+        let old = {
+            let mut pending = self.terminal_pending.borrow_mut();
+            if let Some(previous) = pending.as_ref()
+                && previous.packet.source == source
+                && previous.packet.target == Some(target)
+                && terminal_phase(&previous.packet.body) > terminal_phase(&item.packet.body)
+            {
+                None
+            } else {
+                pending.replace(item)
+            }
+        };
+        drop(old);
+        self.pump_terminal()
+    }
+    pub fn pump_terminal(&self) -> tresult {
+        if self.terminal_sending.replace(true) {
+            return kResultOk;
+        }
+        struct Sending<'a>(&'a Cell<bool>);
+        impl Drop for Sending<'_> {
+            fn drop(&mut self) {
+                self.0.set(false);
+            }
+        }
+        let _sending = Sending(&self.terminal_sending);
+        for _ in 0..8 {
+            let item = self.terminal_pending.borrow_mut().take();
+            let Some(item) = item else {
+                return kResultOk;
+            };
+            let message = message(&item.bytes);
+            let result = unsafe { item.peer.notify(message.as_ptr()) };
+            if result != kResultOk {
+                let retry = matches!(item.packet.body, Body::RetiredAck) || {
+                    let state = self.state.borrow();
+                    state.peer.is_some()
+                        && state.local == Some(item.packet.source)
+                        && state.remote == item.packet.target
+                        || state.retired.as_ref().is_some_and(|r| {
+                            r.peer.is_some()
+                                && r.local == item.packet.source
+                                && Some(r.remote) == item.packet.target
+                        })
+                };
+                let mut pending = self.terminal_pending.borrow_mut();
+                if retry && pending.is_none() {
+                    *pending = Some(item);
+                }
+                return result;
+            }
+        }
+        kResultOk
+    }
+    /// A prepared terminal Ack owns its return channel independently of the
+    /// ordinary peer, and must survive this synchronous peer release.
+    pub fn release_peer(&self) {
         let old = {
             let mut state = self.state.borrow_mut();
             state.local = None;
@@ -169,11 +402,26 @@ impl Transport {
         };
         drop(old);
     }
+    pub fn close(&self) {
+        let old = {
+            let mut state = self.state.borrow_mut();
+            state.local = None;
+            state.remote = None;
+            state.outbox.clear();
+            (state.peer.take(), state.retired.take())
+        };
+        drop(old);
+        let pending = self.terminal_pending.borrow_mut().take();
+        drop(pending);
+    }
     fn queue(&self, sequence: u64, body: Body, target: Option<Scope>) -> tresult {
         let mut state = self.state.borrow_mut();
         let Some(local) = state.local else {
             return kNotInitialized;
         };
+        if state.closing {
+            return kResultFalse;
+        }
         if state.outbox.len() == PENDING {
             return kResultFalse;
         }
@@ -237,8 +485,21 @@ impl Transport {
         if packet.version != 1 {
             return Err(kInvalidArgument);
         }
+        if matches!(packet.body, Body::Closed | Body::RetiredAck) && packet.sequence == 0 {
+            let state = self.state.borrow();
+            if state
+                .retired
+                .as_ref()
+                .is_some_and(|r| packet.target == Some(r.local) && packet.source == r.remote)
+            {
+                return Ok(Some(packet));
+            }
+        }
         let (local, remote) = {
             let s = self.state.borrow();
+            if s.closing && matches!(packet.body, Body::Offer | Body::Challenge | Body::Confirm) {
+                return Err(kResultFalse);
+            }
             (s.local.ok_or(kNotInitialized)?, s.remote)
         };
         match packet.body {
