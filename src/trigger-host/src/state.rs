@@ -68,7 +68,74 @@ pub struct BufferedState {
     pub(crate) header: StateHeader,
     pub(crate) payload: Vec<u8>,
 }
+impl BufferedState {
+    /// Validate complete framing/content identities before releasing projected
+    /// values. This hashes encoded bytes; it creates no sample or session.
+    pub fn parameter_values(
+        &self,
+        table: &[crate::parameters::PublicParameter],
+    ) -> Result<Vec<f64>, StateError> {
+        let values = self.header.parameter_values(table)?;
+        let mut remaining = self.payload.as_slice();
+        for resource in &self.header.resources {
+            // The private header's validated manifest bounds each resource and
+            // its total; buffer_payload reads exactly that total before use.
+            let (bytes, tail) = remaining.split_at(resource.encoded_bytes as usize);
+            let id = SampleSnapshot::resource_id_for_encoded(bytes)
+                .expect("encoded resource bounded by validated manifest");
+            if id != format!("selected/{}.wav", resource.sha256) {
+                return Err(StateError::Invalid);
+            }
+            remaining = tail;
+        }
+        Ok(values)
+    }
+}
+
 impl StateHeader {
+    /// Pure projection admission shared by processor restore and controllers.
+    /// Resource playability and native history remain processor-owned.
+    pub fn parameter_values(
+        &self,
+        table: &[crate::parameters::PublicParameter],
+    ) -> Result<Vec<f64>, StateError> {
+        for (position, descriptor) in table.iter().enumerate() {
+            if descriptor.root_index >= table.len()
+                || descriptor.root_port_name.is_empty()
+                || !(descriptor.physical_min as f32).is_finite()
+                || !(descriptor.physical_max as f32).is_finite()
+                || descriptor.physical_min >= descriptor.physical_max
+                || table[..position].iter().any(|p| {
+                    p.root_index == descriptor.root_index
+                        || p.id == descriptor.id
+                        || p.root_port_name == descriptor.root_port_name
+                })
+            {
+                return Err(StateError::Invalid);
+            }
+        }
+        if self.state.version == 3 {
+            super::patch_budget::check(&self.state.document).map_err(|_| StateError::Invalid)?;
+            let patch =
+                dandrum_engine::kernel::document::load_kernel_patch_str(&self.state.document)
+                    .map_err(|_| StateError::Invalid)?;
+            let required = patch
+                .sample_assets()
+                .sample_sources
+                .iter()
+                .map(|s| s.resource.path())
+                .collect::<std::collections::BTreeSet<_>>();
+            let declared = self
+                .resources
+                .iter()
+                .map(|r| std::path::Path::new(&r.path))
+                .collect::<std::collections::BTreeSet<_>>();
+            if required != declared {
+                return Err(StateError::Invalid);
+            }
+        }
+        self.state.values_for(table)
+    }
     /// Read only the validated payload extent, outside any controller borrow.
     pub fn buffer_payload(self, input: &mut impl Read) -> Result<BufferedState, StateError> {
         let mut payload = vec![0; self.payload_bytes];
@@ -327,11 +394,10 @@ impl SavedState {
         validate_resources(&patch)
     }
 
-    /// Private to this host crate; the controller owns both arguments together.
+    /// Match named state values to their canonical public destinations.
     pub(crate) fn values_for(
         &self,
         table: &[crate::parameters::PublicParameter],
-        runtime: &crate::runtime::RuntimeControl,
     ) -> Result<Vec<f64>, StateError> {
         let patch = dandrum_engine::kernel::document::load_kernel_patch_str(&self.document)
             .map_err(|_| StateError::Invalid)?;
@@ -348,7 +414,7 @@ impl SavedState {
             let alias = matching.next().ok_or(StateError::Invalid)?;
             let range = alias.control_default();
             if matching.next().is_some()
-                || runtime.parameter_index(alias.port_name()) != Some(descriptor.root_index)
+                || alias.port_name() != descriptor.root_port_name
                 || range.min() != Some(descriptor.physical_min)
                 || range.max() != Some(descriptor.physical_max)
                 || (self.version == 2 && range.default() != descriptor.physical_default)

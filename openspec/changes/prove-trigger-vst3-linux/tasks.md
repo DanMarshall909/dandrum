@@ -30,7 +30,12 @@ implementation until repaired or explicitly refined.
 
 - [x] 3.1 Characterize the current discrete runtime and CLAP timing, then implement the covered format-neutral curve boundary and bounded VST3 point/note translation; prove every-sample ramps, implicit previous endpoints, adjacent jumps, same-frame ordering, block-partition invariance and malformed/capacity atomicity with independent oracles.
 - [ ] 3.2 Connect zero-sample/stopped flush, controller projection updates and balanced host gestures/feedback; prove no DSP-time advance or native-history entry, bounded delivery and once-only cancellation while retaining CLAP's discrete behavior.
-- [ ] 3.3 Adapt the existing portable state to `IBStream` and controller projection state; prove all named values/selected content in a fresh isolated instance after source-instance/file loss, legacy packaged state, successful partial I/O, invalid/truncated/zero-progress/failing stream preservation of nonempty history/signed output, and controller restore without session creation or host automation callbacks.
+- [x] 3.3 Adapt the existing portable state to `IBStream` and controller projection state; prove all named values/selected content in a fresh isolated instance after source-instance/file loss, legacy packaged state, successful partial I/O, invalid/truncated/zero-progress/failing stream preservation of nonempty history/signed output, and controller restore without session creation or host automation callbacks.
+
+Task 3.3 evidence: [processor streams](../../../docs/migrations/evidence/trigger-vst3-processor-state-2026-11-03/README.md)
+and [controller restoration](../../../docs/migrations/evidence/trigger-vst3-controller-state-2026-11-15/README.md).
+The controller checkpoint includes the existing large-payload shared-owner check
+and fresh CLAP regression; it does not complete tasks 2.4/3.2 or the Linux proof.
 
 Checkpoint: review discovery, signed audio, service, curve/state evidence and
 remaining resource allowance before dependent full-editor integration.

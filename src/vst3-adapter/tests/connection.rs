@@ -773,3 +773,94 @@ fn processor_termination_revokes_a_surviving_projection_before_late_delivery() {
     to_p.target.borrow_mut().take();
     to_c.target.borrow_mut().take();
 }
+
+#[test]
+fn delayed_initial_parameter_reply_cannot_overwrite_component_state_restoration() {
+    let bundle = Bundle::new();
+    let module = bundle.load();
+    let p = module.class::<IComponent>(&PROCESSOR);
+    let c = module.class::<IEditController>(&CONTROLLER);
+    assert_eq!(unsafe { p.initialize(std::ptr::null_mut()) }, kResultOk);
+    assert_eq!(unsafe { c.initialize(std::ptr::null_mut()) }, kResultOk);
+    let pc = p.cast::<IConnectionPoint>().unwrap();
+    let cc = c.cast::<IConnectionPoint>().unwrap();
+    let (to_c, proxy_c) = proxy(cc.clone());
+    let (_to_p, proxy_p) = proxy(pc.clone());
+    *to_c.refuse_type.borrow_mut() = Some("reply".into());
+    assert_eq!(unsafe { pc.connect(proxy_c.as_ptr()) }, kResultOk);
+    assert_eq!(unsafe { cc.connect(proxy_p.as_ptr()) }, kResultOk);
+    let old_reply = {
+        let frames = to_c.frames.borrow();
+        let i = frames
+            .iter()
+            .position(|f| f["body"]["type"] == "reply")
+            .expect("proxy retained initial default-value reply");
+        to_c.messages.borrow()[i].clone()
+    };
+    let legacy = include_bytes!("../../trigger-host/tests/fixtures/trigger-v2-state.json");
+    let (_, input) = common::stream::stream(legacy.to_vec(), 4096);
+    assert_eq!(unsafe { p.setState(input.as_ptr()) }, kResultOk);
+    let (_, input) = common::stream::stream(legacy.to_vec(), 7);
+    assert_eq!(unsafe { c.setComponentState(input.as_ptr()) }, kResultOk);
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.125);
+    assert_eq!(
+        unsafe { cc.notify(old_reply.as_ptr()) },
+        kResultOk,
+        "obsolete accepted reply must be acknowledged to release bounded peer storage"
+    );
+    assert_eq!(
+        unsafe { c.getParamNormalized(0x1003) },
+        0.125,
+        "old initial projection cannot roll back restored state"
+    );
+    assert_eq!(unsafe { cc.notify(old_reply.as_ptr()) }, kResultOk);
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.125);
+    assert_eq!(unsafe { c.setParamNormalized(0x1003, 0.875) }, kResultOk);
+    assert_eq!(unsafe { pc.disconnect(proxy_c.as_ptr()) }, kResultOk);
+    assert_eq!(unsafe { cc.disconnect(proxy_p.as_ptr()) }, kResultOk);
+    to_c.refuse_type.borrow_mut().take();
+    assert_eq!(unsafe { pc.connect(proxy_c.as_ptr()) }, kResultOk);
+    assert_eq!(unsafe { cc.connect(proxy_p.as_ptr()) }, kResultOk);
+    assert_eq!(
+        unsafe { c.getParamNormalized(0x1003) },
+        0.125,
+        "a new connection must still synchronize from the processor"
+    );
+    assert_eq!(unsafe { c.terminate() }, kResultOk);
+    assert_eq!(unsafe { p.terminate() }, kResultOk);
+}
+
+#[test]
+fn failed_component_state_restore_keeps_a_pending_parameter_reply_usable() {
+    let bundle = Bundle::new();
+    let module = bundle.load();
+    let p = module.class::<IComponent>(&PROCESSOR);
+    let c = module.class::<IEditController>(&CONTROLLER);
+    assert_eq!(unsafe { p.initialize(std::ptr::null_mut()) }, kResultOk);
+    assert_eq!(unsafe { c.initialize(std::ptr::null_mut()) }, kResultOk);
+    let legacy = include_bytes!("../../trigger-host/tests/fixtures/trigger-v2-state.json");
+    let (_, input) = common::stream::stream(legacy.to_vec(), 4096);
+    assert_eq!(unsafe { p.setState(input.as_ptr()) }, kResultOk);
+    let pc = p.cast::<IConnectionPoint>().unwrap();
+    let cc = c.cast::<IConnectionPoint>().unwrap();
+    let (to_c, proxy_c) = proxy(cc.clone());
+    let (_to_p, proxy_p) = proxy(pc.clone());
+    *to_c.refuse_type.borrow_mut() = Some("reply".into());
+    assert_eq!(unsafe { pc.connect(proxy_c.as_ptr()) }, kResultOk);
+    assert_eq!(unsafe { cc.connect(proxy_p.as_ptr()) }, kResultOk);
+    let reply = {
+        let frames = to_c.frames.borrow();
+        let i = frames
+            .iter()
+            .position(|f| f["body"]["type"] == "reply")
+            .unwrap();
+        to_c.messages.borrow()[i].clone()
+    };
+    let (_, input) = common::stream::stream(legacy[..legacy.len() / 2].to_vec(), 7);
+    assert_eq!(unsafe { c.setComponentState(input.as_ptr()) }, kResultFalse);
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.25);
+    assert_eq!(unsafe { cc.notify(reply.as_ptr()) }, kResultOk);
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.125);
+    assert_eq!(unsafe { c.terminate() }, kResultOk);
+    assert_eq!(unsafe { p.terminate() }, kResultOk);
+}

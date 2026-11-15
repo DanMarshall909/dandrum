@@ -374,6 +374,11 @@ struct Projection {
     parameters: Vec<PublicParameter>,
     values: [f64; 23],
 }
+#[derive(Clone, Copy)]
+struct ParameterRequest {
+    sequence: u64,
+    apply_values: bool,
+}
 struct Controller {
     root: PathBuf,
     thread: libc::pid_t,
@@ -382,7 +387,7 @@ struct Controller {
     transport: Transport,
     bootstrap: RefCell<Option<String>>,
     next_sequence: Cell<u64>,
-    awaiting: Cell<Option<u64>>,
+    awaiting: Cell<Option<ParameterRequest>>,
     last_reply: RefCell<Option<(u64, String)>>,
 }
 impl Class for Controller {
@@ -441,8 +446,54 @@ impl IPluginBaseTrait for Controller {
     }
 }
 impl IEditControllerTrait for Controller {
-    unsafe fn setComponentState(&self, _state: *mut IBStream) -> tresult {
-        kNotImplemented
+    unsafe fn setComponentState(&self, state: *mut IBStream) -> tresult {
+        if !self.main() {
+            return kResultFalse;
+        }
+        let parameters = {
+            self.projection
+                .borrow()
+                .as_ref()
+                .map(|p| p.parameters.clone())
+        };
+        let Some(parameters) = parameters else {
+            return kNotInitialized;
+        };
+        let Some(mut input) = (unsafe { crate::stream::Stream::from_raw(state) }) else {
+            return kInvalidArgument;
+        };
+        let Ok(header) = dandrum_trigger_host::state::read_header(&mut input) else {
+            return kResultFalse;
+        };
+        if header.parameter_values(&parameters).is_err() {
+            return kResultFalse;
+        }
+        let Ok(buffered) = header.buffer_payload(&mut input) else {
+            return kResultFalse;
+        };
+        let Ok(values) = buffered.parameter_values(&parameters) else {
+            return kResultFalse;
+        };
+        let normalized = std::array::from_fn(|i| {
+            parameters[i]
+                .physical_to_normalized(values[parameters[i].root_index])
+                .expect("validated projection")
+        });
+        if !self.main() {
+            return kNotInitialized;
+        }
+        let mut projection = self.projection.borrow_mut();
+        let Some(projection) = projection.as_mut() else {
+            return kNotInitialized;
+        };
+        projection.values = normalized;
+        // A successful restore supersedes an older snapshot, but its reply
+        // still needs validation and acknowledgement to release peer storage.
+        if let Some(mut request) = self.awaiting.get() {
+            request.apply_values = false;
+            self.awaiting.set(Some(request));
+        }
+        kResultOk
     }
     unsafe fn setState(&self, _state: *mut IBStream) -> tresult {
         kNotImplemented
@@ -960,7 +1011,10 @@ impl Controller {
             .send(sequence, Body::Request { frame: request });
         if result == kResultOk {
             self.next_sequence.set(next);
-            self.awaiting.set(Some(sequence));
+            self.awaiting.set(Some(ParameterRequest {
+                sequence,
+                apply_values: true,
+            }));
             self.last_reply.borrow_mut().take();
             *self.bootstrap.borrow_mut() = Some(frame);
         }
@@ -976,9 +1030,9 @@ impl Controller {
                 kResultFalse
             };
         }
-        if self.awaiting.get() != Some(sequence) {
+        let Some(request) = self.awaiting.get().filter(|r| r.sequence == sequence) else {
             return kResultFalse;
-        }
+        };
         let Some(bootstrap) = self
             .bootstrap
             .borrow()
@@ -1022,11 +1076,13 @@ impl Controller {
                 return kInvalidArgument;
             }
         }
-        let mut projection = self.projection.borrow_mut();
-        let Some(projection) = projection.as_mut() else {
-            return kNotInitialized;
-        };
-        projection.values = values.map(|value| value.expect("23 distinct named values"));
+        if request.apply_values {
+            let mut projection = self.projection.borrow_mut();
+            let Some(projection) = projection.as_mut() else {
+                return kNotInitialized;
+            };
+            projection.values = values.map(|value| value.expect("23 distinct named values"));
+        }
         self.awaiting.set(None);
         *self.last_reply.borrow_mut() = Some((sequence, frame));
         kResultOk

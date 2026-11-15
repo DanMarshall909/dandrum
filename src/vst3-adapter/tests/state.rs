@@ -428,3 +428,265 @@ fn state_lifecycle_checks_reentrant_termination_and_missing_encoded_factory_inpu
         assert!(terminated.get());
     }
 }
+
+#[test]
+fn controller_component_state_projects_all_values_without_playable_session_or_host_edits() {
+    use std::cell::Cell;
+    use vst3::{Class, Steinberg::tresult};
+    struct Handler(Rc<Cell<usize>>);
+    impl Class for Handler {
+        type Interfaces = (IComponentHandler,);
+    }
+    impl IComponentHandlerTrait for Handler {
+        unsafe fn beginEdit(&self, _: u32) -> tresult {
+            self.0.set(self.0.get() + 1);
+            kResultOk
+        }
+        unsafe fn performEdit(&self, _: u32, _: f64) -> tresult {
+            self.0.set(self.0.get() + 1);
+            kResultOk
+        }
+        unsafe fn endEdit(&self, _: u32) -> tresult {
+            self.0.set(self.0.get() + 1);
+            kResultOk
+        }
+        unsafe fn restartComponent(&self, _: i32) -> tresult {
+            self.0.set(self.0.get() + 1);
+            kResultOk
+        }
+    }
+    let bundle = Bundle::new();
+    std::fs::write(
+        bundle
+            .resources
+            .join("instrument/assets/advanced-drums.wav"),
+        b"not a WAV",
+    )
+    .unwrap();
+    let module = bundle.load();
+    let c = module.class::<IEditController>(&CONTROLLER);
+    assert_eq!(unsafe { c.initialize(std::ptr::null_mut()) }, kResultOk);
+    let calls = Rc::new(Cell::new(0));
+    let handler = ComWrapper::new(Handler(calls.clone()))
+        .to_com_ptr::<IComponentHandler>()
+        .unwrap();
+    assert_eq!(
+        unsafe { c.setComponentHandler(handler.as_ptr()) },
+        kResultOk
+    );
+    let (input, source) = stream(LEGACY.to_vec(), 7);
+    let view = (*c).clone();
+    *input.on_io.borrow_mut() = Some(Rc::new(move || {
+        assert_eq!(
+            unsafe { view.getParamNormalized(0x1003) },
+            0.25,
+            "no partial projection during foreign reads"
+        )
+    }));
+    assert_eq!(unsafe { c.setComponentState(source.as_ptr()) }, kResultOk);
+    let legacy: serde_json::Value = serde_json::from_slice(LEGACY).unwrap();
+    let ids = [
+        0x1001, 0x1002, 0x1003, 0x1004, 0x1005, 0x2001, 0x2002, 0x2003, 0x2004, 0x3001, 0x3002,
+        0x3003, 0x3004, 0x3005, 0x4001, 0x4002, 0x4003, 0x4004, 0x5001, 0x5002, 0x5003, 0x5004,
+        0x5005,
+    ];
+    let mut expected = Vec::new();
+    for (id, p) in ids
+        .into_iter()
+        .zip(legacy["parameters"].as_array().unwrap())
+    {
+        let name = p["id"].as_str().unwrap();
+        let value = p["value"].as_f64().unwrap();
+        let (min, max) = if name.ends_with("pitch_ratio") {
+            (0.125, 8.0)
+        } else if name.ends_with("level") {
+            (0.0, 4.0)
+        } else if name.ends_with("pan") {
+            (-1.0, 1.0)
+        } else {
+            (0.0, 1.0)
+        };
+        let normalized = (value - min) / (max - min);
+        assert_eq!(
+            unsafe { c.getParamNormalized(id) },
+            normalized,
+            "named controller value {name}"
+        );
+        expected.push((id, normalized));
+    }
+    let invalid = LEGACY[..LEGACY.len() / 2].to_vec();
+    let (_, source) = stream(invalid, 11);
+    assert_eq!(
+        unsafe { c.setComponentState(source.as_ptr()) },
+        kResultFalse
+    );
+    for (id, value) in expected {
+        assert_eq!(unsafe { c.getParamNormalized(id) }, value);
+    }
+    assert_eq!(
+        calls.get(),
+        0,
+        "controller restoration emits no begin/perform/end/restart callbacks"
+    );
+    assert_eq!(unsafe { c.terminate() }, kResultOk);
+}
+
+fn framed(metadata: &serde_json::Value, payload: &[u8]) -> Vec<u8> {
+    let encoded = serde_json::to_vec(metadata).unwrap();
+    let mut bytes = b"DTRGSTAT".to_vec();
+    bytes.extend(3u32.to_le_bytes());
+    bytes.extend(u32::try_from(encoded.len()).unwrap().to_le_bytes());
+    bytes.extend((payload.len() as u64).to_le_bytes());
+    bytes.extend(encoded);
+    bytes.extend(payload);
+    bytes
+}
+
+#[test]
+fn controller_v3_projection_validates_payload_identity_without_decoding_samples() {
+    let saved = {
+        let bundle = Bundle::new();
+        let module = bundle.load();
+        let p = module.class::<IComponent>(&PROCESSOR);
+        assert_eq!(unsafe { p.initialize(std::ptr::null_mut()) }, kResultOk);
+        let (_, source) = stream(LEGACY.to_vec(), 4096);
+        assert_eq!(unsafe { p.setState(source.as_ptr()) }, kResultOk);
+        let saved = save(&p);
+        assert_eq!(unsafe { p.terminate() }, kResultOk);
+        saved
+    };
+    let bundle = Bundle::new();
+    std::fs::write(
+        bundle
+            .resources
+            .join("instrument/assets/advanced-drums.wav"),
+        b"bad factory PCM",
+    )
+    .unwrap();
+    let module = bundle.load();
+    let c = module.class::<IEditController>(&CONTROLLER);
+    let (_, input) = stream(saved.clone(), 11);
+    assert_eq!(
+        unsafe { c.setComponentState(input.as_ptr()) },
+        kNotInitialized
+    );
+    assert_eq!(unsafe { c.initialize(std::ptr::null_mut()) }, kResultOk);
+    assert_eq!(
+        unsafe { c.setComponentState(std::ptr::null_mut()) },
+        kInvalidArgument
+    );
+    assert_eq!(unsafe { c.setParamNormalized(0x1003, 0.875) }, kResultOk);
+    let mut invalid_streams = vec![saved[..8].to_vec(), saved[..saved.len() - 1].to_vec()];
+    let mut trailing = saved.clone();
+    trailing.push(0);
+    invalid_streams.push(trailing);
+    for bytes in invalid_streams {
+        let (_, input) = stream(bytes, 11);
+        assert_eq!(unsafe { c.setComponentState(input.as_ptr()) }, kResultFalse);
+        assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.875);
+    }
+    let payload_start = 24 + u32::from_le_bytes(saved[12..16].try_into().unwrap()) as usize;
+    for threshold in [0, payload_start] {
+        for fault in 0..4 {
+            let (observation, input) = stream(saved.clone(), 4096);
+            let weak = Rc::downgrade(&observation);
+            *observation.on_io.borrow_mut() = Some(Rc::new(move || {
+                let state = weak.upgrade().unwrap();
+                if state.position.get() >= threshold {
+                    match fault {
+                        0 => state.maximum.set(0),
+                        1 => state.fail.set(true),
+                        2 => state.reply_count.set(ReplyCount::Negative),
+                        _ => state.reply_count.set(ReplyCount::Excess),
+                    }
+                }
+            }));
+            assert_eq!(unsafe { c.setComponentState(input.as_ptr()) }, kResultFalse);
+            assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.875);
+        }
+    }
+    let mut corrupt = saved.clone();
+    *corrupt.last_mut().unwrap() ^= 1;
+    let (_, input) = stream(corrupt, 11);
+    assert_eq!(unsafe { c.setComponentState(input.as_ptr()) }, kResultFalse);
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.875);
+    let invalid = portable_state_edit::edit(&saved, |m| m["parameters"][0]["value"] = 9999.into());
+    let threshold = 24 + u32::from_le_bytes(invalid[12..16].try_into().unwrap()) as usize;
+    let (observation, input) = stream(invalid, 11);
+    let weak = Rc::downgrade(&observation);
+    *observation.on_io.borrow_mut() = Some(Rc::new(move || {
+        assert!(
+            weak.upgrade().unwrap().position.get() < threshold,
+            "invalid metadata must reject before payload I/O"
+        )
+    }));
+    assert_eq!(unsafe { c.setComponentState(input.as_ptr()) }, kResultFalse);
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.875);
+    let (observation, input) = stream(saved.clone(), 11);
+    let view = (*c).clone();
+    *observation.on_io.borrow_mut() = Some(Rc::new(move || {
+        assert_eq!(unsafe { view.getParamNormalized(0x1003) }, 0.875)
+    }));
+    assert_eq!(unsafe { c.setComponentState(input.as_ptr()) }, kResultOk);
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.125);
+    // Hash-valid encoded bytes are enough for a projection; audio playability
+    // remains the processor's separate admission decision.
+    let payload = b"not a playable WAV";
+    let mut metadata = portable_state::metadata(&saved);
+    metadata["resources"][0]["sha256"] =
+        "524135fe71d38756511eb07269c283c19832d4fd1ed1547c07784675c1118588".into();
+    metadata["resources"][0]["encoded_bytes"] = (payload.len() as u64).into();
+    metadata["parameters"][2]["value"] = 1.75.into();
+    let bytes = framed(&metadata, payload);
+    let (_, input) = stream(bytes.clone(), 11);
+    assert_eq!(unsafe { c.setComponentState(input.as_ptr()) }, kResultOk);
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.4375);
+    let other = Bundle::new();
+    let module2 = other.load();
+    let p = module2.class::<IComponent>(&PROCESSOR);
+    assert_eq!(unsafe { p.initialize(std::ptr::null_mut()) }, kResultOk);
+    let (_, input) = stream(bytes, 11);
+    assert_eq!(
+        unsafe { p.setState(input.as_ptr()) },
+        kResultFalse,
+        "processor rejects unplayable PCM"
+    );
+    assert_eq!(unsafe { p.terminate() }, kResultOk);
+    assert_eq!(unsafe { c.terminate() }, kResultOk);
+}
+
+#[test]
+fn controller_restore_rechecks_liveness_after_foreign_header_and_payload_reads() {
+    let saved = {
+        let bundle = Bundle::new();
+        let module = bundle.load();
+        let p = module.class::<IComponent>(&PROCESSOR);
+        assert_eq!(unsafe { p.initialize(std::ptr::null_mut()) }, kResultOk);
+        let saved = save(&p);
+        assert_eq!(unsafe { p.terminate() }, kResultOk);
+        saved
+    };
+    let payload_start = 24 + u32::from_le_bytes(saved[12..16].try_into().unwrap()) as usize;
+    for threshold in [0, payload_start] {
+        let bundle = Bundle::new();
+        let module = bundle.load();
+        let c = module.class::<IEditController>(&CONTROLLER);
+        assert_eq!(unsafe { c.initialize(std::ptr::null_mut()) }, kResultOk);
+        let (observation, input) = stream(saved.clone(), 4096);
+        let weak = Rc::downgrade(&observation);
+        let view = (*c).clone();
+        let terminated = Rc::new(std::cell::Cell::new(false));
+        let mark = terminated.clone();
+        *observation.on_io.borrow_mut() = Some(Rc::new(move || {
+            if weak.upgrade().unwrap().position.get() >= threshold && !mark.replace(true) {
+                assert_eq!(unsafe { view.terminate() }, kResultOk);
+            }
+        }));
+        assert_eq!(
+            unsafe { c.setComponentState(input.as_ptr()) },
+            kNotInitialized
+        );
+        assert!(terminated.get());
+        assert_eq!(unsafe { c.setComponentState(input.as_ptr()) }, kResultFalse);
+    }
+}

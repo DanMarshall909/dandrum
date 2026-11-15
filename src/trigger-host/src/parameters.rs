@@ -58,6 +58,8 @@ pub fn document_generation(revision: u64) -> Result<u64, ParameterError> {
 pub struct PublicParameter {
     pub id: String,
     pub root_index: usize,
+    /// Canonical destination retained without creating a runtime/session.
+    pub root_port_name: String,
     pub physical_min: f64,
     pub physical_max: f64,
     pub physical_default: f64,
@@ -144,6 +146,7 @@ fn public_parameters_from_document(document: &str) -> Result<Vec<PublicParameter
         parameters.push(PublicParameter {
             id: alias.name().into(),
             root_index,
+            root_port_name: alias.port_name().into(),
             physical_min: min,
             physical_max: max,
             physical_default: range.default(),
@@ -491,7 +494,7 @@ impl ParameterController {
                 })
                 .collect(),
         };
-        state.values_for(&self.parameters, &self.runtime)?;
+        state.values_for(&self.parameters)?;
         let samples = Self::patch_samples(
             &state.document,
             &self.parameters,
@@ -605,25 +608,7 @@ impl ParameterController {
         {
             return Err(StateError::Busy);
         }
-        if state.version == 3 {
-            super::patch_budget::check(&state.document).map_err(|_| StateError::Invalid)?;
-            let patch = load_kernel_patch_str(&state.document).map_err(|_| StateError::Invalid)?;
-            let required = patch
-                .sample_assets()
-                .sample_sources
-                .iter()
-                .map(|source| source.resource.path())
-                .collect::<std::collections::BTreeSet<_>>();
-            let declared = saved
-                .resources
-                .iter()
-                .map(|resource| std::path::Path::new(&resource.path))
-                .collect::<std::collections::BTreeSet<_>>();
-            if required != declared {
-                return Err(StateError::Invalid);
-            }
-        }
-        let values = state.values_for(&self.parameters, &self.runtime)?;
+        let values = saved.parameter_values(&self.parameters)?;
         let generation =
             crate::state::restored_generation(self.host.session().owner_snapshot().revision)?;
         if state.version == 2 {
