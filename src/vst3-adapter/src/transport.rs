@@ -20,10 +20,23 @@ pub(crate) enum Body {
     Offer,
     Challenge,
     Confirm,
-    Projection { frame: String },
-    Request { frame: String },
-    Reply { frame: String },
-    Event { frame: String },
+    Projection {
+        frame: String,
+    },
+    Request {
+        frame: String,
+    },
+    Reply {
+        frame: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        publication: Option<String>,
+    },
+    Event {
+        frame: String,
+        publication: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        origins: Option<Vec<String>>,
+    },
     Goodbye,
 }
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]

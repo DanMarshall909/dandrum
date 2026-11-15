@@ -63,6 +63,143 @@ fn automation(controller: &mut ParameterController) -> Vec<AutomationEvent> {
 }
 
 #[test]
+fn publication_cutoff_distinguishes_queued_host_feedback_with_unchanged_musical_sequences() {
+    let (_package, root) = package();
+    let (mut controller, mut audio) =
+        ParameterController::open(root, configuration(), NonZeroU64::new(1).unwrap(), 8, 8)
+            .unwrap();
+    let history = controller.session().owner_snapshot();
+    let level = controller
+        .parameters()
+        .iter()
+        .find(|parameter| parameter.id == "drums.level")
+        .unwrap()
+        .root_index;
+    let (_, initial) = controller.parameter_state_with_publication();
+    let allocation = allocation_counter::measure(|| {
+        for value in [0.5, 1.5] {
+            audio
+                .flush_parameters(&[ControlEvent::Parameter {
+                    index: level,
+                    value,
+                }])
+                .unwrap();
+        }
+    });
+    assert_eq!(allocation, allocation_counter::AllocationInfo::default());
+    let (state, cutoff) = controller.parameter_state_with_publication();
+    assert!(cutoff > initial);
+    assert_eq!((state.generation, state.sequence), (1, 0));
+    assert_eq!(
+        state
+            .parameters
+            .iter()
+            .find(|p| p.id == "drums.level")
+            .unwrap()
+            .value,
+        0.375
+    );
+    let (older, older_stamp) = controller.take_feedback_with_publication().unwrap();
+    let (latest, latest_stamp) = controller.take_feedback_with_publication().unwrap();
+    assert_eq!((older.generation, older.sequence), (1, 0));
+    assert_eq!((latest.generation, latest.sequence), (1, 0));
+    assert_eq!(older.parameters[0].value, 0.125);
+    assert_eq!(latest.parameters[0].value, 0.375);
+    assert!(initial < older_stamp && older_stamp < latest_stamp && latest_stamp <= cutoff);
+    let (snapshot, snapshot_cutoff, origins) = controller.parameter_feedback_snapshot();
+    assert_eq!(snapshot, state);
+    assert_eq!(snapshot_cutoff, cutoff);
+    for (parameter, origin) in snapshot.parameters.iter().zip(&origins) {
+        assert_eq!(
+            *origin,
+            if parameter.id == "drums.level" {
+                latest_stamp
+            } else {
+                initial
+            }
+        );
+    }
+    audio.flush_parameters(&[]).unwrap();
+    let (_, empty_cutoff, empty_origins) = controller.parameter_feedback_snapshot();
+    assert!(empty_cutoff > snapshot_cutoff);
+    assert_eq!(
+        empty_origins, origins,
+        "empty flushes preserve actual write origins"
+    );
+    audio
+        .flush_parameters(&[ControlEvent::Parameter {
+            index: level,
+            value: 2.0,
+        }])
+        .unwrap();
+    let (newer, publication) = controller.take_feedback_with_publication().unwrap();
+    assert!(publication > cutoff);
+    assert_eq!((newer.generation, newer.sequence), (1, 0));
+    assert_eq!(newer.parameters[0].value, 0.5);
+    let editor = controller.attach_editor().unwrap();
+    let command = request(
+        &mut controller,
+        &editor.attachment_id,
+        1,
+        "setParameter",
+        json!(["drums.level", 0.875, 1]),
+    );
+    controller.apply(&command).unwrap();
+    let (before_reset, before_publication) = controller.parameter_state_with_publication();
+    let reset = audio.reset();
+    assert_eq!(reset.cancelled_parameter_commands, 1);
+    let (cancelled, cancellation_publication) = controller.parameter_state_with_publication();
+    assert!(
+        cancellation_publication > before_publication,
+        "reset cancellation must advance the feedback cutoff"
+    );
+    assert_eq!(cancelled.parameters, before_reset.parameters);
+    assert_eq!((cancelled.sequence, cancelled.reset_cancelled), (1, true));
+    let (_, _, reset_origins) = controller.parameter_feedback_snapshot();
+    let level_position = cancelled
+        .parameters
+        .iter()
+        .position(|p| p.id == "drums.level")
+        .unwrap();
+    assert_eq!(reset_origins[level_position], publication);
+    for (index, origin) in reset_origins.iter().enumerate() {
+        if index != level_position {
+            assert_eq!(*origin, initial);
+        }
+    }
+    controller
+        .reconfigure_quiescent(
+            &mut audio,
+            TriggerHostConfiguration {
+                max_block_frames: 32,
+                ..configuration()
+            },
+        )
+        .unwrap();
+    let (_, reconfigured_stamp, reconfigured_origins) = controller.parameter_feedback_snapshot();
+    assert_eq!(reconfigured_stamp, cancellation_publication);
+    assert_eq!(reconfigured_origins, reset_origins);
+    assert_eq!(controller.session().owner_snapshot(), history);
+    let (mut left, mut right) = ([123.0; 16], [123.0; 16]);
+    audio
+        .process_events(
+            &mut left,
+            &mut right,
+            &[TimedEvent {
+                frame_offset: 5,
+                event: ControlEvent::NoteOn {
+                    note: 36,
+                    velocity: 127,
+                },
+            }],
+        )
+        .unwrap();
+    assert_eq!(&left[..5], &[0.0; 5]);
+    assert_eq!((left[5], right[5]), (-1.0, -1.0));
+    assert_eq!((left[6], right[6]), (-716.0 / 32768.0, -716.0 / 32768.0));
+}
+
+#[test]
 fn pending_automation_reads_ordered_events_without_acknowledging_or_freeing_capacity() {
     let (_package, root) = package();
     let (mut controller, _audio) =
@@ -1575,7 +1712,16 @@ fn a_short_host_block_accepts_the_declared_event_capacity_and_preserves_it_after
     }
     let mut saved = Vec::new();
     controller.save_state(&mut saved).unwrap();
+    let (_, before_restore, _) = controller.parameter_feedback_snapshot();
     controller.load_state(&mut saved.as_slice()).unwrap();
+    let (_, restored_stamp, restored_origins) = controller.parameter_feedback_snapshot();
+    assert!(restored_stamp > before_restore);
+    assert!(
+        restored_origins
+            .iter()
+            .all(|origin| *origin == restored_stamp),
+        "restore writes every scalar with its new runtime-local origin"
+    );
     controller.service_quiescent(&mut audio).unwrap();
     let (mut left, mut right) = ([123.0; 8], [123.0; 8]);
     let audit = allocation_counter::measure(|| {

@@ -80,6 +80,40 @@ fn assert_audio_continues(audio: &mut RuntimeAudio) {
 }
 
 #[test]
+fn parameter_feedback_frame_keeps_all_fields_and_the_owned_event_namespace() {
+    use dandrum_trigger_host::parameters::{ParameterFeedback, ParameterValue};
+    let package = Package::new();
+    let (mut controller, mut audio) = package.open(37);
+    let editor = controller.attach_editor().unwrap();
+    let history = controller.session().owner_snapshot();
+    start_audio(&mut audio);
+    let feedback = ParameterFeedback {
+        generation: 7,
+        sequence: 19,
+        reset_cancelled: true,
+        frame_offset: 11,
+        parameters: vec![ParameterValue {
+            id: "drums.level".into(),
+            name: "Level".into(),
+            value: 0.375,
+        }],
+    };
+    let frame = controller
+        .encode_parameter_feedback(&editor.attachment_id, feedback.clone())
+        .unwrap();
+    assert_eq!(
+        decoded(frame),
+        json!({"version":1,"instanceId":"37","attachmentId":"1","sequence":"1","event":"parameterStateChanged","payload":{"generation":7,"sequence":19,"reset_cancelled":true,"frame_offset":11,"parameters":[{"id":"drums.level","name":"Level","value":0.375}]}})
+    );
+    assert_eq!(
+        controller.encode_parameter_feedback("999", feedback),
+        Err(ParameterError::Protocol(ProtocolError::StaleAttachment))
+    );
+    assert_eq!(controller.session().owner_snapshot(), history);
+    assert_audio_continues(&mut audio);
+}
+
+#[test]
 fn replies_use_the_controllers_live_namespace_without_admitting_or_dispatching() {
     let package = Package::new();
     let (mut controller, mut audio) = package.open(37);

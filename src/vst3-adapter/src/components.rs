@@ -7,7 +7,8 @@ use crate::{
 use dandrum_trigger_host::{
     SampleRate, TriggerHostConfiguration,
     parameters::{
-        ParameterController, PublicParameter, SessionServiceWake, public_parameters_from_resources,
+        ParameterController, ParameterFeedback, PublicParameter, SessionServiceWake,
+        public_parameters_from_resources,
     },
 };
 use std::{
@@ -66,6 +67,8 @@ pub(crate) fn create(
             next_sequence: Cell::new(1),
             awaiting: Cell::new(None),
             last_reply: RefCell::new(None),
+            feedback_cutoff: Cell::new(None),
+            feedback_refresh: Cell::new(false),
         })
         .to_com_ptr::<FUnknown>()
         .expect("controller includes FUnknown"))
@@ -373,6 +376,14 @@ impl IComponentTrait for Processor {
 struct Projection {
     parameters: Vec<PublicParameter>,
     values: [f64; 23],
+    feedback: [Option<FeedbackValue>; 23],
+}
+#[derive(Clone, Copy)]
+struct FeedbackValue {
+    sequence: u64,
+    publication: u64,
+    snapshot_cutoff: Option<u64>,
+    value: f64,
 }
 #[derive(Clone, Copy)]
 struct ParameterRequest {
@@ -388,7 +399,9 @@ struct Controller {
     bootstrap: RefCell<Option<String>>,
     next_sequence: Cell<u64>,
     awaiting: Cell<Option<ParameterRequest>>,
-    last_reply: RefCell<Option<(u64, String)>>,
+    last_reply: RefCell<Option<(u64, String, u64)>>,
+    feedback_cutoff: Cell<Option<u64>>,
+    feedback_refresh: Cell<bool>,
 }
 impl Class for Controller {
     type Interfaces = (IEditController, IConnectionPoint);
@@ -430,6 +443,7 @@ impl IPluginBaseTrait for Controller {
         *self.projection.borrow_mut() = Some(Projection {
             parameters: descriptors,
             values,
+            feedback: [None; 23],
         });
         kResultOk
     }
@@ -482,17 +496,21 @@ impl IEditControllerTrait for Controller {
         if !self.main() {
             return kNotInitialized;
         }
-        let mut projection = self.projection.borrow_mut();
-        let Some(projection) = projection.as_mut() else {
+        let mut slot = self.projection.borrow_mut();
+        let Some(projection) = slot.as_mut() else {
             return kNotInitialized;
         };
         projection.values = normalized;
-        // A successful restore supersedes an older snapshot, but its reply
-        // still needs validation and acknowledgement to release peer storage.
-        if let Some(mut request) = self.awaiting.get() {
-            request.apply_values = false;
-            self.awaiting.set(Some(request));
-        }
+        projection.feedback.fill(None);
+        drop(slot);
+        self.feedback_cutoff.set(None);
+        // Capture a fresh processor barrier immediately, even if an older
+        // snapshot reply is delayed. Issued obsolete queries are acknowledged
+        // below without applying their values or moving this cutoff.
+        self.awaiting.set(None);
+        self.feedback_refresh.set(self.bootstrap.borrow().is_some());
+        self.retry_parameter_request(false);
+        self.transport.pump();
         kResultOk
     }
     unsafe fn setState(&self, _state: *mut IBStream) -> tresult {
@@ -638,6 +656,79 @@ impl IEditControllerTrait for Controller {
 }
 
 impl ProcessorCore {
+    fn service_parameter_feedback(&self) {
+        for _ in 0..64 {
+            if !self.transport.has_space() {
+                break;
+            }
+            let attachment = self.attachment.borrow().clone();
+            let event = {
+                let Ok(mut slot) = self.owner.try_borrow_mut() else {
+                    return;
+                };
+                let Some(owner) = slot.as_mut() else {
+                    return;
+                };
+                let (feedback, publication, origins) = match owner.take_feedback_with_publication()
+                {
+                    Some((feedback, publication)) => (feedback, publication, None),
+                    None => {
+                        // The audio ring deliberately drops instead of blocking.
+                        // After its retained prefix drains, coalesce any loss into
+                        // one authoritative snapshot. This signal is separate
+                        // from endpoint ownership, so service cannot interrupt a
+                        // live callback merely to observe feedback loss.
+                        if !self.audio.feedback_lost.swap(false, Ordering::AcqRel) {
+                            return;
+                        }
+                        let (state, publication, origins) = owner.parameter_feedback_snapshot();
+                        (
+                            ParameterFeedback {
+                                generation: state.generation,
+                                sequence: state.sequence,
+                                reset_cancelled: state.reset_cancelled,
+                                frame_offset: 0,
+                                parameters: state.parameters,
+                            },
+                            publication,
+                            Some(
+                                origins
+                                    .into_iter()
+                                    .map(|origin| origin.to_string())
+                                    .collect(),
+                            ),
+                        )
+                    }
+                };
+                attachment.as_ref().and_then(|attachment| {
+                    owner
+                        .encode_parameter_feedback(attachment, feedback)
+                        .ok()
+                        .map(|frame| Body::Event {
+                            frame,
+                            publication: publication.to_string(),
+                            origins,
+                        })
+                })
+            };
+            if let Some(event) = event {
+                let snapshot = matches!(
+                    &event,
+                    Body::Event {
+                        origins: Some(_),
+                        ..
+                    }
+                );
+                let result = self.transport.send(0, event);
+                if result != kResultOk {
+                    if snapshot {
+                        self.audio.feedback_lost.store(true, Ordering::Release);
+                    }
+                    return;
+                }
+            }
+        }
+    }
     fn disconnect_projection(&self) {
         self.processed.borrow_mut().clear();
         self.last_request.set(0);
@@ -748,12 +839,13 @@ impl IConnectionPointTrait for Controller {
         if !self.main() || self.projection.borrow().is_none() {
             return kNotInitialized;
         }
+        let mut retry_awaiting = false;
         match unsafe { self.transport.receive(message) } {
             Err(error) => {
                 self.transport.pump();
                 return error;
             }
-            Ok(None) => {}
+            Ok(None) => retry_awaiting = true,
             Ok(Some(packet)) => match packet.body {
                 Body::Projection { frame } if packet.sequence == 0 => {
                     let result = self.receive_projection(frame);
@@ -767,8 +859,19 @@ impl IConnectionPointTrait for Controller {
                     self.transport.close();
                     return kResultOk;
                 }
-                Body::Reply { frame } => {
-                    let result = self.receive_parameter_reply(packet.sequence, frame);
+                Body::Reply { frame, publication } => {
+                    let result = self.receive_parameter_reply(packet.sequence, frame, publication);
+                    if result != kResultOk {
+                        self.transport.pump();
+                        return result;
+                    }
+                }
+                Body::Event {
+                    frame,
+                    publication,
+                    origins,
+                } if packet.sequence == 0 => {
+                    let result = self.receive_parameter_event(frame, publication, origins);
                     if result != kResultOk {
                         self.transport.pump();
                         return result;
@@ -777,6 +880,7 @@ impl IConnectionPointTrait for Controller {
                 _ => return kNotImplemented,
             },
         }
+        self.retry_parameter_request(retry_awaiting);
         self.transport.pump();
         kResultOk
     }
@@ -842,11 +946,16 @@ impl ProcessorCore {
             if !self.audio.processing.load(Ordering::Acquire) {
                 let _ = self.audio.with(|audio| {
                     let _ = owner.service_quiescent(&mut audio.runtime);
-                    let _ = audio.runtime.flush_parameters(&[]);
+                    if let Ok(report) = audio.runtime.flush_parameters(&[])
+                        && report.dropped_feedback != 0
+                    {
+                        self.audio.feedback_lost.store(true, Ordering::Release);
+                    }
                 });
             }
         }
         self.projection();
+        self.service_parameter_feedback();
         self.transport.pump();
         if self.transport.bound().is_some()
             && self.transport.has_space()
@@ -887,7 +996,7 @@ impl Drop for ProcessorCore {
 struct Processed {
     sequence: u64,
     request: String,
-    reply: String,
+    reply: Body,
 }
 impl ProcessorCore {
     fn request(&self, sequence: u64, frame: &str) -> tresult {
@@ -905,7 +1014,7 @@ impl ProcessorCore {
             if !same {
                 return kResultFalse;
             }
-            let body = Body::Reply { frame: reply };
+            let body = reply;
             return if self.transport.queued(sequence, &body) {
                 kResultOk
             } else {
@@ -931,19 +1040,23 @@ impl ProcessorCore {
         if self.attachment.borrow().as_deref() != Some(attachment) {
             return kResultFalse;
         }
-        let reply = {
+        let (reply, publication) = {
             let Ok(mut owner) = self.owner.try_borrow_mut() else {
                 return kResultFalse;
             };
             let Some(owner) = owner.as_mut() else {
                 return kNotInitialized;
             };
-            match dandrum_trigger_host::editor_commands::dispatch(
+            match dandrum_trigger_host::editor_commands::dispatch_with_publication(
                 owner, attachment, request_id, frame,
             ) {
                 Ok(reply) => reply,
                 Err(_) => return kInvalidArgument,
             }
+        };
+        let reply = Body::Reply {
+            frame: reply,
+            publication: publication.map(|stamp| stamp.to_string()),
         };
         // Retain the outcome before attempting transport delivery. A retry can
         // never run the accepted command a second time, even if notify refuses.
@@ -959,7 +1072,7 @@ impl ProcessorCore {
             });
         }
         self.last_request.set(sequence);
-        self.transport.send(sequence, Body::Reply { frame: reply })
+        self.transport.send(sequence, reply)
     }
 }
 #[derive(serde::Deserialize)]
@@ -990,6 +1103,11 @@ impl Controller {
         self.awaiting.set(None);
         self.last_reply.borrow_mut().take();
         self.next_sequence.set(1);
+        self.feedback_cutoff.set(None);
+        self.feedback_refresh.set(false);
+        if let Some(projection) = self.projection.borrow_mut().as_mut() {
+            projection.feedback.fill(None);
+        }
     }
     fn receive_projection(&self, frame: String) -> tresult {
         if self.bootstrap.borrow().as_deref() == Some(&frame) {
@@ -1017,22 +1135,77 @@ impl Controller {
             }));
             self.last_reply.borrow_mut().take();
             *self.bootstrap.borrow_mut() = Some(frame);
+            self.feedback_cutoff.set(None);
+            self.feedback_refresh.set(false);
+            if let Some(projection) = self.projection.borrow_mut().as_mut() {
+                projection.feedback.fill(None);
+            }
         }
         result
     }
-    fn receive_parameter_reply(&self, sequence: u64, frame: String) -> tresult {
-        if let Some((last, previous)) = self.last_reply.borrow().as_ref()
+    fn retry_parameter_request(&self, retry_awaiting: bool) {
+        if !self.main() {
+            return;
+        }
+        if self.awaiting.get().is_some() && !retry_awaiting {
+            return;
+        }
+        let Some(bootstrap) = self
+            .bootstrap
+            .borrow()
+            .as_deref()
+            .and_then(Bootstrap::parse)
+        else {
+            return;
+        };
+        let request = self.awaiting.get().or_else(|| {
+            self.feedback_refresh.get().then_some(ParameterRequest {
+                sequence: self.next_sequence.get(),
+                apply_values: false,
+            })
+        });
+        let Some(request) = request else {
+            return;
+        };
+        let Some(next_sequence) = request.sequence.checked_add(1) else {
+            return;
+        };
+        let body=Body::Request {frame:serde_json::json!({"version":1,"attachmentId":bootstrap.attachment_id,"requestId":request.sequence.to_string(),"method":"getParameterState","args":[]}).to_string()};
+        if self.transport.queued(request.sequence, &body) {
+            return;
+        }
+        if self.transport.send(request.sequence, body) == kResultOk && self.awaiting.get().is_none()
+        {
+            self.next_sequence.set(next_sequence);
+            self.awaiting.set(Some(request));
+            self.feedback_refresh.set(false);
+        }
+    }
+    fn receive_parameter_reply(
+        &self,
+        sequence: u64,
+        frame: String,
+        publication: Option<String>,
+    ) -> tresult {
+        let Some(publication) = publication.as_deref().and_then(publication_stamp) else {
+            return kInvalidArgument;
+        };
+        if let Some((last, previous, stamp)) = self.last_reply.borrow().as_ref()
             && *last == sequence
         {
-            return if *previous == frame {
+            return if *previous == frame && *stamp == publication {
                 kResultOk
             } else {
                 kResultFalse
             };
         }
-        let Some(request) = self.awaiting.get().filter(|r| r.sequence == sequence) else {
+        // Queries use one contiguous connection-local identity for both the
+        // transport and canonical request ID. A watermark permits bounded
+        // acknowledgement of obsolete issued replies without retaining frames.
+        if sequence == 0 || sequence >= self.next_sequence.get() {
             return kResultFalse;
-        };
+        }
+        let request = self.awaiting.get().filter(|r| r.sequence == sequence);
         let Some(bootstrap) = self
             .bootstrap
             .borrow()
@@ -1048,7 +1221,7 @@ impl Controller {
             || reply["version"] != 1
             || reply["instanceId"] != bootstrap.instance_id
             || reply["attachmentId"] != bootstrap.attachment_id
-            || reply["requestId"] != "1"
+            || reply["requestId"].as_str().and_then(canonical_u64) != Some(sequence)
         {
             return kInvalidArgument;
         }
@@ -1058,24 +1231,12 @@ impl Controller {
         else {
             return kInvalidArgument;
         };
-        let mut values = [None; 23];
-        for parameter in parameters {
-            let Some(index) = parameters::IDS
-                .iter()
-                .position(|(_, id)| parameter["id"] == *id)
-            else {
-                return kInvalidArgument;
-            };
-            let Some(value) = parameter["value"]
-                .as_f64()
-                .filter(|v| (0.0..=1.0).contains(v))
-            else {
-                return kInvalidArgument;
-            };
-            if values[index].replace(value).is_some() {
-                return kInvalidArgument;
-            }
-        }
+        let Some(values) = normalized_parameter_values(parameters) else {
+            return kInvalidArgument;
+        };
+        let Some(request) = request else {
+            return kResultOk;
+        };
         if request.apply_values {
             let mut projection = self.projection.borrow_mut();
             let Some(projection) = projection.as_mut() else {
@@ -1083,10 +1244,181 @@ impl Controller {
             };
             projection.values = values.map(|value| value.expect("23 distinct named values"));
         }
+        {
+            self.feedback_cutoff.set(Some(publication));
+            if let Some(projection) = self.projection.borrow_mut().as_mut() {
+                for (index, pending) in projection.feedback.iter().enumerate() {
+                    if let Some(pending) = pending
+                        && publication_after(pending.publication, publication)
+                    {
+                        projection.values[index] = pending.value;
+                    }
+                }
+            }
+        }
         self.awaiting.set(None);
-        *self.last_reply.borrow_mut() = Some((sequence, frame));
+        *self.last_reply.borrow_mut() = Some((sequence, frame, publication));
         kResultOk
     }
+    fn receive_parameter_event(
+        &self,
+        frame: String,
+        publication: String,
+        origins: Option<Vec<String>>,
+    ) -> tresult {
+        let Some(publication) = publication_stamp(&publication) else {
+            return kInvalidArgument;
+        };
+        let Some(bootstrap) = self
+            .bootstrap
+            .borrow()
+            .as_deref()
+            .and_then(Bootstrap::parse)
+        else {
+            return kNotInitialized;
+        };
+        let Ok(event) = serde_json::from_str::<serde_json::Value>(&frame) else {
+            return kInvalidArgument;
+        };
+        let sequence = event["sequence"]
+            .as_str()
+            .and_then(canonical_u64)
+            .filter(|n| *n != 0);
+        let Some(sequence) = sequence else {
+            return kInvalidArgument;
+        };
+        let payload = &event["payload"];
+        if event["version"] != 1
+            || event["instanceId"] != bootstrap.instance_id
+            || event["attachmentId"] != bootstrap.attachment_id
+            || event["event"] != "parameterStateChanged"
+            || !payload["generation"].as_u64().is_some_and(|g| {
+                (1..=dandrum_trigger_host::protocol::MAX_SAFE_GENERATION).contains(&g)
+            })
+            || payload["sequence"]
+                .as_u64()
+                .is_none_or(|s| s > dandrum_trigger_host::protocol::MAX_SAFE_GENERATION)
+            || payload["reset_cancelled"].as_bool().is_none()
+            || payload["frame_offset"]
+                .as_u64()
+                .is_none_or(|f| f >= u64::from(dandrum_trigger_host::runtime::MAX_BLOCK_FRAMES))
+        {
+            return kInvalidArgument;
+        }
+        let Some(parameters) = payload["parameters"]
+            .as_array()
+            .filter(|p| !p.is_empty() && p.len() <= 23)
+        else {
+            return kInvalidArgument;
+        };
+        let Some(values) = normalized_parameter_values(parameters) else {
+            return kInvalidArgument;
+        };
+        let snapshot = origins.is_some();
+        let mut write_origins = [publication; 23];
+        if let Some(origins) = origins {
+            if origins.len() != 23 || parameters.len() != 23 {
+                return kInvalidArgument;
+            }
+            for (parameter, origin) in parameters.iter().zip(origins) {
+                let Some(origin) = publication_stamp(&origin)
+                    .filter(|origin| !publication_after(*origin, publication))
+                else {
+                    return kInvalidArgument;
+                };
+                let index = parameters::IDS
+                    .iter()
+                    .position(|(_, id)| parameter["id"] == *id)
+                    .expect("validated named values");
+                write_origins[index] = origin;
+            }
+        }
+        let mut slot = self.projection.borrow_mut();
+        let Some(projection) = slot.as_mut() else {
+            return kNotInitialized;
+        };
+        for (index, value) in values.iter().enumerate() {
+            if let Some(value) = value
+                && let Some(previous) = projection.feedback[index]
+                && previous.sequence == sequence
+                && (previous.publication != write_origins[index]
+                    || previous.value != *value
+                    || (snapshot && previous.snapshot_cutoff != Some(publication)))
+            {
+                return kResultFalse;
+            }
+        }
+        for (index, value) in values.into_iter().enumerate() {
+            let origin = write_origins[index];
+            if let Some(value) = value
+                && (!snapshot
+                    || self
+                        .feedback_cutoff
+                        .get()
+                        .is_none_or(|cutoff| publication_after(origin, cutoff)))
+                && projection.feedback[index].is_none_or(|old| {
+                    sequence > old.sequence
+                        && (origin == old.publication || publication_after(origin, old.publication))
+                        && (snapshot
+                            || old
+                                .snapshot_cutoff
+                                .is_none_or(|cutoff| publication_after(origin, cutoff)))
+                })
+            {
+                let previous_cutoff =
+                    projection.feedback[index].and_then(|old| old.snapshot_cutoff);
+                projection.feedback[index] = Some(FeedbackValue {
+                    sequence,
+                    publication: origin,
+                    snapshot_cutoff: if snapshot {
+                        Some(publication)
+                    } else {
+                        previous_cutoff
+                    },
+                    value,
+                });
+                if self
+                    .feedback_cutoff
+                    .get()
+                    .is_some_and(|cutoff| publication_after(origin, cutoff))
+                {
+                    projection.values[index] = value;
+                }
+            }
+        }
+        kResultOk
+    }
+}
+
+// Replies and feedback share the same named, normalized public-parameter
+// surface. Validate the whole batch before the controller publishes any value.
+fn normalized_parameter_values(parameters: &[serde_json::Value]) -> Option<[Option<f64>; 23]> {
+    let mut values = [None; 23];
+    for parameter in parameters {
+        let index = parameters::IDS
+            .iter()
+            .position(|(_, id)| parameter["id"] == *id)?;
+        let value = parameter["value"]
+            .as_f64()
+            .filter(|v| (0.0..=1.0).contains(v))?;
+        if values[index].replace(value).is_some() {
+            return None;
+        }
+    }
+    Some(values)
+}
+
+fn canonical_u64(text: &str) -> Option<u64> {
+    text.parse::<u64>()
+        .ok()
+        .filter(|value| value.to_string() == text)
+}
+fn publication_stamp(text: &str) -> Option<u64> {
+    canonical_u64(text).filter(|stamp| stamp & 1 == 0)
+}
+fn publication_after(candidate: u64, cutoff: u64) -> bool {
+    // Same bounded-lifetime assumption as the shared scalar stamp, including wrap.
+    (candidate.wrapping_sub(cutoff) as i64) > 0
 }
 
 impl IAudioProcessorTrait for Processor {

@@ -4,7 +4,7 @@ use clack_extensions::gui::{GuiApiType, GuiConfiguration, GuiSize, PluginGuiImpl
 use clack_plugin::prelude::PluginError;
 use dandrum_trigger_editor::{EditorAssets, NativeEditor, NativeFileSelection};
 use dandrum_trigger_host::{
-    editor_commands::{command_error, dispatch, parameter_values},
+    editor_commands::{command_error, dispatch},
     parameters::{
         NativeSelectionPermit, ParameterController, ParameterError, SessionJobProgress,
         SessionServiceWake,
@@ -181,11 +181,9 @@ impl Core {
                     return;
                 };
                 target.as_ref().and_then(|(attachment, _)| {
-                    controller.encode_editor_event(attachment, "parameterStateChanged", serde_json::json!({
-                        "generation": feedback.generation, "sequence": feedback.sequence,
-                        "reset_cancelled": feedback.reset_cancelled, "frame_offset": feedback.frame_offset,
-                        "parameters": parameter_values(feedback.parameters),
-                    })).ok()
+                    controller
+                        .encode_parameter_feedback(attachment, feedback)
+                        .ok()
                 })
             };
             if let (Some((_, child)), Some(event)) = (target, event) {

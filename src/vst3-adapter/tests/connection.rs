@@ -16,6 +16,7 @@ struct Forward {
     frames: RefCell<Vec<serde_json::Value>>,
     refuse: Cell<bool>,
     refuse_type: RefCell<Option<String>>,
+    defer_type: RefCell<Option<String>>,
     messages: RefCell<Vec<ComPtr<IMessage>>>,
     callback: RefCell<Option<Box<dyn FnOnce()>>>,
     on_drop: RefCell<Option<Box<dyn FnOnce()>>>,
@@ -55,6 +56,15 @@ impl IConnectionPointTrait for Proxy {
             .is_some_and(|kind| frame["body"]["type"].as_str() == Some(kind.as_str()));
         if self.0.refuse.get() || type_refused {
             return kResultFalse;
+        }
+        if self
+            .0
+            .defer_type
+            .borrow()
+            .as_ref()
+            .is_some_and(|kind| frame["body"]["type"].as_str() == Some(kind.as_str()))
+        {
+            return kResultOk;
         }
         let target = self.0.target.borrow().clone().unwrap();
         unsafe { target.notify(message) }
@@ -632,6 +642,20 @@ fn invalid_projection_replies_preserve_all_cached_values_and_original_correlatio
             assert_eq!(c.getParamNormalized(0x1003), 0.375);
         }
     }
+    for publication in [
+        serde_json::Value::Null,
+        "3".into(),
+        "02".into(),
+        "invalid".into(),
+    ] {
+        let mut malformed = packet.clone();
+        malformed["body"]["publication"] = publication;
+        assert_eq!(
+            unsafe { cc.notify(message::packet(&malformed).as_ptr()) },
+            kInvalidArgument
+        );
+        assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.375);
+    }
     let projection = to_c
         .frames
         .borrow()
@@ -861,6 +885,571 @@ fn failed_component_state_restore_keeps_a_pending_parameter_reply_usable() {
     assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.25);
     assert_eq!(unsafe { cc.notify(reply.as_ptr()) }, kResultOk);
     assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.125);
+    assert_eq!(unsafe { c.terminate() }, kResultOk);
+    assert_eq!(unsafe { p.terminate() }, kResultOk);
+}
+
+#[test]
+fn stopped_processor_feedback_updates_its_projection_and_retries_refused_delivery() {
+    let bundle = Bundle::new();
+    let module = bundle.load();
+    let (clock, factory, _host) = common::runloop::host(&module);
+    let p = module.class_from::<IComponent>(&factory, &PROCESSOR);
+    let c = module.class_from::<IEditController>(&factory, &CONTROLLER);
+    assert_eq!(unsafe { p.initialize(std::ptr::null_mut()) }, kResultOk);
+    assert_eq!(unsafe { c.initialize(std::ptr::null_mut()) }, kResultOk);
+    let pc = p.cast::<IConnectionPoint>().unwrap();
+    let cc = c.cast::<IConnectionPoint>().unwrap();
+    let (to_c, proxy_c) = proxy(cc.clone());
+    let (_to_p, proxy_p) = proxy(pc.clone());
+    assert_eq!(unsafe { pc.connect(proxy_c.as_ptr()) }, kResultOk);
+    assert_eq!(unsafe { cc.connect(proxy_p.as_ptr()) }, kResultOk);
+    let audio = p.cast::<IAudioProcessor>().unwrap();
+    let flush = |value| {
+        let changes =
+            common::parameters::changes(vec![common::parameters::queue(0x1003, vec![(0, value)])]);
+        let mut block = common::audio::Block::new(0);
+        let mut data = block.data();
+        data.inputParameterChanges = changes.as_ptr();
+        assert_eq!(unsafe { audio.process(&mut data) }, kResultOk);
+    };
+    flush(0.125);
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.25);
+    clock.tick();
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.125);
+    let events = || {
+        to_c.frames
+            .borrow()
+            .iter()
+            .filter(|f| f["body"]["type"] == "event")
+            .cloned()
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(events().len(), 1);
+    clock.tick();
+    assert_eq!(events().len(), 1, "accepted feedback is consumed once");
+    *to_c.refuse_type.borrow_mut() = Some("event".into());
+    flush(0.375);
+    clock.tick();
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.125);
+    let first = events().last().unwrap().clone();
+    clock.tick();
+    assert_eq!(
+        events().last(),
+        Some(&first),
+        "retry retains exact event identity"
+    );
+    to_c.refuse_type.borrow_mut().take();
+    clock.tick();
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.375);
+    let accepted = events().len();
+    clock.tick();
+    assert_eq!(events().len(), accepted);
+    // A controller-only restore must keep its imported values even when the
+    // processor differs. Neither already emitted nor still queued old feedback
+    // may overwrite them after the fresh snapshot barrier.
+    flush(0.625);
+    let legacy = include_bytes!("../../trigger-host/tests/fixtures/trigger-v2-state.json");
+    let (_, input) = common::stream::stream(legacy.to_vec(), 4096);
+    assert_eq!(unsafe { c.setComponentState(input.as_ptr()) }, kResultOk);
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.125);
+    let old = common::message::packet(&first);
+    assert_eq!(unsafe { cc.notify(old.as_ptr()) }, kResultOk);
+    clock.tick();
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.125);
+    flush(0.5);
+    clock.tick();
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.5);
+
+    *to_c.defer_type.borrow_mut() = Some("event".into());
+    let count = events().len();
+    let changes = common::parameters::changes(vec![
+        common::parameters::queue(0x1003, vec![(0, 0.375)]),
+        common::parameters::queue(0x1004, vec![(0, 0.625)]),
+    ]);
+    let mut block = common::audio::Block::new(0);
+    let mut data = block.data();
+    data.inputParameterChanges = changes.as_ptr();
+    assert_eq!(unsafe { audio.process(&mut data) }, kResultOk);
+    clock.tick();
+    let delayed = events()[count..].to_vec();
+    assert_eq!(delayed.len(), 2);
+    to_c.defer_type.borrow_mut().take();
+    for frame in delayed.iter().rev() {
+        let event = common::message::packet(frame);
+        assert_eq!(unsafe { cc.notify(event.as_ptr()) }, kResultOk);
+    }
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.375);
+    assert_eq!(
+        unsafe { c.getParamNormalized(0x1004) },
+        0.625,
+        "reordering distinct parameters preserves both updates"
+    );
+    *to_c.refuse_type.borrow_mut() = Some("event".into());
+    for value in [0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875] {
+        flush(value);
+        clock.tick();
+    }
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.375);
+    to_c.refuse_type.borrow_mut().take();
+    for _ in 0..4 {
+        clock.tick();
+    }
+    assert_eq!(
+        unsafe { c.getParamNormalized(0x1003) },
+        0.875,
+        "bounded transport saturation retains the later native feedback"
+    );
+    assert_eq!(unsafe { pc.disconnect(proxy_c.as_ptr()) }, kResultOk);
+    assert_eq!(unsafe { cc.disconnect(proxy_p.as_ptr()) }, kResultOk);
+    flush(0.75);
+    clock.tick();
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.875);
+    assert_eq!(unsafe { pc.connect(proxy_c.as_ptr()) }, kResultOk);
+    assert_eq!(unsafe { cc.connect(proxy_p.as_ptr()) }, kResultOk);
+    assert_eq!(
+        unsafe { c.getParamNormalized(0x1003) },
+        0.75,
+        "reattachment obtains the latest value after editor-absent servicing"
+    );
+    assert_eq!(unsafe { c.terminate() }, kResultOk);
+    assert_eq!(unsafe { p.terminate() }, kResultOk);
+}
+
+#[test]
+fn feedback_converges_after_transport_and_native_ring_overflow() {
+    for active in [false, true] {
+        let bundle = Bundle::new();
+        let module = bundle.load();
+        let (clock, factory, _host) = common::runloop::host(&module);
+        let p = module.class_from::<IComponent>(&factory, &PROCESSOR);
+        let c = module.class_from::<IEditController>(&factory, &CONTROLLER);
+        assert_eq!(unsafe { p.initialize(std::ptr::null_mut()) }, kResultOk);
+        assert_eq!(unsafe { c.initialize(std::ptr::null_mut()) }, kResultOk);
+        let pc = p.cast::<IConnectionPoint>().unwrap();
+        let cc = c.cast::<IConnectionPoint>().unwrap();
+        let (to_c, proxy_c) = proxy(cc.clone());
+        let (_to_p, proxy_p) = proxy(pc.clone());
+        assert_eq!(unsafe { pc.connect(proxy_c.as_ptr()) }, kResultOk);
+        assert_eq!(unsafe { cc.connect(proxy_p.as_ptr()) }, kResultOk);
+        let audio = p.cast::<IAudioProcessor>().unwrap();
+        if active {
+            common::audio::start(&p, &audio, 48_000.0, 16);
+        }
+        let flush = |value| {
+            let changes = common::parameters::changes(vec![common::parameters::queue(
+                0x1003,
+                vec![(0, value)],
+            )]);
+            let mut block = common::audio::Block::new(usize::from(active));
+            let mut data = block.data();
+            data.inputParameterChanges = changes.as_ptr();
+            assert_eq!(unsafe { audio.process(&mut data) }, kResultOk);
+            if active {
+                assert_eq!(
+                    (&block.left[..], &block.right[..]),
+                    (&[0.0][..], &[0.0][..])
+                );
+            }
+        };
+        let legacy = include_bytes!("../../trigger-host/tests/fixtures/trigger-v2-state.json");
+        let (_, input) = common::stream::stream(legacy.to_vec(), 4096);
+        assert_eq!(unsafe { c.setComponentState(input.as_ptr()) }, kResultOk);
+        assert_eq!(unsafe { c.getParamNormalized(0x1004) }, 0.375);
+        *to_c.refuse_type.borrow_mut() = Some("event".into());
+        // Eight staged packets plus the 1024-entry native ring are both bounded.
+        // The final accepted write must remain discoverable after newer feedback
+        // is dropped, even with no subsequent automation to repair the display.
+        for _ in 0..1100 {
+            flush(0.375);
+            clock.tick();
+        }
+        if active {
+            // Both pan writes are dropped from the already-full native ring.
+            // Its final processor value equals its pre-import default, so a
+            // value-diff heuristic would miss this genuine later automation.
+            for value in [0.625, 0.5] {
+                let changes = common::parameters::changes(vec![common::parameters::queue(
+                    0x1004,
+                    vec![(0, value)],
+                )]);
+                let mut block = common::audio::Block::new(1);
+                let mut data = block.data();
+                data.inputParameterChanges = changes.as_ptr();
+                assert_eq!(unsafe { audio.process(&mut data) }, kResultOk);
+                assert_eq!(
+                    (&block.left[..], &block.right[..]),
+                    (&[0.0][..], &[0.0][..])
+                );
+            }
+        }
+        let expected_pan = if active { 0.5 } else { 0.375 };
+        flush(0.875);
+        clock.tick();
+        assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.125);
+        to_c.refuse_type.borrow_mut().take();
+        for _ in 0..160 {
+            clock.tick();
+        }
+        assert_eq!(
+            unsafe { c.getParamNormalized(0x1003) },
+            0.875,
+            "projection converges to the authoritative last value after overflow"
+        );
+        assert_eq!(
+            unsafe { c.getParamNormalized(0x1004) },
+            expected_pan,
+            "overflow recovery preserves an imported control with no later write"
+        );
+        let snapshot = to_c
+            .frames
+            .borrow()
+            .iter()
+            .find(|f| f["body"]["origins"].is_array())
+            .unwrap()
+            .clone();
+        let canonical: serde_json::Value =
+            serde_json::from_str(snapshot["body"]["frame"].as_str().unwrap()).unwrap();
+        let stamp = snapshot["body"]["publication"]
+            .as_str()
+            .unwrap()
+            .parse::<u64>()
+            .unwrap();
+        for origins in [
+            serde_json::json!([]),
+            serde_json::json!(vec!["3"; 23]),
+            serde_json::json!(vec!["02"; 23]),
+            serde_json::json!(vec![(stamp + 2).to_string(); 23]),
+        ] {
+            let mut malformed = snapshot.clone();
+            malformed["body"]["origins"] = origins;
+            let message = common::message::packet(&malformed);
+            assert_eq!(unsafe { cc.notify(message.as_ptr()) }, kInvalidArgument);
+            assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.875);
+            assert_eq!(unsafe { c.getParamNormalized(0x1004) }, expected_pan);
+        }
+        let duplicate = common::message::packet(&snapshot);
+        assert_eq!(unsafe { cc.notify(duplicate.as_ptr()) }, kResultOk);
+        let mut conflicting = snapshot.clone();
+        conflicting["body"]["publication"] = serde_json::json!((stamp + 2).to_string());
+        let conflicting = common::message::packet(&conflicting);
+        assert_eq!(
+            unsafe { cc.notify(conflicting.as_ptr()) },
+            kResultFalse,
+            "a repeated snapshot identity cannot change its supersession cutoff"
+        );
+        assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.875);
+        // A recovery snapshot represents the final value of its entire interval.
+        // A delayed ordinary point in that same interval is obsolete even if it is
+        // encoded with a newer event sequence after the snapshot was produced.
+        let mut delayed = canonical;
+        delayed["sequence"] = serde_json::json!(
+            (delayed["sequence"]
+                .as_str()
+                .unwrap()
+                .parse::<u64>()
+                .unwrap()
+                + 1)
+            .to_string()
+        );
+        delayed["payload"]["parameters"] = serde_json::json!([{"id":"drums.level","value":0.125}]);
+        let mut envelope = snapshot;
+        envelope["body"].as_object_mut().unwrap().remove("origins");
+        envelope["body"]["frame"] = serde_json::json!(delayed.to_string());
+        let message = common::message::packet(&envelope);
+        assert_eq!(unsafe { cc.notify(message.as_ptr()) }, kResultOk);
+        assert_eq!(
+            unsafe { c.getParamNormalized(0x1003) },
+            0.875,
+            "snapshot supersedes equal-publication intermediate points"
+        );
+        if active {
+            assert_eq!(unsafe { audio.setProcessing(0) }, kResultOk);
+            assert_eq!(unsafe { p.setActive(0) }, kResultOk);
+        }
+        assert_eq!(unsafe { c.terminate() }, kResultOk);
+        assert_eq!(unsafe { p.terminate() }, kResultOk);
+    }
+}
+
+#[test]
+fn feedback_before_a_delayed_initial_snapshot_is_retained_after_its_cutoff() {
+    let bundle = Bundle::new();
+    let module = bundle.load();
+    let (clock, factory, _host) = common::runloop::host(&module);
+    let p = module.class_from::<IComponent>(&factory, &PROCESSOR);
+    let c = module.class_from::<IEditController>(&factory, &CONTROLLER);
+    assert_eq!(unsafe { p.initialize(std::ptr::null_mut()) }, kResultOk);
+    assert_eq!(unsafe { c.initialize(std::ptr::null_mut()) }, kResultOk);
+    let pc = p.cast::<IConnectionPoint>().unwrap();
+    let cc = c.cast::<IConnectionPoint>().unwrap();
+    let (to_c, proxy_c) = proxy(cc.clone());
+    let (_to_p, proxy_p) = proxy(pc.clone());
+    *to_c.defer_type.borrow_mut() = Some("reply".into());
+    assert_eq!(unsafe { pc.connect(proxy_c.as_ptr()) }, kResultOk);
+    assert_eq!(unsafe { cc.connect(proxy_p.as_ptr()) }, kResultOk);
+    let snapshot = {
+        let frames = to_c.frames.borrow();
+        frames
+            .iter()
+            .find(|f| f["body"]["type"] == "reply")
+            .unwrap()
+            .clone()
+    };
+    let audio = p.cast::<IAudioProcessor>().unwrap();
+    let changes =
+        common::parameters::changes(vec![common::parameters::queue(0x1003, vec![(0, 0.125)])]);
+    let mut block = common::audio::Block::new(0);
+    let mut data = block.data();
+    data.inputParameterChanges = changes.as_ptr();
+    assert_eq!(unsafe { audio.process(&mut data) }, kResultOk);
+    clock.tick();
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.25);
+    to_c.defer_type.borrow_mut().take();
+    let snapshot = common::message::packet(&snapshot);
+    assert_eq!(unsafe { cc.notify(snapshot.as_ptr()) }, kResultOk);
+    assert_eq!(
+        unsafe { c.getParamNormalized(0x1003) },
+        0.125,
+        "newer feedback received before the older snapshot must survive it"
+    );
+    assert_eq!(unsafe { c.terminate() }, kResultOk);
+    assert_eq!(unsafe { p.terminate() }, kResultOk);
+}
+
+#[test]
+fn post_restore_feedback_survives_a_delayed_initial_reply() {
+    let bundle = Bundle::new();
+    let module = bundle.load();
+    let (clock, factory, _host) = common::runloop::host(&module);
+    let p = module.class_from::<IComponent>(&factory, &PROCESSOR);
+    let c = module.class_from::<IEditController>(&factory, &CONTROLLER);
+    assert_eq!(unsafe { p.initialize(std::ptr::null_mut()) }, kResultOk);
+    assert_eq!(unsafe { c.initialize(std::ptr::null_mut()) }, kResultOk);
+    let pc = p.cast::<IConnectionPoint>().unwrap();
+    let cc = c.cast::<IConnectionPoint>().unwrap();
+    let (to_c, proxy_c) = proxy(cc.clone());
+    let (to_p, proxy_p) = proxy(pc.clone());
+    *to_c.defer_type.borrow_mut() = Some("reply".into());
+    assert_eq!(unsafe { pc.connect(proxy_c.as_ptr()) }, kResultOk);
+    assert_eq!(unsafe { cc.connect(proxy_p.as_ptr()) }, kResultOk);
+    let legacy = include_bytes!("../../trigger-host/tests/fixtures/trigger-v2-state.json");
+    let (_, input) = common::stream::stream(legacy.to_vec(), 4096);
+    assert_eq!(unsafe { c.setComponentState(input.as_ptr()) }, kResultOk);
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.125);
+    let audio = p.cast::<IAudioProcessor>().unwrap();
+    let changes =
+        common::parameters::changes(vec![common::parameters::queue(0x1003, vec![(0, 0.625)])]);
+    let mut block = common::audio::Block::new(0);
+    let mut data = block.data();
+    data.inputParameterChanges = changes.as_ptr();
+    assert_eq!(unsafe { audio.process(&mut data) }, kResultOk);
+    clock.tick();
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.125);
+    to_c.defer_type.borrow_mut().take();
+    let mut replies: Vec<_> = to_c
+        .frames
+        .borrow()
+        .iter()
+        .filter(|f| f["body"]["type"] == "reply")
+        .cloned()
+        .collect();
+    replies.dedup();
+    for reply in replies {
+        let reply = common::message::packet(&reply);
+        assert_eq!(unsafe { cc.notify(reply.as_ptr()) }, kResultOk);
+    }
+    clock.tick();
+    assert_eq!(
+        unsafe { c.getParamNormalized(0x1003) },
+        0.625,
+        "valid post-restore feedback survives the delayed initial reply"
+    );
+    let old_request = to_p
+        .frames
+        .borrow()
+        .iter()
+        .find(|f| f["body"]["type"] == "request")
+        .unwrap()
+        .clone();
+    let replay = common::message::packet(&old_request);
+    assert_eq!(unsafe { pc.notify(replay.as_ptr()) }, kResultOk);
+    clock.tick();
+    assert_eq!(
+        unsafe { c.getParamNormalized(0x1003) },
+        0.625,
+        "obsolete query retries neither roll back values nor block feedback"
+    );
+    assert_eq!(unsafe { c.terminate() }, kResultOk);
+    assert_eq!(unsafe { p.terminate() }, kResultOk);
+}
+
+#[test]
+fn controller_import_freshness_begins_at_the_correlated_processor_barrier() {
+    let bundle = Bundle::new();
+    let module = bundle.load();
+    let (clock, factory, _host) = common::runloop::host(&module);
+    let p = module.class_from::<IComponent>(&factory, &PROCESSOR);
+    let c = module.class_from::<IEditController>(&factory, &CONTROLLER);
+    assert_eq!(unsafe { p.initialize(std::ptr::null_mut()) }, kResultOk);
+    assert_eq!(unsafe { c.initialize(std::ptr::null_mut()) }, kResultOk);
+    let pc = p.cast::<IConnectionPoint>().unwrap();
+    let cc = c.cast::<IConnectionPoint>().unwrap();
+    let (_to_c, proxy_c) = proxy(cc.clone());
+    let (to_p, proxy_p) = proxy(pc.clone());
+    assert_eq!(unsafe { pc.connect(proxy_c.as_ptr()) }, kResultOk);
+    assert_eq!(unsafe { cc.connect(proxy_p.as_ptr()) }, kResultOk);
+    *to_p.defer_type.borrow_mut() = Some("request".into());
+    let legacy = include_bytes!("../../trigger-host/tests/fixtures/trigger-v2-state.json");
+    let (_, input) = common::stream::stream(legacy.to_vec(), 4096);
+    assert_eq!(unsafe { c.setComponentState(input.as_ptr()) }, kResultOk);
+    let audio = p.cast::<IAudioProcessor>().unwrap();
+    let flush = |value| {
+        let changes =
+            common::parameters::changes(vec![common::parameters::queue(0x1003, vec![(0, value)])]);
+        let mut block = common::audio::Block::new(0);
+        let mut data = block.data();
+        data.inputParameterChanges = changes.as_ptr();
+        assert_eq!(unsafe { audio.process(&mut data) }, kResultOk);
+    };
+    flush(0.625);
+    clock.tick();
+    assert_eq!(
+        unsafe { c.getParamNormalized(0x1003) },
+        0.125,
+        "import remains authoritative while the host has not delivered the barrier request"
+    );
+    let barrier = to_p
+        .frames
+        .borrow()
+        .iter()
+        .find(|f| f["body"]["type"] == "request" && f["sequence"] == 2)
+        .unwrap()
+        .clone();
+    to_p.defer_type.borrow_mut().take();
+    let barrier = common::message::packet(&barrier);
+    assert_eq!(unsafe { pc.notify(barrier.as_ptr()) }, kResultOk);
+    assert_eq!(
+        unsafe { c.getParamNormalized(0x1003) },
+        0.125,
+        "barrier captures a cutoff without copying differing processor values"
+    );
+    flush(0.875);
+    clock.tick();
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.875);
+    assert_eq!(unsafe { c.getParamNormalized(0x1004) }, 0.375);
+    assert_eq!(unsafe { c.terminate() }, kResultOk);
+    assert_eq!(unsafe { p.terminate() }, kResultOk);
+}
+
+#[test]
+fn invalid_feedback_batches_preserve_all_cached_values_before_any_publication() {
+    use serde_json::{Value, json};
+    let bundle = Bundle::new();
+    let module = bundle.load();
+    let (clock, factory, _host) = common::runloop::host(&module);
+    let p = module.class_from::<IComponent>(&factory, &PROCESSOR);
+    let c = module.class_from::<IEditController>(&factory, &CONTROLLER);
+    assert_eq!(unsafe { p.initialize(std::ptr::null_mut()) }, kResultOk);
+    assert_eq!(unsafe { c.initialize(std::ptr::null_mut()) }, kResultOk);
+    let pc = p.cast::<IConnectionPoint>().unwrap();
+    let cc = c.cast::<IConnectionPoint>().unwrap();
+    let (to_c, proxy_c) = proxy(cc.clone());
+    let (_to_p, proxy_p) = proxy(pc.clone());
+    assert_eq!(unsafe { pc.connect(proxy_c.as_ptr()) }, kResultOk);
+    assert_eq!(unsafe { cc.connect(proxy_p.as_ptr()) }, kResultOk);
+    assert_eq!(unsafe { c.setParamNormalized(0x1003, 0.875) }, kResultOk);
+    assert_eq!(unsafe { c.setParamNormalized(0x1004, 0.375) }, kResultOk);
+    *to_c.defer_type.borrow_mut() = Some("event".into());
+    let audio = p.cast::<IAudioProcessor>().unwrap();
+    let changes =
+        common::parameters::changes(vec![common::parameters::queue(0x1003, vec![(0, 0.375)])]);
+    let mut block = common::audio::Block::new(0);
+    let mut data = block.data();
+    data.inputParameterChanges = changes.as_ptr();
+    assert_eq!(unsafe { audio.process(&mut data) }, kResultOk);
+    clock.tick();
+    let valid = to_c
+        .frames
+        .borrow()
+        .iter()
+        .find(|f| f["body"]["type"] == "event")
+        .unwrap()
+        .clone();
+    let event: Value = serde_json::from_str(valid["body"]["frame"].as_str().unwrap()).unwrap();
+    let mut malformed = Vec::new();
+    for (key, value) in [
+        ("version", json!(2)),
+        ("instanceId", json!("999")),
+        ("attachmentId", json!("999")),
+        ("event", json!("unknown")),
+        ("sequence", json!("01")),
+        ("sequence", json!("0")),
+    ] {
+        let mut changed = event.clone();
+        changed[key] = value;
+        malformed.push(changed);
+    }
+    for (key, value) in [
+        ("generation", json!(0)),
+        ("generation", json!(9007199254740992u64)),
+        ("sequence", json!(-1)),
+        ("reset_cancelled", json!(0)),
+        ("frame_offset", json!(16384)),
+    ] {
+        let mut changed = event.clone();
+        changed["payload"][key] = value;
+        malformed.push(changed);
+    }
+    for parameters in [
+        json!([]),
+        json!([{"id":"unknown","value":0.5}]),
+        json!([{"id":"drums.level","value":1.1}]),
+        json!([{"id":"drums.level","value":0.625},{"id":"drums.pan","value":"NaN"}]),
+        json!([{"id":"drums.level","value":0.625},{"id":"drums.level","value":0.5}]),
+        json!(vec![json!({"id":"drums.level","value":0.5}); 24]),
+    ] {
+        let mut changed = event.clone();
+        changed["payload"]["parameters"] = parameters;
+        malformed.push(changed);
+    }
+    let mut packets = malformed
+        .into_iter()
+        .map(|changed| {
+            let mut packet = valid.clone();
+            packet["body"]["frame"] = changed.to_string().into();
+            packet
+        })
+        .collect::<Vec<_>>();
+    let mut invalid_json = valid.clone();
+    invalid_json["body"]["frame"] = "not JSON".into();
+    packets.push(invalid_json);
+    for publication in ["3", "02", "invalid"] {
+        let mut packet = valid.clone();
+        packet["body"]["publication"] = publication.into();
+        packets.push(packet);
+    }
+    for (index, packet) in packets.iter().enumerate() {
+        let message = common::message::packet(packet);
+        assert_eq!(
+            unsafe { cc.notify(message.as_ptr()) },
+            kInvalidArgument,
+            "malformed event{index}"
+        );
+        assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.875);
+        assert_eq!(unsafe { c.getParamNormalized(0x1004) }, 0.375);
+    }
+    let message = common::message::packet(&valid);
+    assert_eq!(unsafe { cc.notify(message.as_ptr()) }, kResultOk);
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.375);
+    assert_eq!(unsafe { cc.notify(message.as_ptr()) }, kResultOk);
+    let mut conflict = event;
+    conflict["payload"]["parameters"][0]["value"] = 0.625.into();
+    let mut packet = valid;
+    packet["body"]["frame"] = conflict.to_string().into();
+    let message = common::message::packet(&packet);
+    assert_eq!(unsafe { cc.notify(message.as_ptr()) }, kResultFalse);
+    assert_eq!(unsafe { c.getParamNormalized(0x1003) }, 0.375);
     assert_eq!(unsafe { c.terminate() }, kResultOk);
     assert_eq!(unsafe { p.terminate() }, kResultOk);
 }

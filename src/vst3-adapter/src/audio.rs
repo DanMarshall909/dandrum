@@ -66,6 +66,7 @@ pub(crate) struct Slot {
     pub processing: AtomicBool,
     pub configured: AtomicBool,
     pub max_frames: AtomicU32,
+    pub feedback_lost: AtomicBool,
 }
 impl Default for Slot {
     fn default() -> Self {
@@ -77,6 +78,7 @@ impl Default for Slot {
             processing: AtomicBool::new(false),
             configured: AtomicBool::new(false),
             max_frames: AtomicU32::new(16),
+            feedback_lost: AtomicBool::new(false),
         }
     }
 }
@@ -159,6 +161,7 @@ impl Slot {
                     self.active.load(Ordering::Acquire),
                     self.processing.load(Ordering::Acquire),
                     self.configured.load(Ordering::Acquire),
+                    &self.feedback_lost,
                 )
             })
             .unwrap_or(kResultFalse);
@@ -237,6 +240,7 @@ impl Endpoint {
         active: bool,
         processing: bool,
         configured: bool,
+        feedback_lost: &AtomicBool,
     ) -> tresult {
         if data.symbolicSampleSize != 0
             || !(0..=2).contains(&data.processMode)
@@ -343,14 +347,14 @@ impl Endpoint {
                 *scalar = (range.root_index, self.points[range.end - 1].value);
             }
             unsafe { clear(data) };
-            return if self
-                .runtime
-                .flush_normalized(&scalars[..curve_count])
-                .is_ok()
-            {
-                kResultOk
-            } else {
-                kResultFalse
+            return match self.runtime.flush_normalized(&scalars[..curve_count]) {
+                Ok(report) => {
+                    if report.dropped_feedback != 0 {
+                        feedback_lost.store(true, Ordering::Release);
+                    }
+                    kResultOk
+                }
+                Err(_) => kResultFalse,
             };
         }
         if data.outputs.is_null() {
@@ -384,12 +388,14 @@ impl Endpoint {
                 points: &self.points[range.begin..range.end],
             }
         });
-        if self
-            .runtime
-            .process_curves(left, right, &self.events[..count], &curves[..curve_count])
-            .is_err()
-        {
+        let Ok(report) =
+            self.runtime
+                .process_curves(left, right, &self.events[..count], &curves[..curve_count])
+        else {
             return kResultFalse;
+        };
+        if report.dropped_feedback != 0 {
+            feedback_lost.store(true, Ordering::Release);
         }
         bus.silenceFlags = u64::from(left.iter().all(|x| *x == 0.0))
             | (u64::from(right.iter().all(|x| *x == 0.0)) << 1);

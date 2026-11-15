@@ -857,19 +857,29 @@ impl ParameterController {
         }
     }
     pub fn take_feedback(&mut self) -> Option<ParameterFeedback> {
-        let (feedback, sequence, reset_cancelled) = self.runtime.take_sequenced_feedback()?;
+        self.take_feedback_with_publication()
+            .map(|(feedback, _)| feedback)
+    }
+    /// The transient scalar-write stamp identifies when feedback was produced,
+    /// including entries still queued when an adapter captures a cutoff.
+    pub fn take_feedback_with_publication(&mut self) -> Option<(ParameterFeedback, u64)> {
+        let (feedback, sequence, reset_cancelled, publication) =
+            self.runtime.take_sequenced_feedback()?;
         let parameter = self
             .parameters
             .iter()
             .find(|parameter| parameter.root_index == feedback.index)
             .expect("public aliases cover every prepared root control exactly once");
-        Some(ParameterFeedback {
-            generation: self.generation,
-            sequence,
-            reset_cancelled,
-            frame_offset: feedback.frame_offset,
-            parameters: vec![parameter.project(feedback.value)],
-        })
+        Some((
+            ParameterFeedback {
+                generation: self.generation,
+                sequence,
+                reset_cancelled,
+                frame_offset: feedback.frame_offset,
+                parameters: vec![parameter.project(feedback.value)],
+            },
+            publication,
+        ))
     }
     /// Service accepted runtime ownership after the audio endpoint is returned.
     pub fn service_quiescent(
@@ -1125,6 +1135,24 @@ impl ParameterController {
         self.protocol
             .encode_event(self.host.session(), attachment_id, event, payload)
             .map_err(ParameterError::Protocol)
+    }
+
+    /// Both adapters publish the same parameter event through the live editor
+    /// namespace. Format-specific publication stamps stay outside this frame.
+    pub fn encode_parameter_feedback(
+        &mut self,
+        attachment_id: &str,
+        feedback: ParameterFeedback,
+    ) -> Result<String, ParameterError> {
+        self.encode_editor_event(
+            attachment_id,
+            "parameterStateChanged",
+            serde_json::json!({
+                "generation":feedback.generation,"sequence":feedback.sequence,
+                "reset_cancelled":feedback.reset_cancelled,"frame_offset":feedback.frame_offset,
+                "parameters":crate::editor_commands::parameter_values(feedback.parameters),
+            }),
+        )
     }
 
     /// Project the accepted native session off audio in its admitted wire
@@ -1715,6 +1743,45 @@ impl ParameterController {
 
     pub fn parameter_state(&self) -> ParameterState {
         let (sequence, reset_cancelled, physical) = self.runtime.snapshot_parameters();
+        self.project_parameter_state(sequence, reset_cancelled, physical)
+    }
+    /// Coherent scalar values and their completed write interval. Publication
+    /// stamps are runtime-local, never portable state or musical generations.
+    /// As with the state reader, observations cannot span 2^63 write intervals.
+    pub fn parameter_state_with_publication(&self) -> (ParameterState, u64) {
+        let (sequence, reset_cancelled, physical, publication) =
+            self.runtime.snapshot_parameters_with_publication();
+        (
+            self.project_parameter_state(sequence, reset_cancelled, physical),
+            publication,
+        )
+    }
+    /// A coherent feedback recovery snapshot. Origins follow the public
+    /// parameter order and distinguish actual writes from empty callbacks.
+    /// The global cutoff supersedes intermediate feedback through that interval.
+    pub fn parameter_feedback_snapshot(&self) -> (ParameterState, u64, Vec<u64>) {
+        let snapshot = self.runtime.snapshot_scalar_state();
+        let origins = self
+            .parameters
+            .iter()
+            .map(|parameter| snapshot.origins[parameter.root_index])
+            .collect();
+        (
+            self.project_parameter_state(
+                snapshot.settlement >> 1,
+                snapshot.settlement & 1 != 0,
+                snapshot.values,
+            ),
+            snapshot.publication,
+            origins,
+        )
+    }
+    fn project_parameter_state(
+        &self,
+        sequence: u64,
+        reset_cancelled: bool,
+        physical: Vec<f64>,
+    ) -> ParameterState {
         ParameterState {
             generation: self.generation,
             sequence,

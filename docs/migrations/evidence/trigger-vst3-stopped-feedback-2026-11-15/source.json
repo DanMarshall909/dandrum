@@ -1,0 +1,18 @@
+{
+  "baseCommit": "ac6a841ad08b9e0bba01c0f71f2c61297192c586",
+  "intendedUpstream": "79efd72078260dc67c068456a10a7c0b830347ed",
+  "files": {
+    "src/clap-adapter/src/trigger/gui.rs": "e6fc15ce07b0522b4d3df2e31285efdf41007dd2d55dd49f735867f3c7a9a784",
+    "src/trigger-host/src/editor_commands.rs": "e6c6eb38a17bed32fc6bdf98db0c9bc755b96dcefc241687940359f9c1898f9b",
+    "src/trigger-host/src/parameters.rs": "5e2756b38fb2ea5ae5712d0de5b3f67ce0efc2430046d2bb8de5c8c7990d26d4",
+    "src/trigger-host/src/runtime.rs": "7b71edab08751a9f2ebe1622b0ddc8a15b9551ea86af248d322caf462ddc938a",
+    "src/trigger-host/tests/editor_commands.rs": "5051b42df14f12b26c4aa2e110198359a96c0ca66b16116a58f901c449b06a26",
+    "src/trigger-host/tests/editor_encoding.rs": "8f697f3a6847fba50ce2ac9c52122d871712833de2e3f8a9cf99c837522a1dc0",
+    "src/trigger-host/tests/parameters.rs": "c174f4f122c04bc3a6de7dbb8eb3cf8b5b77da31d02fdaf7b53e33e8c29bb231",
+    "src/vst3-adapter/src/audio.rs": "c1d4778e063698013422fd376427cc5bbd991274a88466834d69fbc4471ecada",
+    "src/vst3-adapter/src/components.rs": "828394dd3b89420ddf43d8c32d672eb54700ecb9bfaff30ac720e73ff86eaa58",
+    "src/vst3-adapter/src/transport.rs": "8eafcfc8ca92468dd6c1cec0a18e65b3f2b3b8cefc6fb0e45f8b8c601cd864f0",
+    "src/vst3-adapter/tests/connection.rs": "5ce03d0f42890d7f0b8df075e84fba9f00b78eb30848589d1f996ba4ffb8d68a"
+  },
+  "patchSha256": "0993b8d957b70c171f44a8d598a66fc3c87f0151d9627008e961f33035123992"
+}

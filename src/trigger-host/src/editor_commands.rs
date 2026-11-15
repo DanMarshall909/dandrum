@@ -15,6 +15,19 @@ pub fn dispatch(
     request_id: &str,
     message: &str,
 ) -> Result<String, ParameterError> {
+    dispatch_with_publication(controller, attachment, request_id, message).map(|(frame, _)| frame)
+}
+
+/// The same command route, with an optional coherent parameter snapshot cutoff
+/// for adapters that must order separately delivered feedback. Canonical editor
+/// frames and native admission remain unchanged.
+pub fn dispatch_with_publication(
+    controller: &mut ParameterController,
+    attachment: &str,
+    request_id: &str,
+    message: &str,
+) -> Result<(String, Option<u64>), ParameterError> {
+    let mut publication = None;
     let result = match controller.admit(message).map_err(input_error) {
         Ok(Admission::New(request)) => match request.command {
             EditorCommand::NegotiateEditorProtocol => controller
@@ -27,7 +40,9 @@ pub fn dispatch(
                 .map_err(snapshot_error),
             EditorCommand::GetSamplerSelectionStatus { .. }
             | EditorCommand::ReleaseSamplerSelection { .. } => {
-                return controller.sample_selection_reply(&request);
+                return controller
+                    .sample_selection_reply(&request)
+                    .map(|frame| (frame, None));
             }
             EditorCommand::ChooseSamplerFiles => Err(ProtocolError::CapabilityUnavailable),
             EditorCommand::GetInstrumentSessionJobStatus { .. } => controller
@@ -47,8 +62,15 @@ pub fn dispatch(
                 .apply_editor_note(&request, Instant::now())
                 .map(|()| Reply::Value(serde_json::Value::Null))
                 .map_err(input_error),
-            EditorCommand::GetParameterState
-            | EditorCommand::BeginGesture { .. }
+            EditorCommand::GetParameterState => controller
+                .apply(&request)
+                .map(|_| {
+                    let (state, stamp) = controller.parameter_state_with_publication();
+                    publication = Some(stamp);
+                    Reply::Value(parameter_reply(ParameterReply::State(state)))
+                })
+                .map_err(command_error),
+            EditorCommand::BeginGesture { .. }
             | EditorCommand::SetParameter { .. }
             | EditorCommand::EndGesture { .. } => controller
                 .apply(&request)
@@ -59,13 +81,14 @@ pub fn dispatch(
         Ok(Admission::Duplicate { .. }) => Err(ProtocolError::DuplicateRequest),
         Err(error) => Err(error),
     };
-    match result {
+    let frame = match result {
         Ok(Reply::Encoded(reply)) => Ok(reply),
         Ok(Reply::Value(value)) => {
             controller.encode_editor_reply(attachment, request_id, Ok(value))
         }
         Err(error) => controller.encode_editor_rejection(attachment, request_id, message, error),
-    }
+    }?;
+    Ok((frame, publication))
 }
 
 // Preserve already framed snapshots/jobs without decoding and re-encoding them.

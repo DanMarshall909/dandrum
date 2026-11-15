@@ -12,6 +12,66 @@ use serde_json::{Value, json};
 use std::{num::NonZeroU64, path::PathBuf};
 
 #[test]
+fn stamped_parameter_reply_keeps_the_existing_wire_shape_and_fences_queued_feedback() {
+    use dandrum_trigger_host::editor_commands::dispatch_with_publication;
+    use dandrum_trigger_host::runtime::ControlEvent;
+    let (_package, mut host, mut audio, attachment) = controller(8, 8);
+    let history = host.session().owner_snapshot();
+    let level = host
+        .parameters()
+        .iter()
+        .find(|p| p.id == "drums.level")
+        .unwrap()
+        .root_index;
+    audio
+        .flush_parameters(&[ControlEvent::Parameter {
+            index: level,
+            value: 0.5,
+        }])
+        .unwrap();
+    let request = json!({"version":1,"attachmentId":attachment,"requestId":"1","method":"getParameterState","args":[]}).to_string();
+    let (frame, publication) =
+        dispatch_with_publication(&mut host, &attachment, "1", &request).unwrap();
+    let reply: Value = serde_json::from_str(&frame).unwrap();
+    assert_eq!(reply["status"], "accepted");
+    assert_eq!(reply["requestId"], "1");
+    assert_eq!(
+        reply["result"].as_object().unwrap().len(),
+        4,
+        "publication metadata stays outside the canonical editor reply"
+    );
+    assert_eq!(reply["result"]["generation"], 1);
+    assert_eq!(reply["result"]["sequence"], 0);
+    assert_eq!(reply["result"]["reset_cancelled"], false);
+    let level = reply["result"]["parameters"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|p| p["id"] == "drums.level")
+        .unwrap();
+    assert_eq!(level["value"], 0.125);
+    let (_, queued) = host.take_feedback_with_publication().unwrap();
+    assert!(queued <= publication.unwrap());
+    let request=json!({"version":1,"attachmentId":attachment,"requestId":"2","method":"getSamplerSession","args":[]}).to_string();
+    let (frame, publication) =
+        dispatch_with_publication(&mut host, &attachment, "2", &request).unwrap();
+    assert_eq!(
+        serde_json::from_str::<Value>(&frame).unwrap()["status"],
+        "accepted"
+    );
+    assert_eq!(publication, None);
+    let request = json!({"version":1,"attachmentId":attachment,"requestId":"3","method":"getParameterState","args":[]}).to_string();
+    assert_eq!(
+        dispatch_with_publication(&mut host, "999", "3", &request),
+        Err(dandrum_trigger_host::parameters::ParameterError::Protocol(
+            dandrum_trigger_host::protocol::ProtocolError::StaleAttachment
+        )),
+        "a coherent snapshot cannot be encoded into a foreign namespace"
+    );
+    assert_eq!(host.session().owner_snapshot(), history);
+}
+
+#[test]
 fn whole_patch_publication_survives_view_loss_and_native_undo_preserves_physical_values() {
     use dandrum_trigger_host::parameters::{SessionJobProgress, SessionServiceWake};
     use dandrum_trigger_host::runtime::{ControlEvent, TimedEvent};
