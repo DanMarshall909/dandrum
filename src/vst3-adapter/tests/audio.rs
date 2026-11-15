@@ -500,3 +500,61 @@ fn bus_lifecycle_and_unsupported_event_policies_are_explicit() {
         assert_eq!(p.terminate(), kResultOk);
     }
 }
+
+#[test]
+fn pending_state_blocks_quiescent_reconfiguration_then_all_advertised_modes_render() {
+    let bundle = Bundle::new();
+    let module = bundle.load();
+    let (clock, factory, _host) = common::runloop::host(&module);
+    let p = module.class_from::<IComponent>(&factory, &PROCESSOR);
+    let a = p.cast::<IAudioProcessor>().unwrap();
+    assert_eq!(unsafe { p.initialize(std::ptr::null_mut()) }, kResultOk);
+    start(&p, &a, 48_000.0, 16);
+    let legacy = include_bytes!("../../trigger-host/tests/fixtures/trigger-v2-state.json");
+    let (_, input) = common::stream::stream(legacy.to_vec(), 4096);
+    assert_eq!(unsafe { p.setState(input.as_ptr()) }, kResultOk);
+    assert_eq!(unsafe { a.setProcessing(0) }, kResultOk);
+    assert_eq!(unsafe { p.setActive(0) }, kResultOk);
+    assert_eq!(
+        unsafe { a.setupProcessing(&mut setup(44_100.5, 32)) },
+        kResultFalse,
+        "an unconsumed restored runtime prevents partial reconfiguration"
+    );
+    assert_eq!(unsafe { p.setActive(1) }, kResultOk);
+    assert_eq!(unsafe { a.setProcessing(1) }, kResultOk);
+    let mut too_large = Block::new(32);
+    assert_eq!(
+        unsafe { a.process(&mut too_large.data()) },
+        kInvalidArgument
+    );
+    let notes = events(vec![note_on(5, 60, 1.0)]);
+    let mut old = Block::new(16);
+    let mut data = old.data();
+    data.inputEvents = notes.as_ptr();
+    assert_eq!(unsafe { a.process(&mut data) }, kResultOk);
+    assert_eq!(&old.left[..5], &[0.0; 5]);
+    assert_eq!((old.left[5], old.right[5]), (-0.14536858, -0.14536858));
+    assert_eq!((old.left[6], old.right[6]), (-0.1444931, -0.1444931));
+    for mode in [1, 2] {
+        assert_eq!(unsafe { a.setProcessing(0) }, kResultOk);
+        assert_eq!(unsafe { p.setActive(0) }, kResultOk);
+        clock.tick(); // Return the adopted runtime's retirement on main first.
+        let mut configuration = setup(44_100.5, 32);
+        configuration.processMode = mode;
+        assert_eq!(unsafe { a.setupProcessing(&mut configuration) }, kResultOk);
+        assert_eq!(unsafe { p.setActive(1) }, kResultOk);
+        assert_eq!(unsafe { a.setProcessing(1) }, kResultOk);
+        let notes = events(vec![note_on(31, 60, 1.0)]);
+        let mut block = Block::new(32);
+        let mut data = block.data();
+        data.processMode = mode;
+        data.inputEvents = notes.as_ptr();
+        assert_eq!(unsafe { a.process(&mut data) }, kResultOk);
+        for channel in [&block.left, &block.right] {
+            assert_eq!(&channel[..31], &[0.0; 31]);
+            assert_eq!(channel[31], -0.14536858);
+        }
+    }
+    assert_eq!(unsafe { a.setProcessing(0) }, kResultOk);
+    assert_eq!(unsafe { p.terminate() }, kResultOk);
+}

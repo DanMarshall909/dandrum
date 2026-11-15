@@ -62,6 +62,16 @@ impl IEventListTrait for ReentrantEvents {
             kResultFalse,
             "borrowed endpoint cannot be terminated"
         );
+        let audio = self.processor.cast::<IAudioProcessor>().unwrap();
+        assert_eq!(
+            unsafe { audio.setProcessing(0) },
+            kResultFalse,
+            "nested reset cannot acquire the outer callback's endpoint"
+        );
+        let mut nested = Block::new(16);
+        assert_eq!(unsafe { audio.process(&mut nested.data()) }, kResultFalse);
+        assert_eq!(nested.left, [0.0; 16]);
+        assert_eq!(nested.right, [0.0; 16]);
         0
     }
     unsafe fn getEvent(&self, _: i32, _: *mut Event) -> tresult {
@@ -135,6 +145,35 @@ fn stopped_flush_reentrant_termination_child() {
     assert_eq!(unsafe { a.process(&mut data) }, kResultOk);
     assert_eq!(event_calls.get(), 1);
     assert_eq!(point_calls.get(), 1);
+    start(&p, &a, 48_000.0, 16);
+    let onset = common::audio::events(vec![note_on(0, 36, 1.0)]);
+    let mut first = Block::new(16);
+    let mut data = first.data();
+    data.inputEvents = onset.as_ptr();
+    assert_eq!(unsafe { a.process(&mut data) }, kResultOk);
+    assert_eq!((first.left[0], first.right[0]), (-0.5, -0.5));
+    let nested_calls = std::rc::Rc::new(Cell::new(0));
+    let nested = ComWrapper::new(ReentrantEvents {
+        processor: (*p).clone(),
+        calls: nested_calls.clone(),
+    })
+    .to_com_ptr::<IEventList>()
+    .unwrap();
+    let mut data = first.data();
+    data.inputEvents = nested.as_ptr();
+    assert_eq!(unsafe { a.process(&mut data) }, kResultOk);
+    assert_eq!(nested_calls.get(), 1);
+    assert_eq!(
+        (first.left[0], first.right[0]),
+        (11869.0 / 32768.0, 11869.0 / 32768.0),
+        "rejected nested process/reset leaves the outer sounding cursor intact"
+    );
+    assert_eq!(unsafe { a.setProcessing(0) }, kResultOk);
+    assert_eq!(unsafe { a.setProcessing(1) }, kResultOk);
+    assert_eq!(unsafe { a.process(&mut first.data()) }, kResultOk);
+    assert_eq!(first.left, [0.0; 16]);
+    assert_eq!(first.right, [0.0; 16]);
+    assert_eq!(unsafe { a.setProcessing(0) }, kResultOk);
     assert_eq!(
         unsafe { p.terminate() },
         kResultOk,
