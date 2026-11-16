@@ -2117,6 +2117,138 @@ fn stopped_normalized_flush_is_atomic_preserves_native_history_and_consumes_no_d
 }
 
 #[test]
+fn automation_provenance_follows_each_editor_through_acknowledgement_and_cancellation() {
+    let (_package, root) = package();
+    let (mut controller, _audio) =
+        ParameterController::open(root, configuration(), NonZeroU64::new(702).unwrap(), 16, 16)
+            .unwrap();
+    let a = controller.attach_editor().unwrap();
+    let b = controller.attach_editor().unwrap();
+    let a_owner = a.attachment_id.parse::<u64>().unwrap();
+    let b_owner = b.attachment_id.parse::<u64>().unwrap();
+    assert_ne!(a_owner, b_owner);
+    let level = controller
+        .parameters()
+        .iter()
+        .position(|p| p.id == "drums.level")
+        .unwrap();
+    let pan = controller
+        .parameters()
+        .iter()
+        .position(|p| p.id == "drums.pan")
+        .unwrap();
+    assert_eq!(controller.peek_automation_with_owner(), None);
+    for (editor, serial, method, args) in [
+        (&a, 1, "beginGesture", json!(["drums.level", 1])),
+        (&b, 1, "beginGesture", json!(["drums.pan", 1])),
+        (&a, 2, "setParameter", json!(["drums.level", 0.5, 1])),
+        (&b, 2, "setParameter", json!(["drums.pan", 0.25, 1])),
+    ] {
+        let admitted = request(&mut controller, &editor.attachment_id, serial, method, args);
+        controller.apply(&admitted).unwrap();
+    }
+    let first = (
+        a_owner,
+        AutomationEvent::Begin {
+            parameter_index: level,
+        },
+    );
+    assert_eq!(controller.peek_automation_with_owner(), Some(first));
+    assert_eq!(
+        controller.peek_automation_with_owner(),
+        Some(first),
+        "observation does not consume delivery"
+    );
+    assert!(controller.acknowledge_automation());
+    assert_eq!(
+        controller.peek_automation_with_owner(),
+        Some((
+            b_owner,
+            AutomationEvent::Begin {
+                parameter_index: pan
+            }
+        ))
+    );
+    // The format adapter has already closed A's accepted host Begin. Its
+    // cancellation now removes only A's undelivered Value and reserved End.
+    assert_eq!(
+        controller
+            .detach_editor_and_cancel_automation(&a.attachment_id)
+            .unwrap(),
+        2
+    );
+    let end_b = request(
+        &mut controller,
+        &b.attachment_id,
+        3,
+        "endGesture",
+        json!(["drums.pan", 1]),
+    );
+    controller.apply(&end_b).unwrap();
+    let c = controller.attach_editor().unwrap();
+    let c_owner = c.attachment_id.parse::<u64>().unwrap();
+    assert_ne!(c_owner, a_owner);
+    let set_c = request(
+        &mut controller,
+        &c.attachment_id,
+        1,
+        "setParameter",
+        json!(["drums.level", 0.25, 1]),
+    );
+    controller.apply(&set_c).unwrap();
+    for expected in [
+        (
+            b_owner,
+            AutomationEvent::Begin {
+                parameter_index: pan,
+            },
+        ),
+        (
+            b_owner,
+            AutomationEvent::Value {
+                parameter_index: pan,
+                value: -0.5,
+            },
+        ),
+        (
+            b_owner,
+            AutomationEvent::End {
+                parameter_index: pan,
+            },
+        ),
+        (
+            c_owner,
+            AutomationEvent::Begin {
+                parameter_index: level,
+            },
+        ),
+        (
+            c_owner,
+            AutomationEvent::Value {
+                parameter_index: level,
+                value: 1.0,
+            },
+        ),
+        (
+            c_owner,
+            AutomationEvent::End {
+                parameter_index: level,
+            },
+        ),
+    ] {
+        assert_eq!(controller.peek_automation_with_owner(), Some(expected));
+        assert_eq!(
+            controller.peek_automation(),
+            Some(expected.1),
+            "existing format consumers retain the same ordered event view"
+        );
+        assert!(controller.acknowledge_automation());
+    }
+    assert_eq!(controller.peek_automation_with_owner(), None);
+    assert!(!controller.acknowledge_automation());
+}
+
+#[test]
 fn cancelling_detachment_removes_only_that_editors_automation_and_preserves_admitted_values() {
     let (_package, root) = package();
     let (mut controller, mut audio) =

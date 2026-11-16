@@ -1841,7 +1841,15 @@ impl ParameterController {
 
     /// A format adapter acknowledges only after its host accepts this event.
     pub fn peek_automation(&self) -> Option<AutomationEvent> {
-        self.automation.front().map(|entry| entry.event)
+        self.peek_automation_with_owner().map(|(_, event)| event)
+    }
+
+    /// Preserve the originating editor when an adapter has multiple projections.
+    /// The owner is an attachment identity, not authority to admit new commands.
+    pub fn peek_automation_with_owner(&self) -> Option<(u64, AutomationEvent)> {
+        self.automation
+            .front()
+            .map(|entry| (entry.owner, entry.event))
     }
     pub fn acknowledge_automation(&mut self) -> bool {
         self.automation.pop_front().is_some()
