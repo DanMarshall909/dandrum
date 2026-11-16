@@ -61,6 +61,10 @@ pub(crate) fn create(
             closing: Cell::new(false),
             shutdown_close: Cell::new(false),
             connection_busy: Cell::new(false),
+            #[cfg(feature = "trigger-editor")]
+            browser: RefCell::new(None),
+            #[cfg(feature = "trigger-editor")]
+            last_view: Cell::new(0),
         })))
         .to_com_ptr::<FUnknown>()
         .expect("component includes FUnknown"))
@@ -118,6 +122,10 @@ struct ProcessorCore {
     closing: Cell<bool>,
     shutdown_close: Cell<bool>,
     connection_busy: Cell<bool>,
+    #[cfg(feature = "trigger-editor")]
+    browser: RefCell<Option<Rc<BrowserProjection>>>,
+    #[cfg(feature = "trigger-editor")]
+    last_view: Cell<u64>,
 }
 #[derive(Clone)]
 struct AutomationFlight {
@@ -953,6 +961,15 @@ impl ProcessorCore {
         }
     }
     fn disconnect_projection(&self, cancel_automation: bool) {
+        #[cfg(feature = "trigger-editor")]
+        {
+            let browser = self.browser.borrow_mut().take();
+            if let Some(browser) = browser {
+                self.detach_browser(&browser);
+                browser.transport.close();
+            }
+            self.last_view.set(0);
+        }
         self.automation.borrow_mut().take();
         self.next_automation.set(1);
         self.processed.borrow_mut().clear();
@@ -975,18 +992,17 @@ impl ProcessorCore {
         {
             return;
         }
-        let frame = {
-            let mut owner = self.owner.borrow_mut();
-            let Some(owner) = owner.as_mut() else {
-                return;
-            };
-            let Ok(connection) = owner.attach_editor() else {
-                return;
-            };
-            *self.attachment.borrow_mut() = Some(connection.attachment_id.clone());
-            serde_json::json!({"protocolVersion":1,"instanceId":connection.instance_id,"attachmentId":connection.attachment_id,"nextRequestId":"1"}).to_string()
+        let Some((attachment, frame)) = self.open_projection() else {
+            return;
         };
+        *self.attachment.borrow_mut() = Some(attachment);
         let _ = self.transport.send(0, Body::Projection { frame });
+    }
+    fn open_projection(&self) -> Option<(String, String)> {
+        let mut owner = self.owner.try_borrow_mut().ok()?;
+        let connection = owner.as_mut()?.attach_editor().ok()?;
+        let frame = serde_json::json!({"protocolVersion":1,"instanceId":connection.instance_id,"attachmentId":connection.attachment_id,"nextRequestId":"1"}).to_string();
+        Some((connection.attachment_id, frame))
     }
 }
 impl IConnectionPointTrait for Processor {
@@ -1045,7 +1061,18 @@ impl IConnectionPointTrait for Processor {
         if !self.live() {
             return kNotInitialized;
         }
-        match unsafe { self.transport.receive(message) } {
+        let packet = match unsafe { Transport::decode(message) } {
+            Ok(packet) => packet,
+            Err(error) => {
+                self.transport.pump();
+                return error;
+            }
+        };
+        #[cfg(feature = "trigger-editor")]
+        if let Some(route) = packet.view.clone() {
+            return self.notify_browser(packet, route);
+        }
+        match self.transport.receive_packet(packet) {
             Err(error) => {
                 self.transport.pump();
                 return error;
@@ -1339,6 +1366,8 @@ impl ProcessorCore {
             return;
         }
         self.projection();
+        #[cfg(feature = "trigger-editor")]
+        self.service_browser();
         self.service_parameter_feedback();
         self.transport.pump();
         self.service_automation();
@@ -1383,8 +1412,232 @@ struct Processed {
     request: String,
     reply: Body,
 }
+#[cfg(feature = "trigger-editor")]
+struct BrowserProjection {
+    id: u64,
+    transport: Transport,
+    attachment: RefCell<Option<String>>,
+    bootstrap: RefCell<Option<String>>,
+    last_request: Cell<u64>,
+    processed: RefCell<VecDeque<Processed>>,
+    closing: Cell<bool>,
+    closed: Cell<bool>,
+}
+#[cfg(feature = "trigger-editor")]
+impl ProcessorCore {
+    fn notify_browser(
+        &self,
+        packet: crate::transport::Packet,
+        route: crate::transport::ViewRoute,
+    ) -> tresult {
+        let Some((local, remote, peer)) = self.transport.bound_peer() else {
+            return kNotInitialized;
+        };
+        if !self.live()
+            || self.closing.get()
+            || route.id == 0
+            || route.parent_source != remote
+            || route.parent_target != local
+        {
+            return kResultFalse;
+        }
+        let previous = self.browser.borrow().clone();
+        let browser = match previous {
+            Some(browser) if browser.id == route.id => browser,
+            previous => {
+                if !matches!(packet.body, Body::Offer)
+                    || packet.target.is_some()
+                    || packet.sequence != 0
+                    || route.id <= self.last_view.get()
+                    || previous.as_ref().is_some_and(|p| {
+                        p.transport.normal_active()
+                            || p.transport.retired_pending()
+                            || (!p.closed.get()
+                                && (p.transport.bound().is_some() || p.closing.get()))
+                    })
+                {
+                    return kResultFalse;
+                }
+                let Some(transport) = Transport::for_view(route.reversed(), peer) else {
+                    return kResultFalse;
+                };
+                let browser = Rc::new(BrowserProjection {
+                    id: route.id,
+                    transport,
+                    attachment: RefCell::new(None),
+                    bootstrap: RefCell::new(None),
+                    last_request: Cell::new(0),
+                    processed: RefCell::new(VecDeque::with_capacity(crate::transport::PENDING)),
+                    closing: Cell::new(false),
+                    closed: Cell::new(false),
+                });
+                // An unconfirmed connection owns no shared attachment. A newer
+                // offer may replace it only after its foreign notify returns;
+                // normal_active above fences reentrant challenge replacement.
+                if let Some(previous) = previous {
+                    previous.transport.close();
+                }
+                self.last_view.set(route.id);
+                *self.browser.borrow_mut() = Some(browser.clone());
+                browser
+            }
+        };
+        if browser.closed.get() && !matches!(packet.body, Body::Closed | Body::RetiredAck) {
+            return kResultFalse;
+        }
+        match browser.transport.receive_packet(packet) {
+            Err(error) => {
+                browser.transport.pump();
+                return error;
+            }
+            Ok(None) => {}
+            Ok(Some(packet)) => match packet.body {
+                Body::Closing | Body::Goodbye if packet.sequence == 0 => {
+                    browser.closing.set(true);
+                    browser.transport.begin_closing();
+                    return kResultOk;
+                }
+                Body::Closed if packet.sequence == 0 => {
+                    if !browser.closing.get() {
+                        return kResultFalse;
+                    }
+                    if browser.transport.is_current(&packet) {
+                        self.detach_browser(&browser);
+                        browser.transport.retire();
+                    }
+                    let _ = browser.transport.terminal_retired(Body::Retired);
+                    return kResultOk;
+                }
+                Body::RetiredAck if packet.sequence == 0 => {
+                    if !browser.transport.is_retired(&packet) {
+                        return kResultFalse;
+                    }
+                    browser.transport.release_retired();
+                    browser.closed.set(true);
+                    return kResultOk;
+                }
+                Body::Request { frame } if !browser.closing.get() => {
+                    // This unwired view lane currently qualifies snapshots only.
+                    // Editing requires view-owned automation/closure first; do
+                    // not admit a gesture into the main projection's ledger.
+                    if frame.len() > dandrum_trigger_host::protocol::PATCH_MESSAGE_BYTES_LIMIT {
+                        return kInvalidArgument;
+                    }
+                    #[derive(serde::Deserialize)]
+                    struct Command {
+                        method: String,
+                    }
+                    let Ok(command) = serde_json::from_str::<Command>(&frame) else {
+                        return kInvalidArgument;
+                    };
+                    if command.method != "getParameterState" {
+                        return kNotImplemented;
+                    }
+                    let attachment = browser.attachment.borrow().clone();
+                    let Some(attachment) = attachment else {
+                        return kNotInitialized;
+                    };
+                    let result = self.request_at(
+                        packet.sequence,
+                        &frame,
+                        &browser.transport,
+                        &attachment,
+                        &browser.last_request,
+                        &browser.processed,
+                    );
+                    if result != kResultOk {
+                        browser.transport.pump();
+                        return result;
+                    }
+                }
+                _ => return kNotImplemented,
+            },
+        }
+        self.project_browser(&browser);
+        browser.transport.pump();
+        kResultOk
+    }
+    fn project_browser(&self, browser: &BrowserProjection) {
+        if !self.live()
+            || self.closing.get()
+            || browser.closing.get()
+            || browser.transport.bound().is_none()
+            || !browser.transport.has_space()
+        {
+            return;
+        }
+        if browser.attachment.borrow().is_none() {
+            let Some((attachment, frame)) = self.open_projection() else {
+                return;
+            };
+            *browser.attachment.borrow_mut() = Some(attachment);
+            *browser.bootstrap.borrow_mut() = Some(frame);
+        }
+        if browser.last_request.get() == 0 {
+            let frame = browser
+                .bootstrap
+                .borrow()
+                .clone()
+                .expect("attached browser bootstrap");
+            let body = Body::Projection { frame };
+            if !browser.transport.queued(0, &body) {
+                let _ = browser.transport.send(0, body);
+            }
+        }
+    }
+    fn detach_browser(&self, browser: &BrowserProjection) {
+        browser.closing.set(true);
+        let attachment = browser.attachment.borrow_mut().take();
+        if let Some(attachment) = attachment
+            && let Some(owner) = self.owner.borrow_mut().as_mut()
+        {
+            let _ = owner.detach_editor_and_cancel_automation(&attachment);
+        }
+        browser.bootstrap.borrow_mut().take();
+    }
+    fn service_browser(&self) {
+        let browser = self.browser.borrow().clone();
+        let Some(browser) = browser else {
+            return;
+        };
+        browser.transport.pump_terminal();
+        if browser.closed.get() {
+            return;
+        }
+        if browser.closing.get() {
+            if browser.transport.retired_pending() {
+                let _ = browser.transport.terminal_retired(Body::Retired);
+            }
+        } else {
+            self.project_browser(&browser);
+            browser.transport.pump();
+        }
+    }
+}
 impl ProcessorCore {
     fn request(&self, sequence: u64, frame: &str) -> tresult {
+        let attachment = self.attachment.borrow().clone();
+        let Some(attachment) = attachment else {
+            return kNotInitialized;
+        };
+        self.request_at(
+            sequence,
+            frame,
+            &self.transport,
+            &attachment,
+            &self.last_request,
+            &self.processed,
+        )
+    }
+    fn request_at(
+        &self,
+        sequence: u64,
+        frame: &str,
+        transport: &Transport,
+        attachment: &str,
+        last_request: &Cell<u64>,
+        processed: &RefCell<VecDeque<Processed>>,
+    ) -> tresult {
         if self.closing.get() {
             return kResultFalse;
         }
@@ -1392,8 +1645,7 @@ impl ProcessorCore {
         {
             return kInvalidArgument;
         }
-        let cached = self
-            .processed
+        let cached = processed
             .borrow()
             .iter()
             .find(|p| p.sequence == sequence)
@@ -1403,29 +1655,29 @@ impl ProcessorCore {
                 return kResultFalse;
             }
             let body = reply;
-            return if self.transport.queued(sequence, &body) {
+            return if transport.queued(sequence, &body) {
                 kResultOk
             } else {
-                self.transport.send(sequence, body)
+                transport.send(sequence, body)
             };
         }
-        if self.last_request.get().checked_add(1) != Some(sequence) {
+        if last_request.get().checked_add(1) != Some(sequence) {
             return kResultFalse;
         }
         // Reserve bounded reply room before admitting any musical command.
-        if !self.transport.has_space() {
+        if !transport.has_space() {
             return kResultFalse;
         }
         let Ok(request) = serde_json::from_str::<serde_json::Value>(frame) else {
             return kInvalidArgument;
         };
-        let (Some(attachment), Some(request_id)) = (
+        let (Some(frame_attachment), Some(request_id)) = (
             request["attachmentId"].as_str(),
             request["requestId"].as_str(),
         ) else {
             return kInvalidArgument;
         };
-        if self.attachment.borrow().as_deref() != Some(attachment) {
+        if frame_attachment != attachment {
             return kResultFalse;
         }
         let (reply, publication) = {
@@ -1449,7 +1701,7 @@ impl ProcessorCore {
         // Retain the outcome before attempting transport delivery. A retry can
         // never run the accepted command a second time, even if notify refuses.
         {
-            let mut processed = self.processed.borrow_mut();
+            let mut processed = processed.borrow_mut();
             if processed.len() == crate::transport::PENDING {
                 processed.pop_front();
             }
@@ -1459,8 +1711,8 @@ impl ProcessorCore {
                 reply: reply.clone(),
             });
         }
-        self.last_request.set(sequence);
-        self.transport.send(sequence, reply)
+        last_request.set(sequence);
+        transport.send(sequence, reply)
     }
 }
 #[derive(serde::Deserialize)]

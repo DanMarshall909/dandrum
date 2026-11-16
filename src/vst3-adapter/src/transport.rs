@@ -14,6 +14,22 @@ use vst3::{
 pub(crate) const PENDING: usize = 8;
 const MAX_WIRE: usize = 2 * dandrum_trigger_host::protocol::PATCH_OUTBOUND_BYTES_LIMIT + 4096;
 pub(crate) type Scope = [u8; 16];
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct ViewRoute {
+    pub id: u64,
+    pub parent_source: Scope,
+    pub parent_target: Scope,
+}
+impl ViewRoute {
+    pub fn reversed(&self) -> Self {
+        Self {
+            id: self.id,
+            parent_source: self.parent_target,
+            parent_target: self.parent_source,
+        }
+    }
+}
 fn terminal_phase(body: &Body) -> u8 {
     match body {
         Body::Closing => 0,
@@ -77,6 +93,8 @@ pub(crate) struct Packet {
     pub target: Option<Scope>,
     pub sequence: u64,
     pub body: Body,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub view: Option<ViewRoute>,
 }
 struct Outbound {
     key: u64,
@@ -103,6 +121,7 @@ struct State {
     retired: Option<RetiredPeer>,
 }
 pub(crate) struct Transport {
+    route: Option<ViewRoute>,
     state: RefCell<State>,
     sending: Cell<bool>,
     terminal_sending: Cell<bool>,
@@ -111,6 +130,7 @@ pub(crate) struct Transport {
 impl Default for Transport {
     fn default() -> Self {
         Self {
+            route: None,
             state: RefCell::new(State {
                 peer: None,
                 local: None,
@@ -127,6 +147,25 @@ impl Default for Transport {
     }
 }
 impl Transport {
+    #[cfg(feature = "trigger-editor")]
+    pub fn for_view(route: ViewRoute, peer: Rc<ComPtr<IConnectionPoint>>) -> Option<Self> {
+        let local = crate::platform::scope()?;
+        let mut transport = Self {
+            route: Some(route),
+            ..Self::default()
+        };
+        let state = transport.state.get_mut();
+        state.peer = Some(peer);
+        state.local = Some(local);
+        Some(transport)
+    }
+    /// Carry the validated parent scopes and already retained standard peer
+    /// together. Rc cloning makes no foreign AddRef under the state borrow.
+    #[cfg(feature = "trigger-editor")]
+    pub fn bound_peer(&self) -> Option<(Scope, Scope, Rc<ComPtr<IConnectionPoint>>)> {
+        let state = self.state.borrow();
+        Some((state.local?, state.remote?, state.peer.clone()?))
+    }
     pub fn peer_matches(&self, peer: *mut IConnectionPoint) -> bool {
         self.state
             .borrow()
@@ -285,6 +324,7 @@ impl Transport {
                 target: Some(target),
                 sequence: 0,
                 body: Body::Goodbye,
+                view: self.route.clone(),
             };
             let bytes = serde_json::to_vec(&packet).expect("fixed terminal packet");
             let message = message(&bytes);
@@ -329,6 +369,7 @@ impl Transport {
             target: Some(target),
             sequence: 0,
             body,
+            view: self.route.clone(),
         };
         let bytes = serde_json::to_vec(&packet).expect("bounded terminal packet");
         let item = Rc::new(Terminal {
@@ -434,6 +475,7 @@ impl Transport {
             target,
             sequence,
             body,
+            view: self.route.clone(),
         };
         let Ok(bytes) = serde_json::to_vec(&packet) else {
             return kResultFalse;
@@ -458,6 +500,10 @@ impl Transport {
     /// Copy the complete foreign payload before touching affine state. The proxy
     /// may run us again from getMessageID/getAttributes/getBinary.
     pub unsafe fn receive(&self, message: *mut IMessage) -> Result<Option<Packet>, tresult> {
+        let packet = unsafe { Self::decode(message) }?;
+        self.receive_packet(packet)
+    }
+    pub unsafe fn decode(message: *mut IMessage) -> Result<Packet, tresult> {
         let Some(message) = (unsafe { ComRef::from_raw(message) }) else {
             return Err(kInvalidArgument);
         };
@@ -484,6 +530,12 @@ impl Transport {
         .map_err(|_| kInvalidArgument)?;
         if packet.version != 1 {
             return Err(kInvalidArgument);
+        }
+        Ok(packet)
+    }
+    pub fn receive_packet(&self, packet: Packet) -> Result<Option<Packet>, tresult> {
+        if packet.view != self.route.as_ref().map(ViewRoute::reversed) {
+            return Err(kResultFalse);
         }
         if matches!(packet.body, Body::Closed | Body::RetiredAck) && packet.sequence == 0 {
             let state = self.state.borrow();
