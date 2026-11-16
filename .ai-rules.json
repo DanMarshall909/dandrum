@@ -29,11 +29,11 @@
       "workloads": {
         "trigger-beta-verification": {
           "reserveMiB": 8192,
-          "outputGrowthMiB": 8192,
+          "outputGrowthMiB": 3072,
           "tempGrowthMiB": 1024,
           "retainedBudgetMiB": 114688,
           "basis": "estimated",
-          "estimateReason": "One serialized Trigger Rust/native/LLVM producer, at most four compiler jobs. Preserve an 8 GiB free-disk floor and all existing reusable caches/dependencies. Dan approved the reassessment on 16 November 2026: managed retention ceiling 112 GiB and separate cumulative incremental-output allowance 56 GiB plus 2 GiB scratch. Each producer still needs its existing growth/reserve admission. Dependency/manifest changes create fresh managed generations; the ceiling preserves earlier warm data while shared editor/native builds are qualified. This is an admission estimate, not a reservation or completion guarantee. Require DANDRUM_CARGO_PRESERVE_GENERATIONS=1 and a non-mutating preflight for full growth+temp+reserve (currently 17 GiB free) and retention+growth+temp before driver invocation. Refuse pressure rather than evicting an existing generation. Account for cumulative outputs across every declared root and remaining scratch separately; 56 GiB is a ceiling, not a promise that the full allowance is usable on this filesystem."
+          "estimateReason": "Dan approved a 3 GiB per-producer output reservation on 16 November 2026 for the existing warm generation 9130ee03dfb4e014aafb91c3 and already prepared dependency/profile configurations. Recent measured net managed growth was about 1.77 GiB for the first ordinary host profile and 1.03 GiB for the full host LLVM run. Reserve 3 GiB output plus 1 GiB temporary growth and 8 GiB free disk (12 GiB admission). Keep 56 GiB cumulative outputs, 112 GiB managed retention, 2 GiB scratch, 8 GiB MemAvailable, one heavy producer, max four compiler jobs, preservation mode1, mutation exclusion and original12active-executor-hour reassessment cap. Cold/new-generation/dependency/profile commands are refused while this warm policy is active; restore the original8GiB growth policy or obtain separately reviewed configuration-specific driver admission before execution. Each command needs a fresh non-mutating preflight verifying the warm generation/profile; refuse pressure rather than retire caches. This estimate is not a completion guarantee."
         },
         "trigger-vst3-proof": {
           "reserveMiB": 8192,
@@ -41,7 +41,7 @@
           "tempGrowthMiB": 2048,
           "retainedBudgetMiB": 8192,
           "basis": "estimated",
-          "estimateReason": "Dan explicitly approved the proposed resource reassessment on 16 November 2026: 56 GiB cumulative incremental outputs plus 2 GiB scratch, raising the earlier 32 GiB allowance; managed retention 112 GiB preserves existing warm generations. Keep at least 8 GiB free disk and MemAvailable, one implementation/heavy producer and at most four compiler jobs. No paid services; mutation remains excluded. The original 12 active-executor-hour reassessment cap and every Linux acceptance requirement remain. Preserve reusable caches/dependencies. Require DANDRUM_CARGO_PRESERVE_GENERATIONS=1 and a non-mutating full growth+temp+reserve preflight (currently 17 GiB free), retention+growth+temp and all-root cumulative accounting before each producer. Refuse pressure rather than evicting earlier generations. This finite allowance is not a completion or usable-capacity guarantee."
+          "estimateReason": "Dan explicitly approved the proposed resource reassessment on 16 November 2026: 56 GiB cumulative incremental outputs plus 2 GiB scratch, raising the earlier 32 GiB allowance; managed retention 112 GiB preserves existing warm generations. Keep at least 8 GiB free disk and MemAvailable, one implementation/heavy producer and at most four compiler jobs. No paid services; mutation remains excluded. The original 12 active-executor-hour reassessment cap and every Linux acceptance requirement remain. Preserve reusable caches/dependencies. Require DANDRUM_CARGO_PRESERVE_GENERATIONS=1 and a non-mutating full growth+temp+reserve preflight (12 GiB free for explicitly qualified warm builds; 17 GiB for cold/new configurations), retention+growth+temp and all-root cumulative accounting before each producer. Refuse pressure rather than evicting earlier generations. This finite allowance is not a completion or usable-capacity guarantee."
         }
       }
     }

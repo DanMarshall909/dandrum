@@ -288,6 +288,21 @@ evicting an earlier generation. These ceilings do not guarantee completion or
 that the full allowance is usable on the current filesystem. No approval to
 delete reusable caches/dependencies is inferred.
 
+Warm-build reassessment, 16 November 2026: Dan replied "ok go ahead" to
+**3 GiB output growth per producer for the existing warm configuration**.
+Recent observed net managed growth was about 1.77 GiB for the first ordinary
+host profile and 1.03 GiB for the full host LLVM run. The new warm admission is
+3 GiB output + 1 GiB temporary growth + 8 GiB disk reserve = **12 GiB free**.
+The 56 GiB cumulative output cap, 112 GiB retention cap, 2 GiB scratch allowance,
+8 GiB disk/MemAvailable floors, preservation mode1, one heavy producer, max four
+compiler jobs, mutation exclusion and original 12 active-executor-hour cap stay
+in force. Qualify the unchanged generation/dependency graph and already prepared
+profile before using the smaller reservation. Cold/new-generation/dependency/
+profile work is refused while the 3 GiB driver policy is active. Restore the
+original 8 GiB driver reservation (17 GiB free), or obtain separately reviewed
+configuration-specific driver admission, before executing cold work. This approves continued warm verification, not cache deletion or
+Linux acceptance. Continue measuring before every producer.
+
 Planning observations: Pop!_OS 22.04 x86_64, Ryzen 5900X, 32 GiB RAM;
 MemAvailable about 19 GiB; shared checkout/tmp free about 132 GiB; root `build/`
 logical size about 9 GiB, Cargo registry about 1.6 GiB. The existing workload's
