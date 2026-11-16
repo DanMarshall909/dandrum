@@ -2,7 +2,10 @@
 pub use dandrum_engine::sample_snapshot::MAX_ENCODED_SAMPLE_BYTES;
 pub(crate) const MAX_RETAINED_ENCODED_BYTES: usize = 256 * 1024 * 1024;
 pub(crate) const MAX_RESOURCE_COUNT: usize = 256;
+pub const MAX_SELECTION_FILES: usize = 16;
 use dandrum_engine::sample_snapshot::{SampleSnapshot, SnapshotRetention};
+#[cfg(unix)]
+use std::path::PathBuf;
 use std::{
     collections::BTreeMap,
     fs::File,
@@ -44,6 +47,32 @@ impl NativeSampleFile {
     }
 }
 
+/// Open only paths supplied by a native chooser, preserving exact OS bytes.
+/// Canonical browser commands never carry paths or acquire this capability.
+/// A nonregular or invalid member rejects the entire batch and closes prior files.
+#[cfg(unix)]
+pub fn open_native_sample_files(paths: Vec<PathBuf>) -> Result<Vec<NativeSampleFile>, SampleError> {
+    use std::os::unix::fs::OpenOptionsExt;
+    if paths.is_empty() || paths.len() > MAX_SELECTION_FILES {
+        return Err(SampleError::FileCount);
+    }
+    paths
+        .into_iter()
+        .map(|path| {
+            let name = path
+                .file_name()
+                .ok_or(SampleError::InvalidName)?
+                .to_string_lossy()
+                .into_owned();
+            let file = std::fs::OpenOptions::new()
+                .read(true)
+                .custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW | libc::O_CLOEXEC)
+                .open(path)
+                .map_err(|_| SampleError::InvalidFile)?;
+            NativeSampleFile::new(name, file)
+        })
+        .collect()
+}
 #[derive(Debug)]
 pub struct SelectedFile {
     pub name: String,
@@ -127,7 +156,7 @@ impl SampleCatalog {
         if self.acquisition_pending() {
             return Err(SampleError::Busy);
         }
-        if files.is_empty() || files.len() > 16 {
+        if files.is_empty() || files.len() > MAX_SELECTION_FILES {
             return Err(SampleError::FileCount);
         }
         let reservation = self.reserve(files.len())?;

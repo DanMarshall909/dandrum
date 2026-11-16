@@ -4,13 +4,15 @@ use clack_extensions::gui::{GuiApiType, GuiConfiguration, GuiSize, PluginGuiImpl
 use clack_plugin::prelude::PluginError;
 use dandrum_trigger_editor::{EditorAssets, NativeEditor, NativeFileSelection};
 use dandrum_trigger_host::{
-    editor_commands::{command_error, dispatch},
-    parameters::{
-        NativeSelectionPermit, ParameterController, ParameterError, SessionJobProgress,
-        SessionServiceWake,
+    editor_bridge::{BrowserRequest, browser_request, delivery_script, initialization_script},
+    editor_commands::{
+        NativeSelectionAdmission, begin_native_selection, dispatch, submit_native_selection,
     },
-    protocol::{Admission, PATCH_MESSAGE_BYTES_LIMIT, ProtocolError},
-    samples::{NativeSampleFile, SampleError},
+    parameters::{
+        NativeSelectionPermit, ParameterController, SessionJobProgress, SessionServiceWake,
+    },
+    protocol::{PATCH_MESSAGE_BYTES_LIMIT, ProtocolError},
+    samples::{MAX_SELECTION_FILES, SampleError},
 };
 use std::{
     cell::Cell,
@@ -205,7 +207,9 @@ impl Core {
                 return;
             }
             let files = match files {
-                Some(files) if files.is_empty() || files.len() > 16 => Err(SampleError::FileCount),
+                Some(files) if files.is_empty() || files.len() > MAX_SELECTION_FILES => {
+                    Err(SampleError::FileCount)
+                }
                 files => Ok(files),
             };
             state.selection_response = Some(SelectionResponse {
@@ -236,26 +240,11 @@ impl Core {
             }
             return;
         };
-        match response.files {
-            Ok(None) => {
-                let _ = controller.cancel_sample_selection(&response.permit);
-            }
-            Err(error) => {
-                let _ = controller.fail_sample_selection(&response.permit, error);
-            }
-            Ok(Some(paths)) => match native_sample_files(paths) {
-                Ok(files) => {
-                    if controller
-                        .admit_selected_files(&response.permit, files)
-                        .is_ok()
-                    {
-                        self.gui.borrow_mut().job_pending = true;
-                    }
-                }
-                Err(error) => {
-                    let _ = controller.fail_sample_selection(&response.permit, error);
-                }
-            },
+        if matches!(
+            submit_native_selection(&mut controller, &response.permit, response.files),
+            Ok(SessionJobProgress::Pending)
+        ) {
+            self.gui.borrow_mut().job_pending = true;
         }
     }
     fn service_structural_jobs(&self) {
@@ -343,9 +332,10 @@ impl Core {
             .map_err(|_| rejected())?
             .attach_editor()
             .map_err(|_| rejected())?;
-        let initializer = format!(
-            "window.__DANDRUM_NATIVE__={};",
-            serde_json::json!({"protocolVersion":1,"instanceId":connection.instance_id,"attachmentId":connection.attachment_id,"nextRequestId":"1"})
+        let initializer = initialization_script(
+            &connection.instance_id,
+            &connection.attachment_id,
+            std::num::NonZeroU64::new(1).expect("first browser request"),
         );
         {
             let mut state = self.gui.borrow_mut();
@@ -396,32 +386,19 @@ impl Core {
                 return;
             }
         }
-        // Only a bounded canonical ID in this current attachment may receive a reply.
-        let Ok(frame) = serde_json::from_str::<serde_json::Value>(message) else {
+        let Some(request) = browser_request(attachment, message) else {
             return;
         };
-        if frame["attachmentId"].as_str() != Some(attachment) {
-            return;
-        }
-        let Some(request_id) = frame["requestId"].as_str() else {
-            return;
-        };
-        if request_id.len() > 20
-            || !request_id
-                .parse::<u64>()
-                .is_ok_and(|n| n != 0 && n.to_string() == request_id)
-        {
-            return;
-        }
-        if frame["method"].as_str() == Some("chooseSamplerFiles") {
-            self.choose_native_files(attachment, request_id, message, &child);
+        let request_id = request.request_id();
+        if request.is_native_selection() {
+            self.choose_native_files(attachment, &request, &child);
             return;
         }
         let reply = {
             let Ok(mut controller) = self.controller.try_borrow_mut() else {
                 return;
             };
-            dispatch(&mut controller, attachment, request_id, message)
+            dispatch(&mut controller, attachment, request_id, request.message())
         };
         if let Ok(reply) = reply {
             self.deliver(&child, &reply);
@@ -430,37 +407,22 @@ impl Core {
     fn choose_native_files(
         self: &Rc<Self>,
         attachment: &str,
-        request_id: &str,
-        message: &str,
+        request: &BrowserRequest<'_>,
         child: &NativeEditor,
     ) {
         let attempt = {
             let Ok(mut controller) = self.controller.try_borrow_mut() else {
                 return;
             };
-            let result = match controller.admit(message) {
-                Ok(Admission::New(request)) => controller.begin_sample_selection(&request),
-                Ok(Admission::Duplicate { .. }) => {
-                    Err(ParameterError::Protocol(ProtocolError::DuplicateRequest))
-                }
-                Err(error) => Err(error),
-            };
-            result.map_err(|error| {
-                let code = match error {
-                    ParameterError::Protocol(code) => code,
-                    other => command_error(other),
-                };
-                controller.encode_editor_reply(attachment, request_id, Err(code))
-            })
+            begin_native_selection(&mut controller, attachment, request)
         };
         let (permit, reply) = match attempt {
-            Ok(value) => value,
-            Err(reply) => {
-                if let Ok(reply) = reply {
-                    self.deliver(child, &reply);
-                }
+            Ok(NativeSelectionAdmission::Ready { permit, reply }) => (permit, reply),
+            Ok(NativeSelectionAdmission::Rejected { reply }) => {
+                self.deliver(child, &reply);
                 return;
             }
+            Err(_) => return,
         };
         let permit = Rc::new(permit);
         let callback_permit = Rc::clone(&permit);
@@ -493,7 +455,7 @@ impl Core {
                         controller.fail_sample_selection(&permit, SampleError::NativeUnavailable);
                     controller.encode_editor_reply(
                         attachment,
-                        request_id,
+                        request.request_id(),
                         Err(ProtocolError::CommandRejected),
                     )
                 };
@@ -504,35 +466,8 @@ impl Core {
         }
     }
     fn deliver(&self, child: &NativeEditor, reply: &str) {
-        // The broker receives a JSON STRING; successful queueing is not consumption.
-        let script = format!(
-            "window.__DANDRUM__.receiveNativeMessage({});",
-            serde_json::to_string(reply).expect("String JSON serialization")
-        );
-        let _ = child.evaluate_script(&script);
+        let _ = child.evaluate_script(&delivery_script(reply));
     }
-}
-fn native_sample_files(paths: Vec<PathBuf>) -> Result<Vec<NativeSampleFile>, SampleError> {
-    use std::os::unix::fs::OpenOptionsExt;
-    if paths.is_empty() || paths.len() > 16 {
-        return Err(SampleError::FileCount);
-    }
-    paths
-        .into_iter()
-        .map(|path| {
-            let name = path
-                .file_name()
-                .ok_or(SampleError::InvalidName)?
-                .to_string_lossy()
-                .into_owned();
-            let file = std::fs::OpenOptions::new()
-                .read(true)
-                .custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW | libc::O_CLOEXEC)
-                .open(path)
-                .map_err(|_| SampleError::InvalidFile)?;
-            NativeSampleFile::new(name, file)
-        })
-        .collect()
 }
 impl Drop for Core {
     fn drop(&mut self) {

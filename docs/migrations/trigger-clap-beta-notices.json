@@ -15,7 +15,7 @@
   ],
   "first_party_license_status": "Private/local beta only, as directed by the project owner on 2026-11-02; no first-party distribution licence selected.",
   "inputs": {
-    "cargo_lock_sha256": "fbb7372934ea35e29cdb8c1dda65480d05b66dc33d0588d2376469f0bb42b46c",
+    "cargo_lock_sha256": "71d348eea3fae3cef53bdfcabc742f3339281dce8e0a4f352c172ced7c45963d",
     "clack_revision": "27ca28391b57a61bad4bb5099288a7bf9247350d",
     "feature": "trigger-editor",
     "package_lock_sha256": "54204a84325693d12087c7f0764c6cd4fa9e6c41168c61b47dc9ab867723faea",

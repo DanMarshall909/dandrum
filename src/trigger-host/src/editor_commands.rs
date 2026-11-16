@@ -2,13 +2,16 @@
 //!
 //! Native choosers and host callbacks remain capabilities of each adapter.
 use crate::{
-    parameters::{ParameterController, ParameterError, ParameterReply, ParameterValue},
+    editor_bridge::BrowserRequest,
+    parameters::{
+        NativeSelectionPermit, ParameterController, ParameterError, ParameterReply, ParameterValue,
+    },
     protocol::{Admission, EditorCommand, ProtocolError},
 };
 use std::time::Instant;
 
 /// Route an authenticated frame through the one persistent instrument authority.
-/// Native file chooser admission stays with the adapter that owns the dialog.
+/// Native file chooser capability stays with the adapter that owns the dialog.
 pub fn dispatch(
     controller: &mut ParameterController,
     attachment: &str,
@@ -95,6 +98,73 @@ pub fn dispatch_with_publication(
 enum Reply {
     Encoded(String),
     Value(serde_json::Value),
+}
+
+/// Native chooser admission uses the existing processor-owned permit. The
+/// adapter creates the dialog only for Ready, and retains the permit locally;
+/// it is never a serialized browser/controller authority.
+pub enum NativeSelectionAdmission {
+    Ready {
+        permit: NativeSelectionPermit,
+        reply: String,
+    },
+    Rejected {
+        reply: String,
+    },
+}
+
+pub fn begin_native_selection(
+    controller: &mut ParameterController,
+    attachment: &str,
+    request: &BrowserRequest<'_>,
+) -> Result<NativeSelectionAdmission, ParameterError> {
+    let result = match controller.admit(request.message()) {
+        Ok(Admission::New(request)) => controller.begin_sample_selection(&request),
+        Ok(Admission::Duplicate { .. }) => {
+            Err(ParameterError::Protocol(ProtocolError::DuplicateRequest))
+        }
+        Err(error) => Err(error),
+    };
+    match result {
+        Ok((permit, reply)) => Ok(NativeSelectionAdmission::Ready { permit, reply }),
+        Err(error) => {
+            let code = match error {
+                ParameterError::Protocol(code) => code,
+                other => command_error(other),
+            };
+            let reply =
+                controller.encode_editor_reply(attachment, request.request_id(), Err(code))?;
+            Ok(NativeSelectionAdmission::Rejected { reply })
+        }
+    }
+}
+
+/// Settle a native dialog result against its retained owner permit. Pending
+/// means real opened files were admitted to the existing decoding worker;
+/// cancellation and terminal acquisition failures need no worker service.
+#[cfg(unix)]
+pub fn submit_native_selection(
+    controller: &mut ParameterController,
+    permit: &NativeSelectionPermit,
+    files: Result<Option<Vec<std::path::PathBuf>>, crate::samples::SampleError>,
+) -> Result<crate::parameters::SessionJobProgress, ParameterError> {
+    use crate::{parameters::SessionJobProgress, samples::open_native_sample_files};
+    match files {
+        Ok(None) => controller
+            .cancel_sample_selection(permit)
+            .map(|()| SessionJobProgress::Idle),
+        Err(error) => controller
+            .fail_sample_selection(permit, error)
+            .map(|()| SessionJobProgress::Idle),
+        Ok(Some(paths)) => match open_native_sample_files(paths) {
+            Ok(files) => controller
+                .admit_selected_files(permit, files)
+                .map(|()| SessionJobProgress::Pending),
+            Err(error) => controller
+                .fail_sample_selection(permit, error)
+                .map(|()| SessionJobProgress::Idle),
+        },
+    }
 }
 
 // Admission and note intent use the same existing input-error policy. Keeping

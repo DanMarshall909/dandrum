@@ -274,6 +274,20 @@ output growth from 16 to 32 GiB. All other limits, cache/dependency preservation
 mutation exclusion and acceptance criteria remain unchanged. The initial
 observations and foundation evidence retain their original 16 GiB envelope.
 
+Resource reassessment, 16 November 2026: Dan replied "approved" to the
+prepared proposal for **56 GiB cumulative incremental outputs** (previously
+32 GiB) and a **112 GiB managed retention ceiling** (previously 80 GiB).
+The 2 GiB scratch allowance, 8 GiB free-disk/MemAvailable floors, one heavy
+producer, at most four compiler jobs, cache/dependency preservation, mutation
+exclusion and original active-executor-hour reassessment cap remain unchanged.
+Require `DANDRUM_CARGO_PRESERVE_GENERATIONS=1` and the non-mutating full cache
+admission preflight before each producer: currently 17 GiB free for 8 GiB
+growth + 1 GiB temporary growth + 8 GiB reserve, plus retention/growth/temp and
+all-root cumulative output/scratch accounting. Refuse pressure rather than
+evicting an earlier generation. These ceilings do not guarantee completion or
+that the full allowance is usable on the current filesystem. No approval to
+delete reusable caches/dependencies is inferred.
+
 Planning observations: Pop!_OS 22.04 x86_64, Ryzen 5900X, 32 GiB RAM;
 MemAvailable about 19 GiB; shared checkout/tmp free about 132 GiB; root `build/`
 logical size about 9 GiB, Cargo registry about 1.6 GiB. The existing workload's

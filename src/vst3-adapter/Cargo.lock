@@ -376,6 +376,7 @@ version = "0.1.0"
 dependencies = [
  "dandrum_engine",
  "dandrum_instrument_session",
+ "libc",
  "rtrb",
  "serde",
  "serde_json",
@@ -397,6 +398,7 @@ dependencies = [
  "serde_json",
  "tempfile",
  "vst3",
+ "webkit2gtk",
  "x11rb",
 ]
 

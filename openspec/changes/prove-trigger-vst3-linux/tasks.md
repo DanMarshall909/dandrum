@@ -52,9 +52,12 @@ remaining resource allowance before dependent full-editor integration.
 
 ## 4. Attach The Existing Production Editor
 
-- [ ] 4.1 Characterize orchestration currently in CLAP and extract only required shared editor integration behind covered boundaries; require 100% coverage of newly extracted modules and passing affected CLAP/native protocol, gestures, selection/history and installed-resource regressions.
+- [x] 4.1 Characterize orchestration currently in CLAP and extract only required shared editor integration behind covered boundaries; require 100% coverage of newly extracted modules and passing affected CLAP/native protocol, gestures, selection/history and installed-resource regressions.
 - [ ] 4.2 Implement Linux VST3 X11 view/host-loop integration over the existing React/Wry editor; prove real parenting/paint, failed creation/service cleanup, host-parent survival, code residency and actual native destruction/recreation without session loss.
 - [ ] 4.3 Join actual native selection/mapping/public gestures with real audio/MIDI callbacks; prove editor-absent/stopped admitted-work completion, retained outcomes and signed Undo/Redo after source removal, balanced held-note/gesture cleanup, independent instances and clean complete callback sentinels.
+
+Task 4.1 evidence: [shared native editor integration](../../../docs/migrations/evidence/trigger-vst3-shared-editor-2026-11-16/README.md).
+VST3 native view/control qualification remains in tasks 4.2/4.3.
 
 ## 5. Qualify The Installed REAPER Candidate
 

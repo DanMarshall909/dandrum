@@ -31,17 +31,17 @@
           "reserveMiB": 8192,
           "outputGrowthMiB": 8192,
           "tempGrowthMiB": 1024,
-          "retainedBudgetMiB": 81920,
+          "retainedBudgetMiB": 114688,
           "basis": "estimated",
-          "estimateReason": "One serial Trigger Rust test, LLVM coverage or native verification build. Allows 8 GiB cache/output growth plus 1 GiB scratch and preserves an 8 GiB free-space reserve. The managed Cargo driver applies the configured admission/retention budget to owned ordinary and instrumented intermediates and registered private Cargo outputs. It preserves current warm state and retires only inactive owned generations when space is needed. Native fixtures retain the current copy and latest failure logs; other native/CMake outputs require separate storage review. Completion measurement detects overruns; this is not a filesystem quota. For the approved 2026-11-03 VST3 proof, retain up to 80 GiB to prevent automatic eviction of the 34.14 GiB starting cache while admitting a single 8 GiB job. Actual cumulative new output remains capped separately at the approved 32 GiB; this retention ceiling grants no additional output growth."
+          "estimateReason": "One serialized Trigger Rust/native/LLVM producer, at most four compiler jobs. Preserve an 8 GiB free-disk floor and all existing reusable caches/dependencies. Dan approved the reassessment on 16 November 2026: managed retention ceiling 112 GiB and separate cumulative incremental-output allowance 56 GiB plus 2 GiB scratch. Each producer still needs its existing growth/reserve admission. Dependency/manifest changes create fresh managed generations; the ceiling preserves earlier warm data while shared editor/native builds are qualified. This is an admission estimate, not a reservation or completion guarantee. Require DANDRUM_CARGO_PRESERVE_GENERATIONS=1 and a non-mutating preflight for full growth+temp+reserve (currently 17 GiB free) and retention+growth+temp before driver invocation. Refuse pressure rather than evicting an existing generation. Account for cumulative outputs across every declared root and remaining scratch separately; 56 GiB is a ceiling, not a promise that the full allowance is usable on this filesystem."
         },
         "trigger-vst3-proof": {
           "reserveMiB": 8192,
-          "outputGrowthMiB": 32768,
+          "outputGrowthMiB": 57344,
           "tempGrowthMiB": 2048,
           "retainedBudgetMiB": 8192,
           "basis": "estimated",
-          "estimateReason": "Dan approved the Linux/REAPER VST3 proof on 2026-11-03: at most 12 active execution hours before reassessment, one heavy producer, at most four compiler jobs, 32 GiB incremental outputs (raised from 16 GiB by Dan's explicit go-ahead after reassessment) plus 2 GiB scratch and an 8 GiB available RAM/free-disk floor. This workload covers VST3-specific native outputs/evidence (8 GiB retained); the existing managed Cargo workload retains its shared-cache admission policy, temporarily raised to an 80 GiB retention ceiling to preserve all starting generations within the separate 32 GiB incremental-output cap. Preserve reusable caches and dependencies. Mutation excluded. Estimates are admission allowances, not a quota or measured peak."
+          "estimateReason": "Dan explicitly approved the proposed resource reassessment on 16 November 2026: 56 GiB cumulative incremental outputs plus 2 GiB scratch, raising the earlier 32 GiB allowance; managed retention 112 GiB preserves existing warm generations. Keep at least 8 GiB free disk and MemAvailable, one implementation/heavy producer and at most four compiler jobs. No paid services; mutation remains excluded. The original 12 active-executor-hour reassessment cap and every Linux acceptance requirement remain. Preserve reusable caches/dependencies. Require DANDRUM_CARGO_PRESERVE_GENERATIONS=1 and a non-mutating full growth+temp+reserve preflight (currently 17 GiB free), retention+growth+temp and all-root cumulative accounting before each producer. Refuse pressure rather than evicting earlier generations. This finite allowance is not a completion or usable-capacity guarantee."
         }
       }
     }

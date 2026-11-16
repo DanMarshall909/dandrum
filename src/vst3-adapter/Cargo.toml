@@ -10,7 +10,7 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = []
-trigger-editor = ["dep:dandrum_trigger_editor", "dep:gtk", "dep:x11rb"]
+trigger-editor = ["dep:dandrum_trigger_editor", "dep:gtk", "dep:x11rb", "dep:webkit2gtk"]
 
 [dependencies]
 # The adapter owns lifecycle, translation and safety; this crate supplies the ABI.
@@ -25,6 +25,8 @@ rtrb = "=0.3.5"
 dandrum_trigger_editor = { package = "dandrum-trigger-editor", path = "../trigger-editor", features = ["native-x11"], optional = true }
 gtk = { version = "=0.18.2", optional = true }
 x11rb = { version = "=0.13.2", default-features = false, optional = true }
+# Match the shared editor's WebKit ABI for native boundary verification.
+webkit2gtk = { version = "=2.0.2", optional = true }
 libc = "=0.2.186"
 
 [dev-dependencies]

@@ -11,6 +11,241 @@ use fixture::{assert_signed_audio, call, controller, controller_with_document};
 use serde_json::{Value, json};
 use std::{num::NonZeroU64, path::PathBuf};
 
+fn native_selection_attempt(
+    host: &mut ParameterController,
+    attachment: &str,
+    id: u64,
+    method: &str,
+    args: Value,
+    version: u32,
+) -> Result<
+    dandrum_trigger_host::editor_commands::NativeSelectionAdmission,
+    dandrum_trigger_host::parameters::ParameterError,
+> {
+    let wire = json!({"version":version,"attachmentId":attachment,"requestId":id.to_string(),"method":method,"args":args}).to_string();
+    let request = dandrum_trigger_host::editor_bridge::browser_request(attachment, &wire).unwrap();
+    dandrum_trigger_host::editor_commands::begin_native_selection(host, attachment, &request)
+}
+
+#[test]
+fn native_selection_admission_retains_one_owner_permit_and_the_existing_rejection_policy() {
+    use dandrum_trigger_host::{
+        editor_commands::NativeSelectionAdmission,
+        parameters::{ParameterError, SessionServiceWake},
+        protocol::ProtocolError,
+    };
+    struct Wake;
+    impl SessionServiceWake for Wake {
+        fn request_service(&self) {}
+    }
+    let (_package, mut host, mut audio, attachment) = controller(8, 8);
+    host.start_session_worker(std::sync::Arc::new(Wake))
+        .unwrap();
+    let history = host.session().owner_snapshot();
+    let values = host.parameter_state();
+    let (permit, accepted) = match native_selection_attempt(
+        &mut host,
+        &attachment,
+        1,
+        "chooseSamplerFiles",
+        json!([]),
+        1,
+    )
+    .unwrap()
+    {
+        NativeSelectionAdmission::Ready { permit, reply } => {
+            (permit, serde_json::from_str::<Value>(&reply).unwrap())
+        }
+        NativeSelectionAdmission::Rejected { reply } => panic!("native choice rejected: {reply}"),
+    };
+    assert_eq!(
+        accepted,
+        json!({"version":1,"instanceId":"19","attachmentId":attachment,"requestId":"1","status":"accepted","result":{"selectionId":"1","phase":"choosing"}})
+    );
+    for (id, method, args, version, code) in [
+        (1, "chooseSamplerFiles", json!([]), 1, "duplicateRequest"),
+        (2, "chooseSamplerFiles", json!([]), 1, "busy"),
+        (3, "chooseSamplerFiles", json!([1]), 1, "invalidArguments"),
+        (4, "getParameterState", json!([]), 1, "commandRejected"),
+        (5, "chooseSamplerFiles", json!([]), 99, "unsupportedVersion"),
+        (1, "getSamplerSession", json!([]), 1, "conflictingRequest"),
+    ] {
+        let NativeSelectionAdmission::Rejected { reply } =
+            native_selection_attempt(&mut host, &attachment, id, method, args, version).unwrap()
+        else {
+            panic!("{code} unexpectedly acquired native authority");
+        };
+        let reply: Value = serde_json::from_str(&reply).unwrap();
+        assert_eq!(reply["status"], "rejected");
+        assert_eq!(reply["error"]["code"], code);
+        assert_eq!(reply["requestId"], id.to_string());
+        assert_eq!(host.session().owner_snapshot(), history);
+        assert_eq!(host.parameter_state(), values);
+    }
+    host.cancel_sample_selection(&permit).unwrap();
+    let selection = call(
+        &mut host,
+        &attachment,
+        6,
+        "getSamplerSelectionStatus",
+        json!(["1"]),
+    );
+    assert_eq!(selection["result"]["phase"], "cancelled");
+    host.detach_editor(&attachment).unwrap();
+    assert!(matches!(
+        native_selection_attempt(
+            &mut host,
+            &attachment,
+            7,
+            "chooseSamplerFiles",
+            json!([]),
+            1
+        ),
+        Err(ParameterError::Protocol(ProtocolError::StaleAttachment))
+    ));
+    assert!(host.peek_automation().is_none());
+    assert_signed_audio(&mut audio);
+}
+
+#[test]
+fn unavailable_native_selection_worker_returns_the_existing_correlated_rejection() {
+    use dandrum_trigger_host::editor_commands::NativeSelectionAdmission;
+    let (_package, mut host, mut audio, attachment) = controller(8, 8);
+    let before = host.session().owner_snapshot();
+    let NativeSelectionAdmission::Rejected { reply } = native_selection_attempt(
+        &mut host,
+        &attachment,
+        1,
+        "chooseSamplerFiles",
+        json!([]),
+        1,
+    )
+    .unwrap() else {
+        panic!("missing worker acquired chooser authority");
+    };
+    let reply: Value = serde_json::from_str(&reply).unwrap();
+    assert_eq!(reply["error"]["code"], "commandRejected");
+    assert_eq!(reply["requestId"], "1");
+    assert_eq!(reply["attachmentId"], attachment);
+    assert_eq!(host.session().owner_snapshot(), before);
+    assert!(host.peek_automation().is_none());
+    assert_signed_audio(&mut audio);
+}
+
+#[cfg(unix)]
+#[test]
+fn native_selection_responses_settle_failure_or_hand_off_real_files_without_editing_history() {
+    use dandrum_trigger_host::{
+        editor_commands::{NativeSelectionAdmission, submit_native_selection},
+        parameters::{SessionJobProgress, SessionServiceWake},
+        samples::SampleError,
+    };
+    struct Wake;
+    impl SessionServiceWake for Wake {
+        fn request_service(&self) {}
+    }
+    let (_package, mut host, mut audio, attachment) = controller(8, 8);
+    host.start_session_worker(std::sync::Arc::new(Wake))
+        .unwrap();
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("selected.wav");
+    let mut encoded = Vec::new();
+    dandrum_engine::wav::write_wav_stereo_i16(&mut encoded, 32_000, &[-0.75, 0.25], &[-0.25, 0.5])
+        .unwrap();
+    std::fs::write(&path, encoded).unwrap();
+    let before = host.session().owner_snapshot();
+    for (index, response, phase, error) in [
+        (1, Ok(None), "cancelled", None),
+        (
+            2,
+            Err(SampleError::NativeUnavailable),
+            "failed",
+            Some("nativeUnavailable"),
+        ),
+        (3, Ok(Some(Vec::new())), "failed", Some("fileCount")),
+        (
+            4,
+            Ok(Some(vec![directory.path().join("absent.wav")])),
+            "failed",
+            Some("invalidFile"),
+        ),
+    ] {
+        let NativeSelectionAdmission::Ready { permit, .. } = native_selection_attempt(
+            &mut host,
+            &attachment,
+            index * 2,
+            "chooseSamplerFiles",
+            json!([]),
+            1,
+        )
+        .unwrap() else {
+            panic!("fresh native choice rejected");
+        };
+        assert_eq!(
+            submit_native_selection(&mut host, &permit, response).unwrap(),
+            SessionJobProgress::Idle
+        );
+        let reply = call(
+            &mut host,
+            &attachment,
+            index * 2 + 1,
+            "getSamplerSelectionStatus",
+            json!([index.to_string()]),
+        );
+        assert_eq!(reply["result"]["phase"], phase);
+        if let Some(error) = error {
+            assert_eq!(reply["result"]["error"], error);
+        }
+        assert!(
+            submit_native_selection(&mut host, &permit, Ok(Some(vec![path.clone()]))).is_err(),
+            "a terminal permit cannot admit work again"
+        );
+        assert_eq!(host.session().owner_snapshot(), before);
+    }
+    let NativeSelectionAdmission::Ready { permit, .. } = native_selection_attempt(
+        &mut host,
+        &attachment,
+        10,
+        "chooseSamplerFiles",
+        json!([]),
+        1,
+    )
+    .unwrap() else {
+        panic!("real file choice rejected");
+    };
+    assert_eq!(
+        submit_native_selection(&mut host, &permit, Ok(Some(vec![path.clone()]))).unwrap(),
+        SessionJobProgress::Pending
+    );
+    std::fs::remove_file(path).unwrap();
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
+    let mut request = 10;
+    let selected = loop {
+        host.service_session_jobs().unwrap();
+        request += 1;
+        let reply = call(
+            &mut host,
+            &attachment,
+            request,
+            "getSamplerSelectionStatus",
+            json!(["5"]),
+        );
+        if reply["result"]["phase"] == "ready" {
+            break reply["result"].clone();
+        }
+        assert!(
+            std::time::Instant::now() < deadline,
+            "native selection never prepared: {reply}"
+        );
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    };
+    assert_eq!(selected["files"][0]["frameCount"], 2);
+    assert_eq!(selected["files"][0]["sampleRateHz"], 32_000);
+    assert_eq!(host.session().owner_snapshot(), before);
+    assert!(host.peek_automation().is_none());
+    assert_signed_audio(&mut audio);
+}
+
 #[test]
 fn stamped_parameter_reply_keeps_the_existing_wire_shape_and_fences_queued_feedback() {
     use dandrum_trigger_host::editor_commands::dispatch_with_publication;

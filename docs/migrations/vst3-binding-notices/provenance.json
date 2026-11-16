@@ -1,0 +1,32 @@
+{
+  "repository": "https://github.com/coupler-rs/vst3-rs",
+  "source_revision": "33f1859fbdcfa247c1fdd17d565cb5285860e4ce",
+  "package": {
+    "name": "com-scrape-types",
+    "version": "0.1.1",
+    "archive_sha256": "5ce183b975b8fc736a20919c4002717255fbd867df575c792aeefa9a56a73ad0",
+    "license_declaration": "MIT OR Apache-2.0",
+    "release_archive_root_license_files": [],
+    "declaration_source_url": "https://github.com/coupler-rs/vst3-rs/blob/33f1859fbdcfa247c1fdd17d565cb5285860e4ce/com-scrape-types/Cargo.toml",
+    "declaration_blob_sha1": "007aba1f107ee7fa1115460e27841be89f64a86e"
+  },
+  "files": [
+    {
+      "path": "LICENSE-MIT",
+      "bytes": 1023,
+      "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+      "upstream_blob_sha1": "31aa79387f27e730e33d871925e152e35e428031",
+      "upstream_url": "https://github.com/coupler-rs/vst3-rs/blob/33f1859fbdcfa247c1fdd17d565cb5285860e4ce/LICENSE-MIT",
+      "matches_vst3_0_3_0_archive_file": true
+    },
+    {
+      "path": "LICENSE-APACHE",
+      "bytes": 10174,
+      "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+      "upstream_blob_sha1": "f433b1a53f5b830a205fd2df78e2b34974656c7b",
+      "upstream_url": "https://github.com/coupler-rs/vst3-rs/blob/33f1859fbdcfa247c1fdd17d565cb5285860e4ce/LICENSE-APACHE",
+      "matches_vst3_0_3_0_archive_file": true
+    }
+  ],
+  "scope": "Exact pinned upstream root notice texts retained to accompany the helper whose published archive omits them. This records provenance, preserves the archive omission and grants no first-party distribution clearance."
+}
