@@ -25,6 +25,10 @@ DRIVER = ROOT / 'scripts/cargo-cache.py'
 
 class CargoCacheTest(unittest.TestCase):
     def setUp(self):
+        environment = mock.patch.dict(os.environ)
+        environment.start()
+        self.addCleanup(environment.stop)
+        os.environ.pop('DANDRUM_CARGO_PRESERVE_GENERATIONS', None)
         temporary = tempfile.TemporaryDirectory(prefix='cargo cache ')
         self.addCleanup(temporary.cleanup)
         self.directory = Path(temporary.name)
@@ -253,11 +257,72 @@ class CargoCacheTest(unittest.TestCase):
         evidence = self.cache / 'retained-evidence.txt'
         evidence.write_text('required proof')
         (manifest.parent / 'Cargo.lock').write_text('version = 4\n# changed resolved inputs\n')
-        new = self.build(manifest)
+        new = self.build(manifest, env={'DANDRUM_CARGO_PRESERVE_GENERATIONS': '0'})
         self.assertNotEqual(old['build'], new['build'])
         self.assertFalse(Path(old['build']).exists())
         self.assertEqual(evidence.read_text(), 'required proof')
         self.assertTrue(Path(new['artifact']).exists())
+
+    def test_preserve_generations_refuses_retirement_and_reuses_warm_state_after_capacity_returns(self):
+        manifest = self.package('app', 'ready')
+        old = self.build(manifest)
+        hot = Path(old['build']) / 'hot.bin'
+        hot.write_bytes(b'x' * (3 * 1024 * 1024))
+        calls = self.calls.read_bytes()
+        self.write_policy(retained=4)
+        lock = manifest.parent / 'Cargo.lock'
+        lock.write_text('version = 4\n# changed resolved inputs\n')
+        protected = {'DANDRUM_CARGO_PRESERVE_GENERATIONS': '1'}
+        result = self.invoke('cargo', '--', 'build', '--manifest-path', str(manifest), env=protected)
+        self.assertNotEqual(result.returncode, 0, 'protected admission must refuse instead of retiring the old generation')
+        self.assertIn('retention-budget', result.stderr)
+        self.assertIn('cache-preservation', result.stderr)
+        self.assertEqual(self.calls.read_bytes(), calls, 'refused producer must not run')
+        self.assertEqual(hot.read_bytes(), b'x' * (3 * 1024 * 1024))
+        self.assertEqual(Path(old['artifact']).read_text(), 'ready')
+        self.write_policy()
+        new = self.build(manifest, env=protected)
+        self.assertNotEqual(new['build'], old['build'])
+        self.assertTrue(hot.exists(), 'successful later admission also preserves the earlier generation')
+        lock.write_text('version = 4\n')
+        reused = self.build(manifest, env=protected)
+        self.assertEqual(reused['build'], old['build'])
+        self.assertTrue(reused['fresh'], 'the earlier warm intermediate remains reusable')
+
+    def test_preserve_generations_keeps_old_cache_when_disk_pressure_refuses_a_new_producer(self):
+        manifest = self.package('app', 'ready')
+        old = self.build(manifest)
+        hot = Path(old['build']) / 'hot.bin'
+        hot.write_text('retained reusable dependency')
+        calls = self.calls.read_bytes()
+        (manifest.parent / 'Cargo.lock').write_text('version = 4\n# another generation\n')
+        spec = importlib.util.spec_from_file_location('protected_cargo_cache_test', DRIVER)
+        driver = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(driver)
+        command = self.command('cargo', '--', 'build', '--manifest-path', str(manifest))
+        error = io.StringIO()
+        def space(path):
+            return type('Space', (), {'free': 0 if Path(path) == self.cache else 1024**4})()
+        with mock.patch.dict(os.environ, {'RUSTC': str(self.cargo), 'DANDRUM_CARGO_PRESERVE_GENERATIONS': '1'}), \
+                mock.patch.object(driver.shutil, 'disk_usage', side_effect=space), \
+                contextlib.redirect_stderr(error):
+            result = driver.main(command[command.index(str(DRIVER)) + 1:])
+        self.assertNotEqual(result, 0)
+        self.assertIn('disk-reserve', error.getvalue())
+        self.assertIn('cache-preservation', error.getvalue())
+        self.assertEqual(self.calls.read_bytes(), calls)
+        self.assertTrue(hot.exists(), 'disk refusal must preserve earlier reusable intermediates')
+        self.assertEqual(hot.read_text(), 'retained reusable dependency')
+        self.assertEqual(Path(old['artifact']).read_text(), 'ready')
+
+    def test_invalid_generation_preservation_setting_refuses_before_cache_or_producer_changes(self):
+        manifest = self.package('app', 'ready')
+        result = self.invoke('cargo', '--', 'build', '--manifest-path', str(manifest),
+                             env={'DANDRUM_CARGO_PRESERVE_GENERATIONS': 'true'})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('cache-preservation', result.stderr)
+        self.assertFalse(self.calls.exists())
+        self.assertFalse(self.cache.exists())
 
     def test_unknown_cache_directory_is_preserved_and_producer_refused(self):
         manifest = self.package('app', 'ready')

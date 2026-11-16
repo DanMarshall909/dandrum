@@ -97,6 +97,15 @@ quota. Raw `$HOME/.cargo/bin/cargo` invocations and unrelated build directories
 are outside this policy. Use the managed commands consistently and serialize
 heavy builds.
 
+For work that must preserve every existing cache generation, set
+`DANDRUM_CARGO_PRESERVE_GENERATIONS=1` on the managed command and its parent
+verification/hook process. Admission then refuses before starting Cargo if
+capacity would require automatic generation retirement; existing warm outputs
+remain reusable. The default (unset or `0`) retains the normal retirement policy.
+Other values fail before cache initialization. Continue checking the task's
+cumulative output allowance and the full growth, scratch and reserve admission
+before each producer; this setting grants no additional storage.
+
 Interrupted commands leave an `active.json` marker and refuse further growth.
 Inspect the recorded process, inherited lease and output before recovery; remove
 the marker only after the producer and its children have stopped and its paths
