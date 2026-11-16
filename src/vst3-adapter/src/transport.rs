@@ -124,6 +124,7 @@ pub(crate) struct Transport {
     route: Option<ViewRoute>,
     state: RefCell<State>,
     sending: Cell<bool>,
+    automation_sending: Cell<bool>,
     terminal_sending: Cell<bool>,
     terminal_pending: RefCell<Option<Rc<Terminal>>>,
 }
@@ -141,6 +142,7 @@ impl Default for Transport {
                 retired: None,
             }),
             sending: Cell::new(false),
+            automation_sending: Cell::new(false),
             terminal_sending: Cell::new(false),
             terminal_pending: RefCell::new(None),
         }
@@ -191,8 +193,12 @@ impl Transport {
     pub fn terminal_active(&self) -> bool {
         self.terminal_sending.get()
     }
+    #[cfg(feature = "trigger-editor")]
     pub fn normal_active(&self) -> bool {
         self.sending.get()
+    }
+    pub fn automation_active(&self) -> bool {
+        self.automation_sending.get()
     }
     pub fn is_current(&self, packet: &Packet) -> bool {
         self.bound()
@@ -618,6 +624,17 @@ impl Transport {
                 break;
             };
             let message = message(&head.bytes);
+            // Every pump may retry an Automation, including reply/feedback
+            // paths. Keep this exact foreign call fenced after an inline Ack.
+            self.automation_sending
+                .set(matches!(&head.packet.body, Body::Automation { .. }));
+            struct AutomationSending<'a>(&'a Cell<bool>);
+            impl Drop for AutomationSending<'_> {
+                fn drop(&mut self) {
+                    self.0.set(false);
+                }
+            }
+            let _automation = AutomationSending(&self.automation_sending);
             // No local borrow, session owner or owned COM release crosses notify.
             let accepted = unsafe { peer.notify(message.as_ptr()) } == kResultOk;
             if !accepted {

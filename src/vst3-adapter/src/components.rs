@@ -130,8 +130,38 @@ struct ProcessorCore {
 #[derive(Clone)]
 struct AutomationFlight {
     delivery: u64,
+    owner: u64,
+    view: Option<u64>,
     shared: AutomationEvent,
     event: HostAutomation,
+}
+enum AutomationDestination {
+    Control,
+    #[cfg(feature = "trigger-editor")]
+    Browser(Rc<BrowserProjection>),
+}
+impl AutomationDestination {
+    fn transport<'a>(&'a self, processor: &'a ProcessorCore) -> &'a Transport {
+        match self {
+            Self::Control => &processor.transport,
+            #[cfg(feature = "trigger-editor")]
+            Self::Browser(browser) => &browser.transport,
+        }
+    }
+    fn counter<'a>(&'a self, processor: &'a ProcessorCore) -> &'a Cell<u64> {
+        match self {
+            Self::Control => &processor.next_automation,
+            #[cfg(feature = "trigger-editor")]
+            Self::Browser(browser) => &browser.next_automation,
+        }
+    }
+    fn view(&self) -> Option<u64> {
+        match self {
+            Self::Control => None,
+            #[cfg(feature = "trigger-editor")]
+            Self::Browser(browser) => Some(browser.id),
+        }
+    }
 }
 impl Class for Processor {
     type Interfaces = (IComponent, IAudioProcessor, IConnectionPoint);
@@ -214,7 +244,7 @@ impl IPluginBaseTrait for Processor {
         if self.audio.processing.load(Ordering::Acquire)
             || self.audio.in_use()
             || self.connection_busy.get()
-            || (self.transport.normal_active() && self.automation.borrow().is_some())
+            || self.automation_foreign_active()
         {
             return kResultFalse;
         }
@@ -758,6 +788,44 @@ impl IEditControllerTrait for Controller {
 }
 
 impl ProcessorCore {
+    fn automation_foreign_active(&self) -> bool {
+        if self.transport.automation_active() {
+            return true;
+        }
+        #[cfg(feature = "trigger-editor")]
+        return self
+            .browser
+            .borrow()
+            .as_ref()
+            .is_some_and(|b| b.transport.automation_active());
+        #[cfg(not(feature = "trigger-editor"))]
+        false
+    }
+    fn automation_destination(&self, owner: u64) -> Option<AutomationDestination> {
+        if self
+            .attachment
+            .borrow()
+            .as_deref()
+            .and_then(|id| id.parse::<u64>().ok())
+            == Some(owner)
+        {
+            return Some(AutomationDestination::Control);
+        }
+        #[cfg(feature = "trigger-editor")]
+        {
+            let browser = self.browser.borrow().clone()?;
+            let matches = browser
+                .attachment
+                .borrow()
+                .as_deref()
+                .and_then(|id| id.parse::<u64>().ok())
+                == Some(owner);
+            if matches && !browser.closing.get() && !browser.closed.get() {
+                return Some(AutomationDestination::Browser(browser));
+            }
+        }
+        None
+    }
     fn request_projection_close(&self, shutdown: bool) -> bool {
         if self.transport.retired_pending() {
             let _ = self.transport.terminal_retired(Body::Retired);
@@ -789,16 +857,12 @@ impl ProcessorCore {
                 return;
             }
             if self.automation.borrow().is_none() {
-                let delivery = self.next_automation.get();
-                let Some(next) = delivery.checked_add(1) else {
-                    return;
-                };
-                let event = {
+                let (origin, shared, event) = {
                     let owner = self.owner.borrow();
                     let Some(owner) = owner.as_ref() else {
                         return;
                     };
-                    let Some(shared) = owner.peek_automation() else {
+                    let Some((origin, shared)) = owner.peek_automation_with_owner() else {
                         return;
                     };
                     let index = match shared {
@@ -832,14 +896,23 @@ impl ProcessorCore {
                             parameter: *parameter,
                         },
                     };
-                    AutomationFlight {
-                        delivery,
-                        shared,
-                        event,
-                    }
+                    (origin, shared, event)
                 };
-                *self.automation.borrow_mut() = Some(event);
-                self.next_automation.set(next);
+                let Some(destination) = self.automation_destination(origin) else {
+                    return;
+                };
+                let delivery = destination.counter(self).get();
+                let Some(next) = delivery.checked_add(1) else {
+                    return;
+                };
+                *self.automation.borrow_mut() = Some(AutomationFlight {
+                    delivery,
+                    owner: origin,
+                    view: destination.view(),
+                    shared,
+                    event,
+                });
+                destination.counter(self).set(next);
             }
             let flight = self
                 .automation
@@ -847,25 +920,49 @@ impl ProcessorCore {
                 .as_ref()
                 .expect("staged event")
                 .clone();
+            let Some(destination) = self.automation_destination(flight.owner) else {
+                return;
+            };
+            if destination.view() != flight.view {
+                return;
+            }
+            let transport = destination.transport(self);
             let body = Body::Automation {
                 delivery: flight.delivery,
                 event: flight.event,
             };
-            if !self.transport.queued(0, &body) && self.transport.send(0, body) != kResultOk {
+            if !transport.queued(0, &body) && transport.send(0, body) != kResultOk {
                 return;
             }
             // The receiver's notify result only releases transport storage.
             // Only a correlated application acknowledgement retires the ledger.
-            self.transport.pump();
+            transport.pump();
             if self.automation.borrow().is_some() {
                 return;
             }
         }
     }
-    fn acknowledge_automation(&self, delivery: u64) -> tresult {
+    fn acknowledge_automation(&self, delivery: u64, view: Option<u64>) -> tresult {
+        let next = match view {
+            None => self.next_automation.get(),
+            Some(_id) => {
+                #[cfg(feature = "trigger-editor")]
+                {
+                    let browser = self.browser.borrow().clone();
+                    let Some(browser) = browser.filter(|b| b.id == _id) else {
+                        return kResultFalse;
+                    };
+                    browser.next_automation.get()
+                }
+                #[cfg(not(feature = "trigger-editor"))]
+                return kResultFalse;
+            }
+        };
         let flight = self.automation.borrow().clone();
-        let Some(flight) = flight.filter(|flight| flight.delivery == delivery) else {
-            return if delivery != 0 && delivery < self.next_automation.get() {
+        let Some(flight) =
+            flight.filter(|flight| flight.delivery == delivery && flight.view == view)
+        else {
+            return if delivery != 0 && delivery < next {
                 kResultOk
             } else {
                 kResultFalse
@@ -877,7 +974,7 @@ impl ProcessorCore {
         let Some(owner) = owner.as_mut() else {
             return kNotInitialized;
         };
-        if owner.peek_automation() != Some(flight.shared) {
+        if owner.peek_automation_with_owner() != Some((flight.owner, flight.shared)) {
             return kResultFalse;
         }
         assert!(
@@ -1026,10 +1123,7 @@ impl IConnectionPointTrait for Processor {
         result
     }
     unsafe fn disconnect(&self, other: *mut IConnectionPoint) -> tresult {
-        if !self.main()
-            || self.connection_busy.get()
-            || (self.transport.normal_active() && self.automation.borrow().is_some())
-        {
+        if !self.main() || self.connection_busy.get() || self.automation_foreign_active() {
             return kResultFalse;
         }
         self.connection_busy.set(true);
@@ -1085,6 +1179,9 @@ impl IConnectionPointTrait for Processor {
                     return kResultOk;
                 }
                 Body::Closed if packet.sequence == 0 => {
+                    if self.automation_foreign_active() {
+                        return kResultFalse;
+                    }
                     if self.transport.is_current(&packet) {
                         self.closing.set(true);
                         self.disconnect_projection(true);
@@ -1113,7 +1210,7 @@ impl IConnectionPointTrait for Processor {
                     }
                 }
                 Body::AutomationAck { delivery } if packet.sequence == 0 => {
-                    let result = self.acknowledge_automation(delivery);
+                    let result = self.acknowledge_automation(delivery, None);
                     if result != kResultOk {
                         return result;
                     }
@@ -1419,6 +1516,7 @@ struct BrowserProjection {
     attachment: RefCell<Option<String>>,
     bootstrap: RefCell<Option<String>>,
     last_request: Cell<u64>,
+    next_automation: Cell<u64>,
     processed: RefCell<VecDeque<Processed>>,
     closing: Cell<bool>,
     closed: Cell<bool>,
@@ -1467,6 +1565,7 @@ impl ProcessorCore {
                     attachment: RefCell::new(None),
                     bootstrap: RefCell::new(None),
                     last_request: Cell::new(0),
+                    next_automation: Cell::new(1),
                     processed: RefCell::new(VecDeque::with_capacity(crate::transport::PENDING)),
                     closing: Cell::new(false),
                     closed: Cell::new(false),
@@ -1498,7 +1597,7 @@ impl ProcessorCore {
                     return kResultOk;
                 }
                 Body::Closed if packet.sequence == 0 => {
-                    if !browser.closing.get() {
+                    if !browser.closing.get() || browser.transport.automation_active() {
                         return kResultFalse;
                     }
                     if browser.transport.is_current(&packet) {
@@ -1516,23 +1615,13 @@ impl ProcessorCore {
                     browser.closed.set(true);
                     return kResultOk;
                 }
+                Body::AutomationAck { delivery } if packet.sequence == 0 => {
+                    let result = self.acknowledge_automation(delivery, Some(browser.id));
+                    if result != kResultOk {
+                        return result;
+                    }
+                }
                 Body::Request { frame } if !browser.closing.get() => {
-                    // This unwired view lane currently qualifies snapshots only.
-                    // Editing requires view-owned automation/closure first; do
-                    // not admit a gesture into the main projection's ledger.
-                    if frame.len() > dandrum_trigger_host::protocol::PATCH_MESSAGE_BYTES_LIMIT {
-                        return kInvalidArgument;
-                    }
-                    #[derive(serde::Deserialize)]
-                    struct Command {
-                        method: String,
-                    }
-                    let Ok(command) = serde_json::from_str::<Command>(&frame) else {
-                        return kInvalidArgument;
-                    };
-                    if command.method != "getParameterState" {
-                        return kNotImplemented;
-                    }
                     let attachment = browser.attachment.borrow().clone();
                     let Some(attachment) = attachment else {
                         return kNotInitialized;
@@ -1588,6 +1677,13 @@ impl ProcessorCore {
     fn detach_browser(&self, browser: &BrowserProjection) {
         browser.closing.set(true);
         let attachment = browser.attachment.borrow_mut().take();
+        let owns_flight = self.automation.borrow().as_ref().is_some_and(|flight| {
+            flight.view == Some(browser.id)
+                && attachment.as_deref().and_then(|id| id.parse::<u64>().ok()) == Some(flight.owner)
+        });
+        if owns_flight {
+            self.automation.borrow_mut().take();
+        }
         if let Some(attachment) = attachment
             && let Some(owner) = self.owner.borrow_mut().as_mut()
         {

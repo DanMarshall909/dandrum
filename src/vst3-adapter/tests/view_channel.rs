@@ -28,6 +28,9 @@ struct Faults {
     reenter_offer: Cell<Option<u64>>,
     defer_automation_ack: Cell<bool>,
     refuse_projection: Cell<bool>,
+    on_view_automation: RefCell<Option<Box<dyn FnOnce()>>>,
+    after_view_automation_ack: RefCell<Option<Box<dyn FnOnce()>>>,
+    refuse_automation: Cell<bool>,
 }
 impl Class for Host {
     type Interfaces = (IConnectionPoint,);
@@ -48,6 +51,18 @@ impl IConnectionPointTrait for Host {
         );
         self.frames.borrow_mut().push(packet.clone());
         let route = packet.get("view").filter(|v| !v.is_null());
+        if route.is_some()
+            && packet["body"]["type"] == "automation"
+            && self.faults.refuse_automation.get()
+        {
+            return kResultFalse;
+        }
+        if route.is_some() && packet["body"]["type"] == "automation" {
+            let callback = self.faults.on_view_automation.borrow_mut().take();
+            if let Some(callback) = callback {
+                callback();
+            }
+        }
         if route.is_some()
             && packet["body"]["type"] == "challenge"
             && let Some(id) = self.faults.reenter_offer.take()
@@ -89,7 +104,14 @@ impl IConnectionPointTrait for Host {
             response["view"] = json!({"id":route["id"],"parentSource":route["parentTarget"],"parentTarget":route["parentSource"]});
         }
         // SAFETY: the fixture retains the processor and the complete reply.
-        unsafe { self.processor.notify(message::packet(&response).as_ptr()) }
+        let result = unsafe { self.processor.notify(message::packet(&response).as_ptr()) };
+        if route.is_some() && kind == "automationAck" {
+            let callback = self.faults.after_view_automation_ack.borrow_mut().take();
+            if let Some(callback) = callback {
+                callback();
+            }
+        }
+        result
     }
 }
 
@@ -216,7 +238,7 @@ fn command(
 }
 
 #[test]
-fn snapshot_view_rejects_editing_and_closes_without_cancelling_pending_control_gestures() {
+fn view_closes_without_cancelling_pending_control_gestures() {
     let bundle = Bundle::new();
     let module = bundle.load();
     let (clock, factory, _context) = runloop::host(&module);
@@ -240,24 +262,8 @@ fn snapshot_view_rejects_editing_and_closes_without_cancelling_pending_control_g
     assert_eq!(send(&p, &offer(&control, 1)), kResultOk);
     let first = observed(&frames, Some(1), "projection");
     assert_eq!(
-        send(
-            &p,
-            &command(
-                &control,
-                Some((1, &first)),
-                1,
-                1,
-                "beginGesture",
-                json!(["drums.level", 1])
-            )
-        ),
-        kNotImplemented,
-        "the snapshot-only lane must not admit editing before view-owned automation is integrated"
-    );
-    assert_eq!(
         send(&p, &request(&control, Some((1, &first)), 1, 1)),
-        kResultOk,
-        "capability rejection preserves request identity"
+        kResultOk
     );
     faults.defer_automation_ack.set(true);
     assert_eq!(
@@ -360,6 +366,547 @@ fn close(p: &ComPtr<IConnectionPoint>, control: &Value, id: u64, projection: &Va
             "view {id} must acknowledge {kind} independently of control automation"
         );
     }
+}
+
+#[test]
+fn reentrant_parent_and_view_teardown_wait_for_the_view_delivery_call_to_return() {
+    for (action, after_ack) in ["terminate", "disconnect", "parent-close", "view-close"]
+        .into_iter()
+        .flat_map(|action| [(action, false), (action, true)])
+    {
+        let bundle = Bundle::new();
+        let module = bundle.load();
+        let (clock, factory, _context) = runloop::host(&module);
+        let processor = module.class_from::<IComponent>(&factory, &PROCESSOR);
+        assert_eq!(
+            unsafe { processor.initialize(std::ptr::null_mut()) },
+            kResultOk
+        );
+        let p = processor.cast::<IConnectionPoint>().unwrap();
+        let frames = Rc::new(RefCell::new(Vec::new()));
+        let faults = Rc::new(Faults::default());
+        let host = ComWrapper::new(Host {
+            processor: Rc::new(p.clone()),
+            frames: frames.clone(),
+            faults: faults.clone(),
+        })
+        .to_com_ptr::<IConnectionPoint>()
+        .unwrap();
+        assert_eq!(unsafe { p.connect(host.as_ptr()) }, kResultOk);
+        let control = observed(&frames, None, "projection");
+        assert_eq!(send(&p, &offer(&control, 1)), kResultOk);
+        let view = observed(&frames, Some(1), "projection");
+        let result = Rc::new(Cell::new(None));
+        let observation = result.clone();
+        let owner = (*processor).clone();
+        let connection = p.clone();
+        let peer = host.clone();
+        let control_during = control.clone();
+        let view_during = view.clone();
+        let callback: Box<dyn FnOnce()> = Box::new(move || {
+            let value = match action {
+                "terminate" => unsafe { owner.terminate() },
+                "disconnect" => unsafe { connection.disconnect(peer.as_ptr()) },
+                "parent-close" => send(
+                    &connection,
+                    &packet(&control_during, None, 0, json!({"type":"closed"})),
+                ),
+                _ => {
+                    let closing = send(
+                        &connection,
+                        &packet(
+                            &control_during,
+                            Some((1, &view_during)),
+                            0,
+                            json!({"type":"closing"}),
+                        ),
+                    );
+                    if closing != kResultOk {
+                        observation.set(Some(closing));
+                        return;
+                    }
+                    send(
+                        &connection,
+                        &packet(
+                            &control_during,
+                            Some((1, &view_during)),
+                            0,
+                            json!({"type":"closed"}),
+                        ),
+                    )
+                }
+            };
+            observation.set(Some(value));
+        });
+        if after_ack {
+            *faults.after_view_automation_ack.borrow_mut() = Some(callback);
+        } else {
+            *faults.on_view_automation.borrow_mut() = Some(callback);
+        }
+        assert_eq!(
+            send(
+                &p,
+                &command(
+                    &control,
+                    Some((1, &view)),
+                    1,
+                    1,
+                    "setParameter",
+                    json!(["drums.level", 0.375, 1])
+                )
+            ),
+            kResultOk
+        );
+        clock.tick();
+        assert_eq!(
+            result.get(),
+            Some(kResultFalse),
+            "{action} after_ack={after_ack} must wait for the active view delivery call"
+        );
+        assert_eq!(
+            clock.handlers.borrow().len(),
+            1,
+            "reentrant teardown cannot unregister the instrument service"
+        );
+        if action == "view-close" {
+            assert_eq!(
+                send(
+                    &p,
+                    &packet(&control, Some((1, &view)), 0, json!({"type":"closed"}))
+                ),
+                kResultOk,
+                "closure succeeds after the foreign delivery call returns"
+            );
+        } else {
+            let events = frames
+                .borrow()
+                .iter()
+                .filter(|p| p["body"]["type"] == "automation")
+                .map(|p| p["body"].clone())
+                .collect::<Vec<_>>();
+            assert_eq!(
+                events,
+                vec![
+                    json!({"type":"automation","delivery":1,"event":{"phase":"begin","parameter":0x1003}}),
+                    json!({"type":"automation","delivery":2,"event":{"phase":"value","parameter":0x1003,"value":0.375}}),
+                    json!({"type":"automation","delivery":3,"event":{"phase":"end","parameter":0x1003}}),
+                ]
+            );
+        }
+        assert_eq!(unsafe { processor.terminate() }, kResultOk);
+        assert!(clock.handlers.borrow().is_empty());
+    }
+}
+
+#[test]
+fn queued_view_delivery_retried_by_a_reply_keeps_teardown_fenced_after_inline_ack() {
+    let bundle = Bundle::new();
+    let module = bundle.load();
+    let (clock, factory, _context) = runloop::host(&module);
+    let processor = module.class_from::<IComponent>(&factory, &PROCESSOR);
+    assert_eq!(
+        unsafe { processor.initialize(std::ptr::null_mut()) },
+        kResultOk
+    );
+    let p = processor.cast::<IConnectionPoint>().unwrap();
+    let frames = Rc::new(RefCell::new(Vec::new()));
+    let faults = Rc::new(Faults::default());
+    faults.refuse_automation.set(true);
+    let host = ComWrapper::new(Host {
+        processor: Rc::new(p.clone()),
+        frames: frames.clone(),
+        faults: faults.clone(),
+    })
+    .to_com_ptr::<IConnectionPoint>()
+    .unwrap();
+    assert_eq!(unsafe { p.connect(host.as_ptr()) }, kResultOk);
+    let control = observed(&frames, None, "projection");
+    assert_eq!(send(&p, &offer(&control, 1)), kResultOk);
+    let view = observed(&frames, Some(1), "projection");
+    assert_eq!(
+        send(
+            &p,
+            &command(
+                &control,
+                Some((1, &view)),
+                1,
+                1,
+                "setParameter",
+                json!(["drums.level", 0.375, 1])
+            )
+        ),
+        kResultOk
+    );
+    clock.tick();
+    let result = Rc::new(RefCell::new(None));
+    let observation = result.clone();
+    let owner = (*processor).clone();
+    let connection = p.clone();
+    let control_during = control.clone();
+    let view_during = view.clone();
+    *faults.after_view_automation_ack.borrow_mut() = Some(Box::new(move || {
+        let parent = unsafe { owner.terminate() };
+        let closing = send(
+            &connection,
+            &packet(
+                &control_during,
+                Some((1, &view_during)),
+                0,
+                json!({"type":"closing"}),
+            ),
+        );
+        let closed = send(
+            &connection,
+            &packet(
+                &control_during,
+                Some((1, &view_during)),
+                0,
+                json!({"type":"closed"}),
+            ),
+        );
+        *observation.borrow_mut() = Some((parent, closing, closed));
+    }));
+    faults.refuse_automation.set(false);
+    assert_eq!(
+        send(&p, &request(&control, Some((1, &view)), 2, 2)),
+        kResultOk
+    );
+    assert_eq!(
+        *result.borrow(),
+        Some((kResultFalse, kResultOk, kResultFalse)),
+        "a queued automation retried by a reply pump remains active after its inline Ack"
+    );
+    assert_eq!(clock.handlers.borrow().len(), 1);
+    assert_eq!(
+        send(
+            &p,
+            &packet(&control, Some((1, &view)), 0, json!({"type":"closed"}))
+        ),
+        kResultOk
+    );
+    assert_eq!(unsafe { processor.terminate() }, kResultOk);
+    assert!(clock.handlers.borrow().is_empty());
+}
+
+#[test]
+fn view_automation_uses_its_own_delivery_stream_and_cancellation_preserves_control_events() {
+    let bundle = Bundle::new();
+    let module = bundle.load();
+    let (clock, factory, _context) = runloop::host(&module);
+    let processor = module.class_from::<IComponent>(&factory, &PROCESSOR);
+    assert_eq!(
+        unsafe { processor.initialize(std::ptr::null_mut()) },
+        kResultOk
+    );
+    let p = processor.cast::<IConnectionPoint>().unwrap();
+    let frames = Rc::new(RefCell::new(Vec::new()));
+    let faults = Rc::new(Faults::default());
+    faults.defer_automation_ack.set(true);
+    let host = ComWrapper::new(Host {
+        processor: Rc::new(p.clone()),
+        frames: frames.clone(),
+        faults,
+    })
+    .to_com_ptr::<IConnectionPoint>()
+    .unwrap();
+    assert_eq!(unsafe { p.connect(host.as_ptr()) }, kResultOk);
+    let control = observed(&frames, None, "projection");
+    assert_eq!(send(&p, &offer(&control, 1)), kResultOk);
+    let first = observed(&frames, Some(1), "projection");
+    for (view, sequence, method, args) in [
+        (
+            Some((1, &first)),
+            1,
+            "beginGesture",
+            json!(["drums.level", 1]),
+        ),
+        (None, 1, "beginGesture", json!(["drums.pan", 1])),
+        (
+            Some((1, &first)),
+            2,
+            "setParameter",
+            json!(["drums.level", 0.625, 1]),
+        ),
+        (None, 2, "setParameter", json!(["drums.pan", 0.25, 1])),
+        (
+            Some((1, &first)),
+            3,
+            "endGesture",
+            json!(["drums.level", 1]),
+        ),
+        (None, 3, "endGesture", json!(["drums.pan", 1])),
+    ] {
+        assert_eq!(
+            send(
+                &p,
+                &command(&control, view, sequence, sequence, method, args)
+            ),
+            kResultOk,
+            "view automation must be admitted through its own shared attachment"
+        );
+        let reply = observed(&frames, view.map(|v| v.0), "reply");
+        assert_eq!(reply["sequence"], sequence);
+        let reply: Value = serde_json::from_str(reply["body"]["frame"].as_str().unwrap()).unwrap();
+        assert_eq!(reply["status"], "accepted");
+    }
+    clock.tick();
+    assert_eq!(
+        send(
+            &p,
+            &packet(
+                &control,
+                None,
+                0,
+                json!({"type":"automationAck","delivery":1})
+            )
+        ),
+        kResultFalse,
+        "control Ack1 cannot consume view delivery1"
+    );
+    for (view, delivery, event) in [
+        (
+            Some((1, &first)),
+            1,
+            json!({"phase":"begin","parameter":0x1003}),
+        ),
+        (None, 1, json!({"phase":"begin","parameter":0x1004})),
+        (
+            Some((1, &first)),
+            2,
+            json!({"phase":"value","parameter":0x1003,"value":0.625}),
+        ),
+        (
+            None,
+            2,
+            json!({"phase":"value","parameter":0x1004,"value":0.25}),
+        ),
+        (
+            Some((1, &first)),
+            3,
+            json!({"phase":"end","parameter":0x1003}),
+        ),
+        (None, 3, json!({"phase":"end","parameter":0x1004})),
+    ] {
+        clock.tick();
+        let frame = observed(&frames, view.map(|v| v.0), "automation");
+        assert_eq!(
+            frame["body"],
+            json!({"type":"automation","delivery":delivery,"event":event})
+        );
+        assert_eq!(
+            send(
+                &p,
+                &packet(
+                    &control,
+                    view,
+                    0,
+                    json!({"type":"automationAck","delivery":delivery})
+                )
+            ),
+            kResultOk
+        );
+    }
+    for (view, sequence, method, args) in [
+        (None, 4, "beginGesture", json!(["drums.pan", 1])),
+        (
+            Some((1, &first)),
+            4,
+            "beginGesture",
+            json!(["drums.level", 1]),
+        ),
+        (None, 5, "setParameter", json!(["drums.pan", 0.75, 1])),
+        (
+            Some((1, &first)),
+            5,
+            "setParameter",
+            json!(["drums.level", 0.25, 1]),
+        ),
+    ] {
+        assert_eq!(
+            send(
+                &p,
+                &command(&control, view, sequence, sequence, method, args)
+            ),
+            kResultOk
+        );
+    }
+    clock.tick();
+    assert_eq!(
+        observed(&frames, None, "automation")["body"],
+        json!({"type":"automation","delivery":4,"event":{"phase":"begin","parameter":0x1004}})
+    );
+    let view_count = frames
+        .borrow()
+        .iter()
+        .filter(|p| p["body"]["type"] == "automation" && p["view"]["id"] == 1)
+        .count();
+    close(&p, &control, 1, &first);
+    assert_eq!(
+        send(
+            &p,
+            &packet(
+                &control,
+                Some((1, &first)),
+                0,
+                json!({"type":"automationAck","delivery":3})
+            )
+        ),
+        kResultFalse
+    );
+    assert_eq!(
+        send(
+            &p,
+            &command(&control, None, 6, 6, "endGesture", json!(["drums.pan", 1]))
+        ),
+        kResultOk
+    );
+    for (delivery, event) in [
+        (4, json!({"phase":"begin","parameter":0x1004})),
+        (5, json!({"phase":"value","parameter":0x1004,"value":0.75})),
+        (6, json!({"phase":"end","parameter":0x1004})),
+    ] {
+        clock.tick();
+        assert_eq!(
+            observed(&frames, None, "automation")["body"],
+            json!({"type":"automation","delivery":delivery,"event":event})
+        );
+        assert_eq!(
+            send(
+                &p,
+                &packet(
+                    &control,
+                    None,
+                    0,
+                    json!({"type":"automationAck","delivery":delivery})
+                )
+            ),
+            kResultOk
+        );
+    }
+    assert_eq!(
+        frames
+            .borrow()
+            .iter()
+            .filter(|p| p["body"]["type"] == "automation" && p["view"]["id"] == 1)
+            .count(),
+        view_count,
+        "cancelled view events cannot reach the host after retirement"
+    );
+    assert_eq!(send(&p, &offer(&control, 2)), kResultOk);
+    let second = observed(&frames, Some(2), "projection");
+    assert_eq!(
+        send(
+            &p,
+            &command(
+                &control,
+                Some((2, &second)),
+                1,
+                1,
+                "setParameter",
+                json!(["drums.level", 0.25, 1])
+            )
+        ),
+        kResultOk
+    );
+    clock.tick();
+    assert_eq!(
+        observed(&frames, Some(2), "automation")["body"],
+        json!({"type":"automation","delivery":1,"event":{"phase":"begin","parameter":0x1003}})
+    );
+    // This fixture records packets without calling IComponentHandler. It has
+    // accepted no host Begin, so its certificate can cancel the pending flight.
+    close(&p, &control, 2, &second);
+    assert_eq!(
+        send(
+            &p,
+            &command(
+                &control,
+                None,
+                7,
+                7,
+                "setParameter",
+                json!(["drums.pan", 0.5, 1])
+            )
+        ),
+        kResultOk
+    );
+    for (delivery, event) in [
+        (7, json!({"phase":"begin","parameter":0x1004})),
+        (8, json!({"phase":"value","parameter":0x1004,"value":0.5})),
+        (9, json!({"phase":"end","parameter":0x1004})),
+    ] {
+        clock.tick();
+        assert_eq!(
+            observed(&frames, None, "automation")["body"],
+            json!({"type":"automation","delivery":delivery,"event":event})
+        );
+        assert_eq!(
+            send(
+                &p,
+                &packet(
+                    &control,
+                    Some((2, &second)),
+                    0,
+                    json!({"type":"automationAck","delivery":1})
+                )
+            ),
+            kResultFalse
+        );
+        assert_eq!(
+            send(
+                &p,
+                &packet(
+                    &control,
+                    None,
+                    0,
+                    json!({"type":"automationAck","delivery":delivery})
+                )
+            ),
+            kResultOk
+        );
+    }
+    assert_eq!(send(&p, &offer(&control, 3)), kResultOk);
+    let third = observed(&frames, Some(3), "projection");
+    assert_eq!(
+        send(
+            &p,
+            &command(
+                &control,
+                Some((3, &third)),
+                1,
+                1,
+                "setParameter",
+                json!(["drums.level", 0.75, 1])
+            )
+        ),
+        kResultOk
+    );
+    for (delivery, event) in [
+        (1, json!({"phase":"begin","parameter":0x1003})),
+        (2, json!({"phase":"value","parameter":0x1003,"value":0.75})),
+        (3, json!({"phase":"end","parameter":0x1003})),
+    ] {
+        clock.tick();
+        assert_eq!(
+            observed(&frames, Some(3), "automation")["body"],
+            json!({"type":"automation","delivery":delivery,"event":event})
+        );
+        assert_eq!(
+            send(
+                &p,
+                &packet(
+                    &control,
+                    Some((3, &third)),
+                    0,
+                    json!({"type":"automationAck","delivery":delivery})
+                )
+            ),
+            kResultOk
+        );
+    }
+    assert_eq!(clock.handlers.borrow().len(), 1);
+    assert_eq!(unsafe { processor.terminate() }, kResultOk);
+    assert!(clock.handlers.borrow().is_empty());
 }
 
 #[test]
@@ -491,7 +1038,7 @@ fn disposable_view_connection_has_independent_shared_identity_and_preserves_cont
                 json!({"type":"automationAck","delivery":1})
             )
         ),
-        kNotImplemented
+        kResultFalse
     );
     clock.tick();
     assert_eq!(
