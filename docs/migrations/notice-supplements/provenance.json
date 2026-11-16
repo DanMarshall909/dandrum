@@ -1,0 +1,176 @@
+{
+  "scope": "Exact upstream root notice text at each published package VCS revision. The release-archive omissions remain documented; this is text/source provenance, not redistribution clearance.",
+  "sources": [
+    {
+      "repository": "Stranger6667/jsonschema",
+      "source_revision": "3d48b9026c6518e7f3a2ecc6c9c94a9f77f6083c",
+      "path": "LICENSE",
+      "repository_path": "docs/migrations/notice-supplements/jsonschema/LICENSE",
+      "bytes": 1075,
+      "sha256": "117829c3ca21efb132d81a44b55363d395ab8eea18526873bc828da4c0e5f038",
+      "upstream_blob_sha1": "20c070f6401feda6f47be1b158f4f5a4a9d14062",
+      "upstream_url": "https://github.com/Stranger6667/jsonschema/blob/3d48b9026c6518e7f3a2ecc6c9c94a9f77f6083c/LICENSE",
+      "source_has_trailing_newline": true
+    },
+    {
+      "repository": "rhaiscript/rhai",
+      "source_revision": "b247dd730de3f2c97fa1e46f138a17f9d844de67",
+      "path": "LICENSE-APACHE.txt",
+      "repository_path": "docs/migrations/notice-supplements/rhai/LICENSE-APACHE.txt",
+      "bytes": 10173,
+      "sha256": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9",
+      "upstream_blob_sha1": "d9a10c0d8e868ebf8da0b3dc95bb0be634c34bfe",
+      "upstream_url": "https://github.com/rhaiscript/rhai/blob/b247dd730de3f2c97fa1e46f138a17f9d844de67/LICENSE-APACHE.txt",
+      "source_has_trailing_newline": true
+    },
+    {
+      "repository": "rhaiscript/rhai",
+      "source_revision": "b247dd730de3f2c97fa1e46f138a17f9d844de67",
+      "path": "LICENSE-MIT.txt",
+      "repository_path": "docs/migrations/notice-supplements/rhai/LICENSE-MIT.txt",
+      "bytes": 1023,
+      "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+      "upstream_blob_sha1": "31aa79387f27e730e33d871925e152e35e428031",
+      "upstream_url": "https://github.com/rhaiscript/rhai/blob/b247dd730de3f2c97fa1e46f138a17f9d844de67/LICENSE-MIT.txt",
+      "source_has_trailing_newline": true
+    },
+    {
+      "repository": "Nugine/simd",
+      "source_revision": "d74c030d9dc4f3cae02146d1f497ff62726ef09a",
+      "path": "LICENSE",
+      "repository_path": "docs/migrations/notice-supplements/simd/LICENSE",
+      "bytes": 1062,
+      "sha256": "71674605ec4c087fe9eb534e3e4f9e26eb2e4aabcd76a29fd156c6a844d44b3d",
+      "upstream_blob_sha1": "2c7eabb59093ea117d73b20effdd0414f87b2af2",
+      "upstream_url": "https://github.com/Nugine/simd/blob/d74c030d9dc4f3cae02146d1f497ff62726ef09a/LICENSE",
+      "source_has_trailing_newline": false
+    }
+  ],
+  "packages": [
+    {
+      "package": {
+        "name": "jsonschema-regex",
+        "version": "0.58.2",
+        "repository": "https://github.com/Stranger6667/jsonschema",
+        "license": "MIT",
+        "license_file": null,
+        "vcs": {
+          "git": {
+            "sha1": "3d48b9026c6518e7f3a2ecc6c9c94a9f77f6083c"
+          },
+          "path_in_vcs": "crates/jsonschema-regex"
+        },
+        "checksum": "599c68ae272eac23e6525c3fc04a39828ae4a0d76d1fb5ba0e23a6241fd5cbfe"
+      },
+      "published_archive_root_license_files": [],
+      "notice_sources": [
+        {
+          "repository_path": "docs/migrations/notice-supplements/jsonschema/LICENSE",
+          "sha256": "117829c3ca21efb132d81a44b55363d395ab8eea18526873bc828da4c0e5f038",
+          "upstream_blob_sha1": "20c070f6401feda6f47be1b158f4f5a4a9d14062"
+        }
+      ]
+    },
+    {
+      "package": {
+        "name": "jsonschema-value",
+        "version": "0.58.2",
+        "repository": "https://github.com/Stranger6667/jsonschema",
+        "license": "MIT",
+        "license_file": null,
+        "vcs": {
+          "git": {
+            "sha1": "3d48b9026c6518e7f3a2ecc6c9c94a9f77f6083c"
+          },
+          "path_in_vcs": "crates/jsonschema-value"
+        },
+        "checksum": "9097316258ece14ed6908011db130c54a11a5bd0c46472b1fe112c8c86261263"
+      },
+      "published_archive_root_license_files": [],
+      "notice_sources": [
+        {
+          "repository_path": "docs/migrations/notice-supplements/jsonschema/LICENSE",
+          "sha256": "117829c3ca21efb132d81a44b55363d395ab8eea18526873bc828da4c0e5f038",
+          "upstream_blob_sha1": "20c070f6401feda6f47be1b158f4f5a4a9d14062"
+        }
+      ]
+    },
+    {
+      "package": {
+        "name": "rhai_codegen",
+        "version": "3.2.0",
+        "repository": "https://github.com/rhaiscript/rhai",
+        "license": "MIT OR Apache-2.0",
+        "license_file": null,
+        "vcs": {
+          "git": {
+            "sha1": "b247dd730de3f2c97fa1e46f138a17f9d844de67"
+          },
+          "path_in_vcs": "codegen"
+        },
+        "checksum": "3cd3a7535e50bf36857e7be7bec276d334e8c2dfa469c2201226fd01638ea5ca"
+      },
+      "published_archive_root_license_files": [],
+      "notice_sources": [
+        {
+          "repository_path": "docs/migrations/notice-supplements/rhai/LICENSE-APACHE.txt",
+          "sha256": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9",
+          "upstream_blob_sha1": "d9a10c0d8e868ebf8da0b3dc95bb0be634c34bfe"
+        },
+        {
+          "repository_path": "docs/migrations/notice-supplements/rhai/LICENSE-MIT.txt",
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+          "upstream_blob_sha1": "31aa79387f27e730e33d871925e152e35e428031"
+        }
+      ]
+    },
+    {
+      "package": {
+        "name": "uuid-simd",
+        "version": "0.8.0",
+        "repository": "https://github.com/Nugine/simd",
+        "license": "MIT",
+        "license_file": null,
+        "vcs": {
+          "git": {
+            "sha1": "d74c030d9dc4f3cae02146d1f497ff62726ef09a"
+          },
+          "path_in_vcs": "crates/uuid-simd"
+        },
+        "checksum": "23b082222b4f6619906941c17eb2297fff4c2fb96cb60164170522942a200bd8"
+      },
+      "published_archive_root_license_files": [],
+      "notice_sources": [
+        {
+          "repository_path": "docs/migrations/notice-supplements/simd/LICENSE",
+          "sha256": "71674605ec4c087fe9eb534e3e4f9e26eb2e4aabcd76a29fd156c6a844d44b3d",
+          "upstream_blob_sha1": "2c7eabb59093ea117d73b20effdd0414f87b2af2"
+        }
+      ]
+    },
+    {
+      "package": {
+        "name": "vsimd",
+        "version": "0.8.0",
+        "repository": "https://github.com/Nugine/simd",
+        "license": "MIT",
+        "license_file": null,
+        "vcs": {
+          "git": {
+            "sha1": "d74c030d9dc4f3cae02146d1f497ff62726ef09a"
+          },
+          "path_in_vcs": "crates/vsimd"
+        },
+        "checksum": "5c3082ca00d5a5ef149bb8b555a72ae84c9c59f7250f013ac822ac2e49b19c64"
+      },
+      "published_archive_root_license_files": [],
+      "notice_sources": [
+        {
+          "repository_path": "docs/migrations/notice-supplements/simd/LICENSE",
+          "sha256": "71674605ec4c087fe9eb534e3e4f9e26eb2e4aabcd76a29fd156c6a844d44b3d",
+          "upstream_blob_sha1": "2c7eabb59093ea117d73b20effdd0414f87b2af2"
+        }
+      ]
+    }
+  ]
+}

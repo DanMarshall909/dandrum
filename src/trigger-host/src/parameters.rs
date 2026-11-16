@@ -11,7 +11,7 @@ use crate::protocol::{
 use crate::runtime::{
     PreparedRuntime, QuiescentReport, RuntimeAudio, RuntimeControl, RuntimeError, runtime_handoff,
 };
-use crate::{TriggerHost, TriggerHostConfiguration};
+use crate::{PackagedResources, TriggerHost, TriggerHostConfiguration};
 use dandrum_engine::kernel::document::load_kernel_patch_str;
 use std::{collections::VecDeque, num::NonZeroU64, path::Path};
 
@@ -58,6 +58,8 @@ pub fn document_generation(revision: u64) -> Result<u64, ParameterError> {
 pub struct PublicParameter {
     pub id: String,
     pub root_index: usize,
+    /// Canonical destination retained without creating a runtime/session.
+    pub root_port_name: String,
     pub physical_min: f64,
     pub physical_max: f64,
     pub physical_default: f64,
@@ -66,13 +68,102 @@ pub struct PublicParameter {
 }
 
 impl PublicParameter {
+    /// Shared linear conversion. No allocation or DSP precision narrowing.
+    pub fn normalized_to_physical(&self, normalized: f64) -> Option<f64> {
+        (0.0..=1.0).contains(&normalized).then(|| {
+            crate::control_values::physical(self.physical_min, self.physical_max, normalized)
+        })
+    }
+    pub fn physical_to_normalized(&self, physical: f64) -> Option<f64> {
+        (self.physical_min..=self.physical_max)
+            .contains(&physical)
+            .then(|| self.normalized_scalar(physical))
+    }
+    fn normalized_scalar(&self, physical: f64) -> f64 {
+        crate::control_values::normalized(self.physical_min, self.physical_max, physical)
+    }
     fn project(&self, physical: f64) -> ParameterValue {
         ParameterValue {
             id: self.id.clone(),
             name: self.id.clone(),
-            value: (physical - self.physical_min) / (self.physical_max - self.physical_min),
+            value: self.normalized_scalar(physical),
         }
     }
+}
+
+/// Read immutable product descriptors without creating an InstrumentSession or
+/// decoding samples. Playability remains the processor-owned host's decision.
+pub fn public_parameters_from_resources(
+    root: &Path,
+) -> Result<Vec<PublicParameter>, ParameterError> {
+    let resources =
+        PackagedResources::open(root).map_err(|error| ParameterError::Host(error.to_string()))?;
+    public_parameters_from_document(resources.document())
+}
+fn public_parameters_from_document(document: &str) -> Result<Vec<PublicParameter>, ParameterError> {
+    let patch =
+        load_kernel_patch_str(document).map_err(|error| ParameterError::Host(error.to_string()))?;
+    let mut parameters = Vec::new();
+    for alias in patch.preset_surface().parameters() {
+        let range = alias.control_default();
+        let (Some(min), Some(max)) = (range.min(), range.max()) else {
+            return Err(ParameterError::InvalidSurface);
+        };
+        if min >= max || !(min as f32).is_finite() || !(max as f32).is_finite() {
+            return Err(ParameterError::InvalidSurface);
+        }
+        let (root_index, root_port) = patch
+            .root()
+            .ports()
+            .iter()
+            .filter(|port| port.direction() == dandrum_engine::graph::PortDirection::Input)
+            .enumerate()
+            .find(|(_, port)| port.name() == alias.port_name())
+            .expect("kernel parser resolves aliases to root control inputs");
+        if parameters
+            .iter()
+            .any(|parameter: &PublicParameter| parameter.root_index == root_index)
+        {
+            return Err(ParameterError::InvalidSurface);
+        }
+        let control_group = match root_port.internal_targets() {
+            [target] => Some(target),
+            _ => None,
+        }
+        .and_then(|target| {
+            patch
+                .root()
+                .nodes()
+                .iter()
+                .find(|node| node.id() == target.node())
+                .filter(|node| node.definition_ref() == "sample_map_player")
+                .map(|_| target)
+        })
+        .and_then(|target| target.port().strip_prefix("group_"))
+        .and_then(|suffix| suffix.split_once('_'))
+        .and_then(|(group, _)| group.parse::<u8>().ok())
+        .filter(|group| *group > 0);
+        parameters.push(PublicParameter {
+            id: alias.name().into(),
+            root_index,
+            root_port_name: alias.port_name().into(),
+            physical_min: min,
+            physical_max: max,
+            physical_default: range.default(),
+            control_group,
+        });
+    }
+    if parameters.len()
+        != patch
+            .root()
+            .ports()
+            .iter()
+            .filter(|port| port.direction() == dandrum_engine::graph::PortDirection::Input)
+            .count()
+    {
+        return Err(ParameterError::InvalidSurface);
+    }
+    Ok(parameters)
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -113,6 +204,11 @@ pub enum AutomationEvent {
     Begin { parameter_index: usize },
     Value { parameter_index: usize, value: f64 },
     End { parameter_index: usize },
+}
+#[derive(Clone, Copy)]
+struct QueuedAutomation {
+    owner: u64,
+    event: AutomationEvent,
 }
 
 /// A native job can leave the controller for preparation without an editor.
@@ -279,7 +375,7 @@ pub struct ParameterController {
     parameters: Vec<PublicParameter>,
     generation: u64,
     admitted_sequence: u64,
-    automation: VecDeque<AutomationEvent>,
+    automation: VecDeque<QueuedAutomation>,
     automation_capacity: usize,
     gestures: Vec<Option<u64>>,
     reserved_ends: usize,
@@ -403,7 +499,7 @@ impl ParameterController {
                 })
                 .collect(),
         };
-        state.values_for(&self.parameters, &self.runtime)?;
+        state.values_for(&self.parameters)?;
         let samples = Self::patch_samples(
             &state.document,
             &self.parameters,
@@ -517,25 +613,7 @@ impl ParameterController {
         {
             return Err(StateError::Busy);
         }
-        if state.version == 3 {
-            super::patch_budget::check(&state.document).map_err(|_| StateError::Invalid)?;
-            let patch = load_kernel_patch_str(&state.document).map_err(|_| StateError::Invalid)?;
-            let required = patch
-                .sample_assets()
-                .sample_sources
-                .iter()
-                .map(|source| source.resource.path())
-                .collect::<std::collections::BTreeSet<_>>();
-            let declared = saved
-                .resources
-                .iter()
-                .map(|resource| std::path::Path::new(&resource.path))
-                .collect::<std::collections::BTreeSet<_>>();
-            if required != declared {
-                return Err(StateError::Invalid);
-            }
-        }
-        let values = state.values_for(&self.parameters, &self.runtime)?;
+        let values = saved.parameter_values(&self.parameters)?;
         let generation =
             crate::state::restored_generation(self.host.session().owner_snapshot().revision)?;
         if state.version == 2 {
@@ -621,6 +699,21 @@ impl ParameterController {
             }
         }
         Ok(())
+    }
+    /// Retire an editor and explicitly cancel its undelivered host automation.
+    /// The adapter must first close host-accepted Begins and retire its staged
+    /// delivery mirror. Cancellation never acknowledges host acceptance.
+    pub fn detach_editor_and_cancel_automation(
+        &mut self,
+        attachment_id: &str,
+    ) -> Result<usize, ParameterError> {
+        self.detach_editor(attachment_id)?;
+        let owner = attachment_id
+            .parse::<u64>()
+            .expect("validated retired attachment");
+        let before = self.automation.len();
+        self.automation.retain(|entry| entry.owner != owner);
+        Ok(before - self.automation.len())
     }
     fn clear_editor_notes(&mut self, owner: NonZeroU64) {
         self.runtime.detach_editor_notes(owner);
@@ -774,9 +867,14 @@ impl ParameterController {
 
     fn end_gestures(&mut self, owner: Option<u64>) {
         for (index, gesture) in self.gestures.iter_mut().enumerate() {
-            if gesture.is_some() && owner.is_none_or(|owner| *gesture == Some(owner)) {
-                self.automation.push_back(AutomationEvent::End {
-                    parameter_index: index,
+            if let Some(gesture_owner) = *gesture
+                && owner.is_none_or(|owner| gesture_owner == owner)
+            {
+                self.automation.push_back(QueuedAutomation {
+                    owner: gesture_owner,
+                    event: AutomationEvent::End {
+                        parameter_index: index,
+                    },
                 });
                 *gesture = None;
                 self.reserved_ends -= 1;
@@ -784,19 +882,29 @@ impl ParameterController {
         }
     }
     pub fn take_feedback(&mut self) -> Option<ParameterFeedback> {
-        let (feedback, sequence, reset_cancelled) = self.runtime.take_sequenced_feedback()?;
+        self.take_feedback_with_publication()
+            .map(|(feedback, _)| feedback)
+    }
+    /// The transient scalar-write stamp identifies when feedback was produced,
+    /// including entries still queued when an adapter captures a cutoff.
+    pub fn take_feedback_with_publication(&mut self) -> Option<(ParameterFeedback, u64)> {
+        let (feedback, sequence, reset_cancelled, publication) =
+            self.runtime.take_sequenced_feedback()?;
         let parameter = self
             .parameters
             .iter()
             .find(|parameter| parameter.root_index == feedback.index)
             .expect("public aliases cover every prepared root control exactly once");
-        Some(ParameterFeedback {
-            generation: self.generation,
-            sequence,
-            reset_cancelled,
-            frame_offset: feedback.frame_offset,
-            parameters: vec![parameter.project(feedback.value)],
-        })
+        Some((
+            ParameterFeedback {
+                generation: self.generation,
+                sequence,
+                reset_cancelled,
+                frame_offset: feedback.frame_offset,
+                parameters: vec![parameter.project(feedback.value)],
+            },
+            publication,
+        ))
     }
     /// Service accepted runtime ownership after the audio endpoint is returned.
     pub fn service_quiescent(
@@ -874,78 +982,61 @@ impl ParameterController {
         event_capacity: usize,
         automation_capacity: usize,
     ) -> Result<(Self, RuntimeAudio), ParameterError> {
+        Self::open_impl(
+            root.as_ref(),
+            configuration,
+            instance_id,
+            event_capacity,
+            automation_capacity,
+            false,
+        )
+    }
+
+    /// Reserve a fixed event budget independently of host block length. The
+    /// original entrypoint retains existing adapters' admission/shrink policy.
+    pub fn open_with_reserved_events(
+        root: &Path,
+        configuration: TriggerHostConfiguration,
+        instance_id: NonZeroU64,
+        event_capacity: usize,
+        automation_capacity: usize,
+    ) -> Result<(Self, RuntimeAudio), ParameterError> {
+        Self::open_impl(
+            root,
+            configuration,
+            instance_id,
+            event_capacity,
+            automation_capacity,
+            true,
+        )
+    }
+
+    fn open_impl(
+        root: &Path,
+        configuration: TriggerHostConfiguration,
+        instance_id: NonZeroU64,
+        event_capacity: usize,
+        automation_capacity: usize,
+        reserve_events: bool,
+    ) -> Result<(Self, RuntimeAudio), ParameterError> {
         if !(3..=MAX_AUTOMATION_EVENTS).contains(&automation_capacity) {
             return Err(ParameterError::InvalidCapacity);
         }
         let host = TriggerHost::open(root, configuration)
             .map_err(|error| ParameterError::Host(error.to_string()))?;
-        let prepared = PreparedRuntime::new(host.session().prepared(), configuration)
-            .map_err(ParameterError::Runtime)?;
+        let prepared = if reserve_events {
+            PreparedRuntime::new_for_events(
+                host.session().prepared(),
+                configuration,
+                event_capacity,
+            )
+        } else {
+            PreparedRuntime::new(host.session().prepared(), configuration)
+        }
+        .map_err(ParameterError::Runtime)?;
         let (runtime, audio) =
             runtime_handoff(prepared, event_capacity).map_err(ParameterError::Runtime)?;
-        // The freshly opened host has prepared this immutable cached document.
-        let patch = load_kernel_patch_str(host.resources.document())
-            .expect("fresh Trigger document was prepared");
-        let mut parameters = Vec::new();
-        for alias in patch.preset_surface().parameters() {
-            let range = alias.control_default();
-            let (Some(min), Some(max)) = (range.min(), range.max()) else {
-                return Err(ParameterError::InvalidSurface);
-            };
-            if min >= max || !(min as f32).is_finite() || !(max as f32).is_finite() {
-                return Err(ParameterError::InvalidSurface);
-            }
-            let root_index = runtime
-                .parameter_index(alias.port_name())
-                .expect("prepared alias names a mono root control");
-            if parameters
-                .iter()
-                .any(|parameter: &PublicParameter| parameter.root_index == root_index)
-            {
-                return Err(ParameterError::InvalidSurface);
-            }
-            let control_group = patch
-                .root()
-                .ports()
-                .iter()
-                .find(|port| port.name() == alias.port_name())
-                .and_then(|port| match port.internal_targets() {
-                    [target] => Some(target),
-                    _ => None,
-                })
-                .and_then(|target| {
-                    patch
-                        .root()
-                        .nodes()
-                        .iter()
-                        .find(|node| node.id() == target.node())
-                        .filter(|node| node.definition_ref() == "sample_map_player")
-                        .map(|_| target)
-                })
-                .and_then(|target| target.port().strip_prefix("group_"))
-                .and_then(|suffix| suffix.split_once('_'))
-                .and_then(|(group, _)| group.parse::<u8>().ok())
-                .filter(|group| *group > 0);
-            parameters.push(PublicParameter {
-                id: alias.name().into(),
-                root_index,
-                physical_min: min,
-                physical_max: max,
-                physical_default: range.default(),
-                control_group,
-            });
-        }
-        if parameters.len()
-            != host
-                .session()
-                .prepared()
-                .root_port_metadata()
-                .iter()
-                .filter(|port| port.direction() == dandrum_engine::graph::PortDirection::Input)
-                .count()
-        {
-            return Err(ParameterError::InvalidSurface);
-        }
+        let parameters = public_parameters_from_document(host.resources.document())?;
         let gestures = vec![None; parameters.len()];
         Ok((
             Self {
@@ -1069,6 +1160,24 @@ impl ParameterController {
         self.protocol
             .encode_event(self.host.session(), attachment_id, event, payload)
             .map_err(ParameterError::Protocol)
+    }
+
+    /// Both adapters publish the same parameter event through the live editor
+    /// namespace. Format-specific publication stamps stay outside this frame.
+    pub fn encode_parameter_feedback(
+        &mut self,
+        attachment_id: &str,
+        feedback: ParameterFeedback,
+    ) -> Result<String, ParameterError> {
+        self.encode_editor_event(
+            attachment_id,
+            "parameterStateChanged",
+            serde_json::json!({
+                "generation":feedback.generation,"sequence":feedback.sequence,
+                "reset_cancelled":feedback.reset_cancelled,"frame_offset":feedback.frame_offset,
+                "parameters":crate::editor_commands::parameter_values(feedback.parameters),
+            }),
+        )
     }
 
     /// Project the accepted native session off audio in its admitted wire
@@ -1564,8 +1673,11 @@ impl ParameterController {
                 if self.automation_slots() < 2 {
                     return Err(ParameterError::QueueFull);
                 }
-                self.automation.push_back(AutomationEvent::Begin {
-                    parameter_index: index,
+                self.automation.push_back(QueuedAutomation {
+                    owner: context.attachment_id,
+                    event: AutomationEvent::Begin {
+                        parameter_index: index,
+                    },
                 });
                 self.gestures[index] = Some(context.attachment_id);
                 self.reserved_ends += 1;
@@ -1578,8 +1690,11 @@ impl ParameterController {
                 if !self.gesture_owned(index, context.attachment_id)? {
                     return Err(ParameterError::GestureNotActive);
                 }
-                self.automation.push_back(AutomationEvent::End {
-                    parameter_index: index,
+                self.automation.push_back(QueuedAutomation {
+                    owner: context.attachment_id,
+                    event: AutomationEvent::End {
+                        parameter_index: index,
+                    },
                 });
                 self.gestures[index] = None;
                 self.reserved_ends -= 1;
@@ -1602,9 +1717,9 @@ impl ParameterController {
                 let parameter = &self.parameters[index];
                 // Rounding can otherwise put normalized endpoints just outside
                 // an accepted nonbinary physical interval (for example -0.1..0.3).
-                let physical = (parameter.physical_min
-                    + value * (parameter.physical_max - parameter.physical_min))
-                    .clamp(parameter.physical_min, parameter.physical_max);
+                let physical = parameter
+                    .normalized_to_physical(*value)
+                    .expect("sealed protocol admission validates normalized values");
                 // Both producers are exclusively owned here. The audio consumer
                 // can only free runtime slots, and no caller can fill our main
                 // queue between this check and publication of the complete value.
@@ -1612,17 +1727,26 @@ impl ParameterController {
                     .send_parameter(parameter.root_index, physical, sequence)
                     .map_err(ParameterError::Runtime)?;
                 if !active {
-                    self.automation.push_back(AutomationEvent::Begin {
-                        parameter_index: index,
+                    self.automation.push_back(QueuedAutomation {
+                        owner: context.attachment_id,
+                        event: AutomationEvent::Begin {
+                            parameter_index: index,
+                        },
                     });
                 }
-                self.automation.push_back(AutomationEvent::Value {
-                    parameter_index: index,
-                    value: physical,
+                self.automation.push_back(QueuedAutomation {
+                    owner: context.attachment_id,
+                    event: AutomationEvent::Value {
+                        parameter_index: index,
+                        value: physical,
+                    },
                 });
                 if !active {
-                    self.automation.push_back(AutomationEvent::End {
-                        parameter_index: index,
+                    self.automation.push_back(QueuedAutomation {
+                        owner: context.attachment_id,
+                        event: AutomationEvent::End {
+                            parameter_index: index,
+                        },
                     });
                 }
                 self.admitted_sequence = sequence;
@@ -1659,6 +1783,45 @@ impl ParameterController {
 
     pub fn parameter_state(&self) -> ParameterState {
         let (sequence, reset_cancelled, physical) = self.runtime.snapshot_parameters();
+        self.project_parameter_state(sequence, reset_cancelled, physical)
+    }
+    /// Coherent scalar values and their completed write interval. Publication
+    /// stamps are runtime-local, never portable state or musical generations.
+    /// As with the state reader, observations cannot span 2^63 write intervals.
+    pub fn parameter_state_with_publication(&self) -> (ParameterState, u64) {
+        let (sequence, reset_cancelled, physical, publication) =
+            self.runtime.snapshot_parameters_with_publication();
+        (
+            self.project_parameter_state(sequence, reset_cancelled, physical),
+            publication,
+        )
+    }
+    /// A coherent feedback recovery snapshot. Origins follow the public
+    /// parameter order and distinguish actual writes from empty callbacks.
+    /// The global cutoff supersedes intermediate feedback through that interval.
+    pub fn parameter_feedback_snapshot(&self) -> (ParameterState, u64, Vec<u64>) {
+        let snapshot = self.runtime.snapshot_scalar_state();
+        let origins = self
+            .parameters
+            .iter()
+            .map(|parameter| snapshot.origins[parameter.root_index])
+            .collect();
+        (
+            self.project_parameter_state(
+                snapshot.settlement >> 1,
+                snapshot.settlement & 1 != 0,
+                snapshot.values,
+            ),
+            snapshot.publication,
+            origins,
+        )
+    }
+    fn project_parameter_state(
+        &self,
+        sequence: u64,
+        reset_cancelled: bool,
+        physical: Vec<f64>,
+    ) -> ParameterState {
         ParameterState {
             generation: self.generation,
             sequence,
@@ -1673,12 +1836,20 @@ impl ParameterController {
 
     /// Read pending events in delivery order without acknowledging them.
     pub fn pending_automation(&self) -> impl Iterator<Item = AutomationEvent> + '_ {
-        self.automation.iter().copied()
+        self.automation.iter().map(|entry| entry.event)
     }
 
     /// A format adapter acknowledges only after its host accepts this event.
     pub fn peek_automation(&self) -> Option<AutomationEvent> {
-        self.automation.front().copied()
+        self.peek_automation_with_owner().map(|(_, event)| event)
+    }
+
+    /// Preserve the originating editor when an adapter has multiple projections.
+    /// The owner is an attachment identity, not authority to admit new commands.
+    pub fn peek_automation_with_owner(&self) -> Option<(u64, AutomationEvent)> {
+        self.automation
+            .front()
+            .map(|entry| (entry.owner, entry.event))
     }
     pub fn acknowledge_automation(&mut self) -> bool {
         self.automation.pop_front().is_some()

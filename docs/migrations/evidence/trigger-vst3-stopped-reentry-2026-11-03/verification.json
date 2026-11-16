@@ -1,0 +1,14 @@
+{
+  "status": "bounded stopped callback teardown repair; full proof incomplete",
+  "semanticRed": "owned child reached host event-list termination reentry and exceeded its three-second callback return deadline; parent killed/reaped it",
+  "green": "reentrant terminate returns false; stopped flush returns OK; later terminate returns OK",
+  "regression": "7 signed audio tests, calibrated complete-callback malloc/free sentinel, reentry parent and strict Clippy pass",
+  "refactor": "production remains one atomic query and teardown guard; tests share the existing owned-child deadline supervision",
+  "sources": {
+    "src/vst3-adapter/src/audio.rs": "083179b468c7efdec7bde7e34b58174337e6def8d530bf31c57408f098bbdbc4",
+    "src/vst3-adapter/src/components.rs": "9c422cceb6b20b2838100e508d2bcf72d58248bd117e11fa6ddef885d313a089",
+    "src/vst3-adapter/tests/reentrancy.rs": "b3c7fcc35fcf69d92559eca01a882280c3c3661ae03e0e9c0412015df4d3e891",
+    "src/vst3-adapter/tests/callback_audit.rs": "aaa162d5ac422dc565b8fcc9669ea1714277b4785ae4b5c2886cb8fe69c336a5",
+    "src/vst3-adapter/tests/common/mod.rs": "73257560d5fee3c32871cb9e034a389a19d2f1fa5b17c199129b41958c66ce68"
+  }
+}

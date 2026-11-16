@@ -244,6 +244,9 @@ def admit(repo, cache, current):
     for generation in previous:
         if retained + growth <= budget and shutil.disk_usage(cache).free >= needed:
             break
+        if os.environ.get('DANDRUM_CARGO_PRESERVE_GENERATIONS') == '1':
+            print('cargo-cache: cache-preservation: automatic generation retirement disabled', file=sys.stderr)
+            break
         retire_generation(generation)
         retained = retained_bytes(cache)
     if retained + growth > budget:
@@ -343,6 +346,8 @@ def main(argv=None):
     repo = Path(os.path.abspath(args.repo))
     cache = Path(os.path.abspath(args.cache_root if args.cache_root else default_cache_root(repo)))
     try:
+        if os.environ.get('DANDRUM_CARGO_PRESERVE_GENERATIONS') not in (None, '0', '1'):
+            raise CacheError('cache-preservation: DANDRUM_CARGO_PRESERVE_GENERATIONS must be 0 or 1')
         if args.operation == 'cargo' and (not arguments or arguments[0].startswith(('-', '+'))):
             raise CacheError('cache-options: put the Cargo subcommand first; leading global options are not supported')
         if args.operation == 'cargo' and arguments[0] not in ('build', 'check', 'clippy', 'test', 'run', 'doc', 'tree', 'metadata', 'llvm-cov'):

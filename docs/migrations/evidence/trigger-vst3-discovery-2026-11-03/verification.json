@@ -1,0 +1,186 @@
+{
+  "date": "2026-11-03",
+  "criterion": "OpenSpec prove-trigger-vst3-linux task 2.2",
+  "source_sha256": {
+    "src/trigger-host/src/parameters.rs": "d6965477766ea1e6fd59227ae82b5628d755235c1cd23b7c0d0d9020327d1445",
+    "src/trigger-host/tests/parameters.rs": "b57deff6916d4b7993c51d75f14beaf30067f31cc4c450e3f9cbf68ff9925849",
+    "src/vst3-adapter/src/components.rs": "5d6115d2c9fb0a0cab9720ae9d7a585442c3b4371be49f839497c8ba10f24a9d",
+    "src/vst3-adapter/src/parameters.rs": "3370e51f404b20211b293948d8f16481c995dd436c09b39c7b953a86b7f42628",
+    "src/vst3-adapter/src/lib.rs": "9ffa658f2581dffd623ac74940602fb1e490e407f5bf145770ae4bd8e6921b7f",
+    "src/vst3-adapter/src/platform/mod.rs": "93e2bf1846830308539461bacf2f86fd50fd1522520bac92b88b02cc695fb1de",
+    "src/vst3-adapter/src/platform/linux.rs": "2023e77909581abb6f2393b9cd587777b8bdecf57dffddc4cc95e5763e7ba689",
+    "src/vst3-adapter/tests/discovery.rs": "a7423313a253f7070f01ec742f591591ba317195e886a881cf1745a65b91cd91",
+    "src/vst3-adapter/tests/common/mod.rs": "afdb6f26cd58593512d9ec45e40295b3665a18e7f9c56f3ed852133c995dc735"
+  },
+  "dynamic_tests": 7,
+  "clap_editor_tests": {
+    "passed": 11,
+    "ignored_child_only": 1
+  },
+  "coverage": [
+    {
+      "file": "src/vst3-adapter/src/components.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 39,
+          "covered": 30,
+          "percent": 76.92307692307693
+        },
+        "instantiations": {
+          "count": 39,
+          "covered": 30,
+          "percent": 76.92307692307693
+        },
+        "lines": {
+          "count": 312,
+          "covered": 274,
+          "percent": 87.82051282051282
+        },
+        "regions": {
+          "count": 394,
+          "covered": 366,
+          "notcovered": 28,
+          "percent": 92.89340101522842
+        }
+      }
+    },
+    {
+      "file": "src/vst3-adapter/src/lib.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 13,
+          "covered": 13,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 17,
+          "covered": 17,
+          "percent": 100.0
+        },
+        "lines": {
+          "count": 128,
+          "covered": 128,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 197,
+          "covered": 197,
+          "notcovered": 0,
+          "percent": 100.0
+        }
+      }
+    },
+    {
+      "file": "src/vst3-adapter/src/parameters.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 5,
+          "covered": 5,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 5,
+          "covered": 5,
+          "percent": 100.0
+        },
+        "lines": {
+          "count": 20,
+          "covered": 20,
+          "percent": 100.0
+        },
+        "regions": {
+          "count": 26,
+          "covered": 26,
+          "notcovered": 0,
+          "percent": 100.0
+        }
+      }
+    },
+    {
+      "file": "src/vst3-adapter/src/platform/linux.rs",
+      "summary": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0.0
+        },
+        "functions": {
+          "count": 2,
+          "covered": 2,
+          "percent": 100.0
+        },
+        "instantiations": {
+          "count": 2,
+          "covered": 2,
+          "percent": 100.0
+        },
+        "lines": {
+          "count": 65,
+          "covered": 59,
+          "percent": 90.76923076923077
+        },
+        "regions": {
+          "count": 92,
+          "covered": 81,
+          "notcovered": 11,
+          "percent": 88.04347826086956
+        }
+      }
+    }
+  ],
+  "extracted_shared_parameter_functions": "All newly extracted descriptor/conversion functions and closures executed; full parameters.rs coverage is not claimed. See retained public-surface-shared-coverage-complete.json.",
+  "limitations": [
+    "Component audio/state/view stubs belong to later tasks and remain uncovered.",
+    "Loader defensive failures requiring a broken foreign loader are not injected; platform coverage is partial.",
+    "Branch/MC-DC instrumentation unavailable.",
+    "No official Trigger validation, VST3 REAPER acceptance, completion review or publication yet."
+  ],
+  "refactoring": {
+    "production": "Shared descriptor construction and normalized/physical math now have both adapter consumers; VST IDs remain explicit and ordered by names. Removed redundant scalar casts. Code residency uses the VST loader handle and executing-object identity, not a CLAP path copy.",
+    "tests": "Table-driven names, ranges and malformed surfaces share one installed fixture. The seven tests cover distinct external contracts; the suite takes 1.52 seconds under instrumentation."
+  },
+  "resource_policy": "32 GiB incremental output cap unchanged; managed retention ceiling 80 GiB prevents eviction of the 34.14 GiB starting cache while admitting one 8 GiB job."
+}

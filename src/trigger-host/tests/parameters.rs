@@ -63,6 +63,143 @@ fn automation(controller: &mut ParameterController) -> Vec<AutomationEvent> {
 }
 
 #[test]
+fn publication_cutoff_distinguishes_queued_host_feedback_with_unchanged_musical_sequences() {
+    let (_package, root) = package();
+    let (mut controller, mut audio) =
+        ParameterController::open(root, configuration(), NonZeroU64::new(1).unwrap(), 8, 8)
+            .unwrap();
+    let history = controller.session().owner_snapshot();
+    let level = controller
+        .parameters()
+        .iter()
+        .find(|parameter| parameter.id == "drums.level")
+        .unwrap()
+        .root_index;
+    let (_, initial) = controller.parameter_state_with_publication();
+    let allocation = allocation_counter::measure(|| {
+        for value in [0.5, 1.5] {
+            audio
+                .flush_parameters(&[ControlEvent::Parameter {
+                    index: level,
+                    value,
+                }])
+                .unwrap();
+        }
+    });
+    assert_eq!(allocation, allocation_counter::AllocationInfo::default());
+    let (state, cutoff) = controller.parameter_state_with_publication();
+    assert!(cutoff > initial);
+    assert_eq!((state.generation, state.sequence), (1, 0));
+    assert_eq!(
+        state
+            .parameters
+            .iter()
+            .find(|p| p.id == "drums.level")
+            .unwrap()
+            .value,
+        0.375
+    );
+    let (older, older_stamp) = controller.take_feedback_with_publication().unwrap();
+    let (latest, latest_stamp) = controller.take_feedback_with_publication().unwrap();
+    assert_eq!((older.generation, older.sequence), (1, 0));
+    assert_eq!((latest.generation, latest.sequence), (1, 0));
+    assert_eq!(older.parameters[0].value, 0.125);
+    assert_eq!(latest.parameters[0].value, 0.375);
+    assert!(initial < older_stamp && older_stamp < latest_stamp && latest_stamp <= cutoff);
+    let (snapshot, snapshot_cutoff, origins) = controller.parameter_feedback_snapshot();
+    assert_eq!(snapshot, state);
+    assert_eq!(snapshot_cutoff, cutoff);
+    for (parameter, origin) in snapshot.parameters.iter().zip(&origins) {
+        assert_eq!(
+            *origin,
+            if parameter.id == "drums.level" {
+                latest_stamp
+            } else {
+                initial
+            }
+        );
+    }
+    audio.flush_parameters(&[]).unwrap();
+    let (_, empty_cutoff, empty_origins) = controller.parameter_feedback_snapshot();
+    assert!(empty_cutoff > snapshot_cutoff);
+    assert_eq!(
+        empty_origins, origins,
+        "empty flushes preserve actual write origins"
+    );
+    audio
+        .flush_parameters(&[ControlEvent::Parameter {
+            index: level,
+            value: 2.0,
+        }])
+        .unwrap();
+    let (newer, publication) = controller.take_feedback_with_publication().unwrap();
+    assert!(publication > cutoff);
+    assert_eq!((newer.generation, newer.sequence), (1, 0));
+    assert_eq!(newer.parameters[0].value, 0.5);
+    let editor = controller.attach_editor().unwrap();
+    let command = request(
+        &mut controller,
+        &editor.attachment_id,
+        1,
+        "setParameter",
+        json!(["drums.level", 0.875, 1]),
+    );
+    controller.apply(&command).unwrap();
+    let (before_reset, before_publication) = controller.parameter_state_with_publication();
+    let reset = audio.reset();
+    assert_eq!(reset.cancelled_parameter_commands, 1);
+    let (cancelled, cancellation_publication) = controller.parameter_state_with_publication();
+    assert!(
+        cancellation_publication > before_publication,
+        "reset cancellation must advance the feedback cutoff"
+    );
+    assert_eq!(cancelled.parameters, before_reset.parameters);
+    assert_eq!((cancelled.sequence, cancelled.reset_cancelled), (1, true));
+    let (_, _, reset_origins) = controller.parameter_feedback_snapshot();
+    let level_position = cancelled
+        .parameters
+        .iter()
+        .position(|p| p.id == "drums.level")
+        .unwrap();
+    assert_eq!(reset_origins[level_position], publication);
+    for (index, origin) in reset_origins.iter().enumerate() {
+        if index != level_position {
+            assert_eq!(*origin, initial);
+        }
+    }
+    controller
+        .reconfigure_quiescent(
+            &mut audio,
+            TriggerHostConfiguration {
+                max_block_frames: 32,
+                ..configuration()
+            },
+        )
+        .unwrap();
+    let (_, reconfigured_stamp, reconfigured_origins) = controller.parameter_feedback_snapshot();
+    assert_eq!(reconfigured_stamp, cancellation_publication);
+    assert_eq!(reconfigured_origins, reset_origins);
+    assert_eq!(controller.session().owner_snapshot(), history);
+    let (mut left, mut right) = ([123.0; 16], [123.0; 16]);
+    audio
+        .process_events(
+            &mut left,
+            &mut right,
+            &[TimedEvent {
+                frame_offset: 5,
+                event: ControlEvent::NoteOn {
+                    note: 36,
+                    velocity: 127,
+                },
+            }],
+        )
+        .unwrap();
+    assert_eq!(&left[..5], &[0.0; 5]);
+    assert_eq!((left[5], right[5]), (-1.0, -1.0));
+    assert_eq!((left[6], right[6]), (-716.0 / 32768.0, -716.0 / 32768.0));
+}
+
+#[test]
 fn pending_automation_reads_ordered_events_without_acknowledging_or_freeing_capacity() {
     let (_package, root) = package();
     let (mut controller, _audio) =
@@ -1085,10 +1222,18 @@ fn constructor_rejects_invalid_capacity_resources_and_nonbijective_or_unbounded_
         ),
         Err(ParameterError::Host(_))
     ));
-    assert!(matches!(
-        ParameterController::open(&root, configuration(), NonZeroU64::new(1).unwrap(), 0, 8),
-        Err(ParameterError::Runtime(_))
-    ));
+    for events in [0, 1025] {
+        assert!(matches!(
+            ParameterController::open(
+                &root,
+                configuration(),
+                NonZeroU64::new(1).unwrap(),
+                events,
+                8
+            ),
+            Err(ParameterError::Runtime(_))
+        ));
+    }
     let document = root.join(ADVANCED_DRUM_KIT_DOCUMENT);
     let yaml = std::fs::read_to_string(&document).unwrap();
     let invalids = [
@@ -1337,5 +1482,902 @@ fn public_index_reads_exact_applied_physical_atoms_without_allocating() {
             measured.bytes_current
         ),
         (0, 0, 0)
+    );
+}
+
+#[test]
+fn every_public_descriptor_and_normalized_write_retains_named_physical_policy() {
+    let (_package, root) = package();
+    let (mut owner, mut audio) =
+        ParameterController::open(root, configuration(), NonZeroU64::new(51).unwrap(), 64, 256)
+            .unwrap();
+    let expected = [
+        ("drums.pitch_ratio", 0.125, 8.0, 1.0, None),
+        ("drums.start_offset", 0.0, 1.0, 0.0, None),
+        ("drums.level", 0.0, 4.0, 1.0, None),
+        ("drums.pan", -1.0, 1.0, 0.0, None),
+        ("drums.variation", 0.0, 1.0, 0.0, None),
+        ("drums.kick.pitch_ratio", 0.125, 8.0, 1.0, Some(1)),
+        ("drums.kick.start_offset", 0.0, 1.0, 0.0, Some(1)),
+        ("drums.kick.level", 0.0, 4.0, 1.0, Some(1)),
+        ("drums.kick.pan", -1.0, 1.0, 0.0, Some(1)),
+        ("drums.snare.pitch_ratio", 0.125, 8.0, 1.0, Some(2)),
+        ("drums.snare.start_offset", 0.0, 1.0, 0.0, Some(2)),
+        ("drums.snare.level", 0.0, 4.0, 1.0, Some(2)),
+        ("drums.snare.pan", -1.0, 1.0, 0.0, Some(2)),
+        ("drums.snare.variation", 0.0, 1.0, 0.0, Some(2)),
+        ("drums.closed_hat.pitch_ratio", 0.125, 8.0, 1.0, Some(3)),
+        ("drums.closed_hat.start_offset", 0.0, 1.0, 0.0, Some(3)),
+        ("drums.closed_hat.level", 0.0, 4.0, 1.0, Some(3)),
+        ("drums.closed_hat.pan", -1.0, 1.0, 0.0, Some(3)),
+        ("drums.open_hat.pitch_ratio", 0.125, 8.0, 1.0, Some(4)),
+        ("drums.open_hat.start_offset", 0.0, 1.0, 0.0, Some(4)),
+        ("drums.open_hat.level", 0.0, 4.0, 1.0, Some(4)),
+        ("drums.open_hat.pan", -1.0, 1.0, 0.0, Some(4)),
+        ("drums.open_hat.variation", 0.0, 1.0, 0.0, Some(4)),
+    ];
+    assert_eq!(owner.parameters().len(), expected.len());
+    let editor = owner.attach_editor().unwrap();
+    let before = owner.session().owner_snapshot();
+    for (index, (id, min, max, default, group)) in expected.iter().enumerate() {
+        let p = &owner.parameters()[index];
+        assert_eq!(
+            (
+                &*p.id,
+                p.root_index,
+                p.physical_min,
+                p.physical_max,
+                p.physical_default,
+                p.control_group
+            ),
+            (*id, index, *min, *max, *default, *group)
+        );
+        let normalized = (index + 1) as f64 / 32.0;
+        let command = request(
+            &mut owner,
+            &editor.attachment_id,
+            index as u64 + 1,
+            "setParameter",
+            json!([id, normalized, 1]),
+        );
+        owner.apply(&command).unwrap();
+    }
+    audio.flush_parameters(&[]).unwrap();
+    for (index, (_, min, max, _, _)) in expected.iter().enumerate() {
+        let value = min + (max - min) * (index + 1) as f64 / 32.0;
+        assert_eq!(owner.physical_value(index), Some(value));
+    }
+    assert_eq!(
+        owner.session().owner_snapshot(),
+        before,
+        "scalar controls never create native history"
+    );
+}
+
+#[test]
+fn metadata_only_public_surface_matches_the_owner_without_decoding_or_creating_sound() {
+    use dandrum_trigger_host::parameters::public_parameters_from_resources;
+    let (_package, root) = package();
+    let (owner, mut audio) = ParameterController::open(
+        &root,
+        configuration(),
+        NonZeroU64::new(53).unwrap(),
+        64,
+        256,
+    )
+    .unwrap();
+    let snapshot = owner.session().owner_snapshot();
+    std::fs::write(root.join(ADVANCED_DRUM_KIT_SAMPLE), b"not playable PCM").unwrap();
+    let descriptors = public_parameters_from_resources(&root).unwrap();
+    assert_eq!(descriptors, owner.parameters());
+    for (index, p) in descriptors.iter().enumerate() {
+        let normalized = (index + 1) as f64 / 32.0;
+        let expected = p.physical_min + (p.physical_max - p.physical_min) * normalized;
+        assert_eq!(p.normalized_to_physical(normalized), Some(expected));
+        assert!((p.physical_to_normalized(expected).unwrap() - normalized).abs() < 1e-14);
+        assert_eq!(p.normalized_to_physical(0.0), Some(p.physical_min));
+        assert_eq!(p.normalized_to_physical(1.0), Some(p.physical_max));
+        for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, -0.1, 1.1] {
+            assert_eq!(p.normalized_to_physical(bad), None);
+        }
+        for bad in [
+            f64::NAN,
+            f64::INFINITY,
+            p.physical_min - 1.0,
+            p.physical_max + 1.0,
+        ] {
+            assert_eq!(p.physical_to_normalized(bad), None);
+        }
+    }
+    assert!(
+        ParameterController::open(
+            &root,
+            configuration(),
+            NonZeroU64::new(54).unwrap(),
+            64,
+            256
+        )
+        .is_err(),
+        "a sound owner must decode the actual resource"
+    );
+    audio
+        .process_events(&mut [0.0; 16], &mut [0.0; 16], &[])
+        .unwrap();
+    let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
+    audio
+        .process_events(
+            &mut left,
+            &mut right,
+            &[TimedEvent {
+                frame_offset: 0,
+                event: ControlEvent::NoteOn {
+                    note: 36,
+                    velocity: 127,
+                },
+            }],
+        )
+        .unwrap();
+    assert_eq!((left[0], right[0]), (-0.5, -0.5));
+    assert_eq!(owner.session().owner_snapshot(), snapshot);
+    assert!(public_parameters_from_resources(&root.join("missing")).is_err());
+    let doc = root.join(ADVANCED_DRUM_KIT_DOCUMENT);
+    let original = std::fs::read_to_string(&doc).unwrap();
+    std::fs::write(
+        &doc,
+        original.replacen(", maps_to: player.pitch_ratio", "", 1),
+    )
+    .unwrap();
+    let unconnected = public_parameters_from_resources(&root).unwrap();
+    assert_eq!(
+        unconnected[0], descriptors[0],
+        "an unconnected global control retains its descriptor without a group"
+    );
+    std::fs::write(doc, "this is not a kernel document").unwrap();
+    assert!(public_parameters_from_resources(&root).is_err());
+}
+
+#[test]
+fn a_short_host_block_accepts_the_declared_event_capacity_and_preserves_it_after_reconfiguration() {
+    let (_package, root) = package();
+    for events in [0, 1025] {
+        assert!(
+            ParameterController::open_with_reserved_events(
+                &root,
+                configuration(),
+                NonZeroU64::new(100).unwrap(),
+                events,
+                1024
+            )
+            .is_err()
+        );
+    }
+    let (small, mut small_audio) = ParameterController::open_with_reserved_events(
+        &root,
+        configuration(),
+        NonZeroU64::new(99).unwrap(),
+        4,
+        8,
+    )
+    .unwrap();
+    let (mut left, mut right) = ([1.0; 16], [1.0; 16]);
+    small_audio
+        .process_events(
+            &mut left,
+            &mut right,
+            &[TimedEvent {
+                frame_offset: 0,
+                event: ControlEvent::NoteOn {
+                    note: 36,
+                    velocity: 127,
+                },
+            }],
+        )
+        .unwrap();
+    assert_eq!((left[0], right[0]), (-0.5, -0.5));
+    drop((small, small_audio));
+    let (mut controller, mut audio) = ParameterController::open_with_reserved_events(
+        &root,
+        configuration(),
+        NonZeroU64::new(101).unwrap(),
+        1024,
+        1024,
+    )
+    .expect("1024 admitted events must not depend on a long host block");
+    let mut notes = vec![
+        TimedEvent {
+            frame_offset: 0,
+            event: ControlEvent::NoteOff { note: 36 }
+        };
+        1024
+    ];
+    notes[1023].event = ControlEvent::NoteOn {
+        note: 36,
+        velocity: 127,
+    };
+    for frames in [16, 8] {
+        let config = TriggerHostConfiguration {
+            max_block_frames: frames,
+            ..configuration()
+        };
+        controller
+            .reconfigure_quiescent(&mut audio, config)
+            .unwrap();
+        let (mut left, mut right) = (vec![123.0; frames as usize], vec![123.0; frames as usize]);
+        let audit = allocation_counter::measure(|| {
+            audio.process_events(&mut left, &mut right, &notes).unwrap();
+        });
+        assert_eq!(audit, allocation_counter::AllocationInfo::default());
+        assert_eq!((left[0], right[0]), (-0.5, -0.5));
+        audio.reset();
+    }
+    let mut saved = Vec::new();
+    controller.save_state(&mut saved).unwrap();
+    let (_, before_restore, _) = controller.parameter_feedback_snapshot();
+    controller.load_state(&mut saved.as_slice()).unwrap();
+    let (_, restored_stamp, restored_origins) = controller.parameter_feedback_snapshot();
+    assert!(restored_stamp > before_restore);
+    assert!(
+        restored_origins
+            .iter()
+            .all(|origin| *origin == restored_stamp),
+        "restore writes every scalar with its new runtime-local origin"
+    );
+    controller.service_quiescent(&mut audio).unwrap();
+    let (mut left, mut right) = ([123.0; 8], [123.0; 8]);
+    let audit = allocation_counter::measure(|| {
+        audio.process_events(&mut left, &mut right, &notes).unwrap();
+    });
+    assert_eq!(audit, allocation_counter::AllocationInfo::default());
+    assert_eq!((left[0], right[0]), (-0.5, -0.5));
+}
+
+#[test]
+fn normalized_curves_render_every_sample_with_implicit_endpoint_and_adjacent_jump() {
+    use dandrum_trigger_host::runtime::{NormalizedPoint, ParameterCurve};
+    let (_package, root) = package();
+    let (mut owner, mut audio) =
+        ParameterController::open(root, configuration(), NonZeroU64::new(600).unwrap(), 64, 64)
+            .unwrap();
+    let level = owner
+        .parameters()
+        .iter()
+        .find(|p| p.id == "drums.level")
+        .unwrap()
+        .root_index;
+    let points = [
+        NormalizedPoint {
+            frame_offset: 7,
+            value: 0.75,
+        },
+        NormalizedPoint {
+            frame_offset: 8,
+            value: 0.125,
+        },
+        NormalizedPoint {
+            frame_offset: 12,
+            value: 0.625,
+        },
+    ];
+    let curves = [ParameterCurve {
+        index: level,
+        points: &points,
+    }];
+    let notes = [TimedEvent {
+        frame_offset: 0,
+        event: ControlEvent::NoteOn {
+            note: 36,
+            velocity: 127,
+        },
+    }];
+    let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
+    let audit = allocation_counter::measure(|| {
+        audio
+            .process_curves(&mut left, &mut right, &notes, &curves)
+            .unwrap();
+    });
+    assert_eq!(audit, allocation_counter::AllocationInfo::default());
+    let pcm = CURVE_PCM;
+    for frame in 0..16 {
+        let normalized = match frame {
+            0..=7 => 0.25 + 0.5 * (frame + 1) as f64 / 8.0,
+            8..=12 => 0.125 + 0.5 * (frame - 8) as f64 / 4.0,
+            _ => 0.625,
+        };
+        let expected = f32::from(pcm[frame]) / 32768.0 * (4.0 * normalized) as f32;
+        assert_eq!(left[frame], expected, "left signed curve frame {frame}");
+        assert_eq!(right[frame], expected, "right signed curve frame {frame}");
+    }
+    assert_eq!(owner.take_feedback().unwrap().parameters[0].value, 0.625);
+}
+
+#[test]
+fn normalized_curves_keep_the_previous_endpoint_across_equivalent_block_partitions() {
+    use dandrum_trigger_host::runtime::{NormalizedPoint, ParameterCurve};
+    let (_package, root) = package();
+    let (_, mut whole) = ParameterController::open(
+        &root,
+        configuration(),
+        NonZeroU64::new(601).unwrap(),
+        64,
+        64,
+    )
+    .unwrap();
+    let (owner, mut split) = ParameterController::open(
+        &root,
+        configuration(),
+        NonZeroU64::new(602).unwrap(),
+        64,
+        64,
+    )
+    .unwrap();
+    let level = owner
+        .parameters()
+        .iter()
+        .find(|p| p.id == "drums.level")
+        .unwrap()
+        .root_index;
+    let notes = [TimedEvent {
+        frame_offset: 0,
+        event: ControlEvent::NoteOn {
+            note: 36,
+            velocity: 127,
+        },
+    }];
+    let (mut left, mut right, mut split_left, mut split_right) =
+        ([0.0; 16], [0.0; 16], [0.0; 16], [0.0; 16]);
+    whole
+        .process_curves(
+            &mut left,
+            &mut right,
+            &notes,
+            &[ParameterCurve {
+                index: level,
+                points: &[NormalizedPoint {
+                    frame_offset: 15,
+                    value: 0.75,
+                }],
+            }],
+        )
+        .unwrap();
+    split
+        .process_curves(
+            &mut split_left[..8],
+            &mut split_right[..8],
+            &notes,
+            &[ParameterCurve {
+                index: level,
+                points: &[NormalizedPoint {
+                    frame_offset: 7,
+                    value: 0.5,
+                }],
+            }],
+        )
+        .unwrap();
+    split
+        .process_curves(
+            &mut split_left[8..],
+            &mut split_right[8..],
+            &[],
+            &[ParameterCurve {
+                index: level,
+                points: &[NormalizedPoint {
+                    frame_offset: 7,
+                    value: 0.75,
+                }],
+            }],
+        )
+        .unwrap();
+    let pcm = CURVE_PCM;
+    for i in 0..16 {
+        let expected = f32::from(pcm[i]) / 32768.0 * (1.0 + 2.0 * (i + 1) as f32 / 16.0);
+        assert_eq!(
+            (left[i], right[i], split_left[i], split_right[i]),
+            (expected, expected, expected, expected),
+            "partition sample {i}"
+        );
+    }
+}
+
+#[test]
+fn normalized_onset_control_precedes_the_note_at_its_exact_frame() {
+    use dandrum_trigger_host::runtime::{NormalizedPoint, ParameterCurve};
+    let (_package, root) = package();
+    let (owner, mut audio) = ParameterController::open(
+        &root,
+        configuration(),
+        NonZeroU64::new(603).unwrap(),
+        64,
+        64,
+    )
+    .unwrap();
+    let offset = owner
+        .parameters()
+        .iter()
+        .find(|p| p.id == "drums.start_offset")
+        .unwrap()
+        .root_index;
+    let points = [
+        NormalizedPoint {
+            frame_offset: 4,
+            value: 0.0,
+        },
+        NormalizedPoint {
+            frame_offset: 5,
+            value: 1.0,
+        },
+    ];
+    let notes = [TimedEvent {
+        frame_offset: 5,
+        event: ControlEvent::NoteOn {
+            note: 36,
+            velocity: 127,
+        },
+    }];
+    let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
+    audio
+        .process_curves(
+            &mut left,
+            &mut right,
+            &notes,
+            &[ParameterCurve {
+                index: offset,
+                points: &points,
+            }],
+        )
+        .unwrap();
+    assert_eq!(&left[..5], &[0.0; 5]);
+    assert_eq!(
+        (left[5], right[5]),
+        (105.0 / 32768.0, 105.0 / 32768.0),
+        "last signed PCM frame at note onset"
+    );
+    assert_eq!(&left[6..], &[0.0; 10]);
+    assert_eq!(left, right);
+}
+
+const CURVE_PCM: [i16; 16] = [
+    -16384, -358, 1554, 4137, -2136, 1664, 6324, 4571, -441, 6389, 2934, 5159, 7331, 10268, 4721,
+    12612,
+];
+
+#[test]
+fn normalized_endpoint_retains_precision_and_reseeds_after_a_physical_write() {
+    use dandrum_trigger_host::runtime::{NormalizedPoint, ParameterCurve};
+    let (_package, root) = package();
+    let (owner, mut audio) = ParameterController::open(
+        &root,
+        configuration(),
+        NonZeroU64::new(604).unwrap(),
+        64,
+        64,
+    )
+    .unwrap();
+    let pitch = owner
+        .parameters()
+        .iter()
+        .find(|p| p.id == "drums.pitch_ratio")
+        .unwrap()
+        .root_index;
+    let previous = 0.5602572770128127;
+    let next = 0.8871297522414345;
+    audio
+        .process_curves(
+            &mut [0.0; 16],
+            &mut [0.0; 16],
+            &[],
+            &[ParameterCurve {
+                index: pitch,
+                points: &[NormalizedPoint {
+                    frame_offset: 0,
+                    value: previous,
+                }],
+            }],
+        )
+        .unwrap();
+    let sample_at = |position: f32| {
+        let base = position.floor() as usize;
+        let a = f32::from(CURVE_PCM[base]) / 32768.0;
+        let b = f32::from(CURVE_PCM[base + 1]) / 32768.0;
+        a + (b - a) * (position - base as f32)
+    };
+    let exact_pitch = (0.125 + 7.875 * (previous + (next - previous) / 2.0)) as f32;
+    let round_tripped = ((0.125 + 7.875 * previous) - 0.125) / 7.875;
+    let wrong_pitch = (0.125 + 7.875 * (round_tripped + (next - round_tripped) / 2.0)) as f32;
+    assert_ne!(
+        sample_at(exact_pitch),
+        sample_at(wrong_pitch),
+        "oracle distinguishes lost normalized endpoint precision"
+    );
+    let notes = [TimedEvent {
+        frame_offset: 0,
+        event: ControlEvent::NoteOn {
+            note: 36,
+            velocity: 127,
+        },
+    }];
+    let (mut left, mut right) = ([0.0; 2], [0.0; 2]);
+    audio
+        .process_curves(
+            &mut left,
+            &mut right,
+            &notes,
+            &[ParameterCurve {
+                index: pitch,
+                points: &[NormalizedPoint {
+                    frame_offset: 1,
+                    value: next,
+                }],
+            }],
+        )
+        .unwrap();
+    assert_eq!(left, [-0.5, sample_at(exact_pitch)]);
+    assert_eq!(left, right);
+    audio.reset();
+    audio
+        .flush_parameters(&[ControlEvent::Parameter {
+            index: pitch,
+            value: 1.0,
+        }])
+        .unwrap();
+    let reseeded = (1.0 - 0.125) / 7.875;
+    let expected_pitch = (0.125 + 7.875 * (reseeded + (next - reseeded) / 2.0)) as f32;
+    audio
+        .process_curves(
+            &mut left,
+            &mut right,
+            &notes,
+            &[ParameterCurve {
+                index: pitch,
+                points: &[NormalizedPoint {
+                    frame_offset: 1,
+                    value: next,
+                }],
+            }],
+        )
+        .unwrap();
+    assert_eq!(left, [-0.5, sample_at(expected_pitch)]);
+    assert_eq!(left, right);
+}
+
+#[test]
+fn stopped_normalized_flush_is_atomic_preserves_native_history_and_consumes_no_dsp_time() {
+    use dandrum_trigger_host::runtime::RuntimeError;
+    let (_package, root) = package();
+    let (mut owner, mut audio) =
+        ParameterController::open(root, configuration(), NonZeroU64::new(605).unwrap(), 4, 6)
+            .unwrap();
+    let level = owner
+        .parameters()
+        .iter()
+        .find(|p| p.id == "drums.level")
+        .unwrap()
+        .root_index;
+    let before = owner.session().owner_snapshot();
+    let editor = owner.attach_editor().unwrap();
+    let command = request(
+        &mut owner,
+        &editor.attachment_id,
+        1,
+        "setParameter",
+        json!(["drums.level", 0.125, 1]),
+    );
+    owner.apply(&command).unwrap();
+    for invalid in [
+        vec![(level, 0.0), (usize::MAX, 0.5)],
+        vec![(level, 0.0), (level, 0.5)],
+        vec![(level, f64::NAN)],
+        vec![(level, -0.1)],
+        vec![(level, 1.1)],
+        vec![(level, 0.5); 5],
+        vec![(level, 0.5); 24],
+    ] {
+        let audit = allocation_counter::measure(|| {
+            assert_eq!(
+                audio.flush_normalized(&invalid),
+                Err(RuntimeError::InvalidEvent)
+            )
+        });
+        assert_eq!(audit, allocation_counter::AllocationInfo::default());
+        assert_eq!(
+            owner.parameter_state().sequence,
+            0,
+            "invalid host batch preserves queued UI settlement"
+        );
+    }
+    let audit = allocation_counter::measure(|| {
+        assert_eq!(
+            audio
+                .flush_normalized(&[(level, 0.5)])
+                .unwrap()
+                .parameter_updates,
+            2
+        )
+    });
+    assert_eq!(audit, allocation_counter::AllocationInfo::default());
+    assert_eq!(
+        owner.session().owner_snapshot(),
+        before,
+        "scalar host work creates no native history"
+    );
+    let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
+    audio
+        .process_events(
+            &mut left,
+            &mut right,
+            &[TimedEvent {
+                frame_offset: 0,
+                event: ControlEvent::NoteOn {
+                    note: 36,
+                    velocity: 127,
+                },
+            }],
+        )
+        .unwrap();
+    assert_eq!((left[0], right[0]), (-1.0, -1.0));
+}
+
+#[test]
+fn automation_provenance_follows_each_editor_through_acknowledgement_and_cancellation() {
+    let (_package, root) = package();
+    let (mut controller, _audio) =
+        ParameterController::open(root, configuration(), NonZeroU64::new(702).unwrap(), 16, 16)
+            .unwrap();
+    let a = controller.attach_editor().unwrap();
+    let b = controller.attach_editor().unwrap();
+    let a_owner = a.attachment_id.parse::<u64>().unwrap();
+    let b_owner = b.attachment_id.parse::<u64>().unwrap();
+    assert_ne!(a_owner, b_owner);
+    let level = controller
+        .parameters()
+        .iter()
+        .position(|p| p.id == "drums.level")
+        .unwrap();
+    let pan = controller
+        .parameters()
+        .iter()
+        .position(|p| p.id == "drums.pan")
+        .unwrap();
+    assert_eq!(controller.peek_automation_with_owner(), None);
+    for (editor, serial, method, args) in [
+        (&a, 1, "beginGesture", json!(["drums.level", 1])),
+        (&b, 1, "beginGesture", json!(["drums.pan", 1])),
+        (&a, 2, "setParameter", json!(["drums.level", 0.5, 1])),
+        (&b, 2, "setParameter", json!(["drums.pan", 0.25, 1])),
+    ] {
+        let admitted = request(&mut controller, &editor.attachment_id, serial, method, args);
+        controller.apply(&admitted).unwrap();
+    }
+    let first = (
+        a_owner,
+        AutomationEvent::Begin {
+            parameter_index: level,
+        },
+    );
+    assert_eq!(controller.peek_automation_with_owner(), Some(first));
+    assert_eq!(
+        controller.peek_automation_with_owner(),
+        Some(first),
+        "observation does not consume delivery"
+    );
+    assert!(controller.acknowledge_automation());
+    assert_eq!(
+        controller.peek_automation_with_owner(),
+        Some((
+            b_owner,
+            AutomationEvent::Begin {
+                parameter_index: pan
+            }
+        ))
+    );
+    // The format adapter has already closed A's accepted host Begin. Its
+    // cancellation now removes only A's undelivered Value and reserved End.
+    assert_eq!(
+        controller
+            .detach_editor_and_cancel_automation(&a.attachment_id)
+            .unwrap(),
+        2
+    );
+    let end_b = request(
+        &mut controller,
+        &b.attachment_id,
+        3,
+        "endGesture",
+        json!(["drums.pan", 1]),
+    );
+    controller.apply(&end_b).unwrap();
+    let c = controller.attach_editor().unwrap();
+    let c_owner = c.attachment_id.parse::<u64>().unwrap();
+    assert_ne!(c_owner, a_owner);
+    let set_c = request(
+        &mut controller,
+        &c.attachment_id,
+        1,
+        "setParameter",
+        json!(["drums.level", 0.25, 1]),
+    );
+    controller.apply(&set_c).unwrap();
+    for expected in [
+        (
+            b_owner,
+            AutomationEvent::Begin {
+                parameter_index: pan,
+            },
+        ),
+        (
+            b_owner,
+            AutomationEvent::Value {
+                parameter_index: pan,
+                value: -0.5,
+            },
+        ),
+        (
+            b_owner,
+            AutomationEvent::End {
+                parameter_index: pan,
+            },
+        ),
+        (
+            c_owner,
+            AutomationEvent::Begin {
+                parameter_index: level,
+            },
+        ),
+        (
+            c_owner,
+            AutomationEvent::Value {
+                parameter_index: level,
+                value: 1.0,
+            },
+        ),
+        (
+            c_owner,
+            AutomationEvent::End {
+                parameter_index: level,
+            },
+        ),
+    ] {
+        assert_eq!(controller.peek_automation_with_owner(), Some(expected));
+        assert_eq!(
+            controller.peek_automation(),
+            Some(expected.1),
+            "existing format consumers retain the same ordered event view"
+        );
+        assert!(controller.acknowledge_automation());
+    }
+    assert_eq!(controller.peek_automation_with_owner(), None);
+    assert!(!controller.acknowledge_automation());
+}
+
+#[test]
+fn cancelling_detachment_removes_only_that_editors_automation_and_preserves_admitted_values() {
+    let (_package, root) = package();
+    let (mut controller, mut audio) =
+        ParameterController::open(root, configuration(), NonZeroU64::new(701).unwrap(), 16, 8)
+            .unwrap();
+    let a = controller.attach_editor().unwrap();
+    let b = controller.attach_editor().unwrap();
+    let history = controller.session().owner_snapshot();
+    let level = controller
+        .parameters()
+        .iter()
+        .position(|p| p.id == "drums.level")
+        .unwrap();
+    let pan = controller
+        .parameters()
+        .iter()
+        .position(|p| p.id == "drums.pan")
+        .unwrap();
+    for (editor, serial, method, args) in [
+        (&a, 1, "beginGesture", json!(["drums.level", 1])),
+        (&b, 1, "beginGesture", json!(["drums.pan", 1])),
+        (&a, 2, "setParameter", json!(["drums.level", 0.5, 1])),
+        (&b, 2, "setParameter", json!(["drums.pan", 0.25, 1])),
+    ] {
+        let command = request(&mut controller, &editor.attachment_id, serial, method, args);
+        controller.apply(&command).unwrap();
+    }
+    assert_eq!(
+        controller.pending_automation().collect::<Vec<_>>(),
+        vec![
+            AutomationEvent::Begin {
+                parameter_index: level
+            },
+            AutomationEvent::Begin {
+                parameter_index: pan
+            },
+            AutomationEvent::Value {
+                parameter_index: level,
+                value: 2.0
+            },
+            AutomationEvent::Value {
+                parameter_index: pan,
+                value: -0.5
+            },
+        ]
+    );
+    // The adapter has separately closed any host-accepted Begin. Cancellation
+    // is explicit; it must never masquerade as acknowledge_automation success.
+    assert_eq!(
+        controller
+            .detach_editor_and_cancel_automation(&a.attachment_id)
+            .unwrap(),
+        3
+    );
+    let retained = vec![
+        AutomationEvent::Begin {
+            parameter_index: pan,
+        },
+        AutomationEvent::Value {
+            parameter_index: pan,
+            value: -0.5,
+        },
+    ];
+    assert_eq!(
+        controller.pending_automation().collect::<Vec<_>>(),
+        retained
+    );
+    assert_eq!(controller.peek_automation(), retained.first().copied());
+    assert!(matches!(
+        controller.detach_editor_and_cancel_automation(&a.attachment_id),
+        Err(ParameterError::Protocol(ProtocolError::StaleAttachment))
+    ));
+    assert!(
+        controller
+            .detach_editor_and_cancel_automation("01")
+            .is_err()
+    );
+    assert_eq!(
+        controller.pending_automation().collect::<Vec<_>>(),
+        retained
+    );
+    assert_eq!(audio.flush_parameters(&[]).unwrap().parameter_updates, 2);
+    let state = controller.parameter_state();
+    assert_eq!(state.parameters[level].value, 0.5);
+    assert_eq!(state.parameters[pan].value, 0.25);
+    assert_eq!(controller.session().owner_snapshot(), history);
+    let finish_b = request(
+        &mut controller,
+        &b.attachment_id,
+        3,
+        "endGesture",
+        json!(["drums.pan", 1]),
+    );
+    controller.apply(&finish_b).unwrap();
+    assert_eq!(
+        controller.pending_automation().last(),
+        Some(AutomationEvent::End {
+            parameter_index: pan
+        })
+    );
+    let c = controller.attach_editor().unwrap();
+    let begin_c = request(
+        &mut controller,
+        &c.attachment_id,
+        1,
+        "beginGesture",
+        json!(["drums.level", 1]),
+    );
+    controller.apply(&begin_c).unwrap();
+    assert_eq!(
+        controller
+            .detach_editor_and_cancel_automation(&c.attachment_id)
+            .unwrap(),
+        2,
+        "cancelled owner releases its gesture and reserved End capacity"
+    );
+    assert_eq!(
+        controller.pending_automation().collect::<Vec<_>>(),
+        vec![
+            AutomationEvent::Begin {
+                parameter_index: pan
+            },
+            AutomationEvent::Value {
+                parameter_index: pan,
+                value: -0.5
+            },
+            AutomationEvent::End {
+                parameter_index: pan
+            }
+        ]
     );
 }

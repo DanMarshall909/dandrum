@@ -10,7 +10,15 @@
         "date": "2026-09-29",
         "evidence": "docs/resource-measurements/2026-09-29-rust-coverage.json",
         "durationSeconds": 60,
-        "completedRunDurationsSeconds": [60, 59, 60, 57, 57, 59, 58],
+        "completedRunDurationsSeconds": [
+          60,
+          59,
+          60,
+          57,
+          57,
+          59,
+          58
+        ],
         "taskConcurrency": 1,
         "minimumAvailableMiB": 17861,
         "peakTaskSwapMiB": 0,
@@ -23,9 +31,17 @@
           "reserveMiB": 8192,
           "outputGrowthMiB": 8192,
           "tempGrowthMiB": 1024,
-          "retainedBudgetMiB": 65536,
+          "retainedBudgetMiB": 114688,
           "basis": "estimated",
-          "estimateReason": "One serial Trigger Rust test, LLVM coverage or native verification build. Allows 8 GiB cache/output growth plus 1 GiB scratch and preserves an 8 GiB free-space reserve. The managed Cargo driver applies the 64 GiB admission/retention budget to owned ordinary and instrumented intermediates and registered private Cargo outputs. It preserves current warm state and retires only inactive owned generations when space is needed. Native fixtures retain the current copy and latest failure logs; other native/CMake outputs require separate storage review. Completion measurement detects overruns; this is not a filesystem quota."
+          "estimateReason": "One serial Trigger Rust test, LLVM coverage or native verification build. Restore the ordinary cold-safe 8 GiB output allowance for publication, plus 1 GiB temporary growth and 8 GiB free disk (17 GiB admission). Dan approved 112 GiB managed retention on 16 November 2026. The earlier 3 GiB warm-only local reservation depended on private configuration checks and is not the maintained default. Use DANDRUM_CARGO_PRESERVE_GENERATIONS=1 for this closeout; preserve reusable caches/dependencies, serialize producers with at most four compiler jobs, and retain the mutation exclusion. Completion measurement detects overruns; this is not a filesystem quota or a completion guarantee."
+        },
+        "trigger-vst3-proof": {
+          "reserveMiB": 8192,
+          "outputGrowthMiB": 57344,
+          "tempGrowthMiB": 2048,
+          "retainedBudgetMiB": 8192,
+          "basis": "estimated",
+          "estimateReason": "Dan explicitly approved 56 GiB cumulative incremental outputs plus 2 GiB scratch and 112 GiB managed retention on 16 November 2026. Keep at least 8 GiB free disk and MemAvailable, one heavy producer and at most four compiler jobs. No paid services; mutation remains excluded. The original 12 active-executor-hour implementation allowance was exhausted; on 17 November Dan authorized a separate split-and-merge closeout, with remaining implementation and full Linux acceptance retained in issue45. Preserve reusable caches/dependencies. Require DANDRUM_CARGO_PRESERVE_GENERATIONS=1 and a non-mutating full growth+temp+reserve preflight (17 GiB free under the restored8GiB driver reservation), retention+growth+temp and all-root cumulative accounting before each producer. Refuse pressure rather than evicting earlier generations. This finite allowance is not a completion or usable-capacity guarantee."
         }
       }
     }

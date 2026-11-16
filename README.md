@@ -45,6 +45,18 @@ See the [React editor performance measurements](docs/resource-measurements/2026-
 
 Maintain demo registrations in [scripts/demos.json](scripts/demos.json) whenever a demo is added, renamed, moved or removed. Native entries can set `nativeOnly`, `buildDirectory`, and `cmakeOptions` (CMake definitions without the `-D` prefix); omitted fields preserve the normal build and React settings. Update launch tests and relevant documentation in the same change. CTest's `demo-launcher-inventory` check rejects unregistered JUCE standalone, console, GUI and direct CMake application targets, incorrect native artifact paths and unregistered local React dev packages. Run `python3 -m unittest discover -s tests/python -p 'test_demo_*.py'` for focused launcher checks.
 
+## Direct Rust VST3 foundation
+
+The experimental direct Rust Trigger VST3 adapter in `src/vst3-adapter` now
+has processor/controller ownership, bounded standard messaging, signed audio/MIDI,
+automation curves, portable state and shared editor foundations. Cargo's native
+editor feature remains opt-in; actual VST3 native attachment is not implemented.
+This is a foundation checkpoint, with native editor integration, installed/offline
+REAPER acceptance and full product qualification tracked in
+[issue #45](https://github.com/DanMarshall909/dandrum/issues/45).
+See the [foundation evidence](docs/migrations/evidence/trigger-vst3-foundation-2026-11-17/README.md).
+The existing JUCE and CLAP products remain available.
+
 ## First Sound
 
 The first milestone is deliberately tiny: prove the JUCE wrapper can open the default audio device while Rust owns the
@@ -96,6 +108,15 @@ Completion measures actual growth; this is an admission limit, not a filesystem
 quota. Raw `$HOME/.cargo/bin/cargo` invocations and unrelated build directories
 are outside this policy. Use the managed commands consistently and serialize
 heavy builds.
+
+For work that must preserve every existing cache generation, set
+`DANDRUM_CARGO_PRESERVE_GENERATIONS=1` on the managed command and its parent
+verification/hook process. Admission then refuses before starting Cargo if
+capacity would require automatic generation retirement; existing warm outputs
+remain reusable. The default (unset or `0`) retains the normal retirement policy.
+Other values fail before cache initialization. Continue checking the task's
+cumulative output allowance and the full growth, scratch and reserve admission
+before each producer; this setting grants no additional storage.
 
 Interrupted commands leave an `active.json` marker and refuse further growth.
 Inspect the recorded process, inherited lease and output before recovery; remove

@@ -5,6 +5,9 @@
 
 #![forbid(unsafe_code)]
 
+mod control_values;
+pub mod editor_bridge;
+pub mod editor_commands;
 pub mod parameters;
 mod patch_budget;
 pub mod protocol;

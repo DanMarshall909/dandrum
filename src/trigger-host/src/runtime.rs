@@ -61,10 +61,29 @@ pub struct TimedEvent {
     pub event: ControlEvent,
 }
 
+/// A normalized host endpoint, interpreted before physical unit conversion.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct NormalizedPoint {
+    pub frame_offset: u32,
+    pub value: f64,
+}
+
+/// One nonempty normalized curve over a bounded physical root control.
+/// Offsets increase strictly; an omitted frame zero interpolates from the
+/// previous applied endpoint at frame -1. The last point holds through the tail.
+#[derive(Clone, Copy, Debug)]
+pub struct ParameterCurve<'a> {
+    pub index: usize,
+    pub points: &'a [NormalizedPoint],
+}
+
+pub const MAX_CURVES: usize = 23;
+
 /// Fully constructed processor and scratch storage; moving it does not allocate.
 pub struct PreparedRuntime(Box<Processor>);
 
 struct Processor {
+    reserve_events: bool,
     graph: RealtimeGraphProcessor,
     configuration: TriggerHostConfiguration,
     layout: Vec<PortMetadata>,
@@ -76,6 +95,43 @@ impl PreparedRuntime {
     pub fn new(
         prepared: &PreparedKernelInstrument,
         configuration: TriggerHostConfiguration,
+    ) -> Result<Self, RuntimeError> {
+        Self::build(
+            prepared,
+            configuration,
+            configuration.max_block_frames as usize,
+        )
+    }
+
+    /// Reserve the declared note budget independently of a short host block.
+    /// Existing sufficient preparation is reused; larger event scratch is built
+    /// off audio, without changing accepted render settings or CLAP's defaults.
+    pub fn new_for_events(
+        prepared: &PreparedKernelInstrument,
+        configuration: TriggerHostConfiguration,
+        events: usize,
+    ) -> Result<Self, RuntimeError> {
+        if events == 0 || events > MAX_EVENTS {
+            return Err(RuntimeError::InvalidConfiguration);
+        }
+        let mut initial = Self::new(prepared, configuration)?;
+        if events <= initial.0.graph.pending_event_capacity() / 2 {
+            initial.0.reserve_events = true;
+            return Ok(initial);
+        }
+        drop(initial); // Reclaim the smaller preparation on this control thread.
+        let mut prepared = Self::build(
+            prepared,
+            configuration,
+            (events * 2).max(configuration.max_block_frames as usize),
+        )?;
+        prepared.0.reserve_events = true;
+        Ok(prepared)
+    }
+    fn build(
+        prepared: &PreparedKernelInstrument,
+        configuration: TriggerHostConfiguration,
+        graph_frames: usize,
     ) -> Result<Self, RuntimeError> {
         if !(1..=MAX_BLOCK_FRAMES).contains(&configuration.max_block_frames)
             || prepared.compiled_patch().render_settings().sample_rate_hz
@@ -123,11 +179,12 @@ impl PreparedRuntime {
             })
             .collect();
         let mut processor = Processor {
+            reserve_events: false,
             graph: RealtimeGraphProcessor::from_compiled_patch(
                 prepared.compiled_patch().clone(),
                 configuration.sample_rate_hz.hz() as f32,
                 &PreparedSamplerAssets::empty(),
-                frames,
+                graph_frames,
             ),
             configuration,
             layout,
@@ -195,14 +252,17 @@ struct QueuedFeedback {
     parameter: ParameterFeedback,
     settlement: u64,
     epoch: u64,
+    publication: u64,
 }
 
 pub struct RuntimeControl {
+    reserve_events: bool,
     pending: Producer<PreparedRuntime>,
     retired: Consumer<PreparedRuntime>,
     events: Producer<QueuedEvent>,
     feedback: Consumer<QueuedFeedback>,
     values: Arc<[AtomicU64]>,
+    value_origins: Arc<[AtomicU64]>,
     settlement: Arc<AtomicU64>,
     epoch: Arc<AtomicU64>,
     admission: Arc<AtomicU64>,
@@ -214,6 +274,16 @@ pub struct RuntimeControl {
     in_flight: bool,
     configuration: TriggerHostConfiguration,
     layout: Vec<PortMetadata>,
+}
+
+/// Values and their actual last-write intervals share one coherent read.
+/// Empty callbacks and reset cancellation may advance publication without
+/// changing origins; scalar restoration writes every root value.
+pub(crate) struct ScalarSnapshot {
+    pub values: Vec<f64>,
+    pub origins: Vec<u64>,
+    pub publication: u64,
+    pub settlement: u64,
 }
 
 pub struct RuntimeAudio {
@@ -228,10 +298,13 @@ struct AudioState {
     retired: Producer<PreparedRuntime>,
     events: Consumer<QueuedEvent>,
     feedback: Producer<QueuedFeedback>,
+    publication: u64,
     values: Arc<[AtomicU64]>,
+    value_origins: Arc<[AtomicU64]>,
     settlement: Arc<AtomicU64>,
     epoch: Arc<AtomicU64>,
     event_capacity: usize,
+    normalized: Vec<(u64, f64)>,
     editor_intent: Arc<[AtomicU64; 128]>,
     editor_gates: [u64; 128],
     editor_seen: [u64; 128],
@@ -250,6 +323,7 @@ pub struct RuntimeLease<'a> {
     in_flight: &'a mut bool,
     candidate: PreparedRuntime,
     values: &'a [AtomicU64],
+    value_origins: &'a [AtomicU64],
     settlement: &'a AtomicU64,
     restored: Option<RestoredScalars>,
     epoch: &'a AtomicU64,
@@ -295,7 +369,15 @@ impl ActivationHost for QuiescentControl<'_> {
     ) -> Result<Self::Lease<'a>, Self::Error> {
         // Session has not published yet: construction, probing and every
         // fallible check belong before its infallible publication boundary.
-        let candidate = PreparedRuntime::new(prepared, self.configuration)?;
+        let candidate = if self.control.reserve_events {
+            PreparedRuntime::new_for_events(
+                prepared,
+                self.configuration,
+                self.audio.state.event_capacity,
+            )?
+        } else {
+            PreparedRuntime::new(prepared, self.configuration)?
+        };
         if !compatible_layout(&candidate.0.layout, &self.control.layout)
             || self.audio.state.event_capacity > candidate.0.graph.pending_event_capacity() / 2
         {
@@ -349,8 +431,14 @@ impl ActivationLease for RuntimeLease<'_> {
         self.slot.fill_from_iter(std::iter::once(self.candidate));
         if let Some(restored) = self.restored {
             let _write = ScalarWrite::begin(self.scalar_stamp);
-            for (destination, value) in self.values.iter().zip(restored.values) {
+            for ((destination, origin), value) in self
+                .values
+                .iter()
+                .zip(self.value_origins)
+                .zip(restored.values)
+            {
                 destination.store(value.to_bits(), Ordering::SeqCst);
+                origin.store(_write.publication, Ordering::SeqCst);
             }
             self.settlement.store(0, Ordering::Release);
             self.epoch.store(restored.epoch, Ordering::Relaxed);
@@ -411,14 +499,17 @@ pub fn runtime_handoff(
             )
         })
         .collect();
+    let value_origins: Arc<[AtomicU64]> = values.iter().map(|_| AtomicU64::new(0)).collect();
     let (pending_tx, pending_rx) = RingBuffer::new(1);
     let (retired_tx, retired_rx) = RingBuffer::new(1);
     let control = RuntimeControl {
+        reserve_events: initial.0.reserve_events,
         pending: pending_tx,
         retired: retired_rx,
         events: event_tx,
         feedback: feedback_rx,
         values: values.clone(),
+        value_origins: value_origins.clone(),
         settlement: settlement.clone(),
         epoch: epoch.clone(),
         admission: admission.clone(),
@@ -430,14 +521,18 @@ pub fn runtime_handoff(
         configuration: initial.0.configuration,
         layout: initial.0.layout.clone(),
     };
+    let normalized = vec![(u64::MAX, 0.0); values.len()];
     let audio = RuntimeAudio {
         state: AudioState {
+            normalized,
             current: initial,
             pending: pending_rx,
             retired: retired_tx,
             events: event_rx,
             feedback: feedback_tx,
+            publication: 0,
             values,
+            value_origins,
             settlement,
             epoch,
             event_capacity,
@@ -585,7 +680,15 @@ impl RuntimeControl {
         if !self.activation_available() {
             return Err(RuntimeError::Busy);
         }
-        let candidate = PreparedRuntime::new(prepared, self.configuration)?;
+        let candidate = if self.reserve_events {
+            PreparedRuntime::new_for_events(
+                prepared,
+                self.configuration,
+                self.events.buffer().capacity(),
+            )?
+        } else {
+            PreparedRuntime::new(prepared, self.configuration)?
+        };
         if !self.compatible(&candidate) {
             return Err(RuntimeError::IncompatibleRuntime);
         }
@@ -602,6 +705,7 @@ impl RuntimeControl {
             in_flight: &mut self.in_flight,
             candidate,
             values: &self.values,
+            value_origins: &self.value_origins,
             settlement: &self.settlement,
             restored,
             epoch: &self.epoch,
@@ -627,12 +731,15 @@ impl RuntimeControl {
     pub fn take_feedback(&mut self) -> Option<ParameterFeedback> {
         self.current_feedback().map(|feedback| feedback.parameter)
     }
-    pub(crate) fn take_sequenced_feedback(&mut self) -> Option<(ParameterFeedback, u64, bool)> {
+    pub(crate) fn take_sequenced_feedback(
+        &mut self,
+    ) -> Option<(ParameterFeedback, u64, bool, u64)> {
         self.current_feedback().map(|feedback| {
             (
                 feedback.parameter,
                 feedback.settlement >> 1,
                 feedback.settlement & 1 != 0,
+                feedback.publication,
             )
         })
     }
@@ -668,10 +775,15 @@ impl RuntimeControl {
 
     /// Read a vector from a completed scalar-write interval. Writers are
     /// serialized by callback admission; only this off-audio reader retries.
-    /// Every stamp/data access is SeqCst, so equal even stamps exclude an
-    /// intervening writer in their single global atomic order.
+    /// Scalar/stamp accesses are SeqCst, so equal even stamps exclude an
+    /// intervening writer. Settlement is acquired inside that same interval;
+    /// its Release stores are published by the writer's finishing stamp.
     pub(crate) fn snapshot_state_values(&self) -> Vec<f64> {
+        self.snapshot_scalar_state().values
+    }
+    pub(crate) fn snapshot_scalar_state(&self) -> ScalarSnapshot {
         let mut values = vec![0.0; self.values.len()];
+        let mut origins = vec![0; self.values.len()];
         loop {
             let before = self.scalar_stamp.load(Ordering::SeqCst);
             if before & 1 != 0 {
@@ -681,8 +793,17 @@ impl RuntimeControl {
             for (destination, source) in values.iter_mut().zip(self.values.iter()) {
                 *destination = f64::from_bits(source.load(Ordering::SeqCst));
             }
+            for (destination, source) in origins.iter_mut().zip(self.value_origins.iter()) {
+                *destination = source.load(Ordering::SeqCst);
+            }
+            let settlement = self.settlement.load(Ordering::Acquire);
             if before == self.scalar_stamp.load(Ordering::SeqCst) {
-                return values;
+                return ScalarSnapshot {
+                    values,
+                    origins,
+                    publication: before,
+                    settlement,
+                };
             }
         }
     }
@@ -699,6 +820,16 @@ impl RuntimeControl {
             .map(|value| f64::from_bits(value.load(Ordering::Relaxed)))
             .collect();
         (settlement >> 1, settlement & 1 != 0, values)
+    }
+
+    pub(crate) fn snapshot_parameters_with_publication(&self) -> (u64, bool, Vec<f64>, u64) {
+        let state = self.snapshot_scalar_state();
+        (
+            state.settlement >> 1,
+            state.settlement & 1 != 0,
+            state.values,
+            state.publication,
+        )
     }
 
     fn send_sequenced(
@@ -769,18 +900,24 @@ impl ControlEvent {
     }
 }
 
-// At two increments per callback, the u64 stamp cannot wrap during a
+// At two increments per scalar transaction, the u64 stamp cannot wrap during a
 // practical snapshot read; a reader must not span 2^63 complete write intervals.
-struct ScalarWrite<'a>(&'a AtomicU64);
+struct ScalarWrite<'a> {
+    stamp: &'a AtomicU64,
+    publication: u64,
+}
 impl<'a> ScalarWrite<'a> {
     fn begin(stamp: &'a AtomicU64) -> Self {
-        stamp.fetch_add(1, Ordering::SeqCst);
-        Self(stamp)
+        let before = stamp.fetch_add(1, Ordering::SeqCst);
+        Self {
+            stamp,
+            publication: before.wrapping_add(2),
+        }
     }
 }
 impl Drop for ScalarWrite<'_> {
     fn drop(&mut self) {
-        self.0.fetch_add(1, Ordering::SeqCst);
+        self.stamp.fetch_add(1, Ordering::SeqCst);
     }
 }
 
@@ -839,13 +976,19 @@ impl RuntimeAudio {
         {
             return Err(RuntimeError::InvalidEvent);
         }
+        Ok(self.apply_scalar_batch(host))
+    }
+
+    /// Both public entrypoints validate the entire scalar batch first.
+    fn apply_scalar_batch(&mut self, host: &[ControlEvent]) -> ParameterFlushReport {
         let Some(_admission) = CallbackAdmission::enter(&self.admission) else {
-            return Ok(ParameterFlushReport {
+            return ParameterFlushReport {
                 admission_closed: true,
                 ..ParameterFlushReport::default()
-            });
+            };
         };
         let _write = ScalarWrite::begin(&self.scalar_stamp);
+        self.state.publication = _write.publication;
         let mut report = ParameterFlushReport::default();
         for _ in 0..self.state.event_capacity {
             let Ok(&queued) = self.state.events.peek() else {
@@ -873,8 +1016,47 @@ impl RuntimeAudio {
                     usize::from(self.state.apply_parameter(index, value, 0, 0));
             }
         }
+        report
+    }
+    /// Apply stopped normalized host scalars without advancing DSP. Preserve
+    /// exact normalized endpoints so the following ramp has the same origin.
+    pub fn flush_normalized(
+        &mut self,
+        host: &[(usize, f64)],
+    ) -> Result<ParameterFlushReport, RuntimeError> {
+        if host.len() > MAX_CURVES || host.len() > self.state.event_capacity {
+            return Err(RuntimeError::InvalidEvent);
+        }
+        let mut scalars = [ControlEvent::Parameter {
+            index: 0,
+            value: 0.0,
+        }; MAX_CURVES];
+        let mut applied_bits = [0; MAX_CURVES];
+        for (position, &(index, normalized)) in host.iter().enumerate() {
+            if !(0.0..=1.0).contains(&normalized)
+                || host[..position].iter().any(|(prior, _)| *prior == index)
+            {
+                return Err(RuntimeError::InvalidEvent);
+            }
+            let (min, max) = self
+                .state
+                .current
+                .0
+                .range(index)
+                .ok_or(RuntimeError::InvalidEvent)?;
+            let value = crate::control_values::physical(min, max, normalized);
+            scalars[position] = ControlEvent::Parameter { index, value };
+            applied_bits[position] = value.to_bits();
+        }
+        let report = self.apply_scalar_batch(&scalars[..host.len()]);
+        if !report.admission_closed {
+            for (&(index, normalized), bits) in host.iter().zip(applied_bits) {
+                self.state.normalized[index] = (bits, normalized);
+            }
+        }
         Ok(report)
     }
+
     pub fn reset(&mut self) -> ResetReport {
         let Some(_admission) = CallbackAdmission::enter(&self.admission) else {
             return ResetReport {
@@ -882,6 +1064,8 @@ impl RuntimeAudio {
                 ..ResetReport::default()
             };
         };
+        let _write = ScalarWrite::begin(&self.scalar_stamp);
+        self.state.publication = _write.publication;
         self.state.reset()
     }
 
@@ -893,11 +1077,27 @@ impl RuntimeAudio {
         self.process_events(left, right, &[])
     }
 
+    /// Notes retain list order. Curves supply normalized controls before DSP
+    /// consumes each sample, including controls sampled at note onset.
     pub fn process_events(
         &mut self,
         left: &mut [f32],
         right: &mut [f32],
         events: &[TimedEvent],
+    ) -> Result<ProcessReport, RuntimeError> {
+        self.process_curves(left, right, events, &[])
+    }
+
+    /// Validate the complete batch before consuming queued work. At most23
+    /// unique curves and the endpoint's total point/note capacity are accepted.
+    /// Curved batches contain notes only; discrete parameter batches retain
+    /// their existing ordered-step semantics through `process_events`.
+    pub fn process_curves(
+        &mut self,
+        left: &mut [f32],
+        right: &mut [f32],
+        events: &[TimedEvent],
+        curves: &[ParameterCurve<'_>],
     ) -> Result<ProcessReport, RuntimeError> {
         let Some(_admission) = CallbackAdmission::enter(&self.admission) else {
             left.fill(0.0);
@@ -908,7 +1108,8 @@ impl RuntimeAudio {
             });
         };
         let _write = ScalarWrite::begin(&self.scalar_stamp);
-        self.state.process_events(left, right, events)
+        self.state.publication = _write.publication;
+        self.state.process_curves(left, right, events, curves)
     }
 }
 
@@ -956,18 +1157,20 @@ impl AudioState {
     }
     /// Control-thread events are applied at the next block boundary; host events
     /// carry ordered offsets in this block. A rejected batch changes no state.
-    pub fn process_events(
+    fn process_curves(
         &mut self,
         left: &mut [f32],
         right: &mut [f32],
         events: &[TimedEvent],
+        curves: &[ParameterCurve<'_>],
     ) -> Result<ProcessReport, RuntimeError> {
         let error = if left.len() != right.len()
             || left.is_empty()
             || left.len() > self.current.0.configuration.max_block_frames as usize
         {
             Some(RuntimeError::InvalidBlock)
-        } else if events.len() > self.event_capacity
+        } else if !self.valid_curves(curves, events, left.len())
+            || events.len() > self.event_capacity
             || events.iter().any(|event| {
                 event.frame_offset as usize >= left.len()
                     || !event.event.valid(&self.current.0.layout)
@@ -1055,21 +1258,92 @@ impl AudioState {
         }
         self.start_editor_notes(&intents, &touched, &mut budget);
         self.editor_cursor = (self.editor_cursor + 1) % 128;
+        let mut cursors = [CurveCursor::default(); MAX_CURVES];
+        for (curve, cursor) in curves.iter().zip(&mut cursors) {
+            let bits = self.values[curve.index].load(Ordering::Relaxed);
+            let value = f64::from_bits(bits);
+            let (min, max) = self.current.0.range(curve.index).expect("validated range");
+            let previous = self.normalized[curve.index];
+            cursor.value = if previous.0 == bits {
+                previous.1
+            } else {
+                crate::control_values::normalized(min, max, value)
+            };
+            cursor.frame = -1;
+        }
         let mut start = 0;
         for event in events {
             let end = event.frame_offset as usize;
             if end > start {
-                self.current
-                    .0
-                    .render(&self.values, &mut left[start..end], &mut right[start..end]);
+                self.current.0.render(
+                    &self.values,
+                    &mut left[start..end],
+                    &mut right[start..end],
+                    curves,
+                    &mut cursors,
+                    start,
+                );
             }
             self.apply_event(event.event, event.frame_offset, 0, &mut report)?;
             start = end;
         }
-        self.current
-            .0
-            .render(&self.values, &mut left[start..], &mut right[start..]);
+        self.current.0.render(
+            &self.values,
+            &mut left[start..],
+            &mut right[start..],
+            curves,
+            &mut cursors,
+            start,
+        );
+        for curve in curves {
+            let point = curve.points.last().expect("validated nonempty curve");
+            let (min, max) = self.current.0.range(curve.index).expect("validated range");
+            let physical = crate::control_values::physical(min, max, point.value);
+            report.parameter_updates += 1;
+            report.dropped_feedback +=
+                usize::from(self.apply_parameter(curve.index, physical, point.frame_offset, 0));
+            self.normalized[curve.index] = (physical.to_bits(), point.value);
+        }
         Ok(report)
+    }
+
+    fn valid_curves(
+        &self,
+        curves: &[ParameterCurve<'_>],
+        events: &[TimedEvent],
+        frames: usize,
+    ) -> bool {
+        if curves.len() > MAX_CURVES
+            || (!curves.is_empty()
+                && events
+                    .iter()
+                    .any(|e| matches!(e.event, ControlEvent::Parameter { .. })))
+        {
+            return false;
+        }
+        let mut total = events.len();
+        for (position, curve) in curves.iter().enumerate() {
+            if curve.points.is_empty()
+                || curves[..position].iter().any(|c| c.index == curve.index)
+                || self.current.0.range(curve.index).is_none()
+            {
+                return false;
+            }
+            total += curve.points.len();
+            if total > self.event_capacity
+                || curve
+                    .points
+                    .iter()
+                    .any(|p| p.frame_offset as usize >= frames || !(0.0..=1.0).contains(&p.value))
+                || curve
+                    .points
+                    .windows(2)
+                    .any(|p| p[0].frame_offset >= p[1].frame_offset)
+            {
+                return false;
+            }
+        }
+        true
     }
 
     fn release_editor_notes(
@@ -1172,6 +1446,7 @@ impl AudioState {
         command_sequence: u64,
     ) -> bool {
         self.values[index].store(value.to_bits(), Ordering::SeqCst);
+        self.value_origins[index].store(self.publication, Ordering::SeqCst);
         if command_sequence != 0 {
             self.settlement
                 .store(command_sequence << 1, Ordering::Release);
@@ -1185,17 +1460,72 @@ impl AudioState {
                 },
                 settlement: self.settlement.load(Ordering::Relaxed),
                 epoch: self.epoch.load(Ordering::Relaxed),
+                publication: self.publication,
             })
             .is_err()
     }
 }
 
+#[derive(Clone, Copy, Default)]
+struct CurveCursor {
+    next: usize,
+    frame: i64,
+    value: f64,
+}
+impl CurveCursor {
+    fn at(&mut self, points: &[NormalizedPoint], frame: usize) -> f64 {
+        let frame = frame as i64;
+        while let Some(point) = points.get(self.next) {
+            if i64::from(point.frame_offset) > frame {
+                break;
+            }
+            self.frame = i64::from(point.frame_offset);
+            self.value = point.value;
+            self.next += 1;
+        }
+        if let Some(next) = points.get(self.next) {
+            self.value
+                + (next.value - self.value) * (frame - self.frame) as f64
+                    / (i64::from(next.frame_offset) - self.frame) as f64
+        } else {
+            self.value
+        }
+    }
+}
 impl Processor {
-    fn render(&mut self, values: &[AtomicU64], left: &mut [f32], right: &mut [f32]) {
+    fn range(&self, index: usize) -> Option<(f64, f64)> {
+        let range = self
+            .layout
+            .iter()
+            .filter(|p| p.direction() == PortDirection::Input)
+            .nth(index)?
+            .control_default()?;
+        let (min, max) = (range.min()?, range.max()?);
+        (min < max && (min as f32).is_finite() && (max as f32).is_finite()).then_some((min, max))
+    }
+    fn render(
+        &mut self,
+        values: &[AtomicU64],
+        left: &mut [f32],
+        right: &mut [f32],
+        curves: &[ParameterCurve<'_>],
+        cursors: &mut [CurveCursor; MAX_CURVES],
+        start: usize,
+    ) {
         for (plane, value) in self.inputs.iter_mut().flatten().zip(values) {
             let value = f64::from_bits(value.load(Ordering::Relaxed)) as f32;
             plane.resize(left.len(), value);
             plane.fill(value);
+        }
+        for (curve, cursor) in curves.iter().zip(cursors) {
+            let (min, max) = self.range(curve.index).expect("validated range");
+            for (offset, value) in self.inputs[curve.index][0].iter_mut().enumerate() {
+                *value = crate::control_values::physical(
+                    min,
+                    max,
+                    cursor.at(curve.points, start + offset),
+                ) as f32;
+            }
         }
         for plane in self.outputs.iter_mut().flatten() {
             plane.resize(left.len(), 0.0);
@@ -1345,6 +1675,16 @@ mod admission_tests {
                     },
                     ControlEvent::NoteOff { note: 36 }
                 ]),
+                Err(RuntimeError::InvalidEvent)
+            );
+            assert!(
+                audio
+                    .flush_normalized(&[(2, 0.25)])
+                    .unwrap()
+                    .admission_closed
+            );
+            assert_eq!(
+                audio.flush_normalized(&[(usize::MAX, 0.25)]),
                 Err(RuntimeError::InvalidEvent)
             );
             assert!(audio.reset().admission_closed);
@@ -1504,6 +1844,7 @@ mod admission_tests {
     fn whole_state_reader_waits_only_for_the_scalar_interval_and_never_closes_callback_admission() {
         let (control, audio) = gain_runtime();
         let stamp = control.scalar_stamp.clone();
+        let settlement = control.settlement.clone();
         let gate = audio.admission.clone();
         let callback = CallbackAdmission::enter(&gate).unwrap();
         let write = ScalarWrite::begin(&stamp);
@@ -1512,10 +1853,13 @@ mod admission_tests {
         let (value_tx, value_rx) = mpsc::channel();
         let reader = std::thread::spawn(move || {
             ready_tx.send(()).unwrap();
-            value_tx.send(control.snapshot_state_values()).unwrap();
+            value_tx
+                .send(control.snapshot_parameters_with_publication())
+                .unwrap();
         });
         ready_rx.recv_timeout(Duration::from_secs(5)).unwrap();
         let early = value_rx.recv_timeout(Duration::from_millis(10));
+        settlement.store(31 << 1, Ordering::Release);
         drop(write);
         assert!(
             matches!(early, Err(mpsc::RecvTimeoutError::Timeout)),
@@ -1527,7 +1871,11 @@ mod admission_tests {
         reader.join().unwrap();
         let admission_during_read = gate.load(Ordering::Acquire);
         drop(callback);
-        assert_eq!(finished, vec![0.5]);
+        assert_eq!(
+            finished,
+            (31, false, vec![0.5], 2),
+            "cutoff includes the settlement from its completed value interval"
+        );
         assert_eq!(admission_during_read, CALLBACK_ACTIVE);
     }
 

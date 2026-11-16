@@ -1,0 +1,388 @@
+{
+  "scope": "Task4.1 shared production-editor integration checkpoint; no VST3 native-view or installed/REAPER acceptance claim",
+  "sourceBaseCommit": "f46069c45ae6ca876b44e35618930922320d046f",
+  "sourceInputsSha256": {
+    ".ai-rules.json": "8ac1d1597cb1dd1059f00380333a2387ccaecf4c7a85323b103d52cc3a74ac4d",
+    "docs/migrations/notice-supplements/README.md": "e20a955ae4b31d33dbd9fe6d95eb45a38ebf3aa72a7c1f2dbea76514f6020f22",
+    "docs/migrations/notice-supplements/jsonschema/LICENSE": "117829c3ca21efb132d81a44b55363d395ab8eea18526873bc828da4c0e5f038",
+    "docs/migrations/notice-supplements/provenance.json": "32681ed4946125bfc7b86e3c8fec7361866cc5d2b6f7988613e9020a28b73497",
+    "docs/migrations/notice-supplements/rhai/LICENSE-APACHE.txt": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9",
+    "docs/migrations/notice-supplements/rhai/LICENSE-MIT.txt": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+    "docs/migrations/notice-supplements/simd/LICENSE": "71674605ec4c087fe9eb534e3e4f9e26eb2e4aabcd76a29fd156c6a844d44b3d",
+    "docs/migrations/trigger-clap-beta-notices.json": "12de61e413d915f02128ba43ec9ff5bebc8dfdecfa7168ce31788a2c6135857c",
+    "docs/migrations/trigger-vst3-notices.json": "8a1f46ecaf17aa92be11cf2e29322128447f3fcf58c67e271c4627239117ce69",
+    "docs/migrations/vst3-binding-notices/LICENSE-APACHE": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+    "docs/migrations/vst3-binding-notices/LICENSE-MIT": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+    "docs/migrations/vst3-binding-notices/README.md": "604aa835f988d9c6b0487bafb9e7e47fbf21c82d7a1669d9c623b9753eca4b1d",
+    "docs/migrations/vst3-binding-notices/provenance.json": "a57a98fc6dc2281a57f41ca258c125c73822fc5de9bf3630fc788449031ae41f",
+    "openspec/changes/prove-trigger-vst3-linux/design.md": "56c74c097c49d8d4b6a6769553aa95e6084fd87ac4b85b001acc98964ccdda0a",
+    "src/clap-adapter/Cargo.lock": "71d348eea3fae3cef53bdfcabc742f3339281dce8e0a4f352c172ced7c45963d",
+    "src/clap-adapter/src/trigger/gui.rs": "5b776b951aed588ed0d9279215bdb85365cefe0394248fe0bf718d2e50f9d014",
+    "src/clap-adapter/tests/internal/trigger_gui_dispatch.rs": "470797e5f05f0b27e7b2ea51082023d0712df148c22527cf76983a901b1fefc2",
+    "src/trigger-host/Cargo.lock": "b0d521df1633326b95167360c47d3179f4d43ff937a0a4fbb2b1cbecc883005a",
+    "src/trigger-host/Cargo.toml": "04b942e84b33a3abb826df45499cadcdd83bed7acc63683e59a0b7360be1387e",
+    "src/trigger-host/src/editor_bridge.rs": "97e58de00a3bc6cca567fbf5cb28f76e7d0a8b4e70b0df228cbf7a3401bbb52f",
+    "src/trigger-host/src/editor_commands.rs": "f133fa317a2dda982a6ebc09d5b601baa40ca417feb480c0fb8e70950e902e19",
+    "src/trigger-host/src/lib.rs": "688881789c2dabed04edde2a30709669109e0eb02534dfd60c9e612f6da5e601",
+    "src/trigger-host/src/samples.rs": "a4cf10e96ac179229262aaa74ccc33defc59bd12978eafacc2e05965ecab4df6",
+    "src/trigger-host/tests/editor_bridge.rs": "dd64ce324a13287baa44e50146c2fb44e07c987d7cc075540fefd77d01c4ecd5",
+    "src/trigger-host/tests/editor_commands.rs": "3f3d6d8dd3b726f69e0099200df70bdc179a12e8e20232d18223c0b5847cdd54",
+    "src/trigger-host/tests/native_sample_acquisition.rs": "d06f4b18bd7378477db97852049ed33fdf3fe0f7be7026ac4c9a0f34f5fbb601",
+    "src/vst3-adapter/Cargo.lock": "1d1e5edff5c84557f2b651612cc511e9f405c876a00aff944220b1b22d18666f",
+    "src/vst3-adapter/Cargo.toml": "60703f3c73a37b678f9f42d76b476fc0739ce9129de7263d4ede4c81ed2c593a"
+  },
+  "completionReview": {
+    "status": "PASS",
+    "scope": "Task4.1 candidate and finite local finalization only; combined Linux publication remains pending"
+  },
+  "characterization": {
+    "unchangedClapBeforeExtraction": "11 unit cases with real FIFO child, actual native framing, selection metadata, Import/history and mapping/view-loss",
+    "retainedFailure": "Mapping/view-loss baseline timeout60s exited124 with cleanup; unchanged fixed-input repeat passed4.32s. Current changed-product case passed4.67s. No production defect inferred.",
+    "testConstructionDiagnostic": "Initial bridge test String + &String compile error retained separately; not claimed as semantic RED",
+    "behaviorDelta": "Preserve existing CLAP policy; extract common framing/chooser acquisition/admission/submission for the future VST3 consumer"
+  },
+  "focusedCoverage": {
+    "src/trigger-host/src/editor_bridge.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 6,
+        "covered": 6,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 6,
+        "covered": 6,
+        "percent": 100
+      },
+      "lines": {
+        "count": 39,
+        "covered": 39,
+        "percent": 100
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 59,
+        "covered": 59,
+        "notcovered": 0,
+        "percent": 100
+      }
+    },
+    "src/trigger-host/src/editor_commands.rs": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 13,
+        "covered": 13,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 13,
+        "covered": 13,
+        "percent": 100
+      },
+      "lines": {
+        "count": 143,
+        "covered": 143,
+        "percent": 100
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 202,
+        "covered": 202,
+        "notcovered": 0,
+        "percent": 100
+      }
+    }
+  },
+  "newAcquisitionAndSelectionFunctions": [
+    {
+      "symbol": "_RNvNtCsgCxhhCfjzQi_20dandrum_trigger_host7samples24open_native_sample_files",
+      "calls": 20,
+      "regions": 11,
+      "unhitRegions": []
+    },
+    {
+      "symbol": "_RNvMNtCsgCxhhCfjzQi_20dandrum_trigger_host13editor_bridgeNtB2_14BrowserRequest10request_id",
+      "calls": 19,
+      "regions": 3,
+      "unhitRegions": []
+    },
+    {
+      "symbol": "_RNvMNtCsgCxhhCfjzQi_20dandrum_trigger_host13editor_bridgeNtB2_14BrowserRequest19is_native_selection",
+      "calls": 7,
+      "regions": 3,
+      "unhitRegions": []
+    },
+    {
+      "symbol": "_RNvMNtCsgCxhhCfjzQi_20dandrum_trigger_host13editor_bridgeNtB2_14BrowserRequest7message",
+      "calls": 17,
+      "regions": 3,
+      "unhitRegions": []
+    },
+    {
+      "symbol": "_RNvNtCsgCxhhCfjzQi_20dandrum_trigger_host13editor_bridge15browser_request",
+      "calls": 50,
+      "regions": 33,
+      "unhitRegions": []
+    },
+    {
+      "symbol": "_RNvNtCsgCxhhCfjzQi_20dandrum_trigger_host13editor_bridge15delivery_script",
+      "calls": 1,
+      "regions": 7,
+      "unhitRegions": []
+    },
+    {
+      "symbol": "_RNvNtCsgCxhhCfjzQi_20dandrum_trigger_host13editor_bridge21initialization_script",
+      "calls": 1,
+      "regions": 10,
+      "unhitRegions": []
+    },
+    {
+      "symbol": "_RNvNtCsgCxhhCfjzQi_20dandrum_trigger_host15editor_commands22begin_native_selection",
+      "calls": 14,
+      "regions": 33,
+      "unhitRegions": []
+    },
+    {
+      "symbol": "_RNvNtCsgCxhhCfjzQi_20dandrum_trigger_host15editor_commands23submit_native_selection",
+      "calls": 9,
+      "regions": 27,
+      "unhitRegions": []
+    },
+    {
+      "symbol": "_RNCNvNtCsgCxhhCfjzQi_20dandrum_trigger_host7samples24open_native_sample_files0B5_",
+      "calls": 33,
+      "regions": 19,
+      "unhitRegions": []
+    }
+  ],
+  "coverageScope": "Fresh focused 4 profiles/3 real integration objects; whole-owner fast 20 profiles/19 objects and VST3 DLL 23 profiles/1 object also retained. Unused unit-build copies appear unhit in wider aggregate; not a whole-owner100% or branch/MC/DC claim.",
+  "tests": {
+    "sharedHostFast": 238,
+    "sharedHostFocused": 22,
+    "nativeAcquisitionIgnoredChild": "Executed and marker-checked by its parent",
+    "vst3": 73,
+    "vst3IgnoredChildren": "All3 executed by their parent tests",
+    "clapReleaseUnits": 9,
+    "clapReleaseDynamic": 20,
+    "clapAllocatorIgnoredChild": "Executed by parent audit",
+    "nativeClap": [
+      {
+        "test": "copied_native_parameter_state_is_an_authenticated_numeric_dto",
+        "seconds": 1.7825766870519146,
+        "commandExit": 0,
+        "remainingWorkers": [],
+        "scratchRemoved": true,
+        "allChildrenReaped": true
+      },
+      {
+        "test": "copied_native_parameter_flush_delivers_host_accepted_gestures",
+        "seconds": 1.0044220680138096,
+        "commandExit": 0,
+        "remainingWorkers": [],
+        "scratchRemoved": true,
+        "allChildrenReaped": true
+      },
+      {
+        "test": "copied_native_host_feedback_updates_rendered_control_without_polling_or_undo_pollution",
+        "seconds": 1.7932919879676774,
+        "commandExit": 0,
+        "remainingWorkers": [],
+        "scratchRemoved": true,
+        "allChildrenReaped": true
+      },
+      {
+        "test": "selection_native::copied_native_selection_retains_real_metadata_across_source_and_editor_loss",
+        "seconds": 2.7390644249971956,
+        "commandExit": 0,
+        "remainingWorkers": [],
+        "scratchRemoved": true,
+        "allChildrenReaped": true
+      },
+      {
+        "test": "selection_native::copied_react_import_maps_selected_pcm_once_through_native_history",
+        "seconds": 2.4622161219595,
+        "commandExit": 0,
+        "remainingWorkers": [],
+        "scratchRemoved": true,
+        "allChildrenReaped": true
+      },
+      {
+        "test": "selection_native::copied_react_empty_retains_controls_and_imports_after_recreation",
+        "seconds": 2.2564530229428783,
+        "commandExit": 0,
+        "remainingWorkers": [],
+        "scratchRemoved": true,
+        "allChildrenReaped": true
+      },
+      {
+        "test": "selection_native::copied_react_recovers_selected_import_after_lost_reply_and_recreation",
+        "seconds": 2.4243611890124157,
+        "commandExit": 0,
+        "remainingWorkers": [],
+        "scratchRemoved": true,
+        "allChildrenReaped": true
+      },
+      {
+        "test": "structural_native::copied_native_mapping_survives_lost_reply_and_view_loss",
+        "seconds": 4.67460243194364,
+        "commandExit": 0,
+        "remainingWorkers": [],
+        "scratchRemoved": true,
+        "allChildrenReaped": true
+      }
+    ],
+    "clapInstallNoticeFixture": 2,
+    "selectedCTest": 9,
+    "strictLint": "Host, default/native-feature VST3 and native-feature CLAP all-targets",
+    "format": "All3owners",
+    "strictOpenSpec": "PASS",
+    "specMap": "657 scenarios,418mapped,239unchanged ratchet"
+  },
+  "clapFixture": {
+    "pluginSha256": "94bb0cffadd8fdbdc60bde5b9ba732f466c97bec7f75276f3756c360a1e41918",
+    "testSha256": "adb08f9ba1f2a8191a4d80691333444bad663e8a941323df2f2ffc0aaf4deb92",
+    "resourceFiles": [
+      {
+        "path": ".staged",
+        "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "copy_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "editor/app.css",
+        "source_sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5",
+        "copy_sha256": "c69431237a0926de3d1902cd5a7dddd4373f368e0c4837291f4bd1b6a9c922b5"
+      },
+      {
+        "path": "editor/app.js",
+        "source_sha256": "0f68c7f3f043a8a2b7ca92570c6fb5b0a3f7e5d53bf7913b6ef5e9cacbc9d74b",
+        "copy_sha256": "0f68c7f3f043a8a2b7ca92570c6fb5b0a3f7e5d53bf7913b6ef5e9cacbc9d74b"
+      },
+      {
+        "path": "editor/fonts/.gitattributes",
+        "source_sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616",
+        "copy_sha256": "905963a90fa733ac7a90389e2713cbf8820080f1e2f6ee6fcb5cbaa7cc9eb616"
+      },
+      {
+        "path": "editor/fonts/3386a05f6ece969e.ttf",
+        "source_sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160",
+        "copy_sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160"
+      },
+      {
+        "path": "editor/fonts/6098b66ce7d608dc.ttf",
+        "source_sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef",
+        "copy_sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef"
+      },
+      {
+        "path": "editor/fonts/74103fd6d41bc32c.ttf",
+        "source_sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154",
+        "copy_sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154"
+      },
+      {
+        "path": "editor/fonts/91c841fdfa8e7b94.ttf",
+        "source_sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc",
+        "copy_sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc"
+      },
+      {
+        "path": "editor/fonts/barlow-OFL.txt",
+        "source_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+        "copy_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+      },
+      {
+        "path": "editor/fonts/barlowsemicondensed-OFL.txt",
+        "source_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+        "copy_sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+      },
+      {
+        "path": "editor/fonts/c15439e7a03af571.ttf",
+        "source_sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c",
+        "copy_sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c"
+      },
+      {
+        "path": "editor/fonts/c2b046235fb4c2f8.ttf",
+        "source_sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9",
+        "copy_sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9"
+      },
+      {
+        "path": "editor/fonts/cb75439ae401f776.ttf",
+        "source_sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da",
+        "copy_sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da"
+      },
+      {
+        "path": "editor/fonts/df54dbfafba61d49.ttf",
+        "source_sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8",
+        "copy_sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8"
+      },
+      {
+        "path": "editor/fonts/jetbrainsmono-OFL.txt",
+        "source_sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d",
+        "copy_sha256": "b2fe5e8987594e9ffd1d2ca52a2f5d73eb8335243893c5d6254b5ad69269591d"
+      },
+      {
+        "path": "editor/index.html",
+        "source_sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26",
+        "copy_sha256": "631c37313c0b0ec4b462d8f93aee0de410955bf019cadb632834df7772cb6f26"
+      },
+      {
+        "path": "instrument/advanced-drum-kit.yaml",
+        "source_sha256": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008",
+        "copy_sha256": "a7774b7d096e228ba1e6570101027def07d6a8a52ffb765ae6af29d58b1c5008"
+      },
+      {
+        "path": "instrument/assets/advanced-drums.wav",
+        "source_sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503",
+        "copy_sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503"
+      }
+    ],
+    "scope": "Fresh release copied fixture; no physical-input claim"
+  },
+  "noticeInputs": {
+    "review": "Independent Astra scoped PASS retained privately; not redistribution clearance or installed-bundle qualification",
+    "rustNormalBuildIdentities": 203,
+    "registryArchivesVerified": 198,
+    "listedRootLicenseHashesVerified": 329,
+    "rootOmissionSupplements": 6,
+    "remainingRootTextOmissions": [],
+    "inventory": "docs/migrations/trigger-vst3-notices.json"
+  },
+  "resources": {
+    "approval": "Dan approved16November2026",
+    "cumulativeOutputAllowanceGiB": 56,
+    "managedRetentionCeilingGiB": 112,
+    "scratchAllowanceGiB": 2,
+    "availableDiskAndRamFloorGiB": 8,
+    "compilerJobsAtMost": 4,
+    "heavyProducers": 1,
+    "preserveGenerations": "DANDRUM_CARGO_PRESERVE_GENERATIONS=1; nonmutating full admission before each producer",
+    "mutation": "Excluded",
+    "cacheDeletion": "None",
+    "ceilingCaveat": "Not a reservation, completion guarantee or promise of full usable capacity"
+  },
+  "rawEvidence": "Private task4.1 editor evidence and fresh coverage objects/profiles retained outside the published tree",
+  "pending": [
+    "Linux VST3 native parenting/paint/lifecycle and real control/audio integration (4.2/4.3)",
+    "Installed source-hidden/offline bundle, linkage and complete notices qualification (5.1)",
+    "Actual qualified REAPER independent-instance/state/automation/native acceptance (5.2)",
+    "Final current-source fast/slow/coverage/full validator and combined review/publication/archive (6.1\u20136.3)",
+    "Mandatory later Windows/macOS native milestones"
+  ]
+}

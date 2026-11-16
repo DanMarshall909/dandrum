@@ -909,3 +909,74 @@ fn restored_swaps_scalar_writes_and_reset_stamps_allocate_or_free_nothing_on_aud
     .unwrap();
     drop(audio);
 }
+
+#[test]
+fn pure_state_projection_reuses_named_metadata_and_rejects_mutated_descriptor_authority() {
+    use dandrum_trigger_host::{
+        parameters::public_parameters_from_resources,
+        state::{StateError, read_header},
+    };
+    let (_package, root) = package();
+    let table = public_parameters_from_resources(&root).unwrap();
+    let bytes = include_bytes!("fixtures/trigger-v2-state.json");
+    let header = read_header(&mut bytes.as_slice()).unwrap();
+    let values = header.parameter_values(&table).unwrap();
+    for (id, expected) in VALUES {
+        let p = table.iter().find(|p| p.id == id).unwrap();
+        assert_eq!(values[p.root_index], expected);
+    }
+    let mut bad = Vec::new();
+    let mut t = table.clone();
+    t[0].root_index = t.len();
+    bad.push(t);
+    let mut t = table.clone();
+    t[0].root_index = t[1].root_index;
+    bad.push(t);
+    let mut t = table.clone();
+    t[0].id = t[1].id.clone();
+    bad.push(t);
+    let mut t = table.clone();
+    t[0].root_port_name.clear();
+    bad.push(t);
+    let mut t = table.clone();
+    t[0].root_port_name = t[1].root_port_name.clone();
+    bad.push(t);
+    let mut t = table.clone();
+    t[0].root_port_name = "unknown.destination".into();
+    bad.push(t);
+    let mut t = table.clone();
+    t[0].physical_min = f64::NAN;
+    bad.push(t);
+    let mut t = table.clone();
+    t[0].physical_max = f64::INFINITY;
+    bad.push(t);
+    let mut t = table.clone();
+    t[0].physical_min = t[0].physical_max;
+    bad.push(t);
+    for table in bad {
+        assert_eq!(header.parameter_values(&table), Err(StateError::Invalid));
+    }
+
+    let (mut owner, _audio) = open(&root);
+    owner.load_state(&mut bytes.as_slice()).unwrap();
+    let mut saved = Vec::new();
+    owner.save_state(&mut saved).unwrap();
+    let projected = |bytes: &[u8]| {
+        let mut input = bytes;
+        read_header(&mut input)
+            .unwrap()
+            .buffer_payload(&mut input)
+            .unwrap()
+            .parameter_values(&table)
+    };
+    assert_eq!(projected(bytes).unwrap(), values);
+    assert_eq!(projected(&saved).unwrap(), values);
+    let mut corrupt = saved.clone();
+    *corrupt.last_mut().unwrap() ^= 1;
+    assert_eq!(projected(&corrupt), Err(StateError::Invalid));
+    let mismatched = portable_state_edit::edit(&saved, |m| {
+        let hash = m["resources"][0]["sha256"].as_str().unwrap();
+        m["resources"][0]["path"] = format!("selected/{hash}.wav").into();
+    });
+    assert_eq!(projected(&mismatched), Err(StateError::Invalid));
+}

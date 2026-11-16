@@ -88,6 +88,19 @@ fn prepared(note: u8) -> PreparedRuntime {
 
 #[test]
 fn invalid_configuration_or_foreign_layout_cannot_replace_the_running_runtime() {
+    let reference = session(36);
+    assert!(matches!(
+        PreparedRuntime::new_for_events(
+            reference.prepared(),
+            TriggerHostConfiguration {
+                sample_rate_hz: dandrum_trigger_host::SampleRate::new(44_100.0).unwrap(),
+                ..configuration()
+            },
+            4
+        ),
+        Err(RuntimeError::InvalidConfiguration)
+    ));
+
     let session = session(36);
     for configuration in [
         TriggerHostConfiguration {
@@ -968,4 +981,165 @@ connections:
         Err(RuntimeError::UnsupportedLayout)
     ));
     assert!(control.offer(prepared(60)).is_ok());
+}
+
+#[test]
+fn invalid_curves_preserve_pending_runtime_scalars_queued_work_and_feedback() {
+    use dandrum_trigger_host::runtime::{NormalizedPoint, ParameterCurve};
+    let (mut control, mut audio) = runtime_handoff(prepared(36), 4).unwrap();
+    control
+        .offer(prepared(60))
+        .unwrap_or_else(|_| panic!("replacement admitted"));
+    control
+        .try_send(ControlEvent::Parameter {
+            index: 2,
+            value: 0.25,
+        })
+        .unwrap();
+    let point = NormalizedPoint {
+        frame_offset: 0,
+        value: 0.5,
+    };
+    let valid = [point];
+    let invalid = [
+        vec![],
+        vec![NormalizedPoint {
+            value: f64::NAN,
+            ..point
+        }],
+        vec![NormalizedPoint {
+            value: -0.1,
+            ..point
+        }],
+        vec![NormalizedPoint {
+            value: 1.1,
+            ..point
+        }],
+        vec![NormalizedPoint {
+            frame_offset: 16,
+            ..point
+        }],
+        vec![point, point],
+        vec![
+            NormalizedPoint {
+                frame_offset: 3,
+                ..point
+            },
+            point,
+        ],
+        vec![point; 5],
+    ];
+    for points in &invalid {
+        let curves = [ParameterCurve { index: 2, points }];
+        let (mut left, mut right) = ([3.0; 16], [4.0; 16]);
+        let audit = allocation_counter::measure(|| {
+            assert_eq!(
+                audio.process_curves(&mut left, &mut right, &[], &curves),
+                Err(RuntimeError::InvalidEvent)
+            );
+        });
+        assert_eq!(audit, allocation_counter::AllocationInfo::default());
+        assert_eq!((left, right), ([0.0; 16], [0.0; 16]));
+        assert!(control.reclaim().is_none());
+        assert!(control.take_feedback().is_none());
+        assert_eq!(control.parameter_value(2), Some(1.0));
+    }
+    for curves in [
+        vec![ParameterCurve {
+            index: usize::MAX,
+            points: &valid,
+        }],
+        vec![
+            ParameterCurve {
+                index: 2,
+                points: &valid
+            };
+            2
+        ],
+        vec![
+            ParameterCurve {
+                index: 2,
+                points: &valid
+            };
+            24
+        ],
+    ] {
+        assert_eq!(
+            audio.process_curves(&mut [1.0; 16], &mut [2.0; 16], &[], &curves),
+            Err(RuntimeError::InvalidEvent)
+        );
+    }
+    let curve = [ParameterCurve {
+        index: 2,
+        points: &valid,
+    }];
+    assert_eq!(
+        audio.process_curves(
+            &mut [1.0; 16],
+            &mut [2.0; 16],
+            &[TimedEvent {
+                frame_offset: 0,
+                event: ControlEvent::Parameter {
+                    index: 2,
+                    value: 2.0
+                }
+            }],
+            &curve
+        ),
+        Err(RuntimeError::InvalidEvent)
+    );
+    assert!(control.reclaim().is_none());
+    let (mut left, mut right) = ([0.0; 16], [0.0; 16]);
+    let report = audio
+        .process_curves(
+            &mut left,
+            &mut right,
+            &[TimedEvent {
+                frame_offset: 0,
+                event: ControlEvent::NoteOn {
+                    note: 60,
+                    velocity: 127,
+                },
+            }],
+            &curve,
+        )
+        .unwrap();
+    assert!(report.swapped);
+    assert_eq!((left[0], right[0]), (-1.0, -1.0));
+    assert!(control.reclaim().is_some());
+    assert_eq!(control.take_feedback().unwrap().value, 0.25);
+    assert_eq!(control.take_feedback().unwrap().value, 2.0);
+}
+
+#[test]
+fn normalized_curves_require_declared_finite_physical_bounds() {
+    use dandrum_trigger_host::runtime::{NormalizedPoint, ParameterCurve};
+    let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let yaml = std::fs::read_to_string(repository.join("examples/patches/advanced-drum-kit.yaml"))
+        .unwrap();
+    for replacement in ["default: 1", "default: 1, min: 0"] {
+        let session = planar_session(&yaml.replace("default: 1, min: 0, max: 4", replacement));
+        let prepared = PreparedRuntime::new(session.prepared(), configuration()).unwrap();
+        let (_, mut audio) = runtime_handoff(prepared, 4).unwrap();
+        assert_eq!(
+            audio.flush_normalized(&[(2, 0.5)]),
+            Err(RuntimeError::InvalidEvent)
+        );
+        let points = [NormalizedPoint {
+            frame_offset: 0,
+            value: 0.5,
+        }];
+        assert_eq!(
+            audio.process_curves(
+                &mut [1.0; 16],
+                &mut [2.0; 16],
+                &[],
+                &[ParameterCurve {
+                    index: 2,
+                    points: &points
+                }]
+            ),
+            Err(RuntimeError::InvalidEvent)
+        );
+    }
 }

@@ -1,0 +1,20 @@
+{
+  "status": "stopped normalized scalar criterion verified; full task3.2 and Linux proof incomplete",
+  "red": {
+    "observed": 0.1679762,
+    "expected": 0.16797613,
+    "test": "stopped_normalized_points_retain_exact_endpoint_without_playing_or_advancing"
+  },
+  "green": "6 actual ABI curve tests plus prior dynamic regressions, owning fast suite, real malloc/free sentinel and strict lint pass",
+  "nativeHistory": "SessionSnapshot including YAML/revision/undo/redo unchanged after accepted normalized flush; queued UI settlement retained through invalid batches",
+  "refactor": "both validated scalar entrypoints use one infallible apply_scalar_batch; adapter retains root-index array only; normalized cache and conversion remain common",
+  "coverageLimit": "accumulated TDD coverage; final fresh-profile full candidate gate pending; helper instances/harness duplicates remain visible in private raw JSON",
+  "sources": {
+    "src/trigger-host/src/runtime.rs": "03709ccec735d907bcb2103b3daea6d86dea674a922ae2813daafac580c1b0ef",
+    "src/trigger-host/tests/parameters.rs": "6996e0f00b7b47952eba39ea8b9705f4d286060d778680d4407af5dcd0a7fb1c",
+    "src/trigger-host/tests/runtime.rs": "588dcabca997fd8c6eee52986493d1429d32fd4d63256e904057e9d1a09a64ee",
+    "src/vst3-adapter/src/audio.rs": "f54a544c3d5f0ba5f27b4c9306e4eb703804e6e1c45d2903af62792141a1c9a4",
+    "src/vst3-adapter/src/components.rs": "c17980a2d5a0a2880dfbb51dd2ac38ea4c729a77063ff26afeccf3b26d913ac5",
+    "src/vst3-adapter/tests/curves.rs": "f5e7c914dc1da1b365a9455f91fb62440e2f5b81641c2cbe05a9984904191016"
+  }
+}

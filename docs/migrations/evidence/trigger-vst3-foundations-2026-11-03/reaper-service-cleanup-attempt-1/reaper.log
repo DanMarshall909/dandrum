@@ -1,0 +1,7 @@
+jack: created client
+jack: setting TIME_CRITICAL = 81
+swell-generic-gdk: initialized GTK+ on request.
+LC_NUMERIC / LANG is set to 'en_AU.UTF-8', overriding LC_NUMERIC environment to POSIX
+jack: activated client
+jack: deactivated client
+jack: close client

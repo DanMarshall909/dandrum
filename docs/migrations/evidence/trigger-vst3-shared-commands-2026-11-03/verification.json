@@ -1,0 +1,321 @@
+{
+  "base": "91f64f85260ea429521589b6697dc9f1ea456e39",
+  "coverage": {
+    "clap-dispatch-baseline-coverage": [
+      {
+        "path": "src/clap-adapter/src/trigger/gui.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 75,
+            "covered": 18,
+            "percent": 24.0
+          },
+          "instantiations": {
+            "count": 93,
+            "covered": 18,
+            "percent": 19.35483870967742
+          },
+          "lines": {
+            "count": 641,
+            "covered": 189,
+            "percent": 29.48517940717629
+          },
+          "regions": {
+            "count": 967,
+            "covered": 279,
+            "notcovered": 688,
+            "percent": 28.852119958634955
+          }
+        }
+      }
+    ],
+    "clap-dispatch-characterized-coverage": [
+      {
+        "path": "src/clap-adapter/src/trigger/gui.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 75,
+            "covered": 18,
+            "percent": 24.0
+          },
+          "instantiations": {
+            "count": 93,
+            "covered": 18,
+            "percent": 19.35483870967742
+          },
+          "lines": {
+            "count": 641,
+            "covered": 192,
+            "percent": 29.95319812792512
+          },
+          "regions": {
+            "count": 967,
+            "covered": 285,
+            "notcovered": 682,
+            "percent": 29.472595656670116
+          }
+        }
+      }
+    ],
+    "shared-dispatch-extracted-coverage": [
+      {
+        "path": "src/trigger-host/src/editor_commands.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 6,
+            "covered": 6,
+            "percent": 100.0
+          },
+          "instantiations": {
+            "count": 6,
+            "covered": 6,
+            "percent": 100.0
+          },
+          "lines": {
+            "count": 69,
+            "covered": 66,
+            "percent": 95.65217391304348
+          },
+          "regions": {
+            "count": 108,
+            "covered": 103,
+            "notcovered": 5,
+            "percent": 95.37037037037037
+          }
+        }
+      }
+    ],
+    "shared-dispatch-refactored-coverage": [
+      {
+        "path": "src/trigger-host/src/editor_commands.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 8,
+            "covered": 8,
+            "percent": 100.0
+          },
+          "instantiations": {
+            "count": 8,
+            "covered": 8,
+            "percent": 100.0
+          },
+          "lines": {
+            "count": 81,
+            "covered": 81,
+            "percent": 100.0
+          },
+          "regions": {
+            "count": 114,
+            "covered": 114,
+            "notcovered": 0,
+            "percent": 100.0
+          }
+        }
+      }
+    ]
+  },
+  "current_paths_sha256": {
+    "src/trigger-host/src/editor_commands.rs": "aee205961c02e2b0efc1829b43195dbf159cae82da6bfc598c510e9f799c4e02",
+    "src/trigger-host/tests/editor_commands.rs": "2746ecd0e9aed789f90b8c269cb3215109472085bf30de1599b199d55027d5f6",
+    "src/trigger-host/tests/support/editor_commands.rs": "e4f33edc3a36bb466be3620be154b69e99357281b70e144108f855d1d4d9a8d8",
+    "src/clap-adapter/src/trigger/gui.rs": "f5b362d24ac4833e497ca736d153c9276d7c483da2fdc53fa77b1d841cc6c007",
+    "src/clap-adapter/tests/internal/trigger_gui_dispatch.rs": "9a42a6a110d200e1cc3a90f4b165253db36cabc6a90fb19bb7c050ae99be30ac"
+  },
+  "notes": [
+    "Pure covered extraction/refactor; no new behavior or artificial RED claimed.",
+    "Baseline:22 CLAP dispatcher tests; characterization:23; relocated shared tests:13; remaining CLAP editor unit tests:11 passed,1 intentional ignored FIFO child.",
+    "Source-bound shared module has81/81 lines,114/114 regions,8/8 functions executed. Branch/MC-DC instrumentation unavailable in this run.",
+    "Compilation fixture-path/import failures retained separately from behavior results.",
+    "Current CLAP unit rerun after unused-import cleanup:11 pass/1 intentional ignored FIFO child; no warnings;1.15s compilation and0.29s tests."
+  ],
+  "native_cases": 36,
+  "clap_product_sha256": "cae88f785c543d8e62472ca8989841c3de55187fabcca44c0a333f4f1002e898",
+  "native_receipts": {
+    "native-regressions.receipt": {
+      "phase": "native-regressions",
+      "command": [
+        "/home/dan/.local/bin/ctest",
+        "--test-dir",
+        "build/cache-native",
+        "--parallel",
+        "1",
+        "--output-on-failure",
+        "-R",
+        "^trigger-clap-(dynamic-host|native-.*|installed-native-overlap|install-contract)$"
+      ],
+      "pid": 2066211,
+      "exit": 0,
+      "error": null,
+      "elapsed_seconds": 179.4620745269931,
+      "before": {
+        "utc": 1793680505.9684825,
+        "memory_available": 21182873600,
+        "disk_free": 119683047424,
+        "managed_retained": 54695878656,
+        "managed_growth": 18038501376
+      },
+      "after": {
+        "utc": 1793680685.7739184,
+        "memory_available": 21405700096,
+        "disk_free": 117802827776,
+        "managed_retained": 56573394944,
+        "managed_growth": 19916017664
+      },
+      "minimum_memory_available": 20234207232,
+      "minimum_disk_free": 117797060608,
+      "maximum_managed_retained": 56574918656,
+      "samples": 77
+    },
+    "plain-product-build.receipt": {
+      "phase": "plain-product-build",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "--build",
+        "build/cache-native",
+        "--target",
+        "dandrum-clap-proof",
+        "--parallel",
+        "1"
+      ],
+      "pid": 2059844,
+      "exit": 0,
+      "error": null,
+      "elapsed_seconds": 163.9744899640209,
+      "before": {
+        "utc": 1793680130.3568294,
+        "memory_available": 21503508480,
+        "disk_free": 120990609408,
+        "managed_retained": 53399990272,
+        "managed_growth": 16742612992
+      },
+      "after": {
+        "utc": 1793680294.6672912,
+        "memory_available": 21037969408,
+        "disk_free": 120501178368,
+        "managed_retained": 53886144512,
+        "managed_growth": 17228767232
+      },
+      "minimum_memory_available": 19484061696,
+      "minimum_disk_free": 120501186560,
+      "maximum_managed_retained": 53886279680,
+      "samples": 70
+    },
+    "trigger-product-build.receipt": {
+      "phase": "trigger-product-build",
+      "command": [
+        "/home/dan/.local/bin/cmake",
+        "--build",
+        "build/cache-native",
+        "--target",
+        "dandrum-trigger-clap-product",
+        "--parallel",
+        "1"
+      ],
+      "pid": 2062744,
+      "exit": 0,
+      "error": null,
+      "elapsed_seconds": 210.20814179000445,
+      "before": {
+        "utc": 1793680295.0058734,
+        "memory_available": 21043392512,
+        "disk_free": 120501178368,
+        "managed_retained": 53886144512,
+        "managed_growth": 17228767232
+      },
+      "after": {
+        "utc": 1793680505.5786994,
+        "memory_available": 21179092992,
+        "disk_free": 119683051520,
+        "managed_retained": 54695878656,
+        "managed_growth": 18038501376
+      },
+      "minimum_memory_available": 19332415488,
+      "minimum_disk_free": 119683039232,
+      "maximum_managed_retained": 54712938496,
+      "samples": 89
+    }
+  },
+  "native_cleanup": {
+    "children": [
+      {
+        "pid": 2059832,
+        "exit": 0
+      },
+      {
+        "pid": 2059833,
+        "exit": 0
+      },
+      {
+        "pid": 2059844,
+        "exit": 0
+      },
+      {
+        "pid": 2062744,
+        "exit": 0
+      },
+      {
+        "pid": 2066211,
+        "exit": 0
+      }
+    ],
+    "all_known_children_terminal": true
+  },
+  "clippy": {
+    "trigger_host": 0,
+    "clap_adapter_with_editor": 0,
+    "warning_policy": "-D warnings, --no-deps"
+  },
+  "refactoring": {
+    "production": "One shared command switch, bounded owner reply encoding and error policy. Reply enum preserves already encoded snapshots/jobs; input-error conversion removes repeated unreachable fallback branches without changing observable outcomes.",
+    "tests": "Moved13 format-neutral behavior tests to the owner, shared their fixture, and retained11 adapter-specific tests plus all36 native/boundary contracts. No new artificial RED for unchanged behavior.",
+    "lanes": "Existing owning fast/slow and native lanes retained. Shared command tests1.02s, CLAP unit tests0.29s; current native composite178.14s. Per-test medians unavailable from libtest output; no lane membership changed."
+  }
+}

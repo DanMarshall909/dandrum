@@ -1,0 +1,60 @@
+{
+  "scope": "task2.4 complete callback ownership; production unchanged",
+  "base": "bbd98ab67adf644afdd559f0a8cc0934f3367edb",
+  "tests": {
+    "vst3Full": 55,
+    "parentExecutedIgnoredChildren": 3,
+    "audio": 8,
+    "reentryParents": 2,
+    "allocatorParent": 1,
+    "clippy": "all targets -D warnings pass"
+  },
+  "freshCoverage": {
+    "profiles": 23,
+    "actualLibrary": {
+      "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/fafc0b7c77a511cff6f8ed44/coverage/debug/deps/libdandrum_vst3_adapter.so",
+      "sha256": "05c29383d0b8b7fd3cce58ae2dff27bb6abc7d5c6ee29e83dd6029f7a9738d29"
+    },
+    "audio": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 20,
+        "covered": 20,
+        "percent": 100
+      },
+      "instantiations": {
+        "count": 25,
+        "covered": 25,
+        "percent": 100
+      },
+      "lines": {
+        "count": 339,
+        "covered": 335,
+        "percent": 98.82005899705014
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 470,
+        "covered": 466,
+        "notcovered": 4,
+        "percent": 99.14893617021276
+      }
+    }
+  },
+  "limits": [
+    "defensive/invariant gaps explicit",
+    "no native editor/REAPER/validator claim",
+    "unchanged CLAP/shared checks reused from controller checkpoint",
+    "no mutation"
+  ]
+}
