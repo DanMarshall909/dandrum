@@ -29,6 +29,9 @@ use vst3::{
     Steinberg::{Linux::*, Vst::*, *},
 };
 
+#[cfg(feature = "trigger-editor")]
+mod view;
+
 pub(crate) fn create(
     cid: &TUID,
     runloop: Option<Rc<ComPtr<IRunLoop>>>,
@@ -62,7 +65,7 @@ pub(crate) fn create(
         .to_com_ptr::<FUnknown>()
         .expect("component includes FUnknown"))
     } else {
-        Ok(ComWrapper::new(Controller {
+        Ok(ComWrapper::new(Controller(Rc::new(ControllerCore {
             root,
             thread: platform::thread_id(),
             terminated: Cell::new(false),
@@ -81,7 +84,7 @@ pub(crate) fn create(
             closing: Cell::new(false),
             release_peer_on_retirement: Cell::new(false),
             retired_proof: Cell::new(false),
-        })
+        })))
         .to_com_ptr::<FUnknown>()
         .expect("controller includes FUnknown"))
     }
@@ -421,7 +424,14 @@ struct ParameterRequest {
     sequence: u64,
     apply_values: bool,
 }
-struct Controller {
+struct Controller(Rc<ControllerCore>);
+impl Deref for Controller {
+    type Target = ControllerCore;
+    fn deref(&self) -> &ControllerCore {
+        &self.0
+    }
+}
+struct ControllerCore {
     root: PathBuf,
     thread: libc::pid_t,
     terminated: Cell<bool>,
@@ -450,7 +460,7 @@ impl Drop for HostCall<'_> {
 impl Class for Controller {
     type Interfaces = (IEditController, IConnectionPoint);
 }
-impl Controller {
+impl ControllerCore {
     fn main(&self) -> bool {
         self.thread == platform::thread_id() && !self.terminated.get()
     }
@@ -723,6 +733,18 @@ impl IEditControllerTrait for Controller {
         kResultOk
     }
     unsafe fn createView(&self, _name: *const c_char) -> *mut IPlugView {
+        #[cfg(feature = "trigger-editor")]
+        {
+            if self.main()
+                && !self.closing.get()
+                && self.projection.try_borrow().is_ok_and(|p| p.is_some())
+                // SAFETY: the host supplies a live NUL-terminated SDK name;
+                // comparison stops at the first mismatch or known terminator.
+                && unsafe { view::matches(_name, b"editor\0") }
+            {
+                return view::create(&self.0);
+            }
+        }
         std::ptr::null_mut()
     }
 }
@@ -1463,7 +1485,7 @@ impl Bootstrap {
             .then_some(bootstrap)
     }
 }
-impl Controller {
+impl ControllerCore {
     fn receive_retirement(&self) -> tresult {
         if !self.closing.get()
             || self.host_busy.get()
