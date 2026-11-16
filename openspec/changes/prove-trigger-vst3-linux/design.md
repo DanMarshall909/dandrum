@@ -303,6 +303,18 @@ original 8 GiB driver reservation (17 GiB free), or obtain separately reviewed
 configuration-specific driver admission, before executing cold work. This approves continued warm verification, not cache deletion or
 Linux acceptance. Continue measuring before every producer.
 
+Foundation publication, 17 November 2026: Dan requested a separate ticket for
+all remaining work and a merge of the completed foundation while remote REAPER
+testing is unavailable. [Issue #45](https://github.com/DanMarshall909/dandrum/issues/45)
+owns that follow-up. The original implementation allowance is exhausted; this
+authorizes split-and-merge closeout, not restarting native implementation.
+Restore the maintained driver's ordinary 8 GiB growth reservation before
+publication: the smaller warm allowance depended on private local checks and
+does not qualify cold builds on another checkout. Existing cumulative ceilings,
+floors, preservation and mutation policy remain. Native editor, installed-host
+acceptance and complete-product validation/review remain unproven requirements;
+leave this change open and unsynced until those outcomes are genuinely proved.
+
 Planning observations: Pop!_OS 22.04 x86_64, Ryzen 5900X, 32 GiB RAM;
 MemAvailable about 19 GiB; shared checkout/tmp free about 132 GiB; root `build/`
 logical size about 9 GiB, Cargo registry about 1.6 GiB. The existing workload's

@@ -1,0 +1,1894 @@
+{
+  "scope": "Experimental VST3 foundation checkpoint only; no actual VST3 native editor or full installed-REAPER qualification",
+  "upstream": "79efd72078260dc67c068456a10a7c0b830347ed",
+  "sourceCheckpoint": "9a243d6f68899a8ec33ed70ce52127fcfb1004dc",
+  "sourceTree": "2f3696562080d96c743272fc620360cf9bf7e10f",
+  "followup": "https://github.com/DanMarshall909/dandrum/issues/45",
+  "scopeAuthority": "Dan,17November2026: put remainder in its own ticket and merge completed work; remote REAPER test unavailable",
+  "checkpoints": {
+    "sharedEditor": "b86ceb32fef5c428fe6b1789252080d547d9505c",
+    "viewMetadata": "c11cc03339e5cd67cc4bb4d76bd0c1943680632a",
+    "snapshotChannel": "6846204028550a72ebb431e5bc031f86fdba134c",
+    "ownerPeek": "0c2057dafcbb36030f2051947f0d9bc1ff0cb888",
+    "automationRouting": "9a243d6f68899a8ec33ed70ce52127fcfb1004dc"
+  },
+  "testReceipts": {
+    "routing-final-release-producers.json": [
+      {
+        "command": [
+          "./scripts/cargo",
+          "build",
+          "--offline",
+          "--release",
+          "--manifest-path",
+          "src/vst3-adapter/Cargo.toml",
+          "--features",
+          "trigger-editor",
+          "--lib"
+        ],
+        "testLibrary": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/ordinary/release/libdandrum_vst3_adapter.so",
+        "startedNs": 1794830296503727953,
+        "exit": 0,
+        "seconds": 6.629120833938941,
+        "sourceSha256": {
+          "src/vst3-adapter/src/components.rs": "a25103f3961fab969090beb2ae3b949f3587471557796e0b5bec8331e8c08366",
+          "src/vst3-adapter/src/transport.rs": "8a8a64a76be4a129a2a6d6d5c8c0c8dbb7fef1574818ed68fb23e8d1bfc1b1c1",
+          "src/vst3-adapter/tests/view_channel.rs": "3dc4cbc87384489b10df6001f1081a504172d28efd3bf89a19d68a484a980bcf",
+          "src/trigger-host/src/parameters.rs": "8726cf483c3618f670f9176be9337704d4dd9d4e6eed45407145c16298f43e89",
+          "src/trigger-host/tests/parameters.rs": "2188bf51b6d5b8742037aa77e2e79d335d9d5d0e2ec6acf6eabcfcb893047581"
+        }
+      },
+      {
+        "command": [
+          "./scripts/cargo",
+          "test",
+          "--offline",
+          "--release",
+          "--manifest-path",
+          "src/vst3-adapter/Cargo.toml",
+          "--features",
+          "trigger-editor"
+        ],
+        "testLibrary": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/ordinary/release/libdandrum_vst3_adapter.so",
+        "startedNs": 1794830303850290487,
+        "exit": 0,
+        "seconds": 60.99868446798064,
+        "sourceSha256": {
+          "src/vst3-adapter/src/components.rs": "a25103f3961fab969090beb2ae3b949f3587471557796e0b5bec8331e8c08366",
+          "src/vst3-adapter/src/transport.rs": "8a8a64a76be4a129a2a6d6d5c8c0c8dbb7fef1574818ed68fb23e8d1bfc1b1c1",
+          "src/vst3-adapter/tests/view_channel.rs": "3dc4cbc87384489b10df6001f1081a504172d28efd3bf89a19d68a484a980bcf",
+          "src/trigger-host/src/parameters.rs": "8726cf483c3618f670f9176be9337704d4dd9d4e6eed45407145c16298f43e89",
+          "src/trigger-host/tests/parameters.rs": "2188bf51b6d5b8742037aa77e2e79d335d9d5d0e2ec6acf6eabcfcb893047581"
+        }
+      }
+    ],
+    "routing-final-native-producers.json": [
+      {
+        "command": [
+          "./scripts/cargo",
+          "llvm-cov",
+          "--offline",
+          "--no-clean",
+          "--json",
+          "--output-path",
+          "/tmp/dandrum-vst3-remaining-20261115/view/routing-final-native-aggregate.json",
+          "--manifest-path",
+          "src/vst3-adapter/Cargo.toml",
+          "--features",
+          "trigger-editor"
+        ],
+        "testLibrary": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/libdandrum_vst3_adapter.so",
+        "startedNs": 1794829725171367568,
+        "exit": 0,
+        "seconds": 20.699579175910912,
+        "sourceSha256": {
+          "src/vst3-adapter/src/components.rs": "a25103f3961fab969090beb2ae3b949f3587471557796e0b5bec8331e8c08366",
+          "src/vst3-adapter/src/transport.rs": "8a8a64a76be4a129a2a6d6d5c8c0c8dbb7fef1574818ed68fb23e8d1bfc1b1c1",
+          "src/vst3-adapter/tests/view_channel.rs": "3dc4cbc87384489b10df6001f1081a504172d28efd3bf89a19d68a484a980bcf",
+          "src/trigger-host/src/parameters.rs": "8726cf483c3618f670f9176be9337704d4dd9d4e6eed45407145c16298f43e89",
+          "src/trigger-host/tests/parameters.rs": "2188bf51b6d5b8742037aa77e2e79d335d9d5d0e2ec6acf6eabcfcb893047581"
+        }
+      }
+    ],
+    "routing-final-gates-producers.json": [
+      {
+        "command": [
+          "./scripts/cargo",
+          "llvm-cov",
+          "--offline",
+          "--no-clean",
+          "--json",
+          "--output-path",
+          "/tmp/dandrum-vst3-remaining-20261115/view/routing-final-default-aggregate.json",
+          "--manifest-path",
+          "src/vst3-adapter/Cargo.toml"
+        ],
+        "testLibrary": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/libdandrum_vst3_adapter.so",
+        "startedNs": 1794829908341127419,
+        "exit": 0,
+        "seconds": 10.45452536700759,
+        "sourceSha256": {
+          "src/vst3-adapter/src/components.rs": "a25103f3961fab969090beb2ae3b949f3587471557796e0b5bec8331e8c08366",
+          "src/vst3-adapter/src/transport.rs": "8a8a64a76be4a129a2a6d6d5c8c0c8dbb7fef1574818ed68fb23e8d1bfc1b1c1",
+          "src/vst3-adapter/tests/view_channel.rs": "3dc4cbc87384489b10df6001f1081a504172d28efd3bf89a19d68a484a980bcf",
+          "src/trigger-host/src/parameters.rs": "8726cf483c3618f670f9176be9337704d4dd9d4e6eed45407145c16298f43e89",
+          "src/trigger-host/tests/parameters.rs": "2188bf51b6d5b8742037aa77e2e79d335d9d5d0e2ec6acf6eabcfcb893047581"
+        }
+      },
+      {
+        "command": [
+          "./scripts/cargo",
+          "clippy",
+          "--offline",
+          "--manifest-path",
+          "src/vst3-adapter/Cargo.toml",
+          "--features",
+          "trigger-editor",
+          "--all-targets",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "testLibrary": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/ordinary/release/libdandrum_vst3_adapter.so",
+        "startedNs": 1794829919617413509,
+        "exit": 0,
+        "seconds": 3.274746168986894,
+        "sourceSha256": {
+          "src/vst3-adapter/src/components.rs": "a25103f3961fab969090beb2ae3b949f3587471557796e0b5bec8331e8c08366",
+          "src/vst3-adapter/src/transport.rs": "8a8a64a76be4a129a2a6d6d5c8c0c8dbb7fef1574818ed68fb23e8d1bfc1b1c1",
+          "src/vst3-adapter/tests/view_channel.rs": "3dc4cbc87384489b10df6001f1081a504172d28efd3bf89a19d68a484a980bcf",
+          "src/trigger-host/src/parameters.rs": "8726cf483c3618f670f9176be9337704d4dd9d4e6eed45407145c16298f43e89",
+          "src/trigger-host/tests/parameters.rs": "2188bf51b6d5b8742037aa77e2e79d335d9d5d0e2ec6acf6eabcfcb893047581"
+        }
+      },
+      {
+        "command": [
+          "./scripts/cargo",
+          "clippy",
+          "--offline",
+          "--manifest-path",
+          "src/vst3-adapter/Cargo.toml",
+          "--all-targets",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "testLibrary": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/ordinary/release/libdandrum_vst3_adapter.so",
+        "startedNs": 1794829923715999494,
+        "exit": 0,
+        "seconds": 2.5896576100494713,
+        "sourceSha256": {
+          "src/vst3-adapter/src/components.rs": "a25103f3961fab969090beb2ae3b949f3587471557796e0b5bec8331e8c08366",
+          "src/vst3-adapter/src/transport.rs": "8a8a64a76be4a129a2a6d6d5c8c0c8dbb7fef1574818ed68fb23e8d1bfc1b1c1",
+          "src/vst3-adapter/tests/view_channel.rs": "3dc4cbc87384489b10df6001f1081a504172d28efd3bf89a19d68a484a980bcf",
+          "src/trigger-host/src/parameters.rs": "8726cf483c3618f670f9176be9337704d4dd9d4e6eed45407145c16298f43e89",
+          "src/trigger-host/tests/parameters.rs": "2188bf51b6d5b8742037aa77e2e79d335d9d5d0e2ec6acf6eabcfcb893047581"
+        }
+      }
+    ],
+    "routing-commit.json": {
+      "command": [
+        "git",
+        "commit",
+        "-m",
+        "Scope VST3 view automation and fence delivery teardown"
+      ],
+      "exit": 0,
+      "seconds": 63.30251331604086,
+      "reviewedTree": "2f3696562080d96c743272fc620360cf9bf7e10f",
+      "normalHooks": true,
+      "preservationMode": "1",
+      "commit": "9a243d6f68899a8ec33ed70ce52127fcfb1004dc",
+      "tree": "2f3696562080d96c743272fc620360cf9bf7e10f"
+    },
+    "origin-commit.json": {
+      "command": [
+        "git",
+        "commit",
+        "-m",
+        "Expose editor ownership on queued automation"
+      ],
+      "exit": 0,
+      "seconds": 61.68998185999226,
+      "reviewedTree": "c2781e7f5ec72a529f4105704ad517805f0af882",
+      "normalHooks": true,
+      "preservationMode": "1",
+      "commit": "0c2057dafcbb36030f2051947f0d9bc1ff0cb888",
+      "tree": "c2781e7f5ec72a529f4105704ad517805f0af882"
+    },
+    "automation-origin-coverage-receipt.json": {
+      "producer": {
+        "command": [
+          "./scripts/cargo",
+          "llvm-cov",
+          "--offline",
+          "--no-clean",
+          "--manifest-path",
+          "src/trigger-host/Cargo.toml",
+          "--json",
+          "--output-path",
+          "/tmp/dandrum-vst3-remaining-20261115/view/automation-origin-owner-aggregate.json"
+        ],
+        "startedNs": 1794805649889683821,
+        "exit": 0,
+        "seconds": 30.41404850804247,
+        "sourceSha256": {
+          "src/vst3-adapter/src/components.rs": "23ec59d61fec76b72c6fe3e1f77561a78860a1af7326e094795bd4596e419f3d",
+          "src/vst3-adapter/src/transport.rs": "7749eee57b341e1fb8d526ddfc3fec93afd479d1ad8dd67422d92a93e0ebeda2",
+          "src/vst3-adapter/tests/view_channel.rs": "5a2ea43da08f15d02bc0e99c9376885348d3ea5a8371ad99360244b9ba6b574b",
+          "src/trigger-host/src/parameters.rs": "8726cf483c3618f670f9176be9337704d4dd9d4e6eed45407145c16298f43e89",
+          "src/trigger-host/tests/parameters.rs": "2188bf51b6d5b8742037aa77e2e79d335d9d5d0e2ec6acf6eabcfcb893047581"
+        }
+      },
+      "counts": [
+        239,
+        0,
+        2
+      ],
+      "profiles": [
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193687-2444012308832488439_0.profraw",
+          "sha256": "05116e726f4866df42db52cb67ae9b881a7a59b56d746f15371886cdea644e38"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193745-1838897745064091695_0.profraw",
+          "sha256": "9dd68eca22f6130efba517787fef93e0788ef48437e59e47606f802d46079956"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193757-15965844425091949101_0.profraw",
+          "sha256": "c202d517aed3fd85c4165202cfd8a8e20d288193a9bc9ee6c3028eb2671c7a17"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193788-1472923951914744592_0.profraw",
+          "sha256": "c969973bcf8b32d58832ed03d66c63825178449f3ce243a04ffba56b76a1a907"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193800-15822794991053867905_0.profraw",
+          "sha256": "87a4e5e45144d95923f2dec4680889ce732ce803ab199a56a11253b0624c8a9a"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193848-8654782152416665029_0.profraw",
+          "sha256": "009dfdeee16d8ce4d41ad2c4984b4913b5efe6e9f249c9c388321b520bb3887d"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193867-8065605608401903163_0.profraw",
+          "sha256": "3a8f6a604bc1d184a68c1c4a01999ace42695bdd77d4624536c371d71b851bf9"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193870-8065605608401903163_0.profraw",
+          "sha256": "74e528d5a7e5c6917767f1754392e07372cd2a215381f90c8cdc4423b7896834"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193872-14584986383185627254_0.profraw",
+          "sha256": "1021509d1f82b64f9b4c4540675aa5ed8c6ae09b86a0cf63e77d9c12c5974247"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193883-3258011693075944283_0.profraw",
+          "sha256": "958cf248006c7586aa00a38c67c863f644aedd42f1ddd61e46fef7285409726d"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193892-1630910466900756732_0.profraw",
+          "sha256": "d67b107b22ee191015eb7df6b7ea9dc14239aa69b27ab01311c7caa4ca9ff3b2"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193922-2272193144472371591_0.profraw",
+          "sha256": "cf1af4208eaa0e63bf79d750cf90b6e3e263195e6fe65e4483aff9f695940e05"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193946-16575871162844023067_0.profraw",
+          "sha256": "77f452c56a904439d8f0271f081952c43c4093ea47a235ea9f68a309ae841fce"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193964-3023090516037479088_0.profraw",
+          "sha256": "23ae27f192d2077737a55d295e580ff291485144cd46188a4a566571ac2bc731"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193979-5355331565147454508_0.profraw",
+          "sha256": "23940e877530f6209c4e735d31a17efaf5ae870c99721a68441945ba0d4ebbfb"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-194004-14110601600313490021_0.profraw",
+          "sha256": "1f60ca267d148a8da90a8954836ee467665bdf0baa287f0523e59c83a3971cb1"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-194014-11930314775916761200_0.profraw",
+          "sha256": "3597d8f93fde7a687bf3ab340a3da681f981106f5beb433d8d930829dd2264e0"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-194064-7669397779988472529_0.profraw",
+          "sha256": "260e1099e17eec368a1c410206f296e2844207e565b5b5ad7ef1f8259d37cf52"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-194112-12559687420052886625_0.profraw",
+          "sha256": "4171ea9795e404ad29ba04cb6979266e7fcd623dc7846fb29e8e534365a45402"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-194121-320979433195598274_0.profraw",
+          "sha256": "ee0c77bb8202cad4e3e8fe2524d3ca95f93837def48379efc654204fad26b0b0"
+        }
+      ],
+      "objects": [
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/dandrum_trigger_host-fcd006ee2b789e2c",
+          "sha256": "9e7cf1bf534921859498944757cbc57f564c6a252c88de5e8163a662237e4707"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/editor_bridge-2173d498af2e2127",
+          "sha256": "e0662c5ac5613de4d84704ff851e1a308963a8fec49c71c4a1ab7586ce20aeb7"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/editor_commands-403a4af052a4adc0",
+          "sha256": "26b2a8da07b91c3a31d839b38ca29b5a39ad16554d9732934c621d3ac960d410"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/editor_encoding-de397b6364db8cd2",
+          "sha256": "c6544a1562547bdae41d76945d399e3deade2cdd515489b6c155ddae92d41273"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/editor_note_controller-d5da517223c45496",
+          "sha256": "a3ed25572bd789c4f0202c5e8a148a5af5903898c080879845b03fff71f19343"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/editor_notes-bef902bb7428e8c3",
+          "sha256": "935079bb4e5583a0925d089403fe33b49dbaa586871105bcee47441758950dfd"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/native_sample_acquisition-0dfaebe27b2cb4a0",
+          "sha256": "158542ef211d9b52cdcbf256d50953491e8ca58ccd052ad3e30cdd2705c03c89"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/packaged_resources-0cdca16c4717e513",
+          "sha256": "242889546af9fff9c60bee88ca2f2e276d4d9bcf51471f9f88437baf5e3328a2"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/parameter_flush-5ab2c31c2155f52b",
+          "sha256": "b51a85bfc8d046002b5c8b8de5d49d725d7b57a10ed9501521d54008d5177ecf"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/parameters-5ad9655fc383795a",
+          "sha256": "edc7e2bfa2805e5b1618feff29065cd8fcfd7c0ad5be821b84553050625964db"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/precise_runtime-ab00e9e462dfe2c6",
+          "sha256": "8ec73c4a8c7d7079f8fd3efe465b7c986783ef702b53bd2ae8a70956878fdfc0"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/protocol-e9bbc75fa201375b",
+          "sha256": "d3cc754a739a1eceb0f72ce9aa2e35ad00ccc1b078571adf5bc64a7ed49c94f6"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/render_reconfiguration-a8fa92546e6278a2",
+          "sha256": "f81f1c97ab5b940fe5ba2383097ecc05bbef3b8ae1abb8d146376c70ea543540"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/runtime-d3ba3f333aa287ae",
+          "sha256": "53c2dfe6778768c9c476c01481daba453f8ff6dd50888c1066b3a568dbdf7e8b"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/runtime_quiescent-378a054fc509a5b3",
+          "sha256": "50167b66ba4900c934b3af296e102454851bed87455afd3c905c14f13d4c347c"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/selected_admission-8855f0f4200dff96",
+          "sha256": "f404ab3afe0237dc8c0a1056a9d941849e2fa888df1a1e61bf0ec5912b5f6b1a"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/session_jobs-42527f4b42691c98",
+          "sha256": "65e58e871b9c2407b5bb82355404581415f5cf98c65cb8b640a0a6af46e41800"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/snapshot-68277e78e1c4c3a5",
+          "sha256": "c3ed5a13cb93e27e74b847b0d94d63ef28bc30b8cf699dbbcd761405826f0c83"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/state-f0137672c1f32b6d",
+          "sha256": "fad13bf68708b176feef7f816325f659a387f1a4224650480d39e30a396315af"
+        }
+      ],
+      "focusedObject": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/parameters-5ad9655fc383795a",
+      "mergeCommand": [
+        "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-profdata",
+        "merge",
+        "-sparse",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193687-2444012308832488439_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193745-1838897745064091695_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193757-15965844425091949101_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193788-1472923951914744592_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193800-15822794991053867905_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193848-8654782152416665029_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193867-8065605608401903163_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193870-8065605608401903163_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193872-14584986383185627254_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193883-3258011693075944283_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193892-1630910466900756732_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193922-2272193144472371591_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193946-16575871162844023067_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193964-3023090516037479088_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-193979-5355331565147454508_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-194004-14110601600313490021_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-194014-11930314775916761200_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-194064-7669397779988472529_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-194112-12559687420052886625_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/92f7d1eb227440c60bed3e58/coverage/trigger-host-194121-320979433195598274_0.profraw",
+        "-o",
+        "/tmp/dandrum-vst3-remaining-20261115/view/automation-origin-owner-fresh.profdata"
+      ],
+      "exports": {
+        "full": {
+          "command": [
+            "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov",
+            "export",
+            "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/dandrum_trigger_host-fcd006ee2b789e2c",
+            "-object",
+            "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/editor_bridge-2173d498af2e2127",
+            "-object",
+            "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/editor_commands-403a4af052a4adc0",
+            "-object",
+            "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/editor_encoding-de397b6364db8cd2",
+            "-object",
+            "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/editor_note_controller-d5da517223c45496",
+            "-object",
+            "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/editor_notes-bef902bb7428e8c3",
+            "-object",
+            "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/native_sample_acquisition-0dfaebe27b2cb4a0",
+            "-object",
+            "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/packaged_resources-0cdca16c4717e513",
+            "-object",
+            "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/parameter_flush-5ab2c31c2155f52b",
+            "-object",
+            "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/parameters-5ad9655fc383795a",
+            "-object",
+            "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/precise_runtime-ab00e9e462dfe2c6",
+            "-object",
+            "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/protocol-e9bbc75fa201375b",
+            "-object",
+            "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/render_reconfiguration-a8fa92546e6278a2",
+            "-object",
+            "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/runtime-d3ba3f333aa287ae",
+            "-object",
+            "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/runtime_quiescent-378a054fc509a5b3",
+            "-object",
+            "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/selected_admission-8855f0f4200dff96",
+            "-object",
+            "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/session_jobs-42527f4b42691c98",
+            "-object",
+            "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/snapshot-68277e78e1c4c3a5",
+            "-object",
+            "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/state-f0137672c1f32b6d",
+            "-instr-profile=/tmp/dandrum-vst3-remaining-20261115/view/automation-origin-owner-fresh.profdata"
+          ],
+          "output": "/tmp/dandrum-vst3-remaining-20261115/view/automation-origin-full-fresh.json",
+          "functions": [
+            {
+              "name": "_RNCNvMs5_NtCs2uUB4fSvir6_20dandrum_trigger_host10parametersNtB7_19ParameterController26peek_automation_with_owner0B9_",
+              "calls": 0,
+              "regions": [
+                [
+                  1852,
+                  27,
+                  1852,
+                  38,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1852,
+                  40,
+                  1852,
+                  51,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "unhitRegions": [
+                [
+                  1852,
+                  27,
+                  1852,
+                  38
+                ],
+                [
+                  1852,
+                  40,
+                  1852,
+                  51
+                ]
+              ]
+            },
+            {
+              "name": "_RNvMs5_NtCs2uUB4fSvir6_20dandrum_trigger_host10parametersNtB5_19ParameterController15peek_automation",
+              "calls": 0,
+              "regions": [
+                [
+                  1843,
+                  5,
+                  1843,
+                  61,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1844,
+                  9,
+                  1844,
+                  13,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1844,
+                  14,
+                  1844,
+                  40,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1844,
+                  43,
+                  1844,
+                  46,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1845,
+                  5,
+                  1845,
+                  6,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "unhitRegions": [
+                [
+                  1843,
+                  5,
+                  1843,
+                  61
+                ],
+                [
+                  1844,
+                  9,
+                  1844,
+                  13
+                ],
+                [
+                  1844,
+                  14,
+                  1844,
+                  40
+                ],
+                [
+                  1844,
+                  43,
+                  1844,
+                  46
+                ],
+                [
+                  1845,
+                  5,
+                  1845,
+                  6
+                ]
+              ]
+            },
+            {
+              "name": "_RNvMs5_NtCs2uUB4fSvir6_20dandrum_trigger_host10parametersNtB5_19ParameterController26peek_automation_with_owner",
+              "calls": 0,
+              "regions": [
+                [
+                  1849,
+                  5,
+                  1849,
+                  79,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1850,
+                  9,
+                  1850,
+                  24,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1851,
+                  14,
+                  1851,
+                  19,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1852,
+                  14,
+                  1852,
+                  17,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1853,
+                  5,
+                  1853,
+                  6,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "unhitRegions": [
+                [
+                  1849,
+                  5,
+                  1849,
+                  79
+                ],
+                [
+                  1850,
+                  9,
+                  1850,
+                  24
+                ],
+                [
+                  1851,
+                  14,
+                  1851,
+                  19
+                ],
+                [
+                  1852,
+                  14,
+                  1852,
+                  17
+                ],
+                [
+                  1853,
+                  5,
+                  1853,
+                  6
+                ]
+              ]
+            },
+            {
+              "name": "_RNCNvMs5_NtCsgCxhhCfjzQi_20dandrum_trigger_host10parametersNtB7_19ParameterController26peek_automation_with_owner0B9_",
+              "calls": 111,
+              "regions": [
+                [
+                  1852,
+                  27,
+                  1852,
+                  38,
+                  111,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1852,
+                  40,
+                  1852,
+                  51,
+                  111,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "unhitRegions": []
+            },
+            {
+              "name": "_RNvMs5_NtCsgCxhhCfjzQi_20dandrum_trigger_host10parametersNtB5_19ParameterController15peek_automation",
+              "calls": 176,
+              "regions": [
+                [
+                  1843,
+                  5,
+                  1843,
+                  61,
+                  176,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1844,
+                  9,
+                  1844,
+                  13,
+                  176,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1844,
+                  14,
+                  1844,
+                  40,
+                  176,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1844,
+                  43,
+                  1844,
+                  46,
+                  176,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1845,
+                  5,
+                  1845,
+                  6,
+                  176,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "unhitRegions": []
+            },
+            {
+              "name": "_RNvMs5_NtCsgCxhhCfjzQi_20dandrum_trigger_host10parametersNtB5_19ParameterController26peek_automation_with_owner",
+              "calls": 187,
+              "regions": [
+                [
+                  1849,
+                  5,
+                  1849,
+                  79,
+                  187,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1850,
+                  9,
+                  1850,
+                  24,
+                  187,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1851,
+                  14,
+                  1851,
+                  19,
+                  187,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1852,
+                  14,
+                  1852,
+                  17,
+                  187,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1853,
+                  5,
+                  1853,
+                  6,
+                  187,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "unhitRegions": []
+            }
+          ],
+          "parametersSummary": [
+            {
+              "branches": {
+                "count": 0,
+                "covered": 0,
+                "notcovered": 0,
+                "percent": 0
+              },
+              "functions": {
+                "count": 147,
+                "covered": 147,
+                "percent": 100
+              },
+              "instantiations": {
+                "count": 413,
+                "covered": 266,
+                "percent": 64.40677966101694
+              },
+              "lines": {
+                "count": 1511,
+                "covered": 1485,
+                "percent": 98.27928524156188
+              },
+              "mcdc": {
+                "count": 0,
+                "covered": 0,
+                "notcovered": 0,
+                "percent": 0
+              },
+              "regions": {
+                "count": 2082,
+                "covered": 2030,
+                "notcovered": 52,
+                "percent": 97.50240153698367
+              }
+            }
+          ]
+        },
+        "parameters": {
+          "command": [
+            "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov",
+            "export",
+            "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/parameters-5ad9655fc383795a",
+            "-instr-profile=/tmp/dandrum-vst3-remaining-20261115/view/automation-origin-owner-fresh.profdata"
+          ],
+          "output": "/tmp/dandrum-vst3-remaining-20261115/view/automation-origin-parameters-fresh.json",
+          "functions": [
+            {
+              "name": "_RNCNvMs5_NtCsgCxhhCfjzQi_20dandrum_trigger_host10parametersNtB7_19ParameterController26peek_automation_with_owner0B9_",
+              "calls": 111,
+              "regions": [
+                [
+                  1852,
+                  27,
+                  1852,
+                  38,
+                  111,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1852,
+                  40,
+                  1852,
+                  51,
+                  111,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "unhitRegions": []
+            },
+            {
+              "name": "_RNvMs5_NtCsgCxhhCfjzQi_20dandrum_trigger_host10parametersNtB5_19ParameterController15peek_automation",
+              "calls": 176,
+              "regions": [
+                [
+                  1843,
+                  5,
+                  1843,
+                  61,
+                  176,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1844,
+                  9,
+                  1844,
+                  13,
+                  176,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1844,
+                  14,
+                  1844,
+                  40,
+                  176,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1844,
+                  43,
+                  1844,
+                  46,
+                  176,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1845,
+                  5,
+                  1845,
+                  6,
+                  176,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "unhitRegions": []
+            },
+            {
+              "name": "_RNvMs5_NtCsgCxhhCfjzQi_20dandrum_trigger_host10parametersNtB5_19ParameterController26peek_automation_with_owner",
+              "calls": 187,
+              "regions": [
+                [
+                  1849,
+                  5,
+                  1849,
+                  79,
+                  187,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1850,
+                  9,
+                  1850,
+                  24,
+                  187,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1851,
+                  14,
+                  1851,
+                  19,
+                  187,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1852,
+                  14,
+                  1852,
+                  17,
+                  187,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1853,
+                  5,
+                  1853,
+                  6,
+                  187,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "unhitRegions": []
+            }
+          ],
+          "parametersSummary": [
+            {
+              "branches": {
+                "count": 0,
+                "covered": 0,
+                "notcovered": 0,
+                "percent": 0
+              },
+              "functions": {
+                "count": 147,
+                "covered": 143,
+                "percent": 97.27891156462584
+              },
+              "instantiations": {
+                "count": 148,
+                "covered": 144,
+                "percent": 97.2972972972973
+              },
+              "lines": {
+                "count": 1511,
+                "covered": 1463,
+                "percent": 96.82329583057577
+              },
+              "mcdc": {
+                "count": 0,
+                "covered": 0,
+                "notcovered": 0,
+                "percent": 0
+              },
+              "regions": {
+                "count": 2082,
+                "covered": 2001,
+                "notcovered": 81,
+                "percent": 96.10951008645533
+              }
+            }
+          ]
+        }
+      }
+    },
+    "routing-final-native-fresh-receipt.json": {
+      "producer": {
+        "command": [
+          "./scripts/cargo",
+          "llvm-cov",
+          "--offline",
+          "--no-clean",
+          "--json",
+          "--output-path",
+          "/tmp/dandrum-vst3-remaining-20261115/view/routing-final-native-aggregate.json",
+          "--manifest-path",
+          "src/vst3-adapter/Cargo.toml",
+          "--features",
+          "trigger-editor"
+        ],
+        "testLibrary": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/libdandrum_vst3_adapter.so",
+        "startedNs": 1794829725171367568,
+        "exit": 0,
+        "seconds": 20.699579175910912,
+        "sourceSha256": {
+          "src/vst3-adapter/src/components.rs": "a25103f3961fab969090beb2ae3b949f3587471557796e0b5bec8331e8c08366",
+          "src/vst3-adapter/src/transport.rs": "8a8a64a76be4a129a2a6d6d5c8c0c8dbb7fef1574818ed68fb23e8d1bfc1b1c1",
+          "src/vst3-adapter/tests/view_channel.rs": "3dc4cbc87384489b10df6001f1081a504172d28efd3bf89a19d68a484a980bcf",
+          "src/trigger-host/src/parameters.rs": "8726cf483c3618f670f9176be9337704d4dd9d4e6eed45407145c16298f43e89",
+          "src/trigger-host/tests/parameters.rs": "2188bf51b6d5b8742037aa77e2e79d335d9d5d0e2ec6acf6eabcfcb893047581"
+        }
+      },
+      "profiles": [
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523001-16807034341101808737_0.profraw",
+          "sha256": "183535bbd91f6d60e651cc5def7a915e985c9f86cfa9a569cf3795530a5fc1b9"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523004-16174166710829865873_0.profraw",
+          "sha256": "807357623e250be922499e8f535ea9489268c87f16cdad5be20f706682159d37"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523004-17449012343719542016_0.profraw",
+          "sha256": "b2e079e5a68689f14881ce3d5a823120d509804065620d606cc2d60ae53115df"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523036-17259282067965869943_0.profraw",
+          "sha256": "4ac7d55228af0159a830c2f9b49174abdc185e84865a97ced333066323ba8a98"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523078-16174166710829865873_0.profraw",
+          "sha256": "d58bf2910c65e99125c66891499286825536884613075fc2af76328e2ddd6833"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523078-17259282067965869943_0.profraw",
+          "sha256": "155fe9afe396d00cbfd3c05cd7db1db36fac75598be3fbd6a0aa502e3f9c4be5"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523083-16174166710829865873_0.profraw",
+          "sha256": "cb49b9ac7533431b37729f7c91377a3d4cc243a5062f125df45d6adf767260a6"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523083-7736570015509743609_0.profraw",
+          "sha256": "3a2f4278e5e5685b3af0cb41f30eb96179d64a243abe5ddf2cdfce81a88be2fb"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523187-16174166710829865873_0.profraw",
+          "sha256": "3eaf19059fc3350b6706cfeef65cd35adeff3493ca3c0a2a8fa72b5f5314270e"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523187-7055325447364506851_0.profraw",
+          "sha256": "1fadc9c3611aa6b7df0cec274b57c7f3949bfe43f1090764bc0d64c605214650"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523200-14053085552058251417_0.profraw",
+          "sha256": "555447037a61365f2149f6cb543c4992d8ce9dcdd0c4de818bc3b78c149e97d5"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523200-16174166710829865873_0.profraw",
+          "sha256": "4409e24f922ecf61045561bd94b6151b0d025840b1acced2a3da02bc7b02b6fc"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523237-16174166710829865873_0.profraw",
+          "sha256": "cb42603a936a13b3c7e6e9ea2f4c864d20a916923b1ba3b815cf6cd3cb0aba0c"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523237-2069469110229016876_0.profraw",
+          "sha256": "e8c6e515f3f0a790491530de4fdbf34817598074a2bd9033f62564a510d73a3c"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523249-6540167899945383549_0.profraw",
+          "sha256": "1059ee0b8a9008c222c5c39872568f1dc0d99f57c6ac934fd5d330b3081ae113"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523252-16174166710829865873_0.profraw",
+          "sha256": "fbbfed04c03d56cfa62a0663fa1be03430bf5cdcf5e4a686cf55104675002ead"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523252-6540167899945383549_0.profraw",
+          "sha256": "c65634b1b961b2393e78669fcff8128f1fa658e660eb2dc41d02754e8e452805"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523253-16174166710829865873_0.profraw",
+          "sha256": "7771da4f3f97e1cfecc0e69778b96e7247d536bfbde1ab8e4ed6167f0552b381"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523253-6540167899945383549_0.profraw",
+          "sha256": "ed01e4ca9913456d8faab51ae8b2ffc661fb64fcb7de0f31ba67389e14f78dc0"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523258-14170126975682956012_0.profraw",
+          "sha256": "9dd5b1ffe1bc956ddb1761eb326983118ae1c571331f2eacfbe2a5c2fd0d8c15"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523258-16174166710829865873_0.profraw",
+          "sha256": "0831436fcfebb696cd1dd31be140766095f7b7636dc58bd28f3430db77eb98fb"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523276-16174166710829865873_0.profraw",
+          "sha256": "4227fff65a2a9165218203481178f938b96a4dc2018f0cf5fcdfb15c95fff04c"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523276-4264527614426874948_0.profraw",
+          "sha256": "47b6fa2ecc2fb1469229e22ce14a12ef86838ea6b2cbedd41d97a6031bc59cfc"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523302-16174166710829865873_0.profraw",
+          "sha256": "502c715929b75adb69b66e42bed53ce67f1efb29049c07c81f2bbd84079115f5"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523302-5992227657665873822_0.profraw",
+          "sha256": "214bb29d0208b626ddd4c9e372feaf81c1c34763a5611101bc1d0da18239ee04"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523306-16174166710829865873_0.profraw",
+          "sha256": "60d7d11cf0d7e6ff6154a594ca9fff2d5b9d7d82c880bea0647720af8433d2f3"
+        },
+        {
+          "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523306-9021294735765806272_0.profraw",
+          "sha256": "39ed5c3ed0d4ab13633d42b81eb009dead581f5659742aceb50eba9558ec20dd"
+        }
+      ],
+      "object": {
+        "path": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/libdandrum_vst3_adapter.so",
+        "sha256": "f6233adc2b5906daadb71b129c90715a04366f44d083ed5aaf7e88272ef01fa0"
+      },
+      "mergeCommand": [
+        "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-profdata",
+        "merge",
+        "-sparse",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523001-16807034341101808737_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523004-16174166710829865873_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523004-17449012343719542016_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523036-17259282067965869943_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523078-16174166710829865873_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523078-17259282067965869943_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523083-16174166710829865873_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523083-7736570015509743609_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523187-16174166710829865873_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523187-7055325447364506851_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523200-14053085552058251417_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523200-16174166710829865873_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523237-16174166710829865873_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523237-2069469110229016876_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523249-6540167899945383549_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523252-16174166710829865873_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523252-6540167899945383549_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523253-16174166710829865873_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523253-6540167899945383549_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523258-14170126975682956012_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523258-16174166710829865873_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523276-16174166710829865873_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523276-4264527614426874948_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523302-16174166710829865873_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523302-5992227657665873822_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523306-16174166710829865873_0.profraw",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-523306-9021294735765806272_0.profraw",
+        "-o",
+        "/tmp/dandrum-vst3-remaining-20261115/view/routing-final-native-fresh.profdata"
+      ],
+      "exportCommand": [
+        "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/llvm-cov",
+        "export",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/libdandrum_vst3_adapter.so",
+        "-instr-profile=/tmp/dandrum-vst3-remaining-20261115/view/routing-final-native-fresh.profdata"
+      ],
+      "functions": [
+        {
+          "name": "_RNCNCNvMsj_NtCsgyZei1fXlZM_20dandrum_vst3_adapter10componentsNtB9_13ProcessorCore14detach_browser00Bb_",
+          "calls": 1,
+          "regions": 3,
+          "unhitRegions": []
+        },
+        {
+          "name": "_RNCNvMsa_NtCsgyZei1fXlZM_20dandrum_vst3_adapter10componentsNtB7_13ProcessorCore18service_automation0B9_",
+          "calls": 3369,
+          "regions": 2,
+          "unhitRegions": []
+        },
+        {
+          "name": "_RNCNvMsa_NtCsgyZei1fXlZM_20dandrum_vst3_adapter10componentsNtB7_13ProcessorCore22acknowledge_automation0B9_",
+          "calls": 28,
+          "regions": 2,
+          "unhitRegions": []
+        },
+        {
+          "name": "_RNCNvMsa_NtCsgyZei1fXlZM_20dandrum_vst3_adapter10componentsNtB7_13ProcessorCore22acknowledge_automations_0B9_",
+          "calls": 1106,
+          "regions": 2,
+          "unhitRegions": []
+        },
+        {
+          "name": "_RNCNvMsa_NtCsgyZei1fXlZM_20dandrum_vst3_adapter10componentsNtB7_13ProcessorCore22automation_destination0B9_",
+          "calls": 3271,
+          "regions": 3,
+          "unhitRegions": []
+        },
+        {
+          "name": "_RNCNvMsa_NtCsgyZei1fXlZM_20dandrum_vst3_adapter10componentsNtB7_13ProcessorCore22automation_destinations_0B9_",
+          "calls": 59,
+          "regions": 3,
+          "unhitRegions": []
+        },
+        {
+          "name": "_RNCNvMsa_NtCsgyZei1fXlZM_20dandrum_vst3_adapter10componentsNtB7_13ProcessorCore25automation_foreign_active0B9_",
+          "calls": 33,
+          "regions": 2,
+          "unhitRegions": []
+        },
+        {
+          "name": "_RNCNvMsj_NtCsgyZei1fXlZM_20dandrum_vst3_adapter10componentsNtB7_13ProcessorCore14detach_browser0B9_",
+          "calls": 3,
+          "regions": 7,
+          "unhitRegions": []
+        },
+        {
+          "name": "_RNCNvMsj_NtCsgyZei1fXlZM_20dandrum_vst3_adapter10componentsNtB7_13ProcessorCore14notify_browser0B9_",
+          "calls": 28,
+          "regions": 11,
+          "unhitRegions": []
+        },
+        {
+          "name": "_RNvMs0_NtCsgyZei1fXlZM_20dandrum_vst3_adapter9transportNtB5_9Transport17automation_active",
+          "calls": 269,
+          "regions": 4,
+          "unhitRegions": []
+        },
+        {
+          "name": "_RNvMs_NtCsgyZei1fXlZM_20dandrum_vst3_adapter10componentsNtB4_21AutomationDestination4view",
+          "calls": 3269,
+          "regions": 6,
+          "unhitRegions": []
+        },
+        {
+          "name": "_RNvMs_NtCsgyZei1fXlZM_20dandrum_vst3_adapter10componentsNtB4_21AutomationDestination7counter",
+          "calls": 2224,
+          "regions": 6,
+          "unhitRegions": []
+        },
+        {
+          "name": "_RNvMs_NtCsgyZei1fXlZM_20dandrum_vst3_adapter10componentsNtB4_21AutomationDestination9transport",
+          "calls": 2157,
+          "regions": 6,
+          "unhitRegions": []
+        },
+        {
+          "name": "_RNvMsa_NtCsgyZei1fXlZM_20dandrum_vst3_adapter10componentsNtB5_13ProcessorCore18service_automation",
+          "calls": 3780,
+          "regions": 103,
+          "unhitRegions": [
+            [
+              850,
+              13,
+              850,
+              19
+            ],
+            [
+              857,
+              17,
+              857,
+              23
+            ],
+            [
+              863,
+              25,
+              863,
+              31
+            ],
+            [
+              880,
+              25,
+              880,
+              31
+            ],
+            [
+              888,
+              33,
+              888,
+              39
+            ],
+            [
+              906,
+              21,
+              906,
+              27
+            ],
+            [
+              924,
+              17,
+              924,
+              23
+            ],
+            [
+              927,
+              17,
+              927,
+              23
+            ],
+            [
+              935,
+              17,
+              935,
+              23
+            ]
+          ]
+        },
+        {
+          "name": "_RNvMsa_NtCsgyZei1fXlZM_20dandrum_vst3_adapter10componentsNtB5_13ProcessorCore22acknowledge_automation",
+          "calls": 1113,
+          "regions": 39,
+          "unhitRegions": [
+            [
+              953,
+              32,
+              953,
+              44
+            ],
+            [
+              972,
+              20,
+              972,
+              32
+            ],
+            [
+              975,
+              20,
+              975,
+              35
+            ],
+            [
+              978,
+              20,
+              978,
+              32
+            ]
+          ]
+        },
+        {
+          "name": "_RNvMsa_NtCsgyZei1fXlZM_20dandrum_vst3_adapter10componentsNtB5_13ProcessorCore22automation_destination",
+          "calls": 3271,
+          "regions": 20,
+          "unhitRegions": [
+            [
+              816,
+              56,
+              816,
+              57
+            ]
+          ]
+        },
+        {
+          "name": "_RNvMsa_NtCsgyZei1fXlZM_20dandrum_vst3_adapter10componentsNtB5_13ProcessorCore25automation_foreign_active",
+          "calls": 203,
+          "regions": 8,
+          "unhitRegions": []
+        },
+        {
+          "name": "_RNvMsj_NtCsgyZei1fXlZM_20dandrum_vst3_adapter10componentsNtB5_13ProcessorCore14detach_browser",
+          "calls": 42,
+          "regions": 20,
+          "unhitRegions": []
+        },
+        {
+          "name": "_RNvMsj_NtCsgyZei1fXlZM_20dandrum_vst3_adapter10componentsNtB5_13ProcessorCore14notify_browser",
+          "calls": 270,
+          "regions": 157,
+          "unhitRegions": [
+            [
+              1560,
+              28,
+              1560,
+              40
+            ],
+            [
+              1627,
+              32,
+              1627,
+              47
+            ],
+            [
+              1642,
+              29,
+              1642,
+              44
+            ]
+          ]
+        },
+        {
+          "name": "_RNvXs_NvMs0_NtCsgyZei1fXlZM_20dandrum_vst3_adapter9transportNtBa_9Transport4pumpNtB4_17AutomationSendingNtNtNtCs27Vx93FoQ6z_4core3ops4drop4Drop4drop",
+          "calls": 13085,
+          "regions": 4,
+          "unhitRegions": []
+        }
+      ]
+    }
+  },
+  "textArchive": {
+    "path": "text-evidence.tar.gz",
+    "sha256": "583e189656c60fbc35c3f23038010b2fc8290e71dc68695d74abc4ddcbdc0e11",
+    "bytes": 223428,
+    "members": [
+      {
+        "name": "checkpoint-review/channel-review.json",
+        "sha256": "bf85419943f166c02bc859584e76b437b2c04105d6a9c42f25ffceafea2db49c",
+        "bytes": 4708
+      },
+      {
+        "name": "checkpoint-review/metadata-review.json",
+        "sha256": "ea8b991779906c730023e5e519eb24fffabf84780ecde3377278c9ff83001466",
+        "bytes": 3283
+      },
+      {
+        "name": "checkpoint-review/origin-review.json",
+        "sha256": "0aacfafe4f170f1afb71b3c71acfeef5552392b4610ad203f1c88fe0b4a32e77",
+        "bytes": 3455
+      },
+      {
+        "name": "checkpoint-review/origin-verdict.json",
+        "sha256": "c5e27f456e186a248365b78eb1f72eed7089cc212fe19f8dc0455884249c049d",
+        "bytes": 907
+      },
+      {
+        "name": "checkpoint-review/routing-review.json",
+        "sha256": "a5f35b9ed24fb4c51378fa7c5987100e2681a4aa0c64b7db28db1c51f22961fb",
+        "bytes": 3502
+      },
+      {
+        "name": "checkpoint-review/routing-verdict.json",
+        "sha256": "883de8fa2485b13c29e5b315b3cb1f96afedf7c39a2b50aa28d1bd80287421e1",
+        "bytes": 944
+      },
+      {
+        "name": "logs/automation-origin-green-0.log",
+        "sha256": "bf9e0359d39326377891a32a7cd3d54b7e63f09a77d8dd8be2720bb44cf54673",
+        "bytes": 509
+      },
+      {
+        "name": "logs/automation-origin-owner-coverage-retry-0.log",
+        "sha256": "cb9804c66a7151814a8913b7574b21d0fe7af17c2866aa5b7f51261fe8f346a5",
+        "bytes": 28135
+      },
+      {
+        "name": "logs/automation-origin-red-0.log",
+        "sha256": "85dd036486334966760a755ee42ac4b5ed1be0d9e84da147e2a1d1891c85c392",
+        "bytes": 6426
+      },
+      {
+        "name": "logs/channel-abandoned-coverage.log",
+        "sha256": "b433d2e730e6a235ae83d96c73d2d4e810a4925c08cd5a9052d0a5420a623247",
+        "bytes": 10414
+      },
+      {
+        "name": "logs/channel-abandoned-green-0.log",
+        "sha256": "0b204f9706db57f3e3b5c8f340c02cef254514218a8a58144656a470fe1ba113",
+        "bytes": 145
+      },
+      {
+        "name": "logs/channel-abandoned-green-1.log",
+        "sha256": "4b6f159ab50a61b2693810affdf82d4b02e61fdcb2919ababfd0bb0938a074ce",
+        "bytes": 600
+      },
+      {
+        "name": "logs/channel-abandoned-red-0.log",
+        "sha256": "8617e482ae283187bdf903cda514a87ba0b9a1ce7768b219ce3eaaf16f6334bf",
+        "bytes": 998
+      },
+      {
+        "name": "logs/channel-before-refactor.log",
+        "sha256": "09e22f2f3891786cc4918d3ad2cd98b68b668d24dfda6db73aa32aed8b9d4a3c",
+        "bytes": 10508
+      },
+      {
+        "name": "logs/channel-characterize-0.log",
+        "sha256": "1d8ffc973cbe6b152a88442ec4a4247543cf9cc22048812edb06e3623a0e531c",
+        "bytes": 509
+      },
+      {
+        "name": "logs/channel-characterized-coverage.log",
+        "sha256": "812cd7513a5e41ddc72eda0e6a25766458ac4be632e854ee1054834fb5228a0c",
+        "bytes": 10327
+      },
+      {
+        "name": "logs/channel-characterized-final.log",
+        "sha256": "3ba1a769f4bc4bee5c845296b794c87db2ba61d2313bd462f4cb3a8a6d3c05e8",
+        "bytes": 10512
+      },
+      {
+        "name": "logs/channel-commit.log",
+        "sha256": "23ac0d5a7cd170598ec9fd4312db539e10264f073ef533301c3d51709a1a434c",
+        "bytes": 100470
+      },
+      {
+        "name": "logs/channel-default-clippy.log",
+        "sha256": "743b1fefd0412433754f6edb42e81d1ef34a695630617ed4455507d5a1e41d02",
+        "bytes": 155
+      },
+      {
+        "name": "logs/channel-default-coverage.log",
+        "sha256": "25987f340991d886740b0cc98dcd49d70346c4a3d315f8bb12d75b5d66fe3581",
+        "bytes": 10427
+      },
+      {
+        "name": "logs/channel-full-coverage.log",
+        "sha256": "321eac95096cbf684fc9fafc8895fc851071fa943fd104353d7334c7183ae464",
+        "bytes": 10573
+      },
+      {
+        "name": "logs/channel-green-2.log",
+        "sha256": "4274f4d0b1f6c0526aa4ad9d02b1ab51bc0c01138df9e1abc2d9676a4b4ef926",
+        "bytes": 509
+      },
+      {
+        "name": "logs/channel-green-build-2.log",
+        "sha256": "5ae1d20555d804af09c4acaa58623a3fc199a1f4d60a4463f3c93f821a8419fe",
+        "bytes": 258485
+      },
+      {
+        "name": "logs/channel-green-build.log",
+        "sha256": "33d7b4330b23bbbd781dd4e9442ff4ee9cc1717fb74ee4c30906b4653c126091",
+        "bytes": 261355
+      },
+      {
+        "name": "logs/channel-native-clippy.log",
+        "sha256": "f51c809ecb95628a9c191febb4b46a685c0ac64f2f30603fae2652db20f988af",
+        "bytes": 155
+      },
+      {
+        "name": "logs/channel-native-ordinary.log",
+        "sha256": "d64d19f0a318dc8da65bc67f2ff354bf60e4d74cbbedac669ca02d495a8743af",
+        "bytes": 10456
+      },
+      {
+        "name": "logs/channel-native-release-build.log",
+        "sha256": "9208a2f57af8e064a4232af3ae08474727254f95ce76308addbb6f04076c0c7b",
+        "bytes": 258485
+      },
+      {
+        "name": "logs/channel-red.log",
+        "sha256": "1958bc64df3a2b910b053dfa2855baaef9746d1e3c7021c159ad00446c7387ec",
+        "bytes": 1042
+      },
+      {
+        "name": "logs/channel-refactored-native.log",
+        "sha256": "ebb09abc8150cf827d736be85d9a14eaf0e32b17114aace40668b8f76ae8d0bc",
+        "bytes": 10510
+      },
+      {
+        "name": "logs/channel-snapshot-close-red-0.log",
+        "sha256": "cf84510329d984633084fb57cc9bcadb55fe2b57a278356afa7b2c5c71480ce7",
+        "bytes": 145
+      },
+      {
+        "name": "logs/channel-snapshot-close-red-1.log",
+        "sha256": "ef234f9bffc502a5905df130f58deb8757dfaded2d6df78d1916cb09b51cdb65",
+        "bytes": 956
+      },
+      {
+        "name": "logs/channel-snapshot-coverage.log",
+        "sha256": "24ee5d72de70d02fb0df5cee21dc9da85a3bf43d762660ba54795d43c951a38c",
+        "bytes": 10510
+      },
+      {
+        "name": "logs/channel-snapshot-green-0.log",
+        "sha256": "3d27884c5d348d98d0da44dcf62ef05c193951114479fb61e1766156e063eeb1",
+        "bytes": 145
+      },
+      {
+        "name": "logs/channel-snapshot-green-1.log",
+        "sha256": "18ecec3b73d563259a292d72eee10cd1653707d634b5cdec4c564a7979110f40",
+        "bytes": 1277
+      },
+      {
+        "name": "logs/channel-snapshot-green-2-0.log",
+        "sha256": "6ec73eb01a5f1816e2c84c4c54963a5d828cb6197d4d1d55ef4562adaf7a6217",
+        "bytes": 697
+      },
+      {
+        "name": "logs/channel-snapshot-red-0.log",
+        "sha256": "fa6d6b8fe8645d4d8d65ef24c1dcebe2bfd2d0018acfe234446b242380ecb015",
+        "bytes": 1046
+      },
+      {
+        "name": "logs/channel-static-fmt.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      {
+        "name": "logs/channel-static-openspec.log",
+        "sha256": "98cf2a3779f2cfdc3b7d0fdfa1ee63585a8c5033eee75f0f2661b6dc47da5f2a",
+        "bytes": 43
+      },
+      {
+        "name": "logs/channel-static-spec-coverage.log",
+        "sha256": "bee503f5e9f3a59198ed177c0bb62b84ae91f2a947d8a6ea297f8f43b6a56065",
+        "bytes": 149
+      },
+      {
+        "name": "logs/metadata-commit-hook.log",
+        "sha256": "ff1255211937b540f87113f7bc4b1d8b02920d19b5ae7392586ed9da7fcd7224",
+        "bytes": 100532
+      },
+      {
+        "name": "logs/metadata-default-clippy.log",
+        "sha256": "28bfc69122e310781a40a27e078532a91483aeac156528c911634e7ecf2e2682",
+        "bytes": 155
+      },
+      {
+        "name": "logs/metadata-default-coverage.log",
+        "sha256": "0ed4e7f26ccabba83ef65946d7e4ef86f42ec3f715f71a58355f3bd83e1ab778",
+        "bytes": 9911
+      },
+      {
+        "name": "logs/metadata-native-clippy.log",
+        "sha256": "202e3bd9ad996fc29ad39549584ea08623d08aefcbf05e63dbffdd8c75e6eea4",
+        "bytes": 155
+      },
+      {
+        "name": "logs/metadata-native-ordinary.log",
+        "sha256": "d7de9b5982cab9d26c3a4cf6f86e0dbe7f90e6b9fa80ac613489973827208682",
+        "bytes": 9904
+      },
+      {
+        "name": "logs/metadata-native-release-build.log",
+        "sha256": "68a4de69c22fbbe4db4570e330dc630473c0d8f69c4f1ae3ec60412549d602a5",
+        "bytes": 258485
+      },
+      {
+        "name": "logs/origin-clap-dynamic-retry1-0.log",
+        "sha256": "dfa9bc7cce1e97f642913696b41a1a3daad2d79d37c9c0e0725d5d6c91e8e543",
+        "bytes": 2486
+      },
+      {
+        "name": "logs/origin-commit.log",
+        "sha256": "af097e51efbcf43adeedbfd6944b6853491d392d89a9afeeda608c3b486c984a",
+        "bytes": 100409
+      },
+      {
+        "name": "logs/origin-consumer-clap-0.log",
+        "sha256": "c7d16441a9fb227f7558acbf69a15cf953611d9b95035055ded4f2d21ea5b38d",
+        "bytes": 259622
+      },
+      {
+        "name": "logs/origin-consumer-clap-1.log",
+        "sha256": "831402b41ca8f1fde2d67db8df832b39e79a039ed2891c28a2536f4cc83bef79",
+        "bytes": 1561
+      },
+      {
+        "name": "logs/origin-consumer-clap-2.log",
+        "sha256": "cc7422e6307e61599643e51da5008e44c78e18404bb7bf37d974d0a1690a073e",
+        "bytes": 238
+      },
+      {
+        "name": "logs/origin-consumer-vst3-native-0.log",
+        "sha256": "98710db49b1e13f618e1ca735c136a5641d2b5951c6a6ce2191811c3569e5fac",
+        "bytes": 10767
+      },
+      {
+        "name": "logs/origin-vst3-lint-0.log",
+        "sha256": "6d7d0ee76634ea04c6028a48ea38c34fc8b561d4e7262784478a6cf5c03f2739",
+        "bytes": 155
+      },
+      {
+        "name": "logs/origin-vst3-lint-1.log",
+        "sha256": "94fa10f04dcbd19ce09244fc2197539d3f23bd736301155af0090552a459163d",
+        "bytes": 238
+      },
+      {
+        "name": "logs/origin-warm-host-lint-0.log",
+        "sha256": "75d12cfe1f0af6ca8ead8a244d8722979271c3600bb1137aa0ac970303b8899e",
+        "bytes": 155
+      },
+      {
+        "name": "logs/routing-commit.log",
+        "sha256": "efc996f18766425851ec872cc9c3ccdf11b96a62bae201101e3bf153ea4b9aab",
+        "bytes": 100421
+      },
+      {
+        "name": "logs/routing-final-gates-0.log",
+        "sha256": "76a60d6a3b7693ca103afb9ea5c8d435b8b1d573ea8c7e731e33cd73e2566a65",
+        "bytes": 10178
+      },
+      {
+        "name": "logs/routing-final-gates-1.log",
+        "sha256": "f7059b9f7de2f6e80e7a3479f51323ff7e186f08fe493ee4add7d51867fc3d5e",
+        "bytes": 155
+      },
+      {
+        "name": "logs/routing-final-gates-2.log",
+        "sha256": "24923b074f4c544045120864eae98dcee4f9261692e249129545d876a06fc0e8",
+        "bytes": 155
+      },
+      {
+        "name": "logs/routing-final-native-0.log",
+        "sha256": "ff9c0a44e338f1f6352410f465566fa40d5c6e5200103808d7b5b4c96816b2f4",
+        "bytes": 10756
+      },
+      {
+        "name": "logs/routing-final-release-0.log",
+        "sha256": "b3fd4bd8bb1be4cc5ed18a05fa195e56a7b506211a52a1258218a0d07a33822c",
+        "bytes": 145
+      },
+      {
+        "name": "logs/routing-final-release-1.log",
+        "sha256": "2fd1971fcef10c1037f44453edcb9bef7a7193b4cb32284295eaad6d443fb625",
+        "bytes": 10706
+      },
+      {
+        "name": "logs/routing-lint-recheck-0.log",
+        "sha256": "c7e2a71478cf62ecbc3ed7d454514ecc32dcdae3a8a5161df580339f639e434a",
+        "bytes": 155
+      },
+      {
+        "name": "logs/routing-lint-recheck-1.log",
+        "sha256": "795d84c777fa3f40a9abf2d373aebf12484fb0c71a96cb5b52d0d87082ab1fbc",
+        "bytes": 690
+      },
+      {
+        "name": "logs/view-automation-after-ack-coverage-0.log",
+        "sha256": "08601839da379bafd4726e78faa874202b0cb2b37044b5c7c25aa11eeff82d0d",
+        "bytes": 1080
+      },
+      {
+        "name": "logs/view-automation-cancellation-coverage-0.log",
+        "sha256": "b917a42c1bd4051a68da6bf74f6a10a7d9f01e05b64f4958ef3d70dc3befc513",
+        "bytes": 994
+      },
+      {
+        "name": "logs/view-automation-full-native-0.log",
+        "sha256": "3133b0b2b56f3efc172f9757373d319cc1b76c65979a643c7bf2d2f2ae76a0de",
+        "bytes": 6258
+      },
+      {
+        "name": "logs/view-automation-green-0.log",
+        "sha256": "6f683aca98a59341d07d556f3eb2e1bd7f02c2b27b8b4536a933e06f41758f88",
+        "bytes": 988
+      },
+      {
+        "name": "logs/view-automation-owners-0.log",
+        "sha256": "8babae54191e62798cf5e5ae1d9a9c1ead8cbc04049d18bf71d6271674a9ff32",
+        "bytes": 145
+      },
+      {
+        "name": "logs/view-automation-owners-1.log",
+        "sha256": "b06b7a73f6e57934f7f6c59aca07548f99ed31f15dee7395fa7108c64dd3cf21",
+        "bytes": 10706
+      },
+      {
+        "name": "logs/view-automation-owners-2.log",
+        "sha256": "430dd8c1472d6b94d81159092e75a0d211012b87f1315bc60e53c4304ca79688",
+        "bytes": 10892
+      },
+      {
+        "name": "logs/view-automation-red-0.log",
+        "sha256": "8460ac605303f4d587b4ba75d349f2165a31a6fbb6879fab09809ace699682ce",
+        "bytes": 1907
+      },
+      {
+        "name": "logs/view-automation-reentry-green-0.log",
+        "sha256": "d899f245ea0cee52d665d7f33f123a981d058cec8881f91e0a3237cfc8fe90e8",
+        "bytes": 1084
+      },
+      {
+        "name": "logs/view-automation-reentry-red-0.log",
+        "sha256": "e2b6e42c0c5eabf81f0dbf30d3f1949af68ad34dcd5cbeedbb54bb59004f0de8",
+        "bytes": 1611
+      },
+      {
+        "name": "logs/view-automation-retry-red-0.log",
+        "sha256": "f0e62411d4efaf333db21501667ef40871deaf3900054f4f1e67bbd3f0b842e1",
+        "bytes": 1661
+      },
+      {
+        "name": "logs/view-automation-transport-green-0.log",
+        "sha256": "ac09ef8d05e650a6f5557d2f68d9acb32b160f3e1b81b46a22df3d578453ea63",
+        "bytes": 10766
+      },
+      {
+        "name": "receipts/automation-origin-coverage-receipt.json",
+        "sha256": "9bcb25a6c2f0de7b2ecf7bc15d10901c1ee6ac2f2c7b6f6526847202ed453228",
+        "bytes": 31373
+      },
+      {
+        "name": "receipts/origin-commit.json",
+        "sha256": "64b579ca06888945f5480865212a920a845c30d1e43205c2f4ce024e31ae11ff",
+        "bytes": 376
+      },
+      {
+        "name": "receipts/routing-commit.json",
+        "sha256": "7092085fe34e57ac24f7e1a092d9b50b328ddbe2230c3141d5721776f1f8e4a2",
+        "bytes": 386
+      },
+      {
+        "name": "receipts/routing-final-gates-producers.json",
+        "sha256": "df661b15835f24a96130cc4a7b228bf76ab60818d03a6eaa8171fc9dc17edb08",
+        "bytes": 3348
+      },
+      {
+        "name": "receipts/routing-final-native-fresh-receipt.json",
+        "sha256": "f6bcd34ec3b62ad718d25fbf9eba4a23892d4b10035b50b4e019ccf5c4291430",
+        "bytes": 20335
+      },
+      {
+        "name": "receipts/routing-final-native-producers.json",
+        "sha256": "8c60c92816d32116469d5039fffd2bd788a6f0f80ad42d5dfba411f2ceab1db4",
+        "bytes": 1183
+      },
+      {
+        "name": "receipts/routing-final-release-producers.json",
+        "sha256": "4b61aa819d0124fb2887be5d9934e89a84525ce92eb4fcd59aad1f79363486fc",
+        "bytes": 2175
+      }
+    ]
+  },
+  "coverageLimits": [
+    "Final native routing instrumented object retained privately and bound to27freshprofiles; reused earlier owner evidence remains source-specific.",
+    "No whole-owner100%, branch or MC/DC claim.",
+    "Final headless74 test run passed; separate final fresh-object export was not made before the implementation time cap.",
+    "Private review records in the text archive approve only their named local checkpoints; combined publication requires a separate exact-candidate review."
+  ],
+  "remaining": [
+    "4.2",
+    "4.3",
+    "5.1",
+    "5.2",
+    "6.1",
+    "6.2",
+    "6.3"
+  ],
+  "platformLimits": "GNU Linux x86_64 only; native Windows/macOS remain mandatory later; no distribution clearance or full validator acceptance claim",
+  "mutation": "Excluded by user direction"
+}

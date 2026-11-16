@@ -29,11 +29,11 @@
       "workloads": {
         "trigger-beta-verification": {
           "reserveMiB": 8192,
-          "outputGrowthMiB": 3072,
+          "outputGrowthMiB": 8192,
           "tempGrowthMiB": 1024,
           "retainedBudgetMiB": 114688,
           "basis": "estimated",
-          "estimateReason": "Dan approved a 3 GiB per-producer output reservation on 16 November 2026 for the existing warm generation 9130ee03dfb4e014aafb91c3 and already prepared dependency/profile configurations. Recent measured net managed growth was about 1.77 GiB for the first ordinary host profile and 1.03 GiB for the full host LLVM run. Reserve 3 GiB output plus 1 GiB temporary growth and 8 GiB free disk (12 GiB admission). Keep 56 GiB cumulative outputs, 112 GiB managed retention, 2 GiB scratch, 8 GiB MemAvailable, one heavy producer, max four compiler jobs, preservation mode1, mutation exclusion and original12active-executor-hour reassessment cap. Cold/new-generation/dependency/profile commands are refused while this warm policy is active; restore the original8GiB growth policy or obtain separately reviewed configuration-specific driver admission before execution. Each command needs a fresh non-mutating preflight verifying the warm generation/profile; refuse pressure rather than retire caches. This estimate is not a completion guarantee."
+          "estimateReason": "One serial Trigger Rust test, LLVM coverage or native verification build. Restore the ordinary cold-safe 8 GiB output allowance for publication, plus 1 GiB temporary growth and 8 GiB free disk (17 GiB admission). Dan approved 112 GiB managed retention on 16 November 2026. The earlier 3 GiB warm-only local reservation depended on private configuration checks and is not the maintained default. Use DANDRUM_CARGO_PRESERVE_GENERATIONS=1 for this closeout; preserve reusable caches/dependencies, serialize producers with at most four compiler jobs, and retain the mutation exclusion. Completion measurement detects overruns; this is not a filesystem quota or a completion guarantee."
         },
         "trigger-vst3-proof": {
           "reserveMiB": 8192,
@@ -41,7 +41,7 @@
           "tempGrowthMiB": 2048,
           "retainedBudgetMiB": 8192,
           "basis": "estimated",
-          "estimateReason": "Dan explicitly approved the proposed resource reassessment on 16 November 2026: 56 GiB cumulative incremental outputs plus 2 GiB scratch, raising the earlier 32 GiB allowance; managed retention 112 GiB preserves existing warm generations. Keep at least 8 GiB free disk and MemAvailable, one implementation/heavy producer and at most four compiler jobs. No paid services; mutation remains excluded. The original 12 active-executor-hour reassessment cap and every Linux acceptance requirement remain. Preserve reusable caches/dependencies. Require DANDRUM_CARGO_PRESERVE_GENERATIONS=1 and a non-mutating full growth+temp+reserve preflight (12 GiB free for explicitly qualified warm builds; 17 GiB for cold/new configurations), retention+growth+temp and all-root cumulative accounting before each producer. Refuse pressure rather than evicting earlier generations. This finite allowance is not a completion or usable-capacity guarantee."
+          "estimateReason": "Dan explicitly approved 56 GiB cumulative incremental outputs plus 2 GiB scratch and 112 GiB managed retention on 16 November 2026. Keep at least 8 GiB free disk and MemAvailable, one heavy producer and at most four compiler jobs. No paid services; mutation remains excluded. The original 12 active-executor-hour implementation allowance was exhausted; on 17 November Dan authorized a separate split-and-merge closeout, with remaining implementation and full Linux acceptance retained in issue45. Preserve reusable caches/dependencies. Require DANDRUM_CARGO_PRESERVE_GENERATIONS=1 and a non-mutating full growth+temp+reserve preflight (17 GiB free under the restored8GiB driver reservation), retention+growth+temp and all-root cumulative accounting before each producer. Refuse pressure rather than evicting earlier generations. This finite allowance is not a completion or usable-capacity guarantee."
         }
       }
     }

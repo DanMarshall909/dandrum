@@ -9,6 +9,15 @@ evidence with source/tool/artifact identities. Do not mark a task complete on
 compilation alone, inherit a CLAP result as VST3 evidence or hide a failed trial.
 Mutation remains excluded; normal local gates and independent review remain.
 
+Scope split, 17 November 2026: Dan requested merging the verified foundation
+and moving the remainder to [issue #45](https://github.com/DanMarshall909/dandrum/issues/45).
+That ticket owns the remaining workflow; this change retains the design,
+acceptance criteria and their evidence. Tasks 4.2, 4.3, 5.1, 5.2, 6.1, 6.2 and
+6.3 remain unchecked. Foundation publication does not complete the Linux proof
+or its combined-product review, and this change must not be archived yet.
+Dan is connected remotely and cannot test REAPER now. Native editor and actual
+installed-REAPER acceptance remain required by the follow-up.
+
 ## 1. Agree And Qualify The Proof
 
 - [x] 1.1 Record the accepted D1/D4/D6 decisions, then agree the remaining design/spec/task scope and finite D8 execution/storage envelope, retaining D9's mandatory subsequent native milestones with their exact OS/CPU matrices refined later; record actual answers and stop/resume conditions without inferring consent.
