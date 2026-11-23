@@ -42,6 +42,14 @@
           "retainedBudgetMiB": 8192,
           "basis": "estimated",
           "estimateReason": "Dan explicitly approved 56 GiB cumulative incremental outputs plus 2 GiB scratch and 112 GiB managed retention on 16 November 2026. Keep at least 8 GiB free disk and MemAvailable, one heavy producer and at most four compiler jobs. No paid services; mutation remains excluded. The original 12 active-executor-hour implementation allowance was exhausted; on 17 November Dan authorized a separate split-and-merge closeout, with remaining implementation and full Linux acceptance retained in issue45. Preserve reusable caches/dependencies. Require DANDRUM_CARGO_PRESERVE_GENERATIONS=1 and a non-mutating full growth+temp+reserve preflight (17 GiB free under the restored8GiB driver reservation), retention+growth+temp and all-root cumulative accounting before each producer. Refuse pressure rather than evicting earlier generations. This finite allowance is not a completion or usable-capacity guarantee."
+        },
+        "trigger-vst3-resume": {
+          "reserveMiB": 8192,
+          "outputGrowthMiB": 8192,
+          "tempGrowthMiB": 1024,
+          "retainedBudgetMiB": 114688,
+          "basis": "estimated",
+          "estimateReason": "Dan approved a fresh 4 active-executor-hour tranche on 23 November 2026 for issue45: at most8 GiB additional retained output plus1 GiB temporary space. Preserve existing112 GiB managed-cache ceiling,8 GiB free-disk/MemAvailable floors, one heavy producer, max4 compiler jobs, DANDRUM_CARGO_PRESERVE_GENERATIONS=1, no paid services and no mutation. Track cumulative additional outputs from the restart baseline separately; reassess at the time/storage cap without reducing acceptance criteria. This immediate9+8 GiB admission is not a reservation or completion guarantee."
         }
       }
     }

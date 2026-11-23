@@ -1,6 +1,8 @@
 #![allow(dead_code)]
 pub mod audio;
 pub mod message;
+#[cfg(feature = "trigger-editor")]
+pub mod native;
 pub mod owner;
 pub mod parameters;
 pub mod runloop;

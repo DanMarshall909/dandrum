@@ -1,20 +1,32 @@
 //! Affine VST3 view projection. The instrument authority remains in Processor.
-use super::{ControllerCore, platform};
-use dandrum_trigger_editor::NativeEditor;
+use super::{Bootstrap, ControllerCore, HostCall, Registration, platform};
+use crate::transport::{Body, Packet, Transport, ViewRoute};
+use dandrum_trigger_editor::{EditorAssets, NativeEditor};
+use dandrum_trigger_host::editor_bridge::{
+    browser_request, delivery_script, initialization_script,
+};
 use std::{
+    cell::{Cell, RefCell},
     ffi::c_char,
     rc::{Rc, Weak},
 };
-use vst3::{Class, ComWrapper, Steinberg::*};
+use vst3::{
+    Class, ComWrapper,
+    Steinberg::{Linux::*, *},
+};
 
 const WIDTH: i32 = NativeEditor::WIDTH as i32;
 const HEIGHT: i32 = NativeEditor::HEIGHT as i32;
 
 pub(super) fn create(controller: &Rc<ControllerCore>) -> *mut IPlugView {
-    ComWrapper::new(View {
+    ComWrapper::new(View(Rc::new(ViewCore {
         thread: controller.thread,
         controller: Rc::downgrade(controller),
-    })
+        child: RefCell::new(None),
+        registration: RefCell::new(None),
+        connection: RefCell::new(None),
+        busy: Cell::new(false),
+    })))
     .to_com_ptr::<IPlugView>()
     .expect("view includes the standard interface")
     .into_raw()
@@ -31,25 +43,332 @@ pub(super) unsafe fn matches(value: *const c_char, expected: &[u8]) -> bool {
         })
 }
 
-struct View {
+struct View(Rc<ViewCore>);
+pub(super) struct ViewCore {
     thread: libc::pid_t,
     controller: Weak<ControllerCore>,
+    child: RefCell<Option<Rc<NativeEditor>>>,
+    registration: RefCell<Option<Registration>>,
+    connection: RefCell<Option<Rc<BrowserConnection>>>,
+    busy: Cell<bool>,
+}
+struct BrowserConnection {
+    transport: Transport,
+    bootstrap: RefCell<Option<String>>,
+    next_request: Cell<u64>,
+    started: Cell<bool>,
+    closing: Cell<bool>,
+    closed: Cell<bool>,
+}
+impl std::ops::Deref for View {
+    type Target = ViewCore;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 impl Class for View {
     type Interfaces = (IPlugView,);
 }
-impl View {
-    fn live(&self) -> bool {
+impl ViewCore {
+    fn live_controller(&self) -> Option<Rc<ControllerCore>> {
         // Reject a foreign thread before upgrading or inspecting affine Rc data.
-        self.thread == platform::thread_id()
-            && self.controller.upgrade().is_some_and(|controller| {
-                controller.main()
-                    && !controller.closing.get()
-                    && controller
-                        .projection
-                        .try_borrow()
-                        .is_ok_and(|p| p.is_some())
-            })
+        if self.thread != platform::thread_id() {
+            return None;
+        }
+        self.controller.upgrade().filter(|controller| {
+            controller.main()
+                && !controller.closing.get()
+                && controller
+                    .projection
+                    .try_borrow()
+                    .is_ok_and(|p| p.is_some())
+        })
+    }
+    fn live(&self) -> bool {
+        self.live_controller().is_some()
+    }
+    fn attach(self: &Rc<Self>, parent: u32) -> tresult {
+        let Some(controller) = self.live_controller() else {
+            return kResultFalse;
+        };
+        if self.busy.replace(true) {
+            return kResultFalse;
+        }
+        let _call = HostCall(&self.busy);
+        if self.child.borrow().is_some()
+            || self.registration.borrow().is_some()
+            || controller
+                .native_view
+                .borrow()
+                .as_ref()
+                .is_some_and(|view| view.child.borrow().is_some())
+            || controller.transport.bound().is_none()
+            || controller.host_busy.replace(true)
+        {
+            return kResultFalse;
+        }
+        let _host_call = HostCall(&controller.host_busy);
+        let Some(runloop) = controller.view_runloop.clone() else {
+            return kResultFalse;
+        };
+        let Ok(assets) = EditorAssets::open(&controller.root) else {
+            return kResultFalse;
+        };
+        if gtk::is_initialized() && !gtk::is_initialized_main_thread() {
+            return kResultFalse;
+        }
+        if gtk::init().is_err() {
+            return kResultFalse;
+        }
+        let weak = Rc::downgrade(self);
+        let Ok(child) = NativeEditor::create_deferred(parent, assets, move |message| {
+            if let Some(view) = weak.upgrade() {
+                view.request(&message);
+            }
+        }) else {
+            return kResultFalse;
+        };
+        if child.set_visible(true).is_err() {
+            return kResultFalse;
+        }
+        // Publish ownership before any foreign registration can reenter. The
+        // WebView is blank until the separately authenticated namespace arrives.
+        let old = controller.native_view.replace(Some(self.clone()));
+        drop(old);
+        let timer = ComWrapper::new(ViewTimer(self.thread, Rc::downgrade(self)))
+            .to_com_ptr::<ITimerHandler>()
+            .expect("view timer interface");
+        if unsafe { runloop.registerTimer(timer.as_ptr(), 10) } != kResultOk {
+            return kResultFalse;
+        }
+        *self.registration.borrow_mut() = Some(Registration { runloop, timer });
+        let opened = (|| {
+            let (local, remote, peer) = controller.transport.bound_peer()?;
+            let id = controller.next_view.get();
+            let next = id.checked_add(1)?;
+            let transport = Transport::for_view(
+                ViewRoute {
+                    id,
+                    parent_source: local,
+                    parent_target: remote,
+                },
+                peer,
+            )?;
+            controller.next_view.set(next);
+            Some(Rc::new(BrowserConnection {
+                transport,
+                bootstrap: RefCell::new(None),
+                next_request: Cell::new(1),
+                started: Cell::new(false),
+                closing: Cell::new(false),
+                closed: Cell::new(false),
+            }))
+        })();
+        let Some(connection) = opened else {
+            self.release_registration();
+            return kResultFalse;
+        };
+        *self.child.borrow_mut() = Some(Rc::new(child));
+        *self.connection.borrow_mut() = Some(connection.clone());
+        let _ = connection.transport.offer();
+        connection.transport.pump();
+        kResultOk
+    }
+    pub(super) fn receive(&self, packet: Packet) -> tresult {
+        if self.thread != platform::thread_id() {
+            return kResultFalse;
+        }
+        let connection = self.connection.borrow().clone();
+        let Some(connection) = connection else {
+            return kResultFalse;
+        };
+        let received = connection.transport.receive_packet(packet);
+        match received {
+            Err(error) => return error,
+            Ok(None) => {}
+            Ok(Some(packet)) => match packet.body {
+                Body::Projection { frame } if packet.sequence == 0 && !connection.closing.get() => {
+                    let Some(namespace) = Bootstrap::parse(&frame) else {
+                        return kInvalidArgument;
+                    };
+                    if connection
+                        .bootstrap
+                        .borrow()
+                        .as_ref()
+                        .is_some_and(|previous| previous != &frame)
+                    {
+                        return kResultFalse;
+                    }
+                    *connection.bootstrap.borrow_mut() = Some(frame);
+                    if !connection.started.get() {
+                        let child = self.child.borrow().clone();
+                        let Some(child) = child else {
+                            return kResultFalse;
+                        };
+                        let initializer = initialization_script(
+                            &namespace.instance_id,
+                            &namespace.attachment_id,
+                            std::num::NonZeroU64::new(1).expect("first browser request"),
+                        );
+                        if child.start_application(&initializer).is_err() {
+                            return kResultFalse;
+                        }
+                        connection.started.set(true);
+                    }
+                }
+                Body::Reply { frame, .. } | Body::Event { frame, .. }
+                    if !connection.closing.get() =>
+                {
+                    let child = self.child.borrow().clone();
+                    let Some(child) = child else {
+                        return kResultFalse;
+                    };
+                    if child.evaluate_script(&delivery_script(&frame)).is_err() {
+                        return kResultFalse;
+                    }
+                }
+                Body::Retired if packet.sequence == 0 && connection.closing.get() => {
+                    let result = connection.transport.terminal(Body::RetiredAck);
+                    if result != kResultOk {
+                        return result;
+                    }
+                    connection.closed.set(true);
+                    connection.transport.release_peer();
+                }
+                _ => return kNotImplemented,
+            },
+        }
+        connection.transport.pump();
+        kResultOk
+    }
+    fn request(&self, message: &str) {
+        if self.live_controller().is_none() {
+            return;
+        }
+        let connection = self.connection.borrow().clone();
+        let Some(connection) = connection else {
+            return;
+        };
+        if connection.closing.get() {
+            return;
+        }
+        let bootstrap = connection
+            .bootstrap
+            .borrow()
+            .as_deref()
+            .and_then(Bootstrap::parse);
+        let Some(bootstrap) = bootstrap else {
+            return;
+        };
+        if browser_request(&bootstrap.attachment_id, message).is_none() {
+            return;
+        }
+        let sequence = connection.next_request.get();
+        let Some(next) = sequence.checked_add(1) else {
+            return;
+        };
+        if connection.transport.send(
+            sequence,
+            Body::Request {
+                frame: message.into(),
+            },
+        ) == kResultOk
+        {
+            connection.next_request.set(next);
+            connection.transport.pump();
+        }
+    }
+    fn close_connection(&self) -> bool {
+        let connection = self.connection.borrow().clone();
+        let Some(connection) = connection else {
+            return true;
+        };
+        connection.closing.set(true);
+        connection.transport.begin_closing();
+        let _ = connection.transport.terminal(Body::Closing);
+        let _ = connection.transport.terminal(Body::Closed);
+        if !connection.closed.get() {
+            return false;
+        }
+        self.connection.borrow_mut().take();
+        true
+    }
+    fn release_registration(&self) -> bool {
+        let registration = self.registration.borrow_mut().take();
+        if let Some(registration) = registration
+            && let Err(registration) = registration.unregister()
+        {
+            *self.registration.borrow_mut() = Some(registration);
+            return false;
+        }
+        true
+    }
+    pub(super) fn detach(&self) -> tresult {
+        if self.thread != platform::thread_id() || self.busy.replace(true) {
+            return kResultFalse;
+        }
+        let _call = HostCall(&self.busy);
+        let child = self.child.borrow_mut().take();
+        drop(child);
+        if !self.close_connection() {
+            return kResultFalse;
+        }
+        if self.release_registration() {
+            if let Some(controller) = self.controller.upgrade() {
+                let old = {
+                    let mut active = controller.native_view.borrow_mut();
+                    if active
+                        .as_ref()
+                        .is_some_and(|view| std::ptr::eq(view.as_ref(), self))
+                    {
+                        active.take()
+                    } else {
+                        None
+                    }
+                };
+                drop(old);
+            }
+            kResultOk
+        } else {
+            kResultFalse
+        }
+    }
+    fn service(&self) {
+        if self.thread != platform::thread_id()
+            || self.child.borrow().is_none()
+            || self.busy.replace(true)
+        {
+            return;
+        }
+        let _call = HostCall(&self.busy);
+        let _ = NativeEditor::service();
+        let connection = self.connection.borrow().clone();
+        if let Some(connection) = connection {
+            connection.transport.pump();
+        }
+    }
+}
+impl Drop for ViewCore {
+    fn drop(&mut self) {
+        let _ = self.detach();
+    }
+}
+impl Drop for View {
+    fn drop(&mut self) {
+        let _ = self.0.detach();
+    }
+}
+struct ViewTimer(libc::pid_t, Weak<ViewCore>);
+impl Class for ViewTimer {
+    type Interfaces = (ITimerHandler,);
+}
+impl ITimerHandlerTrait for ViewTimer {
+    unsafe fn onTimer(&self) {
+        if self.0 == platform::thread_id()
+            && let Some(view) = self.1.upgrade()
+        {
+            view.service();
+        }
     }
 }
 impl IPlugViewTrait for View {
@@ -71,11 +390,13 @@ impl IPlugViewTrait for View {
         if parent.is_null() {
             return kInvalidArgument;
         }
-        // Native attachment is a separate capability from view metadata.
-        kResultFalse
+        let Ok(parent) = u32::try_from(parent as usize) else {
+            return kInvalidArgument;
+        };
+        self.0.attach(parent)
     }
     unsafe fn removed(&self) -> tresult {
-        kResultOk
+        self.detach()
     }
     unsafe fn onWheel(&self, _distance: f32) -> tresult {
         kResultFalse

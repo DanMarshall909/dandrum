@@ -88,6 +88,12 @@ pub(crate) fn create(
             closing: Cell::new(false),
             release_peer_on_retirement: Cell::new(false),
             retired_proof: Cell::new(false),
+            #[cfg(feature = "trigger-editor")]
+            view_runloop: runloop,
+            #[cfg(feature = "trigger-editor")]
+            native_view: RefCell::new(None),
+            #[cfg(feature = "trigger-editor")]
+            next_view: Cell::new(1),
         })))
         .to_com_ptr::<FUnknown>()
         .expect("controller includes FUnknown"))
@@ -488,6 +494,12 @@ struct ControllerCore {
     closing: Cell<bool>,
     release_peer_on_retirement: Cell<bool>,
     retired_proof: Cell<bool>,
+    #[cfg(feature = "trigger-editor")]
+    view_runloop: Option<Rc<ComPtr<IRunLoop>>>,
+    #[cfg(feature = "trigger-editor")]
+    native_view: RefCell<Option<Rc<view::ViewCore>>>,
+    #[cfg(feature = "trigger-editor")]
+    next_view: Cell<u64>,
 }
 struct HostCall<'a>(&'a Cell<bool>);
 impl Drop for HostCall<'_> {
@@ -542,6 +554,15 @@ impl IPluginBaseTrait for Controller {
     unsafe fn terminate(&self) -> tresult {
         if self.thread != platform::thread_id() || self.host_busy.get() {
             return kResultFalse;
+        }
+        #[cfg(feature = "trigger-editor")]
+        {
+            let view = self.native_view.borrow().clone();
+            if let Some(view) = view
+                && view.detach() != kResultOk
+            {
+                return kResultFalse;
+            }
         }
         self.closing.set(true);
         self.release_peer_on_retirement.set(true);
@@ -1284,6 +1305,41 @@ impl IConnectionPointTrait for Controller {
         kResultFalse
     }
     unsafe fn notify(&self, message: *mut IMessage) -> tresult {
+        if self.thread != platform::thread_id() {
+            return kNotInitialized;
+        }
+        let native_attached = {
+            #[cfg(feature = "trigger-editor")]
+            {
+                self.native_view.borrow().is_some()
+            }
+            #[cfg(not(feature = "trigger-editor"))]
+            {
+                false
+            }
+        };
+        if self.host_busy.get() && !native_attached {
+            return kNotInitialized;
+        }
+        if self.projection.borrow().is_none() && !self.closing.get() && !self.terminated.get() {
+            return kNotInitialized;
+        }
+        // Copy once, before routing. No affine borrow spans foreign message access.
+        let packet = match unsafe { Transport::decode(message) } {
+            Ok(packet) => packet,
+            Err(error) => {
+                if !self.host_busy.get() {
+                    self.transport.pump_terminal();
+                    self.transport.pump();
+                }
+                return error;
+            }
+        };
+        #[cfg(feature = "trigger-editor")]
+        if packet.view.is_some() {
+            let view = self.native_view.borrow().clone();
+            return view.map_or(kResultFalse, |view| view.receive(packet));
+        }
         if self.thread == platform::thread_id() && !self.host_busy.get() {
             self.transport.pump_terminal();
         }
@@ -1293,7 +1349,7 @@ impl IConnectionPointTrait for Controller {
         {
             // Retained terminal scope still authenticates retries after logical
             // termination; ordinary callbacks remain fenced.
-            return match unsafe { self.transport.receive(message) } {
+            return match self.transport.receive_packet(packet) {
                 Ok(Some(packet))
                     if matches!(packet.body, Body::Retired) && packet.sequence == 0 =>
                 {
@@ -1323,7 +1379,7 @@ impl IConnectionPointTrait for Controller {
             return kNotInitialized;
         }
         let mut retry_awaiting = false;
-        match unsafe { self.transport.receive(message) } {
+        match self.transport.receive_packet(packet) {
             Err(error) => {
                 self.transport.pump();
                 return error;

@@ -2,7 +2,7 @@ use crate::EditorAssets;
 use gtk::prelude::*;
 use std::{
     borrow::Cow,
-    cell::RefCell,
+    cell::{Cell, RefCell},
     path::PathBuf,
     rc::Rc,
     sync::{Arc, Mutex},
@@ -27,6 +27,7 @@ pub enum NativeError {
     X11(String),
     WebView(wry::Error),
     IpcRegistration,
+    AlreadyLoaded,
 }
 
 /// UI-thread-only child. The host retains ownership of its X11 parent and loop.
@@ -36,6 +37,7 @@ pub struct NativeEditor {
     _window: OwnedWindow,
     ipc: Option<(webkit2gtk::UserContentManager, gtk::glib::SignalHandlerId)>,
     protocol: Option<OwnedProtocol>,
+    application_loaded: Cell<bool>,
 }
 
 type SelectionCallback = Box<dyn FnOnce(Option<Vec<PathBuf>>)>;
@@ -172,10 +174,20 @@ impl NativeEditor {
         initialization_script: &str,
         on_message: impl Fn(String) + 'static,
     ) -> Result<Self, NativeError> {
+        let owner = Self::create_deferred(parent, assets, on_message)?;
+        owner.start_application(initialization_script)?;
+        Ok(owner)
+    }
+
+    /// Create the owned native child and IPC edge while an asynchronous host
+    /// authenticates the browser namespace. No application resource loads yet.
+    pub fn create_deferred(
+        parent: u32,
+        assets: EditorAssets,
+        on_message: impl Fn(String) + 'static,
+    ) -> Result<Self, NativeError> {
         let connection = Self::parent_connection(parent)?;
-        let builder = WebViewBuilder::new()
-            .with_initialization_script(initialization_script)
-            .with_navigation_handler(|uri| uri == ENTRY_URI);
+        let builder = WebViewBuilder::new().with_navigation_handler(|uri| uri == ENTRY_URI);
         let mut owner = Self::build_child_with_owned_protocol(
             parent,
             &connection,
@@ -210,8 +222,29 @@ impl NativeEditor {
             return Err(NativeError::IpcRegistration);
         }
         owner.ipc = Some((manager, handler));
-        owner.view.webview().load_uri(ENTRY_URI);
         Ok(owner)
+    }
+
+    /// Start the packaged application exactly once, installing its trusted
+    /// namespace at document start before any application JavaScript executes.
+    pub fn start_application(&self, initialization_script: &str) -> Result<(), NativeError> {
+        Self::check_thread()?;
+        if self.application_loaded.replace(true) {
+            return Err(NativeError::AlreadyLoaded);
+        }
+        let (manager, _) = self
+            .ipc
+            .as_ref()
+            .expect("prepared editor owns its IPC manager");
+        manager.add_script(&webkit2gtk::UserScript::new(
+            initialization_script,
+            webkit2gtk::UserContentInjectedFrames::TopFrame,
+            webkit2gtk::UserScriptInjectionTime::Start,
+            &[],
+            &[],
+        ));
+        self.view.webview().load_uri(ENTRY_URI);
+        Ok(())
     }
 
     /// Queue trusted host JavaScript on this child's UI thread. Success means
@@ -399,6 +432,7 @@ impl NativeEditor {
             _window: window,
             ipc: None,
             protocol: None,
+            application_loaded: Cell::new(false),
         };
         connection
             .flush()

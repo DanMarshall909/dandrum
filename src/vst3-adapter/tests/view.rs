@@ -70,6 +70,11 @@ fn initialized_native_controller_exposes_an_affine_fixed_x11_view_without_owning
             kResultFalse,
             "this controller has no native host-loop service"
         );
+        assert_eq!(
+            view.attached(usize::MAX as *mut _, kPlatformTypeX11EmbedWindowID),
+            kInvalidArgument,
+            "a parent that cannot be an X11 window ID is rejected"
+        );
         assert_eq!(view.getSize(std::ptr::null_mut()), kInvalidArgument);
         assert_eq!(view.getSize(&mut size), kResultOk);
         assert_eq!(
@@ -153,4 +158,31 @@ fn initialized_native_controller_exposes_an_affine_fixed_x11_view_without_owning
         unsafe { view.isPlatformTypeSupported(kPlatformTypeX11EmbedWindowID) },
         kResultFalse
     );
+}
+
+#[cfg(feature = "trigger-editor")]
+#[test]
+fn connected_view_without_host_loop_fails_without_native_creation() {
+    let bundle = Bundle::new();
+    let module = bundle.load();
+    let processor = module.class::<IComponent>(&common::PROCESSOR);
+    let controller = module.class::<IEditController>(&CONTROLLER);
+    unsafe {
+        assert_eq!(processor.initialize(std::ptr::null_mut()), kResultOk);
+        assert_eq!(controller.initialize(std::ptr::null_mut()), kResultOk);
+    }
+    let p = processor.cast::<IConnectionPoint>().unwrap();
+    let c = controller.cast::<IConnectionPoint>().unwrap();
+    unsafe {
+        assert_eq!(p.connect(c.as_ptr()), kResultOk);
+        assert_eq!(c.connect(p.as_ptr()), kResultOk);
+        let view = vst3::ComPtr::from_raw(controller.createView(c"editor".as_ptr())).unwrap();
+        assert_eq!(
+            view.attached(std::ptr::dangling_mut(), kPlatformTypeX11EmbedWindowID),
+            kResultFalse
+        );
+        assert_eq!(view.removed(), kResultOk);
+        assert_eq!(controller.terminate(), kResultOk);
+        assert_eq!(processor.terminate(), kResultOk);
+    }
 }

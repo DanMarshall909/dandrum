@@ -204,6 +204,7 @@ fn real_child_loads_local_content_and_drops_without_owning_the_host_parent() {
         );
     }
     initialized_child_consumes_native_delivery_before_releasing_its_callback(parent);
+    deferred_child_loads_its_authenticated_namespace_only_once(parent);
     acquisition_errors_leave_no_owned_window(&x, parent, root, baseline);
     local_policy::external_fetch_is_blocked_by_enforcing_csp(parent);
     local_policy::top_level_document_stays_at_fixed_entry(parent);
@@ -211,6 +212,58 @@ fn real_child_loads_local_content_and_drops_without_owning_the_host_parent() {
     resource_policy::external_resources_are_blocked_by_enforcing_csp(parent);
     parent_can_be_destroyed_immediately_after_editor(&x, root);
     x.destroy_window(parent).unwrap().check().unwrap();
+}
+
+fn deferred_child_loads_its_authenticated_namespace_only_once(parent: u32) {
+    let package = common::Package::new();
+    for file in common::FILES {
+        package.write(file, b"fixture");
+    }
+    package.write(
+        "index.html",
+        b"<!doctype html><script src='/app.js'></script>",
+    );
+    package.write(
+        "app.js",
+        b"window.ipc.postMessage('startup|'+window.__namespace)",
+    );
+    let messages = Rc::new(RefCell::new(Vec::new()));
+    let sink = messages.clone();
+    let owner = NativeEditor::create_deferred(
+        parent,
+        EditorAssets::open(package.root()).unwrap(),
+        move |message| sink.borrow_mut().push(message),
+    )
+    .unwrap();
+    assert_ne!(
+        owner.view.webview().uri().as_deref(),
+        Some(ENTRY_URI),
+        "parenting alone does not load the application without its namespace"
+    );
+    for _ in 0..4 {
+        NativeEditor::service().unwrap();
+    }
+    assert!(messages.borrow().is_empty());
+    owner
+        .start_application("window.__namespace='first';")
+        .unwrap();
+    let deadline = Instant::now() + Duration::from_secs(15);
+    while messages.borrow().is_empty() && Instant::now() < deadline {
+        NativeEditor::service().unwrap();
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    assert_eq!(&*messages.borrow(), &["startup|first"]);
+    assert!(matches!(
+        owner.start_application("window.__namespace='stale';"),
+        Err(NativeError::AlreadyLoaded)
+    ));
+    expect_page_message(
+        &owner,
+        &messages,
+        &mut vec!["startup|first".into()],
+        "window.ipc.postMessage('retained|'+window.__namespace)",
+        "retained|first",
+    );
 }
 
 fn initialized_child_consumes_native_delivery_before_releasing_its_callback(parent: u32) {

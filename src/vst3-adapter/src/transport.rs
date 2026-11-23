@@ -150,6 +150,10 @@ impl Default for Transport {
 }
 impl Transport {
     #[cfg(feature = "trigger-editor")]
+    pub fn offer(&self) -> tresult {
+        self.queue(0, Body::Offer, None)
+    }
+    #[cfg(feature = "trigger-editor")]
     pub fn for_view(route: ViewRoute, peer: Rc<ComPtr<IConnectionPoint>>) -> Option<Self> {
         let local = crate::platform::scope()?;
         let mut transport = Self {
@@ -505,10 +509,6 @@ impl Transport {
     }
     /// Copy the complete foreign payload before touching affine state. The proxy
     /// may run us again from getMessageID/getAttributes/getBinary.
-    pub unsafe fn receive(&self, message: *mut IMessage) -> Result<Option<Packet>, tresult> {
-        let packet = unsafe { Self::decode(message) }?;
-        self.receive_packet(packet)
-    }
     pub unsafe fn decode(message: *mut IMessage) -> Result<Packet, tresult> {
         let Some(message) = (unsafe { ComRef::from_raw(message) }) else {
             return Err(kInvalidArgument);

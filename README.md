@@ -50,9 +50,12 @@ Maintain demo registrations in [scripts/demos.json](scripts/demos.json) whenever
 The experimental direct Rust Trigger VST3 adapter in `src/vst3-adapter` now
 has processor/controller ownership, bounded standard messaging, signed audio/MIDI,
 automation curves, portable state and shared editor foundations. Cargo's native
-editor feature remains opt-in; actual VST3 native attachment is not implemented.
-This is a foundation checkpoint, with native editor integration, installed/offline
-REAPER acceptance and full product qualification tracked in
+editor feature remains opt-in. It now attaches a real fixed-size X11/WebKit
+child and waits for an authenticated standard-message namespace before loading
+the application. Native boundary tests cover painting, parent survival, cleanup,
+delayed startup and reading processor state across editor recreation.
+This remains experimental: native gestures, sample selection, complete teardown
+qualification, installed/offline REAPER acceptance and full product qualification are tracked in
 [issue #45](https://github.com/DanMarshall909/dandrum/issues/45).
 See the [foundation evidence](docs/migrations/evidence/trigger-vst3-foundation-2026-11-17/README.md).
 The existing JUCE and CLAP products remain available.

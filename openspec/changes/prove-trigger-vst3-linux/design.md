@@ -17,10 +17,11 @@ bounded. `NativeEditor` already owns a disposable X11/Wry child. Much of the
 editor orchestration still lives in the CLAP adapter and contains CLAP-specific
 gesture delivery, timers and host callbacks.
 
-The workflow authority remains `.git/codex/deferred-work.md`; OpenSpec owns the
-proposed design, acceptance criteria and verified task completion. Do not create
-a second live status tracker. The existing 3,000,000-token goal budget does not
-by itself settle this proof's execution/storage limits.
+Following the 17 November foundation split, [issue #45](https://github.com/DanMarshall909/dandrum/issues/45)
+owns the remaining workflow/status. OpenSpec retains accepted design, acceptance
+criteria and verified task completion; older private deferred-work entries are
+historical evidence. The finite execution/storage limits and reassessments are
+recorded in D8 below.
 
 ## Goals / Non-Goals
 
@@ -321,6 +322,19 @@ logical size about 9 GiB, Cargo registry about 1.6 GiB. The existing workload's
 9 GiB growth + 8 GiB reserve admission passes. These are observations, not reserved
 capacity or a qualification of the newly proposed larger VST3 workload. Record
 the agreed workload in `.ai-rules.json` and recheck before its first producer.
+
+Resource reassessment, 23 November 2026: Dan requested completing the general
+VST3 work separately from the parallel Trigger UI redesign and replied "ok go
+for it" to another **4 active execution hours**, **8 GiB additional retained
+outputs** and **1 GiB temporary space**, with the existing **112 GiB managed
+retention ceiling**, **8 GiB free-disk/MemAvailable floors**, one heavy producer
+and at most four compiler jobs. Preserve reusable caches/dependencies, keep
+`DANDRUM_CARGO_PRESERVE_GENERATIONS=1`, no paid services and mutation excluded.
+The new tranche starts from a recorded restart baseline; it does not renew the
+old cumulative allowance or promise completion. Reassess at either cap. First
+checkpoint is task4.2 native attachment/paint and safe destruction/recreation
+using the existing UI. Issue45 remains workflow authority; the separate UI
+redesign is not part of this change.
 
 ### D9 — Native platform milestones and initial host configuration
 
