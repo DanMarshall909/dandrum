@@ -96,6 +96,11 @@ gestures and notes SHALL be revoked once on view loss or partial creation failur
 - **THEN** partial callbacks/registrations/native children are released and the host receives an explicit failure/capability result while accepted state, history and signed playback remain usable
 - **AND** a later valid attach succeeds without duplicate service or late callbacks
 
+#### Scenario: Host content scaling preserves the complete editor
+- **WHEN** the Linux host requests 100%, fractional or 200% content scaling before attachment or while the native editor is open
+- **THEN** the complete 1200 by 800 logical editor scales consistently with its physical native child and negotiated host view size, without an unused host canvas
+- **AND** invalid scale factors and refused host resize requests preserve the previous working geometry and editor state
+
 ### Requirement: REAPER acceptance and existing CLAP behavior are proven
 
 The installed current candidate SHALL earn actual qualified Linux/REAPER

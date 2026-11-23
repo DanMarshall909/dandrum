@@ -39,6 +39,9 @@ pub struct NativeEditor {
     ipc: Option<(webkit2gtk::UserContentManager, gtk::glib::SignalHandlerId)>,
     protocol: Option<OwnedProtocol>,
     application_loaded: Cell<bool>,
+    physical_size: Cell<(u16, u16)>,
+    parent: u32,
+    presentation_dpi: Cell<Option<(i32, u64)>>,
 }
 
 type SelectionCallback = Box<dyn FnOnce(Option<Vec<PathBuf>>)>;
@@ -278,22 +281,22 @@ impl NativeEditor {
             self._window.0.size_allocate(&gtk::Allocation::new(
                 0,
                 0,
-                i32::from(Self::WIDTH) / scale,
-                i32::from(Self::HEIGHT) / scale,
+                i32::from(self.physical_size.get().0) / scale,
+                i32::from(self.physical_size.get().1) / scale,
             ));
         } else {
             self._window.0.hide();
         }
         display.sync();
         if let Some((connection, child)) = self._window.1.as_ref() {
-            // This owned outer child supplies the fixed-size XEmbed socket;
+            // This owned outer child supplies the XEmbed socket;
             // unlike GtkSocket it has no separate layout or mapping loop.
             connection
                 .configure_window(
                     self.focus_window,
                     &x11rb::protocol::xproto::ConfigureWindowAux::new()
-                        .width(u32::from(Self::WIDTH))
-                        .height(u32::from(Self::HEIGHT)),
+                        .width(u32::from(self.physical_size.get().0))
+                        .height(u32::from(self.physical_size.get().1)),
                 )
                 .map_err(|error| NativeError::X11(error.to_string()))?
                 .check()
@@ -326,6 +329,96 @@ impl NativeEditor {
         self.view.webview().grab_focus();
         let (connection, _) = self._window.1.as_ref().ok_or(NativeError::InvalidParent)?;
         focus_child(connection, self.focus_window)
+    }
+
+    /// Convert the fixed logical layout to bounded physical X11 dimensions.
+    pub fn scaled_size(factor: f64) -> Option<(u16, u16)> {
+        let width = (f64::from(Self::WIDTH) * factor).round();
+        let height = (f64::from(Self::HEIGHT) * factor).round();
+        (factor.is_finite()
+            && width >= 1.0
+            && height >= 1.0
+            && width <= f64::from(u16::MAX)
+            && height <= f64::from(u16::MAX))
+        .then_some((width as u16, height as u16))
+    }
+
+    /// Reconcile host view coordinates with its realized X11 embedding parent.
+    /// Some Linux hosts apply desktop scaling to that parent while reporting
+    /// unscaled ViewRects. Only a uniform, layout-preserving transform qualifies;
+    /// a provisional or unrelated parent size does not change the content scale.
+    pub fn sync_host_scale(&self, factor: f64) -> Result<(), NativeError> {
+        Self::check_thread()?;
+        let (width, height) = Self::scaled_size(factor).ok_or(NativeError::UnsupportedSize)?;
+        let (connection, _) = self._window.1.as_ref().ok_or(NativeError::InvalidParent)?;
+        let geometry = connection
+            .get_geometry(self.parent)
+            .map_err(|error| NativeError::X11(error.to_string()))?
+            .reply()
+            .map_err(|error| NativeError::X11(error.to_string()))?;
+        let uniform = u32::from(geometry.width) * u32::from(height)
+            == u32::from(geometry.height) * u32::from(width);
+        if uniform {
+            self.set_presentation(geometry.width, geometry.height)
+        } else {
+            self.set_presentation(width, height)
+        }
+    }
+
+    fn set_presentation(&self, width: u16, height: u16) -> Result<(), NativeError> {
+        let gtk_scale = self._window.0.scale_factor().max(1);
+        let dpi = gtk::prelude::WidgetExt::screen(&self._window.0)
+            .map(|screen| screen.resolution())
+            .filter(|dpi| dpi.is_finite() && *dpi > 0.0)
+            .unwrap_or(96.0);
+        let signature = (gtk_scale, dpi.to_bits());
+        if self.physical_size.get() == (width, height)
+            && self.presentation_dpi.get() == Some(signature)
+        {
+            return Ok(());
+        }
+        let logical_width = i32::from(width) / gtk_scale;
+        let logical_height = i32::from(height) / gtk_scale;
+        self.view
+            .set_bounds(wry::Rect {
+                position: wry::dpi::PhysicalPosition::new(0, 0).into(),
+                size: wry::dpi::PhysicalSize::new(width, height).into(),
+            })
+            .map_err(NativeError::WebView)?;
+        self.view
+            .webview()
+            .set_size_request(logical_width, logical_height);
+        self._window.0.resize(logical_width, logical_height);
+        self._window
+            .0
+            .size_allocate(&gtk::Allocation::new(0, 0, logical_width, logical_height));
+        // Round physical bounds independently, then fit the complete logical
+        // layout. Using the unrounded requested factor can clip its final row.
+        let fit = (f64::from(width) / f64::from(Self::WIDTH))
+            .min(f64::from(height) / f64::from(Self::HEIGHT));
+        self.view
+            .webview()
+            .set_zoom_level(fit * 96.0 / (f64::from(gtk_scale) * dpi));
+        self._window.0.display().sync();
+        let (connection, child) = self._window.1.as_ref().ok_or(NativeError::InvalidParent)?;
+        for id in [*child, self.focus_window] {
+            connection
+                .configure_window(
+                    id,
+                    &x11rb::protocol::xproto::ConfigureWindowAux::new()
+                        .width(u32::from(width))
+                        .height(u32::from(height)),
+                )
+                .map_err(|error| NativeError::X11(error.to_string()))?
+                .check()
+                .map_err(|error| NativeError::X11(error.to_string()))?;
+        }
+        connection
+            .flush()
+            .map_err(|error| NativeError::X11(error.to_string()))?;
+        self.physical_size.set((width, height));
+        self.presentation_dpi.set(Some(signature));
+        Ok(())
     }
 
     /// Accept the declared fixed size without changing the native child.
@@ -487,6 +580,9 @@ impl NativeEditor {
             ipc: None,
             protocol: None,
             application_loaded: Cell::new(false),
+            physical_size: Cell::new((Self::WIDTH, Self::HEIGHT)),
+            parent,
+            presentation_dpi: Cell::new(None),
         };
         connection
             .flush()

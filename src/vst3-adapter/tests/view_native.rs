@@ -122,11 +122,17 @@ fn native_view_paints_and_recreates_without_destroying_its_host_parent() {
         } else {
             unsafe { vst3::ComPtr::from_raw(controller.createView(c"editor".as_ptr())) }.unwrap()
         };
+        let factor = if cycle % 2 == 0 { 1.0 } else { 2.0 };
+        let (width, height) = if factor == 1.0 { (1200, 800) } else { (2400, 1600) };
+        let scale = view.cast::<IPlugViewContentScaleSupport>().expect("host content scale interface");
+        assert_eq!(unsafe { scale.setContentScaleFactor(factor) }, kResultOk);
+        x.configure_window(parent, &x11rb::protocol::xproto::ConfigureWindowAux::new().width(width).height(height)).unwrap().check().unwrap();
         assert_eq!(
             unsafe { view.attached(parent as usize as *mut _, kPlatformTypeX11EmbedWindowID) },
             kResultOk,
             "a connected native view must attach in cycle {cycle}"
         );
+        assert_eq!(unsafe { scale.setContentScaleFactor(1.5) }, kResultFalse, "an attached view cannot change host size without a frame");
         let children = x.query_tree(parent).unwrap().reply().unwrap().children;
         assert_eq!(children.len(), 1, "exactly one direct native child");
         if cycle == 0 {
@@ -153,7 +159,7 @@ fn native_view_paints_and_recreates_without_destroying_its_host_parent() {
         let geometry = x.get_geometry(child).unwrap().reply().unwrap();
         assert_eq!(
             (geometry.x, geometry.y, geometry.width, geometry.height),
-            (0, 0, 1200, 800)
+            (0, 0, width as u16, height as u16)
         );
         assert_eq!(
             x.get_window_attributes(child)
@@ -168,7 +174,7 @@ fn native_view_paints_and_recreates_without_destroying_its_host_parent() {
         while Instant::now() < deadline {
             clock.tick();
             let pixels = x
-                .get_image(ImageFormat::Z_PIXMAP, parent, 12, 12, 1, 1, u32::MAX)
+                .get_image(ImageFormat::Z_PIXMAP, parent, (width - 12) as i16, (height - 12) as i16, 1, 1, u32::MAX)
                 .unwrap()
                 .reply()
                 .unwrap()
@@ -185,6 +191,21 @@ fn native_view_paints_and_recreates_without_destroying_its_host_parent() {
             "the actual WebKit child must paint the specified CSS colour"
         );
         if cycle == 0 {
+            // REAPER's Linux high-DPI path reports a 1200x800 ViewRect but
+            // realizes its X11 embedding parent at 2400x1600. Simulate the
+            // post-attachment host resize, without an explicit scale-2 call.
+            x.configure_window(parent, &x11rb::protocol::xproto::ConfigureWindowAux::new().width(2400).height(1600)).unwrap().check().unwrap();
+            let mut host_rect = ViewRect { left: 0, top: 0, right: 1200, bottom: 800 };
+            clock.tick();
+            let geometry = x.get_geometry(child).unwrap().reply().unwrap();
+            assert_eq!((geometry.width, geometry.height), (2400, 1600), "a host resize completed after onSize must scale on the next host tick");
+            assert_eq!(unsafe { view.onSize(&mut host_rect) }, kResultOk);
+            assert_eq!(unsafe { view.getSize(&mut host_rect) }, kResultOk);
+            assert_eq!((host_rect.right, host_rect.bottom), (1200, 800), "retain the host's coordinate space");
+            x.configure_window(parent, &x11rb::protocol::xproto::ConfigureWindowAux::new().width(1200).height(800)).unwrap().check().unwrap();
+            assert_eq!(unsafe { view.onSize(&mut host_rect) }, kResultOk);
+            let geometry = x.get_geometry(child).unwrap().reply().unwrap();
+            assert_eq!((geometry.width, geometry.height), (1200, 800), "returning to scale one restores physical geometry");
             clock.reject_unregister.set(true);
             assert_eq!(
                 unsafe { view.removed() },

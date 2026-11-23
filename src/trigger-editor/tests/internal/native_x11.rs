@@ -521,6 +521,116 @@ fn exercise_visibility_and_fixed_size(
         "document.getElementById('counter').click()",
         "content|2",
     );
+    let mut counter = 2;
+    for (factor, width, height) in [
+        (2.0, 2400, 1600),
+        (1.333, 1600, 1066),
+        (1.25, 1500, 1000),
+        (1.0, 1200, 800),
+    ] {
+        // A host repeatedly reports the same presentation on its UI ticks.
+        // Repetition must retain this document, counter and native geometry.
+        for _ in 0..3 {
+            owner.sync_host_scale(factor).unwrap();
+        }
+        host_ticks();
+        for id in [child, owner.focus_window] {
+            let geometry = x.get_geometry(id).unwrap().reply().unwrap();
+            assert_eq!(
+                (geometry.width, geometry.height),
+                (width, height),
+                "both X11 layers use the requested physical scale"
+            );
+        }
+        expect_page_message(
+            owner,
+            messages,
+            &mut expected,
+            "window.ipc.postMessage('viewport|'+innerWidth+'|'+innerHeight+'|'+document.getElementById('counter').textContent)",
+            &format!("viewport|1200|800|{counter}"),
+        );
+        if factor == 2.0 {
+            let point = x
+                .translate_coordinates(child, root, 32, 32)
+                .unwrap()
+                .reply()
+                .unwrap();
+            assert!(
+                std::process::Command::new("xdotool")
+                    .args([
+                        "mousemove",
+                        &point.dst_x.to_string(),
+                        &point.dst_y.to_string(),
+                        "click",
+                        "1"
+                    ])
+                    .status()
+                    .unwrap()
+                    .success()
+            );
+            counter += 1;
+            expect_page_message(
+                owner,
+                messages,
+                &mut expected,
+                "",
+                &format!("content|{counter}"),
+            );
+        }
+        x.configure_window(
+            parent,
+            &x11rb::protocol::xproto::ConfigureWindowAux::new()
+                .width(u32::from(width) * 2)
+                .height(u32::from(height) * 2),
+        )
+        .unwrap()
+        .check()
+        .unwrap();
+        owner.sync_host_scale(factor).unwrap();
+        host_ticks();
+        for id in [child, owner.focus_window] {
+            let geometry = x.get_geometry(id).unwrap().reply().unwrap();
+            assert_eq!(
+                (geometry.width, geometry.height),
+                (width * 2, height * 2),
+                "host coordinate conversion retains rounded physical extents"
+            );
+        }
+        expect_page_message(
+            owner,
+            messages,
+            &mut expected,
+            "window.ipc.postMessage('viewport|'+innerWidth+'|'+innerHeight+'|'+document.getElementById('counter').textContent)",
+            &format!("viewport|1200|800|{counter}"),
+        );
+        x.configure_window(
+            parent,
+            &x11rb::protocol::xproto::ConfigureWindowAux::new()
+                .width(u32::from(host.width))
+                .height(u32::from(host.height)),
+        )
+        .unwrap()
+        .check()
+        .unwrap();
+        owner.sync_host_scale(factor).unwrap();
+        owner.set_visible(false).unwrap();
+        owner.set_visible(true).unwrap();
+        host_ticks();
+        let geometry = x.get_geometry(child).unwrap().reply().unwrap();
+        assert_eq!(
+            (geometry.width, geometry.height),
+            (width, height),
+            "showing retains content scale"
+        );
+        for invalid in [0.0, -1.0, f64::NAN, f64::INFINITY, f64::MAX] {
+            assert!(matches!(
+                owner.sync_host_scale(invalid),
+                Err(NativeError::UnsupportedSize)
+            ));
+            let geometry = x.get_geometry(child).unwrap().reply().unwrap();
+            assert_eq!((geometry.width, geometry.height), (width, height));
+        }
+    }
     // Exercise immediate disposal once while shown and once while hidden.
     if cycle == 1 {
         owner.set_visible(false).unwrap();

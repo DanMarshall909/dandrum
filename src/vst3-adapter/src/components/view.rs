@@ -19,7 +19,7 @@ const WIDTH: i32 = NativeEditor::WIDTH as i32;
 const HEIGHT: i32 = NativeEditor::HEIGHT as i32;
 
 pub(super) fn create(controller: &Rc<ControllerCore>) -> *mut IPlugView {
-    ComWrapper::new(View(Rc::new(ViewCore {
+    let core = Rc::new(ViewCore {
         thread: controller.thread,
         controller: Rc::downgrade(controller),
         child: RefCell::new(None),
@@ -27,10 +27,18 @@ pub(super) fn create(controller: &Rc<ControllerCore>) -> *mut IPlugView {
         connection: RefCell::new(None),
         busy: Cell::new(false),
         selection_dialog: RefCell::new(None),
-    })))
-    .to_com_ptr::<IPlugView>()
-    .expect("view includes the standard interface")
-    .into_raw()
+        frame: RefCell::new(None),
+        abi: Cell::new(std::ptr::null_mut()),
+        content_scale: Cell::new(1.0),
+        size: Cell::new((WIDTH, HEIGHT)),
+        scaling: Cell::new(false),
+    });
+    let view = ComWrapper::new(View(core.clone()))
+        .to_com_ptr::<IPlugView>()
+        .expect("view includes the standard interface")
+        .into_raw();
+    core.abi.set(view);
+    view
 }
 
 /// Compare only the known SDK name, including its NUL. Never scan an unknown
@@ -53,6 +61,12 @@ pub(super) struct ViewCore {
     connection: RefCell<Option<Rc<BrowserConnection>>>,
     busy: Cell<bool>,
     selection_dialog: RefCell<Option<NativeFileSelection>>,
+    frame: RefCell<Option<vst3::ComPtr<IPlugFrame>>>,
+    // Non-owning ABI identity, used only during a live scale-interface call.
+    abi: Cell<*mut IPlugView>,
+    content_scale: Cell<f32>,
+    size: Cell<(i32, i32)>,
+    scaling: Cell<bool>,
 }
 pub(super) struct BrowserConnection {
     transport: Transport,
@@ -96,7 +110,7 @@ impl std::ops::Deref for View {
     }
 }
 impl Class for View {
-    type Interfaces = (IPlugView,);
+    type Interfaces = (IPlugView, IPlugViewContentScaleSupport);
 }
 impl ViewCore {
     fn live_controller(&self) -> Option<Rc<ControllerCore>> {
@@ -173,7 +187,11 @@ impl ViewCore {
         }) else {
             return kResultFalse;
         };
-        if child.set_visible(true).is_err() {
+        if child
+            .sync_host_scale(f64::from(self.content_scale.get()))
+            .is_err()
+            || child.set_visible(true).is_err()
+        {
             return kResultFalse;
         }
         // Publish ownership before any foreign registration can reenter. The
@@ -518,6 +536,8 @@ impl ViewCore {
         drop(dialog);
         let child = self.child.borrow_mut().take();
         drop(child);
+        let frame = self.frame.borrow_mut().take();
+        drop(frame);
         let connection = self.connection.borrow().clone();
         if let Some(connection) = connection
             && let Some(controller) = self.controller.upgrade()
@@ -566,6 +586,12 @@ impl ViewCore {
         self.busy.set(true);
         let _call = HostCall(&self.busy);
         let _ = NativeEditor::service();
+        let child = self.child.borrow().clone();
+        if let Some(child) = child {
+            // Hosts can realize their scaled X11 parent after onSize returns.
+            // Reconcile on their UI tick, without recreating the document.
+            let _ = child.sync_host_scale(f64::from(self.content_scale.get()));
+        }
         let connection = self.connection.borrow().clone();
         if let Some(connection) = connection {
             self.service_selection(&connection);
@@ -644,8 +670,8 @@ impl IPlugViewTrait for View {
             *size = ViewRect {
                 left: 0,
                 top: 0,
-                right: WIDTH,
-                bottom: HEIGHT,
+                right: self.size.get().0,
+                bottom: self.size.get().1,
             };
         }
         kResultOk
@@ -661,8 +687,20 @@ impl IPlugViewTrait for View {
         if (
             size.right.checked_sub(size.left),
             size.bottom.checked_sub(size.top),
-        ) == (Some(WIDTH), Some(HEIGHT))
-        {
+        ) == {
+            let (w, h) = NativeEditor::scaled_size(f64::from(self.content_scale.get())).unwrap();
+            (Some(i32::from(w)), Some(i32::from(h)))
+        } {
+            let child = self.child.borrow().clone();
+            if let Some(child) = child
+                && child
+                    .sync_host_scale(f64::from(self.content_scale.get()))
+                    .is_err()
+            {
+                return kResultFalse;
+            }
+            self.size
+                .set((size.right - size.left, size.bottom - size.top));
             kResultOk
         } else {
             kInvalidArgument
@@ -683,7 +721,14 @@ impl IPlugViewTrait for View {
         }
         kResultOk
     }
-    unsafe fn setFrame(&self, _frame: *mut IPlugFrame) -> tresult {
+    unsafe fn setFrame(&self, frame: *mut IPlugFrame) -> tresult {
+        if !self.live() {
+            return kResultFalse;
+        }
+        // SAFETY: the host supplies a live frame or null; retain its COM reference.
+        let frame = unsafe { vst3::ComRef::from_raw(frame) }.map(|frame| frame.to_com_ptr());
+        let old = self.frame.replace(frame);
+        drop(old);
         kResultOk
     }
     unsafe fn canResize(&self) -> tresult {
@@ -697,13 +742,61 @@ impl IPlugViewTrait for View {
         let Some(rect) = (unsafe { rect.as_mut() }) else {
             return kInvalidArgument;
         };
-        let (Some(right), Some(bottom)) =
-            (rect.left.checked_add(WIDTH), rect.top.checked_add(HEIGHT))
-        else {
+        let (width, height) =
+            NativeEditor::scaled_size(f64::from(self.content_scale.get())).unwrap();
+        let (Some(right), Some(bottom)) = (
+            rect.left.checked_add(i32::from(width)),
+            rect.top.checked_add(i32::from(height)),
+        ) else {
             return kInvalidArgument;
         };
         rect.right = right;
         rect.bottom = bottom;
+        kResultOk
+    }
+}
+
+impl IPlugViewContentScaleSupportTrait for View {
+    unsafe fn setContentScaleFactor(&self, factor: f32) -> tresult {
+        if !self.live() || self.scaling.get() {
+            return kResultFalse;
+        }
+        let Some((width, height)) = NativeEditor::scaled_size(f64::from(factor)) else {
+            return kInvalidArgument;
+        };
+        if self.content_scale.get() == factor {
+            return kResultOk;
+        }
+        self.scaling.set(true);
+        let _call = HostCall(&self.scaling);
+        let old = self.content_scale.replace(factor);
+        let frame = self.frame.borrow().clone();
+        let mut rect = ViewRect {
+            left: 0,
+            top: 0,
+            right: i32::from(width),
+            bottom: i32::from(height),
+        };
+        if let Some(frame) = frame {
+            // SAFETY: this method is called through the live view interface;
+            // the retained host frame may synchronously call onSize/getSize.
+            let result = unsafe { frame.resizeView(self.abi.get(), &mut rect) };
+            if result != kResultOk {
+                self.content_scale.set(old);
+                return result;
+            }
+            if self.size.get() != (i32::from(width), i32::from(height)) {
+                self.content_scale.set(old);
+                return kResultFalse;
+            }
+        } else if self.child.borrow().is_none() {
+            // Before attachment, the host obtains the requested size through
+            // getSize. An attached view needs its frame to negotiate a resize.
+            self.size.set((i32::from(width), i32::from(height)));
+        } else {
+            self.content_scale.set(old);
+            return kResultFalse;
+        }
         kResultOk
     }
 }

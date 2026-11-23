@@ -211,7 +211,7 @@ Avoid speculative framework layers; extract concrete behavior with two real
 consumers and retain existing headless dependency boundaries.
 
 For Linux, parent using `IPlugView`'s X11 window contract; keep host parent/loop
-ownership outside the plugin. Fixed initial viewport is the existing 1200x800.
+ownership outside the plugin. The initial logical viewport is the existing 1200x800. Host content scale must consistently scale the physical X11 child, GTK/WebKit presentation and VST3 geometry; preserve working geometry when scaling is invalid or the host refuses a resize. REAPER7.84 on the observed192-DPI Linux desktop sends content scale1 and1200x800 ViewRects while realizing its X11 parent at2400x1600. Reconcile that uniform native-parent transform on attachment/onSize without guessing from desktop DPI or changing the host coordinate space; provisional/nonuniform parent rectangles retain the requested content scale.
 Detach revokes native/IPC/dialog callbacks and ends owned gestures/notes once,
 destroys the actual WebView/native child, and leaves the instrument/history
 alive. Reattachment creates a new view/connection and recovers accepted outcomes.
@@ -431,3 +431,10 @@ See [qualification evidence](../../../docs/migrations/evidence/trigger-vst3-foun
 - [Linux host run-loop contract](https://steinbergmedia.github.io/vst3_doc/base/classSteinberg_1_1Linux_1_1IRunLoop.html).
 - [Binding source/scope](https://github.com/coupler-rs/vst3-rs).
 - [Retained REAPER configuration/evidence](../../../docs/migrations/evidence/trigger-clap-daw-acceptance-2026-11-02/README.md).
+
+DPI repair allowance, 23 November 2026: Dan reported the 200% desktop's
+2400x1600 host parent containing only a1200x800 native child and approved
+another one hour to implement and verify the DPI repair. The tranche starts
+05:22:50UTC and ends06:22:50UTC; earlier storage caps, floors, preservation,
+serial heavy-producer policy and mutation exclusion remain unchanged. This
+repairs native host integration without changing the parallel UI redesign.
