@@ -800,6 +800,24 @@ modules:
 #[test]
 #[ignore = "real production React/Wry/GTK and copied VST3 boundary; explicit packaged assets/display"]
 fn production_native_selection_retains_decoded_content_after_source_and_view_loss() {
+    if std::env::var_os("DANDRUM_SOURCE_HIDDEN_REQUIRED").is_some() {
+        assert!(std::env::var_os("DANDRUM_VST3_INSTALLED_BUNDLE").is_some());
+        assert!(
+            !Path::new(env!("CARGO_MANIFEST_DIR")).exists(),
+            "development sources must actually be hidden"
+        );
+        let namespace = std::fs::read_link("/proc/self/ns/net").unwrap();
+        assert_ne!(
+            namespace.as_os_str(),
+            std::env::var_os("DANDRUM_PARENT_NET_NAMESPACE").unwrap()
+        );
+        let route = std::fs::read_to_string("/proc/net/route").unwrap();
+        assert_eq!(
+            route.lines().count(),
+            1,
+            "no network route in this namespace"
+        );
+    }
     let bundle = Bundle::new();
     let assets = std::env::var_os("DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR")
         .expect("explicit complete packaged native editor");

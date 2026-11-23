@@ -28,6 +28,17 @@ impl Bundle {
         let binary = bundle.join("x86_64-linux/DandrumTrigger.so");
         let resources = bundle.join("Resources");
         std::fs::create_dir_all(binary.parent().unwrap()).unwrap();
+        if let Some(installed) = std::env::var_os("DANDRUM_VST3_INSTALLED_BUNDLE") {
+            let installed = PathBuf::from(installed).join("Contents");
+            std::fs::copy(installed.join("x86_64-linux/DandrumTrigger.so"), &binary)
+                .expect("explicit installed candidate binary, without development fallback");
+            copy_installed_resources(&installed.join("Resources"), &resources);
+            return Self {
+                directory,
+                binary,
+                resources,
+            };
+        }
         std::fs::create_dir_all(resources.join("instrument/assets")).unwrap();
         let source = std::env::var_os("DANDRUM_VST3_TEST_LIBRARY")
             .expect("set DANDRUM_VST3_TEST_LIBRARY to the freshly built private cdylib");
@@ -96,6 +107,20 @@ impl Bundle {
             library: ManuallyDrop::new(library),
             exit,
             _bundle: PhantomData,
+        }
+    }
+}
+
+fn copy_installed_resources(source: &std::path::Path, target: &std::path::Path) {
+    std::fs::create_dir_all(target).unwrap();
+    for entry in std::fs::read_dir(source).expect("complete installed resources") {
+        let entry = entry.unwrap();
+        let target = target.join(entry.file_name());
+        if entry.file_type().unwrap().is_dir() {
+            copy_installed_resources(&entry.path(), &target);
+        } else {
+            assert!(entry.file_type().unwrap().is_file(), "no resource symlinks");
+            std::fs::copy(entry.path(), target).unwrap();
         }
     }
 }

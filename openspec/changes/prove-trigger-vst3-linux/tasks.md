@@ -12,7 +12,7 @@ Mutation remains excluded; normal local gates and independent review remain.
 Scope split, 17 November 2026: Dan requested merging the verified foundation
 and moving the remainder to [issue #45](https://github.com/DanMarshall909/dandrum/issues/45).
 That ticket owns the remaining workflow; this change retains the design,
-acceptance criteria and their evidence. Tasks 4.2 and 4.3 were locally verified on23November; tasks5.1,5.2,6.1,6.2
+acceptance criteria and their evidence. Tasks 4.2 and 4.3 were locally verified on23November; task5.1 now has installed/offline evidence; tasks5.2,6.1,6.2
 and6.3 remain unchecked. Foundation publication does not complete the Linux proof
 or its combined-product review, and this change must not be archived yet.
 Dan is connected remotely and cannot test REAPER now. Native editor and actual
@@ -72,8 +72,10 @@ These local criteria do not complete installed-REAPER or combined-product review
 
 ## 5. Qualify The Installed REAPER Candidate
 
-- [ ] 5.1 Build/install the candidate bundle with complete resource/notices/source identities; prove source-hidden/network-absent dynamic/native operation, native dependencies/linkage and no JUCE requirement, preserving the working CLAP product.
+- [x] 5.1 Build/install the candidate bundle with complete resource/notices/source identities; prove source-hidden/network-absent dynamic/native operation, native dependencies/linkage and no JUCE requirement, preserving the working CLAP product.
 - [ ] 5.2 Run the exact installed candidate in qualified REAPER with two distinct selected instruments, actual native gestures, timed curves/feedback, stopped/editor-absent service and editor recreation with Undo; save/exit/remove original files/reload in a fresh process and assert independent signed renders, all restored values/resources and instance isolation.
+
+Task5.1 evidence: [installed candidate](../../../docs/migrations/evidence/trigger-vst3-installed-2026-11-23/README.md).
 
 ## 6. Review And Publish The Complete Proof
 
