@@ -211,3 +211,8 @@ Clippy is retained as `pointer-final-clippy`. The shared owner test independentl
 covers the new click callback/helper; defensive transport/foreign-lifetime errors
 remain explicit gaps rather than a100%/branch-coverage claim. No new module was
 extracted, mutation remains excluded and actual installed-REAPER is still open.
+
+The subsequent [native DPI repair](../trigger-vst3-dpi-2026-11-23/README.md)
+records the final scaled candidate, exact actual-REAPER mapping, preserved
+named values, current native/CLAP/offline checks and retained variant failure.
+Its single-instance DPI proof does not complete the remaining Linux qualification.

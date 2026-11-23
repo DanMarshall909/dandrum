@@ -1,0 +1,321 @@
+{
+  "productSourceSha256": {
+    "src/vst3-adapter/src/audio.rs": "c1d4778e063698013422fd376427cc5bbd991274a88466834d69fbc4471ecada",
+    "src/vst3-adapter/src/transport.rs": "86b9671d374fea9cc65ca2f3ed5c84e097a17f78393a8fb86e880a858079de41",
+    "src/vst3-adapter/src/components.rs": "bb3b305d15f8f3b49060b88646e5ef3d4b169db91856fbe6623b1b6c404c5a39",
+    "src/vst3-adapter/src/parameters.rs": "3370e51f404b20211b293948d8f16481c995dd436c09b39c7b953a86b7f42628",
+    "src/vst3-adapter/src/stream.rs": "8607a21d7ab63769c058d072e2c542c2d460d48af8f2aafbe3d6305821467d4b",
+    "src/vst3-adapter/src/lib.rs": "4c27b321b7156929d67e4533785e90ef3a545efc6a71c758b3a3225d0475700d",
+    "src/vst3-adapter/src/components/view.rs": "f751b2fb3583db62fbd47022e832c8b921ba34f536ff14fe0ef0537480b7829e",
+    "src/vst3-adapter/src/platform/mod.rs": "30731d3c95b799abd9382d7a04fff96c6ef7f398438d26521696cf9f44fd0432",
+    "src/vst3-adapter/src/platform/linux.rs": "ee9a3004d1e8d58f3f5a92047aa0bd5d34e4db181df838638ef62e973412cace",
+    "src/trigger-editor/src/assets.rs": "9b7e315dc6571118da9dfc01e88235e7f63354a9262619ff22ec9496e5403584",
+    "src/trigger-editor/src/native_x11.rs": "694745693bd99e4c6c547ea0d195b782e581eaed3aa758e02bdbf7f41cd12c41",
+    "src/trigger-editor/src/lib.rs": "3505b470cb2ac25fc7632c047f617ced41a2a068aeab4f711804a69bc5120358"
+  },
+  "runs": [
+    {
+      "label": "dpi-affinity-owner",
+      "command": [
+        "env",
+        "DANDRUM_VST3_TEST_LIBRARY=/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/libdandrum_vst3_adapter.so",
+        "./scripts/cargo",
+        "llvm-cov",
+        "--offline",
+        "--no-clean",
+        "--json",
+        "--output-path",
+        ".git/codex/trigger-vst3-resume-20261123/dpi-affinity-owner-aggregate.json",
+        "--manifest-path",
+        "src/vst3-adapter/Cargo.toml",
+        "--features",
+        "trigger-editor",
+        "--",
+        "--test-threads=2"
+      ],
+      "startedUtc": "2026-11-23T05:55:05.680798+00:00",
+      "finishedUtc": "2026-11-23T05:55:24.564609+00:00",
+      "exit": 0,
+      "seconds": 18.88208493599086,
+      "logSha256": "96b353bbd9e8a883c3cca2fd75f432e5555adeb5eae3ec499755a8ff77bb9f42"
+    },
+    {
+      "label": "dpi-proof-native",
+      "command": [
+        "env",
+        "DANDRUM_VST3_TEST_LIBRARY=/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/libdandrum_vst3_adapter.so",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=/tmp/dandrum-vst3-resume-20261123/editor",
+        "DANDRUM_VST3_NATIVE_AUDIT=1",
+        "DANDRUM_ALLOCATOR_AUDIT_PROBE=/home/dan/code/dandrum/.git/codex/trigger-vst3-resume-20261123/native-sentinel/probe.so",
+        "LD_PRELOAD=/home/dan/code/dandrum/.git/codex/trigger-vst3-resume-20261123/native-sentinel/audit.so",
+        "python3",
+        "/home/dan/code/dandrum/.git/codex/trigger-vst3-resume-20261123/isolated_native_dpi.py",
+        "./scripts/cargo",
+        "llvm-cov",
+        "--offline",
+        "--no-clean",
+        "--json",
+        "--output-path",
+        "/home/dan/code/dandrum/.git/codex/trigger-vst3-resume-20261123/dpi-proof-native-aggregate.json",
+        "--manifest-path",
+        "src/vst3-adapter/Cargo.toml",
+        "--features",
+        "trigger-editor",
+        "--test",
+        "view_native",
+        "--test",
+        "view_browser",
+        "--test",
+        "view_production",
+        "--",
+        "--ignored",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "startedUtc": "2026-11-23T05:49:15.324869+00:00",
+      "finishedUtc": "2026-11-23T05:49:29.397800+00:00",
+      "exit": 0,
+      "seconds": 14.070901786995819,
+      "logSha256": "4dcdd9217978924ad7a971223461481f4a22be2389091819dfde9379332ccb80"
+    },
+    {
+      "label": "dpi-repeated-owner-gtk1",
+      "command": [
+        "env",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=/tmp/dandrum-vst3-resume-20261123/editor",
+        "DANDRUM_TEST_GTK_SCALE=1",
+        "DANDRUM_TEST_XFT_DPI=192",
+        "python3",
+        ".git/codex/trigger-vst3-resume-20261123/isolated_native_dpi_matrix.py",
+        "./scripts/cargo",
+        "llvm-cov",
+        "--offline",
+        "--no-clean",
+        "--json",
+        "--output-path",
+        ".git/codex/trigger-vst3-resume-20261123/dpi-repeated-owner-gtk1-aggregate.json",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "--",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--ignored",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "startedUtc": "2026-11-23T05:52:40.515810+00:00",
+      "finishedUtc": "2026-11-23T05:52:48.557575+00:00",
+      "exit": 0,
+      "seconds": 8.039877634000732,
+      "logSha256": "976d055461f6457dde2f4ee035c8f11f070b23e4ffb2c733bd430b86f90af7f2"
+    },
+    {
+      "label": "dpi-repeated-owner-gtk2",
+      "command": [
+        "env",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=/tmp/dandrum-vst3-resume-20261123/editor",
+        "DANDRUM_TEST_GTK_SCALE=2",
+        "DANDRUM_TEST_XFT_DPI=96",
+        "python3",
+        ".git/codex/trigger-vst3-resume-20261123/isolated_native_dpi_matrix.py",
+        "./scripts/cargo",
+        "llvm-cov",
+        "--offline",
+        "--no-clean",
+        "--json",
+        "--output-path",
+        ".git/codex/trigger-vst3-resume-20261123/dpi-repeated-owner-gtk2-aggregate.json",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--lib",
+        "--",
+        "native_x11::tests::real_child_loads_local_content_and_drops_without_owning_the_host_parent",
+        "--ignored",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "startedUtc": "2026-11-23T05:52:06.949911+00:00",
+      "finishedUtc": "2026-11-23T05:52:17.002685+00:00",
+      "exit": 0,
+      "seconds": 10.05095178601914,
+      "logSha256": "b394a4511959e779ffabbb66dd6454a6b4d070c123368ed6bcbcc2839007f06e"
+    },
+    {
+      "label": "dpi-vst3-final-clippy",
+      "command": [
+        "./scripts/cargo",
+        "clippy",
+        "--offline",
+        "--manifest-path",
+        "src/vst3-adapter/Cargo.toml",
+        "--features",
+        "trigger-editor",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "startedUtc": "2026-11-23T05:56:34.671492+00:00",
+      "finishedUtc": "2026-11-23T05:56:36.683572+00:00",
+      "exit": 0,
+      "seconds": 2.010287488985341,
+      "logSha256": "3957c22fcec9ac20e07e3e6fb3e11879bd014f8e0633466a5b1fb23b9db57d53"
+    },
+    {
+      "label": "dpi-shared-final-clippy",
+      "command": [
+        "./scripts/cargo",
+        "clippy",
+        "--offline",
+        "--manifest-path",
+        "src/trigger-editor/Cargo.toml",
+        "--features",
+        "native-x11",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "startedUtc": "2026-11-23T05:53:42.208668+00:00",
+      "finishedUtc": "2026-11-23T05:53:44.215933+00:00",
+      "exit": 0,
+      "seconds": 2.0051800569926854,
+      "logSha256": "266f2ef99466a38e43caca8471491b73229a3ce0bb3e8c23ed887e7fece388fb"
+    },
+    {
+      "label": "dpi-proof-clap-native",
+      "command": [
+        "env",
+        "DANDRUM_TRIGGER_GUI_PLUGIN_PATH=/tmp/dandrum-vst3-resume-20261123/clap-dpi/DandrumTrigger.clap",
+        "python3",
+        "/home/dan/code/dandrum/.git/codex/trigger-vst3-resume-20261123/isolated_native_dpi_matrix.py",
+        "./scripts/cargo",
+        "test",
+        "--offline",
+        "--release",
+        "--manifest-path",
+        "src/clap-adapter/Cargo.toml",
+        "--features",
+        "trigger-editor",
+        "--test",
+        "trigger_gui",
+        "copied_native_editor_lifecycle_initializes_the_real_react_session_and_preserves_audio",
+        "--",
+        "--ignored",
+        "--exact",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "startedUtc": "2026-11-23T05:49:52.088017+00:00",
+      "finishedUtc": "2026-11-23T05:50:08.978342+00:00",
+      "exit": 0,
+      "seconds": 16.88805955700809,
+      "logSha256": "0c85a3ab45930b8242df7ba6df5f73d5fd51da31ee1efe6cd26358ef971e2736"
+    },
+    {
+      "label": "dpi-installed-package",
+      "command": [
+        "python3",
+        ".git/codex/trigger-vst3-resume-20261123/package_candidate_dpi_final.py"
+      ],
+      "startedUtc": "2026-11-23T05:58:40.288859+00:00",
+      "finishedUtc": "2026-11-23T05:58:42.301428+00:00",
+      "exit": 0,
+      "seconds": 2.0107601009949576,
+      "logSha256": "b1725a82a679e4adf850573902d17619be3e2c0be59e67e9f7279a62cf3a761c"
+    },
+    {
+      "label": "dpi-installed-release-boundary",
+      "command": [
+        "env",
+        "DANDRUM_VST3_INSTALLED_BUNDLE=/tmp/dandrum-vst3-resume-20261123/installed-dpi-final/DandrumTrigger.vst3",
+        "DANDRUM_VST3_TEST_LIBRARY=/tmp/dandrum-vst3-resume-20261123/installed-dpi-final/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
+        "DANDRUM_TRIGGER_EDITOR_BUNDLE_DIR=/tmp/dandrum-vst3-resume-20261123/installed-dpi-final/DandrumTrigger.vst3/Contents/Resources/editor",
+        "python3",
+        ".git/codex/trigger-vst3-resume-20261123/isolated_native.py",
+        "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/ordinary/release/deps/view_production-8d8148f2d1c189ac",
+        "--ignored",
+        "--exact",
+        "production_native_selection_retains_decoded_content_after_source_and_view_loss",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "startedUtc": "2026-11-23T06:03:17.982626+00:00",
+      "finishedUtc": "2026-11-23T06:03:26.023039+00:00",
+      "exit": 0,
+      "seconds": 8.038531699974556,
+      "logSha256": "d35279625df3b997b0bdd21d788eba10e53e3b5cee7b010bcd8254f1b7ed4441"
+    },
+    {
+      "label": "dpi-installed-pinned-source-hidden",
+      "command": [
+        "python3",
+        ".git/codex/trigger-vst3-resume-20261123/isolated_native.py",
+        "python3",
+        ".git/codex/trigger-vst3-resume-20261123/offline_dpi_pinned.py"
+      ],
+      "startedUtc": "2026-11-23T06:04:08.622217+00:00",
+      "finishedUtc": "2026-11-23T06:04:16.651588+00:00",
+      "exit": 0,
+      "seconds": 8.027481555007398,
+      "logSha256": "52f02149fde51deea6838476ae45a3051e11781a747a14c7e9db4875ae03ecdc"
+    },
+    {
+      "label": "dpi-installed-validator",
+      "command": [
+        ".git/codex/trigger-vst3-resume-20261123/tools/validator-build/bin/Release/validator",
+        "-e",
+        "/tmp/dandrum-vst3-resume-20261123/installed-dpi-final/DandrumTrigger.vst3"
+      ],
+      "startedUtc": "2026-11-23T06:05:16.119651+00:00",
+      "finishedUtc": "2026-11-23T06:05:18.132504+00:00",
+      "exit": 255,
+      "seconds": 2.0107394820079207,
+      "logSha256": "5572a298c627cf378e4f6f400ec1e699f52bc90a75ca764269fdcb08b071e104"
+    },
+    {
+      "label": "dpi-source-checkpoint",
+      "command": [
+        "git",
+        "commit",
+        "-m",
+        "Respect host scaling across the VST3 native editor and X11 parent"
+      ],
+      "startedUtc": "2026-11-23T05:57:24.850952+00:00",
+      "finishedUtc": "2026-11-23T05:58:34.243589+00:00",
+      "exit": 0,
+      "seconds": 69.39086911798222,
+      "logSha256": "c149fb2c8645b4e40c04755a98c7c6ad9b22f5837855ae27a99b6866cf8e2278"
+    }
+  ],
+  "notes": "Product source hashes are identical across these runs. Shared-owner repetition and foreign-thread assertions were added to existing tests without changing product source. Ordinary/native/shared profiles remain separately source/object-bound.",
+  "retainedTrials": [
+    {
+      "label": "dpi-installed-source-hidden",
+      "classification": "extended sandbox variant failed; not qualified",
+      "exit": 101,
+      "seconds": 18.892957467003725,
+      "command": [
+        "python3",
+        ".git/codex/trigger-vst3-resume-20261123/isolated_native_dpi.py",
+        "python3",
+        ".git/codex/trigger-vst3-resume-20261123/offline_dpi_final.py"
+      ],
+      "logSha256": "8204c865cc2d9ae4a056ec027469480922a9e72d6e192085f77a4a817bde110e",
+      "failure": "physical level-entry DOM value did not become2",
+      "cause": "unestablished; qualified copied-executable/non-audited offline case passes"
+    },
+    {
+      "label": "dpi-final-owner-coverage",
+      "classification": "development run interrupted by task-local resource sampler, not a completed product result",
+      "supervisorExit": 1,
+      "producerExit": null,
+      "logSha256": "3250f0f34a3c190316179e5c92df702da88d3f06b6826791fdd4ab0bcb52f9af",
+      "recovery": "producer absent, exclusive lease, active marker removed with generation preserved; bounded sampler retry calibrated; complete owner rerun passes"
+    }
+  ]
+}

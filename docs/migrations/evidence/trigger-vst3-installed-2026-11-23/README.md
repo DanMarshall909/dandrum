@@ -73,3 +73,8 @@ gates and independent review/publication remain open. The first long executor
 ended143 while its owned launcher continued; ownership was reverified and a
 replacement resource monitor retained its clean terminal result. Both exact
 process receipts are retained. No replay/project/product binaries are published.
+
+The subsequent [native DPI repair](../trigger-vst3-dpi-2026-11-23/README.md)
+records the final scaled candidate, exact actual-REAPER mapping, preserved
+named values, current native/CLAP/offline checks and retained variant failure.
+Its single-instance DPI proof does not complete the remaining Linux qualification.

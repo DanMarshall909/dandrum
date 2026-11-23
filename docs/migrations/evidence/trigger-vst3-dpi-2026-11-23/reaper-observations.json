@@ -1,0 +1,29 @@
+{
+  "pid": 997030,
+  "sourceCommit": "9631af4c5511b05a65a81fbddd3e5c6df2974e26",
+  "binarySha256": "a99c7f2cd20ff2dab6d8021363ac0a98677480ef4ca3f8706ce52561031ef9b9",
+  "mappedModule": "/tmp/dandrum-vst3-resume-20261123/installed-dpi-final/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
+  "viewWindow": 52428861,
+  "frameWindow": 4211115,
+  "physicalHostParent": [
+    2400,
+    1600
+  ],
+  "physicalOwnedChild": [
+    2400,
+    1600
+  ],
+  "physicalGtkPlug": [
+    2400,
+    1600
+  ],
+  "xftDpi": 192,
+  "restoredNamedValues": 23,
+  "maxNormalizedValueError": 0.0,
+  "userOwnedInteractive": true,
+  "captureMethod": "XComposite named pixmap of owned REAPER frame; no desktop occlusion or focus change",
+  "screenshotPrivatePath": "/tmp/dandrum-vst3-resume-20261123/reaper-interactive/dpi-final-window.png",
+  "screenshotSha256": "aed47b3a766e1a8a1e36c3707ec9ea2ad51189b13dc4f5ac680e0e5f6b532f0d",
+  "result": "Complete editor fills host at 200%; exact final module mapping verified;23 normalized named values restored unchanged",
+  "qualification": "Interactive single-instance DPI result; not the complete two-instance REAPER qualification"
+}

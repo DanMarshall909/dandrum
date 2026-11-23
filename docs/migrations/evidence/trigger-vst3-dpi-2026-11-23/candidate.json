@@ -1,0 +1,21 @@
+{
+  "bundle": "/tmp/dandrum-vst3-resume-20261123/installed-dpi-final/DandrumTrigger.vst3",
+  "source": {
+    "commit": "9631af4c5511b05a65a81fbddd3e5c6df2974e26",
+    "tree": "4d7bd2ff576d9a90993b21b6af06418ad894a050",
+    "binarySha256": "a99c7f2cd20ff2dab6d8021363ac0a98677480ef4ca3f8706ce52561031ef9b9",
+    "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "privateProofOnly": true
+  },
+  "rustPackages": 203,
+  "bundleDigest": "e0468c67bdac26f58e1573bc684a6f9eedfb0287824589a8981e3ff2ef59aefb",
+  "fileCount": 361,
+  "changedFilesSinceV5": [
+    "Contents/Resources/SOURCE_IDENTITY.json",
+    "Contents/x86_64-linux/DandrumTrigger.so"
+  ],
+  "inventoryPrivatePath": ".git/codex/trigger-vst3-resume-20261123/installed-candidate-dpi-final.json",
+  "inventorySha256": "9694c4a95909e72394f9a44db618bb9f858455c79da3b0c5fd9f0fcf815f69f3",
+  "linkage": "All native dependencies resolved; no JUCE",
+  "scope": "DPI repair; complete Linux proof/review/publication remain open"
+}

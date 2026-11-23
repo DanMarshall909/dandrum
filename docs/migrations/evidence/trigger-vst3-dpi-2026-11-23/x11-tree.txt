@@ -1,0 +1,14 @@
+
+xwininfo: Window id: 0x320003d "VST3i: Dandrum Trigger (Dandrum) - Track 1 "Dandrum Trigger DPI""
+
+  Root window id: 0x1ee (the root window) (has no name)
+  Parent window id: 0x4041ab (has no name)
+     2 children:
+     0x3200038 (has no name): ()  2400x1600+0+56  +926+658
+        1 child:
+        0x5600000 (has no name): ()  2400x1600+0+0  +926+658
+           1 child:
+           0x3200039 "reaper": ("reaper" "Reaper")  2400x1600+0+0  +926+658
+              1 child:
+              0x320003a (has no name): ()  1x1+-1+-1  +925+657
+     0x320003e (has no name): ()  1x1+-1+-1  +925+601

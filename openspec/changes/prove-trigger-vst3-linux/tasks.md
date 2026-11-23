@@ -88,3 +88,5 @@ own accepted native implementation/installed-REAPER qualification; the Linux
 proof and cross-compilation cannot mark those milestones complete. The active
 thread goal completes only after every requirement of this Linux feasibility
 proof, including independent review and publication, is actually verified.
+
+Task 4.2 DPI repair: [scaled native/installed REAPER evidence](../../../docs/migrations/evidence/trigger-vst3-dpi-2026-11-23/README.md) proves the added host-content-scaling scenario. Remaining complete-product gates stay open.
