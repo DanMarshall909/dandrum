@@ -17,8 +17,14 @@ use x11rb::{
 struct RecordingProxy {
     target: ComPtr<IConnectionPoint>,
     frames: std::rc::Rc<std::cell::RefCell<Vec<serde_json::Value>>>,
-    defer_projection: std::rc::Rc<std::cell::Cell<bool>>,
-    held: std::rc::Rc<std::cell::RefCell<Vec<ComPtr<IMessage>>>>,
+    faults: std::rc::Rc<Faults>,
+}
+#[derive(Default)]
+struct Faults {
+    defer_projection: std::cell::Cell<bool>,
+    held: std::cell::RefCell<Vec<ComPtr<IMessage>>>,
+    refuse_retired_ack: std::cell::Cell<bool>,
+    drop_retired_ack: std::cell::Cell<bool>,
 }
 impl Class for RecordingProxy {
     type Interfaces = (IConnectionPoint,);
@@ -41,15 +47,23 @@ impl IConnectionPointTrait for RecordingProxy {
         }
         if packet.get("view").is_some()
             && packet["body"]["type"] == "projection"
-            && self.defer_projection.get()
+            && self.faults.defer_projection.get()
         {
-            if self.held.borrow().is_empty() {
+            if self.faults.held.borrow().is_empty() {
                 let message = unsafe { vst3::ComRef::from_raw(message) }
                     .unwrap()
                     .to_com_ptr();
-                self.held.borrow_mut().push(message);
+                self.faults.held.borrow_mut().push(message);
             }
             return kResultOk;
+        }
+        if packet.get("view").is_some() && packet["body"]["type"] == "retiredAck" {
+            if self.faults.refuse_retired_ack.get() {
+                return kResultFalse;
+            }
+            if self.faults.drop_retired_ack.get() {
+                return kResultOk;
+            }
         }
         unsafe { self.target.notify(message) }
     }
@@ -101,21 +115,18 @@ fn browser_projection_reads_the_same_processor_after_native_recreation() {
     let p = processor.cast::<IConnectionPoint>().unwrap();
     let c = controller.cast::<IConnectionPoint>().unwrap();
     let frames = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
-    let defer_projection = std::rc::Rc::new(std::cell::Cell::new(false));
-    let held = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+    let faults = std::rc::Rc::new(Faults::default());
     let to_controller = ComWrapper::new(RecordingProxy {
         target: c.clone(),
         frames: frames.clone(),
-        defer_projection: defer_projection.clone(),
-        held: held.clone(),
+        faults: faults.clone(),
     })
     .to_com_ptr::<IConnectionPoint>()
     .unwrap();
     let to_processor = ComWrapper::new(RecordingProxy {
         target: p.clone(),
         frames: frames.clone(),
-        defer_projection: defer_projection.clone(),
-        held: held.clone(),
+        faults: faults.clone(),
     })
     .to_com_ptr::<IConnectionPoint>()
     .unwrap();
@@ -144,8 +155,8 @@ fn browser_projection_reads_the_same_processor_after_native_recreation() {
     .check()
     .unwrap();
     x.map_window(parent).unwrap().check().unwrap();
-    for cycle in 0..2 {
-        defer_projection.set(cycle == 0);
+    for cycle in 0..3 {
+        faults.defer_projection.set(cycle == 0);
         let view =
             unsafe { vst3::ComPtr::from_raw(controller.createView(c"editor".as_ptr())) }.unwrap();
         assert_eq!(
@@ -172,8 +183,8 @@ fn browser_projection_reads_the_same_processor_after_native_recreation() {
                         && packet["body"]["type"] == "request"),
                 "application requests wait for the authenticated browser namespace"
             );
-            defer_projection.set(false);
-            let delayed = std::mem::take(&mut *held.borrow_mut());
+            faults.defer_projection.set(false);
+            let delayed = std::mem::take(&mut *faults.held.borrow_mut());
             assert_eq!(delayed.len(), 1, "one retained namespace reply");
             for message in delayed {
                 assert_eq!(unsafe { c.notify(message.as_ptr()) }, kResultOk);
@@ -200,7 +211,13 @@ fn browser_projection_reads_the_same_processor_after_native_recreation() {
             "cycle{cycle}: authenticated browser must read normalized pan0.625 from the one processor; public wire: {:?}",
             frames.borrow()
         );
-        assert_eq!(unsafe { view.removed() }, kResultOk);
+        faults.refuse_retired_ack.set(cycle == 0);
+        faults.drop_retired_ack.set(cycle == 1);
+        assert_eq!(
+            unsafe { view.removed() },
+            if cycle == 0 { kResultFalse } else { kResultOk },
+            "refused teardown delivery must retain a retry token"
+        );
         assert!(
             x.query_tree(parent)
                 .unwrap()
@@ -209,7 +226,27 @@ fn browser_projection_reads_the_same_processor_after_native_recreation() {
                 .children
                 .is_empty()
         );
-        clock.tick();
+        if cycle == 0 {
+            faults.refuse_retired_ack.set(false);
+            clock.tick();
+            clock.tick();
+            assert_eq!(
+                clock.handlers.borrow().len(),
+                1,
+                "editor-absent host service settles refused teardown and removes its timer"
+            );
+            drop(view);
+        } else {
+            drop(view);
+            faults.drop_retired_ack.set(false);
+            clock.tick();
+            clock.tick();
+        }
+        assert_eq!(
+            clock.handlers.borrow().len(),
+            1,
+            "only persistent processor service remains between views"
+        );
     }
     unsafe {
         assert_eq!(controller.terminate(), kResultOk);

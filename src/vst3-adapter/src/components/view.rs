@@ -52,13 +52,35 @@ pub(super) struct ViewCore {
     connection: RefCell<Option<Rc<BrowserConnection>>>,
     busy: Cell<bool>,
 }
-struct BrowserConnection {
+pub(super) struct BrowserConnection {
     transport: Transport,
     bootstrap: RefCell<Option<String>>,
     next_request: Cell<u64>,
     started: Cell<bool>,
     closing: Cell<bool>,
     closed: Cell<bool>,
+}
+impl BrowserConnection {
+    pub(super) fn receive_retired(&self, packet: Packet) -> tresult {
+        match self.transport.receive_packet(packet) {
+            Ok(Some(packet))
+                if self.closed.get()
+                    && packet.sequence == 0
+                    && matches!(packet.body, Body::Retired) =>
+            {
+                self.acknowledge_retirement()
+            }
+            Err(error) => error,
+            _ => kResultFalse,
+        }
+    }
+    fn acknowledge_retirement(&self) -> tresult {
+        self.closed.set(true);
+        self.transport.terminal(Body::RetiredAck)
+    }
+    pub(super) fn revoke(&self) {
+        self.transport.close();
+    }
 }
 impl std::ops::Deref for View {
     type Target = ViewCore;
@@ -87,6 +109,12 @@ impl ViewCore {
     fn live(&self) -> bool {
         self.live_controller().is_some()
     }
+    pub(super) fn route_matches(&self, packet: &Packet) -> bool {
+        self.connection
+            .borrow()
+            .as_ref()
+            .is_some_and(|connection| connection.transport.route_matches(packet))
+    }
     fn attach(self: &Rc<Self>, parent: u32) -> tresult {
         let Some(controller) = self.live_controller() else {
             return kResultFalse;
@@ -101,14 +129,18 @@ impl ViewCore {
                 .native_view
                 .borrow()
                 .as_ref()
-                .is_some_and(|view| view.child.borrow().is_some())
+                .is_some_and(|view| {
+                    view.child.borrow().is_some()
+                        || view.registration.borrow().is_some()
+                        || view.connection.borrow().is_some()
+                })
             || controller.transport.bound().is_none()
             || controller.host_busy.replace(true)
         {
             return kResultFalse;
         }
         let _host_call = HostCall(&controller.host_busy);
-        let Some(runloop) = controller.view_runloop.clone() else {
+        let Some(runloop) = controller.view_runloop.borrow().clone() else {
             return kResultFalse;
         };
         let Ok(assets) = EditorAssets::open(&controller.root) else {
@@ -178,6 +210,9 @@ impl ViewCore {
         if self.thread != platform::thread_id() {
             return kResultFalse;
         }
+        // Inline attach/close callbacks already hold this fence. An external
+        // delivery takes it too, so GTK/host reentry cannot destroy this view.
+        let _call = (!self.busy.replace(true)).then(|| HostCall(&self.busy));
         let connection = self.connection.borrow().clone();
         let Some(connection) = connection else {
             return kResultFalse;
@@ -200,6 +235,12 @@ impl ViewCore {
                         return kResultFalse;
                     }
                     *connection.bootstrap.borrow_mut() = Some(frame);
+                    if let Some(controller) = self.controller.upgrade() {
+                        let retired = controller.retired_browser.borrow_mut().take();
+                        if let Some(retired) = retired {
+                            retired.revoke();
+                        }
+                    }
                     if !connection.started.get() {
                         let child = self.child.borrow().clone();
                         let Some(child) = child else {
@@ -228,12 +269,10 @@ impl ViewCore {
                     }
                 }
                 Body::Retired if packet.sequence == 0 && connection.closing.get() => {
-                    let result = connection.transport.terminal(Body::RetiredAck);
+                    let result = connection.acknowledge_retirement();
                     if result != kResultOk {
                         return result;
                     }
-                    connection.closed.set(true);
-                    connection.transport.release_peer();
                 }
                 _ => return kNotImplemented,
             },
@@ -284,13 +323,28 @@ impl ViewCore {
             return true;
         };
         connection.closing.set(true);
-        connection.transport.begin_closing();
-        let _ = connection.transport.terminal(Body::Closing);
-        let _ = connection.transport.terminal(Body::Closed);
-        if !connection.closed.get() {
+        if connection.transport.bound().is_none() {
+            connection.revoke();
+            self.connection.borrow_mut().take();
+            return true;
+        }
+        if connection.closed.get() {
+            let _ = connection.transport.pump_terminal();
+        } else {
+            connection.transport.begin_closing();
+            let _ = connection.transport.terminal(Body::Closing);
+            let _ = connection.transport.terminal(Body::Closed);
+        }
+        if !connection.closed.get() || connection.transport.terminal_pending() {
             return false;
         }
         self.connection.borrow_mut().take();
+        if let Some(controller) = self.controller.upgrade() {
+            let old = controller.retired_browser.replace(Some(connection));
+            if let Some(old) = old {
+                old.revoke();
+            }
+        }
         true
     }
     fn release_registration(&self) -> bool {
@@ -304,13 +358,26 @@ impl ViewCore {
         true
     }
     pub(super) fn detach(&self) -> tresult {
+        self.detach_impl(false)
+    }
+    pub(super) fn revoke_parent(&self) -> tresult {
+        self.detach_impl(true)
+    }
+    fn detach_impl(&self, parent_closing: bool) -> tresult {
         if self.thread != platform::thread_id() || self.busy.replace(true) {
             return kResultFalse;
         }
         let _call = HostCall(&self.busy);
         let child = self.child.borrow_mut().take();
         drop(child);
-        if !self.close_connection() {
+        if parent_closing {
+            // The parent connection's close certificate retires both roles.
+            // Do not wait for a view handshake with an already-closing parent.
+            let connection = self.connection.borrow_mut().take();
+            if let Some(connection) = connection {
+                connection.revoke();
+            }
+        } else if !self.close_connection() {
             return kResultFalse;
         }
         if self.release_registration() {
@@ -334,12 +401,14 @@ impl ViewCore {
         }
     }
     fn service(&self) {
-        if self.thread != platform::thread_id()
-            || self.child.borrow().is_none()
-            || self.busy.replace(true)
-        {
+        if self.thread != platform::thread_id() || self.busy.get() {
             return;
         }
+        if self.child.borrow().is_none() {
+            let _ = self.detach();
+            return;
+        }
+        self.busy.set(true);
         let _call = HostCall(&self.busy);
         let _ = NativeEditor::service();
         let connection = self.connection.borrow().clone();

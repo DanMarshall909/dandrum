@@ -198,6 +198,14 @@ impl Transport {
         self.terminal_sending.get()
     }
     #[cfg(feature = "trigger-editor")]
+    pub fn terminal_pending(&self) -> bool {
+        self.terminal_pending.borrow().is_some()
+    }
+    #[cfg(feature = "trigger-editor")]
+    pub fn route_matches(&self, packet: &Packet) -> bool {
+        packet.view == self.route.as_ref().map(ViewRoute::reversed)
+    }
+    #[cfg(feature = "trigger-editor")]
     pub fn normal_active(&self) -> bool {
         self.sending.get()
     }

@@ -110,7 +110,7 @@ fn native_view_paints_and_recreates_without_destroying_its_host_parent() {
             (nested_controller.terminate(), nested_view.removed())
         }));
     }));
-    for cycle in 0..3 {
+    for cycle in 0..4 {
         let view = if cycle == 0 {
             view.clone()
         } else {
@@ -186,6 +186,25 @@ fn native_view_paints_and_recreates_without_destroying_its_host_parent() {
                 "refused unregister retains a retryable cleanup token"
             );
             assert_eq!(clock.handlers.borrow().len(), 2);
+            let blocked =
+                unsafe { vst3::ComPtr::from_raw(controller.createView(c"editor".as_ptr())) }
+                    .unwrap();
+            assert_eq!(
+                unsafe {
+                    blocked.attached(parent as usize as *mut _, kPlatformTypeX11EmbedWindowID)
+                },
+                kResultFalse,
+                "pending cleanup cannot be superseded by another native view"
+            );
+            assert!(
+                x.query_tree(parent)
+                    .unwrap()
+                    .reply()
+                    .unwrap()
+                    .children
+                    .is_empty()
+            );
+            drop(blocked);
             clock.reject_unregister.set(false);
             assert_eq!(unsafe { view.removed() }, kResultOk);
         } else if cycle == 1 {
@@ -217,6 +236,12 @@ fn native_view_paints_and_recreates_without_destroying_its_host_parent() {
                     .children
                     .is_empty(),
                 "final IPlugView release cleans up without an explicit removed call"
+            );
+        } else if cycle == 2 {
+            assert_eq!(
+                unsafe { c.disconnect(p.as_ptr()) },
+                kResultOk,
+                "controller disconnection revokes the actual native projection"
             );
         } else {
             assert_eq!(
@@ -253,6 +278,12 @@ fn native_view_paints_and_recreates_without_destroying_its_host_parent() {
         );
         drop(view);
         clock.tick();
+        if cycle == 2 {
+            unsafe {
+                assert_eq!(p.connect(c.as_ptr()), kResultOk);
+                assert_eq!(c.connect(p.as_ptr()), kResultOk);
+            }
+        }
     }
     unsafe {
         assert_eq!(controller.terminate(), kResultOk);
@@ -262,5 +293,48 @@ fn native_view_paints_and_recreates_without_destroying_its_host_parent() {
         clock.handlers.borrow().is_empty(),
         "all owned host timers are released"
     );
+    let dying_processor = module.class_from::<IComponent>(&factory, &PROCESSOR);
+    let surviving_controller = module.class_from::<IEditController>(&factory, &CONTROLLER);
+    unsafe {
+        assert_eq!(dying_processor.initialize(std::ptr::null_mut()), kResultOk);
+        assert_eq!(
+            surviving_controller.initialize(std::ptr::null_mut()),
+            kResultOk
+        );
+    }
+    let dying = dying_processor.cast::<IConnectionPoint>().unwrap();
+    let surviving = surviving_controller.cast::<IConnectionPoint>().unwrap();
+    unsafe {
+        assert_eq!(dying.connect(surviving.as_ptr()), kResultOk);
+        assert_eq!(surviving.connect(dying.as_ptr()), kResultOk);
+    }
+    let retained_view =
+        unsafe { vst3::ComPtr::from_raw(surviving_controller.createView(c"editor".as_ptr())) }
+            .unwrap();
+    assert_eq!(
+        unsafe { retained_view.attached(parent as usize as *mut _, kPlatformTypeX11EmbedWindowID) },
+        kResultOk
+    );
+    assert_eq!(
+        x.query_tree(parent)
+            .unwrap()
+            .reply()
+            .unwrap()
+            .children
+            .len(),
+        1
+    );
+    assert_eq!(unsafe { dying_processor.terminate() }, kResultOk);
+    assert!(
+        x.query_tree(parent)
+            .unwrap()
+            .reply()
+            .unwrap()
+            .children
+            .is_empty(),
+        "processor termination revokes the real child while its controller and view are retained"
+    );
+    assert_eq!(unsafe { surviving_controller.terminate() }, kResultOk);
+    assert!(clock.handlers.borrow().is_empty());
     x.destroy_window(parent).unwrap().check().unwrap();
 }

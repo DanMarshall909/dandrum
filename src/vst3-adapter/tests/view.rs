@@ -186,3 +186,34 @@ fn connected_view_without_host_loop_fails_without_native_creation() {
         assert_eq!(processor.terminate(), kResultOk);
     }
 }
+
+#[cfg(feature = "trigger-editor")]
+#[test]
+fn terminated_native_controller_releases_host_context_while_its_interface_is_retained() {
+    let bundle = Bundle::new();
+    let module = bundle.load();
+    let (clock, factory, host) = common::runloop::host(&module);
+    let controller = module.class_from::<IEditController>(&factory, &CONTROLLER);
+    unsafe {
+        assert_eq!(controller.initialize(std::ptr::null_mut()), kResultOk);
+        assert_eq!(
+            factory
+                .cast::<IPluginFactory3>()
+                .unwrap()
+                .setHostContext(std::ptr::null_mut()),
+            kResultOk
+        );
+    }
+    drop(host);
+    assert_eq!(
+        clock.dropped.get(),
+        0,
+        "live native controller retains the host service capability"
+    );
+    assert_eq!(unsafe { controller.terminate() }, kResultOk);
+    assert_eq!(
+        clock.dropped.get(),
+        1,
+        "a retained dead interface must not keep the host context alive"
+    );
+}

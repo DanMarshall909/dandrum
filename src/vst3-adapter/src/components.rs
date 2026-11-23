@@ -89,11 +89,13 @@ pub(crate) fn create(
             release_peer_on_retirement: Cell::new(false),
             retired_proof: Cell::new(false),
             #[cfg(feature = "trigger-editor")]
-            view_runloop: runloop,
+            view_runloop: RefCell::new(runloop),
             #[cfg(feature = "trigger-editor")]
             native_view: RefCell::new(None),
             #[cfg(feature = "trigger-editor")]
             next_view: Cell::new(1),
+            #[cfg(feature = "trigger-editor")]
+            retired_browser: RefCell::new(None),
         })))
         .to_com_ptr::<FUnknown>()
         .expect("controller includes FUnknown"))
@@ -495,11 +497,13 @@ struct ControllerCore {
     release_peer_on_retirement: Cell<bool>,
     retired_proof: Cell<bool>,
     #[cfg(feature = "trigger-editor")]
-    view_runloop: Option<Rc<ComPtr<IRunLoop>>>,
+    view_runloop: RefCell<Option<Rc<ComPtr<IRunLoop>>>>,
     #[cfg(feature = "trigger-editor")]
     native_view: RefCell<Option<Rc<view::ViewCore>>>,
     #[cfg(feature = "trigger-editor")]
     next_view: Cell<u64>,
+    #[cfg(feature = "trigger-editor")]
+    retired_browser: RefCell<Option<Rc<view::BrowserConnection>>>,
 }
 struct HostCall<'a>(&'a Cell<bool>);
 impl Drop for HostCall<'_> {
@@ -511,6 +515,20 @@ impl Class for Controller {
     type Interfaces = (IEditController, IConnectionPoint);
 }
 impl ControllerCore {
+    #[cfg(feature = "trigger-editor")]
+    fn revoke_native_projection(&self) -> bool {
+        let view = self.native_view.borrow().clone();
+        if let Some(view) = view
+            && view.revoke_parent() != kResultOk
+        {
+            return false;
+        }
+        let retired = self.retired_browser.borrow_mut().take();
+        if let Some(retired) = retired {
+            retired.revoke();
+        }
+        true
+    }
     fn main(&self) -> bool {
         self.thread == platform::thread_id() && !self.terminated.get()
     }
@@ -556,13 +574,8 @@ impl IPluginBaseTrait for Controller {
             return kResultFalse;
         }
         #[cfg(feature = "trigger-editor")]
-        {
-            let view = self.native_view.borrow().clone();
-            if let Some(view) = view
-                && view.detach() != kResultOk
-            {
-                return kResultFalse;
-            }
+        if !self.revoke_native_projection() {
+            return kResultFalse;
         }
         self.closing.set(true);
         self.release_peer_on_retirement.set(true);
@@ -585,6 +598,11 @@ impl IPluginBaseTrait for Controller {
         self.projection.borrow_mut().take();
         let handler = self.handler.borrow_mut().take();
         drop(handler);
+        #[cfg(feature = "trigger-editor")]
+        {
+            let runloop = self.view_runloop.borrow_mut().take();
+            drop(runloop);
+        }
         kResultOk
     }
 }
@@ -1275,6 +1293,10 @@ impl IConnectionPointTrait for Controller {
         if !self.transport.peer_matches(other) {
             return kInvalidArgument;
         }
+        #[cfg(feature = "trigger-editor")]
+        if !self.revoke_native_projection() {
+            return kResultFalse;
+        }
         if self.retired_proof.get() || self.transport.bound().is_none() {
             self.host_busy.set(true);
             let _call = HostCall(&self.host_busy);
@@ -1311,7 +1333,7 @@ impl IConnectionPointTrait for Controller {
         let native_attached = {
             #[cfg(feature = "trigger-editor")]
             {
-                self.native_view.borrow().is_some()
+                self.native_view.borrow().is_some() || self.retired_browser.borrow().is_some()
             }
             #[cfg(not(feature = "trigger-editor"))]
             {
@@ -1338,7 +1360,13 @@ impl IConnectionPointTrait for Controller {
         #[cfg(feature = "trigger-editor")]
         if packet.view.is_some() {
             let view = self.native_view.borrow().clone();
-            return view.map_or(kResultFalse, |view| view.receive(packet));
+            if let Some(view) = view
+                && view.route_matches(&packet)
+            {
+                return view.receive(packet);
+            }
+            let retired = self.retired_browser.borrow().clone();
+            return retired.map_or(kResultFalse, |retired| retired.receive_retired(packet));
         }
         if self.thread == platform::thread_id() && !self.host_busy.get() {
             self.transport.pump_terminal();
@@ -1394,6 +1422,10 @@ impl IConnectionPointTrait for Controller {
                     }
                 }
                 Body::Goodbye | Body::Disconnect if packet.sequence == 0 => {
+                    #[cfg(feature = "trigger-editor")]
+                    if !self.revoke_native_projection() {
+                        return kResultFalse;
+                    }
                     if matches!(packet.body, Body::Goodbye) {
                         self.release_peer_on_retirement.set(true);
                     }
