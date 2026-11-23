@@ -1,5 +1,5 @@
 //! Affine VST3 view projection. The instrument authority remains in Processor.
-use super::{Bootstrap, ControllerCore, HostCall, Registration, platform};
+use super::{Bootstrap, ControllerCore, HostCall, HostDelivery, Registration, platform};
 use crate::transport::{Body, Packet, Transport, ViewRoute};
 use dandrum_trigger_editor::{EditorAssets, NativeEditor};
 use dandrum_trigger_host::editor_bridge::{
@@ -59,6 +59,7 @@ pub(super) struct BrowserConnection {
     started: Cell<bool>,
     closing: Cell<bool>,
     closed: Cell<bool>,
+    host_delivery: HostDelivery,
 }
 impl BrowserConnection {
     pub(super) fn receive_retired(&self, packet: Packet) -> tresult {
@@ -108,6 +109,12 @@ impl ViewCore {
     }
     fn live(&self) -> bool {
         self.live_controller().is_some()
+    }
+    pub(super) fn host_gesture_active(&self) -> bool {
+        self.connection
+            .borrow()
+            .as_ref()
+            .is_some_and(|c| c.host_delivery.active())
     }
     pub(super) fn route_matches(&self, packet: &Packet) -> bool {
         self.connection
@@ -194,6 +201,7 @@ impl ViewCore {
                 started: Cell::new(false),
                 closing: Cell::new(false),
                 closed: Cell::new(false),
+                host_delivery: HostDelivery::default(),
             }))
         })();
         let Some(connection) = opened else {
@@ -266,6 +274,22 @@ impl ViewCore {
                     };
                     if child.evaluate_script(&delivery_script(&frame)).is_err() {
                         return kResultFalse;
+                    }
+                }
+                Body::Automation { delivery, event }
+                    if packet.sequence == 0 && !connection.closing.get() =>
+                {
+                    let Some(controller) = self.live_controller() else {
+                        return kResultFalse;
+                    };
+                    let result = controller.receive_automation_at(
+                        &connection.host_delivery,
+                        &connection.transport,
+                        delivery,
+                        event,
+                    );
+                    if result != kResultOk {
+                        return result;
                     }
                 }
                 Body::Retired if packet.sequence == 0 && connection.closing.get() => {
@@ -370,6 +394,13 @@ impl ViewCore {
         let _call = HostCall(&self.busy);
         let child = self.child.borrow_mut().take();
         drop(child);
+        let connection = self.connection.borrow().clone();
+        if let Some(connection) = connection
+            && let Some(controller) = self.controller.upgrade()
+            && !controller.close_host_delivery(&connection.host_delivery)
+        {
+            return kResultFalse;
+        }
         if parent_closing {
             // The parent connection's close certificate retires both roles.
             // Do not wait for a view handshake with an already-closing parent.

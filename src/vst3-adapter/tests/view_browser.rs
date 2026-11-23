@@ -25,6 +25,7 @@ struct Faults {
     held: std::cell::RefCell<Vec<ComPtr<IMessage>>>,
     refuse_retired_ack: std::cell::Cell<bool>,
     drop_retired_ack: std::cell::Cell<bool>,
+    drop_automation_ack: std::cell::Cell<bool>,
 }
 impl Class for RecordingProxy {
     type Interfaces = (IConnectionPoint,);
@@ -65,7 +66,64 @@ impl IConnectionPointTrait for RecordingProxy {
                 return kResultOk;
             }
         }
+        if packet.get("view").is_some()
+            && packet["body"]["type"] == "automationAck"
+            && self.faults.drop_automation_ack.get()
+        {
+            return kResultOk;
+        }
         unsafe { self.target.notify(message) }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum HostEdit {
+    Begin(u32),
+    Value(u32, f64),
+    End(u32),
+}
+#[derive(Default)]
+struct HandlerState {
+    accepted: std::cell::RefCell<Vec<HostEdit>>,
+    attempts: std::cell::RefCell<Vec<HostEdit>>,
+    refuse_once: std::cell::RefCell<Option<HostEdit>>,
+    on_call: std::cell::RefCell<Option<Box<dyn FnOnce()>>>,
+}
+struct Handler(std::rc::Rc<HandlerState>);
+impl Handler {
+    fn record(&self, event: HostEdit) -> tresult {
+        self.0.attempts.borrow_mut().push(event);
+        assert!(
+            self.0.attempts.borrow().len() <= 32,
+            "bounded host delivery attempts"
+        );
+        if self.0.refuse_once.borrow().as_ref() == Some(&event) {
+            self.0.refuse_once.borrow_mut().take();
+            return kResultFalse;
+        }
+        self.0.accepted.borrow_mut().push(event);
+        let callback = self.0.on_call.borrow_mut().take();
+        if let Some(callback) = callback {
+            callback();
+        }
+        kResultOk
+    }
+}
+impl Class for Handler {
+    type Interfaces = (IComponentHandler,);
+}
+impl IComponentHandlerTrait for Handler {
+    unsafe fn beginEdit(&self, id: u32) -> tresult {
+        self.record(HostEdit::Begin(id))
+    }
+    unsafe fn performEdit(&self, id: u32, value: f64) -> tresult {
+        self.record(HostEdit::Value(id, value))
+    }
+    unsafe fn endEdit(&self, id: u32) -> tresult {
+        self.record(HostEdit::End(id))
+    }
+    unsafe fn restartComponent(&self, _: i32) -> tresult {
+        kResultOk
     }
 }
 
@@ -79,16 +137,21 @@ fn browser_projection_reads_the_same_processor_after_native_recreation() {
         b"html,body{margin:0;width:100%;height:100%;background:#ff0000}",
     )
     .unwrap();
-    std::fs::write(bundle.resources.join("editor/app.js"), br#"
+    let browser_script = br#"
         const ns=window.__DANDRUM_NATIVE__;
+        const hold=false;
+        function send(id,method,args) {window.ipc.postMessage(JSON.stringify({version:1,attachmentId:ns.attachmentId,requestId:String(id),method,args}));}
         window.__DANDRUM__={receiveNativeMessage(text){
             const reply=JSON.parse(text);
             if(reply.attachmentId!==ns.attachmentId || reply.instanceId!==ns.instanceId) return;
             const pan=reply.result?.parameters?.find(p=>p.id==='drums.pan');
-            if(pan?.value===0.625) document.body.style.background='#123456';
+            if(pan?.value===0.625) send(2,'beginGesture',['drums.level',1]);
+            if(reply.status==='accepted' && reply.requestId==='2') send(3,'setParameter',['drums.level',0.625,1]);
+            if(reply.status==='accepted' && reply.requestId==='3') {if(hold) document.body.style.background='#123456';else send(4,'endGesture',['drums.level',1]);}
+            if(reply.status==='accepted' && reply.requestId==='4') document.body.style.background='#123456';
         }};
         if(ns) window.ipc.postMessage(JSON.stringify({version:1,attachmentId:ns.attachmentId,requestId:ns.nextRequestId,method:'getParameterState',args:[]}));
-    "#).unwrap();
+    "#;
     let module = bundle.load();
     let (clock, factory, _host) = runloop::host(&module);
     let processor = module.class_from::<IComponent>(&factory, &PROCESSOR);
@@ -97,6 +160,14 @@ fn browser_projection_reads_the_same_processor_after_native_recreation() {
         assert_eq!(processor.initialize(std::ptr::null_mut()), kResultOk);
         assert_eq!(controller.initialize(std::ptr::null_mut()), kResultOk);
     }
+    let edits = std::rc::Rc::new(HandlerState::default());
+    let handler = ComWrapper::new(Handler(edits.clone()))
+        .to_com_ptr::<IComponentHandler>()
+        .unwrap();
+    assert_eq!(
+        unsafe { controller.setComponentHandler(handler.as_ptr()) },
+        kResultOk
+    );
     let audio = processor.cast::<IAudioProcessor>().unwrap();
     assert_eq!(
         unsafe { controller.normalizedParamToPlain(0x1004, 0.625) },
@@ -155,7 +226,20 @@ fn browser_projection_reads_the_same_processor_after_native_recreation() {
     .check()
     .unwrap();
     x.map_window(parent).unwrap().check().unwrap();
-    for cycle in 0..3 {
+    for cycle in 0..4 {
+        let script = String::from_utf8_lossy(browser_script).replace(
+            "const hold=false",
+            if cycle == 3 {
+                "const hold=true"
+            } else {
+                "const hold=false"
+            },
+        );
+        std::fs::write(bundle.resources.join("editor/app.js"), script).unwrap();
+        faults.drop_automation_ack.set(cycle == 0);
+        if cycle == 1 {
+            *edits.refuse_once.borrow_mut() = Some(HostEdit::Value(0x1003, 0.625));
+        }
         faults.defer_projection.set(cycle == 0);
         let view =
             unsafe { vst3::ComPtr::from_raw(controller.createView(c"editor".as_ptr())) }.unwrap();
@@ -163,6 +247,18 @@ fn browser_projection_reads_the_same_processor_after_native_recreation() {
             unsafe { view.attached(parent as usize as *mut _, kPlatformTypeX11EmbedWindowID) },
             kResultOk
         );
+        let retained_view = view.clone();
+        let retained_controller = (*controller).clone();
+        let retained_processor = (*processor).clone();
+        *edits.on_call.borrow_mut() = Some(Box::new(move || {
+            assert_eq!(
+                unsafe { retained_view.removed() },
+                kResultFalse,
+                "view teardown waits for host callback"
+            );
+            assert_eq!(unsafe { retained_controller.terminate() }, kResultFalse);
+            assert_eq!(unsafe { retained_processor.terminate() }, kResultFalse);
+        }));
         if cycle == 0 {
             assert_eq!(
                 x.query_tree(parent)
@@ -211,11 +307,51 @@ fn browser_projection_reads_the_same_processor_after_native_recreation() {
             "cycle{cycle}: authenticated browser must read normalized pan0.625 from the one processor; public wire: {:?}",
             frames.borrow()
         );
+        for _ in 0..4 {
+            clock.tick();
+        }
+        if cycle == 0 {
+            assert_eq!(
+                *edits.accepted.borrow(),
+                [HostEdit::Begin(0x1003)],
+                "lost application acknowledgements cannot duplicate a host begin"
+            );
+            faults.drop_automation_ack.set(false);
+            for _ in 0..4 {
+                clock.tick();
+            }
+        }
+        let mut expected = [
+            HostEdit::Begin(0x1003),
+            HostEdit::Value(0x1003, 0.625),
+            HostEdit::End(0x1003),
+        ]
+        .repeat(cycle + 1);
+        if cycle == 3 {
+            expected.pop();
+        }
+        assert_eq!(
+            *edits.accepted.borrow(),
+            expected,
+            "real native browser gestures reach the host exactly once in each view"
+        );
+        if cycle == 3 {
+            assert_eq!(
+                unsafe { controller.setComponentHandler(std::ptr::null_mut()) },
+                kResultFalse,
+                "a held native gesture retains its accepting handler"
+            );
+            *edits.refuse_once.borrow_mut() = Some(HostEdit::End(0x1003));
+        }
         faults.refuse_retired_ack.set(cycle == 0);
         faults.drop_retired_ack.set(cycle == 1);
         assert_eq!(
             unsafe { view.removed() },
-            if cycle == 0 { kResultFalse } else { kResultOk },
+            if cycle == 0 || cycle == 3 {
+                kResultFalse
+            } else {
+                kResultOk
+            },
             "refused teardown delivery must retain a retry token"
         );
         assert!(
@@ -226,7 +362,7 @@ fn browser_projection_reads_the_same_processor_after_native_recreation() {
                 .children
                 .is_empty()
         );
-        if cycle == 0 {
+        if cycle == 0 || cycle == 3 {
             faults.refuse_retired_ack.set(false);
             clock.tick();
             clock.tick();
@@ -247,8 +383,29 @@ fn browser_projection_reads_the_same_processor_after_native_recreation() {
             1,
             "only persistent processor service remains between views"
         );
+        assert_eq!(
+            *edits.accepted.borrow(),
+            [
+                HostEdit::Begin(0x1003),
+                HostEdit::Value(0x1003, 0.625),
+                HostEdit::End(0x1003)
+            ]
+            .repeat(cycle + 1),
+            "view removal balances held native gestures even after a refused end"
+        );
     }
     unsafe {
+        assert_eq!(audio.setProcessing(1), kResultOk);
+        let notes = events(vec![note_on(5, 36, 1.0)]);
+        let mut rendered = Block::new(16);
+        let mut data = rendered.data();
+        data.inputEvents = notes.as_ptr();
+        assert_eq!(audio.process(&mut data), kResultOk);
+        assert_eq!(&rendered.left[..5], &[0.0; 5]);
+        assert_eq!(&rendered.right[..5], &[0.0; 5]);
+        // Signed source -0.5, physical level2.5 and pan0.25, after every view is gone.
+        assert_eq!((rendered.left[5], rendered.right[5]), (-0.9375, -1.25));
+        assert_eq!(audio.setProcessing(0), kResultOk);
         assert_eq!(controller.terminate(), kResultOk);
         assert_eq!(processor.terminate(), kResultOk);
     }

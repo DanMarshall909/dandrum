@@ -42,7 +42,34 @@ The shared editor deferred-start change also passed the existing actual React
 NativeEditor test and a fresh CLAP native lifecycle/audio regression. These
 protect the shared owner, but do not substitute for VST3 production React or
 REAPER acceptance. Current native VST3 browser tests use a minimal paint fixture.
-Real browser host automation, native selection, feedback, complete callback
+Native selection, feedback, complete callback
 sentinels, package/offline qualification, installed REAPER, full validation and
 independent candidate review remain outstanding; no task checkbox is completed
 by this checkpoint. Windows/macOS are mandatory later native milestones.
+
+## Native browser automation follow-up
+
+The real WebView now submits Begin/Value/End commands through the scoped
+standard proxy. One shared host-delivery policy serves controller and native
+roles with separate receipts and retained accepting handlers. The genuine
+`native-gesture-red2` reached processor automation but stalled at the missing
+native receiver; `native-gesture-red` was a compile error, not behavior evidence.
+`native-gesture-green` passed after routing native deliveries through that policy.
+
+`native-gesture-faults` and `native-gesture-final-coverage` prove a lost
+automation acknowledgement cannot duplicate Begin, a refused Value retries,
+reentrant view/controller/processor teardown is fenced during host callbacks,
+and a held gesture prevents handler replacement. Removing the native child
+with a held gesture retries a refused End through editor-absent service.
+After all four views disappear, actual MIDI/audio processing asserts silence
+through frame4 and literal signed stereo (-0.9375,-1.25) at frame5: source
+-0.5 times physical level2.5 with pan0.25. The selected coverage run also
+passes31 existing controller transport/automation regressions and all five
+view/native tests. Native all-target Clippy passed before the final borrow
+scoping/format-only refinement; final combined gates remain required.
+
+The production refactor groups receipt/gesture state as HostDelivery and
+parameterizes the existing policy by its scoped transport; it introduces no
+new module or musical authority. Test variants share one native scenario and
+record only externally accepted host callbacks. No further extraction is
+justified before the remaining real editor integration is covered.

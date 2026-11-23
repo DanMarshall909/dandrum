@@ -83,8 +83,7 @@ pub(crate) fn create(
             feedback_refresh: Cell::new(false),
             handler: RefCell::new(None),
             host_busy: Cell::new(false),
-            host_gestures: RefCell::new(std::array::from_fn(|_| None)),
-            host_receipt: RefCell::new(None),
+            host_delivery: HostDelivery::default(),
             closing: Cell::new(false),
             release_peer_on_retirement: Cell::new(false),
             retired_proof: Cell::new(false),
@@ -477,6 +476,16 @@ impl Deref for Controller {
         &self.0
     }
 }
+#[derive(Default)]
+struct HostDelivery {
+    gestures: RefCell<[Option<Rc<ComPtr<IComponentHandler>>>; 23]>,
+    receipt: RefCell<Option<(u64, HostAutomation)>>,
+}
+impl HostDelivery {
+    fn active(&self) -> bool {
+        self.gestures.borrow().iter().any(Option::is_some)
+    }
+}
 struct ControllerCore {
     root: PathBuf,
     thread: libc::pid_t,
@@ -491,8 +500,7 @@ struct ControllerCore {
     feedback_refresh: Cell<bool>,
     handler: RefCell<Option<Rc<ComPtr<IComponentHandler>>>>,
     host_busy: Cell<bool>,
-    host_gestures: RefCell<[Option<Rc<ComPtr<IComponentHandler>>>; 23]>,
-    host_receipt: RefCell<Option<(u64, HostAutomation)>>,
+    host_delivery: HostDelivery,
     closing: Cell<bool>,
     release_peer_on_retirement: Cell<bool>,
     retired_proof: Cell<bool>,
@@ -799,7 +807,19 @@ impl IEditControllerTrait for Controller {
             return kResultFalse;
         }
         let _call = HostCall(&self.host_busy);
-        if self.host_gestures.borrow().iter().any(Option::is_some) {
+        if self.host_delivery.active() || {
+            #[cfg(feature = "trigger-editor")]
+            {
+                self.native_view
+                    .borrow()
+                    .as_ref()
+                    .is_some_and(|view| view.host_gesture_active())
+            }
+            #[cfg(not(feature = "trigger-editor"))]
+            {
+                false
+            }
+        } {
             return kResultFalse;
         }
         // AddRef and Release are foreign calls too. Rc snapshots permit calls
@@ -1923,10 +1943,7 @@ impl Bootstrap {
 }
 impl ControllerCore {
     fn receive_retirement(&self) -> tresult {
-        if !self.closing.get()
-            || self.host_busy.get()
-            || self.host_gestures.borrow().iter().any(Option::is_some)
-        {
+        if !self.closing.get() || self.host_busy.get() || self.host_delivery.active() {
             return kResultFalse;
         }
         self.host_busy.set(true);
@@ -1942,18 +1959,21 @@ impl ControllerCore {
         kResultOk
     }
     fn close_host_gestures(&self) -> bool {
+        self.close_host_delivery(&self.host_delivery)
+    }
+    fn close_host_delivery(&self, state: &HostDelivery) -> bool {
         if self.host_busy.replace(true) {
             return false;
         }
         let _call = HostCall(&self.host_busy);
         let mut closed = true;
         for index in 0..23 {
-            let handler = { self.host_gestures.borrow()[index].clone() };
+            let handler = { state.gestures.borrow()[index].clone() };
             let Some(handler) = handler else {
                 continue;
             };
             if unsafe { handler.endEdit(parameters::IDS[index].0) } == kResultOk {
-                let old = { self.host_gestures.borrow_mut()[index].take() };
+                let old = { state.gestures.borrow_mut()[index].take() };
                 drop(old);
             } else {
                 closed = false;
@@ -1961,15 +1981,24 @@ impl ControllerCore {
         }
         closed
     }
-    fn acknowledge_host_delivery(&self, delivery: u64) -> tresult {
+    fn acknowledge_host_delivery(&self, transport: &Transport, delivery: u64) -> tresult {
         let body = Body::AutomationAck { delivery };
-        if self.transport.queued(0, &body) {
+        if transport.queued(0, &body) {
             kResultOk
         } else {
-            self.transport.send(0, body)
+            transport.send(0, body)
         }
     }
     fn receive_automation(&self, delivery: u64, event: HostAutomation) -> tresult {
+        self.receive_automation_at(&self.host_delivery, &self.transport, delivery, event)
+    }
+    fn receive_automation_at(
+        &self,
+        state: &HostDelivery,
+        transport: &Transport,
+        delivery: u64,
+        event: HostAutomation,
+    ) -> tresult {
         if delivery == 0 {
             return kInvalidArgument;
         }
@@ -1986,10 +2015,10 @@ impl ControllerCore {
         {
             return kInvalidArgument;
         }
-        let receipt = self.host_receipt.borrow().clone();
+        let receipt = state.receipt.borrow().clone();
         if let Some((last, previous)) = &receipt {
             if delivery < *last || (delivery == *last && event == *previous) {
-                return self.acknowledge_host_delivery(delivery);
+                return self.acknowledge_host_delivery(transport, delivery);
             }
             if delivery == *last {
                 return kResultFalse;
@@ -2004,12 +2033,12 @@ impl ControllerCore {
         let _call = HostCall(&self.host_busy);
         let handler = match &event {
             HostAutomation::Begin { .. } => {
-                if self.host_gestures.borrow()[index].is_some() {
+                if state.gestures.borrow()[index].is_some() {
                     return kResultFalse;
                 }
                 self.handler.borrow().clone()
             }
-            _ => self.host_gestures.borrow()[index].clone(),
+            _ => state.gestures.borrow()[index].clone(),
         };
         let Some(handler) = handler else {
             return kResultFalse;
@@ -2025,18 +2054,18 @@ impl ControllerCore {
             return result;
         }
         match &event {
-            HostAutomation::Begin { .. } => self.host_gestures.borrow_mut()[index] = Some(handler),
+            HostAutomation::Begin { .. } => state.gestures.borrow_mut()[index] = Some(handler),
             HostAutomation::End { .. } => {
-                let old = self.host_gestures.borrow_mut()[index].take();
+                let old = state.gestures.borrow_mut()[index].take();
                 drop(old);
             }
             _ => {}
         }
-        *self.host_receipt.borrow_mut() = Some((delivery, event));
-        self.acknowledge_host_delivery(delivery)
+        *state.receipt.borrow_mut() = Some((delivery, event));
+        self.acknowledge_host_delivery(transport, delivery)
     }
     fn clear_correlation(&self) {
-        self.host_receipt.borrow_mut().take();
+        self.host_delivery.receipt.borrow_mut().take();
         self.bootstrap.borrow_mut().take();
         self.awaiting.set(None);
         self.last_reply.borrow_mut().take();
