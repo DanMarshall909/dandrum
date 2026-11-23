@@ -26,6 +26,7 @@ struct Faults {
     refuse_retired_ack: std::cell::Cell<bool>,
     drop_retired_ack: std::cell::Cell<bool>,
     drop_automation_ack: std::cell::Cell<bool>,
+    refuse_native_event: std::cell::Cell<bool>,
 }
 impl Class for RecordingProxy {
     type Interfaces = (IConnectionPoint,);
@@ -71,6 +72,12 @@ impl IConnectionPointTrait for RecordingProxy {
             && self.faults.drop_automation_ack.get()
         {
             return kResultOk;
+        }
+        if packet.get("view").is_some()
+            && packet["body"]["type"] == "event"
+            && self.faults.refuse_native_event.get()
+        {
+            return kResultFalse;
         }
         unsafe { self.target.notify(message) }
     }
@@ -144,6 +151,8 @@ fn browser_projection_reads_the_same_processor_after_native_recreation() {
         window.__DANDRUM__={receiveNativeMessage(text){
             const reply=JSON.parse(text);
             if(reply.attachmentId!==ns.attachmentId || reply.instanceId!==ns.instanceId) return;
+            const feedback=reply.event==='parameterStateChanged' && reply.payload?.parameters?.find(p=>p.id==='drums.pan');
+            if(feedback?.value===0.375) document.body.style.background='#654321';
             const pan=reply.result?.parameters?.find(p=>p.id==='drums.pan');
             if(pan?.value===0.625) send(2,'beginGesture',['drums.level',1]);
             if(reply.status==='accepted' && reply.requestId==='2') send(3,'setParameter',['drums.level',0.625,1]);
@@ -335,6 +344,75 @@ fn browser_projection_reads_the_same_processor_after_native_recreation() {
             expected,
             "real native browser gestures reach the host exactly once in each view"
         );
+        if cycle == 2 {
+            faults.refuse_native_event.set(true);
+            let controls = changes(vec![queue(0x1004, vec![(0, 0.25)])]);
+            let mut zero = Block::new(0);
+            let mut data = zero.data();
+            data.inputParameterChanges = controls.as_ptr();
+            assert_eq!(unsafe { audio.process(&mut data) }, kResultOk);
+            for _ in 0..3 {
+                clock.tick();
+            }
+            assert_eq!(
+                unsafe { controller.getParamNormalized(0x1004) },
+                0.25,
+                "metadata projection continues while the native route refuses feedback"
+            );
+            assert_eq!(
+                &x.get_image(ImageFormat::Z_PIXMAP, parent, 12, 12, 1, 1, u32::MAX)
+                    .unwrap()
+                    .reply()
+                    .unwrap()
+                    .data[..3],
+                &[0x56, 0x34, 0x12]
+            );
+            // More than the eight-packet native queue: the final value must
+            // remain pending without an additional browser request to repair it.
+            frames.borrow_mut().clear();
+            for index in 0..17 {
+                let value = if index == 16 {
+                    0.375
+                } else if index % 2 == 0 {
+                    0.5
+                } else {
+                    0.75
+                };
+                let updates = changes(vec![queue(0x1004, vec![(0, value)])]);
+                data.inputParameterChanges = updates.as_ptr();
+                assert_eq!(unsafe { audio.process(&mut data) }, kResultOk);
+                clock.tick();
+            }
+            faults.refuse_native_event.set(false);
+            let deadline = Instant::now() + Duration::from_secs(3);
+            loop {
+                clock.tick();
+                let pixel = x
+                    .get_image(ImageFormat::Z_PIXMAP, parent, 12, 12, 1, 1, u32::MAX)
+                    .unwrap()
+                    .reply()
+                    .unwrap()
+                    .data;
+                if pixel.get(..3) == Some(&[0x21, 0x43, 0x65]) {
+                    break;
+                }
+                assert!(
+                    Instant::now() < deadline,
+                    "native browser must receive stopped host feedback in its own namespace after refusal ends"
+                );
+                std::thread::sleep(Duration::from_millis(5));
+            }
+            let restore = changes(vec![queue(0x1004, vec![(0, 0.625)])]);
+            data.inputParameterChanges = restore.as_ptr();
+            assert_eq!(unsafe { audio.process(&mut data) }, kResultOk);
+            clock.tick();
+            clock.tick();
+            assert_eq!(
+                *edits.accepted.borrow(),
+                expected,
+                "host feedback cannot manufacture host gestures"
+            );
+        }
         if cycle == 3 {
             assert_eq!(
                 unsafe { controller.setComponentHandler(std::ptr::null_mut()) },

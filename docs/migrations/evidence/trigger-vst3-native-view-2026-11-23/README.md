@@ -42,7 +42,7 @@ The shared editor deferred-start change also passed the existing actual React
 NativeEditor test and a fresh CLAP native lifecycle/audio regression. These
 protect the shared owner, but do not substitute for VST3 production React or
 REAPER acceptance. Current native VST3 browser tests use a minimal paint fixture.
-Native selection, feedback, complete callback
+Native selection, complete callback
 sentinels, package/offline qualification, installed REAPER, full validation and
 independent candidate review remain outstanding; no task checkbox is completed
 by this checkpoint. Windows/macOS are mandatory later native milestones.
@@ -73,3 +73,21 @@ parameterizes the existing policy by its scoped transport; it introduces no
 new module or musical authority. Test variants share one native scenario and
 record only externally accepted host callbacks. No further extraction is
 justified before the remaining real editor integration is covered.
+
+## Native feedback follow-up
+
+`native-feedback-red` genuinely proved that stopped host automation reached the
+controller but never reached the browser namespace. `native-feedback-green`
+passes after publishing the one shared feedback record to each attached role,
+with separate event encoding and bounded queue space reserved before consumption.
+`native-feedback-final-coverage` also fills the native queue beyond eight
+packets while refusing delivery, then observes the final browser value without
+a new request or host gesture;31 controller and6 browser-channel regressions
+pass. The existing native-ring overflow/snapshot regressions remain green.
+`native-feedback-clippy` passes with warnings denied.
+
+Production keeps one feedback consumption loop and encodes each attachment
+inside the same covered owner boundary, avoiding parallel feedback authorities.
+Tests extend the existing actual-browser scenario with a distinct pixel oracle
+for host updates and reuse its bounded recorder. Error-only send/owner-borrow
+paths remain uncovered; no whole-owner100% or branch-coverage claim is made.

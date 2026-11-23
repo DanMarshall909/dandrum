@@ -1045,11 +1045,29 @@ impl ProcessorCore {
     }
     fn service_parameter_feedback(&self) {
         for _ in 0..64 {
-            if !self.transport.has_space() {
+            let mut targets = Vec::with_capacity(2);
+            if let Some(attachment) = self.attachment.borrow().clone() {
+                targets.push((&self.transport, attachment));
+            }
+            #[cfg(feature = "trigger-editor")]
+            let browser = self
+                .browser
+                .borrow()
+                .clone()
+                .filter(|browser| !browser.closing.get());
+            #[cfg(feature = "trigger-editor")]
+            if let Some(browser) = &browser
+                && let Some(attachment) = browser.attachment.borrow().clone()
+            {
+                targets.push((&browser.transport, attachment));
+            }
+            // Reserve every live role's bounded queue before consuming feedback.
+            // A stalled browser can delay publication, never discard one role's
+            // update; audio overflow still converges through the shared snapshot.
+            if targets.iter().any(|(transport, _)| !transport.has_space()) {
                 break;
             }
-            let attachment = self.attachment.borrow().clone();
-            let event = {
+            let events = {
                 let Ok(mut slot) = self.owner.try_borrow_mut() else {
                     return;
                 };
@@ -1087,30 +1105,25 @@ impl ProcessorCore {
                         )
                     }
                 };
-                attachment.as_ref().and_then(|attachment| {
-                    owner
-                        .encode_parameter_feedback(attachment, feedback)
-                        .ok()
-                        .map(|frame| Body::Event {
-                            frame,
-                            publication: publication.to_string(),
-                            origins,
-                        })
-                })
+                let mut events = Vec::with_capacity(targets.len());
+                for (transport, attachment) in &targets {
+                    if let Ok(frame) = owner.encode_parameter_feedback(attachment, feedback.clone())
+                    {
+                        events.push((
+                            *transport,
+                            Body::Event {
+                                frame,
+                                publication: publication.to_string(),
+                                origins: origins.clone(),
+                            },
+                        ));
+                    }
+                }
+                events
             };
-            if let Some(event) = event {
-                let snapshot = matches!(
-                    &event,
-                    Body::Event {
-                        origins: Some(_),
-                        ..
-                    }
-                );
-                let result = self.transport.send(0, event);
-                if result != kResultOk {
-                    if snapshot {
-                        self.audio.feedback_lost.store(true, Ordering::Release);
-                    }
+            for (transport, event) in events {
+                if transport.send(0, event) != kResultOk {
+                    self.audio.feedback_lost.store(true, Ordering::Release);
                     return;
                 }
             }
