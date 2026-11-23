@@ -1,9 +1,9 @@
 {
-  "bundle": "private installed-v3/DandrumTrigger.vst3",
+  "bundle": "private installed-v5/DandrumTrigger.vst3",
   "source": {
-    "commit": "04c297f0623c63e9dd7e397c2d10b0133d66fd22",
-    "tree": "fe15e8bfe75ced58bd5f5eb3aa46db6ff318fb47",
-    "binarySha256": "c58a5c18983cd3c91a19a0595b190774e145ea4496b63c7178d2f68b9ef429a6",
+    "commit": "a199fe4e6ec81ad4aca8392aa11c7671c08a2720",
+    "tree": "c1bf71e09ecaabf137cede2e14adf01ff29c08fa",
+    "binarySha256": "3f6d84dd24ae74a42395b18d7b117c73f08c5ffee256985c44cc000dfa978124",
     "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
     "privateProofOnly": true
   },
@@ -11,7 +11,7 @@
   "files": [
     {
       "path": "Contents/Resources/SOURCE_IDENTITY.json",
-      "sha256": "4440fa1efa1b4789ce74f4940a9db10bc7cd360645e85ba0291fe980b083b279",
+      "sha256": "2e78bb44a12e7407a5c0b9cefac901b9b6726ef9ecb12b0ed913384f5eb196d0",
       "bytes": 277,
       "mode": "0o664"
     },
@@ -2171,10 +2171,10 @@
     },
     {
       "path": "Contents/x86_64-linux/DandrumTrigger.so",
-      "sha256": "c58a5c18983cd3c91a19a0595b190774e145ea4496b63c7178d2f68b9ef429a6",
-      "bytes": 14419880,
+      "sha256": "3f6d84dd24ae74a42395b18d7b117c73f08c5ffee256985c44cc000dfa978124",
+      "bytes": 14427416,
       "mode": "0o775"
     }
   ],
-  "bundleDigest": "5a67218fc872be0c63eff747792502456ce02b872badaef79f7eea8ecde24efd"
+  "bundleDigest": "92884cb5b83769eaa176125e25baef0116d7f50fee293a0bc8b2aed0224e6fa8"
 }

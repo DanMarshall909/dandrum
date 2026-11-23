@@ -1,0 +1,116 @@
+{
+  "status": "partial; task5.2 remains open",
+  "candidate": {
+    "commit": "a199fe4e6ec81ad4aca8392aa11c7671c08a2720",
+    "tree": "c1bf71e09ecaabf137cede2e14adf01ff29c08fa",
+    "binarySha256": "3f6d84dd24ae74a42395b18d7b117c73f08c5ffee256985c44cc000dfa978124",
+    "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "privateProofOnly": true
+  },
+  "host": "REAPER7.84/linux-x86_64 rev4b6323",
+  "configuration": "MODE true JACK\nIDENT_IN true JackIn\nIDENT_OUT true JackOut\nBSIZE true 1024\nSRATE true 48000",
+  "nativeGesture": "0.625 0.25",
+  "restoration": "46 named values match; both originals absent",
+  "restoredEnvelope": "0\t0.5\n0.00133333\t0.25\n0.10000000000000001\t0.25",
+  "renders": {
+    "A-before": {
+      "params": "48000Hz stereo PCM24,480frames",
+      "maxAbsError": 0.0,
+      "mismatchCount": 0,
+      "firstMismatch": [],
+      "tailMax": 0.0,
+      "passed": true,
+      "wavSha256": "b970f5f500c382a1d706091c19853849f7f02791a17d7f23721445260a66a7f6"
+    },
+    "B-settled": {
+      "wave": [
+        2,
+        3,
+        48000,
+        960,
+        "NONE",
+        "not compressed"
+      ],
+      "maxAbsError": 0.0,
+      "tailMax": 0.0,
+      "passed": true,
+      "wavSha256": "924449958fcf32b530983b9907ce440f82e9f63a09f305680a0f7c077d275f58"
+    },
+    "A-after": {
+      "wave": [
+        2,
+        3,
+        48000,
+        960,
+        "NONE",
+        "not compressed"
+      ],
+      "maxAbsError": 8.258810424432994e-08,
+      "tailMax": 0.0,
+      "passed": true,
+      "oracleTimeFrames": 63.99984,
+      "wavSha256": "fddf6ad69de9994b8f06336fdaf95e0e36b2dcf6545c1ac096da241f9424702e"
+    },
+    "B-after": {
+      "wave": [
+        2,
+        3,
+        48000,
+        960,
+        "NONE",
+        "not compressed"
+      ],
+      "maxAbsError": 0.0,
+      "tailMax": 0.0,
+      "passed": true,
+      "oracleTimeFrames": null,
+      "wavSha256": "aec638b2b437909a9a6cd058e49902bb64a7b15aa531528222839909d0408dab"
+    }
+  },
+  "processes": {
+    "first": {
+      "reaperExit": 0,
+      "workers": [
+        {
+          "pid": 896388,
+          "exit": 0
+        },
+        {
+          "pid": 896389,
+          "exit": 0
+        },
+        {
+          "pid": 896390,
+          "exit": 0
+        }
+      ],
+      "seconds": 725.851203852013
+    },
+    "fresh": {
+      "reaperExit": 0,
+      "workers": [
+        {
+          "pid": 910517,
+          "exit": 0
+        },
+        {
+          "pid": 910518,
+          "exit": 0
+        },
+        {
+          "pid": 910519,
+          "exit": 0
+        }
+      ],
+      "seconds": 76.86598332598805
+    }
+  },
+  "limits": [
+    "44.1k live IO not qualified; observed JACK48k/1024",
+    "Interrupted selection trials do not prove mapping admission/completion while editor-absent",
+    "Direct loaded-module maps were not retained for the rendering processes",
+    "Initial B render captured host unmute fade; settled render passes",
+    "REAPER saves64frame envelope time as63.99984frames; restored oracle uses independently queried host point time",
+    "Final configured/slow gates and independent review/publication remain pending"
+  ]
+}
