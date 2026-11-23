@@ -173,7 +173,19 @@ impl AutomationDestination {
     }
 }
 impl Class for Processor {
-    type Interfaces = (IComponent, IAudioProcessor, IConnectionPoint);
+    type Interfaces = (
+        IComponent,
+        IAudioProcessor,
+        IConnectionPoint,
+        IProcessContextRequirements,
+    );
+}
+impl IProcessContextRequirementsTrait for Processor {
+    unsafe fn getProcessContextRequirements(&self) -> u32 {
+        // Rendering uses the configured sample clock and timed input events;
+        // no optional host ProcessContext fields are consumed.
+        0
+    }
 }
 impl ProcessorCore {
     fn main(&self) -> bool {

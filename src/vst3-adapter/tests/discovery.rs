@@ -452,7 +452,10 @@ fn projection_lifecycle_and_text_errors_preserve_last_valid_value() {
         );
         assert_eq!(processor.terminate(), kResultOk);
         assert_eq!(processor.getBusInfo(0, 1, 0, &mut bus), kNotInitialized);
-        assert_eq!(processor.initialize(std::ptr::null_mut()), kResultFalse);
+        // VST3 permits restarting the same terminated processor. Its fresh
+        // service/setup/audio contract is asserted by the service owner test.
+        assert_eq!(processor.initialize(std::ptr::null_mut()), kResultOk);
+        assert_eq!(processor.terminate(), kResultOk);
         assert_eq!(controller.terminate(), kResultOk);
         assert_eq!(controller.initialize(std::ptr::null_mut()), kResultFalse);
         assert_eq!(controller.getParameterCount(), 0);
@@ -566,4 +569,22 @@ fn foreign_thread_control_calls_reject_without_mutating_live_components() {
         assert_eq!(processor.terminate(), kResultOk);
         assert_eq!(controller.terminate(), kResultOk);
     }
+}
+
+#[test]
+fn processor_declares_no_unused_optional_process_context_fields() {
+    use vst3::Steinberg::Vst::{
+        IComponent, IProcessContextRequirements, IProcessContextRequirementsTrait,
+    };
+    let bundle = Bundle::new();
+    let module = bundle.load();
+    let p = module.class::<IComponent>(&PROCESSOR);
+    let requirements = p
+        .cast::<IProcessContextRequirements>()
+        .expect("SDK3.7+ mandatory process context interface");
+    assert_eq!(
+        unsafe { requirements.getProcessContextRequirements() },
+        0,
+        "Trigger uses setup clock and sample-offset input, not host context fields"
+    );
 }

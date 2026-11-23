@@ -123,3 +123,18 @@ new setup is required, literal default signed sound returns and both timer
 lifetimes release. The small lifecycle refactor adds no module; wider controller
 retirement/foreign-call regressions remain green. Validator requalification is
 still pending the remaining identified contract.
+
+The mandatory SDK3.7+ IProcessContextRequirements interface now declares a zero
+mask: Trigger consumes no optional ProcessContext fields.
+`process-context-contract-red` loads the retained v2 candidate and fails at the
+missing public interface; the earlier compile-error trial is not behavior RED.
+The existing discovery expectation rejecting restart is updated to the new SDK
+contract; its stronger signed sound/service test remains the lifecycle oracle.
+An initial edit matched the wrong repeated assertion; the wider test caught it
+and the missing-resource rejection was restored before acceptance.
+
+`process-context-coverage-corrected` passes all eight discovery and seven service
+tests. Fresh profiles are retained separately; they exercise the new bitmask
+implementation, not the native-view owner. The declaration adds no module or
+state and needs no further extraction. Strict native Clippy is retained as
+`process-context-clippy`. Full extensive candidate validation follows packaging.
