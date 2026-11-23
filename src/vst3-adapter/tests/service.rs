@@ -166,3 +166,38 @@ fn foreign_thread_cannot_clear_factory_context_or_remove_processor_service() {
     }
     assert_eq!(state.unregistered.get(), 1);
 }
+
+#[test]
+fn advertised_unimplemented_loop_preserves_headless_bus_and_signed_audio() {
+    use common::audio::*;
+    let bundle = Bundle::new();
+    let module = bundle.load();
+    let (clock, factory, _host) = host(&module);
+    clock.unimplemented.set(true);
+    let p = module.class_from::<IComponent>(&factory, &PROCESSOR);
+    assert_eq!(
+        unsafe { p.initialize(std::ptr::null_mut()) },
+        kResultOk,
+        "SDK dummy loop means absent optional service, not a partial instrument"
+    );
+    assert_eq!(unsafe { p.getBusCount(0, 1) }, 1);
+    assert!(clock.handlers.borrow().is_empty());
+    let audio = p.cast::<IAudioProcessor>().unwrap();
+    start(&p, &audio, 48000.0, 16);
+    let notes = events(vec![note_on(5, 36, 1.0)]);
+    let mut block = Block::new(16);
+    let mut data = block.data();
+    data.inputEvents = notes.as_ptr();
+    assert_eq!(unsafe { audio.process(&mut data) }, kResultOk);
+    assert_eq!((block.left[5], block.right[5]), (-0.5, -0.5));
+    assert_eq!(unsafe { audio.setProcessing(0) }, kResultOk);
+    let c = p.cast::<IConnectionPoint>().unwrap();
+    let peer = common::owner::Peer::attach(&c, 71);
+    let selection = peer.send(&c, 1, "chooseSamplerFiles", serde_json::json!([]));
+    assert_eq!(
+        selection["status"], "rejected",
+        "unserviced acquisition is not advertised"
+    );
+    assert_eq!(unsafe { p.terminate() }, kResultOk);
+    assert!(clock.handlers.borrow().is_empty());
+}

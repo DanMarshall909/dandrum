@@ -34,7 +34,7 @@ Refused Closing, lost/refused ClosingAck and refused/lost RetiredAck all settle
 through editor-absent service. The original requirement that Closing precedes
 Closed, and the automation foreign-call fence, remain enforced.
 
-## Current-source verification
+## Native checkpoint verification (9f3b31f6)
 
 Complete private commands, source hashes, timings, terminal status and raw output
 are retained under `.git/codex/trigger-vst3-resume-20261123/`.
@@ -88,3 +88,26 @@ GTK/WebKit inspection and exercise distinct state transitions in one UI-thread
 lane; a separate loader-only executable preserves the residency oracle.
 
 No mutation jobs ran. Private product, host and test binaries are not published.
+
+## Validator host-capability follow-up
+
+The first unfiltered extensive official candidate validation discovered both
+classes, then component initialization failed and the validator crashed. The
+retained traced rerun and pinned SDK source identify its DummyRunLoop: it
+advertises IRunLoop but every registration method returns kNotImplemented.
+Neither failed trial is qualification evidence.
+
+`dummy-loop-red` specifies signed headless operation in that host capability
+case. `dummy-loop-green` passes all six service tests; `dummy-loop-coverage`
+passes the affected discovery, processor-owner and service selections. Worker
+startup now follows successful service registration; explicit unsupported
+registration leaves the optional service absent. Ordinary registration refusal
+remains a failure, and disabled cleanup tokens still block duplicate startup.
+`dummy-loop-clippy` passes all native targets. `dummy-loop-native-regression`
+passes the actual production editing lane with380 signed renders/762 complete
+allocator-clean callbacks. The source change is isolated to initialization;
+full current-candidate validator and final combined qualification remain pending.
+
+Refactoring delays worker creation until a service actually exists, removing
+unserviced background authority. Existing rollback/cleanup tests retain their
+observable contract. No new module was extracted.

@@ -14,6 +14,7 @@ pub struct LoopState {
     pub handlers: RefCell<Vec<Rc<ComPtr<ITimerHandler>>>>,
     pub dropped: Cell<u32>,
     pub reject_register: Cell<bool>,
+    pub unimplemented: Cell<bool>,
     pub reject_unregister: Cell<bool>,
     pub register_callback: RefCell<Option<Box<dyn FnOnce()>>>,
 }
@@ -43,6 +44,9 @@ impl IRunLoopTrait for RunLoop {
         milliseconds: TimerInterval,
     ) -> tresult {
         assert_eq!(milliseconds, 10);
+        if self.0.unimplemented.get() {
+            return kNotImplemented;
+        }
         let handler = Rc::new(unsafe { ComRef::from_raw(handler) }.unwrap().to_com_ptr());
         self.0.registered.set(self.0.registered.get() + 1);
         let callback = self.0.register_callback.borrow_mut().take();

@@ -183,7 +183,11 @@ impl ProcessorCore {
 }
 impl IPluginBaseTrait for Processor {
     unsafe fn initialize(&self, _context: *mut FUnknown) -> tresult {
-        if !self.main() || self.terminated.get() || self.owner.borrow().is_some() {
+        if !self.main()
+            || self.terminated.get()
+            || self.owner.borrow().is_some()
+            || self.registration.borrow().is_some()
+        {
             return kResultFalse;
         }
         static NEXT: AtomicU64 = AtomicU64::new(1);
@@ -195,7 +199,7 @@ impl IPluginBaseTrait for Processor {
             sample_rate_hz: SampleRate::new(48_000.0).expect("fixed supported clock"),
             max_block_frames: 16,
         };
-        let Ok((mut owner, audio)) = ParameterController::open_with_reserved_events(
+        let Ok((owner, audio)) = ParameterController::open_with_reserved_events(
             &self.root,
             configuration,
             NonZeroU64::new(id).expect("counter starts nonzero"),
@@ -208,9 +212,6 @@ impl IPluginBaseTrait for Processor {
             return kResultFalse;
         };
         let runloop = { self.runloop.borrow().clone() };
-        if runloop.is_some() && owner.start_session_worker(self.wake.clone()).is_err() {
-            return kResultFalse;
-        }
         self.audio.install(crate::audio::Endpoint::new(
             audio,
             configuration,
@@ -222,20 +223,48 @@ impl IPluginBaseTrait for Processor {
                 .to_com_ptr::<ITimerHandler>()
                 .expect("standard timer");
             let result = unsafe { runloop.registerTimer(timer.as_ptr(), 10) };
-            if result != kResultOk {
+            if result == kNotImplemented {
+                // Some headless hosts expose an IRunLoop whose methods are
+                // explicitly unsupported. No service or worker is promised.
+                let absent = self.runloop.borrow_mut().take();
+                drop(absent);
+            } else {
+                if result != kResultOk {
+                    let owner = self.owner.borrow_mut().take();
+                    drop(owner);
+                    self.audio.clear_main();
+                    return kResultFalse;
+                }
+                let registration = Registration { runloop, timer };
+                if self.terminated.get() {
+                    if let Err(registration) = registration.unregister() {
+                        *self.registration.borrow_mut() = Some(registration);
+                    }
+                    return kResultFalse;
+                }
+                *self.registration.borrow_mut() = Some(registration);
+            }
+        }
+        if self.registration.borrow().is_some() {
+            let started = self
+                .owner
+                .borrow_mut()
+                .as_mut()
+                .is_some_and(|owner| owner.start_session_worker(self.wake.clone()).is_ok());
+            if !started {
+                let registration = self
+                    .registration
+                    .borrow_mut()
+                    .take()
+                    .expect("registered service");
+                if let Err(registration) = registration.unregister() {
+                    *self.registration.borrow_mut() = Some(registration);
+                }
                 let owner = self.owner.borrow_mut().take();
                 drop(owner);
                 self.audio.clear_main();
                 return kResultFalse;
             }
-            let registration = Registration { runloop, timer };
-            if self.terminated.get() {
-                if let Err(registration) = registration.unregister() {
-                    *self.registration.borrow_mut() = Some(registration);
-                }
-                return kResultFalse;
-            }
-            *self.registration.borrow_mut() = Some(registration);
         }
         self.initialized.set(true);
         self.audio.live.store(true, Ordering::Release);
