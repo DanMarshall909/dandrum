@@ -421,6 +421,45 @@ fn exercise_visibility_and_fixed_size(
         focused, child,
         "keyboard focus belongs to the owned child subtree"
     );
+    x.set_input_focus(
+        x11rb::protocol::xproto::InputFocus::PARENT,
+        parent,
+        x11rb::CURRENT_TIME,
+    )
+    .unwrap()
+    .check()
+    .unwrap();
+    let root = x.get_geometry(parent).unwrap().reply().unwrap().root;
+    let point = x
+        .translate_coordinates(parent, root, 100, 100)
+        .unwrap()
+        .reply()
+        .unwrap();
+    assert!(
+        std::process::Command::new("xdotool")
+            .args([
+                "mousemove",
+                &point.dst_x.to_string(),
+                &point.dst_y.to_string(),
+                "click",
+                "1"
+            ])
+            .status()
+            .unwrap()
+            .success()
+    );
+    host_ticks();
+    let mut focused = x.get_input_focus().unwrap().reply().unwrap().focus;
+    for _ in 0..32 {
+        if focused == child || focused == parent {
+            break;
+        }
+        focused = x.query_tree(focused).unwrap().reply().unwrap().parent;
+    }
+    assert_eq!(
+        focused, child,
+        "a native click requests focus without host assistance"
+    );
     expect_page_message(
         owner,
         messages,

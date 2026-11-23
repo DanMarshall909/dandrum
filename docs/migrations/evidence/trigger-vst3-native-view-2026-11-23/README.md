@@ -175,3 +175,39 @@ plugin-only coverage does not cover dependency source. `keyboard-combined-receip
 checks identical current VST3 sources/object and36 fresh profile hashes: view
 53/53functions,527/578lines(91.18%). Defensive/error gaps remain explicit; no whole
 owner100%, branch or MC/DC claim. No further production extraction is warranted.
+
+## Pointer-initiated keyboard focus
+
+REAPER does not supply IPlugView::onFocus for the observed pointer-entry path.
+`native-pointer-focus-red` and the controlled
+`native-pointer-isolated-baseline-red` replay against retained candidatev4 fail
+at the missing pointer-focus assertion. The final repair uses the same checked
+X11 helper for host grants and WebKit button presses. The callback captures a
+weak Rc connection: it cannot keep the native connection alive or resurrect it
+after the window owner drops. No musical authority is retained.
+
+OS key qualification uses a dedicated task-owned Xvfb display. The shared desktop
+did not deliver keys during diagnosis; its exact cause is unestablished. Isolated
+GTK/DOM event observation showed key2 arriving and appending to1 during focus
+activation. The maintained test now physically uses Ctrl+A, waits for selection,
+types2, waits for the draft, then commits with Return. It asserts the no-change
+pointer gesture and the subsequent balanced value gesture separately. Protocol/
+event-mask diagnostic changes were removed after the minimal repair passed
+`native-pointer-pruned-green`; they are not part of the accepted implementation.
+
+`pointer-shared-owner-coverage` proves both explicit focus and native-click focus
+in the owning executable along with its full lifecycle/resource/native cases.
+An isolated coverage run exposed an immediate-cancellation test assumption; the
+contract permits pendingchoosing until the asynchronous cancellation receipt.
+The test now bounds that wait and still requires the exactcancelled outcome.
+Complete current-source owner/native/CLAP and strict Clippy receipts follow below.
+
+Current pointer repair: `pointer-owner-corrected-coverage` passes all86 ordinary
+VST3 tests. `pointer-native-corrected-coverage` passes all three native lanes on
+the dedicated display, including722 complete allocator-clean callbacks/360 signed
+renders during actual editing. `pointer-clap-native-regression` passes with a
+fresh CLAP binary and the current complete production editor assets. Strict native
+Clippy is retained as `pointer-final-clippy`. The shared owner test independently
+covers the new click callback/helper; defensive transport/foreign-lifetime errors
+remain explicit gaps rather than a100%/branch-coverage claim. No new module was
+extracted, mutation remains excluded and actual installed-REAPER is still open.

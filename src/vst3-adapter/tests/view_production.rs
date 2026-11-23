@@ -813,7 +813,7 @@ modules:
 }
 
 #[test]
-#[ignore = "real production React/Wry/GTK and copied VST3 boundary; explicit packaged assets/display"]
+#[ignore = "production React/Wry/GTK and copied VST3; packaged assets and dedicated X11/XTest display"]
 fn production_native_selection_retains_decoded_content_after_source_and_view_loss() {
     if std::env::var_os("DANDRUM_SOURCE_HIDDEN_REQUIRED").is_some() {
         assert!(std::env::var_os("DANDRUM_VST3_INSTALLED_BUNDLE").is_some());
@@ -1002,10 +1002,19 @@ fn production_native_selection_retains_decoded_content_after_source_and_view_los
     let chooser = native_dialog(&clock);
     chooser.response(gtk::ResponseType::Cancel);
     drop(chooser);
-    assert_eq!(
-        invoke(&clock, &browser, &cancelled_expression)["result"]["phase"],
-        "cancelled"
-    );
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let phase = invoke(&clock, &browser, &cancelled_expression)["result"]["phase"].clone();
+        if phase == "cancelled" {
+            break;
+        }
+        assert_eq!(
+            phase, "choosing",
+            "only the pending cancellation may precede its receipt"
+        );
+        assert!(Instant::now() < deadline, "native cancellation must settle");
+        std::thread::sleep(Duration::from_millis(5));
+    }
     let abandoned = invoke(
         &clock,
         &browser,
@@ -1125,15 +1134,90 @@ fn production_native_selection_retains_decoded_content_after_source_and_view_los
         &browser,
         "(()=>{const i=document.querySelector('[data-knob=\"drums.level\"] input');i.focus();i.select();return 'focused native entry';})()",
     );
-    for args in [vec!["type", "--clearmodifiers", "2"], vec!["key", "Return"]] {
-        assert!(
-            std::process::Command::new("xdotool")
-                .args(args)
-                .status()
-                .expect("XTest keyboard tool for the explicit native lane")
-                .success()
-        );
-    }
+    let point: Vec<i16> = serde_json::from_str(&javascript(&clock, &browser, "JSON.stringify((()=>{const r=document.querySelector('[data-knob=\"drums.level\"] input').getBoundingClientRect();return [Math.floor(r.left+r.width/2),Math.floor(r.top+r.height/2)]})())")).unwrap();
+    let root = parent
+        .x
+        .get_geometry(parent.id)
+        .unwrap()
+        .reply()
+        .unwrap()
+        .root;
+    let point = parent
+        .x
+        .translate_coordinates(parent.id, root, point[0], point[1])
+        .unwrap()
+        .reply()
+        .unwrap();
+    parent
+        .x
+        .set_input_focus(
+            x11rb::protocol::xproto::InputFocus::PARENT,
+            parent.id,
+            x11rb::CURRENT_TIME,
+        )
+        .unwrap()
+        .check()
+        .unwrap();
+    assert!(
+        std::process::Command::new("xdotool")
+            .args([
+                "mousemove",
+                &point.dst_x.to_string(),
+                &point.dst_y.to_string(),
+                "click",
+                "1"
+            ])
+            .status()
+            .unwrap()
+            .success()
+    );
+    javascript(&clock, &browser, "document.activeElement.tagName");
+    assert_ne!(
+        parent.x.get_input_focus().unwrap().reply().unwrap().focus,
+        parent.id,
+        "native pointer entry must claim focus even without host onFocus"
+    );
+    wait_dom(
+        &clock,
+        &browser,
+        "document.querySelector('[data-knob=\"drums.level\"] input')",
+    );
+    assert!(
+        std::process::Command::new("xdotool")
+            .args(["key", "ctrl+a"])
+            .status()
+            .unwrap()
+            .success()
+    );
+    wait_dom(
+        &clock,
+        &browser,
+        "(()=>{const i=document.querySelector('[data-knob=\"drums.level\"] input');return i&&i.selectionStart===0&&i.selectionEnd===i.value.length})()",
+    );
+    assert!(
+        std::process::Command::new("xdotool")
+            .args(["type", "--clearmodifiers", "2"])
+            .status()
+            .unwrap()
+            .success()
+    );
+    wait_dom(
+        &clock,
+        &browser,
+        "document.querySelector('[data-knob=\"drums.level\"] input')?.value==='2'",
+    );
+    assert!(
+        std::process::Command::new("xdotool")
+            .args(["key", "Return"])
+            .status()
+            .unwrap()
+            .success()
+    );
+    wait_dom(
+        &clock,
+        &browser,
+        "!document.querySelector('[data-knob=\"drums.level\"] input')",
+    );
     wait_dom(
         &clock,
         &browser,
@@ -1146,10 +1230,12 @@ fn production_native_selection_retains_decoded_content_after_source_and_view_los
         *edits.borrow(),
         [
             HostEdit::Begin(0x1003),
+            HostEdit::End(0x1003),
+            HostEdit::Begin(0x1003),
             HostEdit::Value(0x1003, 0.5),
             HostEdit::End(0x1003)
         ],
-        "actual React numeric entry reaches normalized VST3 host automation"
+        "pointer activation balances a no-change gesture; native keys commit one balanced edit"
     );
     let imported_source = tempfile::tempdir().unwrap();
     let imported_path = imported_source.path().join("mapped.wav");
@@ -1274,6 +1360,8 @@ fn production_native_selection_retains_decoded_content_after_source_and_view_los
     assert_eq!(
         *edits.borrow(),
         [
+            HostEdit::Begin(0x1003),
+            HostEdit::End(0x1003),
             HostEdit::Begin(0x1003),
             HostEdit::Value(0x1003, 0.5),
             HostEdit::End(0x1003),

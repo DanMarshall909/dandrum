@@ -81,7 +81,7 @@ impl Drop for OwnedProtocol {
 }
 
 // The editor owns its foreign X11 child; a file chooser owns only its GTK window.
-struct OwnedWindow(gtk::Window, Option<(RustConnection, u32)>);
+struct OwnedWindow(gtk::Window, Option<(Rc<RustConnection>, u32)>);
 impl Drop for OwnedWindow {
     fn drop(&mut self) {
         let display = self.0.display();
@@ -325,18 +325,7 @@ impl NativeEditor {
         Self::check_thread()?;
         self.view.webview().grab_focus();
         let (connection, _) = self._window.1.as_ref().ok_or(NativeError::InvalidParent)?;
-        // GDK's toplevel focus request goes through the window manager, which
-        // does not manage this embedded child. The host explicitly grants focus.
-        connection
-            .set_input_focus(
-                x11rb::protocol::xproto::InputFocus::PARENT,
-                self.focus_window,
-                x11rb::CURRENT_TIME,
-            )
-            .map_err(|error| NativeError::X11(error.to_string()))?
-            .check()
-            .map_err(|error| NativeError::X11(error.to_string()))?;
-        Ok(())
+        focus_child(connection, self.focus_window)
     }
 
     /// Accept the declared fixed size without changing the native child.
@@ -420,6 +409,7 @@ impl NativeEditor {
             .map_err(|_| NativeError::UnsupportedDisplay)?;
         let (child_connection, _) = RustConnection::connect(Some(display.name().as_str()))
             .map_err(|error| NativeError::X11(error.to_string()))?;
+        let child_connection = Rc::new(child_connection);
         let child = child_connection
             .generate_id()
             .map_err(|error| NativeError::X11(error.to_string()))?;
@@ -448,6 +438,7 @@ impl NativeEditor {
         let plug = gtk::Plug::for_display(&display, child as i32);
         let focus_window = plug.id() as u32;
         let window: gtk::Window = plug.upcast();
+        let pointer_connection = Rc::downgrade(&child_connection);
         let window = OwnedWindow(window, Some((child_connection, child)));
         window.0.set_resizable(false);
         let fixed = gtk::Fixed::new();
@@ -468,6 +459,15 @@ impl NativeEditor {
             })
             .build_gtk(&fixed)
             .map_err(NativeError::WebView)?;
+        view.webview().connect_button_press_event(move |view, _| {
+            // Hosts may leave raw X11 focus on their parent without onFocus.
+            // A click inside this browser is an explicit native focus request.
+            view.grab_focus();
+            if let Some(connection) = pointer_connection.upgrade() {
+                let _ = focus_child(&connection, focus_window);
+            }
+            gtk::glib::Propagation::Proceed
+        });
         view.webview().set_size_request(
             i32::from(Self::WIDTH) / scale,
             i32::from(Self::HEIGHT) / scale,
@@ -493,6 +493,16 @@ impl NativeEditor {
             .map_err(|error| NativeError::X11(error.to_string()))?;
         Ok(owner)
     }
+}
+
+fn focus_child(connection: &RustConnection, child: u32) -> Result<(), NativeError> {
+    use x11rb::protocol::xproto::InputFocus;
+    connection
+        .set_input_focus(InputFocus::PARENT, child, x11rb::CURRENT_TIME)
+        .map_err(|error| NativeError::X11(error.to_string()))?
+        .check()
+        .map_err(|error| NativeError::X11(error.to_string()))?;
+    Ok(())
 }
 
 impl Drop for NativeEditor {
