@@ -1770,7 +1770,7 @@ impl ProcessorCore {
                 Body::Closing | Body::Goodbye if packet.sequence == 0 => {
                     browser.closing.set(true);
                     browser.transport.begin_closing();
-                    return kResultOk;
+                    return browser.transport.terminal(Body::ClosingAck);
                 }
                 Body::Closed if packet.sequence == 0 => {
                     if !browser.closing.get() || browser.transport.automation_active() {

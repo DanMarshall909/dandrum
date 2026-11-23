@@ -60,6 +60,7 @@ pub(super) struct BrowserConnection {
     next_request: Cell<u64>,
     started: Cell<bool>,
     closing: Cell<bool>,
+    closing_confirmed: Cell<bool>,
     closed: Cell<bool>,
     host_delivery: HostDelivery,
     selection_request: Cell<Option<u64>>,
@@ -205,6 +206,7 @@ impl ViewCore {
                 next_request: Cell::new(1),
                 started: Cell::new(false),
                 closing: Cell::new(false),
+                closing_confirmed: Cell::new(false),
                 closed: Cell::new(false),
                 host_delivery: HostDelivery::default(),
                 selection_request: Cell::new(None),
@@ -284,6 +286,9 @@ impl ViewCore {
                     if child.evaluate_script(&delivery_script(&frame)).is_err() {
                         return kResultFalse;
                     }
+                }
+                Body::ClosingAck if packet.sequence == 0 && connection.closing.get() => {
+                    connection.closing_confirmed.set(true);
                 }
                 Body::NativeSelectionAck { request }
                     if packet.sequence == 0 && !connection.closing.get() =>
@@ -468,7 +473,12 @@ impl ViewCore {
             let _ = connection.transport.pump_terminal();
         } else {
             connection.transport.begin_closing();
-            let _ = connection.transport.terminal(Body::Closing);
+            if !connection.closing_confirmed.get() {
+                let _ = connection.transport.terminal(Body::Closing);
+                if !connection.closing_confirmed.get() {
+                    return false;
+                }
+            }
             let _ = connection.transport.terminal(Body::Closed);
         }
         if !connection.closed.get() || connection.transport.terminal_pending() {

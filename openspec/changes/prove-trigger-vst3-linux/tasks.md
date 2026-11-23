@@ -12,8 +12,8 @@ Mutation remains excluded; normal local gates and independent review remain.
 Scope split, 17 November 2026: Dan requested merging the verified foundation
 and moving the remainder to [issue #45](https://github.com/DanMarshall909/dandrum/issues/45).
 That ticket owns the remaining workflow; this change retains the design,
-acceptance criteria and their evidence. Tasks 4.2, 4.3, 5.1, 5.2, 6.1, 6.2 and
-6.3 remain unchecked. Foundation publication does not complete the Linux proof
+acceptance criteria and their evidence. Tasks 4.2 and 4.3 were locally verified on23November; tasks5.1,5.2,6.1,6.2
+and6.3 remain unchecked. Foundation publication does not complete the Linux proof
 or its combined-product review, and this change must not be archived yet.
 Dan is connected remotely and cannot test REAPER now. Native editor and actual
 installed-REAPER acceptance remain required by the follow-up.
@@ -62,11 +62,13 @@ remaining resource allowance before dependent full-editor integration.
 ## 4. Attach The Existing Production Editor
 
 - [x] 4.1 Characterize orchestration currently in CLAP and extract only required shared editor integration behind covered boundaries; require 100% coverage of newly extracted modules and passing affected CLAP/native protocol, gestures, selection/history and installed-resource regressions.
-- [ ] 4.2 Implement Linux VST3 X11 view/host-loop integration over the existing React/Wry editor; prove real parenting/paint, failed creation/service cleanup, host-parent survival, code residency and actual native destruction/recreation without session loss.
-- [ ] 4.3 Join actual native selection/mapping/public gestures with real audio/MIDI callbacks; prove editor-absent/stopped admitted-work completion, retained outcomes and signed Undo/Redo after source removal, balanced held-note/gesture cleanup, independent instances and clean complete callback sentinels.
+- [x] 4.2 Implement Linux VST3 X11 view/host-loop integration over the existing React/Wry editor; prove real parenting/paint, failed creation/service cleanup, host-parent survival, code residency and actual native destruction/recreation without session loss.
+- [x] 4.3 Join actual native selection/mapping/public gestures with real audio/MIDI callbacks; prove editor-absent/stopped admitted-work completion, retained outcomes and signed Undo/Redo after source removal, balanced held-note/gesture cleanup, independent instances and clean complete callback sentinels.
 
 Task 4.1 evidence: [shared native editor integration](../../../docs/migrations/evidence/trigger-vst3-shared-editor-2026-11-16/README.md).
-VST3 native view/control qualification remains in tasks 4.2/4.3.
+VST3 native view/control evidence is recorded in
+[native editor evidence](../../../docs/migrations/evidence/trigger-vst3-native-view-2026-11-23/README.md).
+These local criteria do not complete installed-REAPER or combined-product review.
 
 ## 5. Qualify The Installed REAPER Candidate
 

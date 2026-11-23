@@ -33,6 +33,8 @@ impl ViewRoute {
 fn terminal_phase(body: &Body) -> u8 {
     match body {
         Body::Closing => 0,
+        #[cfg(feature = "trigger-editor")]
+        Body::ClosingAck => 0,
         Body::Disconnect => 1,
         Body::Goodbye => 2,
         Body::Closed => 3,
@@ -98,6 +100,8 @@ pub(crate) enum Body {
     },
     Closed,
     Closing,
+    #[cfg(feature = "trigger-editor")]
+    ClosingAck,
     Disconnect,
     Retired,
     RetiredAck,

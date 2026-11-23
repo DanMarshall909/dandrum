@@ -27,6 +27,9 @@ struct Faults {
     drop_retired_ack: std::cell::Cell<bool>,
     drop_automation_ack: std::cell::Cell<bool>,
     refuse_native_event: std::cell::Cell<bool>,
+    refuse_closing: std::cell::Cell<bool>,
+    drop_closing_ack_once: std::cell::Cell<bool>,
+    refuse_closing_ack: std::cell::Cell<bool>,
 }
 impl Class for RecordingProxy {
     type Interfaces = (IConnectionPoint,);
@@ -43,7 +46,7 @@ impl IConnectionPointTrait for RecordingProxy {
         if packet["body"]["type"] != "confirm" {
             let mut frames = self.frames.borrow_mut();
             if !frames.contains(&packet) {
-                assert!(frames.len() < 128, "bounded distinct diagnostic frames");
+                assert!(frames.len() < 256, "bounded distinct diagnostic frames");
                 frames.push(packet.clone());
             }
         }
@@ -78,6 +81,20 @@ impl IConnectionPointTrait for RecordingProxy {
             && self.faults.refuse_native_event.get()
         {
             return kResultFalse;
+        }
+        if packet.get("view").is_some()
+            && packet["body"]["type"] == "closing"
+            && self.faults.refuse_closing.get()
+        {
+            return kResultFalse;
+        }
+        if packet.get("view").is_some() && packet["body"]["type"] == "closingAck" {
+            if self.faults.refuse_closing_ack.get() {
+                return kResultFalse;
+            }
+            if self.faults.drop_closing_ack_once.replace(false) {
+                return kResultOk;
+            }
         }
         unsafe { self.target.notify(message) }
     }
@@ -235,7 +252,7 @@ fn browser_projection_reads_the_same_processor_after_native_recreation() {
     .check()
     .unwrap();
     x.map_window(parent).unwrap().check().unwrap();
-    for cycle in 0..4 {
+    for cycle in 0..6 {
         let script = String::from_utf8_lossy(browser_script).replace(
             "const hold=false",
             if cycle == 3 {
@@ -421,17 +438,18 @@ fn browser_projection_reads_the_same_processor_after_native_recreation() {
             );
             *edits.refuse_once.borrow_mut() = Some(HostEdit::End(0x1003));
         }
+        faults.refuse_closing.set(cycle == 2);
+        faults.drop_closing_ack_once.set(cycle == 4);
+        faults.refuse_closing_ack.set(cycle == 5);
         faults.refuse_retired_ack.set(cycle == 0);
         faults.drop_retired_ack.set(cycle == 1);
         assert_eq!(
             unsafe { view.removed() },
-            if cycle == 0 || cycle == 3 {
-                kResultFalse
-            } else {
-                kResultOk
-            },
+            if cycle != 1 { kResultFalse } else { kResultOk },
             "refused teardown delivery must retain a retry token"
         );
+        faults.refuse_closing.set(false);
+        faults.refuse_closing_ack.set(false);
         assert!(
             x.query_tree(parent)
                 .unwrap()
@@ -440,7 +458,7 @@ fn browser_projection_reads_the_same_processor_after_native_recreation() {
                 .children
                 .is_empty()
         );
-        if cycle == 0 || cycle == 3 {
+        if cycle != 1 {
             faults.refuse_retired_ack.set(false);
             clock.tick();
             clock.tick();

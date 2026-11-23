@@ -1,128 +1,90 @@
-# Native VST3 view integration checkpoint
+# Linux native Trigger VST3 editor evidence — 23 November 2026
 
-This is unreviewed Linux implementation evidence for tasks 4.2/4.3 of
-`prove-trigger-vst3-linux`, not completed product or installed-host qualification.
-The Trigger UI redesign is outside this work.
+Local implementation evidence for tasks4.2/4.3 of `prove-trigger-vst3-linux`.
+The combined product remains unreviewed and unpublished; installed/offline
+REAPER qualification, final gates and independent completion review remain
+required by [issue45](https://github.com/DanMarshall909/dandrum/issues/45).
+Native Windows/macOS remain mandatory subsequent milestones. The existing
+production React UI is used unchanged; its redesign is outside this change.
 
-The real X11/Wry child now starts only after its scoped standard-message
-namespace arrives. The processor remains the sole session owner. Native tests
-observe actual parent pixels and child destruction; a standard-interface-only
-proxy records authenticated browser parameter reads across recreation.
-The browser oracle independently requires normalized pan 0.625, corresponding
-to physical pan 0.25.
+## Demonstrated boundaries
 
-The follow-up teardown slice retains one bounded, GTK-free retirement responder
-after view release, allowing a lost final acknowledgement to be retried. Refused
-acknowledgements and host timer unregistration retain cleanup tokens. An
-incomplete view cannot be replaced. Parent disconnect/termination revokes the
-child, and controller termination releases its factory host context even when
-its COM interface remains retained.
+| Boundary | Proving assertion |
+| --- | --- |
+| Native parenting/paint | Actual1200x800 X11/Wry child; literal paint fixture and production React header colour#E08A4E; host parent survives actual destruction/recreation. |
+| Failed creation/service | Missing assets, invalid parent, refused registration/unregistration and reentrant lifecycle calls fail explicitly; accepted signed playback and nonempty native history survive, then a valid attach succeeds. |
+| Scoped browser transport | Standard-interface-only proxies, delayed authenticated bootstrap and normalized pan0.625/physical0.25; no second instrument owner. |
+| Host gestures | Actual WebView Begin/Value/End, lost application Ack, refused Value/End, retained accepting handler, reentrant teardown fencing and editor-absent cleanup; no duplicate accepted host callback. |
+| Live feedback | Separate attachment namespaces; refused native route beyond its eight-packet queue converges to the final browser value without a new request or extra host gesture. |
+| Native acquisition | Real React/Wry/GTK chooser; processor-owned permit; exact bounded Linux path bytes; malformed, foreign, stale/conflicting and browser-path requests rejected without consuming valid authority. |
+| Retained outcomes | Independent60byte WAV hash,32000Hz,2channels,4frames; once-only acquisition survives lost Ack, source removal and recreation. Choosing cancels on view loss; admitted decoding finishes while stopped/editor-absent. |
+| Native mapping/history | Actual React numeric entry and Add source; signed MIDI48/49 and packaged MIDI36 renders; source deletion, native recreation and actual React Undo/Redo recover the expected sound/history and preserve a second processor's state/audio. |
+| Active callbacks | Actual React public editing, GTK selection, mapping and graph replacement overlap a real audio thread; independently specified signed old/new values, newly mapped source and zero tail are asserted. |
+| Held notes | A representative composed gated sample-player child renders [-0.5,0.25,-0.25,0.5], sustains -0.125, becomes exact silence after native view loss and cannot replay its old press after recreation. |
+| Code residency | Separate loader-only host has no preloaded WebKit. Native objects/timers/context references disappear, module releases, GLib dispatches, UI-thread/TLS destructors finish, then exact product/WebKit mappings survive a balanced NOLOAD rescan. |
 
-Task-private complete logs/receipts are under
-`.git/codex/trigger-vst3-resume-20261123/`. Genuine failing behavior runs include
-`native-paint-red`, `browser-corrected-red2`, `browser-delayed-red`,
-`browser-teardown-red`, `native-controller-context-red`,
-`native-parent-loss-red2`, and `native-cleanup-replacement-red`. Earlier browser
-trials used an incorrect physical/normalized oracle; an earlier recorder aborted
-and one parent-loss trial failed compilation. Those are not valid behavior REDs.
+Native acquisition does not serialize the NativeSelectionPermit or accept paths
+from browser commands. One bounded result/receipt pair provides application-level
+retry and deduplication. Shared selection status retains failures and cancellation.
+Rust OsStr bytes preserve acquisition paths without forcing UTF8; a real WAV
+under a nonUTF8 directory is covered at the standard-message boundary.
 
-`native-parent-cleanup-green` passed all five selected view/native/browser tests.
-`parent-cleanup-coverage` passed those tests plus six scoped channel tests. Its
-fresh profiles cover 43/43 functions and 397/430 lines in `components/view.rs`;
-branch coverage is unavailable. Uncovered defensive/error paths remain visible
-in the private fresh coverage receipt. `parent-cleanup-clippy` passed native
-feature all-target checks with warnings denied.
+Closing has an explicit application receipt before Closed can supersede it.
+Refused Closing, lost/refused ClosingAck and refused/lost RetiredAck all settle
+through editor-absent service. The original requirement that Closing precedes
+Closed, and the automation foreign-call fence, remain enforced.
 
-Production refactoring consolidates parent revocation through one controller
-helper and normal/parent view cleanup through one lifecycle function. Tests
-extend existing native scenarios to cover actual lifecycle outcomes rather than
-introducing a second browser harness. Further extraction is not justified here.
+## Current-source verification
 
-The shared editor deferred-start change also passed the existing actual React
-NativeEditor test and a fresh CLAP native lifecycle/audio regression. These
-protect the shared owner, but do not substitute for VST3 production React or
-REAPER acceptance. Current native VST3 browser tests use a minimal paint fixture.
-Native mapping/history, complete callback
-sentinels, package/offline qualification, installed REAPER, full validation and
-independent candidate review remain outstanding; no task checkbox is completed
-by this checkpoint. Windows/macOS are mandatory later native milestones.
+Complete private commands, source hashes, timings, terminal status and raw output
+are retained under `.git/codex/trigger-vst3-resume-20261123/`.
 
-## Native browser automation follow-up
+- `native-owner-final-coverage`:83 ordinary owner tests pass; six ignored entries
+  are three separately run native lanes and three parent-only subprocess entries.
+- `native-boundary-final-coverage`: all three actual native lanes pass, including
+  the calibrated allocator sentinel during actual editing/graph replacement.
+  This run measures718 complete start/process/zero/stop callbacks and358 signed
+  renders, each with zero allocations and zero frees. Counts depend on scheduling.
+- `native-sentinel-calibration`: independent real-DSO allocation and preexisting
+  destruction controls pass; complete valid/error/zero/note-off/reset,1024-input
+  curves and prepared replacement/reclamation callbacks remain clean.
+- `native-final-clippy`: native-feature all-target Clippy passes with warnings
+  denied. Headless all-target Clippy passed at the selection-owner refactor.
+- `native-combined-receipt.json`: only fresh profiles from the current-source
+  ordinary and boundary runs are merged after checking identical source/object
+  identities and every raw profile hash. View52/52functions,516/566lines(91.17%);
+  components150/153functions,1992/2087lines(95.45%). Defensive/error gaps remain
+  explicit; branch/MC/DC coverage is unavailable. This is no100% owner claim.
 
-The real WebView now submits Begin/Value/End commands through the scoped
-standard proxy. One shared host-delivery policy serves controller and native
-roles with separate receipts and retained accepting handlers. The genuine
-`native-gesture-red2` reached processor automation but stalled at the missing
-native receiver; `native-gesture-red` was a compile error, not behavior evidence.
-`native-gesture-green` passed after routing native deliveries through that policy.
+The shared NativeEditor deferred-start change passed its actual production React
+owner test and a fresh CLAP native lifecycle/audio/residency regression earlier
+in this session. Its source has not changed since those runs. These are shared
+owner regression evidence, not substitutes for VST3 native assertions above.
+The final combined product gates remain task6.1.
 
-`native-gesture-faults` and `native-gesture-final-coverage` prove a lost
-automation acknowledgement cannot duplicate Begin, a refused Value retries,
-reentrant view/controller/processor teardown is fenced during host callbacks,
-and a held gesture prevents handler replacement. Removing the native child
-with a held gesture retries a refused End through editor-absent service.
-After all four views disappear, actual MIDI/audio processing asserts silence
-through frame4 and literal signed stereo (-0.9375,-1.25) at frame5: source
--0.5 times physical level2.5 with pan0.25. The selected coverage run also
-passes31 existing controller transport/automation regressions and all five
-view/native tests. Native all-target Clippy passed before the final borrow
-scoping/format-only refinement; final combined gates remain required.
+## TDD and refactoring record
 
-The production refactor groups receipt/gesture state as HostDelivery and
-parameterizes the existing policy by its scoped transport; it introduces no
-new module or musical authority. Test variants share one native scenario and
-record only externally accepted host callbacks. No further extraction is
-justified before the remaining real editor integration is covered.
+Genuine missing-behavior REDs: `native-paint-red`,
+`browser-corrected-red2`, `browser-delayed-red`, `browser-teardown-red`,
+`native-controller-context-red`, `native-parent-loss-red2`,
+`native-cleanup-replacement-red`, `native-gesture-red2`, `native-feedback-red`,
+`production-selection-red2` and `native-lost-closing-recovery-red`. Later React
+mapping/gated-note/concurrency checks characterize the already shared behavior
+through its newly connected real adapter boundary; they required no DSP changes.
 
-## Native feedback follow-up
+Invalid trials remain separate: early browser failures used a physical value
+in a normalized wire oracle; a recorder aborted; several first trials failed
+compilation/linting. The first lost-Closing repair weakened the existing ordering
+guarantee, was caught by the wider wire tests and was reverted. The accepted
+ClosingAck repair preserves that guarantee. None of these diagnostic failures
+counts as a valid behavior RED or passing acceptance evidence.
 
-`native-feedback-red` genuinely proved that stopped host automation reached the
-controller but never reached the browser namespace. `native-feedback-green`
-passes after publishing the one shared feedback record to each attached role,
-with separate event encoding and bounded queue space reserved before consumption.
-`native-feedback-final-coverage` also fills the native queue beyond eight
-packets while refusing delivery, then observes the final browser value without
-a new request or host gesture;31 controller and6 browser-channel regressions
-pass. The existing native-ring overflow/snapshot regressions remain green.
-`native-feedback-clippy` passes with warnings denied.
+Production refactoring groups host receipt/gesture state as HostDelivery and
+parameterizes one callback policy by scoped transport. RequestLane groups borrowed
+transport/progress inputs and excludes native permit machinery from headless
+builds. Parent revocation and normal/parent cleanup share single lifecycle paths.
+No additional production module was extracted. Tests reuse calibrated public
+GTK/WebKit inspection and exercise distinct state transitions in one UI-thread
+lane; a separate loader-only executable preserves the residency oracle.
 
-Production keeps one feedback consumption loop and encodes each attachment
-inside the same covered owner boundary, avoiding parallel feedback authorities.
-Tests extend the existing actual-browser scenario with a distinct pixel oracle
-for host updates and reuse its bounded recorder. Error-only send/owner-borrow
-paths remain uncovered; no whole-owner100% or branch-coverage claim is made.
-
-## Production React and native acquisition follow-up
-
-`production-editor-package` builds the existing unchanged React UI into private
-task output. `production-selection-red2` genuinely reaches that packaged React
-backend and receives capabilityUnavailable; the first trial was a test type
-compilation error. `production-selection-green` passes after native chooser
-admission is connected to the existing shared owner. No UI redesign is included.
-
-The processor retains the NativeSelectionPermit, while a scoped native-only
-message carries bounded exact Linux path bytes. Browser commands still cannot
-supply paths. Results retain an application acknowledgement and one outcome
-receipt, so accepted-but-lost delivery cannot reopen files or admit work twice.
-Shared selection status owns terminal acquisition/decode errors.
-
-`production-selection-faults` drives actual GTK selection/cancellation through
-the production WebView. It checks the literal60byte WAV's independent hash,
-32000Hz,2channels,4frames; file removal and view recreation preserve the result.
-Lost acknowledgements retry without reopening the deleted file, then stop after
-acceptance. View removal destroys an open chooser and cancels choosing work.
-Already admitted decoding completes through persistent host service after source
-and editor loss while stopped. A separate standard-message boundary test rejects
-metadata-role acquisition, malformed batches, wrong correlation and conflicting
-duplicates; preserves the permit after rejected acquisition; retains failed and
-cancelled outcomes; and acquires a real WAV through a non-UTF8 directory.
-
-`selection-owner-coverage` passes31 controller,7 scoped browser-channel and the
-production native selection test after the final RequestLane refactor. Native
-and headless all-target strict Clippy pass. Earlier headless dead-code/closure
-lint failures are retained as setup/refactor diagnostics. RequestLane groups
-borrowed transport/progress data and excludes native permit machinery from the
-headless build. No new production module was extracted. Public GTK/WebKit test
-helpers inspect the exact child and do not prove code residency; that requires
-the separate loader-only native lane. Complete owner coverage and final gates
-remain outstanding, as do actual native mapping/history and installed REAPER.
+No mutation jobs ran. Private product, host and test binaries are not published.

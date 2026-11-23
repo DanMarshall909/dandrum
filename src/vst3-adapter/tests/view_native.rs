@@ -20,6 +20,12 @@ use common::native::paint_package;
 fn native_view_paints_and_recreates_without_destroying_its_host_parent() {
     let bundle = Bundle::new();
     paint_package(&bundle);
+    let before = std::fs::read_to_string("/proc/self/maps").unwrap();
+    assert!(
+        !before.contains("libwebkit2gtk"),
+        "loader-only host must not preload WebKit"
+    );
+    let bundle=std::thread::spawn(move || {
     let module = bundle.load();
     let (clock, factory, _host) = runloop::host(&module);
     let processor = module.class_from::<IComponent>(&factory, &PROCESSOR);
@@ -337,4 +343,34 @@ fn native_view_paints_and_recreates_without_destroying_its_host_parent() {
     assert_eq!(unsafe { surviving_controller.terminate() }, kResultOk);
     assert!(clock.handlers.borrow().is_empty());
     x.destroy_window(parent).unwrap().check().unwrap();
+    drop((retained_view,surviving,dying,surviving_controller,dying_processor,view,p,c,controller,processor,factory,_host));
+    // Take only a balanced reference to the already-loaded GLib dependency;
+    // the host never loads or retains WebKit independently of the product.
+    let glib=unsafe{libloading::os::unix::Library::open(Some("libglib-2.0.so.0"),libloading::os::unix::RTLD_NOW|libc::RTLD_NOLOAD)}.unwrap();
+    let iteration=unsafe{*glib.get::<unsafe extern "C" fn(*mut std::ffi::c_void,i32)->i32>(b"g_main_context_iteration\0").unwrap()};
+    drop(module);
+    for _ in 0..32 {unsafe{iteration(std::ptr::null_mut(),0);}}
+    glib.close().unwrap();
+    bundle
+    }).join().expect("native owner thread and its TLS destructors complete");
+    let mapped = std::fs::read_to_string("/proc/self/maps").unwrap();
+    assert!(
+        mapped.contains(bundle.binary.to_str().unwrap()),
+        "exact product code remains after final module release and UI-thread TLS destruction"
+    );
+    assert!(
+        mapped.contains("libwebkit2gtk"),
+        "WebKit dependency residency outlives the native owner thread"
+    );
+    let balanced = unsafe {
+        libloading::os::unix::Library::open(
+            Some(&bundle.binary),
+            libloading::os::unix::RTLD_NOW | libc::RTLD_NOLOAD,
+        )
+    }
+    .expect("balanced NOLOAD rescan of exact already-mapped product");
+    balanced.close().unwrap();
+    println!(
+        "loader-only VST3: native objects/timers destroyed, module released, GLib dispatched, UI thread/TLS exited, product and WebKit remain resident after balanced NOLOAD rescan"
+    );
 }
