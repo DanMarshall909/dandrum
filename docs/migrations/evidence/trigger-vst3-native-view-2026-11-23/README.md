@@ -111,3 +111,15 @@ full current-candidate validator and final combined qualification remain pending
 Refactoring delays worker creation until a service actually exists, removing
 unserviced background authority. Existing rollback/cleanup tests retain their
 observable contract. No new module was extracted.
+
+The second extensive validator trial completes without a crash and reports274
+passed/3failed tests, plus cascading setup/teardown failures. The retained output
+identifies processor terminate/reinitialize and mandatory process-context support.
+`component-restart-red` proves the same-component restart failure;
+`component-restart-coverage` passes all seven service and31 controller tests after
+restoring fresh initialization with a weak factory-service origin. No context
+reference is retained solely to enable restart. Nondefault old sound is discarded,
+new setup is required, literal default signed sound returns and both timer
+lifetimes release. The small lifecycle refactor adds no module; wider controller
+retirement/foreign-call regressions remain green. Validator requalification is
+still pending the remaining identified contract.

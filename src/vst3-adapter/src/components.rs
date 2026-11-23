@@ -50,6 +50,7 @@ pub(crate) fn create(
             initialized: Cell::new(false),
             transport: Transport::default(),
             attachment: RefCell::new(None),
+            loop_origin: runloop.as_ref().map(Rc::downgrade),
             runloop: RefCell::new(runloop),
             registration: RefCell::new(None),
             wake: Arc::new(WorkerWake::default()),
@@ -118,6 +119,7 @@ struct ProcessorCore {
     audio: crate::audio::Slot,
     transport: Transport,
     attachment: RefCell<Option<String>>,
+    loop_origin: Option<Weak<ComPtr<IRunLoop>>>,
     runloop: RefCell<Option<Rc<ComPtr<IRunLoop>>>>,
     registration: RefCell<Option<Registration>>,
     wake: Arc<WorkerWake>,
@@ -183,12 +185,19 @@ impl ProcessorCore {
 }
 impl IPluginBaseTrait for Processor {
     unsafe fn initialize(&self, _context: *mut FUnknown) -> tresult {
-        if !self.main()
-            || self.terminated.get()
+        if self.thread != platform::thread_id()
             || self.owner.borrow().is_some()
             || self.registration.borrow().is_some()
+            || self.audio.in_use()
+            || self.connection_busy.get()
         {
             return kResultFalse;
+        }
+        if self.terminated.replace(false) {
+            self.closing.set(false);
+            self.shutdown_close.set(false);
+            self.audio.configured.store(false, Ordering::Release);
+            *self.runloop.borrow_mut() = self.loop_origin.as_ref().and_then(Weak::upgrade);
         }
         static NEXT: AtomicU64 = AtomicU64::new(1);
         let Ok(id) = NEXT.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1))

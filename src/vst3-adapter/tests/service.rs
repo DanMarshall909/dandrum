@@ -201,3 +201,50 @@ fn advertised_unimplemented_loop_preserves_headless_bus_and_signed_audio() {
     assert_eq!(unsafe { p.terminate() }, kResultOk);
     assert!(clock.handlers.borrow().is_empty());
 }
+
+#[test]
+fn terminated_processor_can_restart_with_fresh_service_and_signed_default_sound() {
+    use common::{audio::*, parameters::*};
+    let bundle = Bundle::new();
+    let module = bundle.load();
+    let (clock, factory, _host) = host(&module);
+    let p = module.class_from::<IComponent>(&factory, &PROCESSOR);
+    let audio = p.cast::<IAudioProcessor>().unwrap();
+    for cycle in 0..2 {
+        assert_eq!(
+            unsafe { p.initialize(std::ptr::null_mut()) },
+            kResultOk,
+            "same component restarts in cycle{cycle}"
+        );
+        assert_eq!(clock.handlers.borrow().len(), 1);
+        assert_eq!(
+            unsafe { audio.setProcessing(1) },
+            kNotInitialized,
+            "a new lifetime needs fresh processing setup"
+        );
+        start(&p, &audio, 48000.0, 16);
+        let notes = events(vec![note_on(5, 36, 1.0)]);
+        let mut block = Block::new(16);
+        let mut data = block.data();
+        data.inputEvents = notes.as_ptr();
+        let controls = changes(vec![queue(0x1003, vec![(0, 0.125)])]);
+        if cycle == 0 {
+            data.inputParameterChanges = controls.as_ptr();
+        }
+        assert_eq!(unsafe { audio.process(&mut data) }, kResultOk);
+        assert_eq!(
+            (block.left[5], block.right[5]),
+            if cycle == 0 {
+                (-0.25, -0.25)
+            } else {
+                (-0.5, -0.5)
+            }
+        );
+        assert_eq!(unsafe { audio.setProcessing(0) }, kResultOk);
+        assert_eq!(unsafe { p.terminate() }, kResultOk);
+        assert!(clock.handlers.borrow().is_empty());
+        assert_eq!(unsafe { p.getBusCount(0, 1) }, 0);
+    }
+    assert_eq!(clock.registered.get(), 2);
+    assert_eq!(clock.unregistered.get(), 2);
+}
