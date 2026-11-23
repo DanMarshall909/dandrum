@@ -48,6 +48,15 @@ pub(crate) enum HostAutomation {
     Value { parameter: u32, value: f64 },
     End { parameter: u32 },
 }
+#[cfg(feature = "trigger-editor")]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(tag = "status", rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) enum NativeFiles {
+    Cancelled,
+    Selected { paths: Vec<Vec<u8>> },
+    Unavailable,
+    InvalidFiles,
+}
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type", rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) enum Body {
@@ -77,6 +86,15 @@ pub(crate) enum Body {
     },
     AutomationAck {
         delivery: u64,
+    },
+    #[cfg(feature = "trigger-editor")]
+    NativeSelection {
+        request: u64,
+        result: NativeFiles,
+    },
+    #[cfg(feature = "trigger-editor")]
+    NativeSelectionAck {
+        request: u64,
     },
     Closed,
     Closing,

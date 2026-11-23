@@ -1147,3 +1147,202 @@ fn disposable_view_connection_has_independent_shared_identity_and_preserves_cont
     assert_eq!(unsafe { processor.terminate() }, kResultOk);
     assert!(clock.handlers.borrow().is_empty());
 }
+
+#[test]
+fn native_selection_results_require_the_scoped_permit_and_preserve_once_only_outcomes() {
+    use std::os::unix::ffi::{OsStrExt, OsStringExt};
+    let bundle = Bundle::new();
+    let module = bundle.load();
+    let (clock, factory, _context) = runloop::host(&module);
+    let processor = module.class_from::<IComponent>(&factory, &PROCESSOR);
+    assert_eq!(
+        unsafe { processor.initialize(std::ptr::null_mut()) },
+        kResultOk
+    );
+    let p = processor.cast::<IConnectionPoint>().unwrap();
+    let frames = Rc::new(RefCell::new(Vec::new()));
+    let host = ComWrapper::new(Host {
+        processor: Rc::new(p.clone()),
+        frames: frames.clone(),
+        faults: Rc::new(Faults::default()),
+    })
+    .to_com_ptr::<IConnectionPoint>()
+    .unwrap();
+    assert_eq!(unsafe { p.connect(host.as_ptr()) }, kResultOk);
+    let control = observed(&frames, None, "projection");
+    assert_eq!(send(&p, &offer(&control, 1)), kResultOk);
+    let view = observed(&frames, Some(1), "projection");
+    let mut serial = 0;
+    let mut command_reply = |method: &str, args: Value| {
+        serial += 1;
+        assert_eq!(
+            send(
+                &p,
+                &command(&control, Some((1, &view)), serial, serial, method, args)
+            ),
+            kResultOk
+        );
+        let reply = observed(&frames, Some(1), "reply");
+        let value: Value = serde_json::from_str(reply["body"]["frame"].as_str().unwrap()).unwrap();
+        assert_eq!(value["status"], "accepted", "{value}");
+        value["result"].clone()
+    };
+    let first = command_reply("chooseSamplerFiles", json!([]));
+    assert_eq!(first["phase"], "choosing");
+    let native = |request, result| {
+        packet(
+            &control,
+            Some((1, &view)),
+            0,
+            json!({"type":"nativeSelection","request":request,"result":result}),
+        )
+    };
+    let mut foreign = native(1, json!({"status":"cancelled"}));
+    foreign.as_object_mut().unwrap().remove("view");
+    foreign["source"] = json!(host_scope(None));
+    foreign["target"] = control["source"].clone();
+    assert_eq!(
+        send(&p, &foreign),
+        kNotImplemented,
+        "metadata projection cannot acquire native files"
+    );
+    assert_eq!(
+        send(&p, &native(0, json!({"status":"cancelled"}))),
+        kInvalidArgument
+    );
+    assert_eq!(
+        send(&p, &native(2, json!({"status":"cancelled"}))),
+        kResultFalse
+    );
+    for paths in [
+        json!([]),
+        json!([[]]),
+        json!([[0]]),
+        json!([vec![1u8; 4096]]),
+        json!(vec![vec![1u8]; 17]),
+    ] {
+        assert_eq!(
+            send(&p, &native(1, json!({"status":"selected","paths":paths}))),
+            kInvalidArgument,
+            "malformed acquisition cannot consume the live permit"
+        );
+    }
+    let unavailable = native(1, json!({"status":"unavailable"}));
+    assert_eq!(send(&p, &unavailable), kResultOk);
+    assert_eq!(send(&p, &unavailable), kResultOk);
+    assert_eq!(
+        send(&p, &native(1, json!({"status":"cancelled"}))),
+        kResultFalse,
+        "conflicting duplicate cannot change the retained outcome"
+    );
+    let status = command_reply("getSamplerSelectionStatus", json!([first["selectionId"]]));
+    assert_eq!(status["phase"], "failed");
+    assert_eq!(status["error"], "nativeUnavailable");
+    for (request, result, phase, error) in [
+        (
+            3,
+            json!({"status":"invalidFiles"}),
+            "failed",
+            Some("fileCount"),
+        ),
+        (5, json!({"status":"cancelled"}), "cancelled", None),
+        (
+            7,
+            json!({"status":"selected","paths":[b"/missing/dandrum-native-file.wav".to_vec()]}),
+            "failed",
+            Some("invalidFile"),
+        ),
+    ] {
+        let choice = command_reply("chooseSamplerFiles", json!([]));
+        assert_eq!(choice["phase"], "choosing");
+        assert_eq!(send(&p, &native(request, result)), kResultOk);
+        let status = command_reply("getSamplerSelectionStatus", json!([choice["selectionId"]]));
+        assert_eq!(status["phase"], phase);
+        if let Some(error) = error {
+            assert_eq!(status["error"], error);
+        }
+        assert_eq!(
+            send(&p, &unavailable),
+            kResultFalse,
+            "old native outcomes cannot affect a newer selection"
+        );
+    }
+    let root = tempfile::tempdir().unwrap();
+    let directory = root
+        .path()
+        .join(std::ffi::OsString::from_vec(b"native-\xff".to_vec()));
+    std::fs::create_dir(&directory).unwrap();
+    let path = directory.join("selected.wav");
+    let wav: &[u8] = &[
+        82, 73, 70, 70, 52, 0, 0, 0, 87, 65, 86, 69, 102, 109, 116, 32, 16, 0, 0, 0, 1, 0, 2, 0, 0,
+        125, 0, 0, 0, 244, 1, 0, 4, 0, 16, 0, 100, 97, 116, 97, 16, 0, 0, 0, 0, 160, 0, 64, 0, 32,
+        0, 224, 0, 192, 0, 16, 0, 64, 0, 160,
+    ];
+    std::fs::write(&path, wav).unwrap();
+    let choice = command_reply("chooseSamplerFiles", json!([]));
+    let selected = native(
+        9,
+        json!({"status":"selected","paths":[path.as_os_str().as_bytes()]}),
+    );
+    assert_eq!(send(&p, &selected), kResultOk);
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
+    let ready = loop {
+        clock.tick();
+        let status = command_reply("getSamplerSelectionStatus", json!([choice["selectionId"]]));
+        if status["phase"] == "ready" {
+            break status;
+        }
+        assert_eq!(status["phase"], "preparing");
+        assert!(std::time::Instant::now() < deadline);
+        std::thread::yield_now();
+    };
+    assert_eq!(
+        ready["files"][0]["contentSha256"],
+        "2e484972f38876c961b3c23fb4952487dce3e18501c7fb0efd1b8cb7011734d5"
+    );
+    assert_eq!(ready["files"][0]["encodedBytes"], 60);
+    std::fs::remove_file(&path).unwrap();
+    assert_eq!(
+        send(&p, &selected),
+        kResultOk,
+        "retry uses its retained receipt after source removal"
+    );
+    assert_eq!(
+        command_reply("getSamplerSelectionStatus", json!([choice["selectionId"]])),
+        ready
+    );
+    let pending = command_reply("chooseSamplerFiles", json!([]));
+    assert_eq!(pending["phase"], "choosing");
+    let pending_request = serial;
+    for args in [json!([]), json!(["/browser/supplied/path.wav"])] {
+        serial += 1;
+        assert_eq!(
+            send(
+                &p,
+                &command(
+                    &control,
+                    Some((1, &view)),
+                    serial,
+                    serial,
+                    "chooseSamplerFiles",
+                    args
+                )
+            ),
+            kResultOk
+        );
+        let reply = observed(&frames, Some(1), "reply");
+        let reply: Value = serde_json::from_str(reply["body"]["frame"].as_str().unwrap()).unwrap();
+        assert_eq!(
+            reply["status"], "rejected",
+            "busy or browser path acquisition must not gain a native permit"
+        );
+    }
+    assert_eq!(
+        send(&p, &native(pending_request, json!({"status":"cancelled"}))),
+        kResultOk,
+        "rejected acquisition preserves the original permit"
+    );
+    close(&p, &control, 1, &view);
+    assert_eq!(unsafe { processor.terminate() }, kResultOk);
+    assert!(clock.handlers.borrow().is_empty());
+}

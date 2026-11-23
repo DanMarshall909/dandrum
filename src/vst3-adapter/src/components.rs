@@ -1625,6 +1625,57 @@ impl Drop for ProcessorCore {
     }
 }
 
+#[cfg(feature = "trigger-editor")]
+struct NativeChoice {
+    request: u64,
+    permit: dandrum_trigger_host::parameters::NativeSelectionPermit,
+}
+struct RequestLane<'a> {
+    transport: &'a Transport,
+    attachment: &'a str,
+    last_request: &'a Cell<u64>,
+    processed: &'a RefCell<VecDeque<Processed>>,
+    #[cfg(feature = "trigger-editor")]
+    native_selection: Option<&'a RefCell<Option<NativeChoice>>>,
+}
+impl RequestLane<'_> {
+    fn dispatch(
+        &self,
+        owner: &mut ParameterController,
+        _sequence: u64,
+        request_id: &str,
+        frame: &str,
+    ) -> Result<(String, Option<u64>), dandrum_trigger_host::parameters::ParameterError> {
+        #[cfg(feature = "trigger-editor")]
+        if let Some(selection) = self.native_selection
+            && let Some(request) =
+                dandrum_trigger_host::editor_bridge::browser_request(self.attachment, frame)
+                    .filter(|request| request.is_native_selection())
+        {
+            use dandrum_trigger_host::editor_commands::{
+                NativeSelectionAdmission, begin_native_selection,
+            };
+            return begin_native_selection(owner, self.attachment, &request).map(|admission| {
+                match admission {
+                    NativeSelectionAdmission::Ready { permit, reply } => {
+                        *selection.borrow_mut() = Some(NativeChoice {
+                            request: _sequence,
+                            permit,
+                        });
+                        (reply, None)
+                    }
+                    NativeSelectionAdmission::Rejected { reply } => (reply, None),
+                }
+            });
+        }
+        dandrum_trigger_host::editor_commands::dispatch_with_publication(
+            owner,
+            self.attachment,
+            request_id,
+            frame,
+        )
+    }
+}
 struct Processed {
     sequence: u64,
     request: String,
@@ -1639,6 +1690,8 @@ struct BrowserProjection {
     last_request: Cell<u64>,
     next_automation: Cell<u64>,
     processed: RefCell<VecDeque<Processed>>,
+    selection: RefCell<Option<NativeChoice>>,
+    selected: RefCell<Option<(u64, crate::transport::NativeFiles)>>,
     closing: Cell<bool>,
     closed: Cell<bool>,
 }
@@ -1688,6 +1741,8 @@ impl ProcessorCore {
                     last_request: Cell::new(0),
                     next_automation: Cell::new(1),
                     processed: RefCell::new(VecDeque::with_capacity(crate::transport::PENDING)),
+                    selection: RefCell::new(None),
+                    selected: RefCell::new(None),
                     closing: Cell::new(false),
                     closed: Cell::new(false),
                 });
@@ -1742,6 +1797,11 @@ impl ProcessorCore {
                         return result;
                     }
                 }
+                Body::NativeSelection { request, result }
+                    if packet.sequence == 0 && !browser.closing.get() =>
+                {
+                    return self.accept_native_selection(&browser, request, result);
+                }
                 Body::Request { frame } if !browser.closing.get() => {
                     let attachment = browser.attachment.borrow().clone();
                     let Some(attachment) = attachment else {
@@ -1750,10 +1810,13 @@ impl ProcessorCore {
                     let result = self.request_at(
                         packet.sequence,
                         &frame,
-                        &browser.transport,
-                        &attachment,
-                        &browser.last_request,
-                        &browser.processed,
+                        RequestLane {
+                            transport: &browser.transport,
+                            attachment: &attachment,
+                            last_request: &browser.last_request,
+                            processed: &browser.processed,
+                            native_selection: Some(&browser.selection),
+                        },
                     );
                     if result != kResultOk {
                         browser.transport.pump();
@@ -1766,6 +1829,88 @@ impl ProcessorCore {
         self.project_browser(&browser);
         browser.transport.pump();
         kResultOk
+    }
+    fn accept_native_selection(
+        &self,
+        browser: &BrowserProjection,
+        request: u64,
+        result: crate::transport::NativeFiles,
+    ) -> tresult {
+        use crate::transport::NativeFiles;
+        use dandrum_trigger_host::{
+            editor_commands::submit_native_selection,
+            samples::{MAX_SELECTION_FILES, SampleError},
+        };
+        use std::os::unix::ffi::OsStringExt;
+        if request == 0 {
+            return kInvalidArgument;
+        }
+        let receipt = browser.selected.borrow().clone();
+        if let Some((previous, accepted)) = receipt {
+            if request == previous {
+                return if result == accepted {
+                    self.acknowledge_native_selection(browser, request)
+                } else {
+                    kResultFalse
+                };
+            }
+            if request < previous {
+                return kResultFalse;
+            }
+        }
+        let files = match &result {
+            NativeFiles::Cancelled => Ok(None),
+            NativeFiles::Unavailable => Err(SampleError::NativeUnavailable),
+            NativeFiles::InvalidFiles => Err(SampleError::FileCount),
+            NativeFiles::Selected { paths } => {
+                if paths.is_empty()
+                    || paths.len() > MAX_SELECTION_FILES
+                    || paths.iter().any(|p| {
+                        p.is_empty() || p.len() >= libc::PATH_MAX as usize || p.contains(&0)
+                    })
+                {
+                    return kInvalidArgument;
+                }
+                Ok(Some(
+                    paths
+                        .iter()
+                        .cloned()
+                        .map(|p| PathBuf::from(std::ffi::OsString::from_vec(p)))
+                        .collect(),
+                ))
+            }
+        };
+        if !browser.transport.has_space() {
+            return kResultFalse;
+        }
+        {
+            let selection = browser.selection.borrow();
+            let Some(selection) = selection.as_ref().filter(|s| s.request == request) else {
+                return kResultFalse;
+            };
+            let Ok(mut owner) = self.owner.try_borrow_mut() else {
+                return kResultFalse;
+            };
+            let Some(owner) = owner.as_mut() else {
+                return kNotInitialized;
+            };
+            // Acquisition failures are retained as selection status by the shared
+            // owner. Acknowledge this native result once, including failed opens.
+            let _ = submit_native_selection(owner, &selection.permit, files);
+        }
+        browser.selection.borrow_mut().take();
+        *browser.selected.borrow_mut() = Some((request, result));
+        self.acknowledge_native_selection(browser, request)
+    }
+    fn acknowledge_native_selection(&self, browser: &BrowserProjection, request: u64) -> tresult {
+        let ack = Body::NativeSelectionAck { request };
+        let result = if browser.transport.queued(0, &ack) {
+            kResultOk
+        } else {
+            browser.transport.send(0, ack)
+        };
+        browser.transport.pump();
+        result
     }
     fn project_browser(&self, browser: &BrowserProjection) {
         if !self.live()
@@ -1797,6 +1942,8 @@ impl ProcessorCore {
     }
     fn detach_browser(&self, browser: &BrowserProjection) {
         browser.closing.set(true);
+        browser.selection.borrow_mut().take();
+        browser.selected.borrow_mut().take();
         let attachment = browser.attachment.borrow_mut().take();
         let owns_flight = self.automation.borrow().as_ref().is_some_and(|flight| {
             flight.view == Some(browser.id)
@@ -1840,21 +1987,24 @@ impl ProcessorCore {
         self.request_at(
             sequence,
             frame,
-            &self.transport,
-            &attachment,
-            &self.last_request,
-            &self.processed,
+            RequestLane {
+                transport: &self.transport,
+                attachment: &attachment,
+                last_request: &self.last_request,
+                processed: &self.processed,
+                #[cfg(feature = "trigger-editor")]
+                native_selection: None,
+            },
         )
     }
-    fn request_at(
-        &self,
-        sequence: u64,
-        frame: &str,
-        transport: &Transport,
-        attachment: &str,
-        last_request: &Cell<u64>,
-        processed: &RefCell<VecDeque<Processed>>,
-    ) -> tresult {
+    fn request_at(&self, sequence: u64, frame: &str, lane: RequestLane<'_>) -> tresult {
+        let RequestLane {
+            transport,
+            attachment,
+            last_request,
+            processed,
+            ..
+        } = lane;
         if self.closing.get() {
             return kResultFalse;
         }
@@ -1904,9 +2054,7 @@ impl ProcessorCore {
             let Some(owner) = owner.as_mut() else {
                 return kNotInitialized;
             };
-            match dandrum_trigger_host::editor_commands::dispatch_with_publication(
-                owner, attachment, request_id, frame,
-            ) {
+            match lane.dispatch(owner, sequence, request_id, frame) {
                 Ok(reply) => reply,
                 Err(_) => return kInvalidArgument,
             }

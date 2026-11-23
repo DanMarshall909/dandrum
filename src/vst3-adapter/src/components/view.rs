@@ -1,7 +1,7 @@
 //! Affine VST3 view projection. The instrument authority remains in Processor.
 use super::{Bootstrap, ControllerCore, HostCall, HostDelivery, Registration, platform};
-use crate::transport::{Body, Packet, Transport, ViewRoute};
-use dandrum_trigger_editor::{EditorAssets, NativeEditor};
+use crate::transport::{Body, NativeFiles, Packet, Transport, ViewRoute};
+use dandrum_trigger_editor::{EditorAssets, NativeEditor, NativeFileSelection};
 use dandrum_trigger_host::editor_bridge::{
     browser_request, delivery_script, initialization_script,
 };
@@ -26,6 +26,7 @@ pub(super) fn create(controller: &Rc<ControllerCore>) -> *mut IPlugView {
         registration: RefCell::new(None),
         connection: RefCell::new(None),
         busy: Cell::new(false),
+        selection_dialog: RefCell::new(None),
     })))
     .to_com_ptr::<IPlugView>()
     .expect("view includes the standard interface")
@@ -51,6 +52,7 @@ pub(super) struct ViewCore {
     registration: RefCell<Option<Registration>>,
     connection: RefCell<Option<Rc<BrowserConnection>>>,
     busy: Cell<bool>,
+    selection_dialog: RefCell<Option<NativeFileSelection>>,
 }
 pub(super) struct BrowserConnection {
     transport: Transport,
@@ -60,6 +62,9 @@ pub(super) struct BrowserConnection {
     closing: Cell<bool>,
     closed: Cell<bool>,
     host_delivery: HostDelivery,
+    selection_request: Cell<Option<u64>>,
+    selection_started: Cell<u64>,
+    selection_result: RefCell<Option<Body>>,
 }
 impl BrowserConnection {
     pub(super) fn receive_retired(&self, packet: Packet) -> tresult {
@@ -202,6 +207,9 @@ impl ViewCore {
                 closing: Cell::new(false),
                 closed: Cell::new(false),
                 host_delivery: HostDelivery::default(),
+                selection_request: Cell::new(None),
+                selection_started: Cell::new(0),
+                selection_result: RefCell::new(None),
             }))
         })();
         let Some(connection) = opened else {
@@ -214,7 +222,7 @@ impl ViewCore {
         connection.transport.pump();
         kResultOk
     }
-    pub(super) fn receive(&self, packet: Packet) -> tresult {
+    pub(super) fn receive(self: &Rc<Self>, packet: Packet) -> tresult {
         if self.thread != platform::thread_id() {
             return kResultFalse;
         }
@@ -272,7 +280,18 @@ impl ViewCore {
                     let Some(child) = child else {
                         return kResultFalse;
                     };
+                    self.start_selection(&connection, packet.sequence, &frame, &child);
                     if child.evaluate_script(&delivery_script(&frame)).is_err() {
+                        return kResultFalse;
+                    }
+                }
+                Body::NativeSelectionAck { request }
+                    if packet.sequence == 0 && !connection.closing.get() =>
+                {
+                    let matches=connection.selection_result.borrow().as_ref().is_some_and(|result|matches!(result,Body::NativeSelection{request:pending,..} if *pending==request));
+                    if matches {
+                        connection.selection_result.borrow_mut().take();
+                    } else if request != connection.selection_started.get() {
                         return kResultFalse;
                     }
                 }
@@ -323,9 +342,9 @@ impl ViewCore {
         let Some(bootstrap) = bootstrap else {
             return;
         };
-        if browser_request(&bootstrap.attachment_id, message).is_none() {
+        let Some(request) = browser_request(&bootstrap.attachment_id, message) else {
             return;
-        }
+        };
         let sequence = connection.next_request.get();
         let Some(next) = sequence.checked_add(1) else {
             return;
@@ -337,8 +356,101 @@ impl ViewCore {
             },
         ) == kResultOk
         {
+            if request.is_native_selection() {
+                connection.selection_request.set(Some(sequence));
+            }
             connection.next_request.set(next);
             connection.transport.pump();
+        }
+    }
+    fn start_selection(
+        self: &Rc<Self>,
+        connection: &Rc<BrowserConnection>,
+        sequence: u64,
+        frame: &str,
+        child: &NativeEditor,
+    ) {
+        if sequence == 0
+            || connection.selection_request.get() != Some(sequence)
+            || sequence <= connection.selection_started.get()
+        {
+            return;
+        }
+        let Ok(reply) = serde_json::from_str::<serde_json::Value>(frame) else {
+            return;
+        };
+        if reply["status"] != "accepted" || reply["result"]["phase"] != "choosing" {
+            return;
+        }
+        connection.selection_started.set(sequence);
+        connection.selection_request.set(None);
+        let weak = Rc::downgrade(self);
+        let channel = Rc::downgrade(connection);
+        let dialog = child.choose_sample_files(move |files| {
+            use std::os::unix::ffi::OsStrExt;
+            let (Some(view), Some(connection)) = (weak.upgrade(), channel.upgrade()) else {
+                return;
+            };
+            if !view.live() || connection.closing.get() {
+                return;
+            }
+            let result = match files {
+                None => NativeFiles::Cancelled,
+                Some(paths)
+                    if paths.is_empty()
+                        || paths.len() > dandrum_trigger_host::samples::MAX_SELECTION_FILES =>
+                {
+                    NativeFiles::InvalidFiles
+                }
+                Some(paths) => {
+                    let paths: Vec<Vec<u8>> = paths
+                        .into_iter()
+                        .map(|path| path.as_os_str().as_bytes().to_vec())
+                        .collect();
+                    if paths.iter().any(|path| {
+                        path.is_empty()
+                            || path.len() >= libc::PATH_MAX as usize
+                            || path.contains(&0)
+                    }) {
+                        NativeFiles::InvalidFiles
+                    } else {
+                        NativeFiles::Selected { paths }
+                    }
+                }
+            };
+            *connection.selection_result.borrow_mut() = Some(Body::NativeSelection {
+                request: sequence,
+                result,
+            });
+        });
+        match dialog {
+            Ok(dialog) => {
+                *self.selection_dialog.borrow_mut() = Some(dialog);
+            }
+            Err(_) => {
+                *connection.selection_result.borrow_mut() = Some(Body::NativeSelection {
+                    request: sequence,
+                    result: NativeFiles::Unavailable,
+                });
+            }
+        }
+    }
+    fn service_selection(&self, connection: &BrowserConnection) {
+        let finished = self
+            .selection_dialog
+            .borrow()
+            .as_ref()
+            .is_some_and(|dialog| !dialog.is_pending());
+        if finished {
+            let dialog = self.selection_dialog.borrow_mut().take();
+            drop(dialog);
+        }
+        let result = connection.selection_result.borrow().clone();
+        if let Some(result) = result
+            && !connection.closing.get()
+            && !connection.transport.queued(0, &result)
+        {
+            let _ = connection.transport.send(0, result);
         }
     }
     fn close_connection(&self) -> bool {
@@ -392,6 +504,8 @@ impl ViewCore {
             return kResultFalse;
         }
         let _call = HostCall(&self.busy);
+        let dialog = self.selection_dialog.borrow_mut().take();
+        drop(dialog);
         let child = self.child.borrow_mut().take();
         drop(child);
         let connection = self.connection.borrow().clone();
@@ -444,6 +558,7 @@ impl ViewCore {
         let _ = NativeEditor::service();
         let connection = self.connection.borrow().clone();
         if let Some(connection) = connection {
+            self.service_selection(&connection);
             connection.transport.pump();
         }
     }

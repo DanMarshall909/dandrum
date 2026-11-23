@@ -42,7 +42,7 @@ The shared editor deferred-start change also passed the existing actual React
 NativeEditor test and a fresh CLAP native lifecycle/audio regression. These
 protect the shared owner, but do not substitute for VST3 production React or
 REAPER acceptance. Current native VST3 browser tests use a minimal paint fixture.
-Native selection, complete callback
+Native mapping/history, complete callback
 sentinels, package/offline qualification, installed REAPER, full validation and
 independent candidate review remain outstanding; no task checkbox is completed
 by this checkpoint. Windows/macOS are mandatory later native milestones.
@@ -91,3 +91,38 @@ inside the same covered owner boundary, avoiding parallel feedback authorities.
 Tests extend the existing actual-browser scenario with a distinct pixel oracle
 for host updates and reuse its bounded recorder. Error-only send/owner-borrow
 paths remain uncovered; no whole-owner100% or branch-coverage claim is made.
+
+## Production React and native acquisition follow-up
+
+`production-editor-package` builds the existing unchanged React UI into private
+task output. `production-selection-red2` genuinely reaches that packaged React
+backend and receives capabilityUnavailable; the first trial was a test type
+compilation error. `production-selection-green` passes after native chooser
+admission is connected to the existing shared owner. No UI redesign is included.
+
+The processor retains the NativeSelectionPermit, while a scoped native-only
+message carries bounded exact Linux path bytes. Browser commands still cannot
+supply paths. Results retain an application acknowledgement and one outcome
+receipt, so accepted-but-lost delivery cannot reopen files or admit work twice.
+Shared selection status owns terminal acquisition/decode errors.
+
+`production-selection-faults` drives actual GTK selection/cancellation through
+the production WebView. It checks the literal60byte WAV's independent hash,
+32000Hz,2channels,4frames; file removal and view recreation preserve the result.
+Lost acknowledgements retry without reopening the deleted file, then stop after
+acceptance. View removal destroys an open chooser and cancels choosing work.
+Already admitted decoding completes through persistent host service after source
+and editor loss while stopped. A separate standard-message boundary test rejects
+metadata-role acquisition, malformed batches, wrong correlation and conflicting
+duplicates; preserves the permit after rejected acquisition; retains failed and
+cancelled outcomes; and acquires a real WAV through a non-UTF8 directory.
+
+`selection-owner-coverage` passes31 controller,7 scoped browser-channel and the
+production native selection test after the final RequestLane refactor. Native
+and headless all-target strict Clippy pass. Earlier headless dead-code/closure
+lint failures are retained as setup/refactor diagnostics. RequestLane groups
+borrowed transport/progress data and excludes native permit machinery from the
+headless build. No new production module was extracted. Public GTK/WebKit test
+helpers inspect the exact child and do not prove code residency; that requires
+the separate loader-only native lane. Complete owner coverage and final gates
+remain outstanding, as do actual native mapping/history and installed REAPER.
