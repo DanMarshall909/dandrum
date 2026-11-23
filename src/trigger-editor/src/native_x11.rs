@@ -35,6 +35,7 @@ pub struct NativeEditor {
     // Rust drops fields in declaration order: browser before its GTK container.
     view: WebView,
     _window: OwnedWindow,
+    focus_window: u32,
     ipc: Option<(webkit2gtk::UserContentManager, gtk::glib::SignalHandlerId)>,
     protocol: Option<OwnedProtocol>,
     application_loaded: Cell<bool>,
@@ -273,10 +274,68 @@ impl NativeEditor {
         let display = self._window.0.display();
         if visible {
             self._window.0.show_all();
+            let scale = self._window.0.scale_factor().max(1);
+            self._window.0.size_allocate(&gtk::Allocation::new(
+                0,
+                0,
+                i32::from(Self::WIDTH) / scale,
+                i32::from(Self::HEIGHT) / scale,
+            ));
         } else {
             self._window.0.hide();
         }
         display.sync();
+        if let Some((connection, child)) = self._window.1.as_ref() {
+            // This owned outer child supplies the fixed-size XEmbed socket;
+            // unlike GtkSocket it has no separate layout or mapping loop.
+            connection
+                .configure_window(
+                    self.focus_window,
+                    &x11rb::protocol::xproto::ConfigureWindowAux::new()
+                        .width(u32::from(Self::WIDTH))
+                        .height(u32::from(Self::HEIGHT)),
+                )
+                .map_err(|error| NativeError::X11(error.to_string()))?
+                .check()
+                .map_err(|error| NativeError::X11(error.to_string()))?;
+            let inner = if visible {
+                connection.map_window(self.focus_window)
+            } else {
+                connection.unmap_window(self.focus_window)
+            };
+            inner
+                .map_err(|error| NativeError::X11(error.to_string()))?
+                .check()
+                .map_err(|error| NativeError::X11(error.to_string()))?;
+            let request = if visible {
+                connection.map_window(*child)
+            } else {
+                connection.unmap_window(*child)
+            };
+            request
+                .map_err(|error| NativeError::X11(error.to_string()))?
+                .check()
+                .map_err(|error| NativeError::X11(error.to_string()))?;
+        }
+        Ok(())
+    }
+
+    /// Transfer keyboard focus from the foreign host to this browser child.
+    pub fn focus(&self) -> Result<(), NativeError> {
+        Self::check_thread()?;
+        self.view.webview().grab_focus();
+        let (connection, _) = self._window.1.as_ref().ok_or(NativeError::InvalidParent)?;
+        // GDK's toplevel focus request goes through the window manager, which
+        // does not manage this embedded child. The host explicitly grants focus.
+        connection
+            .set_input_focus(
+                x11rb::protocol::xproto::InputFocus::PARENT,
+                self.focus_window,
+                x11rb::CURRENT_TIME,
+            )
+            .map_err(|error| NativeError::X11(error.to_string()))?
+            .check()
+            .map_err(|error| NativeError::X11(error.to_string()))?;
         Ok(())
     }
 
@@ -355,7 +414,7 @@ impl NativeEditor {
         builder: WebViewBuilder<'_>,
     ) -> Result<Self, NativeError> {
         let display = gtk::gdk::Display::default().ok_or(NativeError::UnsupportedDisplay)?;
-        let x11_display = display
+        let _x11_display = display
             .clone()
             .downcast::<gdkx11::X11Display>()
             .map_err(|_| NativeError::UnsupportedDisplay)?;
@@ -383,18 +442,12 @@ impl NativeEditor {
             .map_err(|error| NativeError::X11(error.to_string()))?;
         // Reparenting a realized GTK toplevel leaves WebKit blank on real X11.
         // Register the already-parented child so GTK paints and receives events.
-        let foreign = gdkx11::X11Window::foreign_new_for_display(&x11_display, child.into());
-        let window = gtk::Window::new(gtk::WindowType::Toplevel);
-        window.connect_realize(move |widget| {
-            let original = widget.window();
-            widget.set_window(foreign.clone().upcast());
-            widget.register_window(foreign.upcast_ref::<gtk::gdk::Window>());
-            // GTK creates a root toplevel during realize; replacing its GDK
-            // pointer does not destroy that original XID.
-            if let Some(original) = original {
-                original.destroy();
-            }
-        });
+        // GtkPlug owns a real GTK X11 child with native keyboard handling.
+        // The checked outer child remains ours, preserving the host's parent.
+        // gtk-rs models this opaque32-bit XID as signed; preserve its bits.
+        let plug = gtk::Plug::for_display(&display, child as i32);
+        let focus_window = plug.id() as u32;
+        let window: gtk::Window = plug.upcast();
         let window = OwnedWindow(window, Some((child_connection, child)));
         window.0.set_resizable(false);
         let fixed = gtk::Fixed::new();
@@ -430,6 +483,7 @@ impl NativeEditor {
         let owner = Self {
             view,
             _window: window,
+            focus_window,
             ipc: None,
             protocol: None,
             application_loaded: Cell::new(false),

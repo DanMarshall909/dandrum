@@ -138,3 +138,40 @@ tests. Fresh profiles are retained separately; they exercise the new bitmask
 implementation, not the native-view owner. The declaration adds no module or
 state and needs no further extraction. Strict native Clippy is retained as
 `process-context-clippy`. Full extensive candidate validation follows packaging.
+
+## Physical keyboard follow-up
+
+Actual installed REAPER pointer selection works, but numeric keystrokes exposed a
+focus defect in the original foreign GtkWindow wrapper. Those host trials are
+diagnostic, not task5.2 acceptance. `native-keyboard-red` first specifies real
+XTest key entry through IPlugView focus; no JavaScript value setter supplies the
+new value. An intermediate raw-X focus assertion further isolates the missing
+focus transfer. Early event-mask/GDK-toplevel repairs fail startup or delivery
+and are retained as failed trials.
+
+The accepted container uses GtkPlug inside the existing checked/owned outer X11
+child. Explicit fixed-size allocation/mapping preserves the existing host loop
+and1200x800 contract; IPlugView focus grants the inner native child keyboard
+focus. GTK owns its widget/window; the existing outer owner still releases the
+child after GTK disposal and leaves the host parent intact. No musical/editor
+behavior or module is forked/extracted. Public GTK test discovery now accepts
+a descendant of the exact owned X11 child, still requiring one WebKitWebView.
+
+`native-keyboard-plug-map-green` passes actual key entry (physical2 -> normalized
+0.5), exact host callbacks and the full production journey.
+`native-keyboard-shared-owner` passes the owning GTK lifecycle/resource/production
+asset/font/error cases under fresh coverage. `keyboard-owner-final-coverage`
+passes all ordinary VST3 owner tests; `keyboard-native-final-coverage` passes
+all three explicit native lanes, including loader-only residency and calibrated
+736 complete callbacks/367 signed renders with zero allocations/frees during
+actual editing. Counts are scheduling-dependent. Further current-candidate
+CLAP/Clippy/installed/REAPER gates remain separately recorded.
+
+`keyboard-clap-native-regression` passes fresh CLAP native lifecycle, literal audio,
+React startup, recreation and residency checks with the shared container change.
+`keyboard-shared-focus-coverage` adds the owner-layer focus-subtree assertion so
+the shared focus method has its own instrumented owning executable evidence;
+plugin-only coverage does not cover dependency source. `keyboard-combined-receipt`
+checks identical current VST3 sources/object and36 fresh profile hashes: view
+53/53functions,527/578lines(91.18%). Defensive/error gaps remain explicit; no whole
+owner100%, branch or MC/DC claim. No further production extraction is warranted.

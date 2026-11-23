@@ -400,6 +400,27 @@ fn exercise_visibility_and_fixed_size(
     owner.set_visible(true).unwrap();
     host_ticks();
     assert_state(MapState::VIEWABLE);
+    x.set_input_focus(
+        x11rb::protocol::xproto::InputFocus::PARENT,
+        parent,
+        x11rb::CURRENT_TIME,
+    )
+    .unwrap()
+    .check()
+    .unwrap();
+    owner.focus().unwrap();
+    host_ticks();
+    let mut focused = x.get_input_focus().unwrap().reply().unwrap().focus;
+    for _ in 0..32 {
+        if focused == child || focused == parent {
+            break;
+        }
+        focused = x.query_tree(focused).unwrap().reply().unwrap().parent;
+    }
+    assert_eq!(
+        focused, child,
+        "keyboard focus belongs to the owned child subtree"
+    );
     expect_page_message(
         owner,
         messages,

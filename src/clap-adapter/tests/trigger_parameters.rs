@@ -253,8 +253,19 @@ fn weak_browser_in_child(child: u32) -> gtk::glib::WeakRef<gtk::glib::Object> {
     while !node.is_null() {
         let widget = unsafe { (*node).data as *mut gtk::ffi::GtkWidget };
         let window = unsafe { gtk::ffi::gtk_widget_get_window(widget) };
-        if !window.is_null() && unsafe { gdk_x11_window_get_xid(window) } == u64::from(child) {
-            visit(widget, 0, &mut found);
+        if !window.is_null() {
+            let (x, _) = x11rb::connect(None).unwrap();
+            let mut current = unsafe { gdk_x11_window_get_xid(window) } as u32;
+            for _ in 0..32 {
+                if current == child {
+                    visit(widget, 0, &mut found);
+                    break;
+                }
+                let tree = x11rb::protocol::xproto::ConnectionExt::query_tree(&x, current)
+                    .unwrap().reply().unwrap();
+                if tree.parent == tree.root || tree.parent == 0 { break; }
+                current = tree.parent;
+            }
         }
         node = unsafe { (*node).next };
     }

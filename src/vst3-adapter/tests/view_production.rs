@@ -196,8 +196,23 @@ fn weak_browser_in_child(child: u32) -> gtk::glib::WeakRef<gtk::glib::Object> {
     while !node.is_null() {
         let widget = unsafe { (*node).data as *mut gtk::ffi::GtkWidget };
         let window = unsafe { gtk::ffi::gtk_widget_get_window(widget) };
-        if !window.is_null() && unsafe { gdk_x11_window_get_xid(window) } == u64::from(child) {
-            visit(widget, 0, &mut found);
+        if !window.is_null() {
+            let (x, _) = x11rb::connect(None).unwrap();
+            let mut current = unsafe { gdk_x11_window_get_xid(window) } as u32;
+            for _ in 0..32 {
+                if current == child {
+                    visit(widget, 0, &mut found);
+                    break;
+                }
+                let tree = x11rb::protocol::xproto::ConnectionExt::query_tree(&x, current)
+                    .unwrap()
+                    .reply()
+                    .unwrap();
+                if tree.parent == tree.root || tree.parent == 0 {
+                    break;
+                }
+                current = tree.parent;
+            }
         }
         node = unsafe { (*node).next };
     }
@@ -1072,7 +1087,53 @@ fn production_native_selection_retains_decoded_content_after_source_and_view_los
         edits.borrow().is_empty(),
         "native selection cannot create host parameter gestures"
     );
-    type_level(&clock, &browser, "2");
+    javascript(
+        &clock,
+        &browser,
+        "(()=>{Array.from(document.querySelectorAll('[role=tab]')).find(tab=>tab.textContent.trim()==='Voice').click();return 'voice';})()",
+    );
+    wait_dom(
+        &clock,
+        &browser,
+        "document.querySelector('[data-knob=\"drums.level\"] [role=slider]')",
+    );
+    javascript(
+        &clock,
+        &browser,
+        "(()=>{const s=document.querySelector('[data-knob=\"drums.level\"] [role=slider]');s.focus();s.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));return 'entry';})()",
+    );
+    wait_dom(
+        &clock,
+        &browser,
+        "document.querySelector('[data-knob=\"drums.level\"] input')",
+    );
+    parent
+        .x
+        .set_input_focus(
+            x11rb::protocol::xproto::InputFocus::PARENT,
+            parent.id,
+            x11rb::CURRENT_TIME,
+        )
+        .unwrap()
+        .check()
+        .unwrap();
+    assert_eq!(unsafe { view.onFocus(1) }, kResultOk);
+    let focus = parent.x.get_input_focus().unwrap().reply().unwrap().focus;
+    assert_ne!(focus, parent.id, "host focus must reach the native child");
+    javascript(
+        &clock,
+        &browser,
+        "(()=>{const i=document.querySelector('[data-knob=\"drums.level\"] input');i.focus();i.select();return 'focused native entry';})()",
+    );
+    for args in [vec!["type", "--clearmodifiers", "2"], vec!["key", "Return"]] {
+        assert!(
+            std::process::Command::new("xdotool")
+                .args(args)
+                .status()
+                .expect("XTest keyboard tool for the explicit native lane")
+                .success()
+        );
+    }
     wait_dom(
         &clock,
         &browser,

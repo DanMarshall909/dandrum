@@ -668,8 +668,20 @@ impl IPlugViewTrait for View {
             kInvalidArgument
         }
     }
-    unsafe fn onFocus(&self, _state: TBool) -> tresult {
-        if self.live() { kResultOk } else { kResultFalse }
+    unsafe fn onFocus(&self, state: TBool) -> tresult {
+        if !self.live() {
+            return kResultFalse;
+        }
+        if state != 0
+            && self
+                .child
+                .borrow()
+                .as_ref()
+                .is_some_and(|child| child.focus().is_err())
+        {
+            return kResultFalse;
+        }
+        kResultOk
     }
     unsafe fn setFrame(&self, _frame: *mut IPlugFrame) -> tresult {
         kResultOk
