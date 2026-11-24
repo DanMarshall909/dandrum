@@ -38,12 +38,13 @@ def read_json(path):
 
 class TriggerVst3ReaperCaptureTest(unittest.TestCase):
     capture = None
+    packet = PACKET
 
     @classmethod
     def setUpClass(cls):
         if cls.capture is None:
             raise unittest.SkipTest("requires the private REAPER qualification capture")
-        cls.receipt = read_json(PACKET / "verification.json")
+        cls.receipt = read_json(cls.packet / "verification.json")
         cls.private = cls.capture / "private"
         cls.first = cls.private / "first"
         cls.fresh = cls.private / "fresh"
@@ -140,7 +141,7 @@ class TriggerVst3ReaperCaptureTest(unittest.TestCase):
                           self.receipt["restoration"]["instances"].items()})
         before = (self.first / "before-values.tsv").read_bytes()
         self.assertEqual(before, (self.fresh / "start-values.tsv").read_bytes())
-        self.assertEqual(before, (PACKET / "values.tsv").read_bytes())
+        self.assertEqual(before, (self.packet / "values.tsv").read_bytes())
         self.assertEqual(len(before.splitlines()), 46)
 
     def test_native_gestures_and_undo_after_stopped_editor_loss(self):
@@ -149,6 +150,10 @@ class TriggerVst3ReaperCaptureTest(unittest.TestCase):
                                ("host-feedback.tsv", (0.4375, 0.375, 0))):
             with self.subTest(name=name):
                 self.assertEqual(tuple(map(float, (self.first / name).read_text().split())), expected)
+        feedback = self.receipt["nativeFeedback"]["AFromHost"]
+        self.assertEqual(feedback["visiblePhysicalA"], 1.75)
+        self.assertEqual(sha256((self.first / "A-host-feedback.png").read_bytes()),
+                         feedback["screenshotSha256"])
         gate = read_json(self.first / "gate-receipt.json")
         self.assertEqual(gate, self.receipt["mappingWhileStoppedAndEditorAbsent"]["gate"])
         closed = gate["closedBeforeRelease"]
@@ -201,5 +206,8 @@ class TriggerVst3ReaperCaptureTest(unittest.TestCase):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("capture", type=Path, help="directory containing the private capture and receipts")
-    TriggerVst3ReaperCaptureTest.capture = parser.parse_args().capture
+    parser.add_argument("--packet", type=Path, default=PACKET, help="directory containing the portable evidence")
+    args = parser.parse_args()
+    TriggerVst3ReaperCaptureTest.capture = args.capture
+    TriggerVst3ReaperCaptureTest.packet = args.packet
     unittest.main(argv=[__file__], verbosity=2)
