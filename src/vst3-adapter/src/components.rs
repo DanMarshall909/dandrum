@@ -257,14 +257,17 @@ impl IPluginBaseTrait for Processor {
                     return kResultFalse;
                 }
                 let registration = Registration { runloop, timer };
-                if self.terminated.get() {
-                    if let Err(registration) = registration.unregister() {
-                        *self.registration.borrow_mut() = Some(registration);
-                    }
-                    return kResultFalse;
-                }
                 *self.registration.borrow_mut() = Some(registration);
             }
+        }
+        if self.terminated.get() {
+            let registration = self.registration.borrow_mut().take();
+            if let Some(registration) = registration
+                && let Err(registration) = registration.unregister()
+            {
+                *self.registration.borrow_mut() = Some(registration);
+            }
+            return kResultFalse;
         }
         if self.registration.borrow().is_some() {
             let started = self

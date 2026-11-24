@@ -121,22 +121,28 @@ fn rejected_unregister_retains_a_disabled_token_until_explicit_cleanup_retry() {
 
 #[test]
 fn termination_during_registration_rolls_back_the_foreign_timer_once() {
-    let bundle = Bundle::new();
-    let module = bundle.load();
-    let (state, factory, _host) = host(&module);
-    let p = module.class_from::<IComponent>(&factory, &PROCESSOR);
-    let reentrant = p.cast::<IComponent>().unwrap();
-    *state.register_callback.borrow_mut() = Some(Box::new(move || {
-        assert_eq!(unsafe { reentrant.terminate() }, kResultOk);
-    }));
-    unsafe {
-        assert_eq!(p.initialize(std::ptr::null_mut()), kResultFalse);
-        assert_eq!(p.getBusCount(0, 1), 0);
-        assert_eq!(p.terminate(), kResultOk);
+    for (unimplemented, refuse_cleanup) in [(false, false), (false, true), (true, false)] {
+        let bundle = Bundle::new();
+        let module = bundle.load();
+        let (state, factory, _host) = host(&module);
+        state.unimplemented.set(unimplemented);
+        state.reject_unregister.set(refuse_cleanup);
+        let p = module.class_from::<IComponent>(&factory, &PROCESSOR);
+        let reentrant = p.cast::<IComponent>().unwrap();
+        *state.register_callback.borrow_mut() = Some(Box::new(move || {
+            assert_eq!(unsafe { reentrant.terminate() }, kResultOk);
+        }));
+        unsafe {
+            assert_eq!(p.initialize(std::ptr::null_mut()), kResultFalse);
+            assert_eq!(p.getBusCount(0, 1), 0);
+            assert_eq!(state.handlers.borrow().len(), usize::from(refuse_cleanup));
+            state.reject_unregister.set(false);
+            assert_eq!(p.terminate(), kResultOk);
+        }
+        assert_eq!(state.registered.get(), u32::from(!unimplemented));
+        assert_eq!(state.unregistered.get(), u32::from(!unimplemented));
+        assert!(state.handlers.borrow().is_empty());
     }
-    assert_eq!(state.registered.get(), 1);
-    assert_eq!(state.unregistered.get(), 1);
-    assert!(state.handlers.borrow().is_empty());
 }
 
 #[test]

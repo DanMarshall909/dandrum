@@ -45,6 +45,10 @@ impl IRunLoopTrait for RunLoop {
     ) -> tresult {
         assert_eq!(milliseconds, 10);
         if self.0.unimplemented.get() {
+            let callback = self.0.register_callback.borrow_mut().take();
+            if let Some(callback) = callback {
+                callback();
+            }
             return kNotImplemented;
         }
         let handler = Rc::new(unsafe { ComRef::from_raw(handler) }.unwrap().to_com_ptr());
