@@ -67,6 +67,19 @@ record the portable results. The full manifest, source hashes, run receipts,
 capture and replay fixtures are retained privately under
 `.git/codex/reaper-qualification-20261124/`.
 
+Replay the acceptance assertions against that capture with:
+
+```sh
+python3 -B tests/python/test_trigger_vst3_reaper_capture.py \
+  .git/codex/reaper-qualification-20261124
+```
+
+This checks the captured bundle, project state, editor-transition records and
+signed PCM against the original fixture inputs. It reads the retained files
+and leaves REAPER closed. All four replay tests passed. Reversing the first
+PCM24 sample in an in-memory copy of A's initial render failed at frame zero,
+channel zero.
+
 Whole-product qualification, independent review, publication and archival
 remain OpenSpec tasks 6.1–6.3. Native Windows and macOS qualification remain
 separate milestones. [Issue #45](https://github.com/DanMarshall909/dandrum/issues/45)
