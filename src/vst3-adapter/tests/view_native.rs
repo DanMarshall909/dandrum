@@ -487,9 +487,81 @@ fn native_view_paints_and_recreates_without_destroying_its_host_parent() {
     }
     let geometry = x.get_geometry(closing_child).unwrap().reply().unwrap();
     assert_eq!((geometry.width, geometry.height), (1200, 800));
-    assert_eq!(unsafe { dying_processor.terminate() }, kResultOk);
+    assert_eq!(unsafe { retained_view.removed() }, kResultOk);
+    assert!(x.get_geometry(closing_child).unwrap().reply().is_err());
+
+    x.configure_window(
+        parent,
+        &x11rb::protocol::xproto::ConfigureWindowAux::new()
+            .width(1200)
+            .height(800),
+    )
+    .unwrap()
+    .check()
+    .unwrap();
+    assert_eq!(
+        unsafe { retained_view.attached(parent as usize as *mut _, kPlatformTypeX11EmbedWindowID) },
+        kResultOk
+    );
+    let children = x.query_tree(parent).unwrap().reply().unwrap().children;
+    let [outer_child] = children.as_slice() else {
+        panic!("expected one live editor child");
+    };
+    let accepted = x.get_geometry(*outer_child).unwrap().reply().unwrap();
+    assert_eq!((accepted.width, accepted.height), (1200, 800));
+    let children = x.query_tree(*outer_child).unwrap().reply().unwrap().children;
+    let [gtk_plug] = children.as_slice() else {
+        panic!("expected one live GTK plug");
+    };
+    let gtk_plug = *gtk_plug;
+    *resize.during_resize.borrow_mut() = Some(Box::new(move || {
+        let (x, _) = x11rb::connect(None).unwrap();
+        x.destroy_window(gtk_plug).unwrap().check().unwrap();
+    }));
+    assert_eq!(unsafe { retained_view.setFrame(frame.as_ptr()) }, kResultOk);
+    let gdk = unsafe {
+        libloading::os::unix::Library::open(
+            Some("libgdk-3.so.0"),
+            libloading::os::unix::RTLD_NOW | libc::RTLD_NOLOAD,
+        )
+    }
+    .unwrap();
+    type GdkDisplay = *mut std::ffi::c_void;
+    type DisplayTrap = unsafe extern "C" fn(GdkDisplay);
+    let (result, sdk_size_result, geometry, terminate_result) = unsafe {
+        let default_display = gdk
+            .get::<unsafe extern "C" fn() -> GdkDisplay>(b"gdk_display_get_default\0")
+            .unwrap();
+        let trap_push = gdk
+            .get::<DisplayTrap>(b"gdk_x11_display_error_trap_push\0")
+            .unwrap();
+        let trap_pop = gdk
+            .get::<DisplayTrap>(b"gdk_x11_display_error_trap_pop_ignored\0")
+            .unwrap();
+        let display = default_display();
+        assert!(!display.is_null());
+        // The GTK connection can also observe the deliberately destroyed plug.
+        // Trap those errors while the product's checked X11 requests stay live.
+        trap_push(display);
+        let result = scale.setContentScaleFactor(1.333);
+        let sdk_size_result = retained_view.getSize(&mut rect);
+        let geometry = x.get_geometry(*outer_child).unwrap().reply().unwrap();
+        let terminate_result = dying_processor.terminate();
+        trap_pop(display);
+        (result, sdk_size_result, geometry, terminate_result)
+    };
+    assert_eq!(resize.acknowledgment.get(), Some(kResultOk));
+    assert_eq!(result, kResultFalse);
+    assert_eq!(sdk_size_result, kResultOk);
+    assert_eq!((rect.right, rect.bottom), (1200, 800));
+    assert_eq!(
+        (geometry.width, geometry.height),
+        (1200, 800),
+        "a checked GTK plug resize failure must restore the surviving outer child"
+    );
+    assert_eq!(terminate_result, kResultOk);
     assert!(
-        x.get_geometry(closing_child).unwrap().reply().is_err(),
+        x.get_geometry(*outer_child).unwrap().reply().is_err(),
         "processor termination revokes the real child while its controller and view are retained"
     );
     drop(scale);

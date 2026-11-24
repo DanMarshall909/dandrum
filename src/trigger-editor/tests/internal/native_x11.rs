@@ -211,7 +211,54 @@ fn real_child_loads_local_content_and_drops_without_owning_the_host_parent() {
     production::unmodified_bundle_renders_silent_preview_with_all_eight_fonts(parent);
     resource_policy::external_resources_are_blocked_by_enforcing_csp(parent);
     parent_can_be_destroyed_immediately_after_editor(&x, root);
+    failed_resize_preserves_the_last_presented_extent(&x, parent);
     x.destroy_window(parent).unwrap().check().unwrap();
+}
+
+fn failed_resize_preserves_the_last_presented_extent(x: &RustConnection, parent: u32) {
+    let package = common::Package::new();
+    for file in common::FILES {
+        package.write(file, b"fixture");
+    }
+    let owner =
+        NativeEditor::create_deferred(parent, EditorAssets::open(package.root()).unwrap(), |_| {})
+            .unwrap();
+    let children = x.query_tree(parent).unwrap().reply().unwrap().children;
+    assert_eq!(children.len(), 1);
+    let child = children[0];
+    owner.sync_host_scale(1.25).unwrap();
+    let accepted = x.get_geometry(child).unwrap().reply().unwrap();
+    assert_eq!((accepted.width, accepted.height), (1500, 1000));
+    x.configure_window(
+        parent,
+        &x11rb::protocol::xproto::ConfigureWindowAux::new()
+            .width(2400)
+            .height(1600),
+    )
+    .unwrap()
+    .check()
+    .unwrap();
+
+    // GDK may also observe the destroyed plug before the checked X11 request.
+    gtk::gdk::error_trap_push();
+    x.destroy_window(owner.focus_window)
+        .unwrap()
+        .check()
+        .unwrap();
+    let failed = owner.sync_host_scale(1.333);
+    let restored = x.get_geometry(child).unwrap().reply().unwrap();
+    drop(owner);
+    gtk::gdk::error_trap_pop_ignored();
+
+    assert!(matches!(failed, Err(NativeError::X11(_))));
+    assert_eq!(
+        (restored.width, restored.height),
+        (1500, 1000),
+        "recovery uses the prior presentation even after the parent changes"
+    );
+    let host = x.get_geometry(parent).unwrap().reply().unwrap();
+    assert_eq!((host.width, host.height), (2400, 1600));
+    assert!(x.get_geometry(child).unwrap().reply().is_err());
 }
 
 fn deferred_child_loads_its_authenticated_namespace_only_once(parent: u32) {

@@ -786,10 +786,7 @@ impl IPlugViewContentScaleSupportTrait for View {
             // the retained host frame may synchronously call onSize/getSize.
             let result = match unsafe { frame.resizeView(self.abi.get(), &mut rect) } {
                 result if result == kResultOk && self.size.get() != requested => kResultFalse,
-                result if result == kResultOk && !self.sync_native_scale(factor) => {
-                    let _ = self.sync_native_scale(self.content_scale.get());
-                    kResultFalse
-                }
+                result if result == kResultOk && !self.sync_native_scale(factor) => kResultFalse,
                 result => result,
             };
             self.pending_scale.set(None);

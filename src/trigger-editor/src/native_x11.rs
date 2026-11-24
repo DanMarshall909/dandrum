@@ -372,11 +372,32 @@ impl NativeEditor {
             .filter(|dpi| dpi.is_finite() && *dpi > 0.0)
             .unwrap_or(96.0);
         let signature = (gtk_scale, dpi.to_bits());
-        if self.physical_size.get() == (width, height)
-            && self.presentation_dpi.get() == Some(signature)
-        {
+        let requested = (width, height);
+        let previous = self.physical_size.get();
+        if previous == requested && self.presentation_dpi.get() == Some(signature) {
             return Ok(());
         }
+        let resize_widgets = |size| self.resize_webview(size, gtk_scale, dpi);
+        if let Err(error) = resize_widgets(requested).and_then(|()| self.resize_x11(requested)) {
+            // A checked X11 request can fail after changing an earlier window.
+            // Restore the last complete size without using the cache or parent
+            // geometry, and let later service retry an incomplete presentation.
+            self.presentation_dpi.set(None);
+            let _ = self.resize_x11(previous);
+            let _ = resize_widgets(previous);
+            return Err(error);
+        }
+        self.physical_size.set(requested);
+        self.presentation_dpi.set(Some(signature));
+        Ok(())
+    }
+
+    fn resize_webview(
+        &self,
+        (width, height): (u16, u16),
+        gtk_scale: i32,
+        dpi: f64,
+    ) -> Result<(), NativeError> {
         let logical_width = i32::from(width) / gtk_scale;
         let logical_height = i32::from(height) / gtk_scale;
         self.view
@@ -400,6 +421,10 @@ impl NativeEditor {
             .webview()
             .set_zoom_level(fit * 96.0 / (f64::from(gtk_scale) * dpi));
         self._window.0.display().sync();
+        Ok(())
+    }
+
+    fn resize_x11(&self, (width, height): (u16, u16)) -> Result<(), NativeError> {
         let (connection, child) = self._window.1.as_ref().ok_or(NativeError::InvalidParent)?;
         for id in [*child, self.focus_window] {
             connection
@@ -415,10 +440,7 @@ impl NativeEditor {
         }
         connection
             .flush()
-            .map_err(|error| NativeError::X11(error.to_string()))?;
-        self.physical_size.set((width, height));
-        self.presentation_dpi.set(Some(signature));
-        Ok(())
+            .map_err(|error| NativeError::X11(error.to_string()))
     }
 
     /// Accept the declared fixed size without changing the native child.
