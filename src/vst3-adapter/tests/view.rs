@@ -194,11 +194,12 @@ fn content_scaling_negotiates_with_the_frame_and_preserves_refused_size() {
                 (rect.right, rect.bottom),
                 "constraints reflect the requested scale while getSize still reports the old size"
             );
-            if self.refuse.get() {
-                return kResultFalse;
-            }
             if !self.acknowledge.get() {
-                return kResultOk;
+                return if self.refuse.get() {
+                    kResultFalse
+                } else {
+                    kResultOk
+                };
             }
             let mut accepted = ViewRect {
                 left: 0,
@@ -206,7 +207,16 @@ fn content_scaling_negotiates_with_the_frame_and_preserves_refused_size() {
                 right: rect.right,
                 bottom: rect.bottom,
             };
-            unsafe { view.onSize(&mut accepted) }
+            let result = unsafe { view.onSize(&mut accepted) };
+            if self.refuse.get() {
+                assert_eq!(
+                    result, kResultOk,
+                    "the host acknowledged the requested size"
+                );
+                kResultFalse
+            } else {
+                result
+            }
         }
     }
     let bundle = Bundle::new();
@@ -254,12 +264,23 @@ fn content_scaling_negotiates_with_the_frame_and_preserves_refused_size() {
         assert_eq!(view.getSize(&mut rect), kResultOk);
         assert_eq!((rect.right, rect.bottom), (1200, 800));
         acknowledge.set(true);
+        refuse.set(true);
+        assert_eq!(scale.setContentScaleFactor(2.0), kResultFalse);
+        assert_eq!(view.getSize(&mut rect), kResultOk);
+        assert_eq!(
+            (rect.right, rect.bottom),
+            (1200, 800),
+            "a refusal after onSize must restore the previously accepted size"
+        );
+        assert_eq!(view.checkSizeConstraint(&mut rect), kResultOk);
+        assert_eq!((rect.right, rect.bottom), (1200, 800));
+        refuse.set(false);
         assert_eq!(scale.setContentScaleFactor(2.0), kResultOk);
         assert_eq!(view.getSize(&mut rect), kResultOk);
         assert_eq!((rect.right, rect.bottom), (2400, 1600));
         assert_eq!(
             &*requests.borrow(),
-            &[(2400, 1600), (2400, 1600), (2400, 1600)]
+            &[(2400, 1600), (2400, 1600), (2400, 1600), (2400, 1600)]
         );
         assert_eq!(view.setFrame(std::ptr::null_mut()), kResultOk);
         assert!(

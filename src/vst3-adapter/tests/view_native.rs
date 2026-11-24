@@ -5,7 +5,11 @@
 ))]
 mod common;
 use common::{runloop, *};
-use std::time::{Duration, Instant};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+    time::{Duration, Instant},
+};
 use vst3::Steinberg::{Vst::*, *};
 use x11rb::{
     COPY_DEPTH_FROM_PARENT,
@@ -14,6 +18,30 @@ use x11rb::{
 };
 
 use common::native::paint_package;
+
+struct ResizeState {
+    acknowledgment: Cell<Option<tresult>>,
+    result: Cell<tresult>,
+    during_resize: RefCell<Option<Box<dyn FnOnce()>>>,
+}
+
+struct ResizingFrame(Rc<ResizeState>);
+
+impl vst3::Class for ResizingFrame {
+    type Interfaces = (IPlugFrame,);
+}
+
+impl IPlugFrameTrait for ResizingFrame {
+    unsafe fn resizeView(&self, raw: *mut IPlugView, rect: *mut ViewRect) -> tresult {
+        let view = unsafe { vst3::ComRef::from_raw(raw) }.unwrap();
+        self.0.acknowledgment.set(Some(unsafe { view.onSize(rect) }));
+        let during_resize = self.0.during_resize.borrow_mut().take();
+        if let Some(during_resize) = during_resize {
+            during_resize();
+        }
+        self.0.result.get()
+    }
+}
 
 #[test]
 #[ignore = "real X11/WebKit boundary lane; run serially with an explicit display"]
@@ -191,6 +219,61 @@ fn native_view_paints_and_recreates_without_destroying_its_host_parent() {
             "the actual WebKit child must paint the specified CSS colour"
         );
         if cycle == 0 {
+            let resize = Rc::new(ResizeState {
+                acknowledgment: Cell::new(None),
+                result: Cell::new(kResultFalse),
+                during_resize: RefCell::new(None),
+            });
+            let frame = vst3::ComWrapper::new(ResizingFrame(resize.clone()))
+            .to_com_ptr::<IPlugFrame>()
+            .unwrap();
+            assert_eq!(unsafe { view.setFrame(frame.as_ptr()) }, kResultOk);
+            // Rounding this factor gives 1600x1066. Its aspect ratio differs
+            // from the unchanged 1200x800 parent, so a provisional scale would
+            // resize the actual child rather than inheriting the parent size.
+            assert_eq!(unsafe { scale.setContentScaleFactor(1.333) }, kResultFalse);
+            assert_eq!(resize.acknowledgment.get(), Some(kResultOk));
+            let geometry = x.get_geometry(child).unwrap().reply().unwrap();
+            assert_eq!(
+                (geometry.width, geometry.height),
+                (1200, 800),
+                "a refusal after onSize must preserve the native child geometry"
+            );
+
+            let nested_clock = clock.clone();
+            *resize.during_resize.borrow_mut() = Some(Box::new(move || {
+                let (x, _) = x11rb::connect(None).unwrap();
+                use x11rb::protocol::xproto::ConfigureWindowAux;
+                x.configure_window(parent, &ConfigureWindowAux::new().width(2400).height(1600))
+                    .unwrap()
+                    .check()
+                    .unwrap();
+                nested_clock.tick();
+                x.configure_window(parent, &ConfigureWindowAux::new().width(1200).height(800))
+                    .unwrap()
+                    .check()
+                    .unwrap();
+            }));
+            assert_eq!(unsafe { scale.setContentScaleFactor(1.5) }, kResultFalse);
+            assert_eq!(resize.acknowledgment.get(), Some(kResultOk));
+            let geometry = x.get_geometry(child).unwrap().reply().unwrap();
+            assert_eq!(
+                (geometry.width, geometry.height),
+                (1200, 800),
+                "a timer inside resizeView must not adopt a provisional parent size"
+            );
+
+            resize.result.set(kResultOk);
+            assert_eq!(unsafe { scale.setContentScaleFactor(1.333) }, kResultOk);
+            let geometry = x.get_geometry(child).unwrap().reply().unwrap();
+            assert_eq!(
+                (geometry.width, geometry.height),
+                (1600, 1066),
+                "the same acknowledged size takes effect when the host accepts"
+            );
+            assert_eq!(unsafe { scale.setContentScaleFactor(1.0) }, kResultOk);
+            assert_eq!(unsafe { view.setFrame(std::ptr::null_mut()) }, kResultOk);
+
             // REAPER's Linux high-DPI path reports a 1200x800 ViewRect but
             // realizes its X11 embedding parent at 2400x1600. Simulate the
             // post-attachment host resize, without an explicit scale-2 call.
@@ -338,29 +421,78 @@ fn native_view_paints_and_recreates_without_destroying_its_host_parent() {
     let retained_view =
         unsafe { vst3::ComPtr::from_raw(surviving_controller.createView(c"editor".as_ptr())) }
             .unwrap();
+    let closing_parent = x.generate_id().unwrap();
+    x.create_window(
+        COPY_DEPTH_FROM_PARENT,
+        closing_parent,
+        root.root,
+        0,
+        0,
+        1200,
+        800,
+        0,
+        WindowClass::INPUT_OUTPUT,
+        0,
+        &CreateWindowAux::new(),
+    )
+    .unwrap()
+    .check()
+    .unwrap();
+    x.map_window(closing_parent).unwrap().check().unwrap();
     assert_eq!(
-        unsafe { retained_view.attached(parent as usize as *mut _, kPlatformTypeX11EmbedWindowID) },
+        unsafe {
+            retained_view.attached(closing_parent as usize as *mut _, kPlatformTypeX11EmbedWindowID)
+        },
         kResultOk
     );
-    assert_eq!(
-        x.query_tree(parent)
-            .unwrap()
-            .reply()
-            .unwrap()
-            .children
-            .len(),
-        1
-    );
+    let children = x.query_tree(closing_parent).unwrap().reply().unwrap().children;
+    let [closing_child] = children.as_slice() else {
+        panic!("expected one live editor child");
+    };
+    let (closing_child, root_window) = (*closing_child, root.root);
+    let resize = Rc::new(ResizeState {
+        acknowledgment: Cell::new(None),
+        result: Cell::new(kResultOk),
+        during_resize: RefCell::new(Some(Box::new(move || {
+            let (x, _) = x11rb::connect(None).unwrap();
+            // Keep the plug alive so the view can still dispose it normally.
+            x.reparent_window(closing_child, root_window, 0, 0)
+                .unwrap()
+                .check()
+                .unwrap();
+            x.destroy_window(closing_parent).unwrap().check().unwrap();
+        }))),
+    });
+    let frame = vst3::ComWrapper::new(ResizingFrame(resize.clone()))
+        .to_com_ptr::<IPlugFrame>()
+        .unwrap();
+    let scale = retained_view.cast::<IPlugViewContentScaleSupport>().unwrap();
+    let mut rect = ViewRect {
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+    };
+    unsafe {
+        assert_eq!(retained_view.setFrame(frame.as_ptr()), kResultOk);
+        assert_eq!(
+            scale.setContentScaleFactor(1.5),
+            kResultFalse,
+            "a host acknowledgment cannot commit a resize after native synchronization fails"
+        );
+        assert_eq!(resize.acknowledgment.get(), Some(kResultOk));
+        assert_eq!(retained_view.getSize(&mut rect), kResultOk);
+        assert_eq!((rect.right, rect.bottom), (1200, 800));
+        assert_eq!(retained_view.setFrame(std::ptr::null_mut()), kResultOk);
+    }
+    let geometry = x.get_geometry(closing_child).unwrap().reply().unwrap();
+    assert_eq!((geometry.width, geometry.height), (1200, 800));
     assert_eq!(unsafe { dying_processor.terminate() }, kResultOk);
     assert!(
-        x.query_tree(parent)
-            .unwrap()
-            .reply()
-            .unwrap()
-            .children
-            .is_empty(),
+        x.get_geometry(closing_child).unwrap().reply().is_err(),
         "processor termination revokes the real child while its controller and view are retained"
     );
+    drop(scale);
     assert_eq!(unsafe { surviving_controller.terminate() }, kResultOk);
     assert!(clock.handlers.borrow().is_empty());
     x.destroy_window(parent).unwrap().check().unwrap();

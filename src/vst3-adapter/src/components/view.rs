@@ -31,7 +31,7 @@ pub(super) fn create(controller: &Rc<ControllerCore>) -> *mut IPlugView {
         abi: Cell::new(std::ptr::null_mut()),
         content_scale: Cell::new(1.0),
         size: Cell::new((WIDTH, HEIGHT)),
-        scaling: Cell::new(false),
+        pending_scale: Cell::new(None),
     });
     let view = ComWrapper::new(View(core.clone()))
         .to_com_ptr::<IPlugView>()
@@ -66,7 +66,7 @@ pub(super) struct ViewCore {
     abi: Cell<*mut IPlugView>,
     content_scale: Cell<f32>,
     size: Cell<(i32, i32)>,
-    scaling: Cell<bool>,
+    pending_scale: Cell<Option<f32>>,
 }
 pub(super) struct BrowserConnection {
     transport: Transport,
@@ -129,6 +129,10 @@ impl ViewCore {
     }
     fn live(&self) -> bool {
         self.live_controller().is_some()
+    }
+    fn sync_native_scale(&self, factor: f32) -> bool {
+        let child = self.child.borrow().clone();
+        child.is_none_or(|child| child.sync_host_scale(f64::from(factor)).is_ok())
     }
     pub(super) fn host_gesture_active(&self) -> bool {
         self.connection
@@ -586,11 +590,10 @@ impl ViewCore {
         self.busy.set(true);
         let _call = HostCall(&self.busy);
         let _ = NativeEditor::service();
-        let child = self.child.borrow().clone();
-        if let Some(child) = child {
-            // Hosts can realize their scaled X11 parent after onSize returns.
-            // Reconcile on their UI tick, without recreating the document.
-            let _ = child.sync_host_scale(f64::from(self.content_scale.get()));
+        // Hosts can realize a scaled parent after accepting the size. A tick
+        // nested inside resizeView may instead see a provisional parent.
+        if self.pending_scale.get().is_none() {
+            let _ = self.sync_native_scale(self.content_scale.get());
         }
         let connection = self.connection.borrow().clone();
         if let Some(connection) = connection {
@@ -684,19 +687,18 @@ impl IPlugViewTrait for View {
         let Some(size) = (unsafe { size.as_ref() }) else {
             return kInvalidArgument;
         };
+        let pending = self.pending_scale.get();
+        let factor = pending.unwrap_or(self.content_scale.get());
         if (
             size.right.checked_sub(size.left),
             size.bottom.checked_sub(size.top),
         ) == {
-            let (w, h) = NativeEditor::scaled_size(f64::from(self.content_scale.get())).unwrap();
+            let (w, h) = NativeEditor::scaled_size(f64::from(factor)).unwrap();
             (Some(i32::from(w)), Some(i32::from(h)))
         } {
-            let child = self.child.borrow().clone();
-            if let Some(child) = child
-                && child
-                    .sync_host_scale(f64::from(self.content_scale.get()))
-                    .is_err()
-            {
+            // During resizeView the host can observe its onSize acknowledgment.
+            // The native child waits for the frame to accept the resize.
+            if pending.is_none() && !self.sync_native_scale(factor) {
                 return kResultFalse;
             }
             self.size
@@ -743,8 +745,8 @@ impl IPlugViewTrait for View {
         let Some(rect) = (unsafe { rect.as_mut() }) else {
             return kInvalidArgument;
         };
-        let (width, height) =
-            NativeEditor::scaled_size(f64::from(self.content_scale.get())).unwrap();
+        let factor = self.pending_scale.get().unwrap_or(self.content_scale.get());
+        let (width, height) = NativeEditor::scaled_size(f64::from(factor)).unwrap();
         let (Some(right), Some(bottom)) = (
             rect.left.checked_add(i32::from(width)),
             rect.top.checked_add(i32::from(height)),
@@ -759,7 +761,7 @@ impl IPlugViewTrait for View {
 
 impl IPlugViewContentScaleSupportTrait for View {
     unsafe fn setContentScaleFactor(&self, factor: f32) -> tresult {
-        if !self.live() || self.scaling.get() {
+        if !self.live() || self.pending_scale.get().is_some() {
             return kResultFalse;
         }
         let Some((width, height)) = NativeEditor::scaled_size(f64::from(factor)) else {
@@ -768,37 +770,41 @@ impl IPlugViewContentScaleSupportTrait for View {
         if self.content_scale.get() == factor {
             return kResultOk;
         }
-        self.scaling.set(true);
-        let _call = HostCall(&self.scaling);
-        let old = self.content_scale.replace(factor);
-        // Snapshot our local reference count before any foreign AddRef/resize call.
+        let requested = (i32::from(width), i32::from(height));
+        // Retain the frame locally across reentrant host calls.
         let frame = self.frame.borrow().clone();
-        let mut rect = ViewRect {
-            left: 0,
-            top: 0,
-            right: i32::from(width),
-            bottom: i32::from(height),
-        };
-        if let Some(frame) = frame {
+        if let Some(frame) = frame.as_ref() {
+            let previous = self.size.get();
+            let mut rect = ViewRect {
+                left: 0,
+                top: 0,
+                right: requested.0,
+                bottom: requested.1,
+            };
+            self.pending_scale.set(Some(factor));
             // SAFETY: this method is called through the live view interface;
             // the retained host frame may synchronously call onSize/getSize.
-            let result = unsafe { frame.resizeView(self.abi.get(), &mut rect) };
+            let result = match unsafe { frame.resizeView(self.abi.get(), &mut rect) } {
+                result if result == kResultOk && self.size.get() != requested => kResultFalse,
+                result if result == kResultOk && !self.sync_native_scale(factor) => {
+                    let _ = self.sync_native_scale(self.content_scale.get());
+                    kResultFalse
+                }
+                result => result,
+            };
+            self.pending_scale.set(None);
             if result != kResultOk {
-                self.content_scale.set(old);
+                self.size.set(previous);
                 return result;
-            }
-            if self.size.get() != (i32::from(width), i32::from(height)) {
-                self.content_scale.set(old);
-                return kResultFalse;
             }
         } else if self.child.borrow().is_none() {
             // Before attachment, the host obtains the requested size through
             // getSize. An attached view needs its frame to negotiate a resize.
-            self.size.set((i32::from(width), i32::from(height)));
+            self.size.set(requested);
         } else {
-            self.content_scale.set(old);
             return kResultFalse;
         }
+        self.content_scale.set(factor);
         kResultOk
     }
 }
