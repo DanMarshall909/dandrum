@@ -1,11 +1,11 @@
 # Trigger VST3 resize rollback and REAPER requalification
 
 This requalifies Linux Trigger VST3 after the editor resize rollback repair in
-`ae15c3cef91d45fc77684f0d6a48662f5fbe5697`. The repaired private bundle contains
+`c47bfd4e932bcdbe359f2a78c8ddb22a5a3361a8`. The repaired private bundle contains
 361 files and has SHA-256 manifest digest
-`88a6ec5fa735375ba7dcea74e9be9c93f61bec378125f61a9b2422aa4dfb61f8`. Both REAPER
+`5a0a145524d4768d7cfbaa9a5afbcabefb906354e08009b40a30cde023d84c33`. Both REAPER
 processes and the source-hidden native fixture loaded binary SHA-256
-`cb74164a3b58fa800263ed9fe5a056326aa46776cb9f34fe34aeec2c66967617`. Package
+`813a527bf44f007efed08a1be50d11e2b8d40f561a78278f8981523c001fb2c5`. Package
 inspection matched every unchanged resource and notice to the earlier qualified
 manifest. The repaired release resolved every ELF dependency without JUCE.
 
@@ -21,14 +21,24 @@ failure return success after the host's acknowledgment. The test rejected that
 result when the X11 parent disappeared and confirmed the repaired view retained
 its accepted size, then released its native child when the processor terminated.
 
+Independent review then identified a later failure. The outer child could
+already be at 1600 × 1066 when the checked GTK plug request failed and the
+SDK rectangle returned to 1200 × 800. The native regression deliberately
+destroyed the plug to reproduce that sequence. The repaired path restored the
+surviving child to 1200 × 800 before returning the error. The shared-editor
+fixture also restored the last accepted 1500 × 1000 presentation after its
+host parent changed to 2400 × 1600.
+
 The final run passed 89 ordinary VST3 tests, all three native journeys, strict
-Clippy, and the normal pre-commit hook with 1,096 engine tests and strict
-coverage. Separate ordinary and native profiles exercised all 34 changed
-executable lines in the adapter together. The native run measured 696 complete
-callbacks with zero allocations or frees and verified 347 signed renders. The
-copied-release journey ran with the checkout hidden and no network routes. It
-measured 682 complete callbacks with zero allocations or frees and verified
-340 signed renders.
+Clippy for both affected Rust crates, and the normal pre-commit hook with
+1,096 engine tests and strict coverage. The ordinary and native profiles
+together exercised all 32 changed executable lines in the adapter. The
+shared-editor coverage exercised all 24 changed executable lines under both
+GTK DPI configurations. The native VST3 run measured 702 complete callbacks
+with zero allocations or frees and verified 350 signed renders. The copied
+release ran with the checkout hidden and no network routes. It measured
+732 complete callbacks with zero allocations or frees and verified
+365 signed renders.
 
 ## Installed REAPER
 
@@ -60,7 +70,13 @@ passes and the same two capacity-limit failures in the float32 block and sample
 accuracy tests. Both submit 1,472 points in one block. The supported aggregate
 capacity remains 1,024 automation points and notes.
 
-The production source change is confined to the VST3 view. The
-[configured, shared-owner and installed CLAP checks](../trigger-vst3-full-product-2026-11-24/README.md)
-remain applicable to their unchanged inputs. The installed and native evidence
-here qualifies the repaired Linux candidate used for [issue #45](https://github.com/DanMarshall909/dandrum/issues/45).
+The CLAP product was rebuilt and installed from the same source, with binary
+SHA-256 `62c9a53db8cdbf5b9d15f00f8f9c1fc3908e2c1facea56918dd80184168481d4`.
+All 35 configured CLAP cases passed, including discovery, editor lifecycle,
+native state and automation and the installed PipeWire/JACK case. The
+installed host completed 376 audited callbacks, received 18 MIDI events
+and observed both gestures balance.
+
+The [whole-product qualification](../trigger-vst3-full-product-2026-11-24/README.md)
+continues to document the unchanged host, engine, shared-state and React inputs.
+This record covers the repaired Linux candidate used for [issue #45](https://github.com/DanMarshall909/dandrum/issues/45).

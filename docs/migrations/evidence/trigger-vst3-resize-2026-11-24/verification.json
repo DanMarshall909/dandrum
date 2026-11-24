@@ -1,14 +1,14 @@
 {
   "acceptance": "OpenSpec prove-trigger-vst3-linux task 5.2",
   "source": {
-    "commit": "ae15c3cef91d45fc77684f0d6a48662f5fbe5697",
-    "tree": "891bfe2bacfa5ac97fc63b8c718724f1a874c64c",
-    "binarySha256": "cb74164a3b58fa800263ed9fe5a056326aa46776cb9f34fe34aeec2c66967617",
+    "commit": "c47bfd4e932bcdbe359f2a78c8ddb22a5a3361a8",
+    "tree": "1d7d58bc937685aa7f1704e3151ff38f0ce1c052",
+    "binarySha256": "813a527bf44f007efed08a1be50d11e2b8d40f561a78278f8981523c001fb2c5",
     "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
     "privateProofOnly": true
   },
   "bundle": {
-    "digest": "88a6ec5fa735375ba7dcea74e9be9c93f61bec378125f61a9b2422aa4dfb61f8",
+    "digest": "5a0a145524d4768d7cfbaa9a5afbcabefb906354e08009b40a30cde023d84c33",
     "files": 361
   },
   "host": {
@@ -24,19 +24,19 @@
   "processes": {
     "first": {
       "loadedBeforeAndAfterRenders": {
-        "pid": 60372,
-        "processStartTick": "189193",
+        "pid": 86704,
+        "processStartTick": "319459",
         "sourceHidden": true,
         "networkRoutes": 0,
-        "networkNamespace": "net:[4026533618]",
-        "binaryPath": "/dev/shm/dandrum-vst3-62-upm3fb_h/reaper/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
-        "binarySha256": "cb74164a3b58fa800263ed9fe5a056326aa46776cb9f34fe34aeec2c66967617",
-        "bundleDigest": "88a6ec5fa735375ba7dcea74e9be9c93f61bec378125f61a9b2422aa4dfb61f8",
+        "networkNamespace": "net:[4026533676]",
+        "binaryPath": "/dev/shm/dandrum-vst3-62-upm3fb_h/reaper-late-x11/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
+        "binarySha256": "813a527bf44f007efed08a1be50d11e2b8d40f561a78278f8981523c001fb2c5",
+        "bundleDigest": "5a0a145524d4768d7cfbaa9a5afbcabefb906354e08009b40a30cde023d84c33",
         "maps": [
-          "71c967c27000-71c967eb5000 r--p 00000000 00:1d 19350                      /dev/shm/dandrum-vst3-62-upm3fb_h/reaper/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
-          "71c967eb5000-71c96876e000 r-xp 0028d000 00:1d 19350                      /dev/shm/dandrum-vst3-62-upm3fb_h/reaper/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
-          "71c96876e000-71c9687ce000 r--p 00b45000 00:1d 19350                      /dev/shm/dandrum-vst3-62-upm3fb_h/reaper/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
-          "71c9687ce000-71c9687d1000 rw-p 00ba4000 00:1d 19350                      /dev/shm/dandrum-vst3-62-upm3fb_h/reaper/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so"
+          "71fc8ac2e000-71fc8aebc000 r--p 00000000 00:1d 35688                      /dev/shm/dandrum-vst3-62-upm3fb_h/reaper-late-x11/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
+          "71fc8aebc000-71fc8b775000 r-xp 0028d000 00:1d 35688                      /dev/shm/dandrum-vst3-62-upm3fb_h/reaper-late-x11/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
+          "71fc8b775000-71fc8b7d5000 r--p 00b46000 00:1d 35688                      /dev/shm/dandrum-vst3-62-upm3fb_h/reaper-late-x11/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
+          "71fc8b7d5000-71fc8b7d7000 rw-p 00ba5000 00:1d 35688                      /dev/shm/dandrum-vst3-62-upm3fb_h/reaper-late-x11/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so"
         ],
         "reaperExeSha256": "44ec7a34daecd0472eca5e1ae058352339babf8a42938e87914cacc8522c0a56"
       },
@@ -47,43 +47,43 @@
         "workers": [
           {
             "name": "xvfb",
-            "pid": 60354,
+            "pid": 86685,
             "exit": 0
           },
           {
             "name": "wm",
-            "pid": 60355,
+            "pid": 86686,
             "exit": 0
           },
           {
             "name": "pipewire",
-            "pid": 60356,
+            "pid": 86687,
             "exit": 0
           },
           {
             "name": "reaper",
-            "pid": 60371,
+            "pid": 86703,
             "exit": 0
           }
         ],
-        "seconds": 110.44252999499986
+        "seconds": 21.82958967500008
       }
     },
     "fresh": {
       "loadedBeforeAndAfterRenders": {
-        "pid": 61448,
-        "processStartTick": "203227",
+        "pid": 87515,
+        "processStartTick": "321878",
         "sourceHidden": true,
         "networkRoutes": 0,
-        "networkNamespace": "net:[4026533618]",
-        "binaryPath": "/dev/shm/dandrum-vst3-62-upm3fb_h/reaper/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
-        "binarySha256": "cb74164a3b58fa800263ed9fe5a056326aa46776cb9f34fe34aeec2c66967617",
-        "bundleDigest": "88a6ec5fa735375ba7dcea74e9be9c93f61bec378125f61a9b2422aa4dfb61f8",
+        "networkNamespace": "net:[4026533676]",
+        "binaryPath": "/dev/shm/dandrum-vst3-62-upm3fb_h/reaper-late-x11/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
+        "binarySha256": "813a527bf44f007efed08a1be50d11e2b8d40f561a78278f8981523c001fb2c5",
+        "bundleDigest": "5a0a145524d4768d7cfbaa9a5afbcabefb906354e08009b40a30cde023d84c33",
         "maps": [
-          "7ee714a56000-7ee714ce4000 r--p 00000000 00:1d 19350                      /dev/shm/dandrum-vst3-62-upm3fb_h/reaper/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
-          "7ee714ce4000-7ee71559d000 r-xp 0028d000 00:1d 19350                      /dev/shm/dandrum-vst3-62-upm3fb_h/reaper/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
-          "7ee71559d000-7ee7155fd000 r--p 00b45000 00:1d 19350                      /dev/shm/dandrum-vst3-62-upm3fb_h/reaper/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
-          "7ee7155fd000-7ee715600000 rw-p 00ba4000 00:1d 19350                      /dev/shm/dandrum-vst3-62-upm3fb_h/reaper/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so"
+          "7252d6257000-7252d64e5000 r--p 00000000 00:1d 35688                      /dev/shm/dandrum-vst3-62-upm3fb_h/reaper-late-x11/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
+          "7252d64e5000-7252d6d9e000 r-xp 0028d000 00:1d 35688                      /dev/shm/dandrum-vst3-62-upm3fb_h/reaper-late-x11/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
+          "7252d6d9e000-7252d6dfe000 r--p 00b46000 00:1d 35688                      /dev/shm/dandrum-vst3-62-upm3fb_h/reaper-late-x11/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
+          "7252d6dfe000-7252d6e00000 rw-p 00ba5000 00:1d 35688                      /dev/shm/dandrum-vst3-62-upm3fb_h/reaper-late-x11/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so"
         ],
         "reaperExeSha256": "44ec7a34daecd0472eca5e1ae058352339babf8a42938e87914cacc8522c0a56"
       },
@@ -94,26 +94,26 @@
         "workers": [
           {
             "name": "xvfb",
-            "pid": 61430,
+            "pid": 87496,
             "exit": 0
           },
           {
             "name": "wm",
-            "pid": 61431,
+            "pid": 87498,
             "exit": 0
           },
           {
             "name": "pipewire",
-            "pid": 61432,
+            "pid": 87499,
             "exit": 0
           },
           {
             "name": "reaper",
-            "pid": 61447,
+            "pid": 87514,
             "exit": 0
           }
         ],
-        "seconds": 12.181169135000118
+        "seconds": 11.779414044000077
       }
     }
   },
@@ -126,7 +126,7 @@
         "channels": 2
       }
     ],
-    "frames": 10240,
+    "frames": 9216,
     "signedExtrema": [
       [
         -0.010764608159661293,
@@ -137,7 +137,7 @@
         0.0017187969060614705
       ]
     ],
-    "sha256": "39fa181ee8dfb27e41175f1b319cb53e496d7116e56475a86373bb284046574d",
+    "sha256": "b32c2cf96059800b10240cf8e27d69eb20e5735f8ffdf44bd349d325096b1b57",
     "observedTransport": "playState=1 position=0.13931972789115646 levelA=0.25 levelB=0.375\nMODE\ttrue\tJACK\nIDENT_IN\ttrue\tJackIn\nIDENT_OUT\ttrue\tJackOut\nBSIZE\ttrue\t1024\nSRATE\ttrue\t44100",
     "portLinks": "REAPER:out1\n  |-> qualification-audio-witness:input_FL\nREAPER:out2\n  |-> qualification-audio-witness:input_FR\nqualification-audio-witness:input_FL\n  |<- REAPER:out1\nqualification-audio-witness:input_FR\n  |<- REAPER:out2\n"
   },
@@ -160,37 +160,37 @@
   "mappingWhileStoppedAndEditorAbsent": {
     "gate": {
       "symbol": "dandrum_instrument_session::MappingJob::prepare",
-      "fileVirtualAddress": 3827984,
-      "executionAddress": 125109846989072,
+      "fileVirtualAddress": 3828656,
+      "executionAddress": 125329477553072,
       "workerTids": [
-        60459,
-        60460
+        86796,
+        86797
       ],
-      "binarySha256": "cb74164a3b58fa800263ed9fe5a056326aa46776cb9f34fe34aeec2c66967617",
-      "armedMonotonicNs": 1949837085165,
+      "binarySha256": "813a527bf44f007efed08a1be50d11e2b8d40f561a78278f8981523c001fb2c5",
+      "armedMonotonicNs": 3207958109661,
       "hit": {
-        "tid": 60460,
-        "rip": 125109846989072,
+        "tid": 86797,
+        "rip": 125329477553072,
         "debugStatus": 4294905841,
-        "monotonicNs": 1950884722956
+        "monotonicNs": 3209055304899
       },
       "closedBeforeRelease": {
         "transportStopped": true,
         "closedNativeWindow": true,
         "nativeXid": "0x1000000",
-        "hostFloatingXid": "0xa010e4",
+        "hostFloatingXid": "0xa0108c",
         "workerStillTracedAndStopped": true,
         "windowEvidence": {
           "0x1000000": "X Error: 9: Bad Drawable: 0x1000000\n  Request Major code: 14\n  Request serial number: 3\nxwininfo: error: No such window with id 0x1000000.\n",
-          "0xa010e4": "X Error: 9: Bad Drawable: 0xa010e4\n  Request Major code: 14\n  Request serial number: 3\nxwininfo: error: No such window with id 0xa010e4.\n"
+          "0xa0108c": "X Error: 9: Bad Drawable: 0xa0108c\n  Request Major code: 14\n  Request serial number: 3\nxwininfo: error: No such window with id 0xa0108c.\n"
         },
-        "monotonicNs": 1950997739587
+        "monotonicNs": 3209165420469
       },
-      "releaseMonotonicNs": 1951020847931,
+      "releaseMonotonicNs": 3209166328001,
       "detachErrors": [],
-      "detachedMonotonicNs": 1951020920520
+      "detachedMonotonicNs": 3209166395580
     },
-    "saveEvidence": "transport=0 editor=closed time=1951.0862316370001",
+    "saveEvidence": "transport=0 editor=closed time=3209.2393877170002",
     "resourceManifestB": [
       {
         "path": "assets/advanced-drums.wav",
@@ -211,12 +211,12 @@
   "restoration": {
     "originalRemoval": {
       "firstReaperExit": 0,
-      "firstReaperPid": 60372,
+      "firstReaperPid": 86704,
       "removedOriginals": [
-        "/dev/shm/dandrum-vst3-62-upm3fb_h/reaper/selected-A.wav",
-        "/dev/shm/dandrum-vst3-62-upm3fb_h/reaper/selected-B.wav"
+        "/dev/shm/dandrum-vst3-62-upm3fb_h/reaper-late-x11/selected-A.wav",
+        "/dev/shm/dandrum-vst3-62-upm3fb_h/reaper-late-x11/selected-B.wav"
       ],
-      "savedProjectSha256": "8fcffe15a2c0798dd374203f5e7bad8db0869961fdec8e25a5b0fbb71b170fb4"
+      "savedProjectSha256": "f1872a6d141d6b61045d4501545d59164fbc3b4ae8a75d826cc4213ab4402558"
     },
     "exactNamedNormalizedValues": 46,
     "exactPhysicalValues": 46,
@@ -458,7 +458,7 @@
       "rampEndInFrames": 64.0,
       "renders": {
         "A": {
-          "sha256": "93eeec4fec6033bde22e121b154de7cbb1b22bef468f689a7b97d1db4d848370",
+          "sha256": "78d20fde877c289c0a04932c01e3b991af834e871737feed7f713052cf456111",
           "frames": 960,
           "nonSilentPrefixFrames": 64,
           "silentTailFrames": 896,
@@ -490,7 +490,7 @@
           }
         },
         "B": {
-          "sha256": "36d461fbacaaaedfb22a076f6c93826c9f78e476d8b90823d7694a9e0d644d9f",
+          "sha256": "539ccb8da4e5ab19757244523fe163d58574ff45377116a8ec809d260d960210",
           "frames": 960,
           "nonSilentPrefixFrames": 64,
           "silentTailFrames": 896,
@@ -527,7 +527,7 @@
       "rampEndInFrames": 63.99984,
       "renders": {
         "A": {
-          "sha256": "08529dff7d310fae277b9d830b0615b7aa5c0f949889abbf161048f4a01cad82",
+          "sha256": "3cd7b68d03683d7443ff31dbfd0040b1b34c98f1f6d51094ff827a7cb135cf50",
           "frames": 960,
           "nonSilentPrefixFrames": 64,
           "silentTailFrames": 896,
@@ -559,7 +559,7 @@
           }
         },
         "B": {
-          "sha256": "624b139f8dbb8b0a33ecc114c425a9f3d7d0c56a2f96dc52afbf0defa1310e2a",
+          "sha256": "5f90bc06f0289f34d6bdb32165c3b7a42e7bd0aac95928e7c18d61cb7bede8c4",
           "frames": 960,
           "nonSilentPrefixFrames": 64,
           "silentTailFrames": 896,
