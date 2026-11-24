@@ -5,6 +5,135 @@ use vst3::Steinberg::{Vst::*, *};
 
 #[cfg(feature = "trigger-editor")]
 #[test]
+fn content_scaling_allows_the_host_to_clear_its_frame_during_foreign_calls() {
+    use std::{
+        cell::{Cell, RefCell},
+        rc::Rc,
+    };
+
+    // A raw host ABI fixture is needed because ComWrapper owns AddRef itself.
+    #[repr(C)]
+    struct Frame {
+        vtbl: *const IPlugFrameVtbl,
+        references: Cell<u32>,
+        callback: RefCell<Option<Box<dyn FnOnce()>>>,
+        dropped: Rc<Cell<bool>>,
+    }
+    impl Drop for Frame {
+        fn drop(&mut self) {
+            self.dropped.set(true);
+        }
+    }
+    unsafe fn reenter(this: *mut Frame) {
+        // SAFETY: the caller holds the live host frame's ABI reference.
+        let callback = unsafe { &*this }.callback.borrow_mut().take();
+        if let Some(callback) = callback {
+            callback();
+        }
+    }
+    unsafe extern "system" fn query(
+        this: *mut FUnknown,
+        iid: *const TUID,
+        out: *mut *mut std::ffi::c_void,
+    ) -> tresult {
+        // SAFETY: SDK inputs are live buffers, and this is the leading interface.
+        unsafe {
+            *out = std::ptr::null_mut();
+            if *iid != FUnknown_iid && *iid != IPlugFrame_iid {
+                return kNoInterface;
+            }
+            *out = this.cast();
+            retain(this);
+        }
+        kResultOk
+    }
+    unsafe extern "system" fn retain(this: *mut FUnknown) -> u32 {
+        // SAFETY: every retained reference points at this live repr(C) allocation.
+        let frame = unsafe { &*this.cast::<Frame>() };
+        frame.references.set(frame.references.get() + 1);
+        unsafe {
+            reenter(this.cast());
+        }
+        frame.references.get()
+    }
+    unsafe extern "system" fn release(this: *mut FUnknown) -> u32 {
+        // SAFETY: consume one reference and destroy only the final allocation.
+        let frame = unsafe { &*this.cast::<Frame>() };
+        let remaining = frame.references.get() - 1;
+        frame.references.set(remaining);
+        if remaining == 0 {
+            drop(unsafe { Box::from_raw(this.cast::<Frame>()) });
+        }
+        remaining
+    }
+    unsafe extern "system" fn resize(
+        this: *mut IPlugFrame,
+        view: *mut IPlugView,
+        rect: *mut ViewRect,
+    ) -> tresult {
+        // SAFETY: the host callback retains its frame and receives live SDK inputs.
+        unsafe {
+            reenter(this.cast());
+            vst3::ComRef::from_raw(view).unwrap().onSize(rect)
+        }
+    }
+    static VTABLE: IPlugFrameVtbl = IPlugFrameVtbl {
+        base: FUnknownVtbl {
+            queryInterface: query,
+            addRef: retain,
+            release,
+        },
+        resizeView: resize,
+    };
+
+    let bundle = Bundle::new();
+    let module = bundle.load();
+    let controller = module.class::<IEditController>(&CONTROLLER);
+    let dropped = Rc::new(Cell::new(false));
+    let cleared = Rc::new(Cell::new(false));
+    unsafe {
+        assert_eq!(controller.initialize(std::ptr::null_mut()), kResultOk);
+        let view = vst3::ComPtr::from_raw(controller.createView(c"editor".as_ptr())).unwrap();
+        let raw = Box::into_raw(Box::new(Frame {
+            vtbl: &VTABLE,
+            references: Cell::new(1),
+            callback: RefCell::new(None),
+            dropped: dropped.clone(),
+        }));
+        // The allocation's initial reference is transferred to the host ComPtr.
+        let frame = vst3::ComPtr::<IPlugFrame>::from_raw(raw.cast()).unwrap();
+        assert_eq!(view.setFrame(frame.as_ptr()), kResultOk);
+        let reentrant = view.clone();
+        let observed = cleared.clone();
+        *(*raw).callback.borrow_mut() = Some(Box::new(move || {
+            assert_eq!(reentrant.setFrame(std::ptr::null_mut()), kResultOk);
+            observed.set(true);
+        }));
+        let scale = view.cast::<IPlugViewContentScaleSupport>().unwrap();
+        assert_eq!(scale.setContentScaleFactor(2.0), kResultOk);
+        assert!(
+            cleared.get(),
+            "host frame replacement completes inside the scale negotiation"
+        );
+        let mut rect = ViewRect {
+            left: 0,
+            top: 0,
+            right: 0,
+            bottom: 0,
+        };
+        assert_eq!(view.getSize(&mut rect), kResultOk);
+        assert_eq!((rect.right, rect.bottom), (2400, 1600));
+        drop(frame);
+        assert!(
+            dropped.get(),
+            "the removed frame is released after its in-flight call"
+        );
+        assert_eq!(controller.terminate(), kResultOk);
+    }
+}
+
+#[cfg(feature = "trigger-editor")]
+#[test]
 fn content_scaling_negotiates_with_the_frame_and_preserves_refused_size() {
     use std::{
         cell::{Cell, RefCell},

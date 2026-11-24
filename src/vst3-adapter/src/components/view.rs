@@ -61,7 +61,7 @@ pub(super) struct ViewCore {
     connection: RefCell<Option<Rc<BrowserConnection>>>,
     busy: Cell<bool>,
     selection_dialog: RefCell<Option<NativeFileSelection>>,
-    frame: RefCell<Option<vst3::ComPtr<IPlugFrame>>>,
+    frame: RefCell<Option<Rc<vst3::ComPtr<IPlugFrame>>>>,
     // Non-owning ABI identity, used only during a live scale-interface call.
     abi: Cell<*mut IPlugView>,
     content_scale: Cell<f32>,
@@ -726,7 +726,8 @@ impl IPlugViewTrait for View {
             return kResultFalse;
         }
         // SAFETY: the host supplies a live frame or null; retain its COM reference.
-        let frame = unsafe { vst3::ComRef::from_raw(frame) }.map(|frame| frame.to_com_ptr());
+        let frame =
+            unsafe { vst3::ComRef::from_raw(frame) }.map(|frame| Rc::new(frame.to_com_ptr()));
         let old = self.frame.replace(frame);
         drop(old);
         kResultOk
@@ -770,6 +771,7 @@ impl IPlugViewContentScaleSupportTrait for View {
         self.scaling.set(true);
         let _call = HostCall(&self.scaling);
         let old = self.content_scale.replace(factor);
+        // Snapshot our local reference count before any foreign AddRef/resize call.
         let frame = self.frame.borrow().clone();
         let mut rect = ViewRect {
             left: 0,
