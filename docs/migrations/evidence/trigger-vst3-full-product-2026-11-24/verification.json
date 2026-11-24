@@ -1,0 +1,2238 @@
+{
+  "sourceProductCommit": "c62fd4924b981b6b17a1f2211c9f2530afa1646d",
+  "configuredCTestCasesPassed": 47,
+  "configured": {
+    "host": {
+      "exit": 0,
+      "seconds": 69.745,
+      "head": "c5d2941bb0afb8d4230867be5311f8ea21b8b937",
+      "log": "configured-warm-host.log",
+      "logSha256": "939f9180d6dcaf2d7a2b65fe54dba554778f46f8eca37bddd98fe7e62aa246db",
+      "receipt": "configured-warm-host.json",
+      "receiptSha256": "c94efb90e90cd0ea98eda4ec561dbb8f4847bff437c286eb25553f248152304c",
+      "cases": {
+        "trigger-host-tests": {
+          "passed": true,
+          "seconds": 8.43757
+        },
+        "trigger-host-state-payload-limits": {
+          "passed": true,
+          "seconds": 58.6719
+        }
+      },
+      "junit": "configured-warm-host.junit.xml",
+      "junitSha256": "75d401da816683781fb914febafde4227dd06a097877ded507a4dfb385e5f647"
+    },
+    "ordinary": {
+      "exit": 8,
+      "seconds": 43.653,
+      "head": "c5d2941bb0afb8d4230867be5311f8ea21b8b937",
+      "log": "configured-ordinary-recovered.log",
+      "logSha256": "76af8d531d14c815a9a6c71ff8e29b2bc1565c94a53c661694de655b13996441",
+      "receipt": "configured-ordinary-recovered.json",
+      "receiptSha256": "174220def735a74204437e4dcf51ff4f078907352f642216c9e05a0977c448e8",
+      "cases": {
+        "trigger-editor-tests": {
+          "passed": true,
+          "seconds": 1.47421
+        },
+        "rust-engine-tests": {
+          "passed": true,
+          "seconds": 12.3488
+        },
+        "instrument-session-tests": {
+          "passed": true,
+          "seconds": 24.5368
+        },
+        "trigger-clap-install-contract": {
+          "passed": true,
+          "seconds": 0.784492
+        },
+        "trigger-clap-daw-evidence": {
+          "passed": true,
+          "seconds": 0.403981
+        },
+        "trigger-clap-native-fixture-driver": {
+          "passed": true,
+          "seconds": 0.849941
+        },
+        "trigger-clap-dynamic-host": {
+          "passed": false,
+          "seconds": 0.758085
+        },
+        "trigger-editor-packaged-assets": {
+          "passed": false,
+          "seconds": 0.886737
+        },
+        "clap-dynamic-host": {
+          "passed": false,
+          "seconds": 0.833632
+        }
+      },
+      "junit": "configured-ordinary-recovered.junit.xml",
+      "junitSha256": "18aef5938dbd2423294f7641585bf602920b6ba40bdcd4dee7846228b6fd4ecd"
+    },
+    "finalDebug": {
+      "exit": 0,
+      "seconds": 31.474,
+      "head": "c5d2941bb0afb8d4230867be5311f8ea21b8b937",
+      "log": "configured-debug-final.log",
+      "logSha256": "59e7ac12fe42e84354d3a27d63708a31c29a235bb2458eb56f8f67bbb4d08bc3",
+      "receipt": "configured-debug-final.json",
+      "receiptSha256": "430c18918e3f7edd667c3faa16b0c7bbab7252d9995820866f9589a5f7c4a5fd",
+      "cases": {
+        "trigger-clap-dynamic-host": {
+          "passed": true,
+          "seconds": 23.74
+        },
+        "trigger-editor-packaged-assets": {
+          "passed": true,
+          "seconds": 1.75359
+        },
+        "clap-dynamic-host": {
+          "passed": true,
+          "seconds": 3.75532
+        }
+      },
+      "junit": "configured-debug-final.junit.xml",
+      "junitSha256": "5a3789923ffffe8ad36bdd6e962a792be79a4b276f9c464bba16529a98e12dea"
+    },
+    "x11AndJack": {
+      "exit": 8,
+      "seconds": 228.796,
+      "head": "c5d2941bb0afb8d4230867be5311f8ea21b8b937",
+      "log": "clapsuite-tests.log",
+      "logSha256": "b2dfc93e05f041a3e7d7621ffc3589ee201915e90c5d77efa657b72f4f13eb73",
+      "receipt": "configured-native.json",
+      "receiptSha256": "a4e8d04e64ca387364633d5de83cfa2d85e5c77e66c263641631ed4d07bf962d",
+      "cases": {
+        "trigger-editor-native-prepare": {
+          "passed": true,
+          "seconds": 65.1694
+        },
+        "trigger-editor-native-x11": {
+          "passed": false,
+          "seconds": 3.01371
+        },
+        "trigger-editor-native-handler-lifetime": {
+          "passed": true,
+          "seconds": 1.96456
+        },
+        "trigger-clap-native-product-build": {
+          "passed": true,
+          "seconds": 9.629
+        },
+        "trigger-clap-native-prepare": {
+          "passed": true,
+          "seconds": 13.4437
+        },
+        "trigger-clap-native-extension": {
+          "passed": true,
+          "seconds": 0.0375125
+        },
+        "trigger-clap-native-lifecycle": {
+          "passed": true,
+          "seconds": 2.33733
+        },
+        "trigger-clap-native-configuration": {
+          "passed": true,
+          "seconds": 0.0879759
+        },
+        "trigger-clap-native-loader-identity": {
+          "passed": true,
+          "seconds": 0.0544888
+        },
+        "trigger-clap-native-failed-parent": {
+          "passed": true,
+          "seconds": 0.0552614
+        },
+        "trigger-clap-native-parameters-prepare": {
+          "passed": true,
+          "seconds": 70.2454
+        },
+        "trigger-clap-native-parameter-state": {
+          "passed": true,
+          "seconds": 1.03074
+        },
+        "trigger-clap-native-parameter-flush": {
+          "passed": true,
+          "seconds": 0.759363
+        },
+        "trigger-clap-native-parameter-ownership": {
+          "passed": true,
+          "seconds": 0.765748
+        },
+        "trigger-clap-native-parameter-timer-required": {
+          "passed": true,
+          "seconds": 0.0436141
+        },
+        "trigger-clap-native-parameter-timer-refused": {
+          "passed": true,
+          "seconds": 0.0394505
+        },
+        "trigger-clap-native-parameter-timer-delivery": {
+          "passed": true,
+          "seconds": 0.965219
+        },
+        "trigger-clap-native-parameter-timer-rollback": {
+          "passed": true,
+          "seconds": 0.0414089
+        },
+        "trigger-clap-native-parameter-source-credits": {
+          "passed": true,
+          "seconds": 1.06642
+        },
+        "trigger-clap-native-parameter-feedback-undo": {
+          "passed": true,
+          "seconds": 1.53438
+        },
+        "trigger-clap-native-parameter-callback-audit": {
+          "passed": true,
+          "seconds": 1.21272
+        },
+        "trigger-clap-native-parameter-invalid-stopped-flush": {
+          "passed": true,
+          "seconds": 0.94503
+        },
+        "trigger-clap-native-parameter-structural-session": {
+          "passed": true,
+          "seconds": 4.53605
+        },
+        "trigger-clap-native-parameter-note-hold": {
+          "passed": true,
+          "seconds": 2.6394
+        },
+        "trigger-clap-native-parameter-note-heartbeat": {
+          "passed": true,
+          "seconds": 3.71471
+        },
+        "trigger-clap-native-parameter-note-expiry": {
+          "passed": true,
+          "seconds": 4.92469
+        },
+        "trigger-clap-native-parameter-note-destroy": {
+          "passed": true,
+          "seconds": 2.40007
+        },
+        "trigger-clap-native-parameter-creation-failure": {
+          "passed": true,
+          "seconds": 0.878923
+        },
+        "trigger-clap-native-parameter-continuous-audio": {
+          "passed": true,
+          "seconds": 3.29205
+        },
+        "trigger-clap-native-parameter-continuous-audio-audit": {
+          "passed": true,
+          "seconds": 3.46923
+        },
+        "trigger-clap-native-parameter-two-instances": {
+          "passed": true,
+          "seconds": 9.02247
+        },
+        "trigger-clap-native-parameter-selected-snapshot": {
+          "passed": true,
+          "seconds": 2.22414
+        },
+        "trigger-clap-native-parameter-selected-import": {
+          "passed": true,
+          "seconds": 2.13166
+        },
+        "trigger-clap-native-parameter-empty-import": {
+          "passed": true,
+          "seconds": 1.84513
+        },
+        "trigger-clap-native-parameter-recovered-import": {
+          "passed": true,
+          "seconds": 2.03289
+        },
+        "trigger-clap-installed-native-overlap": {
+          "passed": true,
+          "seconds": 9.09983
+        }
+      },
+      "junit": "configured-native.junit.xml",
+      "junitSha256": "a4f68ae4dedcf6d6c778c44fd927c23c53e3ed9746134c1aa08eed556d096c9b"
+    },
+    "bareX11": {
+      "exit": 0,
+      "seconds": 12.752,
+      "head": "c5d2941bb0afb8d4230867be5311f8ea21b8b937",
+      "log": "editorgeometry-tests.log",
+      "logSha256": "49b61dcfec9cfc8da0cde4b5b0fe5e1569f39b7c330640798f2da20617f2054c",
+      "receipt": "configured-editor-geometry.json",
+      "receiptSha256": "f78075030546f8ec954f016cac3347319b5fc9d09f17eaa9e9621d81eb7e3b79",
+      "cases": {
+        "trigger-editor-native-prepare": {
+          "passed": true,
+          "seconds": 1.44283
+        },
+        "trigger-editor-native-x11": {
+          "passed": true,
+          "seconds": 7.19018
+        },
+        "trigger-editor-native-handler-lifetime": {
+          "passed": true,
+          "seconds": 1.99289
+        }
+      },
+      "junit": "configured-editor-geometry.junit.xml",
+      "junitSha256": "038007f1e193f1174e4b9defe98cb4bfbcd4d3e2f6ddf6b2312c6cef680ee1bd"
+    }
+  },
+  "rustOwners": {
+    "vst3-adapter": {
+      "object": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/libdandrum_vst3_adapter.so",
+      "objectSha256": "e05fd1a838912d4802f58a2e1361bd73c67ac5f831e32b993927024456674b64",
+      "scopes": {
+        "ordinary": {
+          "runReceipt": "current-vst3-ordinary.json",
+          "rawRunLog": "current-vst3-ordinary.log",
+          "testsPassed": 89,
+          "runReceiptSha256": "a1eea5490b6b123fb374c1b476aad0e98ea5c544db35ed413c688988e2029cd7",
+          "runLogSha256": "632834a4d77c1668e53b584d1265dbbfa4eb2992189c6c1031d5653d9ddf61fa",
+          "profiles": [
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-212571-16807818292892413025_0.profraw",
+              "sha256": "7a7ae033473c69f28fbf12fdd0466d5506701d6d417d9641c6ce6489914f8fe9"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-212574-16174952024182774673_0.profraw",
+              "sha256": "2f35b43f176e4ce694ad4eceabdec87444af38c50c80c580b3563de136ca0ab9"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-212574-17449060729748405504_0.profraw",
+              "sha256": "5b18a5372edfc2f05944ea785d2d818dfb6d0609ef9ad6496e03d4f14c749f52"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-212627-17259319456730972023_0.profraw",
+              "sha256": "426057d00aee55a3dd655831b807b6e1985d41edad509a03aeb688ba0b6942ff"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-212668-16174952024182774673_0.profraw",
+              "sha256": "a67ce1addc4357755155e4801d23533b4a235a6b81ae577f66b969c14f7bf43a"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-212668-17259319456730972023_0.profraw",
+              "sha256": "e0f48ed1c5cbad199fab0d32f6eeea77e36df4bcb736467ab9e266958e920e98"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-212691-16174952024182774673_0.profraw",
+              "sha256": "d1dd0fc3144ced78741807cb7ea5ecfbb1e3a673ac541e331d7f4bbe5a37a3e0"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-212691-7736612903980468217_0.profraw",
+              "sha256": "a03e93d02eb4419512d5f8855390aa450d91cc52a1f2c641539f1398bbb559a5"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-213015-16174952024182774673_0.profraw",
+              "sha256": "44d225917a198c0444223a43e4638050147b8a34a4199b5e1d01e5492452bd26"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-213015-7055371632222631139_0.profraw",
+              "sha256": "cc73387f3ff3a5f6e36b964e71f3d5b4d478d01a4c1e6064ba77b532a83a82eb"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-213029-14053159227929344153_0.profraw",
+              "sha256": "ec4f85008c275a8caf2b1e3d5e78269aac158fe0c0309c0133302c5efca4ace8"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-213029-16174952024182774673_0.profraw",
+              "sha256": "e9609cf37d82401032c5260c1fa7c9fac732f197f605a441496b935edb9d5fd1"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-213119-16174952024182774673_0.profraw",
+              "sha256": "8a5ae7fdbf4e8534757ce561d6302a8b29898a9e87aa99c4bc9789b7fb33cb24"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-213119-2069513098211369260_0.profraw",
+              "sha256": "ef299a9df21b5bac2dcbe08efdac6b072f5747641f7411cd884a1e1f34b505a3"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-213300-6540206388222113405_0.profraw",
+              "sha256": "52ef9e0ada3ccf8531bab8cbf4ef505f325f887f3d5e3c6b27ebe324f87195c4"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-213303-16174952024182774673_0.profraw",
+              "sha256": "f64847f2cb33adba6b47617541d32a44466ddf92cbbdab77834512ccc28aa7d7"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-213303-6540206388222113405_0.profraw",
+              "sha256": "58a8828f719a860c67dfa0b7c9b3e8a6bf31bbeb09c46299060aa6e17a986dfc"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-213304-16174952024182774673_0.profraw",
+              "sha256": "f831b468eebdb14773fcd798948461d8a4d0cc4334865f966365d3cfbd953729"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-213304-6540206388222113405_0.profraw",
+              "sha256": "081879eb771e23e5faa914c784bd681475df402825325565b6ad8576c7d5cdea"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-213309-1321597304306642587_0.profraw",
+              "sha256": "8aa823a335cb9895a825b3386aff3fd03f56ad29990cd6d61c565c21a3d98754"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-213309-16174952024182774673_0.profraw",
+              "sha256": "c0dbc9046c41982c7b95375ba80a8f896835b90cb145718459924c79331fceb8"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-213444-16174952024182774673_0.profraw",
+              "sha256": "e09c8acdb64f4d31afe76da2c3c10db683bd7f49cc5b55584c7972bd234ddc72"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-213444-4264576000455738436_0.profraw",
+              "sha256": "5839b66eab4fe293f35a1aca27a59265a2ff1b21fcd778b831e8ce71fa2616ef"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-213764-16174952024182774673_0.profraw",
+              "sha256": "ecbc024834a0d2ecefcda543d0e1e826ce24002a02468e4671b1394839e937ce"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-213764-5993080994681456542_0.profraw",
+              "sha256": "8688a83dc405d9ac96a2b80fbcf1eceaa3bffb7c9585313462285159780ee745"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-213801-12187768126150025092_0.profraw",
+              "sha256": "5fa060aa525f126b5b329fa1487d18b0cd719387bd8fb80c85a0b0c7d4ed56e3"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-213802-16174952024182774673_0.profraw",
+              "sha256": "497e3656867c022d75d48c4ba76e440ac11aa44ab350a6bfd553497b4b6e76f9"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-213802-9021442121867730112_0.profraw",
+              "sha256": "12c4334d0e9d0fff57fa92bd8e02eb0c2ee7114da17da30232f006cc10c9e1e4"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-214013-3390886710843775410_0.profraw",
+              "sha256": "4ef26138c3e8fb75ab270f9d27d81c8bcdc621050d7e7bda1782c18f25926783"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-214014-5713922178851980158_0.profraw",
+              "sha256": "9ead6951736c24f80f0d6ab2f15785167aa60025d0a92455b55064bb07fb4bd5"
+            }
+          ],
+          "reportSha256": "fae74ec0eb2dc9efffb17daf55f9a3469b0a44ade5af48cc994bf10a12f8442e",
+          "mergedProfileSha256": "42a369f4957c621f2b8a63326b8360db1dacbbbdb4fd5469941aaf94034c152f",
+          "totals": {
+            "lines": {
+              "covered": 3345,
+              "count": 3932
+            },
+            "regions": {
+              "covered": 4780,
+              "count": 5607
+            },
+            "functions": {
+              "covered": 285,
+              "count": 328
+            }
+          },
+          "files": {
+            "src/vst3-adapter/src/audio.rs": {
+              "lines": {
+                "count": 344,
+                "covered": 340,
+                "percent": 98.83720930232558
+              },
+              "regions": {
+                "count": 479,
+                "covered": 475,
+                "notcovered": 4,
+                "percent": 99.16492693110646
+              },
+              "functions": {
+                "count": 20,
+                "covered": 20,
+                "percent": 100
+              }
+            },
+            "src/vst3-adapter/src/components.rs": {
+              "lines": {
+                "count": 2129,
+                "covered": 2018,
+                "percent": 94.78628464067637
+              },
+              "regions": {
+                "count": 3036,
+                "covered": 2889,
+                "notcovered": 147,
+                "percent": 95.15810276679841
+              },
+              "functions": {
+                "count": 155,
+                "covered": 150,
+                "percent": 96.7741935483871
+              }
+            },
+            "src/vst3-adapter/src/components/view.rs": {
+              "lines": {
+                "count": 658,
+                "covered": 263,
+                "percent": 39.96960486322189
+              },
+              "regions": {
+                "count": 929,
+                "covered": 353,
+                "notcovered": 576,
+                "percent": 37.997847147470395
+              },
+              "functions": {
+                "count": 55,
+                "covered": 29,
+                "percent": 52.72727272727272
+              }
+            },
+            "src/vst3-adapter/src/lib.rs": {
+              "lines": {
+                "count": 141,
+                "covered": 141,
+                "percent": 100
+              },
+              "regions": {
+                "count": 218,
+                "covered": 218,
+                "notcovered": 0,
+                "percent": 100
+              },
+              "functions": {
+                "count": 14,
+                "covered": 14,
+                "percent": 100
+              }
+            },
+            "src/vst3-adapter/src/parameters.rs": {
+              "lines": {
+                "count": 20,
+                "covered": 20,
+                "percent": 100
+              },
+              "regions": {
+                "count": 26,
+                "covered": 26,
+                "notcovered": 0,
+                "percent": 100
+              },
+              "functions": {
+                "count": 5,
+                "covered": 5,
+                "percent": 100
+              }
+            },
+            "src/vst3-adapter/src/platform/linux.rs": {
+              "lines": {
+                "count": 73,
+                "covered": 67,
+                "percent": 91.78082191780823
+              },
+              "regions": {
+                "count": 111,
+                "covered": 100,
+                "notcovered": 11,
+                "percent": 90.09009009009009
+              },
+              "functions": {
+                "count": 4,
+                "covered": 4,
+                "percent": 100
+              }
+            },
+            "src/vst3-adapter/src/stream.rs": {
+              "lines": {
+                "count": 30,
+                "covered": 29,
+                "percent": 96.66666666666667
+              },
+              "regions": {
+                "count": 59,
+                "covered": 58,
+                "notcovered": 1,
+                "percent": 98.30508474576271
+              },
+              "functions": {
+                "count": 5,
+                "covered": 5,
+                "percent": 100
+              }
+            },
+            "src/vst3-adapter/src/transport.rs": {
+              "lines": {
+                "count": 537,
+                "covered": 467,
+                "percent": 86.96461824953445
+              },
+              "regions": {
+                "count": 749,
+                "covered": 661,
+                "notcovered": 88,
+                "percent": 88.25100133511349
+              },
+              "functions": {
+                "count": 70,
+                "covered": 58,
+                "percent": 82.85714285714286
+              }
+            }
+          },
+          "changed": {
+            "src/vst3-adapter/src/components.rs": {
+              "changedLines": 417,
+              "countedChangedLines": 304,
+              "coveredChangedLines": 281,
+              "missedChangedLines": [
+                279,
+                280,
+                281,
+                282,
+                283,
+                287,
+                288,
+                289,
+                583,
+                585,
+                589,
+                639,
+                1179,
+                1384,
+                1417,
+                1433,
+                1450,
+                1452,
+                1513,
+                1937,
+                1945,
+                1948,
+                1961
+              ]
+            },
+            "src/vst3-adapter/src/components/view.rs": {
+              "changedLines": 687,
+              "countedChangedLines": 560,
+              "coveredChangedLines": 180,
+              "missedChangedLines": [
+                85,
+                86,
+                87,
+                88,
+                89,
+                90,
+                92,
+                94,
+                95,
+                97,
+                98,
+                99,
+                100,
+                101,
+                102,
+                103,
+                104,
+                133,
+                134,
+                135,
+                136,
+                137,
+                138,
+                139,
+                140,
+                141,
+                142,
+                143,
+                144,
+                147,
+                150,
+                160,
+                161,
+                162,
+                163,
+                173,
+                174,
+                176,
+                177,
+                178,
+                179,
+                180,
+                181,
+                182,
+                183,
+                184,
+                185,
+                186,
+                187,
+                188,
+                190,
+                191,
+                192,
+                193,
+                195,
+                196,
+                199,
+                200,
+                201,
+                202,
+                203,
+                204,
+                205,
+                206,
+                207,
+                208,
+                209,
+                210,
+                211,
+                212,
+                213,
+                214,
+                215,
+                216,
+                217,
+                218,
+                219,
+                220,
+                221,
+                222,
+                223,
+                224,
+                225,
+                226,
+                227,
+                228,
+                229,
+                230,
+                231,
+                232,
+                233,
+                235,
+                236,
+                237,
+                239,
+                240,
+                241,
+                242,
+                243,
+                245,
+                246,
+                247,
+                248,
+                251,
+                252,
+                253,
+                254,
+                256,
+                257,
+                258,
+                259,
+                260,
+                261,
+                262,
+                263,
+                265,
+                266,
+                267,
+                268,
+                269,
+                271,
+                272,
+                273,
+                274,
+                275,
+                276,
+                277,
+                278,
+                279,
+                280,
+                281,
+                282,
+                283,
+                285,
+                286,
+                287,
+                288,
+                290,
+                291,
+                292,
+                293,
+                294,
+                296,
+                297,
+                299,
+                300,
+                301,
+                303,
+                304,
+                305,
+                306,
+                308,
+                309,
+                310,
+                311,
+                312,
+                314,
+                315,
+                316,
+                317,
+                318,
+                319,
+                321,
+                322,
+                324,
+                325,
+                327,
+                328,
+                329,
+                330,
+                331,
+                332,
+                333,
+                334,
+                335,
+                337,
+                338,
+                339,
+                340,
+                341,
+                343,
+                346,
+                347,
+                348,
+                349,
+                350,
+                351,
+                352,
+                353,
+                354,
+                355,
+                357,
+                358,
+                359,
+                360,
+                361,
+                362,
+                363,
+                364,
+                365,
+                366,
+                368,
+                369,
+                371,
+                372,
+                373,
+                375,
+                376,
+                377,
+                378,
+                379,
+                380,
+                382,
+                383,
+                384,
+                385,
+                386,
+                387,
+                388,
+                389,
+                390,
+                391,
+                392,
+                393,
+                394,
+                395,
+                396,
+                397,
+                398,
+                400,
+                401,
+                402,
+                403,
+                405,
+                406,
+                407,
+                408,
+                409,
+                410,
+                411,
+                412,
+                414,
+                415,
+                417,
+                418,
+                419,
+                420,
+                421,
+                422,
+                423,
+                424,
+                426,
+                428,
+                429,
+                430,
+                431,
+                432,
+                433,
+                434,
+                435,
+                436,
+                437,
+                438,
+                440,
+                444,
+                445,
+                446,
+                447,
+                448,
+                449,
+                450,
+                451,
+                452,
+                453,
+                454,
+                455,
+                456,
+                457,
+                458,
+                460,
+                461,
+                462,
+                463,
+                464,
+                465,
+                466,
+                467,
+                468,
+                469,
+                470,
+                471,
+                472,
+                473,
+                474,
+                475,
+                476,
+                477,
+                478,
+                484,
+                485,
+                486,
+                487,
+                488,
+                489,
+                490,
+                491,
+                492,
+                493,
+                494,
+                495,
+                496,
+                497,
+                498,
+                499,
+                500,
+                502,
+                503,
+                504,
+                505,
+                506,
+                507,
+                508,
+                509,
+                510,
+                511,
+                512,
+                517,
+                519,
+                520,
+                527,
+                528,
+                529,
+                532,
+                543,
+                544,
+                546,
+                551,
+                552,
+                553,
+                554,
+                556,
+                566,
+                575,
+                578,
+                579,
+                580,
+                581,
+                582,
+                583,
+                584,
+                585,
+                586,
+                587,
+                588,
+                589,
+                590,
+                591,
+                592,
+                593,
+                594,
+                595,
+                596,
+                597,
+                598,
+                599,
+                600,
+                617,
+                618,
+                619,
+                620,
+                621,
+                622,
+                696,
+                697,
+                698,
+                700,
+                720,
+                769,
+                799,
+                800
+              ]
+            },
+            "src/vst3-adapter/src/transport.rs": {
+              "changedLines": 34,
+              "countedChangedLines": 10,
+              "coveredChangedLines": 0,
+              "missedChangedLines": [
+                37,
+                175,
+                176,
+                177,
+                223,
+                224,
+                225,
+                227,
+                228,
+                229
+              ]
+            }
+          }
+        },
+        "native": {
+          "runReceipt": "currently-vst3-native.json",
+          "rawRunLog": "vst3coverage-tests.log",
+          "testsPassed": 3,
+          "runReceiptSha256": "693d9dcf80a8b503052097ff26e9488b3dfebaf28d64c5bf5d7887f193544f39",
+          "runLogSha256": "0e12f184740e3a29415f271325466d19822995eb948516559095eacaa48166f7",
+          "profiles": [
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-214321-12187768126150025092_0.profraw",
+              "sha256": "cd7964718b7867cb2e7ff4262467e524ea8f7d071858150634f0c657735600f1"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-214321-16174952024182774673_0.profraw",
+              "sha256": "75b8657cd17566bb3d91ca16bedc162599dbc326560dad245e76b7e835a799cf"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-214550-16174952024182774673_0.profraw",
+              "sha256": "c7c2895bd5697ed47c2f683584221cc06310be467ab95db6c2b20aa8c68457d9"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-214550-3390886710843775410_0.profraw",
+              "sha256": "fc1992c7a4b76157b802d79d0e4c933e7017e17e0758d013b96bff3e500725bd"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-214752-16174952024182774673_0.profraw",
+              "sha256": "84e441fc275e5324387b5b813039d832e0c5f0285f8a01ce1f7f8f4420387cd9"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/438877456e19e7c6168ffef4/coverage/vst3-adapter-214752-5713922178851980158_0.profraw",
+              "sha256": "aa168fc8345415eaf9e158c82c01fff8005f3a0c55779bb3a74fee3a9a456a46"
+            }
+          ],
+          "reportSha256": "71d819ddb9334e173635a32641ce5c77f28a26113510f70ad90cea246bd6f117",
+          "mergedProfileSha256": "f27e96086a8ab8f40af1c5608282ca187d37ae0013c6e1c57a4e32c134ef476e",
+          "totals": {
+            "lines": {
+              "covered": 2841,
+              "count": 3932
+            },
+            "regions": {
+              "covered": 4112,
+              "count": 5607
+            },
+            "functions": {
+              "covered": 257,
+              "count": 328
+            }
+          },
+          "files": {
+            "src/vst3-adapter/src/audio.rs": {
+              "lines": {
+                "count": 344,
+                "covered": 285,
+                "percent": 82.84883720930233
+              },
+              "regions": {
+                "count": 479,
+                "covered": 405,
+                "notcovered": 74,
+                "percent": 84.55114822546973
+              },
+              "functions": {
+                "count": 20,
+                "covered": 20,
+                "percent": 100
+              }
+            },
+            "src/vst3-adapter/src/components.rs": {
+              "lines": {
+                "count": 2129,
+                "covered": 1426,
+                "percent": 66.9798027242837
+              },
+              "regions": {
+                "count": 3036,
+                "covered": 2094,
+                "notcovered": 942,
+                "percent": 68.97233201581028
+              },
+              "functions": {
+                "count": 155,
+                "covered": 117,
+                "percent": 75.48387096774194
+              }
+            },
+            "src/vst3-adapter/src/components/view.rs": {
+              "lines": {
+                "count": 658,
+                "covered": 543,
+                "percent": 82.52279635258358
+              },
+              "regions": {
+                "count": 929,
+                "covered": 772,
+                "notcovered": 157,
+                "percent": 83.10010764262647
+              },
+              "functions": {
+                "count": 55,
+                "covered": 48,
+                "percent": 87.27272727272727
+              }
+            },
+            "src/vst3-adapter/src/lib.rs": {
+              "lines": {
+                "count": 141,
+                "covered": 46,
+                "percent": 32.62411347517731
+              },
+              "regions": {
+                "count": 218,
+                "covered": 61,
+                "notcovered": 157,
+                "percent": 27.981651376146786
+              },
+              "functions": {
+                "count": 14,
+                "covered": 6,
+                "percent": 42.857142857142854
+              }
+            },
+            "src/vst3-adapter/src/parameters.rs": {
+              "lines": {
+                "count": 20,
+                "covered": 19,
+                "percent": 95
+              },
+              "regions": {
+                "count": 26,
+                "covered": 25,
+                "notcovered": 1,
+                "percent": 96.15384615384616
+              },
+              "functions": {
+                "count": 5,
+                "covered": 5,
+                "percent": 100
+              }
+            },
+            "src/vst3-adapter/src/platform/linux.rs": {
+              "lines": {
+                "count": 73,
+                "covered": 67,
+                "percent": 91.78082191780823
+              },
+              "regions": {
+                "count": 111,
+                "covered": 99,
+                "notcovered": 12,
+                "percent": 89.1891891891892
+              },
+              "functions": {
+                "count": 4,
+                "covered": 4,
+                "percent": 100
+              }
+            },
+            "src/vst3-adapter/src/stream.rs": {
+              "lines": {
+                "count": 30,
+                "covered": 23,
+                "percent": 76.66666666666667
+              },
+              "regions": {
+                "count": 59,
+                "covered": 42,
+                "notcovered": 17,
+                "percent": 71.1864406779661
+              },
+              "functions": {
+                "count": 5,
+                "covered": 4,
+                "percent": 80
+              }
+            },
+            "src/vst3-adapter/src/transport.rs": {
+              "lines": {
+                "count": 537,
+                "covered": 432,
+                "percent": 80.44692737430168
+              },
+              "regions": {
+                "count": 749,
+                "covered": 614,
+                "notcovered": 135,
+                "percent": 81.97596795727637
+              },
+              "functions": {
+                "count": 70,
+                "covered": 53,
+                "percent": 75.71428571428571
+              }
+            }
+          },
+          "changed": {
+            "src/vst3-adapter/src/components.rs": {
+              "changedLines": 417,
+              "countedChangedLines": 304,
+              "coveredChangedLines": 241,
+              "missedChangedLines": [
+                184,
+                187,
+                188,
+                209,
+                210,
+                211,
+                212,
+                248,
+                249,
+                250,
+                251,
+                252,
+                254,
+                255,
+                256,
+                257,
+                262,
+                264,
+                265,
+                266,
+                267,
+                268,
+                269,
+                270,
+                279,
+                280,
+                281,
+                282,
+                283,
+                287,
+                288,
+                289,
+                585,
+                639,
+                1179,
+                1384,
+                1417,
+                1430,
+                1433,
+                1438,
+                1439,
+                1440,
+                1441,
+                1442,
+                1443,
+                1513,
+                1720,
+                1899,
+                1907,
+                1909,
+                1910,
+                1911,
+                1912,
+                1916,
+                1917,
+                1925,
+                1937,
+                1942,
+                1945,
+                1948,
+                1961,
+                2207,
+                2208
+              ]
+            },
+            "src/vst3-adapter/src/components/view.rs": {
+              "changedLines": 687,
+              "countedChangedLines": 560,
+              "coveredChangedLines": 479,
+              "missedChangedLines": [
+                94,
+                95,
+                119,
+                147,
+                150,
+                171,
+                177,
+                180,
+                195,
+                219,
+                236,
+                237,
+                247,
+                254,
+                258,
+                263,
+                271,
+                279,
+                283,
+                291,
+                301,
+                305,
+                318,
+                319,
+                325,
+                340,
+                343,
+                351,
+                355,
+                358,
+                366,
+                369,
+                373,
+                387,
+                403,
+                406,
+                415,
+                418,
+                422,
+                426,
+                438,
+                453,
+                454,
+                455,
+                456,
+                457,
+                458,
+                486,
+                487,
+                488,
+                509,
+                511,
+                572,
+                645,
+                700,
+                711,
+                720,
+                724,
+                725,
+                726,
+                727,
+                729,
+                730,
+                731,
+                732,
+                746,
+                747,
+                748,
+                749,
+                750,
+                763,
+                766,
+                785,
+                786,
+                787,
+                788,
+                789,
+                790,
+                791,
+                792,
+                793
+              ]
+            },
+            "src/vst3-adapter/src/transport.rs": {
+              "changedLines": 34,
+              "countedChangedLines": 10,
+              "coveredChangedLines": 9,
+              "missedChangedLines": [
+                37
+              ]
+            }
+          }
+        },
+        "combined": {
+          "reportSha256": "1d999a0267b7c7669467c0d5fd96f4447a8d9dcbd816b44d5bc96a54859c3676",
+          "mergedProfileSha256": "a47e7ab455570c1402576d97892a8e4362d3a7bda19ab39745877c6cc1e46b27",
+          "totals": {
+            "lines": {
+              "covered": 3706,
+              "count": 3932
+            },
+            "regions": {
+              "covered": 5326,
+              "count": 5607
+            },
+            "functions": {
+              "covered": 316,
+              "count": 328
+            }
+          },
+          "files": {
+            "src/vst3-adapter/src/audio.rs": {
+              "lines": {
+                "count": 344,
+                "covered": 340,
+                "percent": 98.83720930232558
+              },
+              "regions": {
+                "count": 479,
+                "covered": 475,
+                "notcovered": 4,
+                "percent": 99.16492693110646
+              },
+              "functions": {
+                "count": 20,
+                "covered": 20,
+                "percent": 100
+              }
+            },
+            "src/vst3-adapter/src/components.rs": {
+              "lines": {
+                "count": 2129,
+                "covered": 2024,
+                "percent": 95.0681070925317
+              },
+              "regions": {
+                "count": 3036,
+                "covered": 2904,
+                "notcovered": 132,
+                "percent": 95.65217391304348
+              },
+              "functions": {
+                "count": 155,
+                "covered": 152,
+                "percent": 98.06451612903226
+              }
+            },
+            "src/vst3-adapter/src/components/view.rs": {
+              "lines": {
+                "count": 658,
+                "covered": 606,
+                "percent": 92.09726443768997
+              },
+              "regions": {
+                "count": 929,
+                "covered": 867,
+                "notcovered": 62,
+                "percent": 93.32615715823465
+              },
+              "functions": {
+                "count": 55,
+                "covered": 55,
+                "percent": 100
+              }
+            },
+            "src/vst3-adapter/src/lib.rs": {
+              "lines": {
+                "count": 141,
+                "covered": 141,
+                "percent": 100
+              },
+              "regions": {
+                "count": 218,
+                "covered": 218,
+                "notcovered": 0,
+                "percent": 100
+              },
+              "functions": {
+                "count": 14,
+                "covered": 14,
+                "percent": 100
+              }
+            },
+            "src/vst3-adapter/src/parameters.rs": {
+              "lines": {
+                "count": 20,
+                "covered": 20,
+                "percent": 100
+              },
+              "regions": {
+                "count": 26,
+                "covered": 26,
+                "notcovered": 0,
+                "percent": 100
+              },
+              "functions": {
+                "count": 5,
+                "covered": 5,
+                "percent": 100
+              }
+            },
+            "src/vst3-adapter/src/platform/linux.rs": {
+              "lines": {
+                "count": 73,
+                "covered": 67,
+                "percent": 91.78082191780823
+              },
+              "regions": {
+                "count": 111,
+                "covered": 100,
+                "notcovered": 11,
+                "percent": 90.09009009009009
+              },
+              "functions": {
+                "count": 4,
+                "covered": 4,
+                "percent": 100
+              }
+            },
+            "src/vst3-adapter/src/stream.rs": {
+              "lines": {
+                "count": 30,
+                "covered": 29,
+                "percent": 96.66666666666667
+              },
+              "regions": {
+                "count": 59,
+                "covered": 58,
+                "notcovered": 1,
+                "percent": 98.30508474576271
+              },
+              "functions": {
+                "count": 5,
+                "covered": 5,
+                "percent": 100
+              }
+            },
+            "src/vst3-adapter/src/transport.rs": {
+              "lines": {
+                "count": 537,
+                "covered": 479,
+                "percent": 89.19925512104282
+              },
+              "regions": {
+                "count": 749,
+                "covered": 678,
+                "notcovered": 71,
+                "percent": 90.52069425901202
+              },
+              "functions": {
+                "count": 70,
+                "covered": 61,
+                "percent": 87.14285714285714
+              }
+            }
+          },
+          "changed": {
+            "src/vst3-adapter/src/components.rs": {
+              "changedLines": 417,
+              "countedChangedLines": 304,
+              "coveredChangedLines": 285,
+              "missedChangedLines": [
+                279,
+                280,
+                281,
+                282,
+                283,
+                287,
+                288,
+                289,
+                585,
+                639,
+                1179,
+                1384,
+                1417,
+                1433,
+                1513,
+                1937,
+                1945,
+                1948,
+                1961
+              ]
+            },
+            "src/vst3-adapter/src/components/view.rs": {
+              "changedLines": 687,
+              "countedChangedLines": 560,
+              "coveredChangedLines": 508,
+              "missedChangedLines": [
+                94,
+                95,
+                147,
+                150,
+                177,
+                180,
+                195,
+                219,
+                236,
+                237,
+                247,
+                254,
+                258,
+                263,
+                271,
+                279,
+                283,
+                291,
+                301,
+                305,
+                318,
+                319,
+                325,
+                340,
+                343,
+                351,
+                355,
+                358,
+                366,
+                369,
+                373,
+                387,
+                403,
+                406,
+                415,
+                418,
+                422,
+                426,
+                438,
+                453,
+                454,
+                455,
+                456,
+                457,
+                458,
+                486,
+                487,
+                488,
+                509,
+                511,
+                700,
+                720
+              ]
+            },
+            "src/vst3-adapter/src/transport.rs": {
+              "changedLines": 34,
+              "countedChangedLines": 10,
+              "coveredChangedLines": 9,
+              "missedChangedLines": [
+                37
+              ]
+            }
+          }
+        }
+      }
+    },
+    "trigger-editor": {
+      "object": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/dandrum_trigger_editor-2526f1acdcffa9a8",
+      "objectSha256": "2dd3eb083b662f5b7a43703afd17706bcc90b4e6a591771b7a7b180be4b54f48",
+      "scopes": {
+        "ordinary": {
+          "runReceipt": "currently-shared-editor-ordinary.json",
+          "rawRunLog": "currently-shared-editor-ordinary.log",
+          "testsPassed": 4,
+          "runReceiptSha256": "90fb83f3e05f03a7f6b2bfc2463d80afbb0c3dbb89a9d5f578f3105e38e7c6d3",
+          "runLogSha256": "53f6fc6282f31cc302233d379d05998f1d324f8726f85a3dc75954cb29277d21",
+          "profiles": [
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/87b61960e797c6d565408860/coverage/trigger-editor-215978-16871152964962616059_0.profraw",
+              "sha256": "f28d9432ddd5160774080dfca54d926fe183ff4ed5e03a535f23fe1cf9fe8aab"
+            }
+          ],
+          "reportSha256": "c107bd9bb674e4d9f3b6e8501ca3b7252e9432032a3ad4a1711ca88626f06031",
+          "mergedProfileSha256": "9cef04f0a3562dde31207d474a51a2771902576dcf2b6c184e1e7f4a50ae7d2e",
+          "totals": {
+            "lines": {
+              "covered": 52,
+              "count": 510
+            },
+            "regions": {
+              "covered": 86,
+              "count": 829
+            },
+            "functions": {
+              "covered": 5,
+              "count": 58
+            }
+          },
+          "files": {
+            "src/trigger-editor/src/assets.rs": {
+              "lines": {
+                "count": 52,
+                "covered": 52,
+                "percent": 100
+              },
+              "regions": {
+                "count": 87,
+                "covered": 86,
+                "notcovered": 1,
+                "percent": 98.85057471264368
+              },
+              "functions": {
+                "count": 5,
+                "covered": 5,
+                "percent": 100
+              }
+            },
+            "src/trigger-editor/src/native_x11.rs": {
+              "lines": {
+                "count": 458,
+                "covered": 0,
+                "percent": 0
+              },
+              "regions": {
+                "count": 742,
+                "covered": 0,
+                "notcovered": 742,
+                "percent": 0
+              },
+              "functions": {
+                "count": 53,
+                "covered": 0,
+                "percent": 0
+              }
+            }
+          },
+          "changed": {
+            "src/trigger-editor/src/native_x11.rs": {
+              "changedLines": 213,
+              "countedChangedLines": 168,
+              "coveredChangedLines": 0,
+              "missedChangedLines": [
+                180,
+                181,
+                182,
+                183,
+                184,
+                188,
+                189,
+                190,
+                191,
+                194,
+                234,
+                235,
+                236,
+                237,
+                238,
+                239,
+                240,
+                241,
+                242,
+                243,
+                244,
+                245,
+                246,
+                247,
+                248,
+                249,
+                250,
+                251,
+                252,
+                280,
+                281,
+                282,
+                283,
+                284,
+                285,
+                286,
+                291,
+                294,
+                295,
+                296,
+                297,
+                298,
+                299,
+                301,
+                302,
+                303,
+                304,
+                305,
+                307,
+                309,
+                310,
+                311,
+                312,
+                313,
+                314,
+                316,
+                318,
+                319,
+                320,
+                321,
+                322,
+                323,
+                324,
+                327,
+                328,
+                329,
+                330,
+                331,
+                332,
+                335,
+                336,
+                337,
+                338,
+                339,
+                340,
+                341,
+                342,
+                343,
+                344,
+                350,
+                351,
+                352,
+                353,
+                354,
+                355,
+                356,
+                357,
+                358,
+                359,
+                360,
+                361,
+                362,
+                364,
+                366,
+                368,
+                369,
+                370,
+                371,
+                372,
+                373,
+                374,
+                375,
+                376,
+                378,
+                379,
+                380,
+                381,
+                382,
+                383,
+                384,
+                385,
+                386,
+                387,
+                388,
+                389,
+                390,
+                391,
+                392,
+                393,
+                394,
+                397,
+                398,
+                399,
+                400,
+                401,
+                402,
+                403,
+                404,
+                405,
+                406,
+                407,
+                408,
+                409,
+                410,
+                412,
+                413,
+                414,
+                416,
+                417,
+                418,
+                419,
+                420,
+                499,
+                505,
+                531,
+                532,
+                533,
+                534,
+                555,
+                558,
+                559,
+                560,
+                561,
+                562,
+                563,
+                579,
+                582,
+                583,
+                584,
+                585,
+                594,
+                596,
+                597,
+                598,
+                599,
+                600,
+                601,
+                602
+              ]
+            }
+          }
+        },
+        "native": {
+          "runReceipt": "current-shared-editor-native.json",
+          "rawRunLog": "sharedcoveragefixed-tests.log",
+          "testsPassed": 2,
+          "runReceiptSha256": "c07fea4fd57f42b6f5e36d53e4be1dabac6b6d514c719497b41f88e5735c8a70",
+          "runLogSha256": "c375ea1a1973b4f35183b4fcff7c1de85159b706c57ca6e13ad84acb1c281beb",
+          "profiles": [
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/87b61960e797c6d565408860/coverage/trigger-editor-217322-16871152964962616059_0.profraw",
+              "sha256": "81eab42755f57acf7e9fa9006f2691d67f4eefd16b763f296d4a7e594553584d"
+            },
+            {
+              "path": ".git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/targets/87b61960e797c6d565408860/coverage/trigger-editor-217738-16871152964962616059_0.profraw",
+              "sha256": "1d9490e69531807cbd6a05d75f28a70c65247b7722fac291bb2b8e92e506cdd1"
+            }
+          ],
+          "reportSha256": "9f84a79644b18ccb0ef0f464da3927b47b83dbbbd2db15740eae6a72e6fb5fa6",
+          "mergedProfileSha256": "f92b569ad684389bf6b437569edd27e64dfdd8c755cd8488d0ef0c71ff6fec95",
+          "totals": {
+            "lines": {
+              "covered": 433,
+              "count": 510
+            },
+            "regions": {
+              "covered": 672,
+              "count": 829
+            },
+            "functions": {
+              "covered": 33,
+              "count": 58
+            }
+          },
+          "files": {
+            "src/trigger-editor/src/assets.rs": {
+              "lines": {
+                "count": 52,
+                "covered": 45,
+                "percent": 86.53846153846155
+              },
+              "regions": {
+                "count": 87,
+                "covered": 75,
+                "notcovered": 12,
+                "percent": 86.20689655172413
+              },
+              "functions": {
+                "count": 5,
+                "covered": 3,
+                "percent": 60
+              }
+            },
+            "src/trigger-editor/src/native_x11.rs": {
+              "lines": {
+                "count": 458,
+                "covered": 388,
+                "percent": 84.71615720524017
+              },
+              "regions": {
+                "count": 742,
+                "covered": 597,
+                "notcovered": 145,
+                "percent": 80.45822102425876
+              },
+              "functions": {
+                "count": 53,
+                "covered": 30,
+                "percent": 56.60377358490566
+              }
+            }
+          },
+          "changed": {
+            "src/trigger-editor/src/native_x11.rs": {
+              "changedLines": 213,
+              "countedChangedLines": 168,
+              "coveredChangedLines": 167,
+              "missedChangedLines": [
+                322
+              ]
+            }
+          }
+        },
+        "combined": {
+          "reportSha256": "84addcf9d231c876de8f1502ed7521a57834c3dab5922adb876628772d1a92b3",
+          "mergedProfileSha256": "e398aecfbcfd82ba0ee2cb1cbe82b25608c5a3b6bdb211911bd4038773006539",
+          "totals": {
+            "lines": {
+              "covered": 440,
+              "count": 510
+            },
+            "regions": {
+              "covered": 683,
+              "count": 829
+            },
+            "functions": {
+              "covered": 35,
+              "count": 58
+            }
+          },
+          "files": {
+            "src/trigger-editor/src/assets.rs": {
+              "lines": {
+                "count": 52,
+                "covered": 52,
+                "percent": 100
+              },
+              "regions": {
+                "count": 87,
+                "covered": 86,
+                "notcovered": 1,
+                "percent": 98.85057471264368
+              },
+              "functions": {
+                "count": 5,
+                "covered": 5,
+                "percent": 100
+              }
+            },
+            "src/trigger-editor/src/native_x11.rs": {
+              "lines": {
+                "count": 458,
+                "covered": 388,
+                "percent": 84.71615720524017
+              },
+              "regions": {
+                "count": 742,
+                "covered": 597,
+                "notcovered": 145,
+                "percent": 80.45822102425876
+              },
+              "functions": {
+                "count": 53,
+                "covered": 30,
+                "percent": 56.60377358490566
+              }
+            }
+          },
+          "changed": {
+            "src/trigger-editor/src/native_x11.rs": {
+              "changedLines": 213,
+              "countedChangedLines": 168,
+              "coveredChangedLines": 167,
+              "missedChangedLines": [
+                322
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "changedCoverageBase": "883289488524161324537c2f2f0e718b749e72b1",
+  "coverageToolchain": "rustc 1.96.0 (ac68faa20 2026-05-25)\nbinary: rustc\ncommit-hash: ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96\ncommit-date: 2026-05-25\nhost: x86_64-unknown-linux-gnu\nrelease: 1.96.0\nLLVM version: 22.1.2\n",
+  "sharedStateActual": {
+    "exit": 0,
+    "seconds": 56.376,
+    "head": "c5d2941bb0afb8d4230867be5311f8ea21b8b937",
+    "log": "shared-state-actual.log",
+    "logSha256": "b390be04b496b3d2e29ae58d14257b1edd5aa3a220ac8110cde7cfa17bad8dc3",
+    "receipt": "shared-state-actual.json",
+    "receiptSha256": "36578787ff6f5616b3e2460b5665410c522c205311c25503ba5b522216b77602",
+    "encodedBytes": 268435456,
+    "decodedBytes": 536870560,
+    "peakRssKiB": 1400052
+  },
+  "vst3NativeCallbackAudit": {
+    "completeCallbacks": 704,
+    "allocations": 0,
+    "frees": 0,
+    "signedRenders": 351,
+    "exit": 0,
+    "seconds": 14.737,
+    "head": "c5d2941bb0afb8d4230867be5311f8ea21b8b937",
+    "log": "vst3coverage-tests.log",
+    "logSha256": "0e12f184740e3a29415f271325466d19822995eb948516559095eacaa48166f7",
+    "receipt": "currently-vst3-native.json",
+    "receiptSha256": "693d9dcf80a8b503052097ff26e9488b3dfebaf28d64c5bf5d7887f193544f39"
+  },
+  "installedClapNative": {
+    "pipewireJackRate": 44100,
+    "frames": 1024,
+    "auditedCallbacks": 376,
+    "midiEvents": 18,
+    "gesturesBegan": 2,
+    "gesturesEnded": 2,
+    "exit": 0,
+    "seconds": 10.052,
+    "head": "c5d2941bb0afb8d4230867be5311f8ea21b8b937",
+    "log": "clapaudit-tests.log",
+    "logSha256": "ccb51c26f8bb4ffc1168e5282daf415e6be2c0dbfa86b3dfe825baaf995d69d3",
+    "receipt": "clap-installed-verbose.json",
+    "receiptSha256": "01b1cd3f7b92b12fd7d85c6f44fa5fc748a5cc268b52607fb68d65356d0e4629",
+    "cases": {
+      "trigger-clap-installed-native-overlap": {
+        "passed": true,
+        "seconds": 9.11828
+      }
+    },
+    "junit": "clap-installed-verbose.junit.xml",
+    "junitSha256": "ab010cd8a1d75ffc73e6429e8aeec66976b9f0168898b763cf1e9825d7b50e2b"
+  },
+  "frontend": {
+    "testsPassed": 314,
+    "sourceFilesChecked": 70,
+    "logSha256": "82c6f32d0dc6ec21141f6eafe6b2509632a731061cae6b18699d72d154acb286",
+    "typecheckLogSha256": "b0bab331c63867fa869f03aeff4aeef673d6ec90d098c5fd740844478ed683dc"
+  },
+  "validator": {
+    "exit": 255,
+    "seconds": 2.011,
+    "head": "c5d2941bb0afb8d4230867be5311f8ea21b8b937",
+    "log": "vst3-validator.log",
+    "logSha256": "127061090613117db2e465ca67c61fa41603cb60781ef0cc47a81d2410f791d6",
+    "receipt": "vst3-validator.json",
+    "receiptSha256": "6e941c03f5bc57ae8683a600584fd00e6d351fc118c9fb8233e887dddb9bdf67",
+    "inputIdentity": {
+      "source": {
+        "commit": "c62fd4924b981b6b17a1f2211c9f2530afa1646d",
+        "tree": "2f4e20f09c7d78ff6dab1991457b4301c60b66ec",
+        "binarySha256": "16f00ecec644d9ece503886d42d360b33cf8dfac39cd326d8d853ab8c5841406",
+        "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+        "privateProofOnly": true
+      },
+      "bundleDigest": "07d320697b398049de829e67630153aebe4242f5f4a055f5a9227f2696f0c7a5",
+      "files": 361,
+      "validatorSha256": "9eaa345c26882230b03e90a8b15cd60a4b48bffe7f688d8fc07e0e8765616d9d",
+      "sdkCommit": "9fad9770f2ae8542ab1a548a68c1ad1ac690abe0",
+      "installedModules": [
+        {
+          "path": "base",
+          "commit": "3d2e82f8e6bff59c1d8b7a27491a29c2286b5206"
+        },
+        {
+          "path": "cmake",
+          "commit": "de6e54eeaaab35b7145f5c32c279b5e892146e04"
+        },
+        {
+          "path": "pluginterfaces",
+          "commit": "31d6eeba6daaa3e2a8bfbe3e7a90ca0b7fbfbc1c"
+        },
+        {
+          "path": "public.sdk",
+          "commit": "a3911a4615dabbfdfd9d181ee26b05c70c289a95"
+        }
+      ]
+    },
+    "passed": 535,
+    "failed": [
+      "Accuracy: Block, All Parameters, Change every1 Samples",
+      "Accuracy: Sample, All Parameters, Change every1 Samples"
+    ],
+    "pointsPerFailingBlock": 1472,
+    "supportedCombinedPointsAndNotesPerBlock": 1024
+  },
+  "sourceHiddenDynamicHost": {
+    "exit": 0,
+    "seconds": 14.071,
+    "head": "c5d2941bb0afb8d4230867be5311f8ea21b8b937",
+    "log": "offline-current-product.log",
+    "logSha256": "0afc5fa30dd4f5f174600b07535d490844d86127eb059133d731b293965a9ea8",
+    "receipt": "offline-current-product.json",
+    "receiptSha256": "d95b746eb08fd5812fac417c0dfeb402b453421006e24347a1408ae80cc4cac1",
+    "artifactIdentity": {
+      "testSource": "/home/dan/code/dandrum/.git/dandrum-cargo-cache/generations/9130ee03dfb4e014aafb91c3/coverage/debug/deps/view_production-9d94708205ce0219",
+      "testSha256": "0428190365a0ed016e11b6c2ff39a9e6e03ae5c9dd005d42acf2d77309b7493a",
+      "binarySha256": "16f00ecec644d9ece503886d42d360b33cf8dfac39cd326d8d853ab8c5841406",
+      "bundleDigest": "07d320697b398049de829e67630153aebe4242f5f4a055f5a9227f2696f0c7a5",
+      "fileCount": 361,
+      "result": 0,
+      "command": [
+        "bwrap",
+        "--die-with-parent",
+        "--ro-bind",
+        "/",
+        "/",
+        "--bind",
+        "/tmp/dandrum-vst3-full-product-20261124/offline-product",
+        "/tmp/dandrum-vst3-full-product-20261124/offline-product",
+        "--tmpfs",
+        "/home/dan/code/dandrum",
+        "--unshare-net",
+        "--unshare-pid",
+        "--proc",
+        "/proc",
+        "--dev-bind",
+        "/dev",
+        "/dev",
+        "--chdir",
+        "/tmp/dandrum-vst3-full-product-20261124/offline-product",
+        "/tmp/dandrum-vst3-full-product-20261124/offline-product/native-test",
+        "--ignored",
+        "--exact",
+        "production_native_selection_retains_decoded_content_after_source_and_view_loss",
+        "--nocapture",
+        "--test-threads=1"
+      ]
+    }
+  },
+  "packages": {
+    "products": {
+      "vst3": {
+        "sha256": "16f00ecec644d9ece503886d42d360b33cf8dfac39cd326d8d853ab8c5841406",
+        "dynamicDependencies": [
+          "libgdk-3.so.0",
+          "libgobject-2.0.so.0",
+          "libglib-2.0.so.0",
+          "libwebkit2gtk-4.1.so.0",
+          "libgtk-3.so.0",
+          "libsoup-3.0.so.0",
+          "libgio-2.0.so.0",
+          "libjavascriptcoregtk-4.1.so.0",
+          "libgcc_s.so.1",
+          "libm.so.6",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ],
+        "resolvedLines": 132
+      },
+      "clap": {
+        "sha256": "ef88c0fb42dad7d3f10c59bf3692054808c4c2c7efd17bb665b89b16fbea312d",
+        "dynamicDependencies": [
+          "libgdk-3.so.0",
+          "libgobject-2.0.so.0",
+          "libglib-2.0.so.0",
+          "libwebkit2gtk-4.1.so.0",
+          "libgtk-3.so.0",
+          "libsoup-3.0.so.0",
+          "libgio-2.0.so.0",
+          "libjavascriptcoregtk-4.1.so.0",
+          "libgcc_s.so.1",
+          "libm.so.6",
+          "libc.so.6",
+          "ld-linux-x86-64.so.2"
+        ],
+        "resolvedLines": 132
+      }
+    },
+    "rustPackages": 203,
+    "javascriptRuntimePackages": 4,
+    "editorFiles": 15,
+    "sourceNoticeSha256": "8a1f46ecaf17aa92be11cf2e29322128447f3fcf58c67e271c4627239117ce69",
+    "vst3NoticeTextCount": 344
+  },
+  "resources": {
+    "amendedAdmissionGiB": 12,
+    "mainCheckoutPolicyAdmissionGiB": 17,
+    "authorizedDiskFloorGiB": 8,
+    "authorizedRamFloorGiB": 8,
+    "retainedGrowthLimitGiB": 8,
+    "scratchLimitGiB": 1,
+    "recordedCoverageRunsAreSeparateProcesses": true
+  }
+}

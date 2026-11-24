@@ -80,9 +80,11 @@ Task 5.2 evidence is recorded in the [installed REAPER qualification](../../../d
 
 ## 6. Review And Publish The Complete Proof
 
-- [ ] 6.1 Complete current-source fast/slow owning and configured regression checks, source-bound changed/owner coverage and refactoring review, full pinned official VST3 validator, CLAP regression, dependencies/notices and a requirement-by-requirement evidence audit; retain failures, unsupported capabilities and concrete gaps without claiming broader platform/host acceptance.
+- [x] 6.1 Complete current-source fast/slow owning and configured regression checks, source-bound changed/owner coverage and refactoring review, full pinned official VST3 validator, CLAP regression, dependencies/notices and a requirement-by-requirement evidence audit; retain failures, unsupported capabilities and concrete gaps without claiming broader platform/host acceptance.
 - [ ] 6.2 Earn independent GPT-6 Astra completion PASS on the exact combined candidate/publication envelope, resolve all findings, sync genuinely proven scenarios/test mappings, run strict OpenSpec/spec coverage and normal hooks, and publish/merge source/tests/reviewed text evidence under repository gates with exact remote verification.
 - [ ] 6.3 Archive the completed change after validation, verify owned-worker/scratch cleanup while preserving reusable builds/dependencies/evidence, and hand back the Linux result with the mandatory native Windows/macOS milestones still explicitly outstanding.
+
+Task 6.1 evidence is recorded in the [whole-product qualification](../../../docs/migrations/evidence/trigger-vst3-full-product-2026-11-24/README.md). The full validator retains two failures above the supported automation capacity.
 
 The wider VST3 work remains unfinished after Linux. Windows/macOS require their
 own accepted native implementation/installed-REAPER qualification; the Linux
