@@ -1,0 +1,594 @@
+{
+  "acceptance": "OpenSpec prove-trigger-vst3-linux task 5.2",
+  "source": {
+    "commit": "c62fd4924b981b6b17a1f2211c9f2530afa1646d",
+    "tree": "2f4e20f09c7d78ff6dab1991457b4301c60b66ec",
+    "binarySha256": "16f00ecec644d9ece503886d42d360b33cf8dfac39cd326d8d853ab8c5841406",
+    "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "privateProofOnly": true
+  },
+  "bundle": {
+    "digest": "07d320697b398049de829e67630153aebe4242f5f4a055f5a9227f2696f0c7a5",
+    "files": 361
+  },
+  "host": {
+    "version": "REAPER 7.84 linux-x86_64 rev 4b6323",
+    "linuxIme": 1,
+    "logicalEditorScale": 1,
+    "liveDriver": "private PipeWire/JACK",
+    "liveRate": 44100,
+    "liveBufferFrames": 1024,
+    "offlineRate": 48000,
+    "anticipativeFxDisabledOnWitnessTracks": true
+  },
+  "processes": {
+    "first": {
+      "loadedBeforeAndAfterRenders": {
+        "pid": 95447,
+        "processStartTick": "303203",
+        "sourceHidden": true,
+        "networkRoutes": 0,
+        "networkNamespace": "net:[4026533955]",
+        "binaryPath": "/tmp/dandrum-reaper-qualification-20261124/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
+        "binarySha256": "16f00ecec644d9ece503886d42d360b33cf8dfac39cd326d8d853ab8c5841406",
+        "bundleDigest": "07d320697b398049de829e67630153aebe4242f5f4a055f5a9227f2696f0c7a5",
+        "maps": [
+          "7538c6c00000-7538c6e8e000 r--p 00000000 103:05 4728582                   /tmp/dandrum-reaper-qualification-20261124/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
+          "7538c6e8e000-7538c7747000 r-xp 0028d000 103:05 4728582                   /tmp/dandrum-reaper-qualification-20261124/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
+          "7538c7747000-7538c77a7000 r--p 00b45000 103:05 4728582                   /tmp/dandrum-reaper-qualification-20261124/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
+          "7538c77a7000-7538c77aa000 rw-p 00ba4000 103:05 4728582                   /tmp/dandrum-reaper-qualification-20261124/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so"
+        ],
+        "reaperExeSha256": "44ec7a34daecd0472eca5e1ae058352339babf8a42938e87914cacc8522c0a56"
+      },
+      "exit": {
+        "stage": "first",
+        "display": ":94",
+        "reaperExit": 0,
+        "workers": [
+          {
+            "name": "xvfb",
+            "pid": 95429,
+            "exit": 0
+          },
+          {
+            "name": "wm",
+            "pid": 95430,
+            "exit": 0
+          },
+          {
+            "name": "pipewire",
+            "pid": 95431,
+            "exit": 0
+          },
+          {
+            "name": "reaper",
+            "pid": 95446,
+            "exit": 0
+          }
+        ],
+        "seconds": 948.510579454
+      }
+    },
+    "fresh": {
+      "loadedBeforeAndAfterRenders": {
+        "pid": 102294,
+        "processStartTick": "400556",
+        "sourceHidden": true,
+        "networkRoutes": 0,
+        "networkNamespace": "net:[4026533954]",
+        "binaryPath": "/tmp/dandrum-reaper-qualification-20261124/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
+        "binarySha256": "16f00ecec644d9ece503886d42d360b33cf8dfac39cd326d8d853ab8c5841406",
+        "bundleDigest": "07d320697b398049de829e67630153aebe4242f5f4a055f5a9227f2696f0c7a5",
+        "maps": [
+          "7b60f1a00000-7b60f1c8e000 r--p 00000000 103:05 4728582                   /tmp/dandrum-reaper-qualification-20261124/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
+          "7b60f1c8e000-7b60f2547000 r-xp 0028d000 103:05 4728582                   /tmp/dandrum-reaper-qualification-20261124/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
+          "7b60f2547000-7b60f25a7000 r--p 00b45000 103:05 4728582                   /tmp/dandrum-reaper-qualification-20261124/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so",
+          "7b60f25a7000-7b60f25aa000 rw-p 00ba4000 103:05 4728582                   /tmp/dandrum-reaper-qualification-20261124/installed/DandrumTrigger.vst3/Contents/x86_64-linux/DandrumTrigger.so"
+        ],
+        "reaperExeSha256": "44ec7a34daecd0472eca5e1ae058352339babf8a42938e87914cacc8522c0a56"
+      },
+      "exit": {
+        "stage": "fresh",
+        "display": ":94",
+        "reaperExit": 0,
+        "workers": [
+          {
+            "name": "xvfb",
+            "pid": 102259,
+            "exit": 0
+          },
+          {
+            "name": "wm",
+            "pid": 102260,
+            "exit": 0
+          },
+          {
+            "name": "pipewire",
+            "pid": 102261,
+            "exit": 0
+          },
+          {
+            "name": "reaper",
+            "pid": 102292,
+            "exit": 0
+          }
+        ],
+        "seconds": 58.858698198000184
+      }
+    }
+  },
+  "liveAudio": {
+    "programs": [],
+    "streams": [
+      {
+        "codec_name": "pcm_f32le",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    ],
+    "frames": 772096,
+    "signedExtrema": [
+      [
+        -0.010764608159661293,
+        0.0012890977086499333
+      ],
+      [
+        -0.014352811500430107,
+        0.0017187969060614705
+      ]
+    ],
+    "sha256": "38793f3200e44db50fdd8604a9e2d16f5470e8060455d03d56b6b95e86425cb0",
+    "observedTransport": "playState=1 position=0.16253968253968254 levelA=0.25 levelB=0.375\nMODE\ttrue\tJACK\nIDENT_IN\ttrue\tJackIn\nIDENT_OUT\ttrue\tJackOut\nBSIZE\ttrue\t1024\nSRATE\ttrue\t44100",
+    "portLinks": "REAPER:out1\n  |-> qualification-audio-witness:input_FL\nREAPER:out2\n  |-> qualification-audio-witness:input_FR\nqualification-audio-witness:input_FL\n  |<- REAPER:out1\nqualification-audio-witness:input_FR\n  |<- REAPER:out2\n"
+  },
+  "nativeFeedback": {
+    "AFromEditor": {
+      "A": 0.625,
+      "B": 0.25
+    },
+    "BFromEditor": {
+      "A": 0.625,
+      "B": 0.375
+    },
+    "AFromHost": {
+      "A": 0.4375,
+      "B": 0.375,
+      "visiblePhysicalA": 1.75,
+      "screenshotSha256": "340ac20b02aca7633b3ec99f30eb1d0c35f73eae73a53e6c8e5258a082636013"
+    }
+  },
+  "mappingWhileStoppedAndEditorAbsent": {
+    "gate": {
+      "symbol": "dandrum_instrument_session::MappingJob::prepare",
+      "fileVirtualAddress": 3828000,
+      "executionAddress": 128886716918048,
+      "workerTids": [
+        95540,
+        95541
+      ],
+      "binarySha256": "16f00ecec644d9ece503886d42d360b33cf8dfac39cd326d8d853ab8c5841406",
+      "armedMonotonicNs": 3223019092300,
+      "hit": {
+        "tid": 95541,
+        "rip": 128886716918048,
+        "debugStatus": 4294905841,
+        "monotonicNs": 3247067236227
+      },
+      "closedBeforeRelease": {
+        "transportStopped": true,
+        "closedNativeWindow": true,
+        "nativeXid": "0x1000000",
+        "hostFloatingXid": "0xa088d3",
+        "windowEvidence": {
+          "0x1000000": "X Error: 9: Bad Drawable: 0x1000000\n  Request Major code: 14\n  Request serial number: 3\nxwininfo: error: No such window with id 0x1000000.\n",
+          "0xa088d3": "X Error: 9: Bad Drawable: 0xa088d3\n  Request Major code: 14\n  Request serial number: 3\nxwininfo: error: No such window with id 0xa088d3.\n"
+        },
+        "workerStillTracedAndStopped": true,
+        "monotonicNs": 3270610789922
+      },
+      "releaseMonotonicNs": 3270616163830,
+      "detachErrors": [],
+      "detachedMonotonicNs": 3270616271769
+    },
+    "saveEvidence": "transport=0 editor=closed time=3304.4227831769999",
+    "resourceManifestB": [
+      {
+        "path": "assets/advanced-drums.wav",
+        "sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503",
+        "encoded_bytes": 102044
+      },
+      {
+        "path": "selected/bcc2072b36f5a6d12525ee5db25e1b586e5347bf6bf89302e8e3676a40769e06.wav",
+        "sha256": "bcc2072b36f5a6d12525ee5db25e1b586e5347bf6bf89302e8e3676a40769e06",
+        "encoded_bytes": 172
+      }
+    ],
+    "BStoppedStateSha256": "79476fbdb6cac5c066be688f92357fc001eb9396d5e98770b6ce9c7851ccf45f",
+    "BUndoStateSha256": "3d9942a79c105f216f61c2f7ad085e151778e57e5d7ed7ee9a2c6840c2e711bc",
+    "BRedoStateSha256": "79476fbdb6cac5c066be688f92357fc001eb9396d5e98770b6ce9c7851ccf45f",
+    "AUnchangedDuringUndoRedo": true
+  },
+  "restoration": {
+    "originalRemoval": {
+      "firstReaperExit": 0,
+      "firstReaperPid": 95447,
+      "removedOriginals": [
+        "/tmp/dandrum-reaper-qualification-20261124/selected-A.wav",
+        "/tmp/dandrum-reaper-qualification-20261124/selected-B.wav"
+      ],
+      "savedProjectSha256": "7d2191cbab57184bab36e510ba16fd679c1a6652a78a00a9350bd498fb4dffff"
+    },
+    "exactNamedNormalizedValues": 46,
+    "exactPhysicalValues": 46,
+    "fullTriggerStatesByteIdentical": true,
+    "instances": {
+      "A": {
+        "documentSha256": "d48ccc011767523eb18a07890c4c8a403d1b1076a3d0129c77750c777a1c1fb7",
+        "resources": [
+          {
+            "path": "assets/advanced-drums.wav",
+            "sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503",
+            "encoded_bytes": 102044
+          },
+          {
+            "path": "selected/eedc7e98b27f7fb773ec03aaf8fb5139f0ac87bc1f4a1245c1158e03f1e1ffd8.wav",
+            "sha256": "eedc7e98b27f7fb773ec03aaf8fb5139f0ac87bc1f4a1245c1158e03f1e1ffd8",
+            "encoded_bytes": 172
+          }
+        ],
+        "parameters": [
+          {
+            "id": "drums.pitch_ratio",
+            "value": 1.0
+          },
+          {
+            "id": "drums.start_offset",
+            "value": 0.0
+          },
+          {
+            "id": "drums.level",
+            "value": 1.0136054754257202
+          },
+          {
+            "id": "drums.pan",
+            "value": 0.25
+          },
+          {
+            "id": "drums.variation",
+            "value": 0.15625
+          },
+          {
+            "id": "drums.kick.pitch_ratio",
+            "value": 1.6015625
+          },
+          {
+            "id": "drums.kick.start_offset",
+            "value": 0.21875
+          },
+          {
+            "id": "drums.kick.level",
+            "value": 1.0
+          },
+          {
+            "id": "drums.kick.pan",
+            "value": -0.4375
+          },
+          {
+            "id": "drums.snare.pitch_ratio",
+            "value": 2.5859375
+          },
+          {
+            "id": "drums.snare.start_offset",
+            "value": 0.34375
+          },
+          {
+            "id": "drums.snare.level",
+            "value": 1.5
+          },
+          {
+            "id": "drums.snare.pan",
+            "value": -0.1875
+          },
+          {
+            "id": "drums.snare.variation",
+            "value": 0.4375
+          },
+          {
+            "id": "drums.closed_hat.pitch_ratio",
+            "value": 3.81640625
+          },
+          {
+            "id": "drums.closed_hat.start_offset",
+            "value": 0.5
+          },
+          {
+            "id": "drums.closed_hat.level",
+            "value": 2.125
+          },
+          {
+            "id": "drums.closed_hat.pan",
+            "value": 0.125
+          },
+          {
+            "id": "drums.open_hat.pitch_ratio",
+            "value": 4.80078125
+          },
+          {
+            "id": "drums.open_hat.start_offset",
+            "value": 0.625
+          },
+          {
+            "id": "drums.open_hat.level",
+            "value": 2.625
+          },
+          {
+            "id": "drums.open_hat.pan",
+            "value": 0.375
+          },
+          {
+            "id": "drums.open_hat.variation",
+            "value": 0.71875
+          }
+        ],
+        "stateSha256": "5c2a12f75a4d74df43e140476cc24e4655240ad6e74c0520b17561f91b8dbf20"
+      },
+      "B": {
+        "documentSha256": "bedf2bed9b43196b2041f25b32b38c538037cf30cf61530a76239e675408f5bc",
+        "resources": [
+          {
+            "path": "assets/advanced-drums.wav",
+            "sha256": "22d9f1c5bec480566906ca4aa7542b58800a7d16d4ee8c52039a978532f08503",
+            "encoded_bytes": 102044
+          },
+          {
+            "path": "selected/bcc2072b36f5a6d12525ee5db25e1b586e5347bf6bf89302e8e3676a40769e06.wav",
+            "sha256": "bcc2072b36f5a6d12525ee5db25e1b586e5347bf6bf89302e8e3676a40769e06",
+            "encoded_bytes": 172
+          }
+        ],
+        "parameters": [
+          {
+            "id": "drums.pitch_ratio",
+            "value": 1.0
+          },
+          {
+            "id": "drums.start_offset",
+            "value": 0.0
+          },
+          {
+            "id": "drums.level",
+            "value": 1.5
+          },
+          {
+            "id": "drums.pan",
+            "value": -0.5
+          },
+          {
+            "id": "drums.variation",
+            "value": 0.1875
+          },
+          {
+            "id": "drums.kick.pitch_ratio",
+            "value": 1.84765625
+          },
+          {
+            "id": "drums.kick.start_offset",
+            "value": 0.25
+          },
+          {
+            "id": "drums.kick.level",
+            "value": 1.125
+          },
+          {
+            "id": "drums.kick.pan",
+            "value": -0.375
+          },
+          {
+            "id": "drums.snare.pitch_ratio",
+            "value": 2.83203125
+          },
+          {
+            "id": "drums.snare.start_offset",
+            "value": 0.375
+          },
+          {
+            "id": "drums.snare.level",
+            "value": 1.625
+          },
+          {
+            "id": "drums.snare.pan",
+            "value": -0.125
+          },
+          {
+            "id": "drums.snare.variation",
+            "value": 0.46875
+          },
+          {
+            "id": "drums.closed_hat.pitch_ratio",
+            "value": 4.0625
+          },
+          {
+            "id": "drums.closed_hat.start_offset",
+            "value": 0.53125
+          },
+          {
+            "id": "drums.closed_hat.level",
+            "value": 2.25
+          },
+          {
+            "id": "drums.closed_hat.pan",
+            "value": 0.1875
+          },
+          {
+            "id": "drums.open_hat.pitch_ratio",
+            "value": 5.046875
+          },
+          {
+            "id": "drums.open_hat.start_offset",
+            "value": 0.65625
+          },
+          {
+            "id": "drums.open_hat.level",
+            "value": 2.75
+          },
+          {
+            "id": "drums.open_hat.pan",
+            "value": 0.4375
+          },
+          {
+            "id": "drums.open_hat.variation",
+            "value": 0.75
+          }
+        ],
+        "stateSha256": "9bcd9530d3acfb4748436e470a957db63cb58cf79e8d1c1bbc9bb9a6bfb95988"
+      }
+    },
+    "changesAfterNewPlayback": [
+      {
+        "id": "drums.level",
+        "restored": 1.0136054754257202,
+        "afterRender": 1.0136029720306396
+      }
+    ]
+  },
+  "offlineRenders": {
+    "before": {
+      "stage": "before",
+      "rate": 48000,
+      "rampEndInFrames": 64.0,
+      "renders": {
+        "A": {
+          "sha256": "b471d1439881e5753a2efd044f5313a89ff0cb161c227939d8b3c1bae2a5619b",
+          "frames": 960,
+          "nonSilentPrefixFrames": 64,
+          "silentTailFrames": 896,
+          "firstFourPCM24": [
+            [
+              -6291456,
+              -8388608
+            ],
+            [
+              3121152,
+              4161536
+            ],
+            [
+              -3096576,
+              -4128768
+            ],
+            [
+              6144000,
+              8192000
+            ]
+          ],
+          "maxErrorPCM24LSB": 0.0,
+          "limitPCM24LSB": 0,
+          "negativeControlMaxErrorPCM24LSB": {
+            "reversed polarity": 16777215,
+            "one-frame shift": 65536.0,
+            "stepped automation": 2064384.0,
+            "other instrument": 6815744.0
+          }
+        },
+        "B": {
+          "sha256": "5a3c80f9856d09c26257c1b97d2ac317dd02085a9bdd4c3836349a1c8f2e44f0",
+          "frames": 960,
+          "nonSilentPrefixFrames": 64,
+          "silentTailFrames": 896,
+          "firstFourPCM24": [
+            [
+              -3145728,
+              -1572864
+            ],
+            [
+              6291456,
+              3145728
+            ],
+            [
+              -6291456,
+              -3145728
+            ],
+            [
+              3145728,
+              1572864
+            ]
+          ],
+          "maxErrorPCM24LSB": 0.0,
+          "limitPCM24LSB": 0,
+          "negativeControlMaxErrorPCM24LSB": {
+            "reversed polarity": 12582912.0,
+            "other instrument": 6815744
+          }
+        }
+      }
+    },
+    "after": {
+      "stage": "after",
+      "rate": 48000,
+      "rampEndInFrames": 63.99984,
+      "renders": {
+        "A": {
+          "sha256": "4045a08594075ad8fa05cf9e9fc24074b6c9c404af4e1460d51981b851b43044",
+          "frames": 960,
+          "nonSilentPrefixFrames": 64,
+          "silentTailFrames": 896,
+          "firstFourPCM24": [
+            [
+              -6291456,
+              -8388608
+            ],
+            [
+              3121152,
+              4161536
+            ],
+            [
+              -3096576,
+              -4128768
+            ],
+            [
+              6144000,
+              8192000
+            ]
+          ],
+          "maxErrorPCM24LSB": 0.6927992319688201,
+          "limitPCM24LSB": 1,
+          "negativeControlMaxErrorPCM24LSB": {
+            "reversed polarity": 16777215,
+            "one-frame shift": 65536.6553616384,
+            "stepped automation": 2064389.0,
+            "other instrument": 6815744.0
+          }
+        },
+        "B": {
+          "sha256": "5ac0d181fc7e4d8be26b856424e3d801da032e0a507e573fa5f9841eb494905a",
+          "frames": 960,
+          "nonSilentPrefixFrames": 64,
+          "silentTailFrames": 896,
+          "firstFourPCM24": [
+            [
+              -3145728,
+              -1572864
+            ],
+            [
+              6291456,
+              3145728
+            ],
+            [
+              -6291456,
+              -3145728
+            ],
+            [
+              3145728,
+              1572864
+            ]
+          ],
+          "maxErrorPCM24LSB": 0.0,
+          "limitPCM24LSB": 0,
+          "negativeControlMaxErrorPCM24LSB": {
+            "reversed polarity": 12582912.0,
+            "other instrument": 6815744
+          }
+        }
+      }
+    }
+  }
+}
