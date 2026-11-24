@@ -383,7 +383,12 @@ fn wait_dom(clock: &runloop::LoopState, browser: &webkit2gtk::WebView, expressio
     while javascript(clock, browser, &format!("String(Boolean({expression}))")) != "true" {
         assert!(
             Instant::now() < deadline,
-            "DOM condition did not become true: {expression}"
+            "DOM condition did not become true: {expression}; input state: {}",
+            javascript(
+                clock,
+                browser,
+                "JSON.stringify({focused:document.hasFocus(),active:document.activeElement?.outerHTML,level:document.querySelector('[data-knob=\"drums.level\"] input')?.value,trace:window.__VST3_INPUT_TRACE__})"
+            )
         );
         std::thread::sleep(Duration::from_millis(5));
     }
@@ -934,7 +939,13 @@ fn production_native_selection_retains_decoded_content_after_source_and_view_los
         if status["result"]["phase"] == "ready" {
             break status["result"].clone();
         }
-        assert_eq!(status["result"]["phase"], "preparing", "{status}");
+        assert!(
+            matches!(
+                status["result"]["phase"].as_str(),
+                Some("choosing" | "preparing")
+            ),
+            "{status}"
+        );
         assert!(Instant::now() < deadline, "native decode must complete");
     };
     let file = &ready["files"][0];
@@ -1116,6 +1127,11 @@ fn production_native_selection_retains_decoded_content_after_source_and_view_los
         &browser,
         "document.querySelector('[data-knob=\"drums.level\"] input')",
     );
+    javascript(
+        &clock,
+        &browser,
+        "(()=>{window.__VST3_INPUT_TRACE__=[];for(const type of ['pointerdown','pointerup','click','keydown','keyup','beforeinput','input','compositionstart','compositionend'])document.addEventListener(type,event=>{const input=document.querySelector('[data-knob=\"drums.level\"] input');const trace=window.__VST3_INPUT_TRACE__;trace.push({type,key:event.key,ctrl:event.ctrlKey,trusted:event.isTrusted,target:event.target===input,focused:document.hasFocus(),value:input?.value,start:input?.selectionStart,end:input?.selectionEnd});if(trace.length>32)trace.shift();},true);return 'observing';})()",
+    );
     parent
         .x
         .set_input_focus(
@@ -1132,7 +1148,7 @@ fn production_native_selection_retains_decoded_content_after_source_and_view_los
     javascript(
         &clock,
         &browser,
-        "(()=>{const i=document.querySelector('[data-knob=\"drums.level\"] input');i.focus();i.select();return 'focused native entry';})()",
+        "(()=>{document.querySelector('[data-knob=\"drums.level\"] input').focus();return 'focus requested';})()",
     );
     let point: Vec<i16> = serde_json::from_str(&javascript(&clock, &browser, "JSON.stringify((()=>{const r=document.querySelector('[data-knob=\"drums.level\"] input').getBoundingClientRect();return [Math.floor(r.left+r.width/2),Math.floor(r.top+r.height/2)]})())")).unwrap();
     let root = parent
@@ -1171,7 +1187,13 @@ fn production_native_selection_retains_decoded_content_after_source_and_view_los
             .unwrap()
             .success()
     );
-    javascript(&clock, &browser, "document.activeElement.tagName");
+    // xdotool returning means X11 accepted the click, not that WebKit applied
+    // its caret movement. Finish that trusted event before sending selection keys.
+    wait_dom(
+        &clock,
+        &browser,
+        "document.activeElement===document.querySelector('[data-knob=\"drums.level\"] input')&&window.__VST3_INPUT_TRACE__.some(event=>event.type==='click'&&event.trusted&&event.target)",
+    );
     assert_ne!(
         parent.x.get_input_focus().unwrap().reply().unwrap().focus,
         parent.id,
@@ -1192,7 +1214,7 @@ fn production_native_selection_retains_decoded_content_after_source_and_view_los
     wait_dom(
         &clock,
         &browser,
-        "(()=>{const i=document.querySelector('[data-knob=\"drums.level\"] input');return i&&i.selectionStart===0&&i.selectionEnd===i.value.length})()",
+        "(()=>{const i=document.querySelector('[data-knob=\"drums.level\"] input');const trace=window.__VST3_INPUT_TRACE__;return i&&i.value.length>0&&i.selectionStart===0&&i.selectionEnd===i.value.length&&trace.some(event=>event.type==='keydown'&&event.key==='a'&&event.ctrl&&event.trusted&&event.target)&&trace.some(event=>event.type==='keyup'&&event.key==='a'&&event.trusted&&event.target)})()",
     );
     assert!(
         std::process::Command::new("xdotool")

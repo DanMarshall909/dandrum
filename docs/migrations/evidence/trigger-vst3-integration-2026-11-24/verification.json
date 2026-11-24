@@ -1,0 +1,118 @@
+{
+  "productSourceCommit": "444c3aed7edac103b5af2f9021bd722613726a60",
+  "scope": "experimental source integration; Linux milestone remains incomplete",
+  "checks": [
+    {
+      "command": [
+        "./scripts/cargo",
+        "llvm-cov",
+        "--offline",
+        "--no-clean",
+        "--json",
+        "--output-path",
+        "/home/dan/code/dandrum/.git/codex/vst3-integration-20261124/final-ordinary-aggregate.json",
+        "--manifest-path",
+        "src/vst3-adapter/Cargo.toml",
+        "--features",
+        "trigger-editor",
+        "--",
+        "--test-threads=2"
+      ],
+      "startedUtc": "2026-11-24T00:51:01.863983+00:00",
+      "finishedUtc": "2026-11-24T00:51:22.043784+00:00",
+      "seconds": 20.179800840000098,
+      "exit": 0,
+      "productSourceCommit": "444c3aed7edac103b5af2f9021bd722613726a60",
+      "label": "final-ordinary",
+      "logSha256": "29dbaa5100a8640fb2bab777ab4f988ef43758b9fae8d6e84b1b12400aee9c7f"
+    },
+    {
+      "command": [
+        "python3",
+        "/home/dan/code/dandrum/.git/codex/trigger-vst3-resume-20261123/isolated_native_dpi.py",
+        "./scripts/cargo",
+        "llvm-cov",
+        "--offline",
+        "--no-clean",
+        "--json",
+        "--output-path",
+        "/home/dan/code/dandrum/.git/codex/vst3-integration-20261124/final-native-aggregate.json",
+        "--manifest-path",
+        "src/vst3-adapter/Cargo.toml",
+        "--features",
+        "trigger-editor",
+        "--test",
+        "view_native",
+        "--test",
+        "view_browser",
+        "--test",
+        "view_production",
+        "--",
+        "--ignored",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "startedUtc": "2026-11-24T00:51:22.045529+00:00",
+      "finishedUtc": "2026-11-24T00:51:33.809359+00:00",
+      "seconds": 11.763832706999892,
+      "exit": 0,
+      "productSourceCommit": "444c3aed7edac103b5af2f9021bd722613726a60",
+      "label": "final-native",
+      "logSha256": "b18f1e03eabd1426e827a41c8a0f482a4846d4e3d2fbabfd065ce1ea5ef4dca4"
+    },
+    {
+      "command": [
+        "./scripts/cargo",
+        "clippy",
+        "--offline",
+        "--manifest-path",
+        "src/vst3-adapter/Cargo.toml",
+        "--features",
+        "trigger-editor",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "startedUtc": "2026-11-24T00:51:33.811164+00:00",
+      "finishedUtc": "2026-11-24T00:51:40.824534+00:00",
+      "seconds": 7.013372932000038,
+      "exit": 0,
+      "productSourceCommit": "444c3aed7edac103b5af2f9021bd722613726a60",
+      "label": "final-clippy",
+      "logSha256": "268d0b3349bee0a2d9debe1fa861ef41b08bedd165a37dc52fc6ef88241e8784"
+    }
+  ],
+  "retainedFailures": [
+    {
+      "label": "service-red",
+      "exit": 101,
+      "logSha256": "8eec5b475964b77f43db498141f7c15e26e6604203391bc8d2b425359158e8fa"
+    },
+    {
+      "label": "frame-red",
+      "exit": 101,
+      "logSha256": "25ae892201af44975088b12d4886cbe09495c4717bf58f7d4ca67857ef233002"
+    },
+    {
+      "label": "native",
+      "exit": 101,
+      "logSha256": "13f191e572c6a2be8a89589b65ffd623650417eefa5e6cb9ecb6663aba1d7c99"
+    },
+    {
+      "label": "native-diagnostic",
+      "exit": 101,
+      "logSha256": "e27611bfacc7a31fc2ddcfb8de33a5012160a7d8e348df1b58dc08fa31f20adb"
+    },
+    {
+      "label": "native-input-trace",
+      "exit": 101,
+      "logSha256": "c5afa5bf4c8f39f27a979d4ff047dfce031e22ab1e63d9fbe75c71db0c4561d4"
+    }
+  ],
+  "coverage": {
+    "objectSha256": "e05fd1a838912d4802f58a2e1361bd73c67ac5f831e32b993927024456674b64",
+    "profiles": 36,
+    "scope": "current-source VST3 ordinary plus explicit native journeys; no full-owner or mutation claim"
+  }
+}
