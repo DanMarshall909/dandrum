@@ -26,7 +26,7 @@ export function frameModelProjection(context) {
     showTree: !isMin && !showBrowser, showBrowser, tree, assets, browserFilter: [{ id: 'all', label: 'All' }, { id: 'smp', label: 'Samples' }, { id: 'ir', label: 'IRs' }, { id: 'fav', label: 'Favourites' }],
     isEmpty: empty, isDrop: drop,
     dropOpts: [
-      { name: 'One per key', sug: false, desc: 'Each file on its own key from C3 upward.', border: 'var(--dd-line-2)', cells: [1,2,3,4,5,6].map(c => ({ col: c, row: '1 / 3', bg: 'var(--dd-ink-5)' })) },
+      { name: 'One per key', sug: false, desc: 'Each file gets its own key, beginning at Starting note.', border: 'var(--dd-line-2)', cells: [1,2,3,4,5,6].map(c => ({ col: c, row: '1 / 3', bg: 'var(--dd-ink-5)' })) },
       { name: 'By root + velocity', sug: true, desc: '6 roots × p / f. Keys between roots filled; p below f.', border: 'var(--dd-vermilion)', cells: [1,3,5].flatMap(c => [{ col: c + ' / span 2', row: 1, bg: 'var(--dd-vermilion-lo)' }, { col: c + ' / span 2', row: 2, bg: 'var(--dd-ink-6)' }]) },
       { name: 'Stack', sug: false, desc: 'All files play together on every key.', border: 'var(--dd-line-2)', cells: [1,2].map(r => ({ col: '1 / 7', row: r, bg: 'var(--dd-ink-5)' })) },
       { name: 'Round robin', sug: false, desc: 'One key; files cycle per hit.', border: 'var(--dd-line-2)', cells: [{ col: '3 / 5', row: '1 / 3', bg: 'var(--dd-ink-5)' }] },

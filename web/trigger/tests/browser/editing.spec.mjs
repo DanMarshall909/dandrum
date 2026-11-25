@@ -32,6 +32,7 @@ test('multi-file import offers all mapping policies, shows filename interpretati
   ]);
   const mapping=page.getByRole('region',{name:'Import mapping',exact:true});await expect(mapping).toBeVisible();
   for(const policy of ['One per key','By root + velocity','Stack','Round robin'])await expect(mapping.getByRole('button',{name:new RegExp('^'+policy.replace('+','\\+'))})).toBeVisible();
+  await expect(mapping.getByRole('button',{name:/^One per key/})).toContainText('Starting note');
   await expect(page.getByRole('region',{name:'Interpreted mapping'})).toContainText('root 60');
   await mapping.getByRole('button',{name:'Import samples',exact:true}).click();
   await expect(page.getByRole('banner').getByRole('status')).toContainText('Ready');await expect(page.getByRole('button',{name:/^Undo/})).toHaveAttribute('title',/Import samples/);
