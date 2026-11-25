@@ -16,6 +16,21 @@ test('typed parameter values retain their displayed units and canonical centres'
   const units=parameterUnits(label);assert.equal(units.format(value),text);assert.ok(Math.abs(units.parse(text)-value)<1e-12,label);
  }
  assert.equal(parameterUnits('Cutoff').parse('invalid'),null);assert.equal(parameterUnits('Cutoff').parse('20 kHz'),1);assert.equal(parameterUnits('Tune').parse('-24 st'),0);
+ for(const [label,text] of [['Cutoff','2 kHz noise'],['Tune','12 st later'],['Pan','L 54% right'],['Gain','-6 dB extra']])assert.equal(parameterUnits(label).parse(text),null,`${label} rejects trailing text`);
+ const pan=parameterUnits('Pan').descriptor;assert.equal(pan.accessibleText(pan.toPosition(.23)),'54 percent left');assert.equal(pan.accessibleText(pan.toPosition(.77)),'54 percent right');
+});
+test('every legacy parameter-unit branch preserves its accepted display anchors and range conversion',()=>{
+ const cases=[
+  ['Width',.54,'54%',.54],['Start',.25,'1.205 s',.25],['End',.75,'3.615 s',.75],
+  ['Tune',.75,'+12 st',.75],['Lush Tune',.25,'−12 st',.25],['Fine',.47,'−3 ct',.47],
+  ['Pan',.23,'L54',.23],['Lush Pan',.77,'R54',.77],['Bend',.17,'±2 st',.17],
+  ['Env amt',.71,'+42%',.71],['Cutoff',.42,'2.40 kHz',.42],['Gain',.72,'−1.5 dB',.72],
+  ['Level',.62,'−0.8 dB',.62],['Lush Level',.55,'−6 dB',.55],['Drive',.4,'6.0 dB',.4],
+ ];
+ for(const [label,value,text,roundTrip] of cases){const units=parameterUnits(label);assert.equal(units.format(value),text,label);assert.ok(Math.abs(units.parse(text)-roundTrip)<1e-12,label);}
+ for(const [label,low,high] of [['Width','0%','100%'],['Start','0.000 s','4.820 s'],['Tune','−24 st','+24 st'],['Fine','−50 ct','+50 ct'],['Pan','L100','R100'],['Env amt','−100%','+100%'],['Cutoff','20 Hz','20.00 kHz'],['Drive','0.0 dB','15.0 dB']]){
+  const units=parameterUnits(label);assert.equal(units.format(0),low,label+' low');assert.equal(units.format(1),high,label+' high');
+ }
 });
 test('modulator percentage entries remain percentages while time and rate entries use seconds and hertz',t=>{
  const {engine,presenter}=setup(t),env=engine.getPatch().modulators.find(m=>m.id==='Filter envelope'),lfo=engine.getPatch().modulators.find(m=>m.id==='LFO 1');
@@ -23,6 +38,12 @@ test('modulator percentage entries remain percentages while time and rate entrie
  assert.equal(modulatorKnobs(presenter,lfo).find(k=>k.label==='Phase').parse('25%'),.25);
  assert.equal(modulatorKnobs(presenter,lfo).find(k=>k.label==='Rate').parse('2.40 Hz'),.12);
  assert.ok(Math.abs(modulatorKnobs(presenter,env).find(k=>k.label==='Attack').parse('0.012 s')-.0012)<1e-12);
+ assert.equal(modulatorKnobs(presenter,lfo).find(k=>k.label==='Rate').parse('2.40 Hz later'),null);
+});
+test('only symmetric processor ranges render as bipolar and processor entry rejects trailing text',t=>{
+ const {presenter}=setup(t);presenter.go('fx');const model=presenter.buildModel(),knobs=model.insp.rows.find(row=>row.knobs).list;
+ assert.equal(knobs.find(knob=>knob.label==='Threshold').bi,false);assert.equal(knobs.find(knob=>knob.label==='Ratio').bi,false);
+ presenter.setState({selectedProcessor:'eq'});const eq=presenter.buildModel().insp.rows.find(row=>row.knobs).list.find(knob=>knob.label==='Low');assert.equal(eq.bi,true);assert.equal(eq.parse('-6 dB extra'),null);
 });
 test('an operation undo preserves other fields within the same module, node, macro and candidate',async t=>{
  const {engine,store}=setup(t);await store.operation('Cutoff','setModuleParam','filter','cutoff',.9);engine.setParam('Reso',.8);await store.undo();assert.equal(engine.getPatch().modules.find(m=>m.id==='filter').params.resonance,.8);assert.equal(engine.getPatch().params.Reso.value,.8);

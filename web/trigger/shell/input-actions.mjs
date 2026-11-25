@@ -12,6 +12,7 @@ attach() {
     this.onR = () => this.forceUpdate();
     this.onMod = (e) => { const s = !!e.shiftKey; if (s !== this.shift) { this.shift = s; if (this.snap) this.setState({ dragShift: s }); } };
     this.onDown = e => {
+      if(e.target?.closest?.('[role="dialog"]'))return;
       const target=e.target?.closest?.('[data-knob],[data-reset^="macro|"]')??e.target?.closest?.('[role="slider"],[role="spinbutton"]');
       if(target&&e.button===0&&!e.altKey){this.controlGesture=target.getAttribute('data-knob')??target.getAttribute('data-reset')??target.getAttribute('aria-label');this.props.store.beginGesture(this.controlGesture);}
     };
@@ -21,6 +22,8 @@ attach() {
         if(JSON.stringify(before)!==JSON.stringify(next))this.commit(next,'Edit mapping');else this.setState({zones:null});}
     };
     this.onCancel = () => {if(this.controlGesture)Promise.resolve(this.props.store.cancelGesture()).catch(error=>this.setState({modNote:error.message}));this.controlGesture=null;this.snap=null;this.setState({zones:null,dragShift:false});};
+    this.onControlBegin=e=>{if(!this.controlGesture){this.controlGesture=e.detail?.id;this.props.store.beginGesture(this.controlGesture);}};
+    this.onControlEnd=()=>this.onUp();
     this.onKey = (e) => {
       if(e.target?.closest?.('[role="dialog"]'))return;
       this.onMod(e);
@@ -62,6 +65,8 @@ attach() {
     window.addEventListener('pointercancel', this.onCancel, true);
     window.addEventListener('blur',this.onCancel);
     window.addEventListener('pointerdown', this.onDown, true);
+    window.addEventListener('dandrum-control-begin',this.onControlBegin);
+    window.addEventListener('dandrum-control-end',this.onControlEnd);
   },
 detach() {
     this.velocityCleanup?.();
@@ -73,6 +78,8 @@ detach() {
     window.removeEventListener('pointercancel', this.onCancel, true);
     window.removeEventListener('blur',this.onCancel);
     window.removeEventListener('pointerdown', this.onDown, true);
+    window.removeEventListener('dandrum-control-begin',this.onControlBegin);
+    window.removeEventListener('dandrum-control-end',this.onControlEnd);
     if(this.controlGesture)this.props.store.endGesture(this.controlGesture);
   }
 };

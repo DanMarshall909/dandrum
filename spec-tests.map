@@ -2932,4 +2932,119 @@ AC trigger-vst3-feasibility :: REAPER acceptance and existing CLAP behavior are 
   fp b7e019a78178
   test py:tests/python/test_trigger_vst3_reaper_capture.py
   test rust:production_native_selection_retains_decoded_content_after_source_and_view_loss
+
+AC parameter-control-interaction :: Shared parameter descriptors govern every control presentation :: Knob and field share a parameter contract
+  fp 2d8f8805999a
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Shared parameter descriptors govern every control presentation :: Nonlinear descriptor maps range positions consistently
+  fp 5911e0e01309
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Displayed values support direct editing without stealing dial gestures :: Value click opens entry
+  fp 5c937e436b85
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Displayed values support direct editing without stealing dial gestures :: Dial interaction remains distinct
+  fp a3ab05c395df
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Displayed values support direct editing without stealing dial gestures :: Entry commits or cancels predictably
+  fp ce4ea7004ee5
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Percentage and bipolar variants use explicit formats :: Unipolar percentage formats are selectable
+  fp 34c8f82e451d
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Percentage and bipolar variants use explicit formats :: Bipolar control exposes direction and centre
+  fp 600ee80c1c71
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Pan presents signed position as left centre or right :: Pan displays direction and amount
+  fp 34e6fcb05833
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Pan presents signed position as left centre or right :: Equivalent pan forms parse identically
+  fp f29a8a3ff0b0
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Fractions represent exact proportions of control range :: Unipolar fraction addresses the full range
+  fp ba181fbb5622
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Fractions represent exact proportions of control range :: Bipolar fractions are symmetric
+  fp df1ed9eae923
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Fractions represent exact proportions of control range :: Fraction expression survives passive rounding
+  fp 33e384cd2b45
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Fraction denominators govern subsequent drag steps :: Fraction drag changes the numerator
+  fp 205933fe223b
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Fraction denominators govern subsequent drag steps :: Unreduced denominator is retained
+  fp 626d1288c8f6
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Fraction denominators govern subsequent drag steps :: Decimal entry leaves fraction stepping
+  fp 18e1df468fa9
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Physical stepped and musical-time variants remain unambiguous :: Physical units parse in their displayed domain
+  fp c229fb9044c4
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Physical stepped and musical-time variants remain unambiguous :: Musical note value is distinguished from a fraction
+  fp c875e6354eac
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Physical stepped and musical-time variants remain unambiguous :: Stepped value cannot publish an intermediate
+  fp 84af88475034
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Validation and formatting preserve authoritative precision :: Equivalent decimal forms are accepted
+  fp 063c58f00c0b
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Validation and formatting preserve authoritative precision :: Invalid text does not change the parameter
+  fp 6dd036b04d00
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Validation and formatting preserve authoritative precision :: Valid out-of-range text clamps visibly
+  fp 835c6e7278e2
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Parameter gestures are reversible and host-balanced :: Drag coalesces into one operation
+  fp 96c6f6f2f081
+  test js:tests/js/TriggerReactShellTest.mjs
+  test js:tests/js/TriggerNativeAdapterTest.mjs
+
+AC parameter-control-interaction :: Parameter gestures are reversible and host-balanced :: Typed fraction commits once
+  fp 2d15004dad77
+  test js:tests/js/TriggerReactShellTest.mjs
+  test js:tests/js/TriggerNativeAdapterTest.mjs
+
+AC parameter-control-interaction :: Parameter gestures are reversible and host-balanced :: Cancellation restores the prior value
+  fp 133c2c877630
+  test js:tests/js/TriggerReactShellTest.mjs
+  test js:tests/js/TriggerNativeAdapterTest.mjs
+
+AC parameter-control-interaction :: Base effective and accessible values remain distinct :: Modulation does not replace editable base value
+  fp 4ce9afa8c843
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Base effective and accessible values remain distinct :: Compact notation has spoken meaning
+  fp 501964dbf568
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Catalog exercises every maintained parameter variant :: Variant matrix is reviewable
+  fp 9f999e91f739
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC parameter-control-interaction :: Catalog exercises every maintained parameter variant :: Catalog interactions update controlled values
+  fp a3750aa42b9c
+  test js:tests/js/TriggerReactShellTest.mjs
   test rust:installed_native_edits_overlap_server_audio_and_midi

@@ -19,7 +19,7 @@ export function sampleMappingProjection(context) {
     const focused = this.state.dropOver === key || this.state.kmenu?.label === key || this.state.flashKey === key;
     const units=parameterUnits(key);
     return {
-      label, key, v: cv, default:param?.default??v, t:units.format(cv), parse:units.parse,
+      label, key, v: cv, default:param?.default??v, t:units.format(cv), parse:units.parse, descriptor:units.descriptor,
       bi: !!bi, mods: kAll(key, mods).filter(m => m.slot), host: !!host,
       pop: !!pop && !this.state.dragMod && !this.state.kmenu, set,
       ring: focused ? '0 0 0 1px var(--dd-vermilion)' : 'none',

@@ -15,10 +15,20 @@ function NumericField({
   min = 0,
   max = 100,
   step = 1,
+  fineStep = step / 10,
+  coarseStep = step * 10,
   defaultValue,
   unit,
   label,
   format,
+  parseValue,
+  editText,
+  accessibleValueText,
+  onEditAccepted,
+  onEditBegin,
+  onEditEnd,
+  scrubValue,
+  snapValue = true,
   width,
   compact = false,
   readOnly = false,
@@ -30,19 +40,30 @@ function NumericField({
 }) {
   const [editing, setEditing] = React.useState(false);
   const [text, setText] = React.useState('');
+  const [error, setError] = React.useState('');
+  const cancelEdit = React.useRef(false);
   const [focus, setFocus] = React.useState(false);
   const [hover, setHover] = React.useState(false);
   const drag = React.useRef(null);
   const fmt = format || (v => Number.isInteger(step) ? String(Math.round(v)) : v.toFixed(2));
   const clamp = v => Math.max(min, Math.min(max, v));
   const set = v => {
-    if (!readOnly && !disabled && onChange) onChange(clamp(Math.round(v / step) * step));
+    if (!readOnly && !disabled && onChange) onChange(clamp(snapValue ? Math.round(v / step) * step : v));
   };
   const live = !readOnly && !disabled;
   const h = compact ? 22 : 24;
   const commit = () => {
-    const n = parseFloat(text);
-    if (!Number.isNaN(n)) set(n);
+    const parsed = parseValue ? parseValue(text) : parseFloat(text);
+    const n = parsed && typeof parsed === 'object' ? parsed.nativeValue : parsed;
+    if (!Number.isFinite(n)) {
+      setError(parsed?.error || 'Enter a valid value');
+      return;
+    }
+    onEditBegin && onEditBegin();
+    set(n);
+    setError('');
+    onEditAccepted && onEditAccepted(parsed);
+    onEditEnd && onEditEnd();
     setEditing(false);
   };
   return /*#__PURE__*/React.createElement("div", {
@@ -67,6 +88,8 @@ function NumericField({
     "aria-valuenow": value,
     "aria-valuemin": min,
     "aria-valuemax": max,
+    "aria-valuetext": accessibleValueText,
+    "aria-invalid": error ? true : undefined,
     "aria-readonly": readOnly || undefined,
     onFocus: () => setFocus(true),
     onBlur: () => setFocus(false),
@@ -85,27 +108,44 @@ function NumericField({
       if (!drag.current) return;
       const dy = drag.current.y - e.clientY;
       if (Math.abs(dy) > 2) drag.current.moved = true;
-      set(drag.current.v + Math.round(dy / (e.shiftKey ? 12 : 4)) * step);
+      const scrubbed = scrubValue && scrubValue({ value: drag.current.v, verticalPixels: dy, shiftKey: e.shiftKey });
+      set(scrubbed ?? drag.current.v + Math.round(dy / (e.shiftKey ? 12 : 4)) * step);
     },
     onPointerUp: () => {
       const d = drag.current;
       drag.current = null;
       if (d && !d.moved && live) {
-        setText(fmt(value));
+        setText(String(editText ?? fmt(value)));
+        setError('');
+        cancelEdit.current = false;
         setEditing(true);
       }
     },
-    onDoubleClick: () => defaultValue != null && set(defaultValue),
+    onDoubleClick: () => { if (defaultValue != null) { onEditBegin && onEditBegin(); set(defaultValue); onEditEnd && onEditEnd(); } },
+    onWheel: e => {
+      if (!live || editing) return;
+      onEditBegin && onEditBegin();
+      set(value + (e.deltaY < 0 ? 1 : -1) * (e.shiftKey ? fineStep : step));
+      onEditEnd && onEditEnd();
+    },
     onKeyDown: e => {
       if (!live || editing) return;
       if (e.key === 'ArrowUp') {
-        set(value + step * (e.shiftKey ? 10 : 1));
+        onEditBegin && onEditBegin(); set(value + (e.shiftKey ? fineStep : step)); onEditEnd && onEditEnd();
         e.preventDefault();
       } else if (e.key === 'ArrowDown') {
-        set(value - step * (e.shiftKey ? 10 : 1));
+        onEditBegin && onEditBegin(); set(value - (e.shiftKey ? fineStep : step)); onEditEnd && onEditEnd();
         e.preventDefault();
+      } else if (e.key === 'PageUp' || e.key === 'PageDown') {
+        onEditBegin && onEditBegin(); set(value + (e.key === 'PageUp' ? coarseStep : -coarseStep)); onEditEnd && onEditEnd(); e.preventDefault();
+      } else if (e.key === 'Home' || e.key === 'End') {
+        onEditBegin && onEditBegin(); set(e.key === 'Home' ? min : max); onEditEnd && onEditEnd(); e.preventDefault();
+      } else if ((e.key === 'Delete' || e.key === 'Backspace') && defaultValue != null) {
+        onEditBegin && onEditBegin(); set(defaultValue); onEditEnd && onEditEnd(); e.preventDefault();
       } else if (e.key === 'Enter') {
-        setText(fmt(value));
+        setText(String(editText ?? fmt(value)));
+        setError('');
+        cancelEdit.current = false;
         setEditing(true);
       } else if (e.key === 'F10' && e.shiftKey || e.key === 'ContextMenu') {
         e.preventDefault();
@@ -138,14 +178,24 @@ function NumericField({
       cursor: live ? editing ? 'text' : 'ns-resize' : 'default',
       touchAction: 'none'
     }
-  }, editing ? /*#__PURE__*/React.createElement("input", {
+  }, editing ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("input", {
     autoFocus: true,
     value: text,
     onChange: e => setText(e.target.value),
-    onBlur: commit,
+    onBlur: () => {
+      if (cancelEdit.current) {
+        cancelEdit.current = false;
+        return;
+      }
+      commit();
+    },
     onKeyDown: e => {
       if (e.key === 'Enter') commit();
-      if (e.key === 'Escape') setEditing(false);
+      if (e.key === 'Escape') {
+        cancelEdit.current = true;
+        setError('');
+        setEditing(false);
+      }
     },
     style: {
       width: '100%',
@@ -157,7 +207,10 @@ function NumericField({
       fontSize: 'var(--type-value)',
       padding: 0
     }
-  }) : /*#__PURE__*/React.createElement("span", {
+  }), error && /*#__PURE__*/React.createElement("span", {
+    role: "alert",
+    style: { position: 'absolute', left: 0, top: '100%', zIndex: 31, padding: '2px 4px', background: 'var(--dd-ink-0)', color: 'var(--dd-error)', fontFamily: 'var(--font-ui)', fontSize: 'var(--type-micro)', whiteSpace: 'nowrap' }
+  }, error)) : /*#__PURE__*/React.createElement("span", {
     style: {
       fontFamily: 'var(--font-value)',
       fontSize: compact ? 'var(--type-micro)' : 'var(--type-value)',
@@ -1032,7 +1085,8 @@ function KeyMap({
       overflow: 'hidden',
       background: 'var(--dd-ink-0)',
       borderRadius: '0 0 2px 2px',
-      touchAction: 'none'
+      touchAction: 'none',
+      position: 'relative'
     }
   }, whites.map(n => {
     const down = held && held.note === n,
@@ -1287,7 +1341,13 @@ function Knob({
   size = 'md',
   label,
   valueText,
+  editText,
+  accessibleValueText,
+  ariaValueMin = 0,
+  ariaValueMax = 1,
+  ariaValueNow,
   unit,
+  marks = [],
   modulations = [],
   assigning = false,
   hostAutomated = false,
@@ -1300,10 +1360,13 @@ function Knob({
   trough: troughProp,
   peakText,
   troughText,
+  effectiveValueText,
   showPeakTrough = true,
   onResetPeaks,
   valueDisplay = 'hover',
   parseValue,
+  onEditAccepted,
+  onEditBegin,
   popupOpen,
   onChange,
   onContextMenu,
@@ -1323,6 +1386,8 @@ function Knob({
   const [popHover, setPopHover] = React.useState(false);
   const [editing, setEditing] = React.useState(false);
   const [draft, setDraft] = React.useState('');
+  const [editError, setEditError] = React.useState('');
+  const cancelDraft = React.useRef(false);
   const closeT = React.useRef(null);
   const holdOpen = () => {
     clearTimeout(closeT.current);
@@ -1384,8 +1449,16 @@ function Knob({
     return Number.isFinite(n) ? n / 100 : null;
   });
   const commitDraft = () => {
-    const v = parse(draft);
-    if (v != null) setK(v);
+    const parsed = parse(draft);
+    const v = parsed && typeof parsed === 'object' ? parsed.position : parsed;
+    if (!Number.isFinite(v)) {
+      setEditError(parsed?.error || 'Enter a valid value');
+      return;
+    }
+    onEditBegin && onEditBegin();
+    setK(v);
+    setEditError('');
+    onEditAccepted && onEditAccepted(parsed);
     setEditing(false);
   };
   const resetPeaks = () => {
@@ -1480,10 +1553,11 @@ function Knob({
     role: "slider",
     tabIndex: disabled ? -1 : 0,
     "aria-label": label,
-    "aria-valuemin": 0,
-    "aria-valuemax": 1,
-    "aria-valuenow": Number(value.toFixed(3)),
-    "aria-valuetext": valueText,
+    "aria-valuemin": ariaValueMin,
+    "aria-valuemax": ariaValueMax,
+    "aria-valuenow": ariaValueNow ?? Number(value.toFixed(3)),
+    "aria-valuetext": accessibleValueText ?? valueText,
+    "aria-invalid": editError ? true : undefined,
     "aria-disabled": disabled || undefined,
     onPointerDown: onPointerDown,
     onPointerMove: onPointerMove,
@@ -1493,7 +1567,9 @@ function Knob({
     onKeyDown: e => {
       if (e.key === 'Enter' && !disabled && !showInline) {
         e.preventDefault();
-        setDraft(String(valueText ?? Math.round(value * 100)));
+        setDraft(String(editText ?? valueText ?? Math.round(value * 100)));
+        setEditError('');
+        cancelDraft.current = false;
         setEditing(true);
         return;
       }
@@ -1595,6 +1671,9 @@ function Knob({
         }
       });
     })());
+  }), marks.map((mark, i) => {
+    const a = ang(mark), [x0, y0] = pt(c, rTrack + trackW / 2 + 1, a), [x1, y1] = pt(c, rTrack + trackW / 2 + (px >= 44 ? 3 : 2.5), a);
+    return /*#__PURE__*/React.createElement("line", { key: 'mark' + i, x1: x0, y1: y0, x2: x1, y2: y1, style: { stroke: 'var(--dd-paper-4)', strokeWidth: 1, opacity: disabled ? .25 : .7 } });
   }), /*#__PURE__*/React.createElement("path", {
     d: arc(c, rTrack, -SWEEP, SWEEP),
     style: {
@@ -1877,7 +1956,9 @@ function Knob({
   }), /*#__PURE__*/React.createElement("div", {
     onClick: () => {
       if (!editing) {
-        setDraft(String(valueText ?? Math.round(value * 100)));
+        setDraft(String(editText ?? valueText ?? Math.round(value * 100)));
+        setEditError('');
+        cancelDraft.current = false;
         setEditing(true);
       }
     },
@@ -1898,14 +1979,24 @@ function Knob({
       color: hostAutomated ? 'var(--dd-host)' : 'var(--text-primary)',
       whiteSpace: 'nowrap'
     }
-  }, editing ? /*#__PURE__*/React.createElement("input", {
+  }, editing ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("input", {
     autoFocus: true,
     value: draft,
     onChange: e => setDraft(e.target.value),
-    onBlur: commitDraft,
+    onBlur: () => {
+      if (cancelDraft.current) {
+        cancelDraft.current = false;
+        return;
+      }
+      commitDraft();
+    },
     onKeyDown: e => {
       if (e.key === 'Enter') commitDraft();
-      if (e.key === 'Escape') setEditing(false);
+      if (e.key === 'Escape') {
+        cancelDraft.current = true;
+        setEditError('');
+        setEditing(false);
+      }
       e.stopPropagation();
     },
     onFocus: e => e.target.select(),
@@ -1920,7 +2011,10 @@ function Knob({
       color: 'var(--text-primary)',
       font: 'inherit'
     }
-  }) : /*#__PURE__*/React.createElement("span", {
+  }), editError && /*#__PURE__*/React.createElement("span", {
+    role: "alert",
+    style: { position: 'absolute', left: 6, right: 6, top: '100%', paddingTop: 2, color: 'var(--dd-error)', fontFamily: 'var(--font-ui)', fontSize: 'var(--type-micro)' }
+  }, editError)) : /*#__PURE__*/React.createElement("span", {
     style: {
       flex: 1
     }
@@ -1930,7 +2024,13 @@ function Knob({
       fontFamily: 'var(--font-ui)',
       fontSize: 'var(--type-micro)'
     }
-  }, unit)), (clipWarn || showPeakTrough && peak != null && trough != null) && /*#__PURE__*/React.createElement("div", {
+  }, unit)), anyLive && /*#__PURE__*/React.createElement("div", {
+    role: "status",
+    "aria-label": "Effective value",
+    style: { display: 'flex', justifyContent: 'space-between', gap: 8, color: 'var(--text-tertiary)', fontFamily: 'var(--font-ui)', fontSize: 'var(--type-micro)' }
+  }, /*#__PURE__*/React.createElement("span", null, "Effective"), /*#__PURE__*/React.createElement("span", {
+    style: { color: 'var(--text-secondary)', fontFamily: 'var(--font-value)' }
+  }, effectiveValueText ?? Math.round(clamp01(effective) * 100) + '%')), (clipWarn || showPeakTrough && peak != null && trough != null) && /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       alignItems: 'center',

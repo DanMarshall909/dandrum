@@ -10,10 +10,16 @@ test('supplied knob drawing supports full-range drag, fine mode, typing and defa
   await expect(knob).toHaveAttribute('aria-valuenow','0.64');
   await page.keyboard.press('Control+z');await expect(knob).toHaveAttribute('aria-valuenow','0.62');
   await page.keyboard.press('Control+z');await expect(knob).toHaveAttribute('aria-valuenow','0.42');
-  await knob.focus();await page.keyboard.press('Home');await page.keyboard.press('PageUp');await expect(knob).toHaveAttribute('aria-valuenow','0.5');
-  await knob.dblclick();const input=knob.getByRole('textbox');await expect(input).toBeVisible();await input.fill('2.40 kHz');await input.press('Enter');
-  await expect(knob).toHaveAttribute('aria-valuenow','0.42');await knob.dblclick();await input.fill('20 kHz');await input.press('Enter');await expect(knob).toHaveAttribute('aria-valuenow','1');
+  await knob.focus();await page.keyboard.press('Home');await page.keyboard.press('PageUp');await expect(knob).toHaveAttribute('aria-valuenow','0.1');
+  await knob.hover();await knob.getByTitle('Click to type a value').click();const input=knob.getByRole('textbox');await expect(input).toBeVisible();await input.fill('2.40 kHz');await input.press('Enter');
+  await expect(knob).toHaveAttribute('aria-valuenow','0.42');await knob.getByTitle('Click to type a value').click();await input.fill('20 kHz');await input.press('Enter');await expect(knob).toHaveAttribute('aria-valuenow','1');
   await knob.click({modifiers:['Alt']});await expect(knob).toHaveAttribute('aria-valuenow','0.42');
+});
+
+test('typed fraction is one reversible parameter operation',async({page})=>{
+  await load(page);await page.getByRole('tab',{name:'Voice',exact:true}).click();const knob=page.getByRole('slider',{name:'Cutoff',exact:true});
+  await knob.hover();await knob.getByTitle('Click to type a value').click();await knob.getByRole('textbox').fill('1/3');await knob.getByRole('textbox').press('Enter');
+  await expect(knob).toHaveAttribute('aria-valuenow',String(1/3));await page.keyboard.press('Control+z');await expect(knob).toHaveAttribute('aria-valuenow','0.42');
 });
 
 test('sample handles and playback edit the accepted region and undo follows navigation',async({page})=>{

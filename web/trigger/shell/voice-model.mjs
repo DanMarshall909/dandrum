@@ -16,7 +16,7 @@ export function voiceModel(presenter,model){
     const key=module.type==='Filter'?'type':'mode';return {...section,id:module.id+'-'+section.title,sub:module.type==='Lush'?'Lush · Dandrum synth':module.type==='Filter'?'Ladder '+(module.params.slope??24)+' dB':module.type,segV:module.params[key]??section.segV,
       setSeg:value=>command('Change '+module.type+' '+key,'setModuleParam',module.id,key,value),select:()=>select(module.id),
       knobs:section.knobs.map(knob=>{const id=moduleParameterId(module,knob.key),value=patch.params[id]?.value??module.params[moduleControls[module.type]?.[knob.key]]??knob.v;
-        const units=parameterUnits(knob.key);return {...knob,key:id,v:value,t:units.format(value),parse:units.parse,set:value=>presenter.changeParameter(id,value)};})};
+        const units=parameterUnits(knob.key);return {...knob,key:id,v:value,t:units.format(value),parse:units.parse,descriptor:units.descriptor,set:value=>presenter.changeParameter(id,value)};})};
   }));
   if(modules[0]?.type==='Sample player'&&modules[1]?.type==='Lush'){const pitch=model.voiceSecs.splice(1,1)[0];model.voiceSecs.splice(2,0,pitch);}
   model.editTemplate=()=>presenter.setState({dialog:{kind:'voice-template'}});

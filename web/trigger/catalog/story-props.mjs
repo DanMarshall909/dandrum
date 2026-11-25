@@ -1,9 +1,11 @@
 import {shapePoints} from '../shell/modulator-shape.mjs';
 import {envelopeGeometry} from '../shell/envelope-geometry.mjs';
+import {createParameterVariant} from '../shell/parameter-descriptor.mjs';
 const valueText=v=>Math.round(v*100)+'%';
 const callbacks=(value,emit,path='model')=>{
   if(typeof value==='function')return (...args)=>{emit(path,args);return value(...args);};
   if(Array.isArray(value))return value.map((v,i)=>callbacks(v,emit,path+'['+i+']'));
+  if(value&&typeof value.parseEdit==='function'&&typeof value.toNative==='function')return value;
   if(value&&Object.getPrototypeOf(value)===Object.prototype)return Object.fromEntries(Object.entries(value).map(([key,v])=>[key,key.endsWith('Ref')||/^(get|subscribe|fmt|format|parse)/.test(key)?v:callbacks(v,emit,path+'.'+key)]));
   return value;
 };
@@ -28,7 +30,18 @@ export function storyProps(name,base,controls,emit){
   const macro={...base.macros[0],name:text,v:value,host:state==='hover',off:disabled,set:change,bg:state==='selected'?'var(--dd-vermilion-wash)':'transparent'};
   const route={...base.routes[1],src:text,a:value*2-1,amt:valueText(value),l:value<.5?value*100:50,w:Math.abs(value-.5)*100,on:checked,setAmount:change};
   model.envs=model.envs.map((e,i)=>i?e:envelope);model.voiceSecs=model.voiceSecs.map((s,i)=>i===3?section:s);model.macros=model.macros.map((m,i)=>i?m:macro);
-  const props={model,label:text,title:text,value,defaultValue:.5,valueText:valueText(value),checked,selected:state==='selected',active:state==='hover',disabled,onChange:change,onClick:noop,onClose:noop,onCancel:noop,onConfirm:noop,onSubmit:noop,onSelect:noop,onReceive:noop,
+  const range=controls.range==='0…1'?[0,1]:controls.range==='−1…1'?[-1,1]:controls.range==='20…20000'?[20,20000]:null;
+  const descriptorBase=createParameterVariant(controls.variant??'percent'),rawMinimum=range?.[0]??descriptorBase.min,maximum=range?.[1]??descriptorBase.max;
+  const minimum=controls.transfer==='log'&&rawMinimum<=0?Math.min(.001,maximum/1000):rawMinimum;
+  const defaultValue=controls.defaultPosition==='minimum'?minimum:controls.defaultPosition==='maximum'?maximum:(minimum+maximum)/2;
+  const descriptor=createParameterVariant(controls.variant??'percent',{
+    ...(range?{min:minimum,max:maximum}:{}),defaultValue,
+    ...(controls.transfer!=='variant'?{scale:controls.transfer}:{}),
+    ...(controls.unitPreset!=='variant'?{unit:controls.unitPreset==='none'?'':controls.unitPreset}:{}),
+    marks:controls.marks==='none'?[]:controls.marks==='dense'?[0,.125,.25,.375,.5,.625,.75,.875,1]:[0,.25,.5,.75,1],
+  });
+  const parameterControl=['ParameterKnob','NumericField'].includes(name);
+  const props={model,label:text,title:text,value:parameterControl?descriptor.toNative(value):value,defaultValue:parameterControl?descriptor.defaultValue:.5,valueText:valueText(value),descriptor:parameterControl?descriptor:undefined,modulations:name==='ParameterKnob'?[{slot:'A',depth:.2,live:.5}]:undefined,checked,selected:state==='selected',active:state==='hover',disabled,onChange:parameterControl?(native=>emit('onChange',[descriptor.toPosition(native)])):change,onClick:noop,onClose:noop,onCancel:noop,onConfirm:noop,onSubmit:noop,onSelect:noop,onReceive:noop,
     children:text,icon:'level',name:'level',size:'md',options,items,width:260,height:100,slot:'A',source:text,depth:value,
     getTelemetry:model.getTelemetry,subscribeTelemetry:model.subscribeTelemetry,assetId:model.assetId,peaks:model.pianoPeaks,regionStart:.012,regionEnd:.94,fadeIn:.004,fadeOut:.08,
     slices:model.slices,onMarkerChange:noop,onRegionChange:noop,onViewport:noop,viewport:model.viewport,rows:model.routeRows,busses:model.busses,layers:model.insertLayers,outputs:model.outputs,

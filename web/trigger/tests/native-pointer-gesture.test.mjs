@@ -57,6 +57,14 @@ test('a nested slider uses its enclosing public parameter identity for the compl
   ]);
 });
 
+for(const mode of ['keyboard','wheel','typed'])test(mode+' edits use one balanced native gesture',async t=>{
+  const {presenter,dom,settled,gestures}=await setup(t),control=dom.window.document.querySelector('[data-knob]');
+  control.dispatchEvent(new dom.window.CustomEvent('dandrum-control-begin',{bubbles:true,detail:{id:'drums.level'}}));await settled();
+  const knob=presenter.buildModel().voiceSecs.flatMap(section=>section.knobs).find(item=>item.key==='drums.level');await knob.set(.6);
+  control.dispatchEvent(new dom.window.CustomEvent('dandrum-control-end',{bubbles:true,detail:{id:'drums.level'}}));await settled();
+  assert.deepEqual(gestures(),[['beginGesture','drums.level',7],['setParameter','drums.level',.6,7],['endGesture','drums.level',7]]);
+});
+
 for(const event of ['pointercancel','blur'])test(event+' rolls back a native drag and ends its gesture once',async t=>{
   const {engine,presenter,dom,pointer,settled,gestures}=await setup(t),control=dom.window.document.querySelector('[data-knob]');
   const before=engine.getPatch().params['drums.level'].value;

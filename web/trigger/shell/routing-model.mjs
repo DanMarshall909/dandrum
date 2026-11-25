@@ -1,4 +1,9 @@
+import {createParameterDescriptor,parsePhysical} from './parameter-descriptor.mjs';
 const ranges={Low:[-12,12,'dB'],High:[-12,12,'dB'],Threshold:[-60,0,'dB'],Ratio:[1,20,':1'],Attack:[.1,100,'ms'],Release:[10,1000,'ms'],Makeup:[-12,18,'dB'],Drive:[0,100,'%'],Mix:[0,100,'%'],Bits:[1,24,'bit'],Predelay:[0,200,'ms'],'Low cut':[20,1000,'Hz'],Time:[1,2000,'ms'],Feedback:[0,100,'%'],Cutoff:[20,20000,'Hz']};
+const symmetric=(min,max)=>min<0&&Math.abs(min+max)<1e-9;
+const processorDescriptor=(min,max,unit)=>createParameterDescriptor({kind:'physical',min:0,max:1,defaultValue:0,step:.01,bipolar:symmetric(min,max),
+  formatNative:position=>(min+position*(max-min)).toFixed(Number.isInteger(min+position*(max-min))?0:1)+' '+unit,
+  parseNative:text=>{const escaped=unit.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');const n=parsePhysical(escaped)(text);return Number.isFinite(n)?(n-min)/(max-min):null;}});
 export function routingModel(presenter,model){
   const patch=presenter.props.store.getSnapshot().patch,command=(label,method,...args)=>presenter.command(label,method,...args);
   const busName=id=>patch.buses.find(b=>b.id===id)?.name??'Main',effective=node=>node.output&&node.output!=='inherit'?node.output:node.parent?effective(patch.nodes.find(n=>n.id===node.parent)):'main';
@@ -16,7 +21,7 @@ export function routingModel(presenter,model){
   for(const module of patch.chains.flatMap(c=>c.modules))if(!presenter.processorDefaults.has(module.id))presenter.processorDefaults.set(module.id,{...module.params});
   model.processorControls=[];
   const layer=chain=>({...chain,source:['rev','dly'].includes(chain.id)?'FX bus':'Group',detail:chain.detail??chain.modules.length+' processors',level:chain.level??0,
-    modules:chain.modules.map(module=>({...module,params:Object.entries(module.params).map(([id,value],i)=>{const [min,max,unit]=ranges[id]??[0,100,''];const key=module.id+' '+id,initial=presenter.processorDefaults.get(module.id)[id]??value;model.processorControls.push({key,default:(initial-min)/(max-min),set:v=>command('Change '+module.type+' '+id,'setProcessorParam',module.id,id,min+v*(max-min))});return {id,parameterId:key,label:id,value,default:initial,min,max,unit,summary:i<2,bipolar:min<0};})}))});
+    modules:chain.modules.map(module=>({...module,params:Object.entries(module.params).map(([id,value],i)=>{const [min,max,unit]=ranges[id]??[0,100,''];const key=module.id+' '+id,initial=presenter.processorDefaults.get(module.id)[id]??value;model.processorControls.push({key,default:(initial-min)/(max-min),set:v=>command('Change '+module.type+' '+id,'setProcessorParam',module.id,id,min+v*(max-min))});return {id,parameterId:key,label:id,value,default:initial,min,max,unit,summary:i<2,bipolar:symmetric(min,max)};})}))});
   model.insertLayers=patch.chains.filter(c=>!['rev','dly'].includes(c.id)).map(layer);model.fxLayers=patch.chains.filter(c=>['rev','dly'].includes(c.id)).map(layer);
   model.selectedChain=presenter.state.selectedChain??'drums';
   model.selectChain=id=>presenter.setState({selectedChain:id});
@@ -40,7 +45,7 @@ export function routingModel(presenter,model){
   }
   if(model.page==='fx'){
     const module=patch.chains.flatMap(c=>c.modules).find(m=>m.id===presenter.state.selectedProcessor)??patch.chains.flatMap(c=>c.modules).find(m=>m.id==='comp');
-    if(module){if(!presenter.processorDefaults.has(module.id))presenter.processorDefaults.set(module.id,{...module.params});const knobs=Object.entries(module.params).map(([key,value])=>{const [min,max,unit]=ranges[key]??[0,100,''];return {key:module.id+' '+key,label:key,v:(value-min)/(max-min),default:((presenter.processorDefaults.get(module.id)[key]??value)-min)/(max-min),t:value.toFixed(Number.isInteger(value)?0:1)+' '+unit,bi:min<0,parse:text=>{const n=Number.parseFloat(String(text).replace('−','-'));return Number.isFinite(n)?(n-min)/(max-min):null;},set:v=>command('Change '+module.type+' '+key,'setProcessorParam',module.id,key,min+v*(max-min))};});
+    if(module){if(!presenter.processorDefaults.has(module.id))presenter.processorDefaults.set(module.id,{...module.params});const knobs=Object.entries(module.params).map(([key,value])=>{const [min,max,unit]=ranges[key]??[0,100,''],descriptor=processorDescriptor(min,max,unit);return {key:module.id+' '+key,label:key,v:(value-min)/(max-min),default:((presenter.processorDefaults.get(module.id)[key]??value)-min)/(max-min),t:value.toFixed(Number.isInteger(value)?0:1)+' '+unit,bi:symmetric(min,max),descriptor,parse:text=>{const result=descriptor.parseEdit(text);return result.valid?result.nativeValue:null;},set:v=>command('Change '+module.type+' '+key,'setProcessorParam',module.id,key,min+v*(max-min))};});
       model.insp={icon:'settings',title:module.type,type:'Processor',ann:'DSP module',rows:[{knobs:true,list:knobs},...(module.type==='Compressor'?[{h:true,label:'Gain reduction'},{p:true,label:'Now',value:'0.0',unit:'dB',ro:true},{p:true,label:'Detector',value:'Peak'},{p:true,label:'Sidechain',value:'Self'}]:[]),{b:true,label:module.bypassed?'Enable processor':'Bypass',icon:'reset',action:()=>command('Toggle '+module.type,'bypass',module.id,!module.bypassed)}]};}
   }
   if(['routing','fx'].includes(model.page))model.crumbs=[patch.name,model.page==='fx'?'Effects':'Routing',model.insp.title].map((label,i)=>({label,sep:i<2,c:'var(--dd-paper-2)'}));

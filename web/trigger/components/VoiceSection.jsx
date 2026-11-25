@@ -15,7 +15,7 @@ export function VoiceSection({model,section:v}){return <><section style={{"backg
                 </>}
                 <div style={{"display": "flex","flexWrap": "wrap","gap": "0"}}>
                   {(v.knobs || []).map((k,index) => <React.Fragment key={k.id ?? k.key ?? index}>
-                    <div data-knob={k.key} data-reset={"knob|" + (k.key)} style={{"borderRadius": "4px","boxShadow": k.ring}}><DD.Knob {...model.kTight} size="sm" value={k.v} defaultValue={k.default} parseValue={k.parse} onCommit={k.commit} onChange={k.set} bipolar={k.bi} label={k.label} valueText={k.t} modulations={k.mods} popupOpen={k.pop} assigning={model.assigning}></DD.Knob></div>
+                    <div data-knob={k.key} data-reset={"knob|" + (k.key)} style={{"borderRadius": "4px","boxShadow": k.ring}}><DD.Knob {...model.kTight} size="sm" value={k.v} defaultValue={k.default} descriptor={k.descriptor} parseValue={k.parse} onCommit={k.commit} onChange={k.set} bipolar={k.bi} label={k.label} valueText={k.t} modulations={k.mods} popupOpen={k.pop} assigning={model.assigning}></DD.Knob></div>
                   </React.Fragment>)}
                 </div>
               </div>

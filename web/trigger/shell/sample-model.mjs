@@ -1,4 +1,5 @@
 import {snapZero} from '../engine/mock-wave.mjs';
+import {createParameterDescriptor,parsePhysical} from './parameter-descriptor.mjs';
 export function selectedSample(presenter){
   const patch=presenter.props.store.getSnapshot().patch;
   const rule=patch.rules.find(r=>r.id===presenter.state.zoneSel);
@@ -25,11 +26,11 @@ export function sampleModel(presenter,model){
   model.viewport=presenter.state.waveViewport??{zoom:1,offset:0};model.setViewport=viewport=>presenter.setState({waveViewport:viewport});
   const duration=asset.duration,seconds=v=>(v*duration).toFixed(3)+' s';
   const edit=(label,delta)=>store.operation(label,'setRegion',region.id,delta).catch(error=>presenter.setState({modNote:error.message}));
-  const field=(label,read,delta,format)=>({label,key:'Region '+label,v:read(region),default:read(defaults),t:format(read(region)),
+  const field=(label,read,delta,format)=>{const fade=label.startsWith('Fade'),scale=fade?duration*1000:duration,descriptor=createParameterDescriptor({kind:'time',min:0,max:1,defaultValue:read(defaults),step:.001,formatNative:format,parseNative:text=>{const n=parsePhysical(fade?'ms':'s')(text);return Number.isFinite(n)?n/scale:null;}});return {label,key:'Region '+label,v:read(region),default:read(defaults),t:format(read(region)),descriptor,
     set:value=>presenter.setState({sampleDraft:{id:region.id,...delta(value)}}),
     commit:value=>{const revision=++presenter.sampleRevision;return edit('Change '+label,delta(value)).finally(()=>{
       if(presenter.sampleRevision===revision)presenter.setState({sampleDraft:null});});},
-    parse:text=>{const n=Number.parseFloat(text.replace('−','-'));return Number.isFinite(n)?n/(label.startsWith('Fade')?duration*1000:duration):null;},mods:[],bi:false});
+    parse:text=>{const result=descriptor.parseEdit(text);return result.valid?result.nativeValue:null;},mods:[],bi:false};};
   model.sampleKnobGroups[0].knobs=[
     field('Start',r=>r.start,v=>({start:Math.min(v,region.end-.0001)}),seconds),
     field('End',r=>r.end,v=>({end:Math.max(v,region.start+.0001)}),seconds),
