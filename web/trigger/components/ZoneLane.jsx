@@ -1,7 +1,7 @@
 import React from 'react';
 import * as DD from './design-system/index.jsx';
 export function ZoneLane({model}){return <><div onDrop={model.onMapDrop} onDragOver={model.onFileDrag} ref={model.mapRef} onContextMenu={model.onMapCtx} onPointerMove={model.onMapMove} style={{"padding": "8px","display": "flex","flexDirection": "column","gap": "4px"}}>
-            <DD.KeyMap zones={model.zones} selectedId={model.zoneSel} onSelect={model.selZone} onChange={model.chZones} lowNote={24} highNote={96} gridHeight={model.keymapH} title={model.mappingTitle} onNoteOn={model.onKeyOn} onNoteOff={model.onKeyOff}></DD.KeyMap>
+            <DD.KeyMap zones={model.zones} selectedId={model.zoneSel} onSelect={model.selZone} onChange={model.chZones} lowNote={24} highNote={96} gridHeight={model.keymapH} title={model.mappingTitle} formatNoteName={model.formatNoteName} onNoteOn={model.onKeyOn} onNoteOff={model.onKeyOff}></DD.KeyMap>
             <div style={{"position": "relative","height": "14px","marginLeft": "30px","background": "var(--dd-ink-0)","borderRadius": "2px"}}>
               <span style={{"position": "absolute","left": "-30px","top": "1px","width": "26px","textAlign": "right","font": "600 11px/12px var(--font-ui)","letterSpacing": ".06em","textTransform": "uppercase","color": "var(--dd-paper-4)"}}>XF</span>
               {(model.relSegs || []).map((r,index) => <React.Fragment key={r.id ?? r.key ?? index}>

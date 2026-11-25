@@ -40,6 +40,7 @@ export class NativeEngine {
     backend=transport?.backend;
     if(typeof backend?.getNativeFunction!=='function')throw new Error('Native sampler backend unavailable');
     this.backendId=transport.backendId;
+    this.middleCOctave=transport.middleCOctave===3?3:4;
     if(this.backendId==='juce-free')this.redoSession=()=>this.connection?.history.redoCount?this.publishSessionCommand('redoInstrumentSession',[]):Promise.resolve();
     this.backend=backend;this.pollMs=pollMs;this.heartbeatMs=heartbeatMs;this.patch=emptyPatch();this.patch.macros=[];
     this.listeners=new Map();this.closed=false;this.sequence=0;this.pending=null;this.waits=new Set();this.eventTokens=[];

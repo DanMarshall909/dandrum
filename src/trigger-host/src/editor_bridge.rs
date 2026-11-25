@@ -48,10 +48,15 @@ pub fn browser_request<'a>(attachment: &str, message: &'a str) -> Option<Browser
 }
 
 /// Initialize a browser with the adapter's already validated live namespace.
-pub fn initialization_script(instance: &str, attachment: &str, next_request: NonZeroU64) -> String {
+pub fn initialization_script(
+    instance: &str,
+    attachment: &str,
+    next_request: NonZeroU64,
+    middle_c_octave: u8,
+) -> String {
     format!(
         "window.__DANDRUM_NATIVE__={};",
-        serde_json::json!({"protocolVersion":1,"instanceId":instance,"attachmentId":attachment,"nextRequestId":next_request.to_string()})
+        serde_json::json!({"protocolVersion":1,"instanceId":instance,"attachmentId":attachment,"nextRequestId":next_request.to_string(),"middleCOctave":middle_c_octave})
     )
 }
 

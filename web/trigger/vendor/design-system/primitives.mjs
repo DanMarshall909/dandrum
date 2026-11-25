@@ -356,6 +356,7 @@ function KeyMap({
   onChange,
   onNoteOn,
   onNoteOff,
+  formatNoteName = noteName,
   lowNote = 24,
   highNote = 96,
   keyWidth,
@@ -604,7 +605,7 @@ function KeyMap({
     rt: 'nesw-resize',
     lb: 'nesw-resize'
   })[m];
-  const range = z => z.lo === z.hi ? `${z.lo} ${noteName(z.lo)}` : `${z.lo} ${noteName(z.lo)}–${z.hi} ${noteName(z.hi)}`;
+  const range = z => z.lo === z.hi ? `${z.lo} ${formatNoteName(z.lo)}` : `${z.lo} ${formatNoteName(z.lo)}–${z.hi} ${formatNoteName(z.hi)}`;
   return /*#__PURE__*/React.createElement("div", {
     ref: wrapRef,
     style: {
@@ -689,7 +690,7 @@ function KeyMap({
     style: smLabel
   }, "Root"), /*#__PURE__*/React.createElement("span", {
     style: smValue
-  }, selZone.root, " ", noteName(selZone.root)))), /*#__PURE__*/React.createElement("span", {
+  }, selZone.root, " ", formatNoteName(selZone.root)))), /*#__PURE__*/React.createElement("span", {
     style: {
       ...smValue,
       marginLeft: 'auto',
@@ -697,7 +698,7 @@ function KeyMap({
       minWidth: 110,
       textAlign: 'right'
     }
-  }, readout ? `${readout.note} ${noteName(readout.note)} · vel ${readout.vel}` : ''), /*#__PURE__*/React.createElement("span", {
+  }, readout ? `${readout.note} ${formatNoteName(readout.note)} · vel ${readout.vel}` : ''), /*#__PURE__*/React.createElement("span", {
     style: {
       display: 'flex',
       alignItems: 'center',
@@ -1040,7 +1041,7 @@ function KeyMap({
     return /*#__PURE__*/React.createElement("div", {
       key: n,
       role: "button",
-      "aria-label": `Key ${n} ${noteName(n)}`,
+      "aria-label": `Key ${n} ${formatNoteName(n)}`,
       onPointerDown: e => noteOn(e, n),
       style: {
         position: 'absolute',
@@ -1076,7 +1077,7 @@ function KeyMap({
         color: 'var(--dd-ink-3)',
         pointerEvents: 'none'
       }
-    }, noteName(n)));
+    }, formatNoteName(n)));
   }), notes.filter(smIsBlack).map(n => {
     const down = held && held.note === n,
       sel = inSel(n),
@@ -1084,7 +1085,7 @@ function KeyMap({
     return /*#__PURE__*/React.createElement("div", {
       key: n,
       role: "button",
-      "aria-label": `Key ${n} ${noteName(n)}`,
+      "aria-label": `Key ${n} ${formatNoteName(n)}`,
       onPointerDown: e => noteOn(e, n),
       style: {
         position: 'absolute',

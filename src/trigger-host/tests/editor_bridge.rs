@@ -93,6 +93,7 @@ fn native_scripts_keep_full_precision_bootstrap_and_deliver_one_opaque_string_in
         "18446744073709551615",
         "9007199254740993",
         NonZeroU64::new(u64::MAX).unwrap(),
+        3,
     );
     let frame = "{\"result\":\"\\\"});globalThis.injected=true;//\"}\n\0雪\u{2028}";
     let mut script = bootstrap;
@@ -123,6 +124,6 @@ process.stdout.write(JSON.stringify({bootstrap:context.window.__DANDRUM_NATIVE__
     let observed: Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(
         observed,
-        json!({"bootstrap":{"protocolVersion":1,"instanceId":"18446744073709551615","attachmentId":"9007199254740993","nextRequestId":"18446744073709551615"},"received":[frame],"injected":null})
+        json!({"bootstrap":{"protocolVersion":1,"instanceId":"18446744073709551615","attachmentId":"9007199254740993","nextRequestId":"18446744073709551615","middleCOctave":3},"received":[frame],"injected":null})
     );
 }

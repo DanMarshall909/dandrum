@@ -149,6 +149,36 @@ test('trusted Wry bootstrap connects the production entrypoint through correlate
   expect(errors).toEqual([]);
 });
 
+for(const {middleCOctave,kick,middleC} of [
+  {middleCOctave:3,kick:'C1',middleC:'C3'},
+  {middleCOctave:undefined,kick:'C2',middleC:'C4'},
+]){
+  test(`native mapping displays MIDI 36 as ${kick} and auditions MIDI 36`,async({page})=>{
+    await page.addInitScript(({initial,middleCOctave})=>{
+      const {instanceId,attachmentId}=initial.connection;
+      window.__DANDRUM_NATIVE__={protocolVersion:1,instanceId,attachmentId,middleCOctave};
+      window.nativeCalls=[];
+      window.ipc={postMessage(message){
+        const {version,requestId,method,args}=JSON.parse(message);
+        window.nativeCalls.push([method,...args]);
+        const result=method==='negotiateEditorProtocol'?window.__TEST_EDITOR_PROFILE__
+          :method==='getSamplerSession'?initial:true;
+        window.__DANDRUM__.receiveNativeMessage(JSON.stringify({
+          version,instanceId,attachmentId,requestId,status:'accepted',result,
+        }));
+      }};
+    },{initial:session(),middleCOctave});
+    await page.goto('/');
+    await expect(page.getByText(`36 ${kick}`,{exact:true}).first()).toBeVisible();
+    await page.getByRole('tab',{name:'Mapping',exact:true}).click();
+    await expect(page.getByRole('button',{name:`Key 60 ${middleC}`,exact:true})).toBeVisible();
+    await page.getByRole('button',{name:`Key 36 ${kick}`,exact:true}).click({position:{x:3,y:40}});
+    await expect.poll(()=>page.evaluate(()=>window.nativeCalls
+      .filter(([method])=>method==='noteOn'||method==='noteOff')
+      .map(([method,note])=>[method,note]))).toEqual([['noteOn',36],['noteOff',36]]);
+  });
+}
+
 test('page disposal closes a pending native initialization once without rendering a late failure',async({page})=>{
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.addInitScript(()=>{

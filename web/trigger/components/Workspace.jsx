@@ -46,7 +46,7 @@ export function Workspace({model}) {
 
       {model.isExp && <>
         <section style={{"background": "var(--dd-ink-2)","border": "1px solid var(--dd-line-1)","borderRadius": "6px","padding": "6px 8px"}}>
-          <DD.KeyMap zones={model.zones} selectedId={model.zoneSel} onSelect={model.selZone} onNoteOn={model.onKeyOn} onNoteOff={model.onKeyOff} lowNote={24} highNote={96} gridHeight={56} keyboardHeight={44} editable={false} title="Key map · read-only overview"></DD.KeyMap>
+          <DD.KeyMap zones={model.zones} selectedId={model.zoneSel} onSelect={model.selZone} onNoteOn={model.onKeyOn} onNoteOff={model.onKeyOff} formatNoteName={model.formatNoteName} lowNote={24} highNote={96} gridHeight={56} keyboardHeight={44} editable={false} title="Key map · read-only overview"></DD.KeyMap>
         </section>
       </>}
     </main>);

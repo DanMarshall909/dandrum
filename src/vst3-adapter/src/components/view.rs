@@ -29,6 +29,7 @@ pub(super) fn create(controller: &Rc<ControllerCore>) -> *mut IPlugView {
         selection_dialog: RefCell::new(None),
         frame: RefCell::new(None),
         abi: Cell::new(std::ptr::null_mut()),
+        middle_c_octave: controller.middle_c_octave.get(),
         content_scale: Cell::new(1.0),
         size: Cell::new((WIDTH, HEIGHT)),
         pending_scale: Cell::new(None),
@@ -64,6 +65,7 @@ pub(super) struct ViewCore {
     frame: RefCell<Option<Rc<vst3::ComPtr<IPlugFrame>>>>,
     // Non-owning ABI identity, used only during a live scale-interface call.
     abi: Cell<*mut IPlugView>,
+    middle_c_octave: u8,
     content_scale: Cell<f32>,
     size: Cell<(i32, i32)>,
     pending_scale: Cell<Option<f32>>,
@@ -290,6 +292,7 @@ impl ViewCore {
                             &namespace.instance_id,
                             &namespace.attachment_id,
                             std::num::NonZeroU64::new(1).expect("first browser request"),
+                            self.middle_c_octave,
                         );
                         if child.start_application(&initializer).is_err() {
                             return kResultFalse;

@@ -89,6 +89,8 @@ pub(crate) fn create(
             release_peer_on_retirement: Cell::new(false),
             retired_proof: Cell::new(false),
             #[cfg(feature = "trigger-editor")]
+            middle_c_octave: Cell::new(4),
+            #[cfg(feature = "trigger-editor")]
             view_runloop: RefCell::new(runloop),
             #[cfg(feature = "trigger-editor")]
             native_view: RefCell::new(None),
@@ -558,6 +560,8 @@ struct ControllerCore {
     release_peer_on_retirement: Cell<bool>,
     retired_proof: Cell<bool>,
     #[cfg(feature = "trigger-editor")]
+    middle_c_octave: Cell<u8>,
+    #[cfg(feature = "trigger-editor")]
     view_runloop: RefCell<Option<Rc<ComPtr<IRunLoop>>>>,
     #[cfg(feature = "trigger-editor")]
     native_view: RefCell<Option<Rc<view::ViewCore>>>,
@@ -610,7 +614,7 @@ impl ControllerCore {
 }
 impl IPluginBaseTrait for Controller {
     unsafe fn initialize(&self, _context: *mut FUnknown) -> tresult {
-        if !self.main() || self.terminated.get() || self.projection.borrow().is_some() {
+        if !self.main() || self.host_busy.get() || self.projection.borrow().is_some() {
             return kResultFalse;
         }
         let Ok(descriptors) =
@@ -623,6 +627,27 @@ impl IPluginBaseTrait for Controller {
                 .physical_to_normalized(descriptors[i].physical_default)
                 .expect("validated descriptor default")
         });
+        #[cfg(feature = "trigger-editor")]
+        {
+            self.host_busy.set(true);
+            let _host_call = HostCall(&self.host_busy);
+            // SAFETY: initialize supplies a live optional SDK host context.
+            let host = unsafe { ComRef::from_raw(_context) }
+                .and_then(|context| context.cast::<IHostApplication>());
+            if let Some(host) = host {
+                let mut name = [0; 128];
+                if unsafe { host.getName(&mut name) } == kResultOk {
+                    let end = name
+                        .iter()
+                        .position(|&unit| unit == 0)
+                        .unwrap_or(name.len());
+                    let name = String::from_utf16_lossy(&name[..end]);
+                    if name == "Bitwig Studio" || name.starts_with("Bitwig Studio ") {
+                        self.middle_c_octave.set(3);
+                    }
+                }
+            }
+        }
         *self.projection.borrow_mut() = Some(Projection {
             parameters: descriptors,
             values,

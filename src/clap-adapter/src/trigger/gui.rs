@@ -336,6 +336,7 @@ impl Core {
             &connection.instance_id,
             &connection.attachment_id,
             std::num::NonZeroU64::new(1).expect("first browser request"),
+            4,
         );
         {
             let mut state = self.gui.borrow_mut();

@@ -84,6 +84,31 @@ impl IComponentHandlerTrait for Handler {
         kResultOk
     }
 }
+
+struct BitwigHost;
+impl vst3::Class for BitwigHost {
+    type Interfaces = (IHostApplication,);
+}
+impl IHostApplicationTrait for BitwigHost {
+    unsafe fn getName(&self, output: *mut String128) -> tresult {
+        let Some(output) = (unsafe { output.as_mut() }) else {
+            return kInvalidArgument;
+        };
+        output.fill(0);
+        for (slot, unit) in output.iter_mut().zip("Bitwig Studio".encode_utf16()) {
+            *slot = unit;
+        }
+        kResultOk
+    }
+    unsafe fn createInstance(
+        &self,
+        _: *mut TUID,
+        _: *mut TUID,
+        _: *mut *mut std::ffi::c_void,
+    ) -> tresult {
+        kNotImplemented
+    }
+}
 fn saved_state(processor: &vst3::ComPtr<IComponent>) -> Vec<u8> {
     let (state, stream) = common::stream::stream(Vec::new(), 4096);
     assert_eq!(unsafe { processor.getState(stream.as_ptr()) }, kResultOk);
@@ -847,14 +872,14 @@ fn production_native_selection_retains_decoded_content_after_source_and_view_los
     let (clock, factory, _host) = runloop::host(&module);
     let processor = module.class_from::<IComponent>(&factory, &PROCESSOR);
     let controller = module.class_from::<IEditController>(&factory, &CONTROLLER);
+    let host = vst3::ComWrapper::new(BitwigHost)
+        .to_com_ptr::<FUnknown>()
+        .unwrap();
     assert_eq!(
         unsafe { processor.initialize(std::ptr::null_mut()) },
         kResultOk
     );
-    assert_eq!(
-        unsafe { controller.initialize(std::ptr::null_mut()) },
-        kResultOk
-    );
+    assert_eq!(unsafe { controller.initialize(host.as_ptr()) }, kResultOk);
     let edits = Rc::new(RefCell::new(Vec::new()));
     let handler = vst3::ComWrapper::new(Handler(edits.clone()))
         .to_com_ptr::<IComponentHandler>()
@@ -900,6 +925,11 @@ fn production_native_selection_retains_decoded_content_after_source_and_view_los
     assert_eq!((block.left[5], block.right[5]), (-0.5, -0.5));
     assert_eq!(unsafe { audio.setProcessing(0) }, kResultOk);
     let (view, browser) = open_view(&controller, &parent, &clock);
+    wait_dom(
+        &clock,
+        &browser,
+        "document.body.innerText.includes('36 C1')",
+    );
     let selected = tempfile::tempdir().unwrap();
     let path = selected.path().join("distinct-selected.wav");
     std::fs::write(&path, SELECTED_WAV).unwrap();

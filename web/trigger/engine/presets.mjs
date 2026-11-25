@@ -1,6 +1,6 @@
 /** The supplied Felt Kit data. These are mock resources, never decoded audio. */
 import {defaultParameters,initialiseModule} from './voice-defaults.mjs';
-export const noteName = note => ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'][note % 12] + (Math.floor(note / 12) - 1);
+export const noteName = (note,middleCOctave=4) => ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'][note % 12] + (middleCOctave + Math.floor((note - 60) / 12));
 /** @returns {import('./contract').Patch} */
 export const emptyPatch = () => ({
   id: 'untitled', name: 'Untitled', nodes: [{id:'root',name:'Untitled',kind:'instrument',parent:null}],

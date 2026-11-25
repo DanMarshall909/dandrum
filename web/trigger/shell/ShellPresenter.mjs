@@ -18,6 +18,7 @@ import {controlActions,controlMenus} from './control-menus.mjs';
 import {macroModel} from './macro-model.mjs';
 import {entityMenus} from './entity-menus.mjs';
 import {nativeControls} from '../engine/native-controls.mjs';
+import {noteName} from '../engine/presets.mjs';
 
 /** Ephemeral selection, menus and pointer state; the Store owns patch commands. */
 export class ShellPresenter {
@@ -51,7 +52,7 @@ export class ShellPresenter {
   go(st) {  this.setState({ st, cmenu: null, dmenu: null, rrMode: null, kmenu: null, menu: null, editRoute: null, modInsp: false, histSel: null, modNote: null,selectedMacro:null }); }
   rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
   peaks(n, f, seed) { const r = this.rng(seed), o = []; for (let i = 0; i < n; i++) o.push(Math.min(1, f(i / n, r))); return o; }
-  nn(n) { const N = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B']; return N[n % 12] + (Math.floor(n / 12) - 1); }
+  nn(note) { return noteName(note,this.props.store.engine.middleCOctave); }
   auditionSelection(){
     const patch=this.props.store.getSnapshot().patch,model=this.buildModel();
     const zone=patch.rules.find(r=>r.id===this.state.zoneSel);
@@ -70,6 +71,7 @@ export class ShellPresenter {
   confirmReplace(){const dialog=this.state.dialog;this.setState({dialog:null});return this.performReplace(dialog.operation,dialog.presetId);}
   buildModel() {
     const model=projectReference(this);
+    model.formatNoteName=this.nn.bind(this);
     sampleModel(this,model);
     this.importModel(model);
     libraryModel(this,model);

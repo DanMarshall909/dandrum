@@ -10,6 +10,7 @@ unit parsing, gesture cleanup, numeric display precision and in-editor menus.
 Compatibility changes in this compiled copy:
 - Toggle's switch receives its visible label as an accessible name.
 - KeyMap accepts current controlled zones after initial mount.
+- KeyMap accepts a note-name formatter from its host-facing editor.
 - LayerStack module containers expose `data-module-id` for selection/drag identity.
 - LayerStack typed parameters parse their actual units, including kHz; parameter
   IDs identify context/modulation targets.
