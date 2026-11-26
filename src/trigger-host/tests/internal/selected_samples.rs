@@ -589,3 +589,80 @@ fn portable_payloads_share_catalog_capacity_reuse_and_release_with_native_work()
     drop(replacement);
     assert_eq!(catalog.usage(), CatalogUsage::default());
 }
+
+#[test]
+fn channel_aware_decoded_limits_and_invalid_formats_preserve_catalog() {
+    use dandrum_engine::wav::{
+        write_wav_channels_f32, write_wav_channels_i16, write_wav_channels_i24,
+        write_wav_stereo_i16,
+    };
+
+    let mut mono16 = Vec::new();
+    write_wav_channels_i16(&mut mono16, 48_000, &[&[-0.5, 0.25, -0.25, 0.5]]).unwrap();
+    let mut stereo16 = Vec::new();
+    write_wav_stereo_i16(
+        &mut stereo16,
+        48_000,
+        &[-0.5, 0.25, -0.25, 0.5],
+        &[0.5, -0.25, 0.25, -0.5],
+    )
+    .unwrap();
+    let mut stereo24 = Vec::new();
+    write_wav_channels_i24(
+        &mut stereo24,
+        48_000,
+        &[&[-8_388_608, 4_194_304, 0, 1], &[8_388_607, -2_097_152, 0, -1]],
+    )
+    .unwrap();
+    let mut stereo32 = Vec::new();
+    write_wav_channels_f32(
+        &mut stereo32,
+        48_000,
+        &[&[-1.25, 0.5, 0.0, 0.25], &[1.25, -0.5, 0.0, -0.25]],
+    )
+    .unwrap();
+
+    let mut catalog = SampleCatalog::new();
+    catalog.limits.decoded = 24;
+    let accepted_mono = finish(&mut catalog, vec![input(&mono16)]);
+    assert_eq!(catalog.usage().decoded_bytes, 16);
+    assert_eq!(accepted_mono[0].sample.sample().source_channel_count(), 1);
+    drop(accepted_mono);
+    assert_eq!(catalog.usage(), CatalogUsage::default());
+
+    let over_limit = catalog.begin(vec![input(&stereo16)]).unwrap();
+    assert_eq!(
+        catalog.accept(over_limit.prepare()).unwrap().unwrap_err(),
+        SampleError::DecodedLimit
+    );
+    assert_eq!(catalog.usage(), CatalogUsage::default());
+
+    catalog.limits.decoded = 32;
+    for (bytes, expected_l0, expected_r0) in [
+        (&stereo24, -1.0_f32, 8_388_607.0 / 8_388_608.0),
+        (&stereo32, -1.25, 1.25),
+    ] {
+        let files = finish(&mut catalog, vec![input(bytes)]);
+        assert_eq!(catalog.usage().decoded_bytes, 32);
+        assert_eq!(files[0].sample.sample().source_channel_count(), 2);
+        assert_eq!(files[0].sample.sample().source_sample(0, 0), Some(expected_l0));
+        assert_eq!(files[0].sample.sample().source_sample(1, 0), Some(expected_r0));
+
+        // Invalid WAVs (non-finite float32, surround 3ch, truncated PCM24) fail without disturbing live catalog usage.
+        let mut nan_wav = Vec::new();
+        write_wav_channels_f32(&mut nan_wav, 48_000, &[&[0.0], &[f32::NAN]]).unwrap();
+        let mut surround = Vec::new();
+        write_wav_channels_i16(&mut surround, 48_000, &[&[0.1], &[0.2], &[0.3]]).unwrap();
+        let truncated24 = stereo24[..stereo24.len() - 1].to_vec();
+        for bad in [nan_wav, surround, truncated24] {
+            let job = catalog.begin(vec![input(&bad)]).unwrap();
+            assert_eq!(
+                catalog.accept(job.prepare()).unwrap().unwrap_err(),
+                SampleError::InvalidSample
+            );
+            assert_eq!(catalog.usage().decoded_bytes, 32);
+            assert_eq!(catalog.usage().resource_count, 1);
+        }
+    }
+    assert_eq!(catalog.usage(), CatalogUsage::default());
+}

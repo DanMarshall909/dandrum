@@ -238,6 +238,7 @@ pub(super) fn process_sampler(
         return audio_output(builtin_ports::AUDIO, audio);
     };
     let sample_frames = sample_ref.frames();
+    let right_frames = sample_ref.channel_frames(1);
     if sample_frames.is_empty() {
         return audio_output(builtin_ports::AUDIO, audio);
     }
@@ -268,7 +269,9 @@ pub(super) fn process_sampler(
             continue;
         }
 
-        *output = sample_frames[idx];
+        *output = right_frames.map_or(sample_frames[idx], |right| {
+            (sample_frames[idx] + right[idx]) * 0.5
+        });
 
         let rate = rate_in.get(frame).copied().unwrap_or(1.0).max(0.0);
         *position += rate;

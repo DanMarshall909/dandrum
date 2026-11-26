@@ -1930,14 +1930,120 @@ fn fresh_clap_restores_selected_payload_without_a_package_file() {
         );
     }
     let mut audio = activate(&mut fresh, 48_000.0, 16);
-    for (key, expected) in [(36, -1.0), (48, -0.25), (60, 0.0)] {
+    for (key, expected_left, expected_right) in [
+        (36, -1.0, -1.0),
+        (48, -1.5, 1.0),
+        (60, 0.0, 0.0),
+    ] {
         let output = block(&mut audio, 16, &note(0, key), true);
         assert_eq!(
             (output[0][0], output[1][0]),
-            (expected, expected),
+            (expected_left, expected_right),
             "signed fresh CLAP output at MIDI {key}"
         );
     }
+    deactivate(&mut fresh, audio);
+}
+
+#[test]
+fn fresh_clap_restores_stereo_pcm24_and_float32_without_source_files() {
+    use dandrum_engine::sample_snapshot::SampleSnapshot;
+    use dandrum_engine::wav::{write_wav_channels_f32, write_wav_channels_i24};
+    use serde_json::json;
+
+    let mut pcm24 = Vec::new();
+    write_wav_channels_i24(&mut pcm24, 48_000, &[&[-8_388_608, 4_194_304], &[8_388_607, -2_097_152]])
+        .unwrap();
+    let mut float32 = Vec::new();
+    write_wav_channels_f32(&mut float32, 48_000, &[&[0.75, -1.25], &[-0.75, 1.25]]).unwrap();
+    let id24 = SampleSnapshot::resource_id_for_encoded(&pcm24).unwrap();
+    let sha24 = id24.strip_prefix("selected/").unwrap().strip_suffix(".wav").unwrap().to_owned();
+    let id32 = SampleSnapshot::resource_id_for_encoded(&float32).unwrap();
+    let sha32 = id32.strip_prefix("selected/").unwrap().strip_suffix(".wav").unwrap().to_owned();
+
+    let (original_root, original_path) = copied_product();
+    let mut original = load_at(&original_path).unwrap();
+    let mut metadata = portable_state::metadata(&save(&mut original));
+    let package = std::fs::read(
+        original_root
+            .path()
+            .join("DandrumTrigger.resources/instrument/assets/advanced-drums.wav"),
+    )
+    .unwrap();
+    let mut document: serde_yaml::Value =
+        serde_yaml::from_str(metadata["document"].as_str().unwrap()).unwrap();
+    let sources = document["assets"]["sample_sources"].as_sequence_mut().unwrap();
+    sources.push(
+        serde_yaml::to_value(json!({
+            "id": "s24", "path": id24,
+            "regions": [{"id": "body", "start_frame": 0, "end_frame": 2}]
+        }))
+        .unwrap(),
+    );
+    sources.push(
+        serde_yaml::to_value(json!({
+            "id": "s32", "path": id32,
+            "regions": [{"id": "body", "start_frame": 0, "end_frame": 2}]
+        }))
+        .unwrap(),
+    );
+    let zones = document["assets"]["sample_maps"][0]["zones"].as_sequence_mut().unwrap();
+    zones.push(
+        serde_yaml::to_value(json!({
+            "id": "hit24", "region": "s24.body",
+            "key_range": [48, 48], "velocity_range": [1, 127], "control_group": 1
+        }))
+        .unwrap(),
+    );
+    zones.push(
+        serde_yaml::to_value(json!({
+            "id": "hit32", "region": "s32.body",
+            "key_range": [50, 50], "velocity_range": [1, 127], "control_group": 1
+        }))
+        .unwrap(),
+    );
+    metadata["document"] = serde_yaml::to_string(&document).unwrap().into();
+    let resources = metadata["resources"].as_array_mut().unwrap();
+    resources.push(json!({ "path": id24, "sha256": sha24, "encoded_bytes": pcm24.len() }));
+    resources.push(json!({ "path": id32, "sha256": sha32, "encoded_bytes": float32.len() }));
+    let encoded = serde_json::to_vec(&metadata).unwrap();
+    let mut input = b"DTRGSTAT".to_vec();
+    input.extend(3_u32.to_le_bytes());
+    input.extend(u32::try_from(encoded.len()).unwrap().to_le_bytes());
+    input.extend(
+        u64::try_from(package.len() + pcm24.len() + float32.len())
+            .unwrap()
+            .to_le_bytes(),
+    );
+    input.extend(encoded);
+    input.extend(package);
+    input.extend(pcm24);
+    input.extend(float32);
+    assert!(load_state(&mut original, &input));
+    let saved = save(&mut original);
+    drop(original);
+    original_root.close().unwrap();
+
+    let (fresh_root, fresh_path) = copied_product();
+    let mut fresh = load_at(&fresh_path).unwrap();
+    std::fs::remove_file(
+        fresh_root
+            .path()
+            .join("DandrumTrigger.resources/instrument/assets/advanced-drums.wav"),
+    )
+    .unwrap();
+    assert!(load_state(&mut fresh, &saved));
+    let mut audio = activate(&mut fresh, 48_000.0, 16);
+    let out24 = block(&mut audio, 16, &note(0, 48), true);
+    assert_eq!(
+        (&out24[0][..2], &out24[1][..2]),
+        (&[-1.0, 0.5][..], &[8_388_607.0 / 8_388_608.0, -0.25][..])
+    );
+    let out32 = block(&mut audio, 16, &note(0, 50), true);
+    assert_eq!(
+        (&out32[0][..2], &out32[1][..2]),
+        (&[0.75, -1.25][..], &[-0.75, 1.25][..])
+    );
     deactivate(&mut fresh, audio);
 }
 

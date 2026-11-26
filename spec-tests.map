@@ -3048,3 +3048,31 @@ AC parameter-control-interaction :: Catalog exercises every maintained parameter
   fp a3750aa42b9c
   test js:tests/js/TriggerReactShellTest.mjs
   test rust:installed_native_edits_overlap_server_audio_and_midi
+
+AC advanced-sampling-options :: Common WAV formats are decoded with strict validation and planar channel preservation :: Malformed and non-finite WAVs are rejected safely
+  fp 60f2628ff50e
+  test rust:rejects_nonfinite_float32_and_malformed_or_unsupported_wav_formats
+  test rust:decoder_rejects_malformed_or_unsupported_pcm_chunks
+
+AC advanced-sampling-options :: Common WAV formats are decoded with strict validation and planar channel preservation :: PCM16, PCM24, and float32 WAVs preserve extrema, interleaving, and headroom
+  fp 98f8fa052b6d
+  test rust:decodes_pcm24_and_float32_wavs_with_extrema_interleaving_and_headroom
+  test rust:waveform_reduction_and_decoded_capacity_preserve_stereo_pcm24_and_float32
+
+AC advanced-sampling-options :: Mapped sample playback preserves stereo and applies linear stereo balance :: Stereo topologies and common WAV formats render signed expected L/R output
+  fp 1eaf6cd318b4
+  test rust:sample_map_player_preserves_stereo_topologies_and_common_wav_formats
+
+AC advanced-sampling-options :: Mapped sample playback preserves stereo and applies linear stereo balance :: Stereo trim, fades, reverse, tuning, gain, and linear balance pan behave consistently
+  fp 960cfa5ecd14
+  test rust:sample_map_player_applies_trim_fades_reverse_tuning_gain_and_linear_balance_pan_across_stereo_channels
+
+AC trigger-sample-resources :: Native Trigger supports stereo and common WAV formats through selection, limits, and state restore :: Save and fresh-instance restore preserve stereo channels and WAV formats without source files
+  fp 10013340034e
+  test rust:native_trigger_selects_and_restores_stereo_pcm24_and_float32_without_source_files
+  test rust:fresh_clap_restores_stereo_pcm24_and_float32_without_source_files
+
+AC trigger-sample-resources :: Native Trigger supports stereo and common WAV formats through selection, limits, and state restore :: Stereo PCM24 and float32 selections agree on metadata, channel limits, and signed playback
+  fp 226036dac985
+  test rust:channel_aware_decoded_limits_and_invalid_formats_preserve_catalog
+  test rust:native_trigger_selects_and_restores_stereo_pcm24_and_float32_without_source_files

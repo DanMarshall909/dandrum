@@ -366,7 +366,11 @@ pub fn analyze_external_wav(
 ) -> Result<Vec<AnalysisFrame>, String> {
     let audio =
         crate::audio_loading::load_pcm_wav(wav_path.as_ref(), fixture.render.sample_rate_hz)?;
-    crate::sound_analysis::analyze_sound(audio.frames(), audio.sample_rate_hz(), fixture.analysis)
+    crate::sound_analysis::analyze_sound(
+        &audio.mono_mix(),
+        audio.sample_rate_hz(),
+        fixture.analysis,
+    )
 }
 
 pub fn run_sound_workbench<I, S>(args: I) -> WorkbenchResult

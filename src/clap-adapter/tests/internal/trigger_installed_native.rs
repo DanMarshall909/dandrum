@@ -637,7 +637,7 @@ impl NativeHost {
                     let expected = if r.key == 36 {
                         -0.5 * gain
                     } else if selected {
-                        -0.125 * gain
+                        -0.75 * gain
                     } else {
                         0.0
                     };
@@ -648,8 +648,11 @@ impl NativeHost {
         }
     }
     fn assert_audio(&self, r: &Observation, selected: bool, level: f32) {
-        // Independently decoded literal PCM16 stereo means, linearly resampled.
-        let source = [-0.125_f64, 0.0, -0.1875, -0.125];
+        // Independently decoded literal PCM16 stereo channels, linearly resampled.
+        let source = [
+            [-0.75_f64, 0.25, -0.5, 0.5],
+            [0.5_f64, -0.25, 0.125, -0.75],
+        ];
         for channel in 0..2 {
             let expected = if r.key == 36 { -0.5 } else { 0.0 };
             assert_eq!(
@@ -670,8 +673,9 @@ impl NativeHost {
                     let position = frame as f64 * 32000.0 / f64::from(self.rate);
                     let index = position.floor() as usize;
                     let expected = if selected {
-                        (source[index] + (source[index + 1] - source[index]) * position.fract())
-                            as f32
+                        (source[channel][index]
+                            + (source[channel][index + 1] - source[channel][index])
+                                * position.fract()) as f32
                             * level
                     } else {
                         0.0

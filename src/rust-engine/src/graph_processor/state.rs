@@ -571,13 +571,17 @@ impl PerModuleState {
                 let ir = resources
                     .impulse_response
                     .as_ref()
-                    .map(|handle| handle.sample().frames())
-                    .or_else(|| sampler_assets.get(module_id).map(|sample| sample.frames()));
+                    .map(|handle| handle.sample().mono_mix().into_owned())
+                    .or_else(|| {
+                        sampler_assets
+                            .get(module_id)
+                            .map(|sample| sample.mono_mix().into_owned())
+                    });
                 let processors = (0..channels)
                     .map(|_| {
                         let mut processor = Convolution::new();
-                        if let Some(ir) = ir {
-                            processor.load_ir(ir.to_vec());
+                        if let Some(ir) = ir.as_ref() {
+                            processor.load_ir(ir.clone());
                         }
                         processor
                     })

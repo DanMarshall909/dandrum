@@ -68,6 +68,7 @@ pub(super) fn process_sampler_state(
     events: &[BlockEvent],
 ) {
     let frames = sample.as_ref().map_or(&[][..], |sample| sample.frames());
+    let right_frames = sample.as_ref().and_then(|sample| sample.channel_frames(1));
     if frames.is_empty() {
         for frame in 0..context.frames() {
             for channel in 0..context.output_count() {
@@ -96,7 +97,9 @@ pub(super) fn process_sampler_state(
             if index >= frames.len() {
                 *active = false;
             } else {
-                output = frames[index];
+                output = right_frames.map_or(frames[index], |right| {
+                    (frames[index] + right[index]) * 0.5
+                });
                 let rate = context.input_sample(0, frame, 1.0).max(0.0);
                 *position += rate;
                 if context.input_sample(2, frame, 0.0) > 0.5 {
@@ -140,6 +143,7 @@ pub(super) fn process_sample_player_state(
     gate_events: &[BlockEvent],
 ) {
     let frames = sample.as_ref().map_or(&[][..], |sample| sample.frames());
+    let right_frames = sample.as_ref().and_then(|sample| sample.channel_frames(1));
     let sample_rate = sample
         .as_ref()
         .map_or(0.0, |sample| f64::from(sample.sample_rate_hz()));
@@ -212,17 +216,40 @@ pub(super) fn process_sample_player_state(
                         } else {
                             loop_settings.start_frame as f64 + fade_position
                         };
-                        let head =
-                            sample_interpolated(frames, head_position, region, interpolation);
-                        let tail = sample_interpolated(frames, *position, region, interpolation);
+                        let head = sample_mono_interpolated(
+                            frames,
+                            right_frames,
+                            head_position,
+                            region,
+                            interpolation,
+                        );
+                        let tail = sample_mono_interpolated(
+                            frames,
+                            right_frames,
+                            *position,
+                            region,
+                            interpolation,
+                        );
                         let weight =
                             ((fade_position + 1.0) / crossfade_frames as f64).min(1.0) as f32;
                         tail * (1.0 - weight) + head * weight
                     } else {
-                        sample_interpolated(frames, *position, region, interpolation)
+                        sample_mono_interpolated(
+                            frames,
+                            right_frames,
+                            *position,
+                            region,
+                            interpolation,
+                        )
                     }
                 } else {
-                    sample_interpolated(frames, *position, region, interpolation)
+                    sample_mono_interpolated(
+                        frames,
+                        right_frames,
+                        *position,
+                        region,
+                        interpolation,
+                    )
                 };
                 value *=
                     sample_region_boundary_gain(region, *position, fade_in_frames, fade_out_frames);
@@ -339,6 +366,7 @@ pub(super) fn process_sample_slicer_state(
     events: &[BlockEvent],
 ) {
     let frames = sample.as_ref().map_or(&[][..], |sample| sample.frames());
+    let right_frames = sample.as_ref().and_then(|sample| sample.channel_frames(1));
     for frame in 0..context.frames() {
         if events.iter().any(|event| {
             event.frame_offset as usize == frame
@@ -364,7 +392,12 @@ pub(super) fn process_sample_slicer_state(
                 let last = slice.end_frame as usize - 1;
                 let base = (*position as usize).clamp(first, last);
                 let fraction = (*position - base as f64) as f32;
-                let value = frames[base] + fraction * (frames[(base + 1).min(last)] - frames[base]);
+                let left = frames[base] + fraction * (frames[(base + 1).min(last)] - frames[base]);
+                let value = right_frames.map_or(left, |right| {
+                    let right_sample =
+                        right[base] + fraction * (right[(base + 1).min(last)] - right[base]);
+                    (left + right_sample) * 0.5
+                });
                 let ratio = context.input_sample(1, frame, 1.0);
                 *position += f64::from(if ratio.is_finite() {
                     ratio.clamp(0.125, 8.0)
@@ -416,6 +449,19 @@ fn sample_interpolated(
         + (2.0 * before + 4.0 * b - 5.0 * a - after) * f2
         + (b - before) * fraction
         + 2.0 * a)
+}
+
+fn sample_mono_interpolated(
+    frames: &[f32],
+    right_frames: Option<&[f32]>,
+    position: f64,
+    region: &SampleRegion,
+    interpolation: SampleInterpolation,
+) -> f32 {
+    let left = sample_interpolated(frames, position, region, interpolation);
+    right_frames.map_or(left, |right| {
+        (left + sample_interpolated(right, position, region, interpolation)) * 0.5
+    })
 }
 
 fn next_sample_selection_random(state: &mut u64) -> u64 {
@@ -507,23 +553,26 @@ pub(super) fn process_sample_map_player_state(
                 }
             }
         }
-        let output = if *active {
+        let (left, right, has_stereo) = if *active {
             let zone = &zones[selected_zone.expect("active map player has a selected zone")];
             let region = &zone.region;
             if *position >= region.start_frame as f64 && *position < region.end_frame as f64 {
-                let sample = sample_interpolated(
+                let left_sample = sample_interpolated(
                     zone.sample.frames(),
                     *position,
                     region,
                     SampleInterpolation::Linear,
                 );
-                let sample = sample
-                    * sample_region_boundary_gain(
-                        region,
-                        *position,
-                        zone.fade_in_frames,
-                        zone.fade_out_frames,
-                    );
+                let right_frames = zone.sample.channel_frames(1);
+                let right_sample = right_frames.map_or(left_sample, |frames| {
+                    sample_interpolated(frames, *position, region, SampleInterpolation::Linear)
+                });
+                let boundary_gain = sample_region_boundary_gain(
+                    region,
+                    *position,
+                    zone.fade_in_frames,
+                    zone.fade_out_frames,
+                );
                 let level = context.input_sample(2, frame, 1.0)
                     * sample_map_group_control(context, zone, frame, 2, 1.0);
                 let level = if level.is_finite() {
@@ -531,7 +580,7 @@ pub(super) fn process_sample_map_player_state(
                 } else {
                     1.0
                 };
-                let sample = sample * zone.gain * level;
+                let gain = boundary_gain * zone.gain * level;
                 let musical_pitch = context.input_sample(0, frame, 1.0)
                     * sample_map_group_control(context, zone, frame, 0, 1.0);
                 let musical_pitch = if musical_pitch.is_finite() {
@@ -544,13 +593,13 @@ pub(super) fn process_sample_map_player_state(
                 if *position < region.start_frame as f64 || *position >= region.end_frame as f64 {
                     *active = false;
                 }
-                sample
+                (left_sample * gain, right_sample * gain, right_frames.is_some())
             } else {
                 *active = false;
-                0.0
+                (0.0, 0.0, false)
             }
         } else {
-            0.0
+            (0.0, 0.0, false)
         };
         let live_pan = context.input_sample(3, frame, 0.0)
             + selected_zone.map_or(0.0, |index| {
@@ -565,11 +614,13 @@ pub(super) fn process_sample_map_player_state(
         for channel in 0..context.output_count() {
             let output = if context.output_count() == 2 {
                 match channel {
-                    0 => output * (1.0 - pan.max(0.0)),
-                    _ => output * (1.0 + pan.min(0.0)),
+                    0 => left * (1.0 - pan.max(0.0)),
+                    _ => right * (1.0 + pan.min(0.0)),
                 }
+            } else if has_stereo {
+                (left + right) * 0.5
             } else {
-                output
+                left
             };
             context
                 .set_output_sample(channel, frame, output)
@@ -1686,5 +1737,64 @@ mod sampler_tests {
 
         assert_eq!(arena.sample(BufferId(5), 0), 0.0);
         assert_eq!(arena.sample(BufferId(5), 3), 0.0);
+    }
+
+    #[test]
+    fn sampler_downmixes_stereo_channels_on_arena_and_reference_paths() {
+        let stereo_handle = crate::compiled_patch::SampleResourceHandle::new(
+            crate::sample::LoadedSample::new_stereo(
+                48_000,
+                vec![0.5, 0.0, -0.25],
+                vec![-0.125, 0.75, -0.75],
+            ),
+        );
+        let expected = [0.1875, 0.375, -0.5];
+
+        let mut arena = AudioArena::new(AudioBufferPlan {
+            buffer_count: 6,
+            max_block_frames: 3,
+            max_voices: 1,
+        });
+        let inputs = [
+            BufferId(0),
+            BufferId(1),
+            BufferId(2),
+            BufferId(3),
+            BufferId(4),
+        ];
+        let outputs = [BufferId(5)];
+        arena.fill(BufferId(0), 3, 1.0);
+        let mut context = ProcessContext::new(&mut arena, &inputs, &outputs, 3);
+        let mut arena_state = PerModuleState::Sampler {
+            sample: Some(stereo_handle.clone()),
+            position: 0.0,
+            active: true,
+        };
+        process_sampler(&mut arena_state, &mut context, &[]);
+        assert_eq!(
+            [
+                arena.sample(BufferId(5), 0),
+                arena.sample(BufferId(5), 1),
+                arena.sample(BufferId(5), 2),
+            ],
+            expected
+        );
+
+        let mut ref_state = PerModuleState::Sampler {
+            sample: Some(stereo_handle),
+            position: 0.0,
+            active: true,
+        };
+        let ref_out = super::super::processing::process_sampler(
+            &mut ref_state,
+            &[],
+            &[1.0; 3],
+            &[0.0; 3],
+            &[0.0; 3],
+            &[0.0; 3],
+            &[0.0; 3],
+            3,
+        );
+        assert_eq!(ref_out.audio[crate::graph::builtin_ports::AUDIO], expected);
     }
 }
