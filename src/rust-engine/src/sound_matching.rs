@@ -139,12 +139,13 @@ where
     let region_end = region_start
         .checked_add(region_length)
         .ok_or_else(|| "sound matching region overflow".to_string())?;
-    if reference_audio.frames().len() < region_end {
+    let reference_frames = reference_audio.mono_mix();
+    if reference_frames.len() < region_end {
         return Err(format!(
             "reference WAV is shorter than the matching region ending at frame {region_end}"
         ));
     }
-    let reference_region = &reference_audio.frames()[region_start..region_end];
+    let reference_region = &reference_frames[region_start..region_end];
     let reference_energy = reference_region
         .iter()
         .map(|sample| f64::from(*sample).powi(2))

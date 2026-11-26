@@ -1207,9 +1207,8 @@ fn portable_selected_state_restores_owned_pcm_and_values_after_the_source_instan
         assert!(Instant::now() < deadline, "selected document publishes");
         std::thread::sleep(Duration::from_millis(2));
     }
-    // The file helper wrote literal stereo [-.75,-.25], averaged to -.5;
-    // physical gain2 gives -1 at MIDI60, where the packaged kit is silent.
-    assert_eq!(render(&mut source, 60), [-1., -1.]);
+    // The file helper wrote literal stereo [-.75, -.25]; physical gain 2 gives [-1.5, -0.5] at MIDI60.
+    assert_eq!(render(&mut source, 60), [-1.5, -0.5]);
     assert_eq!(render(&mut source, 36), [0., 0.]);
     let accepted = source.controller.session().owner_snapshot();
     assert_eq!((accepted.undo_len, accepted.redo_len), (1, 0));
@@ -1238,7 +1237,7 @@ fn portable_selected_state_restores_owned_pcm_and_values_after_the_source_instan
     assert_eq!(restored.yaml, accepted.yaml);
     assert_eq!((restored.undo_len, restored.redo_len), (0, 0));
     assert_eq!(render(&mut fresh, 36), [0., 0.]);
-    assert_eq!(render(&mut fresh, 60), [-1., -1.]);
+    assert_eq!(render(&mut fresh, 60), [-1.5, -0.5]);
     assert_eq!(fresh.controller.parameter_state().parameters, parameters);
     assert_eq!(
         fresh.state(),
@@ -1307,7 +1306,7 @@ fn portable_selected_state_restores_owned_pcm_and_values_after_the_source_instan
         assert!(Instant::now() < deadline);
         std::thread::sleep(Duration::from_millis(2));
     }
-    assert_eq!(render(&mut fresh, 60), [-1., -1.]);
+    assert_eq!(render(&mut fresh, 60), [-1.5, -0.5]);
     let accepted = fresh.controller.session().owner_snapshot();
     assert_eq!((accepted.undo_len, accepted.redo_len), (1, 0));
     let parameters = fresh.controller.parameter_state();
@@ -1440,7 +1439,7 @@ fn portable_selected_state_restores_owned_pcm_and_values_after_the_source_instan
     assert_eq!(fresh.controller.session().owner_snapshot(), accepted);
     assert_eq!(fresh.controller.parameter_state(), parameters);
     assert_eq!(fresh.state(), canonical);
-    assert_eq!(render(&mut fresh, 60), [-1., -1.]);
+    assert_eq!(render(&mut fresh, 60), [-1.5, -0.5]);
     assert_eq!(independent.state(), independent_state);
 
     // Admitted native work owns its publication. State backpressure must be
@@ -1569,8 +1568,8 @@ fn portable_mixed_state_owns_both_packaged_and_selected_pcm_after_source_loss() 
         assert!(Instant::now() < deadline, "selected document publishes");
         std::thread::sleep(Duration::from_millis(2));
     }
-    // Selected stereo[-.75,+.5] averages to-.125; physicalgain2 gives-.25.
-    assert_eq!(render(&mut source, 60), [-0.25, -0.25]);
+    // Selected stereo L=-0.75, R=+0.5; physical gain 2 gives [-1.5, 1.0].
+    assert_eq!(render(&mut source, 60), [-1.5, 1.0]);
     assert_eq!(render(&mut source, 36), [-1., -1.]);
     let accepted = source.controller.session().owner_snapshot();
     assert_eq!((accepted.undo_len, accepted.redo_len), (1, 0));
@@ -1622,7 +1621,7 @@ fn portable_mixed_state_owns_both_packaged_and_selected_pcm_after_source_loss() 
     assert_eq!(restored.yaml, accepted.yaml);
     assert_eq!((restored.undo_len, restored.redo_len), (0, 0));
     assert_eq!(render(&mut fresh, 61), [0., 0.]);
-    assert_eq!(render(&mut fresh, 60), [-0.25, -0.25]);
+    assert_eq!(render(&mut fresh, 60), [-1.5, 1.0]);
     assert_eq!(render(&mut fresh, 36), [-1., -1.]);
     assert_eq!(fresh.controller.parameter_state().parameters, parameters);
     assert_eq!(
@@ -1651,4 +1650,222 @@ fn portable_mixed_state_owns_both_packaged_and_selected_pcm_after_source_loss() 
         u64::from_le_bytes(saved[16..24].try_into().unwrap()) as usize,
         packaged.len() + WAV.len()
     );
+}
+
+#[test]
+fn native_trigger_selects_and_restores_stereo_pcm24_and_float32_without_source_files() {
+    use dandrum_engine::wav::{
+        write_wav_channels_f32, write_wav_channels_i16, write_wav_channels_i24,
+    };
+    use dandrum_trigger_host::runtime::{ControlEvent, TimedEvent};
+    use serde_json::json;
+
+    let render = |fixture: &mut Fixture, note| {
+        let audio = &mut fixture._audio;
+        std::thread::scope(|scope| {
+            scope
+                .spawn(move || {
+                    let (mut left, mut right) = ([123.0_f32; 16], [123.0_f32; 16]);
+                    let allocation = allocation_counter::measure(|| {
+                        audio
+                            .process_events(
+                                &mut left,
+                                &mut right,
+                                &[TimedEvent {
+                                    frame_offset: 0,
+                                    event: ControlEvent::NoteOn {
+                                        note,
+                                        velocity: 127,
+                                    },
+                                }],
+                            )
+                            .unwrap();
+                    });
+                    assert_eq!(allocation, allocation_counter::AllocationInfo::default());
+                    (left, right)
+                })
+                .join()
+                .unwrap()
+        })
+    };
+
+    let make_file = |name: &str, bytes: &[u8]| {
+        let mut fd = tempfile::tempfile().unwrap();
+        std::io::Write::write_all(&mut fd, bytes).unwrap();
+        NativeSampleFile::new(name.into(), fd).unwrap()
+    };
+
+    let mut pcm24_bytes = Vec::new();
+    write_wav_channels_i24(
+        &mut pcm24_bytes,
+        32_000,
+        &[&[-8_388_608, 4_194_304, 0, 0], &[8_388_607, -2_097_152, 0, 0]],
+    )
+    .unwrap();
+    let mut float32_bytes = Vec::new();
+    write_wav_channels_f32(
+        &mut float32_bytes,
+        48_000,
+        &[&[0.75, -1.25], &[-0.75, 1.25]],
+    )
+    .unwrap();
+
+    let mut source = Fixture::new();
+    let choose = source.request("chooseSamplerFiles", json!([]));
+    let (permit, _) = source.controller.begin_sample_selection(&choose).unwrap();
+    source
+        .controller
+        .admit_selected_files(
+            &permit,
+            vec![
+                make_file("stereo24.wav", &pcm24_bytes),
+                make_file("stereo32.wav", &float32_bytes),
+            ],
+        )
+        .unwrap();
+    let deadline = Instant::now() + Duration::from_secs(5);
+    let selected = loop {
+        source.controller.service_session_jobs().unwrap();
+        let status = source.status("1");
+        if status["phase"] == "ready" {
+            break status;
+        }
+        assert_eq!(status["phase"], "preparing");
+        assert!(Instant::now() < deadline);
+        std::thread::sleep(Duration::from_millis(2));
+    };
+    let files = selected["files"].as_array().unwrap();
+    assert_eq!(files.len(), 2);
+    assert_eq!(files[0]["sampleRateHz"], 32_000);
+    assert_eq!(files[0]["channelCount"], 2);
+    assert_eq!(files[0]["frameCount"], 4);
+    assert_eq!(files[1]["sampleRateHz"], 48_000);
+    assert_eq!(files[1]["channelCount"], 2);
+    assert_eq!(files[1]["frameCount"], 2);
+    let res24 = files[0]["resourceId"].as_str().unwrap().to_owned();
+    let res32 = files[1]["resourceId"].as_str().unwrap().to_owned();
+
+    let mut graph: serde_yaml::Value =
+        serde_yaml::from_str(&source.controller.session().owner_snapshot().yaml).unwrap();
+    let sources = graph["assets"]["sample_sources"].as_sequence_mut().unwrap();
+    sources.push(
+        serde_yaml::to_value(json!({
+            "id": "sel24", "path": res24,
+            "regions": [{"id": "hit", "start_frame": 0, "end_frame": 4}]
+        }))
+        .unwrap(),
+    );
+    sources.push(
+        serde_yaml::to_value(json!({
+            "id": "sel32", "path": res32,
+            "regions": [{"id": "hit", "start_frame": 0, "end_frame": 2}]
+        }))
+        .unwrap(),
+    );
+    let zones = graph["assets"]["sample_maps"][0]["zones"]
+        .as_sequence_mut()
+        .unwrap();
+    zones.push(
+        serde_yaml::to_value(json!({
+            "id": "hit24", "region": "sel24.hit",
+            "key_range": [60, 60], "velocity_range": [1, 127], "control_group": 1
+        }))
+        .unwrap(),
+    );
+    zones.push(
+        serde_yaml::to_value(json!({
+            "id": "hit32", "region": "sel32.hit",
+            "key_range": [62, 62], "velocity_range": [1, 127], "control_group": 1
+        }))
+        .unwrap(),
+    );
+    let document = serde_yaml::to_string(&graph).unwrap();
+    let negotiate = source.request("negotiateEditorProtocol", json!([2]));
+    source
+        .controller
+        .negotiate_editor_protocol(&negotiate)
+        .unwrap();
+    let frame = json!({
+        "version": 2, "attachmentId": source.connection.attachment_id,
+        "requestId": source.next_request.to_string(),
+        "method": "prepareInstrumentSessionPatch",
+        "args": ["113", source.connection.attachment_id, "41", "0", document]
+    })
+    .to_string();
+    source.next_request += 1;
+    let Admission::New(request) = source.controller.admit(&frame).unwrap() else {
+        panic!("new native selected document");
+    };
+    source.controller.admit_session_command(&request).unwrap();
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while source.controller.session().owner_snapshot().revision != 1 {
+        source.controller.service_session_jobs().unwrap();
+        assert!(Instant::now() < deadline, "selected document publishes");
+        std::thread::sleep(Duration::from_millis(2));
+    }
+
+    let generation = source.controller.parameter_state().generation;
+    let set_level = source.request("setParameter", json!(["drums.level", 0.5, generation]));
+    source.controller.apply(&set_level).unwrap();
+    let set_pan = source.request("setParameter", json!(["drums.pan", 0.25, generation]));
+    source.controller.apply(&set_pan).unwrap();
+
+    // At drums.level = 2.0 and drums.pan = -0.5, right channel scales by 0.5 while left stays unity.
+    let (l24, r24) = render(&mut source, 60);
+    assert_eq!((l24[0], r24[0]), (-2.0, 8_388_607.0 / 8_388_608.0));
+    let src_pos = 32_000.0_f64 / 48_000.0;
+    let expected_l24_1 = ((-1.0 + src_pos * 1.5) as f32) * 2.0;
+    let r24_0 = 8_388_607.0_f64 / 8_388_608.0;
+    let expected_r24_1 = ((r24_0 + src_pos * (-0.25 - r24_0)) as f32) * 2.0 * 0.5;
+    assert!((l24[1] - expected_l24_1).abs() < 1.0e-6);
+    assert!((r24[1] - expected_r24_1).abs() < 1.0e-6);
+
+    let (l32, r32) = render(&mut source, 62);
+    assert_eq!((l32[0], r32[0]), (1.5, -0.75));
+    assert_eq!((l32[1], r32[1]), (-2.5, 1.25));
+
+    // Failed imports (non-finite float32 and 3ch surround) preserve the playable instrument and audio.
+    let mut nan_wav = Vec::new();
+    write_wav_channels_f32(&mut nan_wav, 48_000, &[&[f32::NAN]]).unwrap();
+    let mut surround_wav = Vec::new();
+    write_wav_channels_i16(&mut surround_wav, 48_000, &[&[0.1], &[0.2], &[0.3]]).unwrap();
+    for (index, bad_bytes) in [("2", nan_wav), ("3", surround_wav)] {
+        let choose = source.request("chooseSamplerFiles", json!([]));
+        let (permit, _) = source.controller.begin_sample_selection(&choose).unwrap();
+        source
+            .controller
+            .admit_selected_files(&permit, vec![make_file("bad.wav", &bad_bytes)])
+            .unwrap();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
+            source.controller.service_session_jobs().unwrap();
+            let status = source.status(index);
+            if status["phase"] == "failed" {
+                assert_eq!(status["error"], "invalidSample");
+                break;
+            }
+            assert_eq!(status["phase"], "preparing");
+            assert!(Instant::now() < deadline);
+            std::thread::sleep(Duration::from_millis(2));
+        }
+    }
+    assert_eq!(render(&mut source, 62).0[0], 1.5);
+
+    let accepted = source.controller.session().owner_snapshot();
+    let parameters = source.controller.parameter_state().parameters;
+    let saved = source.state();
+    drop(source);
+
+    let mut fresh = Fixture::with_worker(false);
+    std::fs::remove_file(fresh._root.path().join(ADVANCED_DRUM_KIT_SAMPLE)).unwrap();
+    fresh.controller.load_state(&mut saved.as_slice()).unwrap();
+    assert_eq!(fresh.controller.session().owner_snapshot().yaml, accepted.yaml);
+    assert_eq!(fresh.controller.parameter_state().parameters, parameters);
+    let (fl24, fr24) = render(&mut fresh, 60);
+    assert_eq!((fl24[0], fr24[0]), (-2.0, 8_388_607.0 / 8_388_608.0));
+    assert!((fl24[1] - expected_l24_1).abs() < 1.0e-6);
+    assert!((fr24[1] - expected_r24_1).abs() < 1.0e-6);
+    let (fl32, fr32) = render(&mut fresh, 62);
+    assert_eq!((fl32[0], fr32[0]), (1.5, -0.75));
+    assert_eq!((fl32[1], fr32[1]), (-2.5, 1.25));
 }

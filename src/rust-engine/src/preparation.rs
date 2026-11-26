@@ -1007,7 +1007,7 @@ fn prepare_sample_assets(
                     ),
                 )
             })?;
-        let frame_count = resource.sample().frames().len() as u64;
+        let frame_count = resource.sample().frame_count() as u64;
         let frames_per_ms = resource.sample().sample_rate_hz() as f64 / 1000.0;
         for region in &declaration.regions {
             if region.end_frame > frame_count {

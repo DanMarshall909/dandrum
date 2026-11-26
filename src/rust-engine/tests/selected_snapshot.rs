@@ -55,7 +55,19 @@ fn owned_snapshot_metadata_and_channels_come_from_the_retained_bytes() {
     assert_eq!(snapshot.sample().source_sample(1, 0), Some(0.5));
     assert_eq!(snapshot.sample().source_sample(0, 3), Some(0.5));
     assert_eq!(snapshot.sample().source_sample(1, 3), Some(-0.75));
-    assert_eq!(snapshot.sample().frames(), &[-0.125, 0.0, -0.1875, -0.125]);
+    assert_eq!(snapshot.sample().frames(), &[-0.75, 0.25, -0.5, 0.5]);
+    assert_eq!(
+        snapshot.sample().channel_frames(0),
+        Some(&[-0.75, 0.25, -0.5, 0.5][..])
+    );
+    assert_eq!(
+        snapshot.sample().channel_frames(1),
+        Some(&[0.5, -0.25, 0.125, -0.75][..])
+    );
+    assert_eq!(
+        snapshot.sample().mono_mix().as_ref(),
+        &[-0.125, 0.0, -0.1875, -0.125]
+    );
 }
 
 #[test]

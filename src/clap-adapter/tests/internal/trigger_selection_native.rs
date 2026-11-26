@@ -117,7 +117,7 @@ fn installed_react_accepts_physical_sample_selection_and_retains_native_history(
         assert_eq!(imported["connection"]["history"], serde_json::json!({"undoCount":1,"redoCount":0}));
         assert_ne!(imported["connection"]["revision"], initial["connection"]["revision"]);
         selected.close().unwrap(); // This test owns the temporary source directory.
-        assert_mapping_audio(&mut plugin, &[(48, [-0.125, -0.125]), (36, [-0.5, -0.5])]);
+        assert_mapping_audio(&mut plugin, &[(48, [-0.75, 0.5]), (36, [-0.5, -0.5])]);
 
         let gui = plugin.plugin_handle().get_extension::<PluginGui>().unwrap();
         gui.destroy(&plugin.plugin_handle());
@@ -143,7 +143,7 @@ fn installed_react_accepts_physical_sample_selection_and_retains_native_history(
                 assert!(Instant::now() < deadline, "physical {action} timed out");
                 std::thread::sleep(Duration::from_millis(50));
             }
-            assert_mapping_audio(&mut plugin, &[(48, if selected_audio { [-0.125, -0.125] } else { [0.0, 0.0] }), (36, [-0.5, -0.5])]);
+            assert_mapping_audio(&mut plugin, &[(48, if selected_audio { [-0.75, 0.5] } else { [0.0, 0.0] }), (36, [-0.5, -0.5])]);
         }
         assert_eq!(saved_state(&mut independent), independent_state);
         assert_packaged_audio(&mut independent);
@@ -560,7 +560,7 @@ fn assert_import_audio(plugin: &mut PluginInstance<GuiHost>, selected: bool) {
     assert_mapping_audio(
         plugin,
         &[
-            (48, if selected { [-0.25, -0.25] } else { [0.0, 0.0] }),
+            (48, if selected { [-1.5, 1.0] } else { [0.0, 0.0] }),
             (36, [-1.0, -1.0]),
             (60, [0.0, 0.0]),
         ],
@@ -571,7 +571,7 @@ fn assert_mapping_audio(plugin: &mut PluginInstance<GuiHost>, cases: &[(u8, [f32
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         // Apply queued gain before reset deliberately cancels unconsumed activity.
         let _ = render_audio(&mut audio, &EventBuffer::new(), &mut Recorder::new(64));
-        // Existing stereo playback mix: (-0.75 + 0.5) / 2, times physical gain2.
+        // Stereo playback preserves channels [-0.75, 0.5] times physical gain 2.
         for &(key, expected) in cases {
             std::thread::scope(|scope| scope.spawn(|| audio.reset()).join().unwrap());
             let mut events = EventBuffer::new();
@@ -654,7 +654,7 @@ fn copied_react_empty_retains_controls_and_imports_after_recreation() {
             std::thread::sleep(Duration::from_millis(5));
         }
         std::fs::remove_file(&path).unwrap();
-        assert_mapping_audio(&mut plugin, &[(48,[-0.25,-0.25]),(36,[0.0,0.0]),(60,[0.0,0.0])]);
+        assert_mapping_audio(&mut plugin, &[(48,[-1.5,1.0]),(36,[0.0,0.0]),(60,[0.0,0.0])]);
         for (action,revision,selected,undo,redo) in [("Undo","3",false,1,1),("Redo","4",true,2,0)] {
             let selector=serde_json::to_string(&format!("header button[aria-label^=\"{action} \"]:not(:disabled)")).unwrap();
             wait_dom(&mut plugin,&browser,&format!("document.querySelector({selector})"));
@@ -669,7 +669,7 @@ fn copied_react_empty_retains_controls_and_imports_after_recreation() {
                 }
                 assert!(Instant::now()<deadline,"Empty/import history completes once");std::thread::sleep(Duration::from_millis(5));
             }
-            assert_mapping_audio(&mut plugin,&[(48,if selected {[-0.25,-0.25]} else {[0.0,0.0]}),(36,[0.0,0.0]),(60,[0.0,0.0])]);
+            assert_mapping_audio(&mut plugin,&[(48,if selected {[-1.5,1.0]} else {[0.0,0.0]}),(36,[0.0,0.0]),(60,[0.0,0.0])]);
         }
         assert_eq!(saved_state(&mut independent),independent_state);assert_packaged_audio(&mut independent);
         gui.destroy(&plugin.plugin_handle());drop(browser);assert!(parent.children().is_empty());

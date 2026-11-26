@@ -12,7 +12,7 @@ pub struct LoadedSample {
     sample_rate_hz: u32,
     source_channel_count: u16,
     frames: Vec<f32>,
-    source_pcm: Option<Vec<i16>>,
+    right_frames: Option<Vec<f32>>,
     content_revision: [u8; 32],
     // Every shared prepared/FFI sample also pins its encoded ownership charge.
     pub(crate) encoded_snapshot: Option<std::sync::Arc<[u8]>>,
@@ -110,12 +110,21 @@ impl LoadedSample {
         ))
     }
 
+    #[cfg(test)]
+    pub fn new_stereo(sample_rate_hz: u32, left: Vec<f32>, right: Vec<f32>) -> Self {
+        Self::from_loaded_audio(crate::audio_loading::LoadedAudio::new_stereo(
+            sample_rate_hz,
+            left,
+            right,
+        ))
+    }
+
     pub(crate) fn from_loaded_audio(audio: crate::audio_loading::LoadedAudio) -> Self {
         Self {
             sample_rate_hz: audio.sample_rate_hz,
             source_channel_count: audio.source_channel_count,
             frames: audio.frames,
-            source_pcm: audio.source_pcm,
+            right_frames: audio.right_frames,
             content_revision: audio.content_revision,
             encoded_snapshot: None,
         }
@@ -128,9 +137,9 @@ impl LoadedSample {
     pub(crate) fn decoded_capacity_bytes(&self) -> usize {
         self.frames.capacity() * std::mem::size_of::<f32>()
             + self
-                .source_pcm
+                .right_frames
                 .as_ref()
-                .map_or(0, |pcm| pcm.capacity() * std::mem::size_of::<i16>())
+                .map_or(0, |right| right.capacity() * std::mem::size_of::<f32>())
     }
 
     pub fn source_channel_count(&self) -> u16 {
@@ -145,11 +154,23 @@ impl LoadedSample {
         &self.frames
     }
 
+    pub fn channel_frames(&self, channel: u16) -> Option<&[f32]> {
+        match channel {
+            0 => Some(&self.frames),
+            1 => self.right_frames.as_deref(),
+            _ => None,
+        }
+    }
+
+    pub fn mono_mix(&self) -> std::borrow::Cow<'_, [f32]> {
+        crate::audio_loading::mono_mix_slices(&self.frames, self.right_frames.as_deref())
+    }
+
     pub fn source_sample(&self, channel: u16, frame: usize) -> Option<f32> {
         crate::audio_loading::source_sample(
             &self.frames,
             self.source_channel_count,
-            self.source_pcm.as_deref(),
+            self.right_frames.as_deref(),
             channel,
             frame,
         )
@@ -290,6 +311,46 @@ mod tests {
             )
             .is_none()
         );
+    }
+
+    #[test]
+    fn waveform_reduction_and_decoded_capacity_preserve_stereo_pcm24_and_float32() {
+        let mut i24_bytes = Vec::new();
+        crate::wav::write_wav_channels_i24(
+            &mut i24_bytes,
+            48_000,
+            &[&[-8_388_608, 1], &[4_194_304, -2_097_152]],
+        )
+        .unwrap();
+        let i24_sample = LoadedSample::from_loaded_audio(
+            crate::audio_loading::decode_pcm_wav(&i24_bytes, 48_000).unwrap(),
+        );
+        assert_eq!(i24_sample.decoded_capacity_bytes(), 16);
+        let left_buckets = i24_sample.reduce_waveform(0, 0, 2, 1).unwrap();
+        assert_eq!((left_buckets[0].minimum, left_buckets[0].maximum), (-1.0, 1.0 / 8_388_608.0));
+        let right_buckets = i24_sample.reduce_waveform(1, 0, 2, 1).unwrap();
+        assert_eq!((right_buckets[0].minimum, right_buckets[0].maximum), (-0.25, 0.5));
+
+        let mut f32_bytes = Vec::new();
+        crate::wav::write_wav_channels_f32(&mut f32_bytes, 48_000, &[&[-1.5, 0.5], &[0.25, 1.25]])
+            .unwrap();
+        let f32_sample = LoadedSample::from_loaded_audio(
+            crate::audio_loading::decode_pcm_wav(&f32_bytes, 48_000).unwrap(),
+        );
+        assert_eq!(f32_sample.decoded_capacity_bytes(), 16);
+        let left_f32 = f32_sample.reduce_waveform(0, 0, 2, 1).unwrap();
+        assert_eq!((left_f32[0].minimum, left_f32[0].maximum), (-1.5, 0.5));
+        let right_f32 = f32_sample.reduce_waveform(1, 0, 2, 1).unwrap();
+        assert_eq!((right_f32[0].minimum, right_f32[0].maximum), (0.25, 1.25));
+        assert_eq!(f32_sample.channel_frames(0), Some(&[-1.5, 0.5][..]));
+        assert_eq!(f32_sample.channel_frames(1), Some(&[0.25, 1.25][..]));
+        assert_eq!(f32_sample.channel_frames(2), None);
+        assert_eq!(f32_sample.mono_mix().as_ref(), &[-0.625, 0.875]);
+
+        let constructed = LoadedSample::new_stereo(48_000, vec![0.25, -0.5], vec![-0.25, 0.5]);
+        assert_eq!(constructed.source_channel_count(), 2);
+        assert_eq!(constructed.decoded_capacity_bytes(), 16);
+        assert_eq!(constructed.channel_frames(1), Some(&[-0.25, 0.5][..]));
     }
 
     #[test]

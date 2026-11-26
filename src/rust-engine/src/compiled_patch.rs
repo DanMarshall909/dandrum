@@ -388,6 +388,10 @@ impl SampleResourceHandle {
         self.0.frames()
     }
 
+    pub fn channel_frames(&self, channel: u16) -> Option<&[f32]> {
+        self.0.channel_frames(channel)
+    }
+
     pub fn sample_rate_hz(&self) -> u32 {
         self.0.sample_rate_hz()
     }

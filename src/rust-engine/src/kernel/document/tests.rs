@@ -1528,7 +1528,9 @@ fn prepared_drum_source_keeps_decoded_frames_regions_and_map_metadata() {
     assert_eq!(source.sample().source_channel_count(), 2);
     assert_eq!(source.sample().frame_count(), 96_000);
     assert_eq!(source.sample().frames().len(), 96_000);
-    assert!((source.sample().frames()[0] - 0.25).abs() < 0.0001);
+    assert!((source.sample().frames()[0] - 0.5).abs() < 0.0001);
+    assert_eq!(source.sample().channel_frames(1).unwrap()[0], 0.0);
+    assert!((source.sample().mono_mix()[0] - 0.25).abs() < 0.0001);
     assert!((source.sample().source_sample(0, 0).unwrap() - 0.5).abs() < 0.0001);
     assert_eq!(source.sample().source_sample(1, 0), Some(0.0));
     assert_eq!(source.declaration().regions[0].id, "full");
@@ -6487,4 +6489,515 @@ fn external_schema_checks_poly_static_argument_types() {
         error_codes::KERNEL_DOCUMENT_SCHEMA_FAILED,
     );
     assert!(error.to_string().contains("/modules/1/static/max_voices"));
+}
+
+#[test]
+fn sample_map_player_preserves_stereo_topologies_and_common_wav_formats() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let i16_pos = |value: f32| ((value * 32767.0) as i16) as f32 / 32768.0;
+
+    let mut mono_bytes = Vec::new();
+    crate::wav::write_wav_channels_i16(&mut mono_bytes, 48_000, &[&[-0.5, 0.25]]).unwrap();
+    fs::write(directory.path().join("mono16.wav"), mono_bytes).unwrap();
+
+    let mut left_only_bytes = Vec::new();
+    crate::wav::write_wav_stereo_i16(&mut left_only_bytes, 48_000, &[-0.75, 0.25], &[0.0, 0.0])
+        .unwrap();
+    fs::write(directory.path().join("left16.wav"), left_only_bytes).unwrap();
+
+    let mut right_only_bytes = Vec::new();
+    crate::wav::write_wav_stereo_i16(&mut right_only_bytes, 48_000, &[0.0, 0.0], &[0.5, -0.25])
+        .unwrap();
+    fs::write(directory.path().join("right16.wav"), right_only_bytes).unwrap();
+
+    let mut unequal_i24 = Vec::new();
+    crate::wav::write_wav_channels_i24(
+        &mut unequal_i24,
+        48_000,
+        &[&[-8_388_608, 4_194_304], &[8_388_607, -2_097_152]],
+    )
+    .unwrap();
+    fs::write(directory.path().join("unequal24.wav"), unequal_i24).unwrap();
+
+    let mut antiphase_f32 = Vec::new();
+    crate::wav::write_wav_channels_f32(&mut antiphase_f32, 48_000, &[&[0.75, -1.25], &[-0.75, 1.25]])
+        .unwrap();
+    fs::write(directory.path().join("antiphase32.wav"), antiphase_f32).unwrap();
+
+    let mut src_f32 = Vec::new();
+    crate::wav::write_wav_channels_f32(&mut src_f32, 24_000, &[&[0.0, 1.0, 0.0], &[0.0, -0.5, 0.0]])
+        .unwrap();
+    fs::write(directory.path().join("src32.wav"), src_f32).unwrap();
+
+    // WAVE_FORMAT_EXTENSIBLE stereo PCM24 and float32 fixtures.
+    let mut ext_i24 = Vec::new();
+    {
+        let payload = [0x00, 0x00, 0x80, 0xff, 0xff, 0x7f, 0x00, 0x00, 0x40, 0x00, 0x00, 0xe0];
+        let fmt_size = 40_u32;
+        let riff_size = 4 + 8 + fmt_size + 8 + payload.len() as u32;
+        ext_i24.extend_from_slice(b"RIFF");
+        ext_i24.extend_from_slice(&riff_size.to_le_bytes());
+        ext_i24.extend_from_slice(b"WAVEfmt ");
+        ext_i24.extend_from_slice(&fmt_size.to_le_bytes());
+        ext_i24.extend_from_slice(&0xFFFE_u16.to_le_bytes());
+        ext_i24.extend_from_slice(&2_u16.to_le_bytes());
+        ext_i24.extend_from_slice(&48_000_u32.to_le_bytes());
+        ext_i24.extend_from_slice(&(48_000_u32 * 6).to_le_bytes());
+        ext_i24.extend_from_slice(&6_u16.to_le_bytes());
+        ext_i24.extend_from_slice(&24_u16.to_le_bytes());
+        ext_i24.extend_from_slice(&22_u16.to_le_bytes());
+        ext_i24.extend_from_slice(&24_u16.to_le_bytes());
+        ext_i24.extend_from_slice(&0_u32.to_le_bytes());
+        ext_i24.extend_from_slice(&[
+            0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38,
+            0x9b, 0x71,
+        ]);
+        ext_i24.extend_from_slice(b"data");
+        ext_i24.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+        ext_i24.extend_from_slice(&payload);
+    }
+    fs::write(directory.path().join("ext24.wav"), ext_i24).unwrap();
+
+    let yaml = r#"
+metadata: { name: stereo_formats }
+assets:
+  sample_sources:
+    - { id: mono16, path: mono16.wav, regions: [{ id: hit, start_frame: 0, end_frame: 2 }] }
+    - { id: left16, path: left16.wav, regions: [{ id: hit, start_frame: 0, end_frame: 2 }] }
+    - { id: right16, path: right16.wav, regions: [{ id: hit, start_frame: 0, end_frame: 2 }] }
+    - { id: unequal24, path: unequal24.wav, regions: [{ id: hit, start_frame: 0, end_frame: 2 }] }
+    - { id: antiphase32, path: antiphase32.wav, regions: [{ id: hit, start_frame: 0, end_frame: 2 }] }
+    - { id: src32, path: src32.wav, regions: [{ id: hit, start_frame: 0, end_frame: 3 }] }
+    - { id: ext24, path: ext24.wav, regions: [{ id: hit, start_frame: 0, end_frame: 2 }] }
+  sample_maps:
+    - id: kit
+      zones:
+        - { id: z_mono, region: mono16.hit, key_range: [36, 36], velocity_range: [1, 127] }
+        - { id: z_left, region: left16.hit, key_range: [37, 37], velocity_range: [1, 127] }
+        - { id: z_right, region: right16.hit, key_range: [38, 38], velocity_range: [1, 127] }
+        - { id: z_unequal24, region: unequal24.hit, key_range: [39, 39], velocity_range: [1, 127] }
+        - { id: z_antiphase32, region: antiphase32.hit, key_range: [40, 40], velocity_range: [1, 127] }
+        - { id: z_src32, region: src32.hit, key_range: [41, 41], velocity_range: [1, 127] }
+        - { id: z_ext24, region: ext24.hit, key_range: [42, 42], velocity_range: [1, 127] }
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 2, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 1, channels: 2 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("stereo format patch loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 8,
+        duration_frames: 8,
+    };
+    let prepared = prepare_kernel_patch_with_context(
+        &patch,
+        &settings,
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .expect("stereo format patch prepares");
+
+    let render_note = |note: u8| {
+        let rendered = render_kernel_offline_named(
+            &prepared,
+            vec![TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note,
+                    velocity: 100,
+                },
+            )],
+            &PreparedSamplerAssets::empty(),
+        )
+        .expect("render succeeds");
+        (rendered[0].1[0].clone(), rendered[0].1[1].clone())
+    };
+
+    let (l, r) = render_note(36);
+    assert_eq!(&l[..3], &[-0.5, i16_pos(0.25), 0.0]);
+    assert_eq!(l, r);
+
+    let (l, r) = render_note(37);
+    assert_eq!(&l[..3], &[-0.75, i16_pos(0.25), 0.0]);
+    assert_eq!(r, vec![0.0; 8]);
+
+    let (l, r) = render_note(38);
+    assert_eq!(l, vec![0.0; 8]);
+    assert_eq!(&r[..3], &[i16_pos(0.5), -0.25, 0.0]);
+
+    let (l, r) = render_note(39);
+    assert_eq!(&l[..3], &[-1.0, 0.5, 0.0]);
+    assert_eq!(&r[..3], &[8_388_607.0 / 8_388_608.0, -0.25, 0.0]);
+
+    let (l, r) = render_note(40);
+    assert_eq!(&l[..3], &[0.75, -1.25, 0.0]);
+    assert_eq!(&r[..3], &[-0.75, 1.25, 0.0]);
+
+    let (l, r) = render_note(41);
+    assert_eq!(&l[..7], &[0.0, 0.5, 1.0, 0.5, 0.0, 0.0, 0.0]);
+    assert_eq!(&r[..7], &[0.0, -0.25, -0.5, -0.25, 0.0, 0.0, 0.0]);
+
+    let (l, r) = render_note(42);
+    assert_eq!(&l[..3], &[-1.0, 0.5, 0.0]);
+    assert_eq!(&r[..3], &[8_388_607.0 / 8_388_608.0, -0.25, 0.0]);
+}
+
+#[test]
+fn sample_map_player_applies_trim_fades_reverse_tuning_gain_and_linear_balance_pan_across_stereo_channels() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let mut source = Vec::new();
+    crate::wav::write_wav_channels_f32(
+        &mut source,
+        48_000,
+        &[
+            &[0.25, -0.5, 1.0, 0.5, -0.25, 0.75, -1.0, 0.125],
+            &[-0.25, 0.25, -0.5, 1.0, 0.5, -0.75, 0.5, -0.125],
+        ],
+    )
+    .unwrap();
+    fs::write(directory.path().join("stereo.wav"), source).unwrap();
+
+    let mut mono = Vec::new();
+    crate::wav::write_wav_channels_f32(&mut mono, 48_000, &[&[0.625, -0.25]]).unwrap();
+    fs::write(directory.path().join("mono.wav"), mono).unwrap();
+
+    let yaml = r#"
+metadata: { name: stereo_shaping }
+assets:
+  sample_sources:
+    - id: stereo
+      path: stereo.wav
+      regions:
+        - { id: body, start_frame: 1, end_frame: 6 }
+        - { id: shaped, start_frame: 1, end_frame: 6, reverse: true, fade_in_ms: 0.0625, fade_out_ms: 0.0, gain_db: -6.020599913279624, root_note: 60 }
+        - { id: raw, start_frame: 2, end_frame: 4, pan: 0.25 }
+        - { id: anti, start_frame: 5, end_frame: 6, pan: 0.25 }
+        - { id: fade_out, start_frame: 2, end_frame: 6, fade_out_ms: 0.0625 }
+    - id: mono
+      path: mono.wav
+      regions:
+        - { id: body, start_frame: 0, end_frame: 2 }
+  sample_maps:
+    - id: kit
+      zones:
+        - { id: z_shaped, region: stereo.shaped, region_override: { start_frame: 2, end_frame: 6 }, key_range: [60, 60], velocity_range: [1, 127], pitch_semitones: 12 }
+        - { id: z_pan, region: stereo.raw, key_range: [38, 38], velocity_range: [1, 127], pan: -0.25, control_group: 1 }
+        - { id: z_offset, region: stereo.body, key_range: [40, 40], velocity_range: [1, 127], gain_db: -6.020599913279624 }
+        - { id: z_anti, region: stereo.anti, key_range: [42, 42], velocity_range: [1, 127], pan: -0.25, control_group: 1 }
+        - { id: z_fade_out, region: stereo.fade_out, key_range: [44, 44], velocity_range: [1, 127] }
+ports:
+  - { name: level, direction: input, signal: control, channels: 1, default: 1, min: 0, max: 4, maps_to: player.level }
+  - { name: pan, direction: input, signal: control, channels: 1, default: 0, min: -1, max: 1, maps_to: player.pan }
+  - { name: start_offset, direction: input, signal: control, channels: 1, default: 0, min: 0, max: 1, maps_to: player.start_offset }
+  - { name: pitch_ratio, direction: input, signal: control, channels: 1, default: 1, min: 0.125, max: 8, maps_to: player.pitch_ratio }
+  - { name: group_pan, direction: input, signal: control, channels: 1, default: 0, min: -1, max: 1, maps_to: player.group_1_pan }
+  - { name: audio_out, direction: output, signal: audio, channels: 2, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 1, channels: 2 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("shaping patch loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 4,
+        duration_frames: 4,
+    };
+    let prepared = crate::preparation::prepare_kernel_patch_for_planar_host_with_context(
+        &patch,
+        &settings,
+        &crate::preparation::HostBuses::new()
+            .with_input("level", 1)
+            .with_input("pan", 1)
+            .with_input("start_offset", 1)
+            .with_input("pitch_ratio", 1)
+            .with_input("group_pan", 1)
+            .with_output("audio_out", 2),
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .expect("shaping patch prepares");
+
+    let mut runtime = crate::graph_processor::RealtimeGraphProcessor::from_compiled_patch(
+        prepared.compiled_patch().clone(),
+        48_000.0,
+        &PreparedSamplerAssets::empty(),
+        4,
+    );
+    let make_inputs = |level: f32, pan: f32, start_offset: f32, pitch_ratio: f32, group_pan: f32| {
+        vec![
+            vec![vec![level; 4]],
+            vec![vec![pan; 4]],
+            vec![vec![start_offset; 4]],
+            vec![vec![pitch_ratio; 4]],
+            vec![vec![group_pan; 4]],
+        ]
+    };
+    let mut outputs = vec![vec![vec![0.0_f32; 4]; 2]];
+
+    // 1) Reverse + region_override [2..6] + 3-frame fade_in + -6 dB gain + +12 st pitch:
+    // frame 0 hits index 5 (fade 0.0); frame 1 hits index 3 (fade 1.0 -> 0.5*[0.5, 1.0]); frame 2 stops.
+    runtime.note_on(60, 100);
+    assert_eq!(
+        runtime.render_root_buses(&make_inputs(1.0, 0.0, 0.0, 1.0, 0.0), &mut outputs),
+        4
+    );
+    assert_eq!(outputs[0][0][0], 0.0);
+    assert_eq!(outputs[0][1][0], 0.0);
+    assert!(
+        (outputs[0][0][1] - 0.25).abs() < 1.0e-6,
+        "got left={:?}",
+        outputs[0][0]
+    );
+    assert!(
+        (outputs[0][1][1] - 0.5).abs() < 1.0e-6,
+        "got right={:?}",
+        outputs[0][1]
+    );
+    assert_eq!(&outputs[0][0][2..], &[0.0, 0.0]);
+    assert_eq!(&outputs[0][1][2..], &[0.0, 0.0]);
+
+    // 2) Live start_offset (0.5 -> frame 3 on [1..6]), pitch_ratio (2.0 -> frames 3, 5), level (0.5), zone gain (-6 dB):
+    runtime.reset();
+    outputs[0][0].fill(0.0);
+    outputs[0][1].fill(0.0);
+    runtime.note_on(40, 100);
+    assert_eq!(
+        runtime.render_root_buses(&make_inputs(0.5, 0.0, 0.5, 2.0, 0.0), &mut outputs),
+        4
+    );
+    // Total gain = 0.5 * 0.5 = 0.25; frames 3 [0.5, 1.0] and 5 [0.75, -0.75].
+    assert!((outputs[0][0][0] - 0.125).abs() < 1.0e-6);
+    assert!((outputs[0][1][0] - 0.25).abs() < 1.0e-6);
+    assert!((outputs[0][0][1] - 0.1875).abs() < 1.0e-6);
+    assert!((outputs[0][1][1] + 0.1875).abs() < 1.0e-6);
+    assert_eq!(&outputs[0][0][2..], &[0.0, 0.0]);
+
+    // 3) Linear stereo balance pan across [-1.0, -0.5, 0.0, 0.5, 1.0] (region.pan 0.25 + zone.pan -0.25 = 0.0 base)
+    // and antiphase stereo [0.75, -0.75] (proving zero cross-feed cancellation at any pan):
+    for (live_pan, group_pan, expected_l, expected_r, expected_anti_l, expected_anti_r) in [
+        (-1.0_f32, 0.0_f32, 1.0_f32, 0.0_f32, 0.75_f32, 0.0_f32), // total pan = -1.0 -> [L, 0]
+        (-0.25, -0.25, 1.0, -0.25, 0.75, -0.375),                 // total pan = -0.5 -> [L, 0.5*R]
+        (0.0, 0.0, 1.0, -0.5, 0.75, -0.75),                       // total pan =  0.0 -> [L, R]
+        (0.25, 0.25, 0.5, -0.5, 0.375, -0.75),                    // total pan = +0.5 -> [0.5*L, R]
+        (0.5, 0.5, 0.0, -0.5, 0.0, -0.75),                        // total pan = +1.0 -> [0, R]
+    ] {
+        runtime.reset();
+        outputs[0][0].fill(0.0);
+        outputs[0][1].fill(0.0);
+        runtime.note_on(38, 100);
+        assert_eq!(
+            runtime.render_root_buses(
+                &make_inputs(1.0, live_pan, 0.0, 1.0, group_pan),
+                &mut outputs,
+            ),
+            4
+        );
+        assert!(
+            (outputs[0][0][0] - expected_l).abs() < 1.0e-6,
+            "pan=({live_pan},{group_pan}) left"
+        );
+        assert!(
+            (outputs[0][1][0] - expected_r).abs() < 1.0e-6,
+            "pan=({live_pan},{group_pan}) right"
+        );
+
+        runtime.reset();
+        outputs[0][0].fill(0.0);
+        outputs[0][1].fill(0.0);
+        runtime.note_on(42, 100);
+        assert_eq!(
+            runtime.render_root_buses(
+                &make_inputs(1.0, live_pan, 0.0, 1.0, group_pan),
+                &mut outputs,
+            ),
+            4
+        );
+        // Frame 5 of stereo.anti is antiphase [0.75, -0.75] with base pan -0.5 and control_group 1.
+        assert!(
+            (outputs[0][0][0] - expected_anti_l).abs() < 1.0e-6,
+            "antiphase pan=({live_pan},{group_pan}) left"
+        );
+        assert!(
+            (outputs[0][1][0] - expected_anti_r).abs() < 1.0e-6,
+            "antiphase pan=({live_pan},{group_pan}) right"
+        );
+    }
+
+    // 3b) Non-zero fade_out_ms attenuates both stereo channels equally across trailing boundary:
+    runtime.reset();
+    outputs[0][0].fill(0.0);
+    outputs[0][1].fill(0.0);
+    runtime.note_on(44, 100);
+    assert_eq!(
+        runtime.render_root_buses(&make_inputs(1.0, 0.0, 0.0, 1.0, 0.0), &mut outputs),
+        4
+    );
+    assert_eq!(outputs[0][0], vec![1.0, 0.5, -0.125, 0.0]);
+    assert_eq!(outputs[0][1], vec![-0.5, 1.0, 0.25, 0.0]);
+
+    // 4) One-channel sample_map_player downmixes stereo (L + R) * 0.5 while preserving mono bit-exact:
+    let mono_out_yaml = r#"
+metadata: { name: mono_downmix }
+assets:
+  sample_sources:
+    - { id: stereo, path: stereo.wav, regions: [{ id: raw, start_frame: 2, end_frame: 4 }] }
+    - { id: mono, path: mono.wav, regions: [{ id: body, start_frame: 0, end_frame: 2 }] }
+  sample_maps:
+    - id: kit
+      zones:
+        - { id: z_stereo, region: stereo.raw, key_range: [38, 38], velocity_range: [1, 127] }
+        - { id: z_mono, region: mono.body, key_range: [36, 36], velocity_range: [1, 127] }
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 1, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#;
+    let mono_patch = load_kernel_patch_str(mono_out_yaml).unwrap();
+    let mono_prepared = prepare_kernel_patch_with_context(
+        &mono_patch,
+        &settings,
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .unwrap();
+    let downmixed = render_kernel_offline_named(
+        &mono_prepared,
+        vec![TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 38,
+                velocity: 100,
+            },
+        )],
+        &PreparedSamplerAssets::empty(),
+    )
+    .unwrap();
+    assert_eq!(&downmixed[0].1[0][..2], &[0.25, 0.75]);
+    let mono_exact = render_kernel_offline_named(
+        &mono_prepared,
+        vec![TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 36,
+                velocity: 100,
+            },
+        )],
+        &PreparedSamplerAssets::empty(),
+    )
+    .unwrap();
+    assert_eq!(&mono_exact[0].1[0][..2], &[0.625, -0.25]);
+}
+
+#[test]
+fn mono_sample_player_and_sample_slicer_downmix_stereo_channels() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let left = [0.0, 0.25, 0.5, 0.75, 0.0, -0.5];
+    let right = [0.5, -0.75, 0.0, 0.25, -0.5, 0.0];
+    crate::wav::write_wav_channels_f32(
+        fs::File::create(directory.path().join("stereo.wav")).expect("sample file"),
+        48_000,
+        &[&left, &right],
+    )
+    .expect("write stereo f32 wav");
+
+    let loop_yaml = r#"
+metadata: { name: mono_player_downmix }
+assets:
+  sample_sources:
+    - id: hit
+      path: stereo.wav
+      regions:
+        - id: body
+          start_frame: 0
+          end_frame: 6
+          loop: { mode: forward, start_frame: 0, end_frame: 6, crossfade_ms: 0.041666668 }
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_player, static: { source: hit, region: body, mode: looped, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.trigger }
+  - { from: midi.events, to: player.gate }
+"#;
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 6,
+        duration_frames: 6,
+    };
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let player_prepared = prepare_kernel_patch_with_context(
+        &load_kernel_patch_str(loop_yaml).unwrap(),
+        &settings,
+        &context,
+    )
+    .unwrap();
+    let player_out = render_kernel_offline_named(
+        &player_prepared,
+        vec![TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            },
+        )],
+        &PreparedSamplerAssets::empty(),
+    )
+    .unwrap();
+    let mix = |i: usize| (left[i] + right[i]) * 0.5;
+    assert_eq!(
+        player_out[0].1[0],
+        vec![
+            mix(0),
+            mix(1),
+            mix(2),
+            mix(3),
+            mix(4) * 0.5 + mix(0) * 0.5,
+            mix(5) * 0.0 + mix(1) * 1.0,
+        ]
+    );
+
+    let slicer_yaml = r#"
+metadata: { name: mono_slicer_downmix }
+assets:
+  sample_sources:
+    - id: hit
+      path: stereo.wav
+      slices: [{ id: whole, start_frame: 0, end_frame: 6 }]
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: slicer.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: slicer, type: sample_slicer, static: { source: hit, slice_table: hit, channels: 1 } }
+connections:
+  - { from: midi.events, to: slicer.trigger }
+"#;
+    let slicer_prepared = prepare_kernel_patch_with_context(
+        &load_kernel_patch_str(slicer_yaml).unwrap(),
+        &settings,
+        &context,
+    )
+    .unwrap();
+    let slicer_out = render_kernel_offline_named(
+        &slicer_prepared,
+        vec![TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            },
+        )],
+        &PreparedSamplerAssets::empty(),
+    )
+    .unwrap();
+    assert_eq!(
+        slicer_out[0].1[0],
+        (0..6).map(mix).collect::<Vec<f32>>()
+    );
 }

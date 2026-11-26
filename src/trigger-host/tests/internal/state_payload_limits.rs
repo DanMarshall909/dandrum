@@ -110,7 +110,7 @@ fn metadata(
     level["value"] = 2.0.into();
     metadata
 }
-fn render(audio: &mut RuntimeAudio, note: u8, expected: [f32; 2]) {
+fn render(audio: &mut RuntimeAudio, note: u8, expected_left: [f32; 2], expected_right: [f32; 2]) {
     std::thread::scope(|scope| {
         scope
             .spawn(|| {
@@ -133,9 +133,11 @@ fn render(audio: &mut RuntimeAudio, note: u8, expected: [f32; 2]) {
                 });
                 assert_eq!(audit, allocation_counter::AllocationInfo::default());
                 assert_eq!(&left[..3], &[0.; 3]);
-                assert_eq!(left, right);
-                assert_eq!([left[3], left[4]], expected);
+                assert_eq!(&right[..3], &[0.; 3]);
+                assert_eq!([left[3], left[4]], expected_left);
+                assert_eq!([right[3], right[4]], expected_right);
                 assert_eq!(&left[5..], &[0.; 11]);
+                assert_eq!(&right[5..], &[0.; 11]);
             })
             .join()
             .unwrap();
@@ -211,7 +213,7 @@ fn exactly_two_hundred_fifty_six_owned_resources_restore_and_release() {
         .acquire(resources[255]["path"].as_str().unwrap())
         .unwrap()
         .retention();
-    render(&mut audio, 60, [-16129.0 / 16384.0, 0.]);
+    render(&mut audio, 60, [-16129.0 / 16384.0, 0.], [-16129.0 / 16384.0, 0.]);
     let accepted = controller.session().owner_snapshot();
     let values = controller.parameter_state();
     let mut extra = resources.clone();
@@ -232,7 +234,7 @@ fn exactly_two_hundred_fifty_six_owned_resources_restore_and_release() {
     );
     assert_eq!(controller.session().owner_snapshot(), accepted);
     assert_eq!(controller.parameter_state(), values);
-    render(&mut audio, 60, [-16129.0 / 16384.0, 0.]);
+    render(&mut audio, 60, [-16129.0 / 16384.0, 0.], [-16129.0 / 16384.0, 0.]);
     assert_eq!(
         controller.session().owner_snapshot().yaml,
         metadata["document"].as_str().unwrap()
@@ -364,9 +366,14 @@ fn maximum_portable_payload_restores_signed_tail_geometry_and_reclaims_every_own
     };
     assert_eq!(used.decoded_bytes, 536_870_560);
     assert_eq!(source.host.sample_catalog.usage(), used);
-    let golden = [[-1., -0.5], [-0.5, 0.5], [-0.25, 0.5], [-0.25, -0.5]];
-    for (index, expected) in golden.iter().enumerate() {
-        render(&mut audio, 60 + index as u8, *expected);
+    let golden = [
+        ([-1.5, -1.0], [-0.5, 0.0]),
+        ([-1.0, 0.5], [0.0, 0.5]),
+        ([-0.5, 1.0], [0.0, 0.0]),
+        ([-0.25, -1.5], [-0.25, 0.5]),
+    ];
+    for (index, (expected_left, expected_right)) in golden.iter().enumerate() {
+        render(&mut audio, 60 + index as u8, *expected_left, *expected_right);
     }
     let retentions: Vec<_> = resources
         .iter()
@@ -416,8 +423,8 @@ fn maximum_portable_payload_restores_signed_tail_geometry_and_reclaims_every_own
     assert_eq!(fresh.host.sample_catalog.usage(), used);
     assert_eq!(fresh.session().owner_snapshot().yaml, accepted.yaml);
     assert_eq!(fresh.parameter_state().parameters, values);
-    for (index, expected) in golden.iter().enumerate() {
-        render(&mut fresh_audio, 60 + index as u8, *expected);
+    for (index, (expected_left, expected_right)) in golden.iter().enumerate() {
+        render(&mut fresh_audio, 60 + index as u8, *expected_left, *expected_right);
     }
     let mut again = tempfile::tempfile().unwrap();
     fresh.save_state(&mut again).unwrap();
@@ -461,8 +468,8 @@ fn maximum_portable_payload_restores_signed_tail_geometry_and_reclaims_every_own
     assert_eq!(fresh.host.sample_catalog.usage(), used);
     assert_eq!(fresh.session().owner_snapshot(), before);
     assert_eq!(fresh.parameter_state(), parameters);
-    for (index, expected) in golden.iter().enumerate() {
-        render(&mut fresh_audio, 60 + index as u8, *expected);
+    for (index, (expected_left, expected_right)) in golden.iter().enumerate() {
+        render(&mut fresh_audio, 60 + index as u8, *expected_left, *expected_right);
     }
     for aggregate in [false, true] {
         let mut too_large = rejected.clone();
@@ -510,15 +517,15 @@ fn maximum_portable_payload_restores_signed_tail_geometry_and_reclaims_every_own
     assert_eq!(fresh.host.sample_catalog.usage(), used);
     assert_eq!(fresh.session().owner_snapshot(), before);
     assert_eq!(fresh.parameter_state(), parameters);
-    for (index, expected) in golden.iter().enumerate() {
-        render(&mut fresh_audio, 60 + index as u8, *expected);
+    for (index, (expected_left, expected_right)) in golden.iter().enumerate() {
+        render(&mut fresh_audio, 60 + index as u8, *expected_left, *expected_right);
     }
     // Exact serialized content can be restored again while the live union is full.
     saved.rewind().unwrap();
     fresh.load_state(&mut saved).unwrap();
     assert_eq!(fresh.host.sample_catalog.usage(), used);
-    for (index, expected) in golden.iter().enumerate() {
-        render(&mut fresh_audio, 60 + index as u8, *expected);
+    for (index, (expected_left, expected_right)) in golden.iter().enumerate() {
+        render(&mut fresh_audio, 60 + index as u8, *expected_left, *expected_right);
     }
     let retentions: Vec<_> = resources
         .iter()

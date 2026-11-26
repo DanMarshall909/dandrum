@@ -115,10 +115,14 @@ fn saved_state(processor: &vst3::ComPtr<IComponent>) -> Vec<u8> {
     state.bytes.borrow().clone()
 }
 fn assert_mapping_audio(audio: &vst3::ComPtr<IAudioProcessor>, selected: bool, gain: f32) {
-    for (key, expected) in [
-        (48, if selected { -0.125 * gain } else { 0.0 }),
-        (36, -0.5 * gain),
-        (60, 0.0),
+    for (key, expected_left, expected_right) in [
+        (
+            48,
+            if selected { -0.75 * gain } else { 0.0 },
+            if selected { 0.5 * gain } else { 0.0 },
+        ),
+        (36, -0.5 * gain, -0.5 * gain),
+        (60, 0.0, 0.0),
     ] {
         assert_eq!(unsafe { audio.setProcessing(1) }, kResultOk);
         let notes = events(vec![note_on(0, key, 1.0)]);
@@ -128,7 +132,7 @@ fn assert_mapping_audio(audio: &vst3::ComPtr<IAudioProcessor>, selected: bool, g
         assert_eq!(unsafe { audio.process(&mut data) }, kResultOk);
         assert_eq!(
             (block.left[0], block.right[0]),
-            (expected, expected),
+            (expected_left, expected_right),
             "literal signed actual native mapping at MIDI{key}"
         );
         assert_eq!(unsafe { audio.setProcessing(0) }, kResultOk);
@@ -597,14 +601,12 @@ fn concurrent_native_callbacks(
                     audit.clean(|| unsafe { audio.process(&mut data) }),
                     kResultOk
                 );
-                let left = block.left[0];
-                let right = block.right[0];
+                let sample = (block.left[0], block.right[0]);
                 assert!(
-                    left == -0.25 || left == -0.3125,
-                    "known signed sample at physical level2 or2.5: {left}"
+                    sample == (-1.5, 1.0) || sample == (-1.875, 1.25),
+                    "known signed stereo sample at physical level 2 or 2.5: {sample:?}"
                 );
-                assert_eq!(left, right);
-                if left == -0.3125 {
+                if sample == (-1.875, 1.25) {
                     observed_change.store(true, Ordering::Release);
                 }
                 assert_eq!((block.left[15], block.right[15]), (0.0, 0.0));
@@ -612,9 +614,9 @@ fn concurrent_native_callbacks(
                     audit.clean(|| unsafe { audio.process(&mut zero.data()) }),
                     kResultOk
                 );
-                left
+                sample
             };
-            assert_eq!(render(), -0.25);
+            assert_eq!(render(), (-1.5, 1.0));
             ready.send(()).unwrap();
             begin.recv_timeout(Duration::from_secs(5)).unwrap();
             let mut overlapping = 0;
@@ -727,7 +729,7 @@ fn concurrent_native_callbacks(
     assert_eq!(unsafe { retained_audio.process(&mut data) }, kResultOk);
     assert_eq!(
         (block.left[0], block.right[0]),
-        (-0.625, -0.625),
+        (-2.5, 1.25),
         "distinct second selected source maps to the next free key49 and survives deletion"
     );
     assert_eq!(unsafe { retained_audio.setProcessing(0) }, kResultOk);
@@ -1513,8 +1515,8 @@ fn production_native_selection_retains_decoded_content_after_source_and_view_los
         let mut data = block.data();
         data.inputEvents = notes.as_ptr();
         assert_eq!(unsafe { audio.process(&mut data) }, kResultOk);
-        let wanted = if selected { -0.625 } else { 0.0 };
-        assert_eq!((block.left[0], block.right[0]), (wanted, wanted));
+        let wanted = if selected { (-2.5, 1.25) } else { (0.0, 0.0) };
+        assert_eq!((block.left[0], block.right[0]), wanted);
         assert_eq!(unsafe { audio.setProcessing(0) }, kResultOk);
         assert_eq!(saved_state(&independent), independent_before);
         assert_mapping_audio(&independent_audio, false, 1.0);
