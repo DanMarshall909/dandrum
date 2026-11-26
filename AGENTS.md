@@ -70,6 +70,11 @@
 - Dan authorizes deleting task artifacts confirmed to have no future use without further approval. Verify ownership,
   stop their workers and retain required evidence before deletion. Preserve artifacts whose future value is uncertain;
   reusable builds, caches and dependencies with an identified future use still follow the approval rule above.
+- Keep `.git/codex/` evidence compact at ticket closeout: strip raw coverage exports, object archives, test-result
+  trees, and temporary build snapshots once a ticket merges, retaining only compact JSON/Markdown summaries, logs, and
+  verdicts; route heavy raw run evidence to `/mnt/e-media` when available.
+- Rely on normal automatic Cargo generation retirement under the 44 GiB managed retention budget in `.ai-rules.json`
+  (do not set `DANDRUM_CARGO_PRESERVE_GENERATIONS=1` unless a specific task explicitly requires freezing old generations).
 - For DSP and mixing tests, assert a known signed output value or waveform as well as relationships between renders.
   Relative comparisons alone can pass when both paths share the same incorrect transformation.
 - When testing a composed voice or graph, exercise a representative child module that produces the output or event;

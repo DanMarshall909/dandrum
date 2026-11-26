@@ -105,7 +105,7 @@ An existing warm target can be explicitly registered with
 registration preserves it at that path and requires an otherwise empty managed
 generation. New clones need no registration.
 
-The `.ai-rules.json` policy allows 64 GiB of retained managed Cargo data, reserves
+The `.ai-rules.json` policy allows 44 GiB of retained managed Cargo data, reserves
 8 GiB of free disk, and admits a producer only when its 8 GiB growth allowance
 fits. Inactive owned generations are retired only when capacity is needed. If
 the current warm cache cannot fit, the command stops and explains the conflict.

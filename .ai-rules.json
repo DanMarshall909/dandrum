@@ -31,9 +31,9 @@
           "reserveMiB": 8192,
           "outputGrowthMiB": 8192,
           "tempGrowthMiB": 1024,
-          "retainedBudgetMiB": 114688,
+          "retainedBudgetMiB": 45056,
           "basis": "estimated",
-          "estimateReason": "One serial Trigger Rust test, LLVM coverage or native verification build. Restore the ordinary cold-safe 8 GiB output allowance for publication, plus 1 GiB temporary growth and 8 GiB free disk (17 GiB admission). Dan approved 112 GiB managed retention on 16 November 2026. The earlier 3 GiB warm-only local reservation depended on private configuration checks and is not the maintained default. Use DANDRUM_CARGO_PRESERVE_GENERATIONS=1 for this closeout; preserve reusable caches/dependencies, serialize producers with at most four compiler jobs, and retain the mutation exclusion. Completion measurement detects overruns; this is not a filesystem quota or a completion guarantee."
+          "estimateReason": "One serial Trigger Rust test, LLVM coverage or native verification build. Uses the cold-safe 8 GiB output allowance, plus 1 GiB temporary growth and 8 GiB free disk (17 GiB admission), with a 44 GiB managed Cargo retention ceiling so normal automatic retirement of inactive cache generations stays active when Cargo.lock or toolchain inputs change. Serialize producers with at most four compiler jobs, and retain the mutation exclusion. Completion measurement detects overruns; this is not a filesystem quota or a completion guarantee."
         },
         "trigger-vst3-proof": {
           "reserveMiB": 8192,
@@ -47,9 +47,9 @@
           "reserveMiB": 8192,
           "outputGrowthMiB": 8192,
           "tempGrowthMiB": 1024,
-          "retainedBudgetMiB": 114688,
+          "retainedBudgetMiB": 45056,
           "basis": "estimated",
-          "estimateReason": "Dan approved a fresh 4 active-executor-hour tranche on 23 November 2026 for issue45: at most8 GiB additional retained output plus1 GiB temporary space. Preserve existing112 GiB managed-cache ceiling,8 GiB free-disk/MemAvailable floors, one heavy producer, max4 compiler jobs, DANDRUM_CARGO_PRESERVE_GENERATIONS=1, no paid services and no mutation. Track cumulative additional outputs from the restart baseline separately; reassess at the time/storage cap without reducing acceptance criteria. This immediate9+8 GiB admission is not a reservation or completion guarantee."
+          "estimateReason": "Dan approved a fresh 4 active-executor-hour tranche on 23 November 2026 for issue45: at most 8 GiB additional retained output plus 1 GiB temporary space. Aligned to the 44 GiB managed-cache ceiling with normal automatic generation retirement active, 8 GiB free-disk/MemAvailable floors, one heavy producer, max 4 compiler jobs, no paid services and no mutation. Track cumulative additional outputs from the restart baseline separately; reassess at the time/storage cap without reducing acceptance criteria. This immediate 9+8 GiB admission is not a reservation or completion guarantee."
         }
       }
     }
