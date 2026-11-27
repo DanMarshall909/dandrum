@@ -11,9 +11,9 @@
 
 ## 3. Prepare native modulation and independent lifecycle
 
-- [ ] 3.1 Qualify the one- and multi-voice sample-map expansion and a source-completion event routed to `poly.done`; write failing Rust prepared-graph tests for default known signed output, alternative envelope feeding amplitude and a second destination, independent per-voice state, shared-source scope and invalid-cable rejection.
+- [ ] 3.1 Qualify the one- and multi-voice sample-map expansion and a source-completion event routed to `poly.done`, including no-zone selection; write failing Rust prepared-graph tests for default known signed output, alternative envelope feeding amplitude and a second destination, independent per-voice state, shared-source scope and invalid-cable rejection.
 - [ ] 3.2 Compose the supported amplitude path from existing primitives and typed cables under #8; expose only capabilities that compile and render in the native adapter.
-- [ ] 3.3 Write failing small-voice-limit tests for one-shot completion, gated/looped note-off, temporary zero amplitude, choke, steal, reset and slot reuse under default/replaced/detached assignments.
+- [ ] 3.3 Write failing small-voice-limit tests for one-shot completion, gated/looped note-off, temporary zero amplitude, unmatched selection, choke, steal, reset and slot reuse under default/replaced/detached assignments.
 - [ ] 3.4 Supply an explicit Trigger voice completion signal independent of the amplitude route and pass signed output and bounded-lifecycle tests; reject unsupported completion cases during preparation.
 
 ## 4. Connect the editor and accepted session

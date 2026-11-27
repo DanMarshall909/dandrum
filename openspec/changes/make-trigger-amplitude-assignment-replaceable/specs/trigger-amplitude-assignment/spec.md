@@ -64,6 +64,10 @@ Trigger's prepared poly-region voice SHALL use explicit completion from source a
 - **WHEN** a choke or configured steal replaces an active voice under a replaced or detached amplitude assignment
 - **THEN** only the intended voice SHALL be retired or released, later output SHALL contain no stale samples, and the configured voice limit SHALL hold
 
+#### Scenario: Unmatched selection does not occupy a slot
+- **WHEN** a note enters the bounded sampled voice definition but selects no playable zone
+- **THEN** the attempted voice SHALL produce no audio and SHALL leave its slot available for a later matching note
+
 ### Requirement: Assignment commits and saved state preserve voice ownership
 
 Replace, Detach and Restore SHALL be atomic prepared commands in the accepted native session. Preparation failure SHALL leave sounding voices and the accepted patch unchanged. On a successful structural commit, old voices SHALL retire and new notes SHALL use the new assignment; late note-off for the old generation SHALL not occupy a new voice. The editor SHALL disclose the interruption before committing an edit while notes are held. Undo, redo and saved-state restore SHALL preserve the selected assignment and its stable identities.
