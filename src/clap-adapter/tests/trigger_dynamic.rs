@@ -1629,6 +1629,61 @@ fn supported_fractional_clocks_activate_and_keep_exact_signed_sample_timing() {
 }
 
 #[test]
+fn fresh_clap_restores_mapped_forward_loop_and_note_off_from_portable_state() {
+    let (original_root, original_path) = copied_product();
+    let resources = original_root.path().join("DandrumTrigger.resources/instrument");
+    let document_path = resources.join("advanced-drum-kit.yaml");
+    let document = std::fs::read_to_string(&document_path).unwrap();
+    let kick = "id: kick, start_frame: 0, end_frame: 12000";
+    assert!(document.contains(kick));
+    std::fs::write(
+        &document_path,
+        document.replace(
+            kick,
+            "id: kick, start_frame: 0, end_frame: 8, playback_mode: looped, loop: { mode: forward, start_frame: 2, end_frame: 6 }",
+        ),
+    )
+    .unwrap();
+    let source = [-0.5, -0.25, 0.25, 0.5, -0.75, 0.75, -0.125, 0.125];
+    let mut frames = vec![0.0; 51_000];
+    frames[..source.len()].copy_from_slice(&source);
+    dandrum_engine::wav::write_wav_stereo_i16(
+        std::fs::File::create(resources.join("assets/advanced-drums.wav")).unwrap(),
+        48_000,
+        &frames,
+        &frames,
+    )
+    .unwrap();
+    let mut original = load_at(&original_path).unwrap();
+    let mut events = EventBuffer::new();
+    events.push(&MidiEvent::new(0, 0, [0x90, 36, 100]));
+    events.push(&MidiEvent::new(10, 0, [0x80, 36, 0]));
+    let expected = vec![
+        -0.5, -0.25, 8191.0 / 32768.0, 16383.0 / 32768.0,
+        -0.75, 24575.0 / 32768.0, 8191.0 / 32768.0, 16383.0 / 32768.0,
+        -0.75, 24575.0 / 32768.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    ];
+    let mut processor = activate(&mut original, 48_000.0, 16);
+    assert_eq!(block(&mut processor, 16, &events, false), [expected.clone(), expected.clone()]);
+    deactivate(&mut original, processor);
+    let saved = save(&mut original);
+    drop(original);
+    original_root.close().unwrap();
+
+    let (fresh_root, fresh_path) = copied_product();
+    let mut fresh = load_at(&fresh_path).unwrap();
+    std::fs::remove_file(
+        fresh_root.path().join("DandrumTrigger.resources/instrument/assets/advanced-drums.wav"),
+    )
+    .unwrap();
+    assert!(load_state(&mut fresh, &saved));
+    assert_eq!(save(&mut fresh), saved);
+    let mut processor = activate(&mut fresh, 48_000.0, 16);
+    assert_eq!(block(&mut processor, 16, &events, false), [expected.clone(), expected]);
+    deactivate(&mut fresh, processor);
+}
+
+#[test]
 fn portable_state_larger_than_legacy_limit_restores_fresh_pcm_and_values_with_reentrant_short_reads()
  {
     use serde_json::json;

@@ -5,7 +5,7 @@ use super::process_context::ProcessContext;
 use super::state::PerModuleState;
 use crate::compiled_patch::{SampleInterpolation, SampleSelectionMode};
 use crate::decay::DecayCurve;
-use crate::kernel::document::{SampleRegion, SampleSlice};
+use crate::kernel::document::{SampleLoop, SampleRegion, SampleSlice};
 use crate::oscillator::OSCILLATOR_BASE_HZ;
 use crate::saturator::Saturator;
 use crate::script::ScriptEvent;
@@ -196,61 +196,22 @@ pub(super) fn process_sample_player_state(
                 && *position < region.end_frame as f64
                 && index < frames.len()
             {
-                let mut value = if let Some(loop_settings) = loop_settings {
-                    let fade_start = loop_settings.end_frame as usize - crossfade_frames;
-                    let in_crossfade = crossfade_frames > 0
-                        && if region.reverse {
-                            *position < (loop_settings.start_frame + crossfade_frames as u64) as f64
-                        } else {
-                            index >= fade_start
-                        };
-                    if in_crossfade {
-                        let fade_position = if region.reverse {
-                            (loop_settings.start_frame + crossfade_frames as u64 - 1) as f64
-                                - *position
-                        } else {
-                            *position - fade_start as f64
-                        };
-                        let head_position = if region.reverse {
-                            (loop_settings.end_frame - 1) as f64 - fade_position
-                        } else {
-                            loop_settings.start_frame as f64 + fade_position
-                        };
-                        let head = sample_mono_interpolated(
-                            frames,
-                            right_frames,
-                            head_position,
-                            region,
-                            interpolation,
-                        );
-                        let tail = sample_mono_interpolated(
-                            frames,
-                            right_frames,
-                            *position,
-                            region,
-                            interpolation,
-                        );
-                        let weight =
-                            ((fade_position + 1.0) / crossfade_frames as f64).min(1.0) as f32;
-                        tail * (1.0 - weight) + head * weight
-                    } else {
+                let mut value = sample_loop_interpolated(
+                    *position,
+                    region,
+                    loop_settings,
+                    crossfade_frames,
+                    |cursor| {
                         sample_mono_interpolated(
                             frames,
                             right_frames,
-                            *position,
+                            cursor,
                             region,
+                            loop_settings,
                             interpolation,
                         )
-                    }
-                } else {
-                    sample_mono_interpolated(
-                        frames,
-                        right_frames,
-                        *position,
-                        region,
-                        interpolation,
-                    )
-                };
+                    },
+                );
                 value *=
                     sample_region_boundary_gain(region, *position, fade_in_frames, fade_out_frames);
                 let ratio = context.input_sample(0, frame, 1.0);
@@ -265,21 +226,7 @@ pub(super) fn process_sample_player_state(
                     f64::from(ratio) * playback_rate_scale
                 };
                 if let Some(loop_settings) = loop_settings {
-                    if region.reverse && *position < loop_settings.start_frame as f64 {
-                        let wrap_length = (loop_settings.end_frame
-                            - loop_settings.start_frame
-                            - crossfade_frames as u64)
-                            as f64;
-                        *position = loop_settings.start_frame as f64
-                            + (*position - loop_settings.start_frame as f64)
-                                .rem_euclid(wrap_length);
-                    } else if !region.reverse && *position >= loop_settings.end_frame as f64 {
-                        let wrap_start =
-                            (loop_settings.start_frame + crossfade_frames as u64) as f64;
-                        let wrap_length = loop_settings.end_frame as f64 - wrap_start;
-                        *position = wrap_start
-                            + (*position - loop_settings.end_frame as f64).rem_euclid(wrap_length);
-                    }
+                    advance_sample_loop(position, region, loop_settings, crossfade_frames);
                 } else if (region.reverse && *position < region.start_frame as f64)
                     || (!region.reverse && *position >= region.end_frame as f64)
                 {
@@ -427,22 +374,35 @@ fn sample_interpolated(
     frames: &[f32],
     position: f64,
     region: &SampleRegion,
+    loop_settings: Option<&SampleLoop>,
     interpolation: SampleInterpolation,
 ) -> f32 {
-    let first = region.start_frame as usize;
-    let last = region.end_frame as usize - 1;
+    let first = region.start_frame as i64;
+    let last = region.end_frame as i64 - 1;
+    let loop_window = loop_settings.filter(|settings| {
+        position >= settings.start_frame as f64 && position < settings.end_frame as f64
+    });
+    let sample_index = |index: i64| -> usize {
+        if let Some(settings) = loop_window {
+            let start = settings.start_frame as i64;
+            let length = (settings.end_frame - settings.start_frame) as i64;
+            (start + (index - start).rem_euclid(length)) as usize
+        } else {
+            index.clamp(first, last) as usize
+        }
+    };
     if interpolation == SampleInterpolation::Nearest {
-        return frames[(position.round() as usize).clamp(first, last)];
+        return frames[sample_index(position.round() as i64)];
     }
-    let base = (position.floor() as usize).clamp(first, last);
+    let base = position.floor() as i64;
     let fraction = (position - base as f64) as f32;
-    let a = frames[base];
-    let b = frames[(base + 1).min(last)];
+    let a = frames[sample_index(base)];
+    let b = frames[sample_index(base + 1)];
     if interpolation == SampleInterpolation::Linear {
         return a + fraction * (b - a);
     }
-    let before = frames[base.saturating_sub(1).max(first)];
-    let after = frames[(base + 2).min(last)];
+    let before = frames[sample_index(base - 1)];
+    let after = frames[sample_index(base + 2)];
     let f2 = fraction * fraction;
     let f3 = f2 * fraction;
     0.5 * ((3.0 * (a - b) + after - before) * f3
@@ -456,12 +416,67 @@ fn sample_mono_interpolated(
     right_frames: Option<&[f32]>,
     position: f64,
     region: &SampleRegion,
+    loop_settings: Option<&SampleLoop>,
     interpolation: SampleInterpolation,
 ) -> f32 {
-    let left = sample_interpolated(frames, position, region, interpolation);
+    let left = sample_interpolated(frames, position, region, loop_settings, interpolation);
     right_frames.map_or(left, |right| {
-        (left + sample_interpolated(right, position, region, interpolation)) * 0.5
+        (left + sample_interpolated(right, position, region, loop_settings, interpolation)) * 0.5
     })
+}
+
+fn sample_loop_interpolated(
+    position: f64,
+    region: &SampleRegion,
+    loop_settings: Option<&SampleLoop>,
+    crossfade_frames: usize,
+    sample: impl Fn(f64) -> f32,
+) -> f32 {
+    let Some(loop_settings) = loop_settings else {
+        return sample(position);
+    };
+    let fade_start = loop_settings.end_frame as f64 - crossfade_frames as f64;
+    let in_crossfade = crossfade_frames > 0
+        && if region.reverse {
+            position < (loop_settings.start_frame + crossfade_frames as u64) as f64
+        } else {
+            position >= fade_start
+        };
+    if !in_crossfade {
+        return sample(position);
+    }
+    let fade_position = if region.reverse {
+        (loop_settings.start_frame + crossfade_frames as u64 - 1) as f64 - position
+    } else {
+        position - fade_start
+    };
+    let head_position = if region.reverse {
+        (loop_settings.end_frame - 1) as f64 - fade_position
+    } else {
+        loop_settings.start_frame as f64 + fade_position
+    };
+    let head = sample(head_position);
+    let tail = sample(position);
+    let weight = ((fade_position + 1.0) / crossfade_frames as f64).min(1.0) as f32;
+    tail * (1.0 - weight) + head * weight
+}
+
+fn advance_sample_loop(
+    position: &mut f64,
+    region: &SampleRegion,
+    loop_settings: &SampleLoop,
+    crossfade_frames: usize,
+) {
+    if region.reverse && *position < loop_settings.start_frame as f64 {
+        let wrap_length = (loop_settings.end_frame - loop_settings.start_frame
+            - crossfade_frames as u64) as f64;
+        *position = loop_settings.start_frame as f64
+            + (*position - loop_settings.start_frame as f64).rem_euclid(wrap_length);
+    } else if !region.reverse && *position >= loop_settings.end_frame as f64 {
+        let wrap_start = (loop_settings.start_frame + crossfade_frames as u64) as f64;
+        let wrap_length = loop_settings.end_frame as f64 - wrap_start;
+        *position = wrap_start + (*position - loop_settings.end_frame as f64).rem_euclid(wrap_length);
+    }
 }
 
 fn next_sample_selection_random(state: &mut u64) -> u64 {
@@ -485,6 +500,7 @@ pub(super) fn process_sample_map_player_state(
     rng_state: &mut u64,
     queued_choices: Option<&[Option<usize>]>,
     selected_zone: &mut Option<usize>,
+    selected_note: &mut Option<u8>,
     selected_pitch_ratio: &mut f64,
     position: &mut f64,
     active: &mut bool,
@@ -495,6 +511,17 @@ pub(super) fn process_sample_map_player_state(
     for frame in 0..context.frames() {
         for event in events {
             if event.frame_offset as usize != frame {
+                continue;
+            }
+            if let ScriptEvent::NoteOff { note } = event.event {
+                if *selected_note == Some(note)
+                    && selected_zone.is_some_and(|index| {
+                        zones[index].region.mapped_playback_mode() != "one_shot"
+                    })
+                {
+                    *active = false;
+                    *selected_note = None;
+                }
                 continue;
             }
             if let ScriptEvent::NoteOn { note, velocity } = event.event {
@@ -529,6 +556,7 @@ pub(super) fn process_sample_map_player_state(
                         variation,
                     );
                     *selected_zone = Some(index);
+                    *selected_note = Some(note);
                     let region = &zones[index].region;
                     let root_ratio = region.root_note.map_or(1.0, |root| {
                         2.0_f32.powf((f32::from(note) - f32::from(root)) / 12.0)
@@ -557,15 +585,47 @@ pub(super) fn process_sample_map_player_state(
             let zone = &zones[selected_zone.expect("active map player has a selected zone")];
             let region = &zone.region;
             if *position >= region.start_frame as f64 && *position < region.end_frame as f64 {
-                let left_sample = sample_interpolated(
-                    zone.sample.frames(),
+                let loop_settings = (region.mapped_playback_mode() == "looped")
+                    .then_some(region.loop_settings.as_ref())
+                    .flatten();
+                let crossfade_frames = loop_settings.map_or(0, |settings| {
+                    let requested = settings.crossfade_ms.unwrap_or(0.0)
+                        * f64::from(zone.sample.sample_rate_hz()) / 1000.0;
+                    (requested.round() as usize)
+                        .min(((settings.end_frame - settings.start_frame) / 2) as usize)
+                });
+                let left_sample = sample_loop_interpolated(
                     *position,
                     region,
-                    SampleInterpolation::Linear,
+                    loop_settings,
+                    crossfade_frames,
+                    |cursor| {
+                        sample_interpolated(
+                            zone.sample.frames(),
+                            cursor,
+                            region,
+                            loop_settings,
+                            SampleInterpolation::Linear,
+                        )
+                    },
                 );
                 let right_frames = zone.sample.channel_frames(1);
                 let right_sample = right_frames.map_or(left_sample, |frames| {
-                    sample_interpolated(frames, *position, region, SampleInterpolation::Linear)
+                    sample_loop_interpolated(
+                        *position,
+                        region,
+                        loop_settings,
+                        crossfade_frames,
+                        |cursor| {
+                            sample_interpolated(
+                                frames,
+                                cursor,
+                                region,
+                                loop_settings,
+                                SampleInterpolation::Linear,
+                            )
+                        },
+                    )
                 });
                 let boundary_gain = sample_region_boundary_gain(
                     region,
@@ -590,7 +650,11 @@ pub(super) fn process_sample_map_player_state(
                 };
                 let ratio = f64::from(musical_pitch) * *selected_pitch_ratio;
                 *position += if region.reverse { -ratio } else { ratio };
-                if *position < region.start_frame as f64 || *position >= region.end_frame as f64 {
+                if let Some(settings) = loop_settings {
+                    advance_sample_loop(position, region, settings, crossfade_frames);
+                } else if *position < region.start_frame as f64
+                    || *position >= region.end_frame as f64
+                {
                     *active = false;
                 }
                 (left_sample * gain, right_sample * gain, right_frames.is_some())
@@ -601,6 +665,9 @@ pub(super) fn process_sample_map_player_state(
         } else {
             (0.0, 0.0, false)
         };
+        if !*active {
+            *selected_note = None;
+        }
         let live_pan = context.input_sample(3, frame, 0.0)
             + selected_zone.map_or(0.0, |index| {
                 sample_map_group_control(context, &zones[index], frame, 3, 0.0)
@@ -744,6 +811,7 @@ pub(super) fn process_sample_map_player(
         round_robin_counters,
         rng_state,
         selected_zone,
+        selected_note,
         selected_pitch_ratio,
         position,
         active,
@@ -761,6 +829,7 @@ pub(super) fn process_sample_map_player(
         rng_state,
         None,
         selected_zone,
+        selected_note,
         selected_pitch_ratio,
         position,
         active,
@@ -1685,6 +1754,7 @@ mod sampler_tests {
                 reverse: false,
                 fade_in_ms: None,
                 fade_out_ms: None,
+                playback_mode: None,
                 loop_settings: None,
             },
             key_range: [36, 36],

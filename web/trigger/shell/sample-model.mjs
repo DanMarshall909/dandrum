@@ -42,7 +42,11 @@ export function sampleModel(presenter,model){
     hRs:region.start,hRe:region.end,hFi:region.fades?.in??0,hFo:region.fades?.out??0,
     root:region.root??rule?.root??60,setRoot:value=>edit('Change root',{root:Math.round(value)}),
     onWaveClick:()=>store.audition(asset.id,region),setRegion:delta=>edit('Edit region',delta),
-    setPlayback:playback=>edit('Change playback',{playback,loop:['loop','pp','sus'].includes(playback)?region.loop??{start:.55,end:.82,crossfade:.025}:null}),
+    setPlayback:playback=>{
+      const span=region.end-region.start;
+      const initialLoop={mode:'forward',start:region.start+.2*span,end:region.start+.8*span,crossfade:.025*span};
+      return edit('Change playback',{playback,loop:['loop','pp','sus'].includes(playback)?region.loop??initialLoop:null});
+    },
     toggleReverse:()=>edit('Reverse sample',{reverse:!region.reverse}),
     setLoop:(field,value)=>edit('Change loop '+field,{loop:{...region.loop,[field]:value}}),
     snap:canSnap&&(presenter.state.snapZero??true),setSnap:value=>presenter.setState(canSnap?{snapZero:value}:{modNote:'Zero crossing analysis is unavailable in the native sampler.'}),

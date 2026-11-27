@@ -249,15 +249,53 @@ test('native region DSP edits publish only reconstructible state through Undo Re
     bridge.setSession(session(undo?yaml:candidate,7+revision,connection({revision:String(revision),nextRequestId:String(revision+1),history:{undoCount:undo?0:1,redoCount:undo?1:0}})));
     return {state:'completed',request_id:request,revision:String(revision)};
   };
-  await store.operation('Trim','setRegion','drums.kick',{start:.01,end:.1,reverse:true,root:36,gain:-6,pan:.25,fades:{in:.001,out:.002},loop:{mode:'forward',start:.02,end:.08,crossfade:.0005}});
+  await store.operation('Trim','setRegion','drums.kick',{start:.01,end:.1,reverse:true,root:36,gain:-6,pan:.25,fades:{in:.001,out:.002},playback:'loop',loop:{mode:'forward',start:.02,end:.08,crossfade:.0005}});
   const accepted=engine.getPatch();assert.deepEqual(accepted.history,[],'native operation history is the supported Undo authority; no transient processing stack');
   assert.equal(accepted.regions.find(r=>r.id==='drums.kick').start,.01);assert.equal(accepted.regions.find(r=>r.id==='drums.kick').reverse,true);
   const region=accepted.regions.find(r=>r.id==='drums.kick');
+  assert.equal(region.playback,'loop');
   assert.deepEqual([region.root,region.gain,region.pan,region.fades,region.loop],[36,-6,.25,{in:.001,out:.002},{mode:'forward',start:.02,end:.08,crossfade:.0005}]);
   for(const [method,args] of unrepresentableEdits){
     const pending=method==='applyDelta'?engine.applyDelta(...args(accepted)):store.operation('Rejected edit',method,...args(accepted));
     await assert.rejects(pending,/unsupported/i);assert.deepEqual(engine.getPatch(),accepted);assert.equal(store.undoCount,1);
   }
+  await store.undo();assert.deepEqual(engine.getPatch(),before);
+  await store.redo();assert.deepEqual(engine.getPatch(),accepted);
+  engine.close();recreated=new NativeEngine({heartbeatMs:0,pollMs:0});await recreated.initialize();assert.deepEqual(recreated.getPatch(),accepted);
+});
+
+test('invalid native loop edit retains the playing patch and has no undo admission',async t=>{
+  const previous=globalThis.window,bridge=backend();globalThis.window={__DANDRUM__:{protocolVersion:1,backendId:'juce-free',capabilities,backend:bridge}};
+  const engine=new NativeEngine({heartbeatMs:0,pollMs:0});let store;
+  t.after(()=>{store?.close();engine.close();globalThis.window=previous;});
+  await engine.initialize();store=new Store(engine);
+  const before=engine.getPatch();
+  const admissions=()=>bridge.calls.filter(([name])=>name==='prepareInstrumentSessionPatch').length;
+  await assert.rejects(store.operation('Loop','setRegion','drums.kick',{
+    playback:'loop',loop:{start:.02,end:.08,crossfade:.04},
+  }),/invalid.*loop/i);
+  assert.deepEqual(engine.getPatch(),before);
+  assert.equal(store.undoCount,0);
+  assert.equal(admissions(),0);
+});
+
+test('accepted gated playback survives native Undo Redo and editor recreation',async t=>{
+  const previous=globalThis.window,bridge=backend();globalThis.window={__DANDRUM__:{protocolVersion:1,backendId:'juce-free',capabilities,backend:bridge}};
+  const engine=new NativeEngine({heartbeatMs:0,pollMs:0});let store,candidate,action,recreated;
+  t.after(()=>{recreated?.close();store?.close();engine.close();globalThis.window=previous;});await engine.initialize();store=new Store(engine);
+  const before=engine.getPatch();
+  bridge.functions.prepareInstrumentSessionPatch=(_i,_a,request,_revision,text)=>{candidate=text;action='edit';return {status:'accepted',job_id:request};};
+  bridge.functions.undoInstrumentSession=(_i,_a,request)=>{action='undo';return {status:'accepted',job_id:request};};
+  bridge.functions.redoInstrumentSession=(_i,_a,request)=>{action='redo';return {status:'accepted',job_id:request};};
+  bridge.functions.getInstrumentSessionJobStatus=request=>{
+    const undo=action==='undo',revision=action==='edit'?1:undo?2:3;
+    bridge.setSession(session(undo?yaml:candidate,7+revision,connection({revision:String(revision),nextRequestId:String(revision+1),history:{undoCount:undo?0:1,redoCount:undo?1:0}})));
+    return {state:'completed',request_id:request,revision:String(revision)};
+  };
+  await store.operation('Gate','setRegion','drums.kick',{playback:'gated'});
+  const accepted=engine.getPatch();
+  assert.equal(accepted.regions.find(region=>region.id==='drums.kick').playback,'gated');
+  assert.equal(parse(candidate).assets.sample_sources[0].regions[0].playback_mode,'gated');
   await store.undo();assert.deepEqual(engine.getPatch(),before);
   await store.redo();assert.deepEqual(engine.getPatch(),accepted);
   engine.close();recreated=new NativeEngine({heartbeatMs:0,pollMs:0});await recreated.initialize();assert.deepEqual(recreated.getPatch(),accepted);

@@ -290,6 +290,7 @@ juce::var preparedDocumentForWeb (const InstrumentUiDocument& document)
             regionValue->setProperty ("reverse", region.reverse);
             regionValue->setProperty ("fadeInMs", region.fadeInMs);
             regionValue->setProperty ("fadeOutMs", region.fadeOutMs);
+            regionValue->setProperty ("playbackMode", juce::String (region.playbackMode));
             if (region.rootNote)
                 regionValue->setProperty ("rootNote", *region.rootNote);
             if (region.gainDb)

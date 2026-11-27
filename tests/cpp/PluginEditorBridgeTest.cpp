@@ -1027,7 +1027,7 @@ int main (int argc, char** argv)
             (sourceRoot / "examples/patches/advanced-drum-kit.yaml").string())).loadFileAsString();
         detailedYaml = detailedYaml.replace (
             "{ id: kick, start_frame: 0, end_frame: 12000 }",
-            "{ id: kick, start_frame: 0, end_frame: 12000, root_note: 60, gain_db: -3, pan: 0.25, fade_in_ms: 2, fade_out_ms: 3, loop: { mode: forward, start_frame: 100, end_frame: 10000, crossfade_ms: 1 } }");
+            "{ id: kick, start_frame: 0, end_frame: 12000, root_note: 60, gain_db: -3, pan: 0.25, fade_in_ms: 2, fade_out_ms: 3, playback_mode: looped, loop: { mode: forward, start_frame: 100, end_frame: 10000, crossfade_ms: 1 } }");
         detailedYaml = detailedYaml.replace ("selection_seed: 2026",
                                              "selection_seed: 9007199254740993");
         detailedYaml = detailedYaml.replace (
@@ -1080,6 +1080,7 @@ int main (int argc, char** argv)
                      && std::abs (static_cast<double> (detailedRegion.getProperty ("pan", {})) - 0.25) < 0.0001
                      && std::abs (static_cast<double> (detailedRegion.getProperty ("fadeInMs", {})) - 2.0) < 0.0001
                      && std::abs (static_cast<double> (detailedRegion.getProperty ("fadeOutMs", {})) - 3.0) < 0.0001
+                     && detailedRegion.getProperty ("playbackMode", {}).toString() == "looped"
                      && detailedLoop.getProperty ("mode", {}).toString() == "forward"
                      && detailedLoop.getProperty ("startFrame", {}).toString() == "100"
                      && detailedLoop.getProperty ("endFrame", {}).toString() == "10000"

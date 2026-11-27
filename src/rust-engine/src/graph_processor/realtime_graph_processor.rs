@@ -1641,6 +1641,7 @@ struct SampleMapPlayerStepExecutor {
     initial_seed: u64,
     rng_state: u64,
     selected_zone: Option<usize>,
+    selected_note: Option<u8>,
     selected_pitch_ratio: f64,
     position: f64,
     active: bool,
@@ -1668,6 +1669,7 @@ impl PreparedStepExecutor for SampleMapPlayerStepExecutor {
             &mut self.rng_state,
             (!self.queued_choices.is_empty()).then_some(self.queued_choices.as_slice()),
             &mut self.selected_zone,
+            &mut self.selected_note,
             &mut self.selected_pitch_ratio,
             &mut self.position,
             &mut self.active,
@@ -1690,6 +1692,7 @@ impl PreparedStepExecutor for SampleMapPlayerStepExecutor {
         self.round_robin_counters.fill(0);
         self.rng_state = self.initial_seed;
         self.selected_zone = None;
+        self.selected_note = None;
         self.selected_pitch_ratio = 1.0;
         self.position = 0.0;
         self.active = false;
@@ -2240,6 +2243,7 @@ pub(super) fn bind_prepared_step_executors(
                     initial_seed,
                     rng_state,
                     selected_zone,
+                    selected_note,
                     selected_pitch_ratio,
                     position,
                     active,
@@ -2252,6 +2256,7 @@ pub(super) fn bind_prepared_step_executors(
                     initial_seed,
                     rng_state,
                     selected_zone,
+                    selected_note,
                     selected_pitch_ratio,
                     position,
                     active,

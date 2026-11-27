@@ -3076,3 +3076,42 @@ AC trigger-sample-resources :: Native Trigger supports stereo and common WAV for
   fp 226036dac985
   test rust:channel_aware_decoded_limits_and_invalid_formats_preserve_catalog
   test rust:native_trigger_selects_and_restores_stereo_pcm24_and_float32_without_source_files
+
+AC advanced-sampling-options :: Mapped sample regions honor explicit playback modes :: Forward loop repeats the mapped signed waveform
+  fp 1376e1f2c22b
+  test rust:native_sample_map_forward_loop_repeats_signed_frames_past_region_end
+  test rust:native_host_renders_mapped_loop_and_gated_release_without_stuck_voices
+
+AC advanced-sampling-options :: Mapped sample regions honor explicit playback modes :: Crossfade and reverse preserve the loop window
+  fp 57d6b9c340d3
+  test rust:mapped_forward_loop_keeps_signed_crossfade_reverse_and_rate_boundaries
+
+AC advanced-sampling-options :: Mapped sample regions honor explicit playback modes :: Note-off distinguishes one-shot and held playback
+  fp 619ad1a55117
+  test rust:mapped_one_shot_ignores_release_while_gated_voice_stops_at_the_event_frame
+  test rust:mapped_loop_stops_on_matching_note_off_and_retriggers_from_its_start
+
+AC advanced-sampling-options :: Mapped sample regions honor explicit playback modes :: Voice policies retire held mapped samples safely
+  fp b3f37522b767
+  test rust:held_mapped_voices_obey_steal_choke_and_release_policies
+  test rust:native_host_renders_mapped_loop_and_gated_release_without_stuck_voices
+
+AC advanced-sampling-options :: Mapped sample regions honor explicit playback modes :: Invalid mapped playback metadata cannot replace audio
+  fp 092aecf7f7e8
+  test rust:mapped_regions_reject_unsupported_and_inconsistent_playback_modes_before_loading_audio
+  test js:tests/js/TriggerNativeAdapterTest.mjs
+
+AC trigger-native-webview :: Native Trigger playback edits preserve accepted mode and sound :: Accepted loop and gated edits change native playback
+  fp 3d49e0fcb5e8
+  test js:tests/js/TriggerNativeAdapterTest.mjs
+  test cpp:tests/cpp/PluginEditorBridgeTest.cpp
+  test rust:native_host_renders_mapped_loop_and_gated_release_without_stuck_voices
+
+AC trigger-native-webview :: Native Trigger playback edits preserve accepted mode and sound :: Rejected playback edit preserves the working patch
+  fp d9d3d7f9053e
+  test js:tests/js/TriggerNativeAdapterTest.mjs
+
+AC trigger-native-webview :: Native Trigger playback edits preserve accepted mode and sound :: Playback mode survives history and fresh instance restore
+  fp 26e55dc463f5
+  test js:tests/js/TriggerNativeAdapterTest.mjs
+  test rust:fresh_clap_restores_mapped_forward_loop_and_note_off_from_portable_state

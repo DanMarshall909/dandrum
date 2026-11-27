@@ -244,3 +244,83 @@ fn runtime_rejects_a_different_clock_even_below_f32_precision() {
     ));
     assert!(PreparedRuntime::new(session.prepared(), configuration(48_000.000_001)).is_ok());
 }
+
+#[test]
+fn native_host_renders_mapped_loop_and_gated_release_without_stuck_voices() {
+    let directory = tempfile::tempdir().unwrap();
+    let values = [-0.5, -0.25, 0.25, 0.5, -0.75, 0.75, -0.125, 0.125];
+    dandrum_engine::wav::write_wav_stereo_i16(
+        std::fs::File::create(directory.path().join("hit.wav")).unwrap(),
+        48_000,
+        &values,
+        &values,
+    )
+    .unwrap();
+    let patch = r#"
+assets:
+  sample_sources:
+    - id: hit
+      path: hit.wav
+      regions:
+        - { id: loop, start_frame: 0, end_frame: 4, playback_mode: looped, loop: { mode: forward, start_frame: 1, end_frame: 3 } }
+        - { id: gate, start_frame: 4, end_frame: 8, playback_mode: gated }
+  sample_maps:
+    - id: kit
+      zones:
+        - { id: loop, region: hit.loop, key_range: [36, 36], velocity_range: [1, 127] }
+        - { id: gate, region: hit.gate, key_range: [38, 38], velocity_range: [1, 127] }
+ports:
+  - { name: master, direction: output, signal: audio, channels: 2, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 2, channels: 2 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#;
+    let rate = SampleRate::new(48_000.0).unwrap();
+    let session = InstrumentSession::new_realtime_for_planar_host(
+        patch,
+        PreparationContext::new_realtime(directory.path(), rate),
+        RealtimeRenderSettings {
+            sample_rate_hz: rate,
+            block_size_frames: BLOCK as u32,
+            duration_frames: BLOCK as u64,
+        },
+        HostBuses::new().with_output("master", 2),
+    )
+    .unwrap();
+    let (_, mut audio) = runtime_handoff(
+        PreparedRuntime::new(session.prepared(), configuration(48_000.0)).unwrap(),
+        8,
+    )
+    .unwrap();
+    let on = |note, frame_offset| TimedEvent {
+        frame_offset,
+        event: ControlEvent::NoteOn { note, velocity: 100 },
+    };
+    let off = |note, frame_offset| TimedEvent {
+        frame_offset,
+        event: ControlEvent::NoteOff { note },
+    };
+    let render = |audio: &mut RuntimeAudio, events: &[TimedEvent]| {
+        let (mut left, mut right) = ([0.0; 12], [0.0; 12]);
+        let allocations = allocation_counter::measure(|| {
+            audio.process_events(&mut left, &mut right, events).unwrap();
+        });
+        assert_eq!(allocations, allocation_counter::AllocationInfo::default());
+        assert_eq!(left, right);
+        left
+    };
+    assert_eq!(
+        render(&mut audio, &[on(36, 0), off(36, 7), on(36, 9)]),
+        [-0.5, -0.25, 8191.0 / 32768.0, -0.25, 8191.0 / 32768.0,
+         -0.25, 8191.0 / 32768.0, 0.0, 0.0, -0.5, -0.25, 8191.0 / 32768.0]
+    );
+    assert!(!audio.reset().admission_closed);
+    assert_eq!(render(&mut audio, &[]), [0.0; 12]);
+    assert_eq!(
+        render(&mut audio, &[on(38, 0), off(38, 2)]),
+        [-0.75, 24575.0 / 32768.0, 0.0, 0.0, 0.0, 0.0,
+         0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    );
+}

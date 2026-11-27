@@ -2469,6 +2469,435 @@ connections:
 }
 
 #[test]
+fn native_sample_map_forward_loop_repeats_signed_frames_past_region_end() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.5, -0.25, 0.25, 0.5];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("loop.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: mapped_forward_loop }
+assets:
+  sample_sources:
+    - id: hit
+      path: loop.wav
+      regions:
+        - { id: body, start_frame: 0, end_frame: 4, loop: { mode: forward, start_frame: 1, end_frame: 3 } }
+  sample_maps:
+    - id: kit
+      zones: [{ id: hit, region: hit.body, key_range: [36, 36], velocity_range: [1, 127] }]
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 1, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("mapped loop loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 8,
+        duration_frames: 8,
+    };
+    let prepared = prepare_kernel_patch_with_context(
+        &patch,
+        &settings,
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .expect("mapped loop prepares");
+    let output = render_kernel_offline_named(
+        &prepared,
+        vec![TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 36,
+                velocity: 100,
+            },
+        )],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("mapped loop renders");
+    let positive = 8191.0 / 32768.0;
+    assert_eq!(
+        output[0].1[0],
+        vec![-0.5, -0.25, positive, -0.25, positive, -0.25, positive, -0.25]
+    );
+}
+
+#[test]
+fn mapped_forward_loop_keeps_signed_crossfade_reverse_and_rate_boundaries() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.5, -0.25, 0.25, 0.5, -0.75, 0.75];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("loop.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: mapped_forward_loop }
+assets:
+  sample_sources:
+    - id: hit
+      path: loop.wav
+      regions:
+        - { id: body, start_frame: 0, end_frame: 6, reverse: REVERSE, loop: { mode: forward, start_frame: 1, end_frame: 5 LOOP_EXTRA } }
+  sample_maps:
+    - id: kit
+      zones: [{ id: hit, region: hit.body, key_range: [36, 36], velocity_range: [1, 127] }]
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 1, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#;
+    let render = |reverse: bool, crossfade: &str, rate| {
+        let document = yaml
+            .replace("REVERSE", if reverse { "true" } else { "false" })
+            .replace(" LOOP_EXTRA", crossfade);
+        let patch = load_kernel_patch_str(&document).expect("mapped loop loads");
+        let settings = RenderSettings {
+            sample_rate_hz: rate,
+            block_size_frames: 4,
+            duration_frames: if rate == 96_000 { 12 } else { 10 },
+        };
+        let prepared = prepare_kernel_patch_with_context(
+            &patch,
+            &settings,
+            &PreparationContext::new(directory.path(), rate),
+        )
+        .expect("mapped loop prepares");
+        render_kernel_offline_named(
+            &prepared,
+            vec![TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            )],
+            &PreparedSamplerAssets::empty(),
+        )
+        .expect("mapped loop renders")[0]
+            .1[0]
+            .clone()
+    };
+    let p25 = 8191.0 / 32768.0;
+    let p50 = 16383.0 / 32768.0;
+    let p75 = 24575.0 / 32768.0;
+    assert_eq!(
+        render(false, "", 48_000),
+        vec![-0.5, -0.25, p25, p50, -0.75, -0.25, p25, p50, -0.75, -0.25]
+    );
+    assert_eq!(
+        render(false, ", crossfade_ms: 0.020833333333333332", 48_000),
+        vec![-0.5, -0.25, p25, p50, -0.25, p25, p50, -0.25, p25, p50]
+    );
+    let blend = (p50 - 0.25) * 0.5;
+    assert_eq!(
+        render(false, ", crossfade_ms: 0.041666666666666664", 48_000),
+        vec![-0.5, -0.25, p25, blend, p25, blend, p25, blend, p25, blend]
+    );
+    assert_eq!(
+        render(true, "", 48_000),
+        vec![p75, -0.75, p50, p25, -0.25, -0.75, p50, p25, -0.25, -0.75]
+    );
+    assert_eq!(
+        render(true, ", crossfade_ms: 0.020833333333333332", 48_000),
+        vec![p75, -0.75, p50, p25, -0.75, p50, p25, -0.75, p50, p25]
+    );
+    let reverse_blend = (p25 - 0.75) * 0.5;
+    assert_eq!(
+        render(true, ", crossfade_ms: 0.041666666666666664", 48_000),
+        vec![p75, -0.75, p50, reverse_blend, p50, reverse_blend, p50, reverse_blend, p50, reverse_blend]
+    );
+    assert_eq!(
+        render(false, "", 24_000),
+        vec![-0.5, p25, -0.75, p25, -0.75, p25, -0.75, p25, -0.75, p25]
+    );
+    assert_eq!(
+        render(false, "", 96_000),
+        vec![
+            -0.5, -0.375, -0.25, (-0.25 + p25) * 0.5,
+            p25, (p25 + p50) * 0.5, p50, (p50 - 0.75) * 0.5,
+            -0.75, -0.5, -0.25, (-0.25 + p25) * 0.5,
+        ]
+    );
+    assert_eq!(
+        render(true, "", 96_000),
+        vec![
+            p75, -0.5, -0.75, (p50 - 0.75) * 0.5,
+            p50, (p25 + p50) * 0.5, p25, (-0.25 + p25) * 0.5,
+            -0.25, -0.5, -0.75, (p50 - 0.75) * 0.5,
+        ]
+    );
+}
+
+#[test]
+fn mapped_loop_stops_on_matching_note_off_and_retriggers_from_its_start() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.5, -0.25, 0.25, 0.5];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("loop.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+assets:
+  sample_sources:
+    - id: hit
+      path: loop.wav
+      regions:
+        - { id: body, start_frame: 0, end_frame: 4, loop: { mode: forward, start_frame: 1, end_frame: 3 } }
+  sample_maps:
+    - id: kit
+      zones: [{ id: hit, region: hit.body, key_range: [36, 36], velocity_range: [1, 127] }]
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 1, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("mapped loop loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 3,
+        duration_frames: 10,
+    };
+    let prepared = prepare_kernel_patch_with_context(
+        &patch,
+        &settings,
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .expect("mapped loop prepares");
+    let events = vec![
+        TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 36, velocity: 100 }),
+        TimedInputEvent::new(2, ScriptEvent::NoteOff { note: 37 }),
+        TimedInputEvent::new(4, ScriptEvent::NoteOff { note: 36 }),
+        TimedInputEvent::new(6, ScriptEvent::NoteOn { note: 36, velocity: 100 }),
+        TimedInputEvent::new(8, ScriptEvent::NoteOff { note: 36 }),
+    ];
+    let output = render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
+        .expect("mapped loop renders");
+    assert_eq!(
+        output[0].1[0],
+        vec![-0.5, -0.25, 8191.0 / 32768.0, -0.25, 0.0, 0.0, -0.5, -0.25, 0.0, 0.0]
+    );
+}
+
+#[test]
+fn mapped_one_shot_ignores_release_while_gated_voice_stops_at_the_event_frame() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.5, -0.25, 0.25, 0.5];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hit.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+assets:
+  sample_sources:
+    - id: hit
+      path: hit.wav
+      regions:
+        - { id: body, start_frame: 0, end_frame: 4, playback_mode: MODE }
+  sample_maps:
+    - id: kit
+      zones: [{ id: hit, region: hit.body, key_range: [36, 36], velocity_range: [1, 127] }]
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 1, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#;
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 3,
+        duration_frames: 9,
+    };
+    let events = vec![
+        TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 36, velocity: 100 }),
+        TimedInputEvent::new(2, ScriptEvent::NoteOff { note: 36 }),
+        TimedInputEvent::new(5, ScriptEvent::NoteOn { note: 36, velocity: 100 }),
+        TimedInputEvent::new(7, ScriptEvent::NoteOff { note: 36 }),
+    ];
+    for (mode, expected) in [
+        (
+            "one_shot",
+            vec![-0.5, -0.25, 8191.0 / 32768.0, 16383.0 / 32768.0, 0.0,
+                 -0.5, -0.25, 8191.0 / 32768.0, 16383.0 / 32768.0],
+        ),
+        ("gated", vec![-0.5, -0.25, 0.0, 0.0, 0.0, -0.5, -0.25, 0.0, 0.0]),
+    ] {
+        let patch = load_kernel_patch_str(&yaml.replace("MODE", mode))
+            .expect("mapped playback mode loads");
+        let prepared = prepare_kernel_patch_with_context(
+            &patch,
+            &settings,
+            &PreparationContext::new(directory.path(), 48_000),
+        )
+        .expect("mapped playback mode prepares");
+        let output = render_kernel_offline_named(
+            &prepared,
+            events.clone(),
+            &PreparedSamplerAssets::empty(),
+        )
+        .expect("mapped playback mode renders");
+        assert_eq!(output[0].1[0], expected, "{mode}");
+    }
+}
+
+#[test]
+fn mapped_regions_reject_unsupported_and_inconsistent_playback_modes_before_loading_audio() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let yaml = r#"
+assets:
+  sample_sources:
+    - id: hit
+      path: missing.wav
+      regions:
+        - { id: body, start_frame: 0, end_frame: 4, playback_mode: MODE LOOP }
+  sample_maps:
+    - id: kit
+      zones: [{ id: hit, region: hit.body, key_range: [36, 36], velocity_range: [1, 127] }]
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 1, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#;
+    for (mode, loop_data, code) in [
+        ("stretched", "", error_codes::KERNEL_SAMPLE_UNSUPPORTED_MODE),
+        ("looped", "", error_codes::KERNEL_SAMPLE_INVALID_LOOP),
+        (
+            "one_shot",
+            ", loop: { mode: forward, start_frame: 1, end_frame: 3 }",
+            error_codes::KERNEL_SAMPLE_INVALID_LOOP,
+        ),
+        (
+            "gated",
+            ", loop: { mode: forward, start_frame: 1, end_frame: 3 }",
+            error_codes::KERNEL_SAMPLE_INVALID_LOOP,
+        ),
+    ] {
+        let document = yaml.replace("MODE", mode).replace(" LOOP", loop_data);
+        let patch = load_kernel_patch_str(&document).expect("mode shape loads");
+        let error = prepare_kernel_patch_with_context(
+            &patch,
+            &RenderSettings {
+                sample_rate_hz: 48_000,
+                block_size_frames: 8,
+                duration_frames: 8,
+            },
+            &PreparationContext::new(directory.path(), 48_000),
+        )
+        .expect_err("invalid mode must be rejected before the missing source is loaded");
+        assert_eq!(
+            error.diagnostics().errors().next().unwrap().error_code(),
+            code,
+            "{mode}"
+        );
+    }
+}
+
+#[test]
+fn held_mapped_voices_obey_steal_choke_and_release_policies() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [0.5, 0.5, -0.25, -0.25, -0.5];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hits.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+assets:
+  sample_sources:
+    - id: hits
+      path: hits.wav
+      regions:
+        - { id: loop, start_frame: 0, end_frame: 2, playback_mode: looped, loop: { mode: forward, start_frame: 0, end_frame: 2 } }
+        - { id: gate, start_frame: 2, end_frame: 4, playback_mode: gated }
+        - { id: hit, start_frame: 4, end_frame: 5 }
+  sample_maps:
+    - id: kit
+      zones:
+        - { id: loop, region: hits.loop, key_range: [36, 36], velocity_range: [1, 127] CHOKE_LOOP }
+        - { id: gate, region: hits.gate, key_range: [38, 38], velocity_range: [1, 127] }
+        - { id: hit, region: hits.hit, key_range: [40, 40], velocity_range: [1, 127] CHOKE_HIT }
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 2, voice_steal: POLICY, choke_mode: CHOKE_MODE, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#;
+    let render = |policy, choke_mode, grouped: bool, events| {
+        let document = yaml
+            .replace("POLICY", policy)
+            .replace("CHOKE_MODE", choke_mode)
+            .replace(" CHOKE_LOOP", if grouped { ", choke_group: hats" } else { "" })
+            .replace(" CHOKE_HIT", if grouped { ", choke_group: hats" } else { "" });
+        let patch = load_kernel_patch_str(&document).expect("held map loads");
+        let prepared = prepare_kernel_patch_with_context(
+            &patch,
+            &RenderSettings {
+                sample_rate_hz: 48_000,
+                block_size_frames: 2,
+                duration_frames: 5,
+            },
+            &PreparationContext::new(directory.path(), 48_000),
+        )
+        .expect("held map prepares");
+        render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
+            .expect("held map renders")[0]
+            .1[0]
+            .clone()
+    };
+    let on = |frame, note| TimedInputEvent::new(frame, ScriptEvent::NoteOn { note, velocity: 100 });
+    let off = |frame, note| TimedInputEvent::new(frame, ScriptEvent::NoteOff { note });
+    let p50 = 16383.0 / 32768.0;
+    for (policy, expected) in [
+        ("oldest", vec![p50, p50-0.25, -0.75, 0.0, 0.0]),
+        ("quietest", vec![p50, p50-0.25, p50-0.5, p50, 0.0]),
+        ("reject_new", vec![p50, p50-0.25, p50-0.25, p50, 0.0]),
+    ] {
+        assert_eq!(
+            render(policy, "cut", false, vec![on(0,36),on(1,38),on(2,40),off(3,38),off(4,36)]),
+            expected,
+            "{policy}"
+        );
+    }
+    for choke_mode in ["cut", "release"] {
+        assert_eq!(
+            render("oldest", choke_mode, true, vec![on(0,36),on(2,40)]),
+            vec![p50,p50,-0.5,0.0,0.0],
+            "{choke_mode}"
+        );
+    }
+}
+
+#[test]
 fn pitched_sample_player_uses_declared_interpolation_at_fractional_positions() {
     let directory = tempfile::tempdir().expect("temporary sample root");
     let values = [0.0, 1.0, 0.0, -1.0];

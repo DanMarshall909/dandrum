@@ -1853,6 +1853,7 @@ std::optional<InstrumentUiDocument> DandrumAudioProcessor::getPreparedUiDocument
             region.reverse = regionView.reverse;
             region.fadeInMs = regionView.fadeInMs;
             region.fadeOutMs = regionView.fadeOutMs;
+            region.playbackMode = copyUiText (regionView.playbackMode);
             if (regionView.hasLoop)
                 region.loop = InstrumentUiDocument::RegionLoop {
                     copyUiText (regionView.loopMode), regionView.loopStartFrame,

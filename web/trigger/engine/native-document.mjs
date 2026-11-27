@@ -50,7 +50,10 @@ export function patchFromSession(session){
     const uri=selectedResource(reference)?reference:absoluteSamplePath(reference,sourcePath);
     patch.assets.push({id:source.id,name:uri.split('/').at(-1),uri,state:'loaded',cached:true,duration,sampleRate:source.sampleRateHz,bits:0,channels:source.channelCount,frameCount});
     for(const region of source.regions??[]){
-      patch.regions.push({id:`${source.id}.${region.id}`,nativeId:region.id,assetId:source.id,name:readable(region.id),kind:'sample',start:Number(region.startFrame)/frameCount,end:Number(region.endFrame)/frameCount,root:region.rootNote,reverse:region.reverse??false,gain:region.gainDb??0,pan:region.pan??0,fades:{in:(region.fadeInMs??0)/(duration*1000),out:(region.fadeOutMs??0)/(duration*1000)},playback:region.loop?({forward:'loop',ping_pong:'pp',sustain:'sus'}[region.loop.mode]??'loop'):'once',loop:region.loop?{mode:region.loop.mode,start:Number(region.loop.startFrame)/frameCount,end:Number(region.loop.endFrame)/frameCount,crossfade:(region.loop.crossfadeMs??0)/(duration*1000)}:null});
+      const nativeMode=region.playbackMode??(region.loop?'looped':'one_shot');
+      const playback={one_shot:'once',gated:'gated',looped:'loop'}[nativeMode];
+      if(!playback)unsupported(`Playback mode ${nativeMode}`);
+      patch.regions.push({id:`${source.id}.${region.id}`,nativeId:region.id,assetId:source.id,name:readable(region.id),kind:'sample',start:Number(region.startFrame)/frameCount,end:Number(region.endFrame)/frameCount,root:region.rootNote,reverse:region.reverse??false,gain:region.gainDb??0,pan:region.pan??0,fades:{in:(region.fadeInMs??0)/(duration*1000),out:(region.fadeOutMs??0)/(duration*1000)},playback,loop:region.loop?{mode:region.loop.mode,start:Number(region.loop.startFrame)/frameCount,end:Number(region.loop.endFrame)/frameCount,crossfade:(region.loop.crossfadeMs??0)/(duration*1000)}:null});
     }
   }
   for(const map of document.maps??[]){
@@ -149,13 +152,19 @@ export function compileNativePatch(patch,session,{retainPublicSurface=false}={})
       const frame=value=>Math.round(finite(value,'region frame')*frames),milliseconds=value=>finite(value,'fade duration')*asset.duration*1000;
       const result={id:regionId,start_frame:frame(region.start),end_frame:frame(region.end),reverse:!!region.reverse,fade_in_ms:milliseconds(region.fades?.in??0),fade_out_ms:milliseconds(region.fades?.out??0)};
       if(result.start_frame<0||result.end_frame>frames||result.end_frame<=result.start_frame)throw new Error('Invalid native sample region');
+      const playbackMode={once:'one_shot',gated:'gated',loop:'looped'}[region.playback??'once'];
+      if(!playbackMode)unsupported('Region playback mode');
+      result.playback_mode=playbackMode;
       if(region.root!=null)result.root_note=region.root;if(region.gain)result.gain_db=region.gain;if(region.pan)result.pan=region.pan;
       if(region.tune||region.choke)unsupported('Per-region tuning and choke; use candidate controls');
       if(region.loop){
-        const mode=({loop:'forward',pp:'ping_pong',sus:'sustain'}[region.playback]??region.loop.mode??'forward');if(mode!=='forward')unsupported('Ping pong and sustain loops');
-        result.loop={mode,start_frame:frame(region.loop.start),end_frame:frame(region.loop.end),crossfade_ms:milliseconds(region.loop.crossfade??0)};
+        if(playbackMode!=='looped'||(region.loop.mode??'forward')!=='forward')unsupported('Ping pong, sustain and inactive loops');
+        result.loop={mode:'forward',start_frame:frame(region.loop.start),end_frame:frame(region.loop.end),crossfade_ms:milliseconds(region.loop.crossfade??0)};
+        const loopFrames=result.loop.end_frame-result.loop.start_frame;
+        if(result.loop.start_frame<result.start_frame||result.loop.end_frame>result.end_frame||loopFrames<=0
+          ||result.loop.crossfade_ms<0||result.loop.crossfade_ms*asset.sampleRate/1000>loopFrames/2)throw new Error('Invalid native loop window or crossfade');
       }
-      else if(region.playback&&region.playback!=='once')unsupported('Gated region playback');
+      else if(playbackMode==='looped')throw new Error('Loop playback requires loop points');
       compiledRegions.set(`${id}.${regionId}`,result);
       return result;
     });
