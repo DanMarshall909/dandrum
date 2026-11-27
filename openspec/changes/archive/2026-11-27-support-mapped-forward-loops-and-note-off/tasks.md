@@ -18,4 +18,4 @@
 ## 4. Verify and deliver
 
 - [x] 4.1 Map every new acceptance scenario to meaningful tests, run focused and affected suites, coverage, strict OpenSpec validation and spec coverage, then review refactoring opportunities.
-- [ ] 4.2 Obtain independent completion review of the exact candidate, publish under repository gates, and update issue #33 and the canonical handoff with verified evidence.
+- [x] 4.2 Obtain independent completion review of the exact candidate, publish under repository gates, and update issue #33 and the canonical handoff with verified evidence.
