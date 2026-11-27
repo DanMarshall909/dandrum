@@ -167,6 +167,7 @@ pub struct DandrumKernelUiRegion {
     pub reverse: bool,
     pub fade_in_ms: f64,
     pub fade_out_ms: f64,
+    pub playback_mode: DandrumKernelStringView,
     pub has_loop: bool,
     pub loop_mode: DandrumKernelStringView,
     pub loop_start_frame: u64,
@@ -914,6 +915,7 @@ pub unsafe extern "C" fn dandrum_kernel_ui_region(
             reverse: region.reverse,
             fade_in_ms: region.fade_in_ms.unwrap_or(0.0),
             fade_out_ms: region.fade_out_ms.unwrap_or(0.0),
+            playback_mode: ui_string_view(region.mapped_playback_mode()),
             has_loop: loop_settings.is_some(),
             loop_mode: ui_string_view(loop_settings.map_or("", |settings| &settings.mode)),
             loop_start_frame: loop_settings.map_or(0, |settings| settings.start_frame),
@@ -2513,6 +2515,7 @@ assets:
           reverse: true
           fade_in_ms: 1
           fade_out_ms: 2
+          playback_mode: looped
           loop: { mode: forward, start_frame: 200, end_frame: 1800, crossfade_ms: 1 }
       slices:
         - { id: transient, start_frame: 100, end_frame: 300 }
@@ -2561,6 +2564,7 @@ modules:
         assert!(region.has_gain_db && region.has_pan && region.has_loop);
         assert_eq!((region.gain_db, region.pan), (-3.0, 0.25));
         assert_eq!((region.fade_in_ms, region.fade_out_ms), (1.0, 2.0));
+        assert_eq!(ui_text(region.playback_mode), "looped");
         assert_eq!(ui_text(region.loop_mode), "forward");
         assert_eq!(
             (region.loop_start_frame, region.loop_end_frame),

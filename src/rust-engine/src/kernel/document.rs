@@ -417,8 +417,19 @@ pub struct SampleRegion {
     pub reverse: bool,
     pub fade_in_ms: Option<f64>,
     pub fade_out_ms: Option<f64>,
+    pub playback_mode: Option<String>,
     #[serde(rename = "loop")]
     pub loop_settings: Option<SampleLoop>,
+}
+
+impl SampleRegion {
+    pub fn mapped_playback_mode(&self) -> &str {
+        self.playback_mode.as_deref().unwrap_or(if self.loop_settings.is_some() {
+            "looped"
+        } else {
+            "one_shot"
+        })
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]

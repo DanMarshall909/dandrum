@@ -92,6 +92,7 @@ struct DandrumKernelUiRegion
     bool reverse;
     double fadeInMs;
     double fadeOutMs;
+    DandrumKernelStringView playbackMode;
     bool hasLoop;
     DandrumKernelStringView loopMode;
     std::uint64_t loopStartFrame;

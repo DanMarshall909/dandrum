@@ -55,6 +55,37 @@ test('forward loop and pitch/gain candidate edits retain actual units and weight
   assert.deepEqual([candidate.gain_db,candidate.pan,candidate.pitch_semitones,candidate.weight],[-6,-.5,12,3]);
 });
 
+test('native playback modes project from prepared regions and compile back into mapped audio',()=>{
+  const gated=session(yamlWithGatedKick());
+  const patch=patchFromSession(gated);
+  const kick=patch.regions.find(region=>region.id==='drums.kick');
+  assert.equal(kick.playback,'gated');
+  assert.equal(kick.loop,null);
+  const compiled=parse(compileNativePatch(patch,gated));
+  const region=compiled.assets.sample_sources[0].regions.find(item=>item.id==='kick');
+  assert.equal(region.playback_mode,'gated');
+  assert.equal(region.loop,undefined);
+  kick.playback='once';
+  assert.equal(parse(compileNativePatch(patch,gated)).assets.sample_sources[0].regions[0].playback_mode,'one_shot');
+});
+
+test('native compiler rejects loop endpoints and crossfade outside the selected region',()=>{
+  for(const loop of [
+    {start:-.01,end:.1,crossfade:0},
+    {start:.1,end:.1,crossfade:0},
+    {start:.1,end:.3,crossfade:0},
+    {start:.02,end:.08,crossfade:.04},
+  ]){
+    const initial=session(),patch=patchFromSession(initial),kick=patch.regions.find(region=>region.id==='drums.kick');
+    kick.playback='loop';kick.loop=loop;
+    assert.throws(()=>compileNativePatch(patch,initial),/invalid.*loop/i);
+  }
+});
+
+function yamlWithGatedKick(){
+  return session().yaml.replace('id: kick, start_frame: 0, end_frame: 12000','id: kick, start_frame: 0, end_frame: 12000, playback_mode: gated');
+}
+
 test('mapping roots compile to distinct playable regions while unchanged drums retain native no-root semantics',()=>{
   const initial=session(),patch=patchFromSession(initial),defaultGraph=parse(compileNativePatch(patch,initial));
   assert.equal(defaultGraph.assets.sample_sources[0].regions.find(region=>region.id==='kick').root_note,undefined);

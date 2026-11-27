@@ -102,6 +102,7 @@ pub(super) enum PerModuleState {
         initial_seed: u64,
         rng_state: u64,
         selected_zone: Option<usize>,
+        selected_note: Option<u8>,
         selected_pitch_ratio: f64,
         position: f64,
         active: bool,
@@ -234,6 +235,7 @@ impl PerModuleState {
                 initial_seed,
                 rng_state,
                 selected_zone,
+                selected_note,
                 selected_pitch_ratio,
                 position,
                 active,
@@ -242,6 +244,7 @@ impl PerModuleState {
                 round_robin_counters.fill(0);
                 *rng_state = *initial_seed;
                 *selected_zone = None;
+                *selected_note = None;
                 *selected_pitch_ratio = 1.0;
                 *position = 0.0;
                 *active = false;
@@ -538,6 +541,7 @@ impl PerModuleState {
                     initial_seed: *selection_seed,
                     rng_state: *selection_seed,
                     selected_zone: None,
+                    selected_note: None,
                     selected_pitch_ratio: 1.0,
                     position: 0.0,
                     active: false,

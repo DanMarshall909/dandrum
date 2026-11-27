@@ -893,6 +893,25 @@ fn validate_sample_module_options(patch: &KernelPatch) -> Result<(), KernelPrepa
 fn validate_sample_declarations(assets: &SampleAssets) -> Result<(), KernelPreparationError> {
     for source in &assets.sample_sources {
         for region in &source.regions {
+            let playback_mode = region.mapped_playback_mode();
+            if !matches!(playback_mode, "one_shot" | "gated" | "looped") {
+                return Err(sample_preparation_error(
+                    diagnostics::error_codes::KERNEL_SAMPLE_UNSUPPORTED_MODE,
+                    format!(
+                        "sample source '{}' region '{}' does not support playback mode '{}'",
+                        source.id, region.id, playback_mode
+                    ),
+                ));
+            }
+            if (playback_mode == "looped") != region.loop_settings.is_some() {
+                return Err(sample_preparation_error(
+                    diagnostics::error_codes::KERNEL_SAMPLE_INVALID_LOOP,
+                    format!(
+                        "sample source '{}' region '{}' requires loop points only in looped playback mode",
+                        source.id, region.id
+                    ),
+                ));
+            }
             if region.start_frame >= region.end_frame {
                 return Err(sample_preparation_error(
                     diagnostics::error_codes::KERNEL_SAMPLE_INVALID_REGION,

@@ -44,6 +44,7 @@ struct InstrumentUiDocument
         bool reverse = false;
         double fadeInMs = 0.0;
         double fadeOutMs = 0.0;
+        std::string playbackMode = "one_shot";
         std::optional<RegionLoop> loop;
     };
 
