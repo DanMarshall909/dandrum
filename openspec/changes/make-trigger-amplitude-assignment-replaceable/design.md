@@ -1,0 +1,65 @@
+## Context
+
+Issue #9 owns the replaceable default amplitude assignment. Its native prerequisites are #6 (stable patch/module/port identity and poly ownership) and #8 (modulator scope, destination domains and combination); #7 supplies the native editor proof. Those issues remain open, so this plan does not claim their contracts are implemented.
+
+The standalone Trigger model currently creates a locked `Amp envelope` modulator and locked `Amp gain` route in `voice-defaults.mjs` and `presets.mjs`. Its operation and presentation code uses that display ID for protection and dB formatting. The native adapter rejects modulation and macros, and its document compiler accepts only a sample-player voice. The historic envelope model is silent, so there is no pre-migration native envelope render. Rust currently expands a multi-voice `sample_map_player` into one `poly` region whose child contains only the player; the one-voice case stays unexpanded. Its special one-shot auto-retirement applies only while that child has no other modules. Adding an envelope and amplifier therefore needs an explicit completion path and a one-voice composition rule without a second allocator. Existing `poly` regions support a designated `done` output. Without `done`, the general poly implementation can retire released voices after sustained silence or a five-second timeout; that fallback must not become Trigger's assignment-dependent lifecycle rule. The current native replacement boundary prepares a candidate away from audio, rejects it without changing the accepted runtime, and retires old voices when a new graph commits.
+
+## Goals / Non-Goals
+
+**Goals:** Preserve the declared default envelope values and simple amplitude controls; permit an advanced user to replace, detach and restore the amplitude source; use stable identities and typed graph composition; keep voice retirement independent of the amplitude route; make structural edits, undo/redo and state restore safe; prove actual rendered behavior.
+
+**Non-Goals:** A graph-wide allocator, a new envelope primitive without an admission case, arbitrary unbounded modulation, ping-pong/sustain/CC64/time-stretch playback, every modulation destination, or changing the general poly fallback for unrelated patches.
+
+## Decisions
+
+### 1. Assignment is template/editor policy, not an intrinsic envelope
+
+The new sampler template creates a reusable envelope module and an amplitude assignment through stable source and destination identities supplied by #6. The ordinary Voice page continues to show an amplitude-envelope panel. The advanced assignment menu owns Replace modulator, Detach assignment and Restore default. The engine validates typed ports and graph ownership; it does not protect a module because its name or historic ID is `Amp envelope`. Rename changes display text only. The old fixed IDs are migration inputs, not semantic keys.
+
+Replace selects one compatible source and changes the amplitude assignment atomically. Detach removes that assignment but leaves the source available for other routes. Restore default reinstates a default envelope and assignment if needed, preserving unrelated routes and user modules. The UI displays `Default`, `Replaced` or `Detached` according to the accepted assignment and its template provenance. A disabled operation must explain the missing native capability.
+
+Alternative considered: unlock the existing mock route directly. That would leave name-based semantics, allow invalid destination combinations, and not supply native audio or lifecycle guarantees.
+
+### 2. Compose amplitude in the prepared voice graph
+
+Within one poly region, the default per-voice envelope emits a control signal. Extend the prepared sample-map voice definition, including the one-voice case, rather than wrapping the already bounded player in another allocator. Typed cables and a prepared gain/multiply composition combine base amplitude, envelope and velocity according to #8. A supported alternative source can drive amplitude and a second compatible destination without duplicating a per-voice stateful source. A deliberately shared source lives outside the poly region and is explicitly forwarded to voices. Preparation rejects scope, type, multiplicity or destination-domain mismatches before publication. The exact combination/order and unit conversion are inherited from the accepted #8 contract; this change does not invent a second rule.
+
+Detaching leaves the base amplitude path audible for new notes. It removes envelope shaping from that path; it does not disable the sample source or alter poly voice ownership. Existing per-voice modulation of other destinations remains intact.
+
+Alternative considered: interpret a missing assignment as zero gain. That turns a routing edit into silent playback and obscures whether voices are still active.
+
+### 3. Explicit voice completion is independent of amplitude modulation
+
+The Trigger voice definition supplies an explicit lifecycle/done signal to `poly`, based on source and gate state rather than temporary output level or a modulator named `Amp envelope`. The leading implementation candidate is a completion event from the one-voice sample player, connected to the voice definition's designated `done` output; qualify that event path before expanding the graph. One-shot sources finish at their prepared region end regardless of note-off. Gated and looped sources release on matching note-off. Choke, steal and reset retire or release the intended bounded slots according to the accepted sampling policy. A replaced, detached or silent amplitude route does not keep a voice occupied or cause premature retirement. Any source whose completion cannot be represented safely is rejected during preparation rather than relying on temporary silence.
+
+Alternative considered: reuse the general poly silence fallback. It only examines voices after gate release, but a temporarily silent released source could later produce output and still be retired early. An explicit Trigger completion signal gives the source lifecycle its own testable contract.
+
+### 4. Prepared commits and persistence use one accepted session
+
+Replace, Detach and Restore are one structural command each. Preparation and validation occur off the audio callback. Failure leaves the current patch, sounding voices, history and UI assignment unchanged. On successful publication, the accepted graph and assignment switch together. **Proposed held-note rule:** the current native replacement boundary retires old voices at commit; new notes use the new graph. This avoids retaining two graph generations and ensures a late note-off cannot occupy a new voice. The UI must disclose the interruption before every structural assignment edit, because native voice-count telemetry is not yet available to reliably detect all held notes. Undo/redo uses the same preparation and commit rule.
+
+Store assignment intent and stable source/destination identity in structural patch data, separate from parameter preset values. Migrate the historic locked default route into the new default assignment while preserving its stored envelope values and visible units. Since the historic mock is silent, establish the new native default's sonic equivalence with an independently calculated signed reference using those values, not a claimed old native render. A saved detached or replaced assignment restores exactly; Restore default is an explicit user action, never an automatic load repair. Missing/incompatible sources fail preparation with a useful diagnostic and leave the last accepted patch active.
+
+Alternative considered: keep old graph generations alive until every note ends. That would require bounded cross-generation note and asset ownership beyond the current single-session replacement boundary and is not needed for the first supported workflow. It can be a later separately specified capability.
+
+## Risks / Trade-offs
+
+- **#6/#8 are open** → Confirm their minimum stable identity, scope and combination contracts before implementing native assignment; hold dependent tasks if either contract changes.
+- **Replacing a graph interrupts held notes** → Show the effect before commit, test note ownership and voice counts after commit, and keep failed preparations non-disruptive. A later crossfade/old-generation tail needs its own proof and scope.
+- **Detached amplitude can sound louder** → Keep base gain bounded, show the unshaped state, and test signed peak/output values before allowing the action.
+- **Historic fixed-route semantics leak through UI or migration** → Inventory every ID-based branch, use capability/assignment metadata, and compare old versus migrated serialized states and visible values; compare new native audio to the independent signed reference.
+- **A `done` signal can retire too early or never fire** → Exercise source modes, note-off, silent modulation, choke, steal and reset at small voice limits with known signed output and active-slot assertions.
+- **The sample-map expansion assumes a lone player** → Qualify the one- and multi-voice expanded definitions and completion event before adding the envelope/gain graph; retain one allocator per poly region.
+
+## Migration Plan
+
+1. Freeze a representative historic mock patch's serialized values and create an independently calculated signed native reference for those values. Confirm the minimum #6/#8 contracts and the native support boundary before changing behavior.
+2. Add structural assignment identity and migration in a versioned patch projection. Prove unchanged stored/visible default values and new native output against the signed reference, plus rejection/rollback for malformed legacy routes.
+3. Add prepared graph routing and explicit lifecycle, then advanced UI commands. Keep the native capability unavailable until the complete route and lifecycle path is tested; the silent mock remains labeled as such.
+4. Qualify undo/redo, saved-state restore, held-note commit, a real native host render and all changed spec scenarios. Publish only after the normal repository verification and review gates. Roll back the candidate before publication if equivalence or lifecycle proof fails; accepted old patches remain loadable.
+
+## Open Questions
+
+- Dan's choice is pending on held-note commit behavior. The proposed rule above matches the current native replacement boundary; if the choice is to preserve old voices, revise the runtime ownership design and tests before implementation.
+- Dan's choice is pending on detached sound. The proposed base-amplitude behavior keeps the source audible; a mute choice would change the route/default contract and tests.
+- #6 must settle the stable identity/projection for the amplitude destination and template provenance; #8 must settle the supported source types, scope and amplitude combination. Do not infer those contracts from today's mock DTOs.
