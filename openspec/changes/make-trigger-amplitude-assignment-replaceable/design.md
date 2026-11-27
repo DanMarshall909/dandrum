@@ -24,7 +24,7 @@ Alternative considered: unlock the existing mock route directly. That would leav
 
 Within one poly region, the default per-voice envelope emits a control signal. Extend the prepared sample-map voice definition, including the one-voice case, rather than wrapping the already bounded player in another allocator. Typed cables and a prepared gain/multiply composition combine base amplitude, envelope and velocity according to #8. A supported alternative source can drive amplitude and a second compatible destination without duplicating a per-voice stateful source. A deliberately shared source lives outside the poly region and is explicitly forwarded to voices. Preparation rejects scope, type, multiplicity or destination-domain mismatches before publication. The exact combination/order and unit conversion are inherited from the accepted #8 contract; this change does not invent a second rule.
 
-Detaching leaves the base amplitude path audible for new notes. It removes envelope shaping from that path; it does not disable the sample source or alter poly voice ownership. Existing per-voice modulation of other destinations remains intact.
+Detaching leaves the base amplitude path audible for new notes, as Dan accepted on 27 November 2026. It removes envelope shaping from that path; it does not disable the sample source or alter poly voice ownership. Existing per-voice modulation of other destinations remains intact.
 
 Alternative considered: interpret a missing assignment as zero gain. That turns a routing edit into silent playback and obscures whether voices are still active.
 
@@ -36,7 +36,7 @@ Alternative considered: reuse the general poly silence fallback. It only examine
 
 ### 4. Prepared commits and persistence use one accepted session
 
-Replace, Detach and Restore are one structural command each. Preparation and validation occur off the audio callback. Failure leaves the current patch, sounding voices, history and UI assignment unchanged. On successful publication, the accepted graph and assignment switch together. **Proposed held-note rule:** the current native replacement boundary retires old voices at commit; new notes use the new graph. This avoids retaining two graph generations and ensures a late note-off cannot occupy a new voice. The UI must disclose the interruption before every structural assignment edit, because native voice-count telemetry is not yet available to reliably detect all held notes. Undo/redo uses the same preparation and commit rule.
+Replace, Detach and Restore are one structural command each. Preparation and validation occur off the audio callback. Failure leaves the current patch, sounding voices, history and UI assignment unchanged. On successful publication, the accepted graph and assignment switch together. **Held-note rule, accepted by Dan on 27 November 2026:** the current native replacement boundary retires old voices at commit; new notes use the new graph. This avoids retaining two graph generations and ensures a late note-off cannot occupy a new voice. The UI must disclose the interruption before every structural assignment edit, because native voice-count telemetry is not yet available to reliably detect all held notes. Undo/redo uses the same preparation and commit rule.
 
 Store assignment intent and stable source/destination identity in structural patch data, separate from parameter preset values. Migrate the historic locked default route into the new default assignment while preserving its stored envelope values and visible units. Since the historic mock is silent, establish the new native default's sonic equivalence with an independently calculated signed reference using those values, not a claimed old native render. A saved detached or replaced assignment restores exactly; Restore default is an explicit user action, never an automatic load repair. Missing/incompatible sources fail preparation with a useful diagnostic and leave the last accepted patch active.
 
@@ -62,6 +62,4 @@ Alternative considered: keep old graph generations alive until every note ends. 
 
 ## Open Questions
 
-- Dan's choice is pending on held-note commit behavior. The proposed rule above matches the current native replacement boundary; if the choice is to preserve old voices, revise the runtime ownership design and tests before implementation.
-- Dan's choice is pending on detached sound. The proposed base-amplitude behavior keeps the source audible; a mute choice would change the route/default contract and tests.
 - #6 must settle the stable identity/projection for the amplitude destination and template provenance; #8 must settle the supported source types, scope and amplitude combination. Do not infer those contracts from today's mock DTOs.
