@@ -48,6 +48,8 @@ The advanced Trigger workflow SHALL provide Replace modulator, Detach assignment
 
 Trigger's prepared poly-region voice SHALL use explicit completion from source and gate lifecycle, independent of the amplitude route, its name or temporary output level. One-shot sources SHALL retire when their prepared region ends; gated and looped sources SHALL release on matching note-off. Choking, stealing and reset SHALL leave no permanently occupied voice. A source whose completion cannot be represented safely SHALL fail preparation instead of relying on temporary silence.
 
+The editor SHALL not imply that envelope Release creates audio after a source has stopped. For playback modes that stop at note-off, it SHALL explain or disable the ineffective release-tail control while preserving the accepted mapped-playback mode semantics.
+
 #### Scenario: Silent modulation does not retire a held loop
 - **WHEN** an active looped voice has zero amplitude from an assigned modulator while its note remains held
 - **THEN** its bounded voice slot SHALL remain active until matching note-off or an explicit choke, steal or reset event
@@ -59,6 +61,10 @@ Trigger's prepared poly-region voice SHALL use explicit completion from source a
 #### Scenario: Gated and looped note-off reclaim voices
 - **WHEN** a gated or looped source receives matching note-off under default, replaced and detached assignments
 - **THEN** its output SHALL stop according to its playback mode and its voice slot SHALL become reusable without affecting another held note
+
+#### Scenario: Release control reflects source lifetime
+- **WHEN** a user views the amplitude envelope for a gated or looped source that stops at note-off
+- **THEN** the editor SHALL explain or disable the ineffective release-tail control, and a signed render SHALL remain silent after the note-off frame
 
 #### Scenario: Choke and steal stay bounded
 - **WHEN** a choke or configured steal replaces an active voice under a replaced or detached amplitude assignment

@@ -13,12 +13,12 @@
 
 - [ ] 3.1 Qualify the one- and multi-voice sample-map expansion and a source-completion event routed to `poly.done`, including no-zone selection; write failing Rust prepared-graph tests for default known signed output, alternative envelope feeding amplitude and a second destination, independent per-voice state, shared-source scope and invalid-cable rejection.
 - [ ] 3.2 Compose the supported amplitude path from existing primitives and typed cables under #8; expose only capabilities that compile and render in the native adapter.
-- [ ] 3.3 Write failing small-voice-limit tests for one-shot completion, gated/looped note-off, temporary zero amplitude, unmatched selection, choke, steal, reset and slot reuse under default/replaced/detached assignments.
+- [ ] 3.3 Write failing small-voice-limit tests for one-shot completion, gated/looped note-off and post-note-off silence, temporary zero amplitude, unmatched selection, choke, steal, reset and slot reuse under default/replaced/detached assignments.
 - [ ] 3.4 Supply an explicit Trigger voice completion signal independent of the amplitude route and pass signed output and bounded-lifecycle tests; reject unsupported completion cases during preparation.
 
 ## 4. Connect the editor and accepted session
 
-- [ ] 4.1 Write failing adapter and UI interaction tests for advanced Replace, Detach and Restore, truthful unsupported states, assignment labels, familiar default controls, rename independence and keyboard-accessible disclosure/confirmation before structural commits.
+- [ ] 4.1 Write failing adapter and UI interaction tests for advanced Replace, Detach and Restore, truthful unsupported states and release-tail control timing, assignment labels, familiar default controls, rename independence and keyboard-accessible disclosure/confirmation before structural commits.
 - [ ] 4.2 Implement the native projection/compiler and advanced UI commands, preserving the current supported editor flow and rejecting unsupported operations without simulated publication.
 - [ ] 4.3 Write failing native session tests for failed preparation with held notes, successful held-note commit, late note-off, undo/redo, saved-state migration and fresh-session restore; then implement the accepted transaction and persistence path.
 
