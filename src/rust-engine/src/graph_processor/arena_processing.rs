@@ -207,6 +207,7 @@ pub(super) fn process_sample_player_state(
                             right_frames,
                             cursor,
                             region,
+                            loop_settings,
                             interpolation,
                         )
                     },
@@ -373,22 +374,35 @@ fn sample_interpolated(
     frames: &[f32],
     position: f64,
     region: &SampleRegion,
+    loop_settings: Option<&SampleLoop>,
     interpolation: SampleInterpolation,
 ) -> f32 {
-    let first = region.start_frame as usize;
-    let last = region.end_frame as usize - 1;
+    let first = region.start_frame as i64;
+    let last = region.end_frame as i64 - 1;
+    let loop_window = loop_settings.filter(|settings| {
+        position >= settings.start_frame as f64 && position < settings.end_frame as f64
+    });
+    let sample_index = |index: i64| -> usize {
+        if let Some(settings) = loop_window {
+            let start = settings.start_frame as i64;
+            let length = (settings.end_frame - settings.start_frame) as i64;
+            (start + (index - start).rem_euclid(length)) as usize
+        } else {
+            index.clamp(first, last) as usize
+        }
+    };
     if interpolation == SampleInterpolation::Nearest {
-        return frames[(position.round() as usize).clamp(first, last)];
+        return frames[sample_index(position.round() as i64)];
     }
-    let base = (position.floor() as usize).clamp(first, last);
+    let base = position.floor() as i64;
     let fraction = (position - base as f64) as f32;
-    let a = frames[base];
-    let b = frames[(base + 1).min(last)];
+    let a = frames[sample_index(base)];
+    let b = frames[sample_index(base + 1)];
     if interpolation == SampleInterpolation::Linear {
         return a + fraction * (b - a);
     }
-    let before = frames[base.saturating_sub(1).max(first)];
-    let after = frames[(base + 2).min(last)];
+    let before = frames[sample_index(base - 1)];
+    let after = frames[sample_index(base + 2)];
     let f2 = fraction * fraction;
     let f3 = f2 * fraction;
     0.5 * ((3.0 * (a - b) + after - before) * f3
@@ -402,11 +416,12 @@ fn sample_mono_interpolated(
     right_frames: Option<&[f32]>,
     position: f64,
     region: &SampleRegion,
+    loop_settings: Option<&SampleLoop>,
     interpolation: SampleInterpolation,
 ) -> f32 {
-    let left = sample_interpolated(frames, position, region, interpolation);
+    let left = sample_interpolated(frames, position, region, loop_settings, interpolation);
     right_frames.map_or(left, |right| {
-        (left + sample_interpolated(right, position, region, interpolation)) * 0.5
+        (left + sample_interpolated(right, position, region, loop_settings, interpolation)) * 0.5
     })
 }
 
@@ -589,6 +604,7 @@ pub(super) fn process_sample_map_player_state(
                             zone.sample.frames(),
                             cursor,
                             region,
+                            loop_settings,
                             SampleInterpolation::Linear,
                         )
                     },
@@ -605,6 +621,7 @@ pub(super) fn process_sample_map_player_state(
                                 frames,
                                 cursor,
                                 region,
+                                loop_settings,
                                 SampleInterpolation::Linear,
                             )
                         },

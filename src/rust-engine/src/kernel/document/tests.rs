@@ -2567,7 +2567,7 @@ connections:
         let settings = RenderSettings {
             sample_rate_hz: rate,
             block_size_frames: 4,
-            duration_frames: 10,
+            duration_frames: if rate == 96_000 { 12 } else { 10 },
         };
         let prepared = prepare_kernel_patch_with_context(
             &patch,
@@ -2622,6 +2622,22 @@ connections:
     assert_eq!(
         render(false, "", 24_000),
         vec![-0.5, p25, -0.75, p25, -0.75, p25, -0.75, p25, -0.75, p25]
+    );
+    assert_eq!(
+        render(false, "", 96_000),
+        vec![
+            -0.5, -0.375, -0.25, (-0.25 + p25) * 0.5,
+            p25, (p25 + p50) * 0.5, p50, (p50 - 0.75) * 0.5,
+            -0.75, -0.5, -0.25, (-0.25 + p25) * 0.5,
+        ]
+    );
+    assert_eq!(
+        render(true, "", 96_000),
+        vec![
+            p75, -0.5, -0.75, (p50 - 0.75) * 0.5,
+            p50, (p25 + p50) * 0.5, p25, (-0.25 + p25) * 0.5,
+            -0.25, -0.5, -0.75, (p50 - 0.75) * 0.5,
+        ]
     );
 }
 
