@@ -4,17 +4,17 @@ Trigger treats its default amplitude envelope and route as fixed mock objects. A
 
 ## What Changes
 
-- New sampler patches install a default envelope-to-amplitude assignment and retain the familiar amplitude-envelope controls. An advanced workflow can replace the source, detach it, or restore the default without requiring graph editing in the normal view.
+- New sampler patches install a default envelope-to-voice-amplitude assignment and a separate default Velocity-modulator-to-layer-gain route, retaining the familiar amplitude-envelope controls. Each new layer receives that route through its template. An advanced workflow can replace the envelope source, detach it, or restore the default without requiring graph editing in the normal view.
 - Make assignment policy and stable identities independent of the envelope's name. Permit a supported source to drive amplitude and another compatible destination under the scope and combination rules of #8.
 - Keep poly-region voice completion independent of the amplitude route. Specify note-off, one-shot completion, sustained/looped playback, choking, stealing, and held-note structural edits with bounded voice reclamation.
 - Persist the choice and migrate existing silent-mock default patches with their stored values intact; prove the new native default against an independent signed reference. Make replacement, detach, restore, and rejected edits reversible through the accepted native session.
-- Prove default equivalence, alternative and shared routing, lifecycle, native rendering, and UI interactions with criterion-specific tests.
+- Prove default velocity-to-layer-gain routing, envelope equivalence, alternative and shared routing, lifecycle, native rendering, and UI interactions with criterion-specific tests.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `trigger-amplitude-assignment`: Default, replaceable, detachable and restorable amplitude assignment; separate voice completion; safe commit, persistence, and rendered acceptance.
+- `trigger-amplitude-assignment`: Default, replaceable, detachable and restorable envelope assignment alongside a separate default Velocity-modulator-to-layer-gain route; separate voice completion; safe commit, persistence, and rendered acceptance.
 
 ### Modified Capabilities
 

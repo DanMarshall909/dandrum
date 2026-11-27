@@ -2,11 +2,19 @@
 
 ### Requirement: New sampler patches provide a replaceable default amplitude assignment
 
-A new Trigger sampler patch SHALL create a reusable per-voice envelope assigned to amplitude by default and SHALL expose its conventional amplitude-envelope controls. Assignment semantics SHALL use stable module and destination identity and SHALL not depend on a modulator's display name or historical ID. Existing silent-mock default-envelope patches SHALL migrate with their stored values and visible controls intact. The new native default SHALL match an independently calculated signed reference for those values.
+A new Trigger sampler patch SHALL create a reusable per-voice envelope assigned to voice amplitude by default and SHALL expose its conventional amplitude-envelope controls. Each new layer SHALL have a default route from the Velocity performance modulator to that layer's gain destination. This velocity response SHALL be composed through the same typed modulation facilities as other routes, with no implicit velocity-to-gain scaling in the sample player or layer selector. The layer's static gain trim and its velocity-controlled gain SHALL remain distinct. Assignment semantics SHALL use stable module and destination identity and SHALL not depend on a modulator's display name or historical ID. Existing silent-mock default-envelope patches SHALL migrate with their stored values, visible controls and explicit Velocity destinations and depths intact; migration SHALL not add a velocity route to a pre-existing layer or duplicate a velocity gain stage. The new native default SHALL match an independently calculated signed reference for those values.
 
 #### Scenario: New patch has a familiar default
 - **WHEN** a new sampler patch is prepared and a supported note is rendered
-- **THEN** the Voice page SHALL show the default amplitude-envelope controls and the signed output SHALL match the declared default envelope, base gain and velocity response
+- **THEN** the Voice page SHALL show the default amplitude-envelope controls, each layer SHALL show its Velocity-to-layer-gain route, and signed output SHALL match the declared default envelope, base gain and layer velocity response
+
+#### Scenario: Velocity changes the gain of a selected layer through its default route
+- **WHEN** two notes at different velocities select the same layer with the default Velocity route enabled
+- **THEN** that layer's output SHALL follow the declared velocity response with known signed values, before voice-amplitude envelope shaping, without changing the layer's static gain trim
+
+#### Scenario: Removing a layer velocity route removes its gain response
+- **WHEN** the default Velocity-to-layer-gain route is disabled through a supported modulation edit and two velocities still select the same layer
+- **THEN** the accepted graph SHALL contain no hidden velocity gain scaling for that layer, and its known signed output SHALL reflect its static trim and remaining routes
 
 #### Scenario: Rename does not change the assignment
 - **WHEN** the assigned default envelope is renamed and the patch is prepared again
@@ -14,11 +22,11 @@ A new Trigger sampler patch SHALL create a reusable per-voice envelope assigned 
 
 #### Scenario: Historic default values migrate to a native reference
 - **WHEN** a saved patch with the historic fixed `Amp envelope` route is loaded
-- **THEN** its route SHALL become the default assignment with stable identities, its stored and visible envelope values SHALL match the old mock fixture, and its new native render SHALL match the signed reference for those values
+- **THEN** its envelope route SHALL become the default voice-amplitude assignment with stable identities, its stored and visible envelope values and any explicit Velocity route SHALL match the old mock fixture without redirection or duplication, and its new native render SHALL match the signed reference for those values
 
 ### Requirement: Advanced amplitude assignment is reversible and capability checked
 
-The advanced Trigger workflow SHALL provide Replace modulator, Detach assignment and Restore default without requiring graph editing in the normal view. A supported source SHALL be assignable to amplitude and another compatible destination under #8's scope and combination rules. Detach SHALL leave the base amplitude path audible for new notes. Unsupported sources, destinations, scopes, types or cable multiplicities SHALL be rejected before replacing the accepted patch. An adapter without native modulation SHALL report the action unavailable instead of accepting a simulated edit.
+The advanced Trigger workflow SHALL provide Replace modulator, Detach assignment and Restore default for the envelope-to-voice-amplitude route without requiring graph editing in the normal view. A supported source SHALL be assignable to voice amplitude and another compatible destination under #8's scope and combination rules. Detach SHALL leave the base voice-amplitude path and any selected layer's independent velocity-to-gain route audible for new notes. Replace, Detach and Restore SHALL preserve those velocity routes where present. Unsupported sources, destinations, scopes, types or cable multiplicities SHALL be rejected before replacing the accepted patch. An adapter without native modulation SHALL report the action unavailable instead of accepting a simulated edit.
 
 #### Scenario: Replace with a reusable source
 - **WHEN** an advanced user replaces the default source with a supported per-voice envelope already routed to a compatible filter destination
@@ -28,13 +36,13 @@ The advanced Trigger workflow SHALL provide Replace modulator, Detach assignment
 - **WHEN** two notes use independent per-voice envelopes and an explicitly shared source under the accepted #8 scope contract
 - **THEN** each envelope SHALL follow only its own note while the shared source SHALL retain one shared state across the two voices
 
-#### Scenario: Detach leaves base amplitude audible
+#### Scenario: Detach leaves base amplitude and layer velocity response audible
 - **WHEN** the amplitude assignment is detached and a new note is played
-- **THEN** the new note SHALL render at its bounded base amplitude without envelope shaping, and the detached envelope's other routes SHALL remain intact
+- **THEN** the new note SHALL render at its bounded base voice amplitude without envelope shaping, retain any selected layer's Velocity-to-gain response, and leave the detached envelope's other routes intact
 
 #### Scenario: Restore the default
 - **WHEN** the user restores the default after replacement or detach
-- **THEN** the default envelope-to-amplitude assignment and familiar controls SHALL return without deleting unrelated modulators or routes
+- **THEN** the default envelope-to-voice-amplitude assignment and familiar controls SHALL return without deleting unrelated modulators or routes, including the layer Velocity routes
 
 #### Scenario: Invalid replacement preserves the accepted patch
 - **WHEN** a source or destination is incompatible by type, domain, scope or multiplicity
